@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
@@ -25,27 +26,30 @@ public class HistoryDeletionService {
 
   private final RdbmsWriters rdbmsWriters;
   private final HistoryDeletionDbReader historyDeletionDbReader;
-  private final Duration minimumDeletionInterval = Duration.ofSeconds(1);
-  private final Duration maximumDeletionInterval = Duration.ofMinutes(5);
-  private Duration currentDeletionInterval = minimumDeletionInterval;
+  private final HistoryDeletionConfig config;
+  private Duration currentDeletionInterval;
 
   public HistoryDeletionService(
-      final RdbmsWriters rdbmsWriters, final HistoryDeletionDbReader historyDeletionDbReader) {
+      final RdbmsWriters rdbmsWriters,
+      final HistoryDeletionDbReader historyDeletionDbReader,
+      final HistoryDeletionConfig config) {
     this.rdbmsWriters = rdbmsWriters;
     this.historyDeletionDbReader = historyDeletionDbReader;
+    this.config = config;
+    this.currentDeletionInterval = config.delayBetweenRuns();
   }
 
   public Duration deleteHistory(final int partitionId) {
-    final var batch = historyDeletionDbReader.getNextBatch(partitionId, 100);
+    final var batch = historyDeletionDbReader.getNextBatch(partitionId, config.queueBatchSize());
     LOG.trace("Deleting historic data for entities: {}", batch);
 
     final var deletedProcessInstances = deleteProcessInstances(batch);
     final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedProcessInstances);
 
     if (deletedResourceCount > 0) {
-      return minimumDeletionInterval;
-    } else if (currentDeletionInterval.compareTo(maximumDeletionInterval) >= 0) {
-      return maximumDeletionInterval;
+      return config.delayBetweenRuns();
+    } else if (currentDeletionInterval.compareTo(config.maxDelayBetweenRuns()) >= 0) {
+      return config.maxDelayBetweenRuns();
     } else {
       currentDeletionInterval = currentDeletionInterval.multipliedBy(2);
       return currentDeletionInterval;
@@ -71,7 +75,7 @@ public class HistoryDeletionService {
         rdbmsWriters.getProcessInstanceDependantWriters().stream()
             .allMatch(
                 dependant -> {
-                  final var limit = 10000; // TODO make limit configurable
+                  final var limit = config.dependentRowLimit();
                   final var deletedRows =
                       dependant.deleteProcessInstanceRelatedData(processInstanceKeys, limit);
                   return deletedRows < limit;

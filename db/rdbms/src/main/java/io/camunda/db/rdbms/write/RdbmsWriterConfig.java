@@ -217,4 +217,10 @@ public record RdbmsWriterConfig(
       }
     }
   }
+
+  public record HistoryDeletionConfig(
+      Duration delayBetweenRuns,
+      Duration maxDelayBetweenRuns,
+      int queueBatchSize,
+      int dependentRowLimit) {}
 }
