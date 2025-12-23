@@ -34,7 +34,7 @@ import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.indices.FlushRequest;
-import org.opensearch.client.opensearch.nodes.Stats;
+import org.opensearch.client.opensearch.nodes.stats.Stats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

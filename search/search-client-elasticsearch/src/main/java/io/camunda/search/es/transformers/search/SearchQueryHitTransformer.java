@@ -22,7 +22,7 @@ public final class SearchQueryHitTransformer<T>
   }
 
   @Override
-  public SearchQueryHit<T> apply(Hit<T> value) {
+  public SearchQueryHit<T> apply(final Hit<T> value) {
     final var sortValues = toArray(value.sort());
     return new SearchQueryHit.Builder<T>()
         .id(value.id())
