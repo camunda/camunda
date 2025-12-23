@@ -15,9 +15,14 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -39,7 +44,9 @@ class NodeIdBasedDataDirectoryProviderTest {
         .thenReturn(new NodeInstance(nodeId, Version.of(nodeVersion)));
 
     final var rootDirectory = tempDir.resolve("root");
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final var copier = new RecordingDataDirectoryCopier();
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier);
 
     // when
     final var result = initializer.initialize(rootDirectory);
@@ -50,6 +57,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     final var directory = rootDirectory.resolve("node-5").resolve("v3");
     assertThat(result.join()).isEqualTo(directory);
     assertThat(directory).exists().isDirectory();
+
+    assertThat(copier.invocations()).isEmpty();
 
     final var initInfo = readInitializationInfo(directory);
     assertThat(initInfo.get("initialized")).isNotNull();
@@ -65,20 +74,20 @@ class NodeIdBasedDataDirectoryProviderTest {
 
     final var rootDirectory = tempDir.resolve("root");
 
-    final var previous = rootDirectory.resolve("node-2").resolve("v3").resolve("raft-partition");
-    final var previousPartition = previous.resolve("partitions").resolve("1");
-    Files.createDirectories(previousPartition.resolve("snapshots").resolve("snap-1"));
-    Files.writeString(
-        previousPartition.resolve("snapshots").resolve("snap-1").resolve("file.bin"), "abc");
+    final var previous = rootDirectory.resolve("node-2").resolve("v3");
+    final var previousPartition =
+        previous.resolve("raft-partition").resolve("partitions").resolve("1");
+
+    Files.createDirectories(previousPartition);
     Files.writeString(previousPartition.resolve("atomix-partition-1.meta"), "meta");
     Files.writeString(previousPartition.resolve("atomix-partition-1.conf"), "conf");
     Files.writeString(previousPartition.resolve("atomix-partition-1-1.log"), "log");
-    Files.createDirectories(previousPartition.resolve("runtime"));
-    Files.writeString(previousPartition.resolve("runtime").resolve("ignore.txt"), "ignore");
 
-    writeInitializationFile(rootDirectory.resolve("node-2").resolve("v3"), null);
+    writeInitializationFile(previous, null);
 
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final var copier = new RecordingDataDirectoryCopier();
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier);
 
     // when
     final var newDirectory = initializer.initialize(rootDirectory).join();
@@ -92,26 +101,16 @@ class NodeIdBasedDataDirectoryProviderTest {
     assertThat(copiedPartition.resolve("atomix-partition-1.meta")).exists();
     assertThat(copiedPartition.resolve("atomix-partition-1.conf")).exists();
     assertThat(copiedPartition.resolve("atomix-partition-1-1.log")).exists();
-    assertThat(copiedPartition.resolve("runtime")).doesNotExist();
+
+    assertThat(copier.invocations()).hasSize(1);
+    assertThat(copier.invocations().getFirst().source()).isEqualTo(previous);
+    assertThat(copier.invocations().getFirst().target())
+        .isEqualTo(rootDirectory.resolve("node-2").resolve("v4"));
+    assertThat(copier.invocations().getFirst().markerFileName()).isEqualTo(DIRECTORY_INITIALIZED_FILE);
 
     final var initInfo = readInitializationInfo(newDirectory);
     assertThat(initInfo.get("initialized")).isNotNull();
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(3L);
-
-    final var sourceSnapshot =
-        previousPartition.resolve("snapshots").resolve("snap-1").resolve("file.bin");
-    final var copiedSnapshot =
-        copiedPartition.resolve("snapshots").resolve("snap-1").resolve("file.bin");
-    assertThat(copiedSnapshot).exists();
-
-    // hardlink if possible (same file key), otherwise at least identical content
-    final var sourceKey = Files.readAttributes(sourceSnapshot, BasicFileAttributes.class).fileKey();
-    final var targetKey = Files.readAttributes(copiedSnapshot, BasicFileAttributes.class).fileKey();
-    if (sourceKey != null && targetKey != null) {
-      assertThat(sourceKey).isEqualTo(targetKey);
-    } else {
-      assertThat(Files.readString(copiedSnapshot)).isEqualTo("abc");
-    }
   }
 
   @Test
@@ -127,7 +126,9 @@ class NodeIdBasedDataDirectoryProviderTest {
     createValidVersionDirectory(nodeDirectory, 0L, "file0.txt", "content0");
     createValidVersionDirectory(nodeDirectory, 2L, "file2.txt", "content2");
 
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final var copier = new RecordingDataDirectoryCopier();
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -136,6 +137,10 @@ class NodeIdBasedDataDirectoryProviderTest {
     assertThat(result).isEqualTo(nodeDirectory.resolve("v3"));
     assertThat(result.resolve("file2.txt")).exists();
     assertThat(Files.readString(result.resolve("file2.txt"))).isEqualTo("content2");
+
+    assertThat(copier.invocations()).hasSize(1);
+    assertThat(copier.invocations().getFirst().source()).isEqualTo(nodeDirectory.resolve("v2"));
+    assertThat(copier.invocations().getFirst().target()).isEqualTo(nodeDirectory.resolve("v3"));
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(2L);
@@ -160,7 +165,8 @@ class NodeIdBasedDataDirectoryProviderTest {
 
     createValidVersionDirectory(nodeDirectory, 3L, "file3.txt", "content3");
 
-    final var initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -190,7 +196,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     Files.writeString(targetDirectory.resolve("existing-file.txt"), "existing content");
     writeInitializationFile(targetDirectory, null);
 
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -217,7 +224,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     Files.writeString(previousVersion.resolve("subdir1/subdir2/file2.txt"), "file2 content");
     writeInitializationFile(previousVersion, null);
 
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -248,7 +256,8 @@ class NodeIdBasedDataDirectoryProviderTest {
 
     createValidVersionDirectory(nodeDirectory, 0L, "file0.txt", "version 0 content");
 
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -279,7 +288,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     Files.createDirectories(targetDirectory);
     Files.writeString(targetDirectory.resolve("garbage.txt"), "garbage");
 
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -300,7 +310,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     when(nodeIdProvider.currentNodeInstance()).thenReturn(null);
 
     final var baseDirectory = tempDir.resolve("base");
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer =
+        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(baseDirectory);
@@ -340,7 +351,49 @@ class NodeIdBasedDataDirectoryProviderTest {
   }
 
   private static JsonNode readInitializationInfo(final Path directory) throws IOException {
-    final var initFile = directory.resolve(DIRECTORY_INITIALIZED_FILE);
+    final Path initFile = directory.resolve(DIRECTORY_INITIALIZED_FILE);
     return OBJECT_MAPPER.readTree(initFile.toFile());
+  }
+
+  private static final class RecordingDataDirectoryCopier implements DataDirectoryCopier {
+
+    private final List<Invocation> invocations = new ArrayList<>();
+
+    List<Invocation> invocations() {
+      return invocations;
+    }
+
+    @Override
+    public void copy(final Path source, final Path target, final String markerFileName)
+        throws IOException {
+      invocations.add(new Invocation(source, target, markerFileName));
+
+      Files.walkFileTree(
+          source,
+          new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
+                throws IOException {
+              Files.createDirectories(target.resolve(source.relativize(dir)));
+              return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+                throws IOException {
+              final var relative = source.relativize(file);
+              if (relative.getFileName().toString().equals(markerFileName)) {
+                return FileVisitResult.CONTINUE;
+              }
+
+              final var targetFile = target.resolve(relative);
+              Files.createDirectories(targetFile.getParent());
+              Files.copy(file, targetFile, StandardCopyOption.COPY_ATTRIBUTES);
+              return FileVisitResult.CONTINUE;
+            }
+          });
+    }
+
+    private record Invocation(Path source, Path target, String markerFileName) {}
   }
 }

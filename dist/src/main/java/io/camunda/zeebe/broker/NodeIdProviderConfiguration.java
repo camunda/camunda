@@ -11,6 +11,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.ConfiguredDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.DataDirectoryProvider;
@@ -127,7 +128,10 @@ public class NodeIdProviderConfiguration {
     final var initializer =
         switch (data.getInitializationMode()) {
           case USE_PRECONFIGURED_DIRECTORY -> new ConfiguredDataDirectoryProvider();
-          case SHARED_ROOT_VERSIONED_NODE -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+          case SHARED_ROOT_VERSIONED_NODE -> {
+            final var copier = new BrokerDataDirectoryCopier();
+            yield new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier::copy);
+          }
         };
 
     // Use the configured data root directory as the root input; for versioned layouts this is

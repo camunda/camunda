@@ -36,16 +36,16 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
   private static final String NODE_DIRECTORY_PREFIX = "node-";
   private static final String VERSION_DIRECTORY_PREFIX = "v";
   private static final String DIRECTORY_INITIALIZED_FILE = "directory-initialized.json";
-
-  private static final String SNAPSHOTS_DIRECTORY = "snapshots";
-  private static final String BOOTSTRAP_SNAPSHOTS_DIRECTORY = "bootstrap-snapshots";
   private static final String RUNTIME_DIRECTORY = "runtime";
 
   private final NodeIdProvider nodeIdProvider;
+  private final DataDirectoryCopier copier;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public NodeIdBasedDataDirectoryProvider(final NodeIdProvider nodeIdProvider) {
+  public NodeIdBasedDataDirectoryProvider(
+      final NodeIdProvider nodeIdProvider, final DataDirectoryCopier copier) {
     this.nodeIdProvider = nodeIdProvider;
+    this.copier = copier;
   }
 
   @Override
@@ -87,7 +87,8 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
             dataDirectory,
             previousDataDirectory);
 
-        copyDirectory(previousDataDirectory, dataDirectory);
+        copier.copy(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
+
         validateCopy(previousDataDirectory, dataDirectory);
         writeDirectoryInitializedFile(dataDirectory, previousVersion.get());
       } else {
@@ -189,69 +190,6 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
         });
   }
 
-  private void copyDirectory(final Path source, final Path target) throws IOException {
-    Files.walkFileTree(
-        source,
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
-              throws IOException {
-            if (isRuntimeDirectory(source, dir)) {
-              return FileVisitResult.SKIP_SUBTREE;
-            }
-
-            final var relative = source.relativize(dir);
-            Files.createDirectories(target.resolve(relative));
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-              throws IOException {
-            final var relative = source.relativize(file);
-            if (relative.getFileName().toString().equals(DIRECTORY_INITIALIZED_FILE)) {
-              return FileVisitResult.CONTINUE;
-            }
-
-            final var targetFile = target.resolve(relative);
-            Files.createDirectories(targetFile.getParent());
-
-            if (isSnapshotFile(relative)) {
-              hardLinkOrCopy(file, targetFile);
-            } else {
-              Files.copy(file, targetFile, StandardCopyOption.COPY_ATTRIBUTES);
-            }
-
-            FileUtil.flushDirectory(targetFile.getParent());
-            return FileVisitResult.CONTINUE;
-          }
-        });
-
-    FileUtil.flushDirectory(target);
-  }
-
-  private void hardLinkOrCopy(final Path sourceFile, final Path targetFile) throws IOException {
-    try {
-      Files.createLink(targetFile, sourceFile);
-    } catch (final IOException e) {
-      LOG.warn(
-          "Failed to hard-link snapshot file {} to {}; falling back to copy",
-          sourceFile,
-          targetFile,
-          e);
-      Files.copy(sourceFile, targetFile, StandardCopyOption.COPY_ATTRIBUTES);
-    }
-  }
-
-  private boolean isSnapshotFile(final Path relativePath) {
-    for (final var part : relativePath) {
-      final var name = part.toString();
-      if (name.equals(SNAPSHOTS_DIRECTORY) || name.equals(BOOTSTRAP_SNAPSHOTS_DIRECTORY)) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   private boolean isRuntimeDirectory(final Path root, final Path path) {
     final var relative = root.relativize(path);
