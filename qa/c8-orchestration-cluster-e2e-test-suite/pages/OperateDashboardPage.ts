@@ -11,6 +11,7 @@ import {Page, Locator} from '@playwright/test';
 export class OperateDashboardPage {
   private page: Page;
   readonly metricPanel: Locator;
+  readonly runningInstancesText: Locator;
   readonly totalInstancesLink: Locator;
   readonly activeInstancesLink: Locator;
   readonly incidentInstancesLink: Locator;
@@ -35,6 +36,9 @@ export class OperateDashboardPage {
   constructor(page: Page) {
     this.page = page;
     this.metricPanel = page.getByTestId('metric-panel');
+    this.runningInstancesText = page.getByText(
+      /running process instances in total/i,
+    );
     this.totalInstancesLink = page.getByTestId('total-instances-link');
     this.activeInstancesLink = page.getByTestId('active-instances-link');
     this.incidentInstancesLink = page.getByTestId('incident-instances-link');
