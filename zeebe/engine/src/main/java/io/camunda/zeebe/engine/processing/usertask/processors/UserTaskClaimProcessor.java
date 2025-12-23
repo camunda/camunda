@@ -7,9 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_ASSIGNEE;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_GROUPS;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_USERS;
+
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -21,9 +26,12 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
 
 public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
@@ -38,6 +46,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final UserTaskCommandPreconditionChecker commandChecker;
 
   public UserTaskClaimProcessor(
@@ -49,6 +58,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     responseWriter = writers.response();
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
+    this.authCheckBehavior = authCheckBehavior;
     commandChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "claim", state.getUserTaskState(), authCheckBehavior);
@@ -109,7 +119,45 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    return commandChecker.checkProcessDefinitionUpdateUserTaskAuth(command, persistedUserTask);
+    final var processDefinitionUpdateUserTaskRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.UPDATE_USER_TASK)
+            .tenantId(persistedUserTask.getTenantId())
+            .addResourceId(persistedUserTask.getBpmnProcessId())
+            .build();
+
+    final var userTaskKey = String.valueOf(persistedUserTask.getUserTaskKey());
+    final var userTaskProperties =
+        Map.of(
+            PROP_ASSIGNEE, persistedUserTask.getAssignee(),
+            PROP_CANDIDATE_USERS, persistedUserTask.getCandidateUsersList(),
+            PROP_CANDIDATE_GROUPS, persistedUserTask.getCandidateGroupsList());
+
+    final var userTaskUpdateRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.USER_TASK)
+            .permissionType(PermissionType.UPDATE)
+            .tenantId(persistedUserTask.getTenantId())
+            .addResourceId(userTaskKey)
+            .addResourceProperties(userTaskProperties)
+            .build();
+    final var userTaskClaimRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.USER_TASK)
+            .permissionType(PermissionType.CLAIM)
+            .tenantId(persistedUserTask.getTenantId())
+            .addResourceId(userTaskKey)
+            .addResourceProperties(userTaskProperties)
+            .build();
+
+    return authCheckBehavior
+        .isAnyAuthorizedOrInternalCommand(
+            processDefinitionUpdateUserTaskRequest, userTaskUpdateRequest, userTaskClaimRequest)
+        .map(ignored -> persistedUserTask);
   }
 
   private static Either<Rejection, UserTaskRecord> checkClaim(
