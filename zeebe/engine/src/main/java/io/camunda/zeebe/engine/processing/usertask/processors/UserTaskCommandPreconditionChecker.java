@@ -9,13 +9,10 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -57,24 +54,6 @@ public class UserTaskCommandPreconditionChecker {
     }
 
     return Either.right(persistedUserTask);
-  }
-
-  // Temporary method to be used until all `UserTaskCommandProcessors` are migrated to provide
-  // their own authorization checks
-  protected Either<Rejection, UserTaskRecord> checkProcessDefinitionUpdateUserTaskAuth(
-      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_USER_TASK)
-            .tenantId(persistedUserTask.getTenantId())
-            .addResourceId(persistedUserTask.getBpmnProcessId())
-            .build();
-
-    return authCheckBehavior
-        .isAuthorizedOrInternalCommand(authRequest)
-        .map(ignored -> persistedUserTask);
   }
 
   protected Either<Rejection, UserTaskRecord> checkLifecycleState(

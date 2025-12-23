@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_ASSIGNEE;
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_GROUPS;
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_USERS;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_ASSIGNEE;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
@@ -375,7 +375,8 @@ public class UserTaskClaimAuthorizationTest {
   }
 
   @Test
-  public void shouldBeAuthorizedToClaimUserTaskWithUserTaskClaimCandidateGroupsPropertyPermission() {
+  public void
+      shouldBeAuthorizedToClaimUserTaskWithUserTaskClaimCandidateGroupsPropertyPermission() {
     // given
     final var user = createUser();
     final var groupId = createGroupWithUser(user);

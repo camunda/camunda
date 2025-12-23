@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_ASSIGNEE;
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_GROUPS;
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_USERS;
-
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -31,7 +28,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Map;
 
 public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
@@ -130,10 +126,11 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
     final var userTaskKey = String.valueOf(persistedUserTask.getUserTaskKey());
     final var userTaskProperties =
-        Map.of(
-            PROP_ASSIGNEE, persistedUserTask.getAssignee(),
-            PROP_CANDIDATE_USERS, persistedUserTask.getCandidateUsersList(),
-            PROP_CANDIDATE_GROUPS, persistedUserTask.getCandidateGroupsList());
+        UserTaskAuthorizationProperties.builder()
+            .assignee(persistedUserTask.getAssignee())
+            .candidateUsers(persistedUserTask.getCandidateUsersList())
+            .candidateGroups(persistedUserTask.getCandidateGroupsList())
+            .build();
 
     final var userTaskUpdateRequest =
         AuthorizationRequest.builder()
@@ -142,7 +139,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
             .permissionType(PermissionType.UPDATE)
             .tenantId(persistedUserTask.getTenantId())
             .addResourceId(userTaskKey)
-            .addResourceProperties(userTaskProperties)
+            .resourceProperties(userTaskProperties)
             .build();
     final var userTaskClaimRequest =
         AuthorizationRequest.builder()
@@ -151,7 +148,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
             .permissionType(PermissionType.CLAIM)
             .tenantId(persistedUserTask.getTenantId())
             .addResourceId(userTaskKey)
-            .addResourceProperties(userTaskProperties)
+            .resourceProperties(userTaskProperties)
             .build();
 
     return authCheckBehavior
