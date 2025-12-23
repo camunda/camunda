@@ -185,7 +185,7 @@ final class OpensearchExporterTest {
       // then
       final RecordFilter filter = context.getRecordFilter();
       assertThat(filter).isNotNull();
-      assertThat(filter.acceptValue(valueType))
+      assertThat(filter.acceptValueType(valueType))
           .as("record filter should reject value type based on configuration")
           .isFalse();
     }
@@ -202,7 +202,7 @@ final class OpensearchExporterTest {
       // then
       final RecordFilter filter = context.getRecordFilter();
       assertThat(filter).isNotNull();
-      assertThat(filter.acceptValue(valueType))
+      assertThat(filter.acceptValueType(valueType))
           .as("record filter should accept value type based on configuration")
           .isTrue();
     }

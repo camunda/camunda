@@ -384,7 +384,7 @@ public class CamundaExporter implements Exporter {
     }
 
     @Override
-    public boolean acceptValue(final ValueType valueType) {
+    public boolean acceptValueType(final ValueType valueType) {
       return VALUE_TYPES_2_EXPORT.contains(valueType);
     }
   }
