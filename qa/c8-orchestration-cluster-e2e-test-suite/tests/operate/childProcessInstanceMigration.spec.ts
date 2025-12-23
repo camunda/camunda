@@ -188,7 +188,14 @@ test.describe('Child Process Instance Migration', () => {
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(1);
 
-      await expect(operationEntry).toBeVisible({timeout: 120000});
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operationEntry.first()).toBeVisible({timeout: 60000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);
     });
