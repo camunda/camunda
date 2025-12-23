@@ -51,7 +51,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
-    backoff = new ExponentialBackoffRetryDelay(Duration.ofSeconds(1), leaseAcquireMaxDelay);
+    backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
     renewalDelay = leaseDuration.dividedBy(3);
     executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
   }
