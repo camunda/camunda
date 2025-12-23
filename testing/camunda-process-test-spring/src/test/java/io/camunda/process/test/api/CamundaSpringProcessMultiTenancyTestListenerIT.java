@@ -32,7 +32,6 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,8 +48,6 @@ import org.springframework.boot.test.context.SpringBootTest;
       "io.camunda.process.test.connectors-secrets.CONNECTORS_URL=http://connectors:8080/actuator/health/readiness"
     })
 @CamundaSpringProcessTest
-@Disabled(
-    "https://camunda.slack.com/archives/C08PLN35WGM/p1765534773892579?thread_ts=1765531708.791569&cid=C08PLN35WGM")
 public class CamundaSpringProcessMultiTenancyTestListenerIT {
 
   // The ID is part of the connector configuration in the BPMN element
