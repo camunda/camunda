@@ -167,8 +167,7 @@ public class PojoCompatibilityTest {
                         ImmutableProcessInstanceSelector.builder()
                             .processDefinitionId("my-process")
                             .build())
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
                     .state(ElementInstanceState.IS_ACTIVE)
                     .build())),
         Arguments.of(
@@ -191,8 +190,7 @@ public class PojoCompatibilityTest {
                         ImmutableProcessInstanceSelector.builder()
                             .processDefinitionId("my-process")
                             .build())
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
                     .state(ElementInstanceState.IS_TERMINATED)
                     .amount(3)
                     .build())));

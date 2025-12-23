@@ -263,7 +263,8 @@ public class AssertElementInstanceInstructionTest {
         stateAssertionArguments(
             ElementInstanceState.IS_TERMINATED,
             (processInstanceAssert, amount) ->
-                processInstanceAssert.hasTerminatedElement(any(ElementSelector.class), eq(amount))));
+                processInstanceAssert.hasTerminatedElement(
+                    any(ElementSelector.class), eq(amount))));
   }
 
   private static Arguments stateAssertionArguments(
