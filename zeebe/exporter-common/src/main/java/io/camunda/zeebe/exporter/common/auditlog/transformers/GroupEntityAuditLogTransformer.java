@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 
 public class GroupEntityAuditLogTransformer implements AuditLogTransformer<GroupRecordValue> {
@@ -14,5 +16,10 @@ public class GroupEntityAuditLogTransformer implements AuditLogTransformer<Group
   @Override
   public TransformerConfig config() {
     return AuditLogTransformerConfigs.GROUP_ENTITY_CONFIG;
+  }
+
+  @Override
+  public void transform(final Record<GroupRecordValue> record, final AuditLogEntry log) {
+    log.setEntityKey(record.getValue().getGroupId());
   }
 }

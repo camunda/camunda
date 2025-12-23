@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 
 public class TenantAuditLogTransformer implements AuditLogTransformer<TenantRecordValue> {
@@ -14,5 +16,10 @@ public class TenantAuditLogTransformer implements AuditLogTransformer<TenantReco
   @Override
   public TransformerConfig config() {
     return AuditLogTransformerConfigs.TENANT_CONFIG;
+  }
+
+  @Override
+  public void transform(final Record<TenantRecordValue> record, final AuditLogEntry log) {
+    log.setEntityKey(record.getValue().getTenantId());
   }
 }
