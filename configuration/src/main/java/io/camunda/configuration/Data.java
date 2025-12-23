@@ -25,6 +25,9 @@ public class Data {
   /** This section allows to configure the audit log setup. */
   @NestedConfigurationProperty private AuditLog auditLog = new AuditLog();
 
+  /** This section allows to configure the history deletion setup. */
+  @NestedConfigurationProperty private HistoryDeletion historyDeletion = new HistoryDeletion();
+
   /** This section allows to configure primary Zeebe's data storage. */
   @NestedConfigurationProperty private PrimaryStorage primaryStorage = new PrimaryStorage();
 
@@ -43,6 +46,14 @@ public class Data {
 
   public void setAuditLog(final AuditLog auditLog) {
     this.auditLog = auditLog;
+  }
+
+  public HistoryDeletion getHistoryDeletion() {
+    return historyDeletion;
+  }
+
+  public void setHistoryDeletion(final HistoryDeletion historyDeletion) {
+    this.historyDeletion = historyDeletion;
   }
 
   public Duration getSnapshotPeriod() {
