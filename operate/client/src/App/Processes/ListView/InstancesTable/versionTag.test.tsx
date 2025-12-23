@@ -11,6 +11,7 @@ import {InstancesTable} from '.';
 import {unstable_HistoryRouter as HistoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {createMemoryHistory} from 'history';
+import type {History} from '@remix-run/router';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
@@ -52,7 +53,9 @@ function getWrapper() {
     });
 
     return (
-      <HistoryRouter history={createMemoryHistory()}>{children}</HistoryRouter>
+      <HistoryRouter history={createMemoryHistory() as unknown as History}>
+        {children}
+      </HistoryRouter>
     );
   };
 

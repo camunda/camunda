@@ -23,6 +23,7 @@ import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
+import type {History} from '@remix-run/router';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
 
@@ -74,7 +75,7 @@ const App: React.FC = () => {
       <Notifications />
       <NetworkStatusWatcher />
       <HistoryRouter
-        history={createBrowserHistory({window})}
+        history={createBrowserHistory({window}) as unknown as History}
         basename={window.clientConfig?.baseName ?? '/'}
       >
         <RedirectDeprecatedRoutes />

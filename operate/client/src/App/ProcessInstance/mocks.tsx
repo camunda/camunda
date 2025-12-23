@@ -27,6 +27,7 @@ import {
 } from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {createMemoryHistory} from 'history';
+import type {History} from '@remix-run/router';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {
   Selection,
@@ -109,9 +110,11 @@ function getWrapper(options?: {
 
     return (
       <HistoryRouter
-        history={createMemoryHistory({
-          initialEntries: [initialPath],
-        })}
+        history={
+          createMemoryHistory({
+            initialEntries: [initialPath],
+          }) as unknown as History
+        }
         basename={contextPath ?? ''}
       >
         <Routes>
