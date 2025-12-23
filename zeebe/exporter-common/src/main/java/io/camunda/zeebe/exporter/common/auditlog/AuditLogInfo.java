@@ -244,12 +244,16 @@ public record AuditLogInfo(
 
   public record AuditLogActor(AuditLogActorType actorType, String actorId) {
 
+    public static final AuditLogActor ANONYMOUS =
+        new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
+    public static final AuditLogActor UNKNOWN = new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+
     public static AuditLogActor unknown() {
-      return new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+      return UNKNOWN;
     }
 
     public static AuditLogActor anonymous() {
-      return new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
+      return ANONYMOUS;
     }
 
     public static AuditLogActor of(final Record<?> record) {
@@ -279,10 +283,10 @@ public record AuditLogInfo(
               .map(Boolean.class::cast)
               .orElse(false);
       if (isAnonymous) {
-        return new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
+        return AuditLogActor.anonymous();
       }
 
-      return new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+      return AuditLogActor.unknown();
     }
   }
 
