@@ -65,7 +65,7 @@
     <!-- Elasticsearch-->
     <version.elasticsearch>8.16.7</version.elasticsearch>
     <!-- The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>8.16.6</elasticsearch.test.version>
+    <elasticsearch.test.version>8.16.7</elasticsearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>8.13.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
@@ -213,6 +213,13 @@
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <!-- Needed due to a known issue https://www.elastic.co/docs/release-notes/elasticsearch/clients/java/known-issues#known-issues-8-16-7 -->
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <version>8.16.6</version>
     </dependency>
   </dependencies>
 

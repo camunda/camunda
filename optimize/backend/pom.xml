@@ -541,10 +541,11 @@
       <artifactId>netty-common</artifactId>
     </dependency>
 
+    <!-- Needed due to a known issue https://www.elastic.co/docs/release-notes/elasticsearch/clients/java/known-issues#known-issues-8-16-7 -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
-      <version>${version.elasticsearch}</version>
+      <version>8.16.6</version>
     </dependency>
 
     <dependency>
