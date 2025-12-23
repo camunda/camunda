@@ -23,15 +23,15 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.json.Json;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -42,7 +42,8 @@ import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.OpenSearchIndicesAsyncClient;
-import org.opensearch.client.transport.rest_client.RestClientTransport;
+import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryTest.class);
 
-  private final RestClientTransport transport = Mockito.spy(createRestClient());
+  private final OpenSearchTransport transport = Mockito.spy(createOpenSearchTransport());
 
   @Test
   void shouldCloseTransportOnClose() throws Exception {
@@ -77,11 +78,6 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
         Runnable::run,
         metrics,
         LOGGER);
-  }
-
-  private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create("http://127.0.0.1:1")).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
   @Test
@@ -169,6 +165,16 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     // then - purely based on mapping logic which splits by root key presence
     assertThat(batch.processInstanceKeys()).containsExactly(1L);
     assertThat(batch.rootProcessInstanceKeys()).containsExactly(100L);
+  }
+
+  private OpenSearchTransport createOpenSearchTransport() {
+    try {
+      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create("http://127.0.0.1:1"))
+          .setMapper(new JacksonJsonpMapper())
+          .build();
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private OpenSearchArchiverRepository createRepository(

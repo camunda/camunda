@@ -94,7 +94,7 @@ class OpensearchBackupRepositoryTest {
                     defaultFields(bi, metadata)
                         .snapshot("test-snapshot")
                         .state(SnapshotState.IN_PROGRESS.name())
-                        .startTimeInMillis("23")));
+                        .startTimeInMillis(23L)));
     final var response = GetSnapshotResponse.of(b -> defaultFields(b).snapshots(snapshotInfos));
 
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
@@ -206,9 +206,8 @@ class OpensearchBackupRepositoryTest {
                                             .snapshot("snapshot")
                                             .state(SnapshotState.SUCCESS.name())
                                             .startTimeInMillis(
-                                                Long.toString(
-                                                    now - (incompleteCheckTimeoutLength / 2)))
-                                            .endTimeInMillis(Long.toString(now)))))));
+                                                now - (incompleteCheckTimeoutLength / 2))
+                                            .endTimeInMillis(now))))));
 
     final var response = repository.getBackupState("repo", 5L);
 
@@ -235,9 +234,9 @@ class OpensearchBackupRepositoryTest {
                     defaultFields(bi, new Metadata(5L, "1", 1, 3))
                         .snapshot("snapshot")
                         .state(SnapshotState.SUCCESS.name())
-                        .startTimeInMillis(Long.toString(endtime - 20))
+                        .startTimeInMillis(endtime - 20)
                         // end time was double the timeout from now
-                        .endTimeInMillis(Long.toString(endtime))));
+                        .endTimeInMillis(endtime)));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(GetSnapshotResponse.of(b -> defaultFields(b).snapshots(snapshotInfos)));
 
@@ -321,16 +320,16 @@ class OpensearchBackupRepositoryTest {
                 defaultFields(bi, new Metadata(5L, "1", 1, 3))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.name())
-                    .startTimeInMillis(Long.toString(timeoutTime - 50))
-                    .endTimeInMillis(Long.toString(timeoutTime - 40)));
+                    .startTimeInMillis(timeoutTime - 50)
+                    .endTimeInMillis(timeoutTime - 40));
     final var lastSnapshotInfo =
         SnapshotInfo.of(
             bi ->
                 defaultFields(bi, new Metadata(5L, "1", 2, 3))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.name())
-                    .startTimeInMillis(Long.toString(timeoutTime - 30))
-                    .endTimeInMillis(Long.toString(timeoutTime - 20)));
+                    .startTimeInMillis(timeoutTime - 30)
+                    .endTimeInMillis(timeoutTime - 20));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
             GetSnapshotResponse.of(
@@ -350,8 +349,8 @@ class OpensearchBackupRepositoryTest {
                 defaultFields(bi, new Metadata(5L, "1", 1, 3))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.name())
-                    .startTimeInMillis(Long.toString(now - incompleteCheckTimeoutLength))
-                    .endTimeInMillis(Long.toString(now - 20)));
+                    .startTimeInMillis(now - incompleteCheckTimeoutLength)
+                    .endTimeInMillis(now - 20));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
             GetSnapshotResponse.of(b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo))));
@@ -368,7 +367,7 @@ class OpensearchBackupRepositoryTest {
                 defaultFields(bi)
                     .uuid("uuid")
                     .state(SnapshotState.PARTIAL.name())
-                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
+                    .startTimeInMillis(Instant.now().toEpochMilli()));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
             GetSnapshotResponse.of(b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo))));
@@ -385,14 +384,14 @@ class OpensearchBackupRepositoryTest {
                 defaultFields(bi, new Metadata(5L, "1", 1, 2))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.name())
-                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
+                    .startTimeInMillis(Instant.now().toEpochMilli()));
     final var lastSnapshotInfo =
         SnapshotInfo.of(
             bi ->
                 defaultFields(bi, new Metadata(5L, "1", 2, 2))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.name())
-                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
+                    .startTimeInMillis(Instant.now().toEpochMilli()));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
             GetSnapshotResponse.of(
@@ -410,7 +409,7 @@ class OpensearchBackupRepositoryTest {
                 defaultFields(bi)
                     .uuid("uuid")
                     .state(SnapshotState.FAILED.name())
-                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
+                    .startTimeInMillis(Instant.now().toEpochMilli()));
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
             GetSnapshotResponse.of(b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo))));

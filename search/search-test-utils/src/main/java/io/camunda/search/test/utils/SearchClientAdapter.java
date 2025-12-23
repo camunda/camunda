@@ -215,9 +215,7 @@ public class SearchClientAdapter {
                   c.index(indexName)
                       .settings(
                           settings ->
-                              settings
-                                  .numberOfShards("1")
-                                  .numberOfReplicas(String.valueOf(numberOfReplicas))));
+                              settings.numberOfShards(1).numberOfReplicas(numberOfReplicas)));
     }
   }
 
