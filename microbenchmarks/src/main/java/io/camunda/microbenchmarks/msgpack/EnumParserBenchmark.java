@@ -67,6 +67,18 @@ public class EnumParserBenchmark {
   // Random index for test data selection
   private int currentIndex = 0;
 
+  public static void main(final String[] args) throws RunnerException {
+    final Options opt =
+        new OptionsBuilder()
+            .include(EnumParserBenchmark.class.getSimpleName())
+            .addProfiler("gc")
+            // To measure allocation rate, add .addProfiler("gc") or run with -prof gc
+            // Example: java -jar target/benchmarks.jar -prof gc
+            .build();
+
+    new Runner(opt).run();
+  }
+
   @Setup
   public void setup() {
     // Initialize optimized parsers
@@ -236,84 +248,6 @@ public class EnumParserBenchmark {
     final LargeEnumNoPrefix result =
         largeNoPrefixZeroAllocParser.parse(buffer, 0, buffer.capacity());
     blackhole.consume(result);
-  }
-
-  //  // Invalid enum benchmarks (worst case for simple parser)
-  //  @Benchmark
-  //  public void invalidEnumTrie(final org.openjdk.jmh.infra.Blackhole blackhole) {
-  //    final DirectBuffer buffer = invalidBuffers[currentIndex % invalidBuffers.length];
-  //    currentIndex++;
-  //    final SmallEnum result = smallTrieParser.parse(buffer, 0, buffer.capacity());
-  //    blackhole.consume(result);
-  //  }
-  //
-  //  @Benchmark
-  //  public void invalidEnumSimple(final org.openjdk.jmh.infra.Blackhole blackhole) {
-  //    final DirectBuffer buffer = invalidBuffers[currentIndex % invalidBuffers.length];
-  //    currentIndex++;
-  //    final SmallEnum result = smallSimpleParser.parse(buffer, 0, buffer.capacity());
-  //    blackhole.consume(result);
-  //  }
-  //
-  //  @Benchmark
-  //  public void invalidEnumZeroAlloc(final org.openjdk.jmh.infra.Blackhole blackhole) {
-  //    final DirectBuffer buffer = invalidBuffers[currentIndex % invalidBuffers.length];
-  //    currentIndex++;
-  //    final SmallEnum result = smallZeroAllocParser.parse(buffer, 0, buffer.capacity());
-  //    blackhole.consume(result);
-  //  }
-
-  // Benchmarks with offset (to test real-world scenarios)
-  //  @Benchmark
-  //  public void mediumEnumTrieWithOffset(org.openjdk.jmh.infra.Blackhole blackhole) {
-  //    final DirectBuffer buffer = mediumEnumBuffers[currentIndex % mediumEnumBuffers.length];
-  //    currentIndex++;
-  //    // Simulate parsing from middle of buffer
-  //    final String prefix = "PREFIX_";
-  //    final byte[] prefixBytes = prefix.getBytes(StandardCharsets.US_ASCII);
-  //    final byte[] originalBytes = new byte[buffer.capacity()];
-  //    buffer.getBytes(0, originalBytes);
-  //
-  //    final byte[] combinedBytes = new byte[prefixBytes.length + originalBytes.length];
-  //    System.arraycopy(prefixBytes, 0, combinedBytes, 0, prefixBytes.length);
-  //    System.arraycopy(originalBytes, 0, combinedBytes, prefixBytes.length, originalBytes.length);
-  //
-  //    final DirectBuffer combinedBuffer = new UnsafeBuffer(combinedBytes);
-  //    MediumEnum result = mediumTrieParser.parse(combinedBuffer, prefixBytes.length,
-  // originalBytes.length);
-  //    blackhole.consume(result);
-  //  }
-  //
-  //  @Benchmark
-  //  public void mediumEnumSimpleWithOffset(org.openjdk.jmh.infra.Blackhole blackhole) {
-  //    final DirectBuffer buffer = mediumEnumBuffers[currentIndex % mediumEnumBuffers.length];
-  //    currentIndex++;
-  //    // Simple parser needs to create substring, so it's less efficient with offsets
-  //    final String prefix = "PREFIX_";
-  //    final byte[] prefixBytes = prefix.getBytes(StandardCharsets.US_ASCII);
-  //    final byte[] originalBytes = new byte[buffer.capacity()];
-  //    buffer.getBytes(0, originalBytes);
-  //
-  //    final byte[] combinedBytes = new byte[prefixBytes.length + originalBytes.length];
-  //    System.arraycopy(prefixBytes, 0, combinedBytes, 0, prefixBytes.length);
-  //    System.arraycopy(originalBytes, 0, combinedBytes, prefixBytes.length, originalBytes.length);
-  //
-  //    final DirectBuffer combinedBuffer = new UnsafeBuffer(combinedBytes);
-  //    MediumEnum result = mediumSimpleParser.parse(combinedBuffer, prefixBytes.length,
-  // originalBytes.length);
-  //    blackhole.consume(result);
-  //  }
-
-  public static void main(final String[] args) throws RunnerException {
-    final Options opt =
-        new OptionsBuilder()
-            .include(EnumParserBenchmark.class.getSimpleName())
-            .addProfiler("gc")
-            // To measure allocation rate, add .addProfiler("gc") or run with -prof gc
-            // Example: java -jar target/benchmarks.jar -prof gc
-            .build();
-
-    new Runner(opt).run();
   }
 
   // Simple enum parser (old implementation)
