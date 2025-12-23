@@ -344,4 +344,7 @@ declare module '@carbon/react/icons' {
   export const CheckmarkFilled: Icon;
   export const Information: Icon;
   export const ErrorFilled: Icon;
+  export const BatchJob: Icon;
+  export const EventSchedule: Icon;
+  export const UserAvatar: Icon;
 }
