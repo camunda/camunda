@@ -133,7 +133,7 @@ final class ManifestCompatabilityTest {
   }
 
   @Test
-  void shouldParseManifestWitRFCDateFormat() throws IOException {
+  void shouldParseManifestWithRFCDateFormat() throws IOException {
     // given
     final var json =
         """
