@@ -171,7 +171,7 @@ public class BackupServiceImplTest {
     // wait for the failure to be processed
     waitForAllTasks();
 
-    // then - should be able to retry with the same backup ID after queue is cleared
+    // then - should be able to retry with a different backup ID after queue is cleared
     backupRepository.setFailOnFirstSnapshot(false);
     final var retryResponse = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(2L));
     assertThat(retryResponse.getScheduledSnapshots()).hasSize(5);
