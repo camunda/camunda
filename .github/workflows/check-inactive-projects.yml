@@ -60,7 +60,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*${{ steps.check-projects.outputs.inactive-projects-found }}* open project(s) have either no open issues, or no updates to open issues in the last 30 days:\n\n${{ steps.check-projects.outputs.inactive-projects-list }}\n\nEMs working in `camunda/camunda`: Please review these projects and archive any that are complete or no longer active."
+                    "text": "*${{ steps.check-projects.outputs.inactive-projects-found }}* open project(s) have either no open items, or no updates to open items in the last 30 days:\n\n${{ steps.check-projects.outputs.inactive-projects-list }}\n\nEMs working in `camunda/camunda`: Please review these projects and archive any that are complete or no longer active."
                   }
                 }
               ]
