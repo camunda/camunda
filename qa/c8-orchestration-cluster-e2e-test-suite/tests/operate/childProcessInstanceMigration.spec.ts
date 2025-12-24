@@ -17,6 +17,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {getNewOperationIds} from '../../utils/getNewOperationIds';
 
 type ProcessDeployment = {
   version: number;
@@ -137,6 +138,11 @@ test.describe('Child Process Instance Migration', () => {
         },
       });
 
+      await operateOperationPanelPage.expandOperationsPanel();
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+      await operateOperationPanelPage.collapseOperationIdField();
+
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
       await operateFiltersPanelPage.displayOptionalFilter(
@@ -178,11 +184,36 @@ test.describe('Child Process Instance Migration', () => {
       });
 
       await operateOperationPanelPage.expandOperationsPanel();
-
       await operateOperationPanelPage.waitForOperationToComplete();
+      operateOperationPanelPage.afterOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+
+      let newIds = getNewOperationIds(
+        operateOperationPanelPage.beforeOperationOperationPanelEntries,
+        operateOperationPanelPage.afterOperationOperationPanelEntries,
+        'Migrate',
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          expect(newIds.length).toBeGreaterThan(0);
+        },
+        onFailure: async () => {
+          await sleep(1_000);
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          newIds = getNewOperationIds(
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Migrate',
+          );
+        },
+        maxRetries: 10,
+      });
       const operationEntry =
         operateOperationPanelPage.getMigrationOperationEntry(1);
-      await expect(operationEntry.last()).toBeVisible({timeout: 120000});
+      await expect(operationEntry).toBeVisible();
+
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(targetVersion);
     });
