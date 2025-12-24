@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {sleep} from "../utils/sleep";
 
 export class OperateProcessMigrationModePage {
   private page: Page;
@@ -71,6 +72,8 @@ export class OperateProcessMigrationModePage {
   }
 
   async clickMigrationConfirmationButton(): Promise<void> {
+    await expect(this.migrationConfirmationButton).toBeVisible();
+    await expect(this.migrationConfirmationButton).toBeEnabled();
     await this.migrationConfirmationButton.click();
   }
 
@@ -93,6 +96,7 @@ export class OperateProcessMigrationModePage {
   }
 
   async completeProcessInstanceMigration(): Promise<void> {
+    await sleep(200);
     await this.clickNextButton();
     await this.clickConfirmButton();
     await this.fillMigrationConfirmation('MIGRATE');

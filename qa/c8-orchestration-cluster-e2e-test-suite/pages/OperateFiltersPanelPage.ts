@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 type OptionalFilter =
   | 'Variable'
@@ -165,13 +166,29 @@ export class OperateFiltersPanelPage {
   }
 
   async selectProcess(option: string) {
-    await this.processNameFilter.click();
-    await this.getOptionByName(option).click();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.processNameFilter).toBeVisible();
+        await this.processNameFilter.click();
+        await this.processNameFilter.clear();
+        await this.getOptionByName(option).click();
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async selectVersion(option: string) {
-    await this.processVersionFilter.click();
-    await this.getOptionByName(option).click();
+    await waitForAssertion({
+      assertion: async () => {
+        await this.processVersionFilter.click();
+        await this.getOptionByName(option).click();
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async selectFlowNode(option: string) {
