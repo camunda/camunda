@@ -29,6 +29,7 @@ PROJECTS_RESPONSE=$(gh api graphql -f query="
           items(first: 100, filterBy: {excludeArchived: true}) {
             nodes {
               id
+              updatedAt
               content {
                 ... on Issue {
                   __typename
@@ -37,28 +38,6 @@ PROJECTS_RESPONSE=$(gh api graphql -f query="
                 ... on PullRequest {
                   __typename
                   state
-                }
-              }
-              fieldValues(first: 20) {
-                nodes {
-                  ... on ProjectV2ItemFieldDateValue {
-                    field {
-                      ... on ProjectV2Field {
-                        name
-                      }
-                    }
-                    date
-                    updatedAt
-                  }
-                  ... on ProjectV2ItemFieldSingleSelectValue {
-                    field {
-                      ... on ProjectV2SingleSelectField {
-                        name
-                      }
-                    }
-                    name
-                    updatedAt
-                  }
                 }
               }
             }
@@ -91,29 +70,27 @@ echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[] | select(
     continue
   fi
   
-  # Find the most recent status field update across all open issue items in the project
-  MOST_RECENT_STATUS_UPDATE=$(echo "$project" | jq -r '
+  # Find the most recent item update (any field) across all open issue items in the project
+  MOST_RECENT_UPDATE=$(echo "$project" | jq -r '
     [
       .items.nodes[]
       | select(.content.state == "OPEN" and .content.__typename == "Issue")
-      | .fieldValues.nodes[]
-      | select(.field.name == "Status" and .updatedAt != null)
       | .updatedAt
     ]
     | sort
     | reverse
     | .[0] // empty')
   
-  # If no status update found or the most recent is older than threshold
-  if [[ -z "$MOST_RECENT_STATUS_UPDATE" ]] || [[ "$MOST_RECENT_STATUS_UPDATE" < "$CUTOFF_DATE" ]]; then
-    if [[ -z "$MOST_RECENT_STATUS_UPDATE" ]]; then
-      echo "    → No status updates found"
-      UPDATE_INFO="No status updates"
+  # If no update found or the most recent is older than threshold
+  if [[ -z "$MOST_RECENT_UPDATE" ]] || [[ "$MOST_RECENT_UPDATE" < "$CUTOFF_DATE" ]]; then
+    if [[ -z "$MOST_RECENT_UPDATE" ]]; then
+      echo "    → No updates found"
+      UPDATE_INFO="No updates"
     else
-      echo "    → Last status update: $MOST_RECENT_STATUS_UPDATE (older than threshold)"
+      echo "    → Last update: $MOST_RECENT_UPDATE (older than threshold)"
       # Try to format the date (GNU date syntax, works on ubuntu-latest)
       # Fall back to generic message if parsing fails
-      if UPDATE_DATE=$(date -d "$MOST_RECENT_STATUS_UPDATE" "+%Y-%m-%d" 2>/dev/null); then
+      if UPDATE_DATE=$(date -d "$MOST_RECENT_UPDATE" "+%Y-%m-%d" 2>/dev/null); then
         UPDATE_INFO="Last updated: $UPDATE_DATE"
       else
         UPDATE_INFO="Last updated: over 30 days ago"
@@ -122,7 +99,7 @@ echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[] | select(
     
     echo "• <${PROJECT_URL}|Project #${PROJECT_NUMBER}: ${PROJECT_TITLE}> - ${UPDATE_INFO}" >> "$TEMP_FILE"
   else
-    echo "    → Last status update: $MOST_RECENT_STATUS_UPDATE (within threshold)"
+    echo "    → Last update: $MOST_RECENT_UPDATE (within threshold)"
   fi
 done
 
