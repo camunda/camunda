@@ -65,13 +65,13 @@ export default defineConfig({
     {
       name: 'api-tests',
       testMatch: ['tests/api/**/*.spec.ts'],
-      testIgnore: ['tests/api/v2/clock/*.spec.ts'],
+      testIgnore: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
       use: devices['Desktop Chrome'],
-      teardown: 'clock-api-tests',
+      teardown: 'api-tests-subset'
     },
     {
-      name: 'clock-api-tests',
-      testMatch: ['tests/api/v2/clock/*.spec.ts'],
+      name: 'api-tests-subset',
+      testMatch: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
       use: devices['Desktop Chrome'],
       workers: 1,
       fullyParallel: false,
