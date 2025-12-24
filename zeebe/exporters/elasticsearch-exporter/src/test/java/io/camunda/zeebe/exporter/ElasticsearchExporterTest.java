@@ -138,7 +138,8 @@ final class ElasticsearchExporterTest {
 
     // when - then
     assertThat(filter.acceptValue(variableValue))
-        .as("record filter should reject variable when its name does not start with any included prefix")
+        .as(
+            "record filter should reject variable when its name does not start with any included prefix")
         .isFalse();
   }
 
@@ -157,7 +158,7 @@ final class ElasticsearchExporterTest {
       // then
       final RecordFilter filter = context.getRecordFilter();
       assertThat(filter).isNotNull();
-      assertThat(filter.acceptValueType(valueType))
+      assertThat(filter.acceptValue(valueType))
           .as("record filter should reject value type based on configuration")
           .isFalse();
     }
@@ -174,7 +175,7 @@ final class ElasticsearchExporterTest {
       // then
       final RecordFilter filter = context.getRecordFilter();
       assertThat(filter).isNotNull();
-      assertThat(filter.acceptValueType(valueType))
+      assertThat(filter.acceptValue(valueType))
           .as("record filter should accept value type based on configuration")
           .isTrue();
     }

@@ -497,7 +497,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             .collect(
                 Collectors.toMap(
                     Function.identity(),
-                    type -> recordFilters.stream().anyMatch(f -> f.acceptValueType(type))));
+                    type -> recordFilters.stream().anyMatch(f -> f.acceptValue(type))));
 
     final Map<Intent, Boolean> acceptIntents =
         Intent.INTENT_CLASSES.stream()
