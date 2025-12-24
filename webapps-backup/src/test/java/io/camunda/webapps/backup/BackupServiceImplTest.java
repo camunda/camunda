@@ -347,7 +347,7 @@ public class BackupServiceImplTest {
           backup.getDetails() == null ? new ArrayList<>() : new ArrayList<>(backup.getDetails());
       details.add(
           new GetBackupStateResponseDetailDto()
-              .setState("SUCCESS")
+              .setState(io.camunda.webapps.backup.repository.elasticsearch.SnapshotState.SUCCESS.name())
               .setSnapshotName(snapshotRequest.snapshotName())
               .setStartTime(startTime));
       backup.setDetails(details);
