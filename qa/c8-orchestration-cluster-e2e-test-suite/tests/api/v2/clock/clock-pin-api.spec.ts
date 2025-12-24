@@ -17,13 +17,23 @@ import {deploy} from '../../../../utils/zeebeClient';
 import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
 test.describe('Pin Clock API Tests', () => {
+  let processDefinitionId: string;
   test.beforeAll(async ({request}) => {
-    await deploy(['./resources/clock_api_test_process.bpmn']);
-    const res = await request.post(buildUrl('/clock/reset'), {
-      headers: jsonHeaders(),
+    await test.step('Deploy process definition', async () => {
+      const deployment = await deploy([
+        './resources/clock_api_test_process.bpmn',
+      ]);
+      processDefinitionId =
+        deployment.processes?.[0]?.processDefinitionId.toString() || '';
     });
 
-    await assertStatusCode(res, 204);
+    await test.step('Reset clock to ensure clean state', async () => {
+      const res = await request.post(buildUrl('/clock/reset'), {
+        headers: jsonHeaders(),
+      });
+
+      await assertStatusCode(res, 204);
+    });
   });
 
   test.afterAll(async ({request}) => {
@@ -46,7 +56,10 @@ test.describe('Pin Clock API Tests', () => {
     });
 
     await test.step('Create process instances and verify pinned start and end dates', async () => {
-      const res = await createProcessInstanceAndRetrieveTimeStamp(request);
+      const res = await createProcessInstanceAndRetrieveTimeStamp(
+        request,
+        processDefinitionId,
+      );
       expect(new Date(res.startDate).getTime()).toBe(timestamp);
       expect(new Date(res.endDate).getTime()).toBe(timestamp);
     });
