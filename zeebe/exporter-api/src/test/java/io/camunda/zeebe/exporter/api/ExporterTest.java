@@ -91,7 +91,7 @@ public final class ExporterTest {
     }
 
     public void exportRecord(final Record<?> record) {
-      if (context.getFilter().acceptValueType(record.getValueType())
+      if (context.getFilter().acceptValue(record.getValueType())
           && context.getFilter().acceptType(record.getRecordType())
           && context.getFilter().acceptIntent(record.getIntent())) {
         exporter.export(record);
@@ -166,7 +166,7 @@ public final class ExporterTest {
     }
 
     @Override
-    public boolean acceptValueType(final ValueType valueType) {
+    public boolean acceptValue(final ValueType valueType) {
       return true;
     }
 

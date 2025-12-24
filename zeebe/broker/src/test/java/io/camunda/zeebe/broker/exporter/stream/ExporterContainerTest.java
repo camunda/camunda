@@ -108,7 +108,7 @@ final class ExporterContainerTest {
     }
 
     @Override
-    public boolean acceptValueType(final ValueType valueType) {
+    public boolean acceptValue(final ValueType valueType) {
       return false;
     }
 

@@ -97,7 +97,7 @@ public final class ExporterContext implements Context, AutoCloseable {
     }
 
     @Override
-    public boolean acceptValueType(final ValueType valueType) {
+    public boolean acceptValue(final ValueType valueType) {
       return true;
     }
   }
