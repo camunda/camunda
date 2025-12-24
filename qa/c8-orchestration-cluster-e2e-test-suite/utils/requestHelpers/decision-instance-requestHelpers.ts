@@ -49,6 +49,7 @@ export async function searchDecisionInstancesByProcessInstanceKey(
 
   await waitForAssertion({
     assertion: async () => {
+      foundDecisionInstances.length = 0;
       await expect(async () => {
         const res = await request.post(buildUrl('/decision-instances/search'), {
           headers: jsonHeaders(),
@@ -109,7 +110,7 @@ export async function createMammalProcessInstanceAndDeployMammalDecision(
       request,
     );
   return {
-    decisions: decisions,
-    instance: instance,
+    decisions,
+    instance,
   };
 }

@@ -81,7 +81,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. 
+      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it. 
       // await validateResponse(
       //   {
       //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -123,7 +123,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. 
+      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it. 
       // await validateResponse(
       //   {
       //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -165,7 +165,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. 
+      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it. 
       // await validateResponse(
       //   {
       //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -206,7 +206,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. 
+      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it. 
       // await validateResponse(
       //   {
       //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -250,7 +250,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. 
+      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it. 
       // await validateResponse(
       //   {
       //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -289,7 +289,7 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. 
+      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it. 
       // await validateResponse(
       //   {
       //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
