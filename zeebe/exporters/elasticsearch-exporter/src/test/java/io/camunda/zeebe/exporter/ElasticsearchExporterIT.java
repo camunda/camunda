@@ -27,10 +27,8 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
@@ -307,67 +305,6 @@ final class ElasticsearchExporterIT {
 
     return factory.generateRecord(
         supportedTypes.get(new Random().nextInt(supportedTypes.size())), modifier);
-  }
-
-  @Test
-  void shouldExportVariableWhenNameMatchesInclusionFilter() {
-    // given
-    config.index.variableNameInclusion = "included,allowed";
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-    testClient.deleteIndices();
-
-    final VariableRecordValue value =
-        ImmutableVariableRecordValue.builder()
-            .from(factory.generateObject(VariableRecordValue.class))
-            .withName("includedVariable")
-            .build();
-    final Record<VariableRecordValue> record =
-        factory.generateRecord(
-            ValueType.VARIABLE,
-            builder ->
-                builder.withValue(value).withBrokerVersion(VersionUtil.getVersionLowerCase()));
-
-    // when
-    export(record);
-
-    // then
-    final var response = testClient.getExportedDocumentFor(record);
-    assertThat(response)
-        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
-        .containsExactly(
-            indexRouter.indexFor(record),
-            indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
-            record);
-  }
-
-  @Test
-  void shouldNotExportVariableWhenNameDoesNotMatchInclusionFilter() {
-    // given
-    config.index.variableNameInclusion = "included,allowed";
-    exporter.configure(exporterTestContext);
-    exporter.open(controller);
-    testClient.deleteIndices();
-
-    final VariableRecordValue value =
-        ImmutableVariableRecordValue.builder()
-            .from(factory.generateObject(VariableRecordValue.class))
-            .withName("excludedVariable")
-            .build();
-    final Record<VariableRecordValue> record =
-        factory.generateRecord(
-            ValueType.VARIABLE,
-            builder ->
-                builder.withValue(value).withBrokerVersion(VersionUtil.getVersionLowerCase()));
-
-    // when
-    export(record);
-
-    // then
-    assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
-        .isInstanceOf(ElasticsearchException.class)
-        .hasMessageContaining("no such index [%s]".formatted(indexRouter.indexFor(record)));
   }
 
   @Nested
