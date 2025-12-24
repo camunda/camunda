@@ -40,6 +40,7 @@ public final class RdbmsTableNames {
           "FORM",
           "GROUP_MEMBER",
           "GROUP_",
+          "HISTORY_DELETION",
           "INCIDENT",
           "JOB",
           "MAPPING_RULES",
@@ -57,8 +58,7 @@ public final class RdbmsTableNames {
           "USER_TASK_TAG",
           "USER_TASK",
           "USER_",
-          "VARIABLE",
-          "HISTORY_DELETION");
+          "VARIABLE");
 
   private RdbmsTableNames() {
     // Utility class - prevent instantiation
