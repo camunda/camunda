@@ -308,15 +308,24 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                     .waitForCompletion(true));
     final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
 
-    executor.execute(
-        () -> {
-          try {
-            final var response = esClient.snapshot().create(request);
-            listener.onResponse(response);
-          } catch (final Exception e) {
-            listener.onFailure(e);
-          }
-        });
+    try {
+      executor.execute(
+          () -> {
+            try {
+              final var response = esClient.snapshot().create(request);
+              listener.onResponse(response);
+            } catch (final Exception e) {
+              listener.onFailure(e);
+            }
+          });
+    } catch (final Exception e) {
+      // Handle executor rejection or any other exception during task submission
+      LOGGER.error(
+          "Failed to submit snapshot task to executor for snapshot [{}]",
+          snapshotRequest.snapshotName(),
+          e);
+      onFailure.run();
+    }
   }
 
   private Metadata extractMetadata(final SnapshotInfo si) {
@@ -411,7 +420,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         try {
           Thread.sleep(100);
         } catch (final InterruptedException e) {
-          throw new RuntimeException(e);
+          LOGGER.warn(
+              "Thread interrupted while waiting for snapshot [{}] to finish.", snapshotName, e);
+          Thread.currentThread().interrupt(); // Restore interrupt status
+          return false;
         }
         count++;
         if (count % 600 == 0) { // approx. 1 minute, depending on how long findSnapshots takes

@@ -160,6 +160,56 @@ public class BackupServiceImplTest {
             "camunda_webapps_1_*_part_3_of_3");
   }
 
+  @Test
+  public void shouldClearQueueOnFailureAndAllowRetry() {
+    // given a repository that fails on first snapshot
+    backupRepository.setFailOnFirstSnapshot(true);
+
+    // when attempting to create a backup
+    backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
+
+    // wait for the failure to be processed
+    waitForAllTasks();
+
+    // then - should be able to retry with the same backup ID after queue is cleared
+    backupRepository.setFailOnFirstSnapshot(false);
+    final var retryResponse = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(2L));
+    assertThat(retryResponse.getScheduledSnapshots()).hasSize(5);
+
+    // wait for completion
+    waitForAllTasks();
+
+    // verify the retry succeeded
+    final var backupState = backupService.getBackupState(2L);
+    assertThat(backupState).isNotNull();
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
+  }
+
+  @Test
+  public void shouldClearQueueOnExceptionDuringSnapshotting() {
+    // given a repository that throws an exception
+    backupRepository.setThrowExceptionOnSnapshot(true);
+
+    // when attempting to create a backup
+    backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
+
+    // wait for the exception to be processed
+    waitForAllTasks();
+
+    // then - should be able to retry after queue is cleared
+    backupRepository.setThrowExceptionOnSnapshot(false);
+    final var retryResponse = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(2L));
+    assertThat(retryResponse.getScheduledSnapshots()).hasSize(5);
+
+    // wait for completion
+    waitForAllTasks();
+
+    // verify the retry succeeded
+    final var backupState = backupService.getBackupState(2L);
+    assertThat(backupState).isNotNull();
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
+  }
+
   private void waitForAllTasks() {
     try {
       // wait for the executor to process all tasks
@@ -179,6 +229,9 @@ public class BackupServiceImplTest {
     Map<Long, Metadata> metadata = new HashMap<>();
     private final String repositoryName;
     private final Set<String> missingIndices = new HashSet<>();
+    private boolean failOnFirstSnapshot = false;
+    private boolean throwExceptionOnSnapshot = false;
+    private int snapshotCount = 0;
 
     public MockBackupRepository(
         final String repositoryName, final SnapshotNameProvider snapshotNameProvider) {
@@ -188,6 +241,15 @@ public class BackupServiceImplTest {
 
     void addMissingIndices(final String... indices) {
       missingIndices.addAll(Arrays.asList(indices));
+    }
+
+    void setFailOnFirstSnapshot(final boolean fail) {
+      this.failOnFirstSnapshot = fail;
+      this.snapshotCount = 0;
+    }
+
+    void setThrowExceptionOnSnapshot(final boolean throwException) {
+      this.throwExceptionOnSnapshot = throwException;
     }
 
     @Override
@@ -260,6 +322,20 @@ public class BackupServiceImplTest {
     public void executeSnapshotting(
         final SnapshotRequest snapshotRequest, final Runnable onSuccess, final Runnable onFailure) {
       validateRepositoryExists(snapshotRequest.repositoryName());
+
+      // Simulate exception throwing
+      if (throwExceptionOnSnapshot) {
+        throw new RuntimeException("Simulated snapshot exception");
+      }
+
+      // Simulate failure on first snapshot
+      if (failOnFirstSnapshot && snapshotCount == 0) {
+        snapshotCount++;
+        onFailure.run();
+        return;
+      }
+
+      snapshotCount++;
       final var id = snapshotNameProvider.extractBackupId(snapshotRequest.snapshotName());
       final var backup = backups.getOrDefault(id, new GetBackupStateResponseDto(id));
       snapshotRequests

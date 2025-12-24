@@ -287,54 +287,70 @@ public class OpensearchBackupRepository implements BackupRepository {
         .thenAccept(response -> handleSnapshotReceived(response.snapshot(), onSuccess, onFailure))
         .exceptionally(
             t -> {
-              final Throwable e;
-              if (t instanceof final CompletionException ce) {
-                e = ce.getCause();
-              } else {
-                e = t;
-              }
-              if (e instanceof SocketTimeoutException) {
-                // This is thrown even if the backup is still running
-                LOGGER.warn(
-                    "Timeout while creating snapshot [{}] for backup id [{}]. Need to keep waiting with polling...",
-                    snapshotRequest.snapshotName(),
-                    backupId);
-                // Keep waiting
-                while (true) {
-                  final List<OpenSearchSnapshotInfo> snapshotInfos =
-                      findSnapshots(snapshotRequest.repositoryName(), backupId);
-                  final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
-                      snapshotInfos.stream()
-                          .filter(
-                              x -> Objects.equals(x.getSnapshot(), snapshotRequest.snapshotName()))
-                          .findFirst();
-
-                  if (maybeCurrentSnapshot.isEmpty()) {
-                    LOGGER.error(
-                        "Expected (but not found) snapshot [{}] for backupId [{}].",
-                        snapshotRequest.snapshotName(),
-                        backupId);
-                    // No need to continue
-                    onFailure.run();
-                    break;
-                  } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
-                    try {
-                      Thread.sleep(100);
-                    } catch (final InterruptedException ex) {
-                      throw new RuntimeException(ex);
-                    }
-                  } else {
-                    handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
-                    break;
-                  }
+              try {
+                final Throwable e;
+                if (t instanceof final CompletionException ce) {
+                  e = ce.getCause();
+                } else {
+                  e = t;
                 }
-              } else {
+                if (e instanceof SocketTimeoutException) {
+                  // This is thrown even if the backup is still running
+                  LOGGER.warn(
+                      "Timeout while creating snapshot [{}] for backup id [{}]. Need to keep waiting with polling...",
+                      snapshotRequest.snapshotName(),
+                      backupId);
+                  // Keep waiting
+                  while (true) {
+                    final List<OpenSearchSnapshotInfo> snapshotInfos =
+                        findSnapshots(snapshotRequest.repositoryName(), backupId);
+                    final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
+                        snapshotInfos.stream()
+                            .filter(
+                                x -> Objects.equals(x.getSnapshot(), snapshotRequest.snapshotName()))
+                            .findFirst();
+
+                    if (maybeCurrentSnapshot.isEmpty()) {
+                      LOGGER.error(
+                          "Expected (but not found) snapshot [{}] for backupId [{}].",
+                          snapshotRequest.snapshotName(),
+                          backupId);
+                      // No need to continue
+                      onFailure.run();
+                      break;
+                    } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
+                      try {
+                        Thread.sleep(100);
+                      } catch (final InterruptedException ex) {
+                        LOGGER.warn(
+                            "Thread interrupted while waiting for snapshot [{}] to finish.",
+                            snapshotRequest.snapshotName(),
+                            ex);
+                        Thread.currentThread().interrupt(); // Restore interrupt status
+                        onFailure.run();
+                        break;
+                      }
+                    } else {
+                      handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
+                      break;
+                    }
+                  }
+                } else {
+                  LOGGER.error(
+                      "Exception while creating snapshot [{}] for backup id [{}].",
+                      snapshotRequest.snapshotName(),
+                      backupId,
+                      e);
+                  // No need to continue
+                  onFailure.run();
+                }
+              } catch (final Exception ex) {
+                // Ensure onFailure is called even if there's an unexpected exception
                 LOGGER.error(
-                    "Exception while creating snapshot [{}] for backup id [{}].",
+                    "Unexpected exception in snapshot error handler for snapshot [{}] and backup id [{}].",
                     snapshotRequest.snapshotName(),
                     backupId,
-                    e);
-                // No need to continue
+                    ex);
                 onFailure.run();
               }
 
