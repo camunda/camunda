@@ -146,6 +146,7 @@ export const decisionInstanceRequiredFields: string[] = [
   'processInstanceKey',
   'decisionDefinitionKey',
   'elementInstanceKey',
+  'rootDecisionDefinitionKey',
 ];
 export const evaluateDecisionRequiredFields: string[] = [
   'decisionDefinitionId',

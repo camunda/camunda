@@ -38,6 +38,7 @@ export interface DecisionInstance {
   processInstanceKey: string;
   decisionDefinitionKey: string;
   elementInstanceKey: string;
+  rootDecisionDefinitionKey: string;
 }
 
 export async function searchDecisionInstancesByProcessInstanceKey(
