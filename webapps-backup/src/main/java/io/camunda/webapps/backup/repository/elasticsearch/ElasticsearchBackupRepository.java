@@ -396,6 +396,8 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   }
 
   // Check: Missing in tasklist!
+  // Returns true if snapshot completed successfully, false otherwise.
+  // The caller is responsible for calling onFailure when this returns false.
   public boolean isSnapshotFinishedWithinTimeout(
       final String repositoryName, final String snapshotName) {
     int count = 0;
