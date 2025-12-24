@@ -15,8 +15,9 @@ import {createSingleInstance} from '../zeebeClient';
 
 export async function createProcessInstanceAndRetrieveTimeStamp(
   request: APIRequestContext,
+  processDefinitionId: string,
 ) {
-  const instance = await createSingleInstance('clockApiTestProcess', 1);
+  const instance = await createSingleInstance(processDefinitionId, 1);
   const processInstanceKeyToGet = instance.processInstanceKey;
   let startDate = '';
   let endDate = '';
@@ -41,6 +42,7 @@ export async function createProcessInstanceAndRetrieveTimeStamp(
 
     const body = await res.json();
     expect(body.processInstanceKey).toBe(processInstanceKeyToGet);
+    expect(body.processDefinitionId).toBe(instance.processDefinitionId);
     expect(body.state).toBe('COMPLETED');
     startDate = body.startDate;
     endDate = body.endDate;

@@ -13,8 +13,14 @@ import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
 test.describe('Reset Clock API Tests', () => {
   const timestamp = Date.parse('2025-01-01T00:00:00Z');
+  let processDefinitionId: string;
   test.beforeAll(async ({request}) => {
-    await deploy(['./resources/clock_api_test_process.bpmn']);
+    const deployment = await deploy([
+      './resources/clock_api_test_process.bpmn',
+    ]);
+    processDefinitionId =
+      deployment.processes?.[0]?.processDefinitionId.toString() || '';
+    console.log(`Deployed process with definition id: ${processDefinitionId}`);
 
     await test.step('Pin clock to fixed instant and verify', async () => {
       const pin = await request.put(buildUrl('/clock'), {
@@ -35,7 +41,10 @@ test.describe('Reset Clock API Tests', () => {
 
   test('Reset clock', async ({request}) => {
     await test.step('Create process instances and verify pinned start and end dates', async () => {
-      const res = await createProcessInstanceAndRetrieveTimeStamp(request);
+      const res = await createProcessInstanceAndRetrieveTimeStamp(
+        request,
+        processDefinitionId,
+      );
       expect(new Date(res.startDate).getTime()).toBe(timestamp);
       expect(new Date(res.endDate).getTime()).toBe(timestamp);
     });
@@ -48,7 +57,10 @@ test.describe('Reset Clock API Tests', () => {
     });
 
     await test.step('Create process instances and verify updated start and end dates', async () => {
-      const res = await createProcessInstanceAndRetrieveTimeStamp(request);
+      const res = await createProcessInstanceAndRetrieveTimeStamp(
+        request,
+        processDefinitionId,
+      );
       const MAX_DRIFT = 30_000; // the time that can pass because of eventual consistency
       const serverTimeMs = new Date(res.startDate).getTime();
       const nowMs = Date.now();
