@@ -20,6 +20,7 @@ import {OperateDashboardPage} from '@pages/OperateDashboardPage';
 import {OperateDiagramPage} from '@pages/OperateDiagramPage';
 import {OperateProcessMigrationModePage} from '@pages/OperateProcessMigrationModePage';
 import {OperateProcessModificationModePage} from '@pages/OperateProcessModificationModePage';
+import {OperateBatchModificationModePage} from '@pages/OperateBatchModificationModePage';
 import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
@@ -49,6 +50,7 @@ type PlaywrightFixtures = {
   operateFiltersPanelPage: OperateFiltersPanelPage;
   operateProcessMigrationModePage: OperateProcessMigrationModePage;
   operateProcessModificationModePage: OperateProcessModificationModePage;
+  operateBatchModificationModePage: OperateBatchModificationModePage;
   operateOperationPanelPage: OperateOperationPanelPage;
   operateDashboardPage: OperateDashboardPage;
   operateDiagramPage: OperateDiagramPage;
@@ -90,6 +92,15 @@ const test = base.extend<PlaywrightFixtures>({
   operateDiagramPage: async ({page}, use) => {
     await use(new OperateDiagramPage(page));
   },
+  operateProcessMigrationModePage: async ({page}, use) => {
+    await use(new OperateProcessMigrationModePage(page));
+  },
+  operateProcessModificationModePage: async ({page}, use) => {
+    await use(new OperateProcessModificationModePage(page));
+  },
+  operateBatchModificationModePage: async ({page}, use) => {
+    await use(new OperateBatchModificationModePage(page));
+  },
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
   },
@@ -113,12 +124,6 @@ const test = base.extend<PlaywrightFixtures>({
   },
   operateFiltersPanelPage: async ({page}, use) => {
     await use(new OperateFiltersPanelPage(page));
-  },
-  operateProcessMigrationModePage: async ({page}, use) => {
-    await use(new OperateProcessMigrationModePage(page));
-  },
-  operateProcessModificationModePage: async ({page}, use) => {
-    await use(new OperateProcessModificationModePage(page));
   },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));

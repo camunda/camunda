@@ -60,6 +60,7 @@ class OperateProcessesPage {
   ) => Locator;
   getParentInstanceCell: (parentInstanceKey: string) => Locator;
   getVersionCells: (version: string) => Locator;
+  readonly viewParentInstanceLinkInList: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -182,6 +183,9 @@ class OperateProcessesPage {
       this.dataList.getByRole('cell', {name: parentInstanceKey});
     this.getVersionCells = (version: string) =>
       this.dataList.getByRole('cell', {name: version, exact: true});
+    this.viewParentInstanceLinkInList = this.dataList.getByRole('link', {
+      name: /view parent instance/i,
+    });
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -418,6 +422,18 @@ class OperateProcessesPage {
   async startMigration(): Promise<void> {
     await this.clickMigrateButton();
     await this.clickContinueButton();
+  }
+
+  async clickViewParentInstanceFromList(): Promise<void> {
+    await this.viewParentInstanceLinkInList.click();
+  }
+
+  getNthProcessInstanceCheckbox(index: number): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .nth(index + 1) // +1 to skip header row
+      .getByRole('checkbox');
   }
 }
 
