@@ -252,48 +252,76 @@ public class OpensearchBackupRepository implements BackupRepository {
         .async()
         .snapshot()
         .create(requestBuilder)
-        .thenAccept(response -> handleSnapshotReceived(response.snapshot(), onSuccess, onFailure))
-        .exceptionally(
-            e -> {
-              if (e instanceof SocketTimeoutException) {
-                // This is thrown even if the backup is still running
-                LOGGER.warn(
-                    format(
-                        "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
-                        snapshotRequest.snapshotName(), backupId));
-                // Keep waiting
-                while (true) {
-                  final List<OpenSearchSnapshotInfo> snapshotInfos =
-                      findSnapshots(snapshotRequest.repositoryName(), backupId);
-                  final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
-                      snapshotInfos.stream()
-                          .filter(
-                              x -> Objects.equals(x.getSnapshot(), snapshotRequest.snapshotName()))
-                          .findFirst();
-
-                  if (maybeCurrentSnapshot.isEmpty()) {
-                    LOGGER.error(
-                        format(
-                            "Expected (but not found) snapshot [%s] for backupId [%d].",
-                            snapshotRequest.snapshotName(), backupId));
-                    // No need to continue
-                    onFailure.run();
-                    break;
-                  } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
-                    ThreadUtil.sleepFor(100);
-                  } else {
-                    handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
-                    break;
-                  }
-                }
-              } else {
+        .thenAccept(
+            response -> {
+              try {
+                handleSnapshotReceived(response.snapshot(), onSuccess, onFailure);
+              } catch (final Exception e) {
                 LOGGER.error(
                     format(
-                        "Exception while creating snapshot [%s] for backup id [%d].",
+                        "Exception while handling snapshot response for [%s], backup id [%d].",
                         snapshotRequest.snapshotName(), backupId),
                     e);
-                // No need to continue
-                onFailure.run();
+                try {
+                  onFailure.run();
+                } catch (final Exception ex) {
+                  LOGGER.error("Exception while calling onFailure callback", ex);
+                }
+              }
+            })
+        .exceptionally(
+            e -> {
+              try {
+                if (e instanceof SocketTimeoutException) {
+                  // This is thrown even if the backup is still running
+                  LOGGER.warn(
+                      format(
+                          "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
+                          snapshotRequest.snapshotName(), backupId));
+                  // Keep waiting
+                  while (true) {
+                    final List<OpenSearchSnapshotInfo> snapshotInfos =
+                        findSnapshots(snapshotRequest.repositoryName(), backupId);
+                    final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
+                        snapshotInfos.stream()
+                            .filter(
+                                x ->
+                                    Objects.equals(x.getSnapshot(), snapshotRequest.snapshotName()))
+                            .findFirst();
+
+                    if (maybeCurrentSnapshot.isEmpty()) {
+                      LOGGER.error(
+                          format(
+                              "Expected (but not found) snapshot [%s] for backupId [%d].",
+                              snapshotRequest.snapshotName(), backupId));
+                      onFailure.run();
+                      break;
+                    } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
+                      ThreadUtil.sleepFor(100);
+                    } else {
+                      handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
+                      break;
+                    }
+                  }
+                } else {
+                  LOGGER.error(
+                      format(
+                          "Exception while creating snapshot [%s] for backup id [%d].",
+                          snapshotRequest.snapshotName(), backupId),
+                      e);
+                  onFailure.run();
+                }
+              } catch (final Exception ex) {
+                LOGGER.error(
+                    format(
+                        "Exception while handling snapshot failure for [%s], backup id [%d].",
+                        snapshotRequest.snapshotName(), backupId),
+                    ex);
+                try {
+                  onFailure.run();
+                } catch (final Exception ex2) {
+                  LOGGER.error("Exception while calling onFailure callback", ex2);
+                }
               }
 
               return null;
@@ -322,34 +350,54 @@ public class OpensearchBackupRepository implements BackupRepository {
       final OpenSearchSnapshotInfo snapshotInfo,
       final Runnable onSuccess,
       final Runnable onFailure) {
-    if (SUCCESS.equals(snapshotInfo.getState())) {
-      LOGGER.info("Snapshot done: {}", snapshotInfo.getUuid());
-      onSuccess.run();
-    } else if (FAILED.equals(snapshotInfo.getState())) {
-      LOGGER.error("Snapshot taking failed for {}", snapshotInfo.getUuid());
-      // No need to continue
-      onFailure.run();
-    } else {
-      LOGGER.warn(
-          "Snapshot state is {} for snapshot {}", snapshotInfo.getState(), snapshotInfo.getUuid());
-      onSuccess.run();
+    try {
+      if (SUCCESS.equals(snapshotInfo.getState())) {
+        LOGGER.info("Snapshot done: {}", snapshotInfo.getUuid());
+        onSuccess.run();
+      } else if (FAILED.equals(snapshotInfo.getState())) {
+        LOGGER.error("Snapshot taking failed for {}", snapshotInfo.getUuid());
+        // No need to continue
+        onFailure.run();
+      } else {
+        LOGGER.warn(
+            "Snapshot state is {} for snapshot {}",
+            snapshotInfo.getState(),
+            snapshotInfo.getUuid());
+        onSuccess.run();
+      }
+    } catch (final Exception e) {
+      LOGGER.error("Exception while handling snapshot received callback", e);
+      try {
+        onFailure.run();
+      } catch (final Exception ex) {
+        LOGGER.error("Exception while calling onFailure callback", ex);
+      }
     }
   }
 
   private void handleSnapshotReceived(
       final SnapshotInfo snapshotInfo, final Runnable onSuccess, final Runnable onFailure) {
-    if (SUCCESS.equals(SnapshotState.valueOf(snapshotInfo.state()))) {
-      LOGGER.info("Snapshot done: {}", snapshotInfo.uuid());
-      onSuccess.run();
-    } else if (FAILED.equals(SnapshotState.valueOf(snapshotInfo.state()))) {
-      LOGGER.error(
-          "Snapshot taking failed for {}, reason {}", snapshotInfo.uuid(), snapshotInfo.reason());
-      // No need to continue
-      onFailure.run();
-    } else {
-      LOGGER.warn(
-          "Snapshot state is {} for snapshot {}", snapshotInfo.state(), snapshotInfo.uuid());
-      onSuccess.run();
+    try {
+      if (SUCCESS.equals(SnapshotState.valueOf(snapshotInfo.state()))) {
+        LOGGER.info("Snapshot done: {}", snapshotInfo.uuid());
+        onSuccess.run();
+      } else if (FAILED.equals(SnapshotState.valueOf(snapshotInfo.state()))) {
+        LOGGER.error(
+            "Snapshot taking failed for {}, reason {}", snapshotInfo.uuid(), snapshotInfo.reason());
+        // No need to continue
+        onFailure.run();
+      } else {
+        LOGGER.warn(
+            "Snapshot state is {} for snapshot {}", snapshotInfo.state(), snapshotInfo.uuid());
+        onSuccess.run();
+      }
+    } catch (final Exception e) {
+      LOGGER.error("Exception while handling snapshot received callback", e);
+      try {
+        onFailure.run();
+      } catch (final Exception ex) {
+        LOGGER.error("Exception while calling onFailure callback", ex);
+      }
     }
   }
 
