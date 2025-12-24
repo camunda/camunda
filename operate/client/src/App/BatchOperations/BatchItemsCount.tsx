@@ -16,6 +16,13 @@ import {
   Pending,
 } from '@carbon/react/icons';
 
+const formatCount = (count: number): string => {
+  return Intl.NumberFormat('en', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(count);
+};
+
 const BatchItemsCount: React.FC<{
   operationsCompletedCount: number;
   operationsFailedCount: number;
@@ -85,10 +92,3 @@ const BatchItemsCount: React.FC<{
 };
 
 export {BatchItemsCount};
-
-const formatCount = (count: number): string => {
-  return Intl.NumberFormat('en', {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(count);
-};

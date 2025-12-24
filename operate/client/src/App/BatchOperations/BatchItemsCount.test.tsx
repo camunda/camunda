@@ -47,12 +47,10 @@ describe('<BatchItemsCount />', () => {
       />,
     );
 
-    // Should show all three statuses with correct counts
     expect(screen.getByLabelText('15 successful')).toBeInTheDocument();
     expect(screen.getByLabelText('3 failed')).toBeInTheDocument();
     expect(screen.getByLabelText('7 pending')).toBeInTheDocument();
 
-    // Verify the visible text shows formatted numbers
     expect(screen.getByText('15')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();

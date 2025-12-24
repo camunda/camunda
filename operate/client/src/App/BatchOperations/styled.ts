@@ -8,21 +8,21 @@
 
 import styled from 'styled-components';
 
-export const PageContainer = styled.div`
+const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
 `;
 
-export const PageHeader = styled.div`
+const PageHeader = styled.div`
   width: 100%;
   background-color: var(--cds-layer-01);
   border-bottom: 1px solid var(--cds-border-subtle-01);
   padding: var(--cds-spacing-04) var(--cds-spacing-05);
 `;
 
-export const PageWrapper = styled.div`
+const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
   background-color: var(--cds-layer);
@@ -30,7 +30,7 @@ export const PageWrapper = styled.div`
   flex: 1;
 `;
 
-export const PanelHeader = styled.div`
+const PanelHeader = styled.div`
   padding: var(--cds-spacing-05);
   padding-bottom: 0;
 
@@ -39,7 +39,7 @@ export const PanelHeader = styled.div`
   }
 `;
 
-export const TableContainer = styled.div`
+const TableContainer = styled.div`
   flex: 1;
   overflow: auto;
   padding: 0 var(--cds-spacing-05);
@@ -58,13 +58,13 @@ export const TableContainer = styled.div`
   }
 `;
 
-export const ItemGroup = styled.div`
+const ItemGroup = styled.div`
   display: flex;
   align-items: center;
   gap: var(--cds-spacing-04);
 `;
 
-export const Item = styled.span<{color?: string}>`
+const Item = styled.span<{color?: string}>`
   display: flex;
   align-items: center;
   gap: var(--cds-spacing-02);
@@ -73,7 +73,7 @@ export const Item = styled.span<{color?: string}>`
   color: ${({color}) => color ?? 'inherit'};
 `;
 
-export const BatchStateIndicatorContainer = styled.div`
+const BatchStateIndicatorContainer = styled.div`
   display: flex;
 
   svg {
@@ -81,3 +81,14 @@ export const BatchStateIndicatorContainer = styled.div`
     margin-inline-end: var(--cds-spacing-03);
   }
 `;
+
+export {
+  PageContainer,
+  PageHeader,
+  PageWrapper,
+  PanelHeader,
+  TableContainer,
+  ItemGroup,
+  Item,
+  BatchStateIndicatorContainer,
+};

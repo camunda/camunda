@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useEffect, useState} from 'react';
+import {useMemo, useEffect} from 'react';
 import {useSearchParams, Link} from 'react-router-dom';
 import {Breadcrumb, BreadcrumbItem, Pagination} from '@carbon/react';
 import {Locations} from 'modules/Routes';
@@ -24,16 +24,26 @@ import {
   PanelHeader,
   TableContainer,
 } from './styled';
-import {parseBatchOperationsSearchSort} from 'modules/utils/filter/v2/batchOperationsSearchSort';
+import {parseBatchOperationsSearchSort} from 'modules/utils/filter/batchOperationsSearchSort';
 import {BatchItemsCount} from './BatchItemsCount';
 import {BatchStateIndicator} from './BatchStateIndicator';
 
 const MAX_OPERATIONS_PER_REQUEST = 20;
 
+const formatOperationType = (type: string) => {
+  return type
+    .split('_')
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const BatchOperations: React.FC = () => {
-  const [params] = useSearchParams();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(MAX_OPERATIONS_PER_REQUEST);
+  const [params, setParams] = useSearchParams();
+  const page = parseInt(params.get('page') ?? '1', 10);
+  const pageSize = parseInt(
+    params.get('pageSize') ?? String(MAX_OPERATIONS_PER_REQUEST),
+    10,
+  );
   const sort = parseBatchOperationsSearchSort(params);
 
   useEffect(() => {
@@ -148,8 +158,12 @@ const BatchOperations: React.FC = () => {
               pageSizes={[20, 50, 100]}
               totalItems={totalItems}
               onChange={({page, pageSize}) => {
-                setPage(page);
-                setPageSize(pageSize);
+                setParams((currentParams) => {
+                  const newParams = new URLSearchParams(currentParams);
+                  newParams.set('page', String(page));
+                  newParams.set('pageSize', String(pageSize));
+                  return newParams;
+                });
               }}
             />
           )}
@@ -160,10 +174,3 @@ const BatchOperations: React.FC = () => {
 };
 
 export {BatchOperations};
-
-const formatOperationType = (type: string) => {
-  return type
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-};

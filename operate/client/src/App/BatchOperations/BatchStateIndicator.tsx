@@ -24,23 +24,6 @@ type BatchStateIndicatorProps = {
   status: BatchOperationState;
 };
 
-const BatchStateIndicator: React.FC<BatchStateIndicatorProps> = ({status}) => {
-  const config = getStatusConfig(status);
-
-  const {Icon, color, label} = config;
-  return (
-    <BatchStateIndicatorContainer
-      role="status"
-      aria-label={`Batch operation status: ${label}`}
-    >
-      <Icon style={{color}} aria-hidden="true" focusable="false" />
-      {label}
-    </BatchStateIndicatorContainer>
-  );
-};
-
-export {BatchStateIndicator};
-
 type StatusConfig = {
   Icon: CarbonIconType;
   color: string;
@@ -99,3 +82,20 @@ const getStatusConfig = (status: BatchOperationState): StatusConfig => {
       };
   }
 };
+
+const BatchStateIndicator: React.FC<BatchStateIndicatorProps> = ({status}) => {
+  const config = getStatusConfig(status);
+
+  const {Icon, color, label} = config;
+  return (
+    <BatchStateIndicatorContainer
+      role="status"
+      aria-label={`Batch operation status: ${label}`}
+    >
+      <Icon style={{color}} aria-hidden="true" focusable="false" />
+      {label}
+    </BatchStateIndicatorContainer>
+  );
+};
+
+export {BatchStateIndicator};
