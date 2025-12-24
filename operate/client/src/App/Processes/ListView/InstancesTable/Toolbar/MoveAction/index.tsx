@@ -16,6 +16,7 @@ import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance';
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/utils/isAttachedToAnEventBasedGateway';
+import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 import isNil from 'lodash/isNil';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import modalButtonsImageLight from './images/modal-buttons-image-light.png';
@@ -52,6 +53,13 @@ const MoveAction: React.FC = observer(() => {
     : null;
 
   const isTypeSupported = (businessObject: BusinessObject) => {
+    // this is temporary until #40960 is implemented
+    if (
+      hasEventType({businessObject, types: ['bpmn:ConditionalEventDefinition']})
+    ) {
+      return false;
+    }
+
     return (
       businessObject.$type !== 'bpmn:StartEvent' &&
       businessObject.$type !== 'bpmn:BoundaryEvent' &&
