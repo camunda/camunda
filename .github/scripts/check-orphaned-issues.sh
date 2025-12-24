@@ -28,17 +28,17 @@ PROJECTS_RESPONSE=$(gh api graphql -f query="
 ACTIVE_PROJECTS=$(echo "$PROJECTS_RESPONSE" | jq -r '.data.repository.projectsV2.nodes[] | select(.closed == false) | .number' | paste -sd "," -)
 ARCHIVED_PROJECTS=$(echo "$PROJECTS_RESPONSE" | jq -r '.data.repository.projectsV2.nodes[] | select(.closed == true) | .number' | paste -sd "," -)
 
-ACTIVE_PROJECT_COUNT=$(echo "$ACTIVE_PROJECTS" | grep -o "," | wc -l | tr -d ' ')
-ACTIVE_PROJECT_COUNT=$((ACTIVE_PROJECT_COUNT + 1))
-ARCHIVED_PROJECT_COUNT=$(echo "$ARCHIVED_PROJECTS" | grep -o "," | wc -l | tr -d ' ')
-ARCHIVED_PROJECT_COUNT=$((ARCHIVED_PROJECT_COUNT + 1))
-
+# Count projects more robustly
 if [[ -z "$ACTIVE_PROJECTS" ]]; then
   ACTIVE_PROJECT_COUNT=0
+else
+  ACTIVE_PROJECT_COUNT=$(echo "$ACTIVE_PROJECTS" | tr ',' '\n' | grep -c .)
 fi
 
 if [[ -z "$ARCHIVED_PROJECTS" ]]; then
   ARCHIVED_PROJECT_COUNT=0
+else
+  ARCHIVED_PROJECT_COUNT=$(echo "$ARCHIVED_PROJECTS" | tr ',' '\n' | grep -c .)
 fi
 
 echo "  Found $ACTIVE_PROJECT_COUNT active project(s)"
