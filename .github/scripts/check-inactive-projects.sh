@@ -19,20 +19,23 @@ echo "Fetching projects for ${ORG_NAME}/${REPO_NAME}..."
 PROJECTS_RESPONSE=$(gh api graphql -f query="
   query {
     repository(owner: \"$ORG_NAME\", name: \"$REPO_NAME\") {
-      projectsV2(first: 100, states: OPEN) {
+      projectsV2(first: 100) {
         nodes {
           id
           number
           title
           url
+          closed
           items(first: 100, filterBy: {excludeArchived: true}) {
             nodes {
               id
               content {
                 ... on Issue {
+                  __typename
                   state
                 }
                 ... on PullRequest {
+                  __typename
                   state
                 }
               }
@@ -70,7 +73,7 @@ TEMP_FILE=$(mktemp)
 trap 'rm -f "$TEMP_FILE"' EXIT
 
 # Process each project
-echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[]' | while read -r project; do
+echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[] | select(.closed == false)' | while read -r project; do
   PROJECT_NUMBER=$(echo "$project" | jq -r '.number')
   PROJECT_TITLE=$(echo "$project" | jq -r '.title')
   PROJECT_URL=$(echo "$project" | jq -r '.url')
