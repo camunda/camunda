@@ -345,7 +345,14 @@ public class OpensearchBackupRepository implements BackupRepository {
                   onFailure.run();
                 }
               } catch (final Exception ex) {
-                // Ensure onFailure is called even if there's an unexpected exception
+                // Catch all exceptions to ensure onFailure is always called to clear the backup
+                // queue.
+                // This guards against:
+                // - RuntimeExceptions from findSnapshots() (e.g., connection failures)
+                // - Unexpected exceptions during snapshot polling
+                // - Any other unforeseen errors in the error handling path
+                // Without this safety net, the backup queue would remain stuck, requiring a
+                // restart.
                 LOGGER.error(
                     "Unexpected exception in snapshot error handler for snapshot [{}] and backup id [{}].",
                     snapshotRequest.snapshotName(),
