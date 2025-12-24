@@ -308,7 +308,7 @@ public class ElasticsearchExporter implements Exporter {
     }
 
     @Override
-    public boolean acceptValueType(final ValueType valueType) {
+    public boolean acceptValue(final ValueType valueType) {
       return configuration.shouldIndexValueType(valueType);
     }
 
