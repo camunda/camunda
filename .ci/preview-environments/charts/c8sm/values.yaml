@@ -380,10 +380,10 @@ camunda-platform:
       #   repository: camunda/web-modeler-webapp
       resources:
         limits:
-          cpu: 100m
-          memory: 256Mi
+          cpu: 500m
+          memory: 1Gi
         requests:
-          cpu: 40m
+          cpu: 100m
           memory: 256Mi
       nodeSelector:
         cloud.google.com/gke-nodepool: previews
