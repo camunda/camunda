@@ -26,9 +26,10 @@ PROJECTS_RESPONSE=$(gh api graphql -f query="
           title
           url
           closed
-          items(first: 1, orderBy: {field: UPDATED_AT, direction: DESC}, filterBy: {excludeArchived: true}) {
+          items(first: 100) {
             nodes {
               updatedAt
+              isArchived
               content {
                 ... on Issue {
                   __typename
@@ -58,31 +59,33 @@ echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[] | select(
   
   echo "  Checking project #$PROJECT_NUMBER: $PROJECT_TITLE"
   
-  # Get the most recently updated item (already sorted by UPDATED_AT DESC)
-  # We fetch both issues and PRs (filterBy excludes archived items)
-  FIRST_ITEM=$(echo "$project" | jq -r '.items.nodes[0] // empty')
+  # Get the most recently updated open item (filtering out archived items)
+  # We fetch both issues and PRs
+  MOST_RECENT_UPDATE=$(echo "$project" | jq -r '
+    [.items.nodes[] | 
+     select(.isArchived == false) | 
+     select(.content.state == "OPEN") | 
+     .updatedAt
+    ] | 
+    sort | 
+    last // empty
+  ')
   
-  # If there are no items, the project has no open items
-  if [[ -z "$FIRST_ITEM" ]]; then
+  # Count open non-archived items
+  OPEN_ITEMS_COUNT=$(echo "$project" | jq -r '
+    [.items.nodes[] | 
+     select(.isArchived == false) | 
+     select(.content.state == "OPEN")
+    ] | length
+  ')
+  
+  # If there are no open items, the project has no open items
+  if [[ "$OPEN_ITEMS_COUNT" == "0" ]]; then
     echo "    → No open items found"
     UPDATE_INFO="No open items"
     echo "• <${PROJECT_URL}|Project #${PROJECT_NUMBER}: ${PROJECT_TITLE}> - ${UPDATE_INFO}" >> "$TEMP_FILE"
     continue
   fi
-  
-  # Check if it's an open item (issue or PR)
-  IS_OPEN=$(echo "$FIRST_ITEM" | jq -r 'select(.content.state == "OPEN") | "true"')
-  
-  if [[ "$IS_OPEN" != "true" ]]; then
-    # The most recent item is not open, so project has no open items
-    echo "    → No open items found"
-    UPDATE_INFO="No open items"
-    echo "• <${PROJECT_URL}|Project #${PROJECT_NUMBER}: ${PROJECT_TITLE}> - ${UPDATE_INFO}" >> "$TEMP_FILE"
-    continue
-  fi
-  
-  # Get the update timestamp of the most recently updated open item (issue or PR)
-  MOST_RECENT_UPDATE=$(echo "$FIRST_ITEM" | jq -r '.updatedAt')
   
   # If no update found or the most recent is older than threshold
   if [[ -z "$MOST_RECENT_UPDATE" ]] || [[ "$MOST_RECENT_UPDATE" < "$CUTOFF_DATE" ]]; then
