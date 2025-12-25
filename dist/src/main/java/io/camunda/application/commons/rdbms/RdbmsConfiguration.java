@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
@@ -294,6 +295,12 @@ public class RdbmsConfiguration {
   public HistoryDeletionDbReader historyDeletionDbReader(
       final HistoryDeletionMapper historyDeletionMapper) {
     return new HistoryDeletionDbReader(historyDeletionMapper);
+  }
+
+  @Bean
+  public IncidentProcessInstanceStatisticsByErrorDbReader
+      incidentProcessInstanceStatisticsByErrorReader(final IncidentMapper incidentMapper) {
+    return new IncidentProcessInstanceStatisticsByErrorDbReader(incidentMapper);
   }
 
   @Bean

@@ -38,6 +38,8 @@ import io.camunda.search.clients.reader.GroupMemberDocumentReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.clients.reader.IncidentDocumentReader;
+import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorDocumentReader;
+import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorReader;
 import io.camunda.search.clients.reader.IncidentReader;
 import io.camunda.search.clients.reader.JobDocumentReader;
 import io.camunda.search.clients.reader.JobReader;
@@ -389,5 +391,13 @@ public class SearchClientReaderConfiguration {
   public AuditLogReader auditLogReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new AuditLogDocumentReader(executor, descriptors.get(AuditLogTemplate.class));
+  }
+
+  @Bean
+  public IncidentProcessInstanceStatisticsByErrorReader
+      incidentProcessInstanceStatisticsByErrorReader(
+          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new IncidentProcessInstanceStatisticsByErrorDocumentReader(
+        executor, descriptors.get(IncidentTemplate.class)) {};
   }
 }
