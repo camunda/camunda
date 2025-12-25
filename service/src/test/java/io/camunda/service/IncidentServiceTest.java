@@ -113,10 +113,20 @@ public final class IncidentServiceTest {
     // when
     final var searchQueryResult =
         services.incidentProcessInstanceStatisticsByError(
-            SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build());
+            SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery()
+                .filter(f -> f.states(IncidentState.ACTIVE.name()))
+                .build());
 
     // then
     assertThat(searchQueryResult.items()).contains(entity);
+    final var queryCaptor =
+        ArgumentCaptor.forClass(
+            io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery.class);
+    verify(client).incidentProcessInstanceStatisticsByError(queryCaptor.capture());
+
+    final var capturedQuery = queryCaptor.getValue();
+    final var filter = capturedQuery.filter();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq(IncidentState.ACTIVE.name()));
   }
 
   @Test
