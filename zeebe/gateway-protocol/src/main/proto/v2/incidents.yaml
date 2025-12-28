@@ -578,11 +578,8 @@ components:
           description: The aggregated field by which the process instance statistics are sorted.
           type: string
           enum:
-              - activeInstancesWithErrorCount
-              - processDefinitionId
               - processDefinitionKey
-              - processDefinitionName
-              - processDefinitionVersion
+              - activeInstancesWithErrorCount
               - tenantId
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'

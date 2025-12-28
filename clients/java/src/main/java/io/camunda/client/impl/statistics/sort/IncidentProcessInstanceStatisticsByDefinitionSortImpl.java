@@ -28,21 +28,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionSortImpl
   }
 
   @Override
-  public IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionId() {
-    return field("processDefinitionId");
-  }
-
-  @Override
-  public IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionName() {
-    return field("processDefinitionName");
-  }
-
-  @Override
-  public IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionVersion() {
-    return field("processDefinitionVersion");
-  }
-
-  @Override
   public IncidentProcessInstanceStatisticsByDefinitionSort tenantId() {
     return field("tenantId");
   }

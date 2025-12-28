@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
@@ -320,6 +321,12 @@ public class RdbmsConfiguration {
   public CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader(
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
     return new CorrelatedMessageSubscriptionDbReader(correlatedMessageSubscriptionMapper);
+  }
+
+  @Bean
+  public IncidentProcessInstanceStatisticsByDefinitionDbReader
+      incidentProcessInstanceStatisticsByDefinitionReader(final IncidentMapper incidentMapper) {
+    return new IncidentProcessInstanceStatisticsByDefinitionDbReader(incidentMapper);
   }
 
   @Bean

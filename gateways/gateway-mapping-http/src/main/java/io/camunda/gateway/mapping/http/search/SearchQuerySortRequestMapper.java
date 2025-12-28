@@ -921,9 +921,6 @@ public class SearchQuerySortRequestMapper {
     } else {
       switch (field) {
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
-        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
-        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
         case TENANT_ID -> builder.tenantId();
         case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
