@@ -27,6 +27,11 @@ on:
         type: string
         default: ""
         required: false
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
