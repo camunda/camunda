@@ -33,21 +33,6 @@ public record IncidentProcessInstanceStatisticsByDefinitionSort(List<FieldSortin
       return this;
     }
 
-    public Builder processDefinitionId() {
-      currentOrdering = new FieldSorting("processDefinitionId", null);
-      return this;
-    }
-
-    public Builder processDefinitionVersion() {
-      currentOrdering = new FieldSorting("processDefinitionVersion", null);
-      return this;
-    }
-
-    public Builder processDefinitionName() {
-      currentOrdering = new FieldSorting("processDefinitionName", null);
-      return this;
-    }
-
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
       return this;

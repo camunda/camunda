@@ -97,16 +97,10 @@ public class IncidentProcessInstanceStatisticsByDefinitionTest extends ClientRes
             s ->
                 s.processDefinitionKey()
                     .asc()
-                    .processDefinitionId()
-                    .desc()
-                    .processDefinitionName()
-                    .asc()
-                    .processDefinitionVersion()
-                    .desc()
                     .tenantId()
-                    .asc()
+                    .desc()
                     .activeInstancesWithErrorCount()
-                    .desc())
+                    .asc())
         .send()
         .join();
 
@@ -118,13 +112,10 @@ public class IncidentProcessInstanceStatisticsByDefinitionTest extends ClientRes
         SearchRequestSortMapper.fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
 
-    Assertions.assertThat(sorts).hasSize(6);
+    Assertions.assertThat(sorts).hasSize(3);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(1), "processDefinitionId", SortOrderEnum.DESC);
-    assertSort(sorts.get(2), "processDefinitionName", SortOrderEnum.ASC);
-    assertSort(sorts.get(3), "processDefinitionVersion", SortOrderEnum.DESC);
-    assertSort(sorts.get(4), "tenantId", SortOrderEnum.ASC);
-    assertSort(sorts.get(5), "activeInstancesWithErrorCount", SortOrderEnum.DESC);
+    assertSort(sorts.get(1), "tenantId", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "activeInstancesWithErrorCount", SortOrderEnum.ASC);
   }
 
   private static List<IncidentProcessInstanceStatisticsByDefinitionResult>
