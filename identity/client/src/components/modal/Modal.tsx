@@ -43,23 +43,35 @@ const FooterButtonSet = styled(ButtonSet)`
   width: 100%;
 `;
 
-export type ModalProps = {
+type BaseModalProps = {
   open: boolean;
   headline: string;
   onClose: () => void;
   children?: ReactNode;
   danger?: boolean;
   overflowVisible?: boolean;
-  confirmLabel?: string;
   onSubmit?: () => unknown;
   submitDisabled?: boolean;
   loading?: boolean;
   loadingDescription?: string | null;
   buttons?: ReactNode[];
   size?: "xs" | "sm" | "md" | "lg";
-  passiveModal?: boolean;
   preventCloseOnClickOutside?: boolean;
 };
+
+// Confirm label is optional here since it will be ignored
+type PassiveModalProps = BaseModalProps & {
+  passiveModal: true;
+  confirmLabel?: string;
+};
+
+// Confirm label is required for an active modal
+type ActiveModalProps = BaseModalProps & {
+  passiveModal?: false;
+  confirmLabel: string;
+};
+
+export type ModalProps = PassiveModalProps | ActiveModalProps;
 
 const Modal: FC<ModalProps> = ({
   children,
