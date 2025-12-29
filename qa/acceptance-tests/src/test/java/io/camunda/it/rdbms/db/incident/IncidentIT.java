@@ -505,14 +505,25 @@ public class IncidentIT {
       final RdbmsWriters rdbmsWriters, final String errorMessage, final int distinctInstances) {
     final var hash = errorMessage.hashCode();
 
-    Long firstProcessInstanceKey = null;
+    // Contract: this helper always creates at least one ACTIVE incident so the given error group
+    // exists in the aggregation results. If distinctInstances is 0, we still create a single
+    // distinct process instance (plus duplicates below).
+    final int instancesToCreate = Math.max(1, distinctInstances);
 
-    for (int i = 0; i < distinctInstances; i++) {
+    final long firstProcessInstanceKey = nextKey();
+
+    // Create the requested number of distinct process instances. The first key is also used later
+    // to create additional incidents which must not increase the distinct count.
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(firstProcessInstanceKey)
+                .errorMessage(errorMessage)
+                .errorMessageHash(hash));
+
+    for (int i = 1; i < instancesToCreate; i++) {
       final var processInstanceKey = nextKey();
-      if (firstProcessInstanceKey == null) {
-        firstProcessInstanceKey = processInstanceKey;
-      }
-
       createAndSaveIncident(
           rdbmsWriters,
           b ->
@@ -522,33 +533,19 @@ public class IncidentIT {
                   .errorMessageHash(hash));
     }
 
-    // additional incidents for an existing PI must not increase distinct count
-    if (firstProcessInstanceKey == null) {
-      firstProcessInstanceKey = nextKey();
-      final long initialKey = firstProcessInstanceKey;
-      createAndSaveIncident(
-          rdbmsWriters,
-          b ->
-              b.state(IncidentEntity.IncidentState.ACTIVE)
-                  .processInstanceKey(initialKey)
-                  .errorMessage(errorMessage)
-                  .errorMessageHash(hash));
-    }
-
-    final long duplicateKey = firstProcessInstanceKey;
-
+    // Additional incidents for an existing PI must not increase distinct count
     createAndSaveIncident(
         rdbmsWriters,
         b ->
             b.state(IncidentEntity.IncidentState.ACTIVE)
-                .processInstanceKey(duplicateKey)
+                .processInstanceKey(firstProcessInstanceKey)
                 .errorMessage(errorMessage)
                 .errorMessageHash(hash));
     createAndSaveIncident(
         rdbmsWriters,
         b ->
             b.state(IncidentEntity.IncidentState.ACTIVE)
-                .processInstanceKey(duplicateKey)
+                .processInstanceKey(firstProcessInstanceKey)
                 .errorMessage(errorMessage)
                 .errorMessageHash(hash));
   }
