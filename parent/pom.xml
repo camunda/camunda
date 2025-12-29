@@ -196,7 +196,7 @@
     <version.nimbus-jose-jwt>10.4.2</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.27</version.nimbus-sdk>
     <version.keycloak>26.3.2</version.keycloak>
-    <version.keycloak-client>26.0.6</version.keycloak-client>
+    <version.keycloak-client>26.0.7</version.keycloak-client>
     <version.jna>5.17.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.5</version.mybatis-spring>
