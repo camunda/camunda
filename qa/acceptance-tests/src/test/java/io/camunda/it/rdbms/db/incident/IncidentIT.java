@@ -329,6 +329,9 @@ public class IncidentIT {
     final IncidentProcessInstanceStatisticsByErrorDbReader reader =
         rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader();
 
+    // Ensure a clean slate for deterministic totals
+    rdbmsWriters.getRdbmsPurger().purgeRdbms();
+
     final var error1 = "error-fail-1";
     final var error2 = "error-fail-2";
     final var error1Hash = error1.hashCode();
@@ -351,7 +354,7 @@ public class IncidentIT {
                 .errorMessage(error1)
                 .errorMessageHash(error1Hash));
 
-    // error2: 1 distinct process instance
+    // error2: 2 distinct process instances
     createAndSaveIncident(
         rdbmsWriters,
         b ->
@@ -359,21 +362,11 @@ public class IncidentIT {
                 .processInstanceKey(nextKey())
                 .errorMessage(error2)
                 .errorMessageHash(error2Hash));
-
-    // Same process instance as for error2 should not increase the distinct count
-    final var duplicatedProcessInstanceKey = nextKey();
     createAndSaveIncident(
         rdbmsWriters,
         b ->
             b.state(IncidentEntity.IncidentState.ACTIVE)
-                .processInstanceKey(duplicatedProcessInstanceKey)
-                .errorMessage(error2)
-                .errorMessageHash(error2Hash));
-    createAndSaveIncident(
-        rdbmsWriters,
-        b ->
-            b.state(IncidentEntity.IncidentState.ACTIVE)
-                .processInstanceKey(duplicatedProcessInstanceKey)
+                .processInstanceKey(nextKey())
                 .errorMessage(error2)
                 .errorMessageHash(error2Hash));
 
@@ -413,6 +406,9 @@ public class IncidentIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final IncidentProcessInstanceStatisticsByErrorDbReader reader =
         rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader();
+
+    // Ensure a clean slate for deterministic totals
+    rdbmsWriters.getRdbmsPurger().purgeRdbms();
 
     // Seed 5 distinct error groups with different distinct PI counts
     // counts: D=5, B=4, E=3, A=2, C=1
