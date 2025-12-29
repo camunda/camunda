@@ -36,9 +36,9 @@ import org.testcontainers.utility.DockerImageName;
 public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
 
   private static final String ADMIN_USER = "camunda-admin";
-  private static final String ADMIN_PASSWORD = "ComplexPassword123!";
+  private static final String ADMIN_PASSWORD = "AdminPassword123!";
   private static final String APP_USER = "camunda-app";
-  private static final String APP_PASSWORD = "ComplexPassword123!";
+  private static final String APP_PASSWORD = "AppPassword123!";
   private static final String INITIAL_ADMIN_PASSWORD = "Strong-Initial-Password123!";
 
   private GenericContainer<?> container;
@@ -251,6 +251,44 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
             q -> q.name(repositoryName).type("fs").settings(s -> s.location(repositoryName)));
   }
 
+  /**
+   * Creates the OpenSearch security users and roles required for the acceptance tests.
+   *
+   * <p>Security model:
+   *
+   * <ul>
+   *   <li>{@code camunda_app_role}: application role used by the Camunda components under test
+   *       (e.g. exporters, web applications) to access their indices. It is restricted to:
+   *       <ul>
+   *         <li>Cluster-level permission {@code indices:data/read/scroll/clear} to clean up scroll
+   *             contexts created during queries.
+   *         <li>Index-level permissions on the {@code zeebe-*}, {@code operate-*}, {@code
+   *             tasklist-*}, and {@code camunda-*} indices, allowing: {@code indices:data/write/*},
+   *             {@code indices:data/read/*}, {@code indices:admin/create}, and {@code
+   *             indices:admin/shards/search_shards}.
+   *       </ul>
+   *       These permissions are intended to be the minimal set required for the application to read
+   *       from and write to its own indices in this test environment.
+   *   <li>{@code camunda-app} user ({@link #APP_USER}): test application user that authenticates
+   *       against OpenSearch using {@link #APP_PASSWORD} and is assigned only the {@code
+   *       camunda_app_role}. This user is used by the Camunda application in tests and should not
+   *       have cluster-wide administrative rights.
+   *   <li>{@code camunda-admin} user ({@link #ADMIN_USER}): administrative test user that
+   *       authenticates using {@link #ADMIN_PASSWORD} and is assigned the built-in {@code
+   *       all_access} role.
+   * </ul>
+   *
+   * <p>The {@code all_access} role is provided by the OpenSearch security plugin as a
+   * superuser-style role. In the test security configuration used here, the Camunda admin role
+   * ({@code camunda_admin_role}) is mapped to {@code all_access}, meaning that granting {@code
+   * all_access} to the {@code camunda-admin} user also grants it the effective privileges of {@code
+   * camunda_admin_role}. This is acceptable in this QA context to simplify setup and ensure the
+   * admin user can perform any required operation on the test cluster, but it should not be used as
+   * a reference for production deployments.
+   *
+   * @throws IOException if the role or user creation HTTP calls fail
+   * @throws InterruptedException if the container execution is interrupted
+   */
   private void createUsersAndRoles() throws IOException, InterruptedException {
     // Create camunda_app_role
     container.execInContainer(
