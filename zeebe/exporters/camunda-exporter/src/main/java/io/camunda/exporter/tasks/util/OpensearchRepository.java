@@ -114,7 +114,7 @@ public class OpensearchRepository implements AutoCloseable {
                 logger.warn(
                     """
                         Failed to clear scroll context; this could eventually lead to \
-                        increased resource usage in Elastic""",
+                        increased resource usage in OpenSearch""",
                     clearError);
 
                 return null;
