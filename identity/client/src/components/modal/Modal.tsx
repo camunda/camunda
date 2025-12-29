@@ -50,13 +50,15 @@ export type ModalProps = {
   children?: ReactNode;
   danger?: boolean;
   overflowVisible?: boolean;
-  confirmLabel: string;
+  confirmLabel?: string;
   onSubmit?: () => unknown;
   submitDisabled?: boolean;
   loading?: boolean;
   loadingDescription?: string | null;
   buttons?: ReactNode[];
   size?: "xs" | "sm" | "md" | "lg";
+  passiveModal?: boolean;
+  preventCloseOnClickOutside?: boolean;
 };
 
 const Modal: FC<ModalProps> = ({
@@ -73,6 +75,8 @@ const Modal: FC<ModalProps> = ({
   loadingDescription,
   buttons,
   size,
+  passiveModal = false,
+  preventCloseOnClickOutside = false,
 }) => {
   const { t } = useTranslate("components");
   const submitLoading = (
@@ -104,6 +108,8 @@ const Modal: FC<ModalProps> = ({
         modalHeading={headline}
         aria-label={headline}
         open={open}
+        passiveModal={passiveModal}
+        preventCloseOnClickOutside={preventCloseOnClickOutside}
         primaryButtonText={loading ? submitLoading : confirmLabel}
         primaryButtonDisabled={submitDisabled || loading}
         closeButtonLabel={t("close")}
