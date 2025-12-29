@@ -51,7 +51,7 @@
     <zeebe.docker.version>8.9</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+    <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
     <!-- maven dependency plugin -->
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
