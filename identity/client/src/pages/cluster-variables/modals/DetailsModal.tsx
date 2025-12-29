@@ -7,9 +7,8 @@
  */
 
 import { FC } from "react";
-import { UseEntityModalProps } from "src/components/modal";
+import Modal, { UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import PassiveModal from "src/components/modal/PassiveModal.tsx";
 import { beautify } from "src/utility/components/editor/jsonUtils.ts";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
 
@@ -19,7 +18,8 @@ const DetailsModal: FC<
   const { t } = useTranslate("clusterVariables");
 
   return (
-    <PassiveModal
+    <Modal
+      passiveModal
       preventCloseOnClickOutside
       open={open}
       onClose={onClose}
@@ -37,7 +37,7 @@ const DetailsModal: FC<
           }),
         }}
       />
-    </PassiveModal>
+    </Modal>
   );
 };
 
