@@ -389,7 +389,8 @@ public class IncidentIT {
     // when
     final var result =
         reader.aggregate(
-            IncidentProcessInstanceStatisticsByErrorQuery.of(b -> b), ResourceAccessChecks.disabled());
+            IncidentProcessInstanceStatisticsByErrorQuery.of(b -> b),
+            ResourceAccessChecks.disabled());
 
     // then
     assertThat(result).isNotNull();
@@ -412,7 +413,6 @@ public class IncidentIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final IncidentProcessInstanceStatisticsByErrorDbReader reader =
         rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader();
-
 
     // Seed 5 distinct error groups with different distinct PI counts
     // counts: D=5, B=4, E=3, A=2, C=1
@@ -437,7 +437,8 @@ public class IncidentIT {
 
     final var fullResult =
         reader.aggregate(
-            IncidentProcessInstanceStatisticsByErrorQuery.of(b -> b.sort(sort).page(p -> p.size(10))),
+            IncidentProcessInstanceStatisticsByErrorQuery.of(
+                b -> b.sort(sort).page(p -> p.size(10))),
             ResourceAccessChecks.disabled());
 
     assertThat(fullResult.total()).isEqualTo(5);
@@ -458,7 +459,8 @@ public class IncidentIT {
     // pagination: first page size 2
     final var firstPage =
         reader.aggregate(
-            IncidentProcessInstanceStatisticsByErrorQuery.of(b -> b.sort(sort).page(p -> p.size(2))),
+            IncidentProcessInstanceStatisticsByErrorQuery.of(
+                b -> b.sort(sort).page(p -> p.size(2))),
             ResourceAccessChecks.disabled());
 
     assertThat(firstPage.total()).isEqualTo(5);

@@ -73,4 +73,3 @@ public record IncidentProcessInstanceStatisticsByErrorDbQuery(
     }
   }
 }
-
