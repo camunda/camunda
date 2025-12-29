@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
 
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -97,6 +98,14 @@ public class SecondaryStorage {
 
   public void setRdbms(final Rdbms rdbms) {
     this.rdbms = rdbms;
+  }
+
+  public Optional<DocumentBasedSecondaryStorageDatabase> getDocumentBasedDatabase() {
+    return switch (getType()) {
+      case elasticsearch -> Optional.of(getElasticsearch());
+      case opensearch -> Optional.of(getOpensearch());
+      default -> Optional.empty();
+    };
   }
 
   public enum SecondaryStorageType {
