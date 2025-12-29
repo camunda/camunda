@@ -145,8 +145,22 @@ test.describe('Child Process Instance Migration', () => {
       await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
         parentInstanceKey,
       );
-      await expect(page.getByText('1 result')).toBeVisible({
-        timeout: 30000,
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Parent Process Instance Key',
+          );
+          await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+            parentInstanceKey,
+          );
+        },
       });
     });
 
