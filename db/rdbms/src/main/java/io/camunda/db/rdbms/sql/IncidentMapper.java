@@ -7,8 +7,8 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery;
 import io.camunda.db.rdbms.read.domain.IncidentDbQuery;
+import io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;

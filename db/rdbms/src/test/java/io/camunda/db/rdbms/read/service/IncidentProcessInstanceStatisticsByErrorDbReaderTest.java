@@ -81,8 +81,7 @@ class IncidentProcessInstanceStatisticsByErrorDbReaderTest {
 
   @Test
   void shouldReturnItemsFromMapper() {
-    final var entities =
-        List.of(new IncidentProcessInstanceStatisticsByErrorEntity(1, "boom", 5L));
+    final var entities = List.of(new IncidentProcessInstanceStatisticsByErrorEntity(1, "boom", 5L));
 
     when(incidentMapper.processInstanceStatisticsByErrorCount(any())).thenReturn(1L);
     when(incidentMapper.processInstanceStatisticsByError(any())).thenReturn(entities);
@@ -100,4 +99,3 @@ class IncidentProcessInstanceStatisticsByErrorDbReaderTest {
     verify(incidentMapper, times(1)).processInstanceStatisticsByError(any());
   }
 }
-

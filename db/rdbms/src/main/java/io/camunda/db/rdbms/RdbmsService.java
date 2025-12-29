@@ -165,7 +165,8 @@ public class RdbmsService {
     this.processDefinitionInstanceVersionStatisticsDbReader =
         processDefinitionInstanceVersionStatisticsDbReader;
     this.historyDeletionDbReader = historyDeletionDbReader;
-    this.incidentProcessInstanceStatisticsByErrorDbReader = incidentProcessInstanceStatisticsByErrorDbReader;
+    this.incidentProcessInstanceStatisticsByErrorDbReader =
+        incidentProcessInstanceStatisticsByErrorDbReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
