@@ -16,8 +16,8 @@ import java.util.function.Function;
  * <p>This filter is intentionally narrow: it only supports filtering by incident state and error
  * hash code.
  */
-public record IncidentProcessInstanceStatisticsByDefinitionFilter(Integer errorHashCode, String state)
-    implements FilterBase {
+public record IncidentProcessInstanceStatisticsByDefinitionFilter(
+    Integer errorHashCode, String state) implements FilterBase {
 
   public static IncidentProcessInstanceStatisticsByDefinitionFilter of(
       final Function<Builder, ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionFilter>>

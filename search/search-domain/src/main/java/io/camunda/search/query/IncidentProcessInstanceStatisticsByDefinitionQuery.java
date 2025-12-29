@@ -33,9 +33,10 @@ public record IncidentProcessInstanceStatisticsByDefinitionQuery(
   }
 
   @Override
-  public io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation aggregation() {
-    return new io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation(
-        filter, sort, page);
+  public io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation
+      aggregation() {
+    return new io.camunda.search.aggregation
+        .IncidentProcessInstanceStatisticsByDefinitionAggregation(filter, sort, page);
   }
 
   public static final class Builder
