@@ -15,9 +15,11 @@ import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
@@ -28,18 +30,22 @@ import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.snapshot.Repository;
 import org.opensearch.client.opensearch.snapshot.RestoreSnapshotRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 
 public class OSClient implements DocumentClient {
-  private final org.opensearch.client.RestClient osRestClient;
   private final OpenSearchClient opensearchClient;
   private final OpenSearchTransport transport;
 
   public OSClient(final String url) {
-    osRestClient = org.opensearch.client.RestClient.builder(HttpHost.create(url)).build();
-    transport =
-        new org.opensearch.client.transport.rest_client.RestClientTransport(
-            osRestClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
-    opensearchClient = new OpenSearchClient(transport);
+    try {
+      transport =
+          ApacheHttpClient5TransportBuilder.builder(HttpHost.create(url))
+              .setMapper(new JacksonJsonpMapper())
+              .build();
+      opensearchClient = new OpenSearchClient(transport);
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

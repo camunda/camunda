@@ -81,9 +81,9 @@ public class OpensearchEngineClientIT {
 
     assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
     assertThat(index.settings().index().numberOfReplicas())
-        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+        .isEqualTo(indexSettings.getNumberOfReplicas());
     assertThat(index.settings().index().numberOfShards())
-        .isEqualTo(indexSettings.getNumberOfShards().toString());
+        .isEqualTo(indexSettings.getNumberOfShards());
   }
 
   @Test
@@ -454,9 +454,9 @@ public class OpensearchEngineClientIT {
     assertThat(index.mappings().meta().get("test_key").to(String.class)).isEqualTo("test_value");
     assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
     assertThat(index.settings().index().numberOfReplicas())
-        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+        .isEqualTo(indexSettings.getNumberOfReplicas());
     assertThat(index.settings().index().numberOfShards())
-        .isEqualTo(indexSettings.getNumberOfShards().toString());
+        .isEqualTo(indexSettings.getNumberOfShards());
   }
 
   @Test
@@ -490,9 +490,9 @@ public class OpensearchEngineClientIT {
     assertThat(index.mappings().meta().get("int_key").to(Integer.class)).isEqualTo(42);
     assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
     assertThat(index.settings().index().numberOfReplicas())
-        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+        .isEqualTo(indexSettings.getNumberOfReplicas());
     assertThat(index.settings().index().numberOfShards())
-        .isEqualTo(indexSettings.getNumberOfShards().toString());
+        .isEqualTo(indexSettings.getNumberOfShards());
   }
 
   private String getPolicyMinAge(final String policyName) throws IOException {

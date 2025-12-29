@@ -486,8 +486,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
               utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfReplicas(settings.getNumberOfReplicas())
-                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+                  .withNumberOfShards(settings.getNumberOfShards().toString())
                   .build());
       return PutIndexTemplateRequest.of(
           b ->
@@ -518,8 +518,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var currentTemplate = getIndexTemplateState(indexTemplateDescriptor);
       final var configuredSettings =
           utils.new SchemaSettingsAppender(templateFile)
-              .withNumberOfShards(indexConfiguration.getNumberOfShards())
-              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas());
+              .withNumberOfShards(indexConfiguration.getNumberOfShards().toString())
+              .withNumberOfReplicas(indexConfiguration.getNumberOfReplicas().toString());
       final var configuredPriority =
           convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
 
@@ -593,8 +593,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
               utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfReplicas(settings.getNumberOfReplicas())
-                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+                  .withNumberOfShards(settings.getNumberOfShards().toString())
                   .build());
 
       return new CreateIndexRequest.Builder()
