@@ -16,6 +16,7 @@ import {
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+import { waitForAssertion } from 'utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -63,7 +64,7 @@ test.describe('Process Instance Batch Modification', () => {
       (instance) => instance.processInstanceKey,
     );
 
-    await test.step('Navigate to processes page with filters', async () => {
+    await test.step('Navigate to processes page with filters and verify results', async () => {
       await gotoProcessesPage(page, {
         searchParams: {
           active: 'true',
@@ -72,12 +73,24 @@ test.describe('Process Instance Batch Modification', () => {
           flowNodeId: 'checkPayment',
         },
       });
-    });
 
-    await test.step('Verify correct number of instances displayed', async () => {
-      await expect(
-        page.getByText(`${NUM_PROCESS_INSTANCES} results`),
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            page.getByText(`${NUM_PROCESS_INSTANCES} results`),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await gotoProcessesPage(page, {
+            searchParams: {
+              active: 'true',
+              process: 'orderProcessBatchMod',
+              version: '1',
+              flowNodeId: 'checkPayment',
+            },
+          });
+        },
+      });
     });
 
     await test.step('Select 4 process instances for move modification', async () => {
