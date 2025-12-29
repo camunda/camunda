@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
@@ -23,9 +24,13 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.sort.IncidentProcessInstanceStatisticsByErrorSort;
 import io.camunda.search.sort.IncidentSort;
+import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -314,5 +319,239 @@ public class IncidentIT {
     assertThat(searchResult.items()).hasSize(2);
     assertThat(searchResult.items().stream().map(IncidentEntity::incidentKey))
         .containsExactlyInAnyOrder(item1.incidentKey(), item3.incidentKey());
+  }
+
+  @TestTemplate
+  public void shouldFindIncidentProcessInstanceStatisticsByError(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentProcessInstanceStatisticsByErrorDbReader reader =
+        rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader();
+
+    final var error1 = "error-fail-1";
+    final var error2 = "error-fail-2";
+    final var error1Hash = error1.hashCode();
+    final var error2Hash = error2.hashCode();
+
+    // given: multiple ACTIVE incidents across distinct process instances, grouped by error message
+    // error1: 2 distinct process instances
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(nextKey())
+                .errorMessage(error1)
+                .errorMessageHash(error1Hash));
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(nextKey())
+                .errorMessage(error1)
+                .errorMessageHash(error1Hash));
+
+    // error2: 1 distinct process instance
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(nextKey())
+                .errorMessage(error2)
+                .errorMessageHash(error2Hash));
+
+    // Same process instance as for error2 should not increase the distinct count
+    final var duplicatedProcessInstanceKey = nextKey();
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(duplicatedProcessInstanceKey)
+                .errorMessage(error2)
+                .errorMessageHash(error2Hash));
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(duplicatedProcessInstanceKey)
+                .errorMessage(error2)
+                .errorMessageHash(error2Hash));
+
+    // RESOLVED incidents must not be counted
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.RESOLVED)
+                .processInstanceKey(nextKey())
+                .errorMessage(error1)
+                .errorMessageHash(error1Hash));
+
+    // when
+    final var result =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByErrorQuery.of(b -> b), ResourceAccessChecks.disabled());
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.total()).isEqualTo(2);
+
+    assertThat(result.items())
+        .extracting(
+            IncidentProcessInstanceStatisticsByErrorEntity::errorHashCode,
+            IncidentProcessInstanceStatisticsByErrorEntity::errorMessage,
+            IncidentProcessInstanceStatisticsByErrorEntity::activeInstancesWithErrorCount)
+        .containsExactlyInAnyOrder(
+            org.assertj.core.api.Assertions.tuple(error1Hash, error1, 2L),
+            org.assertj.core.api.Assertions.tuple(error2Hash, error2, 2L));
+  }
+
+  @TestTemplate
+  public void shouldFindIncidentProcessInstanceStatisticsByErrorWithSortAndPagination(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentProcessInstanceStatisticsByErrorDbReader reader =
+        rdbmsService.getIncidentProcessInstanceStatisticsByErrorDbReader();
+
+
+    // Seed 5 distinct error groups with different distinct PI counts
+    // counts: D=5, B=4, E=3, A=2, C=1
+    createActiveIncidentsForError(rdbmsWriters, "error-a", 2);
+    createActiveIncidentsForError(rdbmsWriters, "error-b", 4);
+    createActiveIncidentsForError(rdbmsWriters, "error-c", 1);
+    createActiveIncidentsForError(rdbmsWriters, "error-d", 5);
+    createActiveIncidentsForError(rdbmsWriters, "error-e", 3);
+
+    // add some noise that must not affect results
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.RESOLVED)
+                .processInstanceKey(nextKey())
+                .errorMessage("error-d")
+                .errorMessageHash("error-d".hashCode()));
+
+    final var sort =
+        IncidentProcessInstanceStatisticsByErrorSort.of(
+            s -> s.activeInstancesWithErrorCount().desc().errorMessage().asc());
+
+    final var fullResult =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByErrorQuery.of(b -> b.sort(sort).page(p -> p.size(10))),
+            ResourceAccessChecks.disabled());
+
+    assertThat(fullResult.total()).isEqualTo(5);
+    assertThat(fullResult.items()).hasSize(5);
+
+    // verify deterministic ordering
+    assertThat(fullResult.items())
+        .extracting(
+            IncidentProcessInstanceStatisticsByErrorEntity::errorMessage,
+            IncidentProcessInstanceStatisticsByErrorEntity::activeInstancesWithErrorCount)
+        .containsExactly(
+            org.assertj.core.api.Assertions.tuple("error-d", 5L),
+            org.assertj.core.api.Assertions.tuple("error-b", 4L),
+            org.assertj.core.api.Assertions.tuple("error-e", 3L),
+            org.assertj.core.api.Assertions.tuple("error-a", 2L),
+            org.assertj.core.api.Assertions.tuple("error-c", 1L));
+
+    // pagination: first page size 2
+    final var firstPage =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByErrorQuery.of(b -> b.sort(sort).page(p -> p.size(2))),
+            ResourceAccessChecks.disabled());
+
+    assertThat(firstPage.total()).isEqualTo(5);
+    assertThat(firstPage.items()).hasSize(2);
+    assertThat(firstPage.items())
+        .extracting(
+            IncidentProcessInstanceStatisticsByErrorEntity::errorMessage,
+            IncidentProcessInstanceStatisticsByErrorEntity::activeInstancesWithErrorCount)
+        .containsExactly(
+            org.assertj.core.api.Assertions.tuple("error-d", 5L),
+            org.assertj.core.api.Assertions.tuple("error-b", 4L));
+
+    // next page after cursor, size 2
+    final var secondPage =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByErrorQuery.of(
+                b -> b.sort(sort).page(p -> p.size(2).after(firstPage.endCursor()))),
+            ResourceAccessChecks.disabled());
+
+    assertThat(secondPage.total()).isEqualTo(5);
+    assertThat(secondPage.items()).hasSize(2);
+    assertThat(secondPage.items())
+        .extracting(
+            IncidentProcessInstanceStatisticsByErrorEntity::errorMessage,
+            IncidentProcessInstanceStatisticsByErrorEntity::activeInstancesWithErrorCount)
+        .containsExactly(
+            org.assertj.core.api.Assertions.tuple("error-e", 3L),
+            org.assertj.core.api.Assertions.tuple("error-a", 2L));
+
+    // last page
+    final var lastPage =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByErrorQuery.of(
+                b -> b.sort(sort).page(p -> p.size(10).after(secondPage.endCursor()))),
+            ResourceAccessChecks.disabled());
+
+    assertThat(lastPage.total()).isEqualTo(5);
+    assertThat(lastPage.items())
+        .extracting(
+            IncidentProcessInstanceStatisticsByErrorEntity::errorMessage,
+            IncidentProcessInstanceStatisticsByErrorEntity::activeInstancesWithErrorCount)
+        .containsExactly(org.assertj.core.api.Assertions.tuple("error-c", 1L));
+  }
+
+  private static void createActiveIncidentsForError(
+      final RdbmsWriters rdbmsWriters, final String errorMessage, final int distinctInstances) {
+    final var hash = errorMessage.hashCode();
+
+    Long firstProcessInstanceKey = null;
+
+    for (int i = 0; i < distinctInstances; i++) {
+      final var processInstanceKey = nextKey();
+      if (firstProcessInstanceKey == null) {
+        firstProcessInstanceKey = processInstanceKey;
+      }
+
+      createAndSaveIncident(
+          rdbmsWriters,
+          b ->
+              b.state(IncidentEntity.IncidentState.ACTIVE)
+                  .processInstanceKey(processInstanceKey)
+                  .errorMessage(errorMessage)
+                  .errorMessageHash(hash));
+    }
+
+    // additional incidents for an existing PI must not increase distinct count
+    if (firstProcessInstanceKey == null) {
+      firstProcessInstanceKey = nextKey();
+      final long initialKey = firstProcessInstanceKey;
+      createAndSaveIncident(
+          rdbmsWriters,
+          b ->
+              b.state(IncidentEntity.IncidentState.ACTIVE)
+                  .processInstanceKey(initialKey)
+                  .errorMessage(errorMessage)
+                  .errorMessageHash(hash));
+    }
+
+    final long duplicateKey = firstProcessInstanceKey;
+
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(duplicateKey)
+                .errorMessage(errorMessage)
+                .errorMessageHash(hash));
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.state(IncidentEntity.IncidentState.ACTIVE)
+                .processInstanceKey(duplicateKey)
+                .errorMessage(errorMessage)
+                .errorMessageHash(hash));
   }
 }
