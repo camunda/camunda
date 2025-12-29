@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -66,6 +67,7 @@ final class ElasticsearchExporterTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void shouldNotFailOnOpenIfElasticIsUnreachable() {
     // given
     final var exporter = new ElasticsearchExporter();
@@ -73,7 +75,7 @@ final class ElasticsearchExporterTest {
 
     // when
     exporter.open(controller);
-    final Record mockRecord = mock(Record.class);
+    final Record<ProcessInstanceRecordValue> mockRecord = mock(Record.class);
     when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
