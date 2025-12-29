@@ -64,3 +64,4 @@ export {
   createMammalProcessInstanceAndDeployMammalDecision,
   type DecisionInstance,
 } from './decision-instance-requestHelpers';
+export {createProcessInstanceAndRetrieveTimeStamp} from './clock-requestHelpers';
