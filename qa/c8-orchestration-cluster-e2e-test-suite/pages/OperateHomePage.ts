@@ -19,6 +19,8 @@ class OperateHomePage {
   readonly variableValueInput: Locator;
   readonly saveVariableButton: Locator;
   readonly editVariableSpinner: Locator;
+  readonly settingsButton: Locator;
+  readonly logoutButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -36,6 +38,8 @@ class OperateHomePage {
       .getByTestId('variable-operation-spinner')
       .locator('circle')
       .nth(1);
+    this.settingsButton = page.getByRole('button', {name: 'Open Settings'});
+    this.logoutButton = page.getByRole('button', {name: 'Log out'});
   }
 
   async clickProcessesTab(): Promise<void> {
@@ -69,6 +73,11 @@ class OperateHomePage {
 
   async clickSaveVariableButton(): Promise<void> {
     await this.saveVariableButton.click();
+  }
+
+  async logout(): Promise<void> {
+    await this.settingsButton.click();
+    await this.logoutButton.click();
   }
 }
 
