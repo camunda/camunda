@@ -291,23 +291,4 @@
     GROUP BY i.ERROR_MESSAGE_HASH, i.ERROR_MESSAGE
   </sql>
 
-  <select id="findOne" parameterType="java.lang.Long" resultMap="io.camunda.db.rdbms.sql.IncidentMapper.searchResultMap">
-    SELECT
-      i.INCIDENT_KEY,
-      i.FLOW_NODE_INSTANCE_KEY,
-      i.FLOW_NODE_ID,
-      i.PROCESS_INSTANCE_KEY,
-      i.PROCESS_DEFINITION_ID,
-      i.PROCESS_DEFINITION_KEY,
-      i.ERROR_MESSAGE,
-      i.ERROR_MESSAGE_HASH,
-      i.ERROR_TYPE,
-      i.STATE,
-      i.CREATION_DATE,
-      i.JOB_KEY,
-      i.TENANT_ID
-    FROM ${prefix}INCIDENT i
-    WHERE i.INCIDENT_KEY = #{incidentKey}
-  </select>
-
 </mapper>
