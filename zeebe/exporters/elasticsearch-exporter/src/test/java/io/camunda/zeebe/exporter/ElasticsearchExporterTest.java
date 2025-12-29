@@ -111,7 +111,7 @@ final class ElasticsearchExporterTest {
   @Test
   void shouldAcceptVariableWhenNameMatchesInclusionList() {
     // given
-    config.index.variableNameInclusion = " foo,bar ";
+    config.index.variableNameInclusion = " foo.*;bar ";
     exporter.configure(context);
 
     final RecordFilter filter = context.getRecordFilter();

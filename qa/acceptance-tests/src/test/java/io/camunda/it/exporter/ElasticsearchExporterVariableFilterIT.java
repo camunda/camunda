@@ -36,7 +36,7 @@ final class ElasticsearchExporterVariableFilterIT {
 
   public static final String TEST_PREFIX = "test-prefix";
   private static final String EXCLUSION_PROCESS = "exclusion-process";
-  private static final String INCLUDED_ALLOWED = "included,allowed";
+  private static final String INCLUDED_ALLOWED = "included.*;allowed.*";
   private ElasticsearchContainer elasticsearchContainer;
   private TestCamundaApplication testCamundaApplication;
   private String esUrl;

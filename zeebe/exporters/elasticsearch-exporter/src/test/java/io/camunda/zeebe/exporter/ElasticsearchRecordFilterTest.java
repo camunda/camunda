@@ -27,7 +27,7 @@ final class ElasticsearchRecordFilterTest {
   void shouldAcceptVariableWhenNameMatchesInclusionPrefix() {
     // given
     final var config = new ElasticsearchExporterConfiguration();
-    config.index.variableNameInclusion = "included,allowed";
+    config.index.variableNameInclusion = "included.*;allowed";
     final var filter = createFilter(config);
 
     final var variableValue =
@@ -47,7 +47,7 @@ final class ElasticsearchRecordFilterTest {
   void shouldNotAcceptVariableWhenNameDoesNotMatchInclusionPrefix() {
     // given
     final var config = new ElasticsearchExporterConfiguration();
-    config.index.variableNameInclusion = "included,allowed";
+    config.index.variableNameInclusion = "included.*;allowed.*";
     final var filter = createFilter(config);
 
     final var variableValue =
@@ -66,13 +66,14 @@ final class ElasticsearchRecordFilterTest {
   @ParameterizedTest(name = "{0}")
   @CsvSource(
       value = {
-        "included | includedVariable | true",
-        "included | includedAnotherName | true",
+        "included.* | includedVariable | true",
+        "included.* | includedAnotherName | true",
         "included | included | true",
-        "allowed | allowedVariable | true",
-        "allowed | allowedAnotherName | true",
-        "var | variable | true",
-        "var | anotherVar | false",
+        "allowed.* | allowedVariable | true",
+        "allowed.* | allowedAnotherName | true",
+        "var.* | variable | true",
+        "var.* | anotherVar | false",
+        ".*Var.* | anotherVar | true",
       },
       delimiter = '|')
   void shouldFilterVariablesByNamePrefix(
@@ -119,7 +120,7 @@ final class ElasticsearchRecordFilterTest {
   void shouldTrimWhitespaceFromInclusionPrefixes() {
     // given
     final var config = new ElasticsearchExporterConfiguration();
-    config.index.variableNameInclusion = "  included  , allowed  ";
+    config.index.variableNameInclusion = "  included.*  ; allowed  ";
     final var filter = createFilter(config);
 
     final var variableValue =
@@ -181,7 +182,7 @@ final class ElasticsearchRecordFilterTest {
     // given
     final var config = new ElasticsearchExporterConfiguration();
     config.index.variable = true;
-    config.index.variableNameInclusion = "included,allowed";
+    config.index.variableNameInclusion = "included.*;allowed.*";
     final var filter = createFilter(config);
 
     final var includedVar =
