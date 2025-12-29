@@ -1030,7 +1030,9 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  public static Either<List<String>, io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter>
+  public static Either<
+          List<String>,
+          io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter>
       toIncidentProcessInstanceStatisticsByDefinitionFilter(
           final IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
     if (filter == null) {
@@ -1043,8 +1045,6 @@ public class SearchQueryFilterMapper {
 
     return Either.right(
         io.camunda.search.filter.FilterBuilders.incidentProcessInstanceStatisticsByDefinition(
-            f ->
-                f.state(IncidentState.ACTIVE.name())
-                    .errorHashCode(filter.getErrorHashCode())));
+            f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(filter.getErrorHashCode())));
   }
 }

@@ -54,9 +54,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
     // given
     final var query =
         IncidentProcessInstanceStatisticsByDefinitionQuery.of(
-            q ->
-                q.filter(
-                    f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(123)));
+            q -> q.filter(f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(123)));
 
     // when
     final var searchRequest = transformQuery(query);
@@ -181,8 +179,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
     final var query =
         IncidentProcessInstanceStatisticsByDefinitionQuery.of(
             q ->
-                q.filter(
-                        f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(123))
+                q.filter(f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(123))
                     .sort(sort)
                     .page(
                         new SearchQueryPage(

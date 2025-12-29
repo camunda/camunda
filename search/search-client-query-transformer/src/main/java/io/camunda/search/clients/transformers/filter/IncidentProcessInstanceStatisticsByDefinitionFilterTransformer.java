@@ -8,8 +8,8 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_MSG_HASH;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.STATE;
@@ -29,10 +29,9 @@ public class IncidentProcessInstanceStatisticsByDefinitionFilterTransformer
   }
 
   @Override
-  public SearchQuery toSearchQuery(final IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
-    return and(
-        term(STATE, filter.state()),
-        term(ERROR_MSG_HASH, filter.errorHashCode()));
+  public SearchQuery toSearchQuery(
+      final IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
+    return and(term(STATE, filter.state()), term(ERROR_MSG_HASH, filter.errorHashCode()));
   }
 
   @Override

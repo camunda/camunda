@@ -32,27 +32,27 @@ class IncidentProcessInstanceStatisticsByDefinitionDocumentReaderTest {
     final var executor = mock(SearchClientBasedQueryExecutor.class);
     final var indexDescriptor = mock(IndexDescriptor.class);
 
-    final var reader = new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(executor, indexDescriptor);
+    final var reader =
+        new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(executor, indexDescriptor);
 
     final var rawItem =
         new IncidentProcessInstanceStatisticsByDefinitionEntity(null, 1L, null, null, "t1", 3L);
 
-    when(
-            executor.aggregateWithQueryResult(
-                any(IncidentProcessInstanceStatisticsByDefinitionQuery.class),
-                eq(IncidentProcessInstanceStatisticsByDefinitionAggregationResult.class),
-                any(ResourceAccessChecks.class),
-                any()))
+    when(executor.aggregateWithQueryResult(
+            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class),
+            eq(IncidentProcessInstanceStatisticsByDefinitionAggregationResult.class),
+            any(ResourceAccessChecks.class),
+            any()))
         .thenReturn(SearchQueryResult.of(rawItem));
 
     final var procDef =
-        new ProcessDefinitionEntity(1L, "Order process", "order-process-id", null, null, 1, null, "t1", null);
+        new ProcessDefinitionEntity(
+            1L, "Order process", "order-process-id", null, null, 1, null, "t1", null);
 
-    when(
-            executor.search(
-                any(ProcessDefinitionQuery.class),
-                eq(ProcessEntity.class),
-                any(ResourceAccessChecks.class)))
+    when(executor.search(
+            any(ProcessDefinitionQuery.class),
+            eq(ProcessEntity.class),
+            any(ResourceAccessChecks.class)))
         .thenReturn(SearchQueryResult.of(procDef));
 
     final var result =

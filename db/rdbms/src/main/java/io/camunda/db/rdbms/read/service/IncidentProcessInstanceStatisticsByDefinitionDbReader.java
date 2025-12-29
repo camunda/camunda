@@ -29,7 +29,8 @@ public class IncidentProcessInstanceStatisticsByDefinitionDbReader
 
   private final IncidentMapper incidentMapper;
 
-  public IncidentProcessInstanceStatisticsByDefinitionDbReader(final IncidentMapper incidentMapper) {
+  public IncidentProcessInstanceStatisticsByDefinitionDbReader(
+      final IncidentMapper incidentMapper) {
     super(IncidentProcessInstanceStatisticsByDefinitionSearchColumn.values());
     this.incidentMapper = incidentMapper;
   }
