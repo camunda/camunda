@@ -108,7 +108,6 @@ test.describe('Child Process Instance Migration', () => {
     page,
     operateFiltersPanelPage,
     operateProcessesPage,
-    operateProcessInstancePage,
     operateProcessMigrationModePage,
     operateOperationPanelPage,
   }) => {
