@@ -52,12 +52,6 @@ test.describe('Process Instance Batch Modification', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Meow', async () => {
-    await test.step('Just a placeholder test', async () => {
-      console.log('Meow');
-    });
-  });
-
   test('Move Operation', async ({
     page,
     operateProcessesPage,
