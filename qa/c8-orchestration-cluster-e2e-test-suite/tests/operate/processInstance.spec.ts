@@ -159,7 +159,15 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Expect all incidents resolved', async () => {
-      await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await sleep(500);
+        },
+      });
       await expect(operateProcessInstancePage.incidentsTable).toBeHidden();
       await expect(operateProcessInstancePage.completedIcon).toBeVisible();
     });
