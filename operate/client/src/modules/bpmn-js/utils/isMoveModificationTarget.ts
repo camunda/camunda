@@ -10,12 +10,23 @@ import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import isNil from 'lodash/isNil';
 import {isAttachedToAnEventBasedGateway} from './isAttachedToAnEventBasedGateway';
 import {hasType} from './hasType';
+import {hasEventType} from './hasEventType';
 
 const isMoveModificationTarget = (
   businessObject: BusinessObject | null | undefined,
 ) => {
+  if (isNil(businessObject)) {
+    return false;
+  }
+
+  // this is temporary until #40960 is implemented
+  if (
+    hasEventType({businessObject, types: ['bpmn:ConditionalEventDefinition']})
+  ) {
+    return false;
+  }
+
   return (
-    !isNil(businessObject) &&
     !isAttachedToAnEventBasedGateway(businessObject) &&
     !hasType({businessObject, types: ['bpmn:StartEvent', 'bpmn:BoundaryEvent']})
   );

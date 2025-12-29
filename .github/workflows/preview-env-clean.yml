@@ -71,7 +71,7 @@ jobs:
         github-token: ${{ github.token }}
         label-selector: |
           preview=smoke-test
-          repo=camunda/camunda
+          repo=camunda_camunda
         min-age: 12h
 
     - name: Observe build status

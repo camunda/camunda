@@ -15,8 +15,9 @@ on:
         type: string
       labels:
         description: |
-          Additional ArgoCD app labels (comma or newline-separated key=value pairs)
-          e.g., "preview=smoke-test,repo=camunda/camunda"
+          Additional ArgoCD app labels (comma or newline-separated key=value pairs).
+          Values must be valid Kubernetes labels: alphanumeric, '-', '_', '.' only (no '/').
+          e.g., "preview=smoke-test,repo=camunda_camunda"
         required: false
         type: string
         default: ''
@@ -173,8 +174,8 @@ jobs:
     - name: Determine Argocd Arguments for c8sm
       shell: bash
       run: |
-        # Normalize labels: support both newline and comma separation
-        labels_normalized=$(echo "${labels}" | tr '\n' ',' | sed 's/,,*/,/g' | sed 's/^,//;s/,$//')
+        # Convert comma/newline-separated labels to multiple --label arguments
+        label_args=$(echo "${labels}" | tr ',' '\n' | sed '/^$/d; s/^/--label /' | tr '\n' ' ')
         echo "argocd_arguments=--dest-namespace ${app_name} \
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
@@ -184,7 +185,7 @@ jobs:
           --name ${app_name} \
           --revision ${revision} \
           --helm-set git.branch=${revision} \
-          --upsert ${labels_normalized:+--label ${labels_normalized}}" >> "$GITHUB_ENV"
+          --upsert ${label_args}" >> "$GITHUB_ENV"
       env:
         docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
         labels: ${{ inputs.labels }}

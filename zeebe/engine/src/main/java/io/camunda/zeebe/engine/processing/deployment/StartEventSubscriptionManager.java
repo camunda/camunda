@@ -111,11 +111,13 @@ public class StartEventSubscriptionManager {
   private void closeConditionalStartEventSubscriptions(final DeployedProcess deployedProcess) {
     conditionalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
         deployedProcess.getKey(),
-        subscription ->
-            stateWriter.appendFollowUpEvent(
-                subscription.getKey(),
-                ConditionalSubscriptionIntent.DELETED,
-                subscription.getRecord()));
+        subscription -> {
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(),
+              ConditionalSubscriptionIntent.DELETED,
+              subscription.getRecord());
+          return true;
+        });
   }
 
   private void closeMessageExistingStartEventSubscriptions(final ProcessMetadata processRecord) {
