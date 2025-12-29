@@ -7,13 +7,13 @@
  */
 package io.camunda.search.aggregation;
 
-import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AggregationPaginated;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 
 public record IncidentProcessInstanceStatisticsByDefinitionAggregation(
-    IncidentFilter filter,
+    IncidentProcessInstanceStatisticsByDefinitionFilter filter,
     IncidentProcessInstanceStatisticsByDefinitionSort sort,
     SearchQueryPage page)
     implements AggregationBase, AggregationPaginated {

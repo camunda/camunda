@@ -541,7 +541,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     final var result =
         new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
-            .filter(f -> f.errorMessageHashes(ERROR_HASH_CODE).states(IncidentState.ACTIVE.name()))
+            .filter(f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
             .build();
     verify(incidentServices).searchIncidentProcessInstanceStatisticsByDefinition(result);
   }
@@ -700,7 +700,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .searchIncidentProcessInstanceStatisticsByDefinition(
             new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
                 .filter(
-                    f -> f.errorMessageHashes(ERROR_HASH_CODE).states(IncidentState.ACTIVE.name()))
+                    f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
                 .sort(
                     s ->
                         s.processDefinitionKey()
@@ -748,7 +748,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .searchIncidentProcessInstanceStatisticsByDefinition(
             new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
                 .filter(
-                    f -> f.errorMessageHashes(ERROR_HASH_CODE).states(IncidentState.ACTIVE.name()))
+                    f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
                 .page(p -> p.from(0).size(5))
                 .build());
   }
