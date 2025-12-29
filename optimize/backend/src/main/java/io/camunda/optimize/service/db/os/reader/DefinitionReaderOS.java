@@ -220,7 +220,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                     .toQuery())
             .size(0)
             .aggregations(
-                Collections.singletonMap(ENGINE_AGGREGATION, enginesAggregation._toAggregation()));
+                Collections.singletonMap(ENGINE_AGGREGATION, enginesAggregation.toAggregation()));
 
     final String errorMessage =
         String.format(
@@ -288,8 +288,8 @@ public class DefinitionReaderOS implements DefinitionReader {
         Aggregation.of(
             a ->
                 a.composite(keyAndTypeAndTenantAggregation)
-                    .aggregations(NAME_AGGREGATION, nameAggregation._toAggregation())
-                    .aggregations(ENGINE_AGGREGATION, enginesAggregation._toAggregation()));
+                    .aggregations(NAME_AGGREGATION, nameAggregation.toAggregation())
+                    .aggregations(ENGINE_AGGREGATION, enginesAggregation.toAggregation()));
 
     final Map<String, List<CompositeBucket>> keyAndTypeAggBucketsByTenantId = new HashMap<>();
 
@@ -304,7 +304,7 @@ public class DefinitionReaderOS implements DefinitionReader {
         .setPathToAggregation(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION)
         .setCompositeBucketConsumer(
             bucket -> {
-              final String tenantId = (bucket.key()).get(TENANT_AGGREGATION).to(String.class);
+              final String tenantId = (bucket.key()).get(TENANT_AGGREGATION).stringValue();
               if (!keyAndTypeAggBucketsByTenantId.containsKey(tenantId)) {
                 keyAndTypeAggBucketsByTenantId.put(tenantId, new ArrayList<>());
               }
@@ -323,9 +323,9 @@ public class DefinitionReaderOS implements DefinitionReader {
                   .map(
                       parsedBucket -> {
                         final String indexAliasName =
-                            parsedBucket.key().get(DEFINITION_TYPE_AGGREGATION).to(String.class);
+                            parsedBucket.key().get(DEFINITION_TYPE_AGGREGATION).stringValue();
                         final String definitionKey =
-                            parsedBucket.key().get(DEFINITION_KEY_AGGREGATION).to(String.class);
+                            parsedBucket.key().get(DEFINITION_KEY_AGGREGATION).stringValue();
                         final String definitionName =
                             parsedBucket
                                 .aggregations()
@@ -430,7 +430,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                     AggregationDSL.withSubaggregations(
                         versionAggregation,
                         Collections.singletonMap(
-                            VERSION_TAG_AGGREGATION, versionTagAggregation._toAggregation()))))
+                            VERSION_TAG_AGGREGATION, versionTagAggregation.toAggregation()))))
             .size(0);
 
     final String errorMessage =
@@ -645,10 +645,10 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     subAggregations.put(
         "versionForSorting",
-        AggregationBuilders.min().script(numericVersionScript).build()._toAggregation());
+        AggregationBuilders.min().script(numericVersionScript).build().toAggregation());
 
     subAggregations.put(
-        "topHits", AggregationDSL.topHitsAggregation(1)._toAggregation() // Use size=1
+        "topHits", AggregationDSL.topHitsAggregation(1).toAggregation() // Use size=1
         );
 
     final Aggregation definitionAgg =
@@ -711,7 +711,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                 AggregationBuilders.min()
                     .script(createDefaultScript("Integer.parseInt(doc['version'].value)"))
                     .build()
-                    ._toAggregation()));
+                    .toAggregation()));
 
     // 2.3 group by engine
     final TermsAggregation enginesAggregation =
@@ -745,9 +745,9 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     final Aggregation.Builder complexKeyAndTypeAggregationBuilder =
         new Aggregation.Builder()
-            .aggregations(TENANT_AGGREGATION, tenantsAggregation._toAggregation())
+            .aggregations(TENANT_AGGREGATION, tenantsAggregation.toAggregation())
             .aggregations(NAME_AGGREGATION, nameAggregationSub)
-            .aggregations(ENGINE_AGGREGATION, enginesAggregation._toAggregation());
+            .aggregations(ENGINE_AGGREGATION, enginesAggregation.toAggregation());
 
     final List<CompositeBucket> keyAndTypeAggBuckets =
         performSearchAndCollectAllKeyAndTypeBuckets(
@@ -761,9 +761,9 @@ public class DefinitionReaderOS implements DefinitionReader {
         .map(
             keyAndTypeAgg -> {
               final String indexAliasName =
-                  keyAndTypeAgg.key().get(DEFINITION_TYPE_AGGREGATION).to(String.class);
+                  keyAndTypeAgg.key().get(DEFINITION_TYPE_AGGREGATION).stringValue();
               final String definitionKey =
-                  keyAndTypeAgg.key().get(DEFINITION_KEY_AGGREGATION).to(String.class);
+                  keyAndTypeAgg.key().get(DEFINITION_KEY_AGGREGATION).stringValue();
               final StringTermsAggregate tenantResult =
                   keyAndTypeAgg.aggregations().get(TENANT_AGGREGATION).sterms();
               final StringTermsAggregate nameResult =
@@ -841,9 +841,9 @@ public class DefinitionReaderOS implements DefinitionReader {
     while (!keyAndTypeAggregationResult.buckets().array().isEmpty()) {
       keyAndTypeAggBuckets.addAll(keyAndTypeAggregationResult.buckets().array());
 
-      final Map<String, String> keysToTypes =
+      final Map<String, FieldValue> keysToTypes =
           keyAndTypeAggregationResult.afterKey().entrySet().stream()
-              .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().to(String.class)));
+              .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue()));
 
       final Aggregation.Builder keyTypeAggregationTempBuilder =
           new Aggregation.Builder().aggregations(keyTypeAggregation.aggregations());

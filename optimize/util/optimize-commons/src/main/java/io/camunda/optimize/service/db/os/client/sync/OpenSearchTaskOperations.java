@@ -9,12 +9,11 @@ package io.camunda.optimize.service.db.os.client.sync;
 
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.apache.hc.core5.http.ConnectionClosedException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
-import org.opensearch.client.opensearch.tasks.Info;
+import org.opensearch.client.opensearch.tasks.TaskInfo;
 
 public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
 
@@ -33,7 +32,7 @@ public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
   }
 
   @Override
-  public Map<String, Info> tasksWithActions(final List<String> actions) {
+  public List<TaskInfo> tasksWithActions(final List<String> actions) {
     return safe(
         () -> super.tasksWithActions(actions),
         e ->

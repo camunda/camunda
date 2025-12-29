@@ -164,7 +164,8 @@ public class DateAggregationServiceOS extends DateAggregationService {
   private Map<String, Map<String, Aggregate>> multiBucketAggregation(final Aggregate aggregate) {
     if (aggregate.isDateHistogram()) {
       return aggregate.dateHistogram().buckets().array().stream()
-          .collect(Collectors.toMap(DateHistogramBucket::key, DateHistogramBucket::aggregations));
+          .collect(
+              Collectors.toMap(b -> String.valueOf(b.key()), DateHistogramBucket::aggregations));
     } else if (aggregate.isDateRange()) {
       return aggregate.dateRange().buckets().array().stream()
           .collect(Collectors.toMap(RangeBucket::key, RangeBucket::aggregations));

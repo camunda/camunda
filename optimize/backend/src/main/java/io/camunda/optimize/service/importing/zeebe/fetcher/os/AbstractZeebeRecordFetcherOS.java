@@ -70,9 +70,8 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
     final SearchResponse<T> searchResponse =
         osClient.getOpenSearchClient().search(builder.build(), getRecordDtoClass());
     if (!searchResponse.shards().failures().isEmpty()
-        || (searchResponse.shards().total().intValue()
-            > (searchResponse.shards().failures().size()
-                + searchResponse.shards().successful().intValue()))) {
+        || (searchResponse.shards().total()
+            > (searchResponse.shards().failures().size() + searchResponse.shards().successful()))) {
       throw new OptimizeRuntimeException("Not all shards could be searched successfully");
     }
     return searchResponse.hits().hits().stream().map(Hit::source).toList();

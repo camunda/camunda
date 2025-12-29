@@ -140,7 +140,7 @@ public class DashboardWriterOS implements DashboardWriter {
 
     final UpdateResponse<Void> updateResponse = osClient.update(request, errorMessage);
 
-    if (updateResponse.shards().failed().intValue() > 0) {
+    if (updateResponse.shards().failed() > 0) {
       LOG.error(
           "Was not able to update dashboard with id [{}] and name [{}].", id, dashboard.getName());
       throw new OptimizeRuntimeException("Was not able to update dashboard!");

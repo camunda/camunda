@@ -94,7 +94,7 @@ public class AlertWriterOS implements AlertWriter {
               return errorMessage + e.getMessage();
             });
 
-    if (response.shards().failed().intValue() > 0) {
+    if (response.shards().failed() > 0) {
       final String errorMessage =
           format(
               "Was not able to update alert with id [%s] and name [%s]. Error during the update in Opensearch.",

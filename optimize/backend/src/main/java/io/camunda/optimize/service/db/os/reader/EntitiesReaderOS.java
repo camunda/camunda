@@ -180,7 +180,7 @@ public class EntitiesReaderOS implements EntitiesReader {
             .map(
                 collectionId -> {
                   final Aggregation termsAggregation =
-                      new TermsAggregation.Builder().field(INDEX_FIELD).build()._toAggregation();
+                      new TermsAggregation.Builder().field(INDEX_FIELD).build().toAggregation();
                   final Aggregation aggregation =
                       new Aggregation.Builder()
                           .filter(term(COLLECTION_ID, collectionId))

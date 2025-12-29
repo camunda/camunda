@@ -702,7 +702,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     final Aggregation subAggregation =
         AggregationDSL.valueCountAggregation(
                 String.join(".", FLOW_NODE_INSTANCES, ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID))
-            ._toAggregation();
+            .toAggregation();
     final NestedAggregation termsAgg =
         new NestedAggregation.Builder().path(FLOW_NODE_INSTANCES).build();
     final Aggregation agg =
@@ -728,7 +728,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
             .aggregations()
             .get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
             .valueCount();
-    return (long) countAggregator.value();
+    return Math.round(countAggregator.value());
   }
 
   @Override

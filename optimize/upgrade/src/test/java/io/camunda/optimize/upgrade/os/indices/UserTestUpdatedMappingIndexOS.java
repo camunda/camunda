@@ -18,6 +18,6 @@ public class UserTestUpdatedMappingIndexOS extends UserTestUpdatedMappingIndex<B
   public IndexSettings.Builder addStaticSetting(
       final String key, final int value, final IndexSettings.Builder indexSettingsBuilder)
       throws IOException {
-    return indexSettingsBuilder.numberOfShards(Integer.toString(value));
+    return indexSettingsBuilder.numberOfShards(value);
   }
 }

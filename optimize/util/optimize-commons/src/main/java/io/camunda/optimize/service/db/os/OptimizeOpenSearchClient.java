@@ -53,11 +53,12 @@ import java.util.stream.Collectors;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
-import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.BulkByScrollFailure;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -231,7 +232,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
 
     if (taskResponse.response() != null) {
-      final List<String> failures = taskResponse.response().failures();
+      final List<BulkByScrollFailure> failures = taskResponse.response().failures();
       if (failures != null && !failures.isEmpty()) {
         LOG.error("Opensearch task contains failures: {}", failures);
         throw new OptimizeRuntimeException(failures.toString());
@@ -243,14 +244,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     getOpenSearchClient().indices().create(request);
   }
 
-  public final void close() {
-    Optional.of(openSearchClient).ifPresent(OpenSearchClient::shutdown);
-    Optional.of(openSearchAsyncClient).ifPresent(OpenSearchAsyncClient::shutdown);
-  }
-
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    close();
     final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
     openSearchClient =
         OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
@@ -938,7 +933,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
             .query(filterQuery)
             .conflicts(Conflicts.Proceed)
             .script(updateScript)
-            .refresh(true);
+            .refresh(Refresh.True);
     final Function<Exception, String> errorMessage =
         e ->
             format(
@@ -959,7 +954,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
     waitUntilTaskIsFinished(taskId, updateItemIdentifier);
 
-    final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
+    final Status taskStatus = richOpenSearchClient.task().task(taskId).task().status();
     LOG.debug("Updated [{}] {}.", taskStatus.updated(), updateItemIdentifier);
     return taskStatus.updated() > 0L;
   }
@@ -970,12 +965,13 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final boolean refresh,
       final String... indices) {
     LOG.debug("Deleting {}", deleteItemIdentifier);
+    final Refresh refreshPolicy = refresh ? Refresh.True : Refresh.False;
     final DeleteByQueryRequest.Builder requestBuilder =
         new DeleteByQueryRequest.Builder()
             .index(applyIndexPrefixes(indices))
             .conflicts(Conflicts.Proceed)
             .query(filterQuery)
-            .refresh(refresh);
+            .refresh(refreshPolicy);
     final Function<Exception, String> errorMessage =
         e ->
             format(
@@ -996,7 +992,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
     waitUntilTaskIsFinished(taskId, deleteItemIdentifier);
 
-    final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
+    final Status taskStatus = richOpenSearchClient.task().task(taskId).task().status();
     LOG.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
     return taskStatus.updated() > 0L;
   }
