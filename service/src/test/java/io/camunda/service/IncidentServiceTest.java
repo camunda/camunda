@@ -42,6 +42,7 @@ public final class IncidentServiceTest {
 
   private IncidentServices services;
   private IncidentSearchClient client;
+  private ProcessDefinitionServices processDefinitionServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
 

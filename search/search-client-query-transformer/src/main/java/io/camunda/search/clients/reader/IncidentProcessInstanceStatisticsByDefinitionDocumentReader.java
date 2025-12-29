@@ -46,12 +46,10 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
                 resourceAccessChecks,
                 IncidentProcessInstanceStatisticsByDefinitionAggregationResult::items);
 
-    final var enrichedItems = enrichWithProcessDefinitionData(paginatedResult.items());
-
     return new SearchQueryResult<>(
         paginatedResult.total(),
         paginatedResult.hasMoreTotalItems(),
-        enrichedItems,
+        paginatedResult.items(),
         paginatedResult.startCursor(),
         paginatedResult.endCursor());
   }

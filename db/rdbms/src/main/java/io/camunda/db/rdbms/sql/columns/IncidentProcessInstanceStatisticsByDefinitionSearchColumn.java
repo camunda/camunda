@@ -16,7 +16,7 @@ public enum IncidentProcessInstanceStatisticsByDefinitionSearchColumn
   PROCESS_DEFINITION_NAME("processDefinitionName"),
   PROCESS_DEFINITION_VERSION("processDefinitionVersion"),
   TENANT_ID("tenantId"),
-  ACTIVE_INSTANCE_WITH_ERROR_COUNT("activeInstancesWithErrorCount");
+  ACTIVE_INSTANCES_WITH_ERROR_COUNT("activeInstancesWithErrorCount");
 
   private final String property;
 
