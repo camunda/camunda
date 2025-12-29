@@ -438,14 +438,18 @@ public final class ProtocolFactory {
   }
 
   private Object generateProtocolImplRecord(final Class<?> implClass) {
+    final Object implInstance;
     try {
-      final var implInstance = implClass.getDeclaredConstructor().newInstance();
-      ImplRecordValuePopulator.populate(implInstance, random);
-      return implInstance;
+      implInstance = implClass.getDeclaredConstructor().newInstance();
+    } catch (final NoSuchMethodException e) {
+      throw new IllegalArgumentException(
+          "Implementation class does not have a no-arg constructor: " + implClass, e);
     } catch (final Exception e) {
       throw new RuntimeException(
           "Failed to create and populate implementation record for type: " + implClass, e);
     }
+    ImplRecordValuePopulator.populate(implInstance, random);
+    return implInstance;
   }
 
   private void registerMsgPackValueRandomizers() {

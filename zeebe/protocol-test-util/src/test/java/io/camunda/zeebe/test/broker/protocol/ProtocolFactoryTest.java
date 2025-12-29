@@ -254,11 +254,11 @@ final class ProtocolFactoryTest {
     // Cast to implementation class to access array properties
     final var implValue = (JobRecord) record.getValue();
 
-    // Verify tags array is populated (might be empty but should not be null)
-    assertThat(implValue.getTags()).isNotNull();
+    // Verify tags array is populated
+    assertThat(implValue.getTags()).isNotEmpty();
 
-    // Verify changedAttributes array is populated (might be empty but should not be null)
-    assertThat(implValue.getChangedAttributes()).isNotNull();
+    // Verify changedAttributes array is populated
+    assertThat(implValue.getChangedAttributes()).isNotEmpty();
 
     // If arrays are populated, verify they contain valid data
     if (!implValue.getTags().isEmpty()) {
