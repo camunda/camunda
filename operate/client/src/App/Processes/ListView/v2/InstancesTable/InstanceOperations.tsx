@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useQueryClient} from '@tanstack/react-query';
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
-import {applyOperation as applyOperationV1} from 'modules/api/processInstances/operations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
@@ -53,28 +53,19 @@ const InstanceOperations: React.FC<Props> = ({
     },
   });
 
-  //TODO update with v2 usage in the scope of #33063
   const {mutate: deleteProcessInstance, isPending: isDeletePending} =
-    useMutation({
-      mutationFn: async () => {
-        const response = await applyOperationV1(processInstanceKey, {
-          operationType: 'DELETE_PROCESS_INSTANCE',
-        });
-
-        if (response.isSuccess) {
-          return response.data;
-        }
-        throw new Error(response.statusCode?.toString());
-      },
+    useDeleteProcessInstance(processInstanceKey, {
+      shouldSkipResultCheck: false,
       onSuccess: () => {
         handleOperationSuccess('DELETE_PROCESS_INSTANCE');
       },
       onError: (error) => {
-        const statusCode =
-          error instanceof Error && error.message
-            ? parseInt(error.message, 10)
-            : undefined;
-        handleOperationError(statusCode);
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Failed to delete process instance',
+          subtitle: error.message,
+          isDismissable: true,
+        });
       },
     });
 

@@ -19,13 +19,12 @@ import {Locations} from 'modules/Routes';
 import {useHasActiveOperationItems} from 'modules/queries/batch-operations/useHasActiveOperationItems';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
-import {operationsStore} from 'modules/stores/operations';
 import {type OperationEntityType} from 'modules/types/operate';
 import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import type {OperationConfig} from 'modules/components/Operations/types';
-import {logger} from 'modules/logger';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -52,6 +51,21 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       notificationsStore.displayNotification({
         kind: 'error',
         title: 'Failed to cancel process instance',
+        subtitle: error.message,
+        isDismissable: true,
+      });
+    },
+  });
+
+  const {
+    mutate: deleteProcessInstance,
+    isPending: isDeleteProcessInstancePending,
+  } = useDeleteProcessInstance(processInstance.processInstanceKey, {
+    onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
+    onError: (error) => {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Failed to delete process instance',
         subtitle: error.message,
         isDismissable: true,
       });
@@ -106,21 +120,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
         title: 'Instance deleted',
         isDismissable: true,
       });
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      await operationsStore.applyOperation({
-        instanceId: processInstance.processInstanceKey,
-        payload: {
-          operationType: 'DELETE_PROCESS_INSTANCE',
-        },
-        onError: ({statusCode}) => handleOperationError(statusCode),
-        onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
-      });
-    } catch (error) {
-      logger.error(error);
     }
   };
 
@@ -180,7 +179,8 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   if (!isInstanceActive) {
     operations.push({
       type: 'DELETE_PROCESS_INSTANCE',
-      onExecute: handleDelete,
+      onExecute: deleteProcessInstance,
+      disabled: isDeleteProcessInstancePending,
     });
   }
 
@@ -194,6 +194,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const isLoading =
     hasActiveOperationItems ||
     isCancelProcessInstancePending ||
+    isDeleteProcessInstancePending ||
     isResolveIncidentsPending;
 
   return (
