@@ -140,16 +140,13 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     final var keyQ =
         buildIfPresent(ProcessDefinition.KEY, filter.getKey(), ElasticsearchUtil::termsQuery);
 
-    // Join all queries with AND
     final var andOfAllQueries =
         ElasticsearchUtil.joinWithAnd(
             nameQ, bpmnProcessIdQ, tenantIdQ, versionQ, versionTagQ, keyQ);
 
-    // Optionally wrap with tenant-aware query if needed
     final var finalQuery =
         isTenantAware ? tenantHelper.makeQueryTenantAware(andOfAllQueries) : andOfAllQueries;
 
-    // Set the query on the search request
     searchRequestBuilder.query(finalQuery);
   }
 
