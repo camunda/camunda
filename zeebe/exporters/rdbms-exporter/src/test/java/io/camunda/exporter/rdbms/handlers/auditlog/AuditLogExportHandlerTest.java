@@ -161,6 +161,19 @@ class AuditLogExportHandlerTest {
     verify(transformer).transform(any(), any());
   }
 
+  @Test
+  void shouldHandleNonProcessInstanceRelatedRecords() {
+    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
+
+    handler.export(record);
+
+    verify(writer).create(auditLogCaptor.capture());
+    final AuditLogDbModel entity = auditLogCaptor.getValue();
+
+    assertThat(entity.processInstanceKey()).isNull();
+    verify(transformer).transform(any(), any());
+  }
+
   private void assertCommonEntityFields(final AuditLogDbModel entity, final Record record) {
     assertThat(entity.auditLogKey()).isNotNull();
     assertThat(entity.entityKey()).isEqualTo(String.valueOf(record.getKey()));
@@ -171,6 +184,7 @@ class AuditLogExportHandlerTest {
     assertThat(entity.actorId()).isEqualTo(USERNAME);
     assertThat(entity.tenantId()).isEqualTo(TENANT);
     assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+    assertThat(entity.processInstanceKey()).isEqualTo(value.getProcessInstanceKey());
     assertThat(entity.entityVersion()).isEqualTo(record.getRecordVersion());
     assertThat(entity.entityValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION.value());
     assertThat(entity.entityOperationIntent())

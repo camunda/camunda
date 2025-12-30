@@ -180,6 +180,18 @@ class AuditLogHandlerTest {
     verify(transformer).transform(record, entity);
   }
 
+  @Test
+  void shouldHandleNonProcessInstanceRelatedRecords() {
+    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
+
+    final var entity = new AuditLogEntity().setId(ENTITY_ID);
+
+    handler.updateEntity(record, entity);
+
+    assertThat(entity.getProcessInstanceKey()).isNull();
+    verify(transformer).transform(record, entity);
+  }
+
   private void assertCommonEntityFields(
       final AuditLogEntity entity, final Record record, final String expectedId) {
     assertThat(entity.getId()).isEqualTo(expectedId);
@@ -191,6 +203,7 @@ class AuditLogHandlerTest {
     assertThat(entity.getActorId()).isEqualTo(USERNAME);
     assertThat(entity.getTenantId()).isEqualTo(TENANT);
     assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(value.getProcessInstanceKey());
     assertThat(entity.getEntityVersion()).isEqualTo(record.getRecordVersion());
     assertThat(entity.getEntityValueType())
         .isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION.value());
