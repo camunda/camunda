@@ -62,6 +62,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
@@ -575,6 +576,20 @@ public class CamundaServicesConfiguration {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new ConditionalServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public TopologyServices topologyServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new TopologyServices(
         brokerClient,
         securityContextProvider,
         null,

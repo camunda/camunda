@@ -27,7 +27,7 @@ public class GlobalErrorControllerNoAuthIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker().withAuthorizationsDisabled().withAuthenticatedAccess();
+      new TestStandaloneBroker().withAuthorizationsDisabled();
 
   @Test
   void shouldPass() throws URISyntaxException {
