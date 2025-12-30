@@ -16,7 +16,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.UserTaskProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor.SafetyCheckFailedException;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
@@ -103,15 +105,20 @@ public class ProcessInstanceMigrationUserTaskBehavior {
         sourceProcessDefinition
             .getProcess()
             .getElementById(elementId, ExecutableJobWorkerElement.class);
-    final ExecutableUserTask targetElement =
-        targetProcessDefinition
-            .getProcess()
-            .getElementById(targetElementId, ExecutableUserTask.class);
+
+    final ExecutableUserTask targetUserTask;
+    final AbstractFlowElement flowNodeElement =
+        targetProcessDefinition.getProcess().getElementById(targetElementId);
+    if (flowNodeElement instanceof final ExecutableMultiInstanceBody mi) {
+      targetUserTask = (ExecutableUserTask) mi.getInnerActivity();
+    } else {
+      targetUserTask = (ExecutableUserTask) flowNodeElement;
+    }
 
     // Create new user task properties
     final Map<String, String> customHeaders = job.getCustomHeaders();
     final io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties
-        targetProperties = targetElement.getUserTaskProperties();
+        targetProperties = targetUserTask.getUserTaskProperties();
     final var userTaskProperties = mapUserTaskProperties(customHeaders, targetProperties);
 
     // Create new Zeebe user task
@@ -122,7 +129,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     migrateForm(sourceElement, customHeaders, targetProperties, context, userTaskProperties);
 
     final var userTaskRecord =
-        createNewUserTask(targetProperties, context, userTaskProperties, targetElement);
+        createNewUserTask(targetProperties, context, userTaskProperties, targetUserTask);
 
     assignUser(userTaskProperties, userTaskRecord);
 

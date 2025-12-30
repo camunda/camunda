@@ -1120,6 +1120,94 @@ public class MigrateUserTaskTest {
         .isFalse();
   }
 
+  @Test
+  public void shouldMigrateMultiInstanceJobBasedUserTaskToZeebeUserTask() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask(
+                        "A", t -> t.multiInstance().parallel().zeebeInputCollection("=[1,2,3]"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask(
+                        "B",
+                        t ->
+                            t.zeebeUserTask()
+                                .multiInstance()
+                                .parallel()
+                                .zeebeInputCollection("=[1,2,3]"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .hasSize(3)
+        .describedAs("Wait until all user tasks have activated")
+        .hasSize(3);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .limit(3))
+        .describedAs("Expect that process definition is updated for all user tasks")
+        .hasSize(3)
+        .allMatch(
+            r ->
+                r.getValue().getProcessDefinitionKey() == targetProcessDefinitionKey
+                    && r.getValue().getBpmnProcessId().equals(targetProcessId)
+                    && r.getValue().getElementId().equals("B"));
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.BPMN_ELEMENT)
+                .filter(r -> r.getValue().isJobToUserTaskMigration())
+                .limit(3))
+        .describedAs("Expect that all jobs are canceled")
+        .hasSize(3);
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(3))
+        .describedAs("Expect all zeebe user tasks are created")
+        .hasSize(3)
+        .allMatch(
+            r ->
+                r.getValue().getBpmnProcessId().equals(targetProcessId)
+                    && r.getValue().getElementId().equals("B"));
+  }
+
   private static void verifyFormOperationsWork(final long userTaskKey) {
     // can be unassigned
     ENGINE.userTask().withKey(userTaskKey).unassign();
