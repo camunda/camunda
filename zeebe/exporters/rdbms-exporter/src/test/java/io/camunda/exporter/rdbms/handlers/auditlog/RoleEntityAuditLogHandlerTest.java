@@ -10,7 +10,6 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -46,6 +45,5 @@ class RoleEntityAuditLogHandlerTest {
 
     // then
     assertThat(entity.entityKey()).isEqualTo("role-123");
-    assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
   }
 }

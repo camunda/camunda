@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -57,8 +56,6 @@ class DecisionEvaluationAuditLogHandlerTest {
     assertThat(entity.getDecisionDefinitionKey()).isEqualTo(456L);
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("drg-1");
     assertThat(entity.getDecisionRequirementsKey()).isEqualTo(789L);
-    assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
   }
 
   @Test

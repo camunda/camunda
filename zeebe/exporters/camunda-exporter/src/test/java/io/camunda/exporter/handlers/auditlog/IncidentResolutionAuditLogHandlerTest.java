@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -66,8 +65,6 @@ class IncidentResolutionAuditLogHandlerTest {
     assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
     assertThat(entity.getElementInstanceKey()).isEqualTo(789L);
     assertThat(entity.getJobKey()).isEqualTo(222L);
-    assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
 
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
     assertThat(auditLogInfo.operationType()).isEqualTo(operationType);

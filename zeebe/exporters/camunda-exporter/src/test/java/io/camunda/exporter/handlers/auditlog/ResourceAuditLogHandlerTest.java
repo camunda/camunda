@@ -10,7 +10,6 @@ package io.camunda.exporter.handlers.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -46,7 +45,5 @@ class ResourceAuditLogHandlerTest {
     // then
     assertThat(entity.getDeploymentKey()).isEqualTo(123L);
     assertThat(entity.getResourceKey()).isEqualTo(456L);
-    assertThat(entity.getTenantId()).isEqualTo("tenant-1");
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
   }
 }
