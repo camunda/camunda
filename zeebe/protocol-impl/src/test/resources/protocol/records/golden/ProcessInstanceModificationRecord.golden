@@ -10,12 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,7 +35,8 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   private static final StringValue MOVE_INSTRUCTIONS_KEY = new StringValue("moveInstructions");
   private static final StringValue ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY =
       new StringValue("activatedElementInstanceKeys");
-
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final StringProperty tenantIdProp =
@@ -52,15 +55,18 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
 
   private final ArrayProperty<LongValue> activatedElementInstanceKeys =
       new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
+  private final LongProperty rootProcessInstanceKeyProperty =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
 
   public ProcessInstanceModificationRecord() {
-    super(6);
+    super(7);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
         .declareProperty(moveInstructionsProperty)
         .declareProperty(activatedElementInstanceKeys)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(rootProcessInstanceKeyProperty);
   }
 
   /**
@@ -140,6 +146,16 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     return activatedElementInstanceKeys;
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProperty.getValue();
+  }
+
+  public ProcessInstanceModificationRecord setRootProcessInstanceKey(final long key) {
+    rootProcessInstanceKeyProperty.setValue(key);
+    return this;
+  }
+
   /** Returns true if this record has terminate instructions, otherwise false. */
   @JsonIgnore
   public boolean hasTerminateInstructions() {
@@ -152,7 +168,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     return this;
   }
 
-  /** Returns true if this record has activate instructions, otherwise false. */
+  /** Returns true if this record has move instructions, otherwise false. */
   @JsonIgnore
   public boolean hasMoveInstructions() {
     return !moveInstructionsProperty.isEmpty();

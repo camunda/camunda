@@ -198,6 +198,7 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record, final ProcessInstanceRecord processInstance) {
     record
         .setProcessInstanceKey(processInstance.getProcessInstanceKey())
+        .setRootProcessInstanceKey(processInstance.getRootProcessInstanceKey())
         .setBpmnProcessId(processInstance.getBpmnProcessId())
         .setVersion(processInstance.getVersion())
         .setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
