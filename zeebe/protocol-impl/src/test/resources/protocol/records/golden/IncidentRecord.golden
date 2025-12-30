@@ -232,6 +232,21 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    // The root process instance key is the first element of the first list in the
+    // elementInstancePath
+    final var iterator = elementInstancePathProp.iterator();
+    if (iterator.hasNext()) {
+      final var firstList = iterator.next();
+      final var listIterator = firstList.iterator();
+      if (listIterator.hasNext()) {
+        return listIterator.next().getValue();
+      }
+    }
+    return -1L;
+  }
+
   public IncidentRecord setJobKey(final long jobKey) {
     jobKeyProp.setValue(jobKey);
     return this;

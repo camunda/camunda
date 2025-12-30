@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -56,6 +57,7 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
           .addMixIn(DecisionEvaluationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
+          .addMixIn(IncidentRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(JobRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
           .addMixIn(
