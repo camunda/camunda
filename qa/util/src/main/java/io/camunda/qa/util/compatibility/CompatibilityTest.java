@@ -53,12 +53,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("compatibility-test")
 @Documented
 @ExtendWith(CompatibilityTestExtension.class)
+@ExtendWith(CompatibilityExceptionHandler.class)
 @Inherited
 public @interface CompatibilityTest {
 
   /**
-   * The Camunda version to test against. System property {@code camunda.compatibility.test.version} takes
-   * precedence if set.
+   * The Camunda version to test against. System property {@code camunda.compatibility.test.version}
+   * takes precedence if set.
    *
    * @return the version string (e.g., "8.8.1", "8.9.0", "SNAPSHOT")
    */
