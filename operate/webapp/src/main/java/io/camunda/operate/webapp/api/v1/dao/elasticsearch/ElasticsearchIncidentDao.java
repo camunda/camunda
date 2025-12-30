@@ -7,9 +7,10 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.IncidentDao;
@@ -20,15 +21,9 @@ import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -42,23 +37,71 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
 
   @Override
   protected void buildFiltering(
-      final Query<Incident> query, final SearchSourceBuilder searchSourceBuilder) {
-    final Incident filter = query.getFilter();
-    final List<QueryBuilder> queryBuilders = new ArrayList<>();
-    if (filter != null) {
-      queryBuilders.add(buildTermQuery(Incident.KEY, filter.getKey()));
-      queryBuilders.add(
-          buildTermQuery(Incident.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
-      queryBuilders.add(
-          buildTermQuery(Incident.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
-      queryBuilders.add(buildTermQuery(Incident.TYPE, filter.getType()));
-      queryBuilders.add(buildMatchQuery(Incident.MESSAGE, filter.getMessage()));
-      queryBuilders.add(buildTermQuery(Incident.STATE, filter.getState()));
-      queryBuilders.add(buildTermQuery(Incident.JOB_KEY, filter.getJobKey()));
-      queryBuilders.add(buildTermQuery(Incident.TENANT_ID, filter.getTenantId()));
-      queryBuilders.add(buildMatchDateQuery(Incident.CREATION_TIME, filter.getCreationTime()));
+      final Query<Incident> query, final SearchSourceBuilder searchSourceBuilder) {}
+
+  @Override
+  protected void buildFiltering(
+      final Query<Incident> query,
+      final Builder searchRequestBuilder,
+      final boolean isTenantAware) {
+    final var filter = query.getFilter();
+    if (filter == null) {
+      return;
     }
-    searchSourceBuilder.query(joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
+
+    final var keyQ = buildIfPresent(Incident.KEY, filter.getKey(), ElasticsearchUtil::termsQuery);
+
+    final var procDefKeyQ =
+        buildIfPresent(
+            Incident.PROCESS_DEFINITION_KEY,
+            filter.getProcessDefinitionKey(),
+            ElasticsearchUtil::termsQuery);
+
+    final var procInstKeyQ =
+        buildIfPresent(
+            Incident.PROCESS_INSTANCE_KEY,
+            filter.getProcessInstanceKey(),
+            ElasticsearchUtil::termsQuery);
+
+    final var typeQ =
+        buildIfPresent(Incident.TYPE, filter.getType(), ElasticsearchUtil::termsQuery);
+
+    // should be a match query
+    final var messageQ =
+        buildIfPresent(
+            Incident.MESSAGE,
+            filter.getMessage(),
+            (field, value) -> QueryBuilders.match(m -> m.field(field).query(value)));
+
+    final var stateQ =
+        buildIfPresent(Incident.STATE, filter.getState(), ElasticsearchUtil::termsQuery);
+
+    final var jobKeyQ =
+        buildIfPresent(Incident.JOB_KEY, filter.getJobKey(), ElasticsearchUtil::termsQuery);
+
+    final var tenantIdQ =
+        buildIfPresent(Incident.TENANT_ID, filter.getTenantId(), ElasticsearchUtil::termsQuery);
+
+    final var creationTimeQ =
+        buildIfPresent(
+            Incident.CREATION_TIME, filter.getCreationTime(), this::buildMatchDateQueryEs8);
+
+    final var andOfAllQueries =
+        ElasticsearchUtil.joinWithAnd(
+            keyQ,
+            procDefKeyQ,
+            procInstKeyQ,
+            typeQ,
+            messageQ,
+            stateQ,
+            jobKeyQ,
+            tenantIdQ,
+            creationTimeQ);
+
+    final var finalQuery =
+        isTenantAware ? tenantHelper.makeQueryTenantAware(andOfAllQueries) : andOfAllQueries;
+
+    searchRequestBuilder.query(finalQuery);
   }
 
   @Override
@@ -66,7 +109,19 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
     logger.debug("byKey {}", key);
     final List<Incident> incidents;
     try {
-      incidents = searchFor(new SearchSourceBuilder().query(termQuery(IncidentTemplate.KEY, key)));
+      final var query = ElasticsearchUtil.termsQuery(IncidentTemplate.KEY, key);
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+      final var searchReqBuilder =
+          new SearchRequest.Builder().index(incidentIndex.getAlias()).query(tenantAwareQuery);
+
+      incidents =
+          ElasticsearchUtil.scrollAllStream(es8Client, searchReqBuilder, Incident.class)
+              .flatMap(res -> res.hits().hits().stream())
+              .map(Hit::source)
+              .filter(Objects::nonNull)
+              .map(this::postProcessIncidents)
+              .toList();
+
     } catch (final Exception e) {
       throw new ServerException(String.format("Error in reading incident for key %s", key), e);
     }
@@ -79,29 +134,25 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
     return incidents.get(0);
   }
 
+  protected Incident postProcessIncidents(final Incident incident) {
+    incident.setCreationTime(
+        dateTimeFormatter.convertGeneralToApiDateTime(incident.getCreationTime()));
+
+    return incident;
+  }
+
   @Override
   public Results<Incident> search(final Query<Incident> query) throws APIException {
     logger.debug("search {}", query);
     mapFieldsInSort(query);
-    final SearchSourceBuilder searchSourceBuilder =
-        buildQueryOn(query, Incident.KEY, new SearchSourceBuilder());
+
+    final var searchReqBuilder =
+        buildQueryOn(query, Incident.KEY, new SearchRequest.Builder(), true);
+
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest().indices(incidentIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final SearchHits searchHits = searchResponse.getHits();
-      final SearchHit[] searchHitArray = searchHits.getHits();
-      if (searchHitArray != null && searchHitArray.length > 0) {
-        final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        final List<Incident> incidents =
-            ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToIncident);
-        return new Results<Incident>()
-            .setTotal(searchHits.getTotalHits().value)
-            .setItems(incidents)
-            .setSortValues(sortValues);
-      } else {
-        return new Results<Incident>().setTotal(searchHits.getTotalHits().value);
-      }
+      final var searchReq = searchReqBuilder.index(incidentIndex.getAlias()).build();
+
+      return searchWithResultsReturn(searchReq, Incident.class);
     } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }
@@ -118,38 +169,5 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
                     s.setField(
                         Incident.OBJECT_TO_SEARCH_MAP.getOrDefault(s.getField(), s.getField())))
             .collect(Collectors.toList()));
-  }
-
-  protected Incident searchHitToIncident(final SearchHit searchHit) {
-    final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
-    return new Incident()
-        .setKey((Long) searchHitAsMap.get(IncidentTemplate.KEY))
-        .setProcessInstanceKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_INSTANCE_KEY))
-        .setProcessDefinitionKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_DEFINITION_KEY))
-        .setType((String) searchHitAsMap.get(IncidentTemplate.ERROR_TYPE))
-        .setMessage((String) searchHitAsMap.get(IncidentTemplate.ERROR_MSG))
-        .setCreationTime(
-            dateTimeFormatter.convertGeneralToApiDateTime(
-                (String) searchHitAsMap.get(Incident.CREATION_TIME)))
-        .setState((String) searchHitAsMap.get(Incident.STATE))
-        .setJobKey((Long) searchHitAsMap.get(Incident.JOB_KEY))
-        .setTenantId((String) searchHitAsMap.get(Incident.TENANT_ID));
-  }
-
-  protected List<Incident> searchFor(final SearchSourceBuilder searchSourceBuilder) {
-    try {
-      final SearchRequest searchRequest =
-          new SearchRequest(incidentIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final SearchHits searchHits = searchResponse.getHits();
-      final SearchHit[] searchHitArray = searchHits.getHits();
-      if (searchHitArray != null && searchHitArray.length > 0) {
-        return ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToIncident);
-      } else {
-        return List.of();
-      }
-    } catch (final Exception e) {
-      throw new ServerException("Error in reading incidents", e);
-    }
   }
 }
