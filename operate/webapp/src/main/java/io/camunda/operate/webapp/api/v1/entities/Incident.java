@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
@@ -39,9 +40,12 @@ public class Incident {
   private Long processInstanceKey;
 
   @Schema(implementation = ErrorType.class)
+  @JsonProperty(TYPE) // Add this annotation
   private String type;
 
+  @JsonProperty(MESSAGE)
   private String message;
+
   private String creationTime;
 
   @Schema(implementation = IncidentState.class)
