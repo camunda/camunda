@@ -16,7 +16,7 @@ import {
   gotoProcessesPage,
 } from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
-import { waitForAssertion } from 'utils/waitForAssertion';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;

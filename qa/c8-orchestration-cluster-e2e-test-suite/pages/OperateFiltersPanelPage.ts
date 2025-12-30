@@ -153,11 +153,11 @@ export class OperateFiltersPanelPage {
 
   async displayOptionalFilter(filterName: OptionalFilter) {
     await this.moreFiltersButton.click();
-    await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
-      .click();
+    const menuitem = this.page.getByRole('menuitem', {
+      name: filterName,
+    });
+    await menuitem.waitFor({state: 'visible'});
+    await menuitem.click();
   }
 
   async removeOptionalFilter(filterName: OptionalFilter) {
