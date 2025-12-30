@@ -11,10 +11,15 @@ import java.time.Duration;
 
 public final class HistoryDeletionConfiguration {
 
-  private Duration delayBetweenRuns = Duration.ofSeconds(1);
-  private Duration maxDelayBetweenRuns = Duration.ofMinutes(5);
-  private int queueBatchSize = 100;
-  private int dependentRowLimit = 10000;
+  private static final Duration DEFAULT_DELAY_BETWEEN_RUNS = Duration.ofSeconds(1);
+  private static final Duration DEFAULT_MAX_DELAY_BETWEEN_RUNS = Duration.ofMinutes(5);
+  private static final int DEFAULT_QUEUE_BATCH_SIZE = 100;
+  private static final int DEFAULT_DEPENDENT_ROW_LIMIT = 10000;
+
+  private Duration delayBetweenRuns = DEFAULT_DELAY_BETWEEN_RUNS;
+  private Duration maxDelayBetweenRuns = DEFAULT_MAX_DELAY_BETWEEN_RUNS;
+  private int queueBatchSize = DEFAULT_QUEUE_BATCH_SIZE;
+  private int dependentRowLimit = DEFAULT_DEPENDENT_ROW_LIMIT;
 
   public Duration getDelayBetweenRuns() {
     return delayBetweenRuns;
