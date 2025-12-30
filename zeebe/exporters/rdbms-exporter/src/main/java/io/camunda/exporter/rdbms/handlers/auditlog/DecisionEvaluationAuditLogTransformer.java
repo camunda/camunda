@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
@@ -40,8 +39,7 @@ public class DecisionEvaluationAuditLogTransformer
             .map(List::getFirst)
             .map(EvaluatedDecisionValue::getDecisionKey)
             .orElse(null));
-    entity.tenantId(value.getTenantId());
-    entity.tenantScope(AuditLogTenantScope.TENANT);
+
     if (record.getIntent() == DecisionEvaluationIntent.FAILED) {
       entity.result(AuditLogOperationResult.FAIL);
     }

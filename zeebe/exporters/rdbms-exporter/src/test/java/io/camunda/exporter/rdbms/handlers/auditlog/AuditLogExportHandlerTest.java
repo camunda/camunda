@@ -22,6 +22,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -46,24 +48,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AuditLogExportHandlerTest {
 
   private static final String USERNAME = "test-user";
+  private static final String TENANT = "test-tenant";
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
-  private AuditLogWriter writer;
-  private VendorDatabaseProperties databaseProperties;
-  private AuditLogConfiguration config;
-  private AuditLogTransformer transformer;
-  private AuditLogExportHandler handler;
-
-  @Captor private ArgumentCaptor<AuditLogDbModel> auditLogCaptor;
+  final ImmutableProcessInstanceModificationRecordValue value =
+      ImmutableProcessInstanceModificationRecordValue.builder()
+          .from(factory.generateObject(ImmutableProcessInstanceModificationRecordValue.class))
+          .withTenantId(TENANT)
+          .build();
 
   private final Record authorizedRecord =
       factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MODIFICATION,
           r ->
               r.withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                  .withValue(value)
                   .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, USERNAME)));
 
+  private AuditLogWriter writer;
+  private VendorDatabaseProperties databaseProperties;
+  private AuditLogConfiguration config;
+  private AuditLogTransformer transformer;
+  private AuditLogExportHandler handler;
+  @Captor private ArgumentCaptor<AuditLogDbModel> auditLogCaptor;
   private final Record unauthorizedRecord =
       factory.generateRecordWithIntent(
           ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationIntent.MODIFIED);
@@ -125,6 +133,7 @@ class AuditLogExportHandlerTest {
             ValueType.PROCESS_INSTANCE_MODIFICATION,
             r ->
                 r.withRecordType(RecordType.COMMAND_REJECTION)
+                    .withValue(value)
                     .withRejectionType(RejectionType.INVALID_STATE)
                     .withIntent(ProcessInstanceModificationIntent.MODIFIED)
                     .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, USERNAME)));
@@ -139,6 +148,32 @@ class AuditLogExportHandlerTest {
     verify(transformer, never()).transform(any(), any());
   }
 
+  @Test
+  void shouldHandleNonTenantOwnedRecords() {
+    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
+
+    handler.export(record);
+
+    verify(writer).create(auditLogCaptor.capture());
+    final AuditLogDbModel entity = auditLogCaptor.getValue();
+
+    assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
+    verify(transformer).transform(any(), any());
+  }
+
+  @Test
+  void shouldHandleNonProcessInstanceRelatedRecords() {
+    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
+
+    handler.export(record);
+
+    verify(writer).create(auditLogCaptor.capture());
+    final AuditLogDbModel entity = auditLogCaptor.getValue();
+
+    assertThat(entity.processInstanceKey()).isNull();
+    verify(transformer).transform(any(), any());
+  }
+
   private void assertCommonEntityFields(final AuditLogDbModel entity, final Record record) {
     assertThat(entity.auditLogKey()).isNotNull();
     assertThat(entity.entityKey()).isEqualTo(String.valueOf(record.getKey()));
@@ -147,6 +182,9 @@ class AuditLogExportHandlerTest {
     assertThat(entity.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
     assertThat(entity.actorType()).isEqualTo(AuditLogActorType.USER);
     assertThat(entity.actorId()).isEqualTo(USERNAME);
+    assertThat(entity.tenantId()).isEqualTo(TENANT);
+    assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+    assertThat(entity.processInstanceKey()).isEqualTo(value.getProcessInstanceKey());
     assertThat(entity.entityVersion()).isEqualTo(record.getRecordVersion());
     assertThat(entity.entityValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION.value());
     assertThat(entity.entityOperationIntent())

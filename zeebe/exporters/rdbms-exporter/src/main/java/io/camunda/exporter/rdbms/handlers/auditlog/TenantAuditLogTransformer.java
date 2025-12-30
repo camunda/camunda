@@ -8,10 +8,8 @@
 package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 
 public class TenantAuditLogTransformer implements AuditLogTransformer<TenantRecordValue, Builder> {
@@ -19,10 +17,5 @@ public class TenantAuditLogTransformer implements AuditLogTransformer<TenantReco
   @Override
   public TransformerConfig config() {
     return AuditLogTransformerConfigs.TENANT_CONFIG;
-  }
-
-  @Override
-  public void transform(final Record<TenantRecordValue> record, final Builder entity) {
-    entity.tenantScope(AuditLogTenantScope.GLOBAL);
   }
 }

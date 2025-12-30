@@ -10,7 +10,6 @@ package io.camunda.exporter.handlers.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -45,6 +44,5 @@ class RoleAuditLogHandlerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("role-123");
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
   }
 }

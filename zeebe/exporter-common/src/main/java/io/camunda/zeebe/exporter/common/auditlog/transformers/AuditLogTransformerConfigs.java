@@ -41,7 +41,6 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import java.util.Set;
 
 public class AuditLogTransformerConfigs {
   public static final TransformerConfig AUTHORIZATION_CONFIG =
@@ -55,17 +54,16 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(BATCH_OPERATION_CREATION).withIntents(BatchOperationIntent.CREATED);
 
   public static final TransformerConfig BATCH_OPERATION_LIFECYCLE_MANAGEMENT_CONFIG =
-      new TransformerConfig(
-          BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-          Set.of(
+      TransformerConfig.with(BATCH_OPERATION_LIFECYCLE_MANAGEMENT)
+          .withIntents(
               BatchOperationIntent.RESUMED,
               BatchOperationIntent.SUSPENDED,
-              BatchOperationIntent.CANCELED),
-          Set.of(
+              BatchOperationIntent.CANCELED)
+          .withRejections(
               BatchOperationIntent.RESUME,
               BatchOperationIntent.SUSPEND,
-              BatchOperationIntent.CANCEL),
-          Set.of(RejectionType.INVALID_STATE));
+              BatchOperationIntent.CANCEL)
+          .withRejectionTypes(RejectionType.INVALID_STATE);
 
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
@@ -133,11 +131,10 @@ public class AuditLogTransformerConfigs {
           .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED);
 
   public static final TransformerConfig USER_TASK_CONFIG =
-      new TransformerConfig(
-          USER_TASK,
-          Set.of(UserTaskIntent.UPDATED, UserTaskIntent.ASSIGNED, UserTaskIntent.COMPLETED),
-          Set.of(UserTaskIntent.UPDATE, UserTaskIntent.ASSIGN, UserTaskIntent.COMPLETE),
-          Set.of(RejectionType.INVALID_STATE));
+      TransformerConfig.with(USER_TASK)
+          .withIntents(UserTaskIntent.UPDATED, UserTaskIntent.ASSIGNED, UserTaskIntent.COMPLETED)
+          .withRejections(UserTaskIntent.UPDATE, UserTaskIntent.ASSIGN, UserTaskIntent.COMPLETE)
+          .withRejectionTypes(RejectionType.INVALID_STATE);
 
   public static final TransformerConfig VARIABLE_ADD_UPDATE_CONFIG =
       TransformerConfig.with(VARIABLE).withIntents(VariableIntent.CREATED, VariableIntent.UPDATED);

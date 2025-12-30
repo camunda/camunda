@@ -10,7 +10,6 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
-import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
@@ -60,10 +59,8 @@ class ProcessInstanceCreatedAuditLogHandlerTest {
 
     // then
     assertThat(model.processDefinitionKey()).isEqualTo(456L);
-    assertThat(model.tenantId()).isEqualTo("tenant-1");
     assertThat(model.processDefinitionId()).isEqualTo("test-process");
     assertThat(model.processInstanceKey()).isEqualTo(123L);
-    assertThat(model.tenantScope()).isEqualTo(AuditLogEntity.AuditLogTenantScope.TENANT);
 
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
     assertThat(auditLogInfo.operationType()).isEqualTo(operationType);

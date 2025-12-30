@@ -8,7 +8,6 @@
 package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
@@ -25,6 +24,5 @@ public class RoleAuditLogTransformer implements AuditLogTransformer<RoleRecordVa
   public void transform(final Record<RoleRecordValue> record, final Builder entity) {
     final var value = record.getValue();
     entity.entityKey(value.getRoleId());
-    entity.tenantScope(AuditLogTenantScope.GLOBAL);
   }
 }

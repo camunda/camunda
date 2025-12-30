@@ -26,7 +26,7 @@ public interface AuditLogTransformer<R extends RecordValue, T> {
 
   TransformerConfig config();
 
-  void transform(Record<R> record, final T entity);
+  default void transform(final Record<R> record, final T entity) {}
 
   default boolean supports(final Record record) {
     return config().supports(record);
@@ -51,6 +51,16 @@ public interface AuditLogTransformer<R extends RecordValue, T> {
         final Intent rejectionIntent, final RejectionType... rejectionTypes) {
       return new TransformerConfig(
           valueType(), supportedIntents(), Set.of(rejectionIntent), Set.of(rejectionTypes));
+    }
+
+    public TransformerConfig withRejections(final Intent... rejectionIntents) {
+      return new TransformerConfig(
+          valueType(), supportedIntents(), Set.of(rejectionIntents), supportedRejectionTypes());
+    }
+
+    public TransformerConfig withRejectionTypes(final RejectionType... rejectionTypes) {
+      return new TransformerConfig(
+          valueType(), supportedIntents(), supportedRejections(), Set.of(rejectionTypes));
     }
 
     boolean supports(final Record record) {

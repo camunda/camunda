@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -105,6 +107,31 @@ class AuditLogInfoTest {
     assertThat(info.actor()).isNotNull();
     assertThat(info.actor().actorType()).isEqualTo(AuditLogActorType.UNKNOWN);
     assertThat(info.actor().actorId()).isEqualTo(null);
+  }
+
+  @Test
+  void shouldMapTenantFromTenantOwnedRecord() {
+    final var record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE_MODIFICATION,
+            r ->
+                r.withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                    .withValue(new ProcessInstanceCreationRecord().setTenantId("tenant-1")));
+
+    final var info = AuditLogInfo.of(record);
+
+    assertThat(info.tenant()).isPresent();
+    assertThat(info.tenant().get().tenantId()).isEqualTo("tenant-1");
+    assertThat(info.tenant().get().scope()).isEqualTo(AuditLogTenantScope.TENANT);
+  }
+
+  @Test
+  void shouldMapTenantFromNonTenantOwnedRecord() {
+    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
+
+    final var info = AuditLogInfo.of(record);
+
+    assertThat(info.tenant()).isNotPresent();
   }
 
   @Test

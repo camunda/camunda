@@ -8,10 +8,8 @@
 package io.camunda.exporter.handlers.auditlog;
 
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 
 public class TenantAuditLogTransformer
@@ -20,10 +18,5 @@ public class TenantAuditLogTransformer
   @Override
   public TransformerConfig config() {
     return AuditLogTransformerConfigs.TENANT_CONFIG;
-  }
-
-  @Override
-  public void transform(final Record<TenantRecordValue> record, final AuditLogEntity entity) {
-    entity.setTenantScope(AuditLogTenantScope.GLOBAL);
   }
 }

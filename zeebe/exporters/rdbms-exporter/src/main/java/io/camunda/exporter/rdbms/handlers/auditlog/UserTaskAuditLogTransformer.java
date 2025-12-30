@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
@@ -31,8 +30,6 @@ public class UserTaskAuditLogTransformer
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
         .elementInstanceKey(value.getElementInstanceKey())
-        .userTaskKey(value.getUserTaskKey())
-        .tenantId(value.getTenantId())
-        .tenantScope(AuditLogTenantScope.TENANT);
+        .userTaskKey(value.getUserTaskKey());
   }
 }

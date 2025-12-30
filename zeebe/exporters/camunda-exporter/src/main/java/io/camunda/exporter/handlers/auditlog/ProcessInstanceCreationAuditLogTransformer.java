@@ -8,7 +8,6 @@
 package io.camunda.exporter.handlers.auditlog;
 
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
@@ -29,8 +28,6 @@ public class ProcessInstanceCreationAuditLogTransformer
     entity
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionId(value.getBpmnProcessId())
-        .setProcessDefinitionKey(value.getProcessDefinitionKey())
-        .setTenantId(value.getTenantId())
-        .setTenantScope(AuditLogTenantScope.TENANT);
+        .setProcessDefinitionKey(value.getProcessDefinitionKey());
   }
 }

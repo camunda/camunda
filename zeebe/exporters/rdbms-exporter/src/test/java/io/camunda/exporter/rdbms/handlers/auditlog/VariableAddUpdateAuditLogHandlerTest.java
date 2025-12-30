@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -62,11 +61,9 @@ class VariableAddUpdateAuditLogHandlerTest {
 
     // then
     assertThat(model.processDefinitionKey()).isEqualTo(456L);
-    assertThat(model.tenantId()).isEqualTo("tenant-1");
     assertThat(model.processDefinitionId()).isEqualTo("bpmn-process-id");
     assertThat(model.processInstanceKey()).isEqualTo(123L);
     assertThat(model.elementInstanceKey()).isEqualTo(789L);
-    assertThat(model.tenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
 
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
     assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
