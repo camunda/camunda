@@ -1,0 +1,30 @@
+name: Repo - Issue Labels
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  issue-labeler:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Issue Labeler
+        uses: github/issue-labeler@c1b0f9f52a63158c4adc09425e858e87b32e9685 # v3.4
+        with:
+          configuration-path: .github/config/issue-labeler.yaml
+          enable-versioned-regex: 0
+          repo-token: "${{ github.token }}"
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Ensure PR branch is up to date
+        run: |
+          git rev-list --left-right --count origin/main...HEAD | grep -q "^0"

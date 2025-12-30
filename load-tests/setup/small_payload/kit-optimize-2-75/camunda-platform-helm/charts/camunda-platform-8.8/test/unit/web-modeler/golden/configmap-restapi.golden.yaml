@@ -1,0 +1,84 @@
+---
+# Source: camunda-platform/templates/web-modeler/configmap-restapi.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-web-modeler-restapi-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: web-modeler
+    app.kubernetes.io/version: "8.8.4"
+  annotations:
+    {}
+data:
+  application.yaml: |
+    camunda:
+      identity:
+        base-url: "http://camunda-platform-test-identity:80"
+        issuer: "http://localhost:18080/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
+        type: "KEYCLOAK"
+
+      modeler:
+        pusher:
+          host: "camunda-platform-test-web-modeler-websockets"
+          port: 80
+        security:
+          jwt:
+            issuer:
+              backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
+            audience:
+              internal-api: "web-modeler-api"
+              public-api: "web-modeler-public-api"
+
+        mail:
+          from-address: "example@example.com"
+          from-name: "Camunda 8"
+
+        server:
+          url: "http://localhost:8070"
+        clusters:
+          - id: "default-cluster"
+            name: "camunda-platform-test-zeebe"
+            version: "8.8.8"
+            authentication: "BASIC"
+            authorizations:
+              enabled: true
+            url:
+              grpc: "grpc://camunda-platform-test-zeebe-gateway:26500"
+              rest: "http://camunda-platform-test-zeebe-gateway:8080"
+              web-app: "http://localhost:8088"
+
+    spring:
+      datasource:
+        url: "jdbc:postgresql://camunda-platform-test-postgresql-web-modeler:5432/web-modeler"
+        username: "web-modeler"
+
+      mail:
+        host: ""
+        port: 587
+        properties:
+          mail.smtp.auth: false
+          mail.smtp.starttls.enable: true
+          mail.smtp.starttls.required: true
+
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
+              jwk-set-uri: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+
+    logging:
+      level:
+        io.camunda.modeler: INFO
+        io.grpc: INFO

@@ -1,0 +1,36 @@
+---
+# Source: camunda-platform/charts/operate/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: camunda-platform-test-operate
+  labels: 
+    app: camunda-platform
+    app.kubernetes.io/name: operate
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.2.31"
+    app.kubernetes.io/component: operate
+  annotations: 
+    ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: camunda-platform-test-operate
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - local
+      secretName: my-secret

@@ -5,8 +5,8 @@
 # Licensed under the Camunda License 1.0. You may not use this file
 # except in compliance with the Camunda License 1.0.
 #
-for i in 17 19 21 23 25; do
-  ns="kit-optimize-2-${i}"
+for i in 47; do
+  ns="small_payload/kit-optimize-2-${i}"
 
   # Create namespace only if it doesn't exist
   if ! kubectl get namespace "$ns" >/dev/null 2>&1; then

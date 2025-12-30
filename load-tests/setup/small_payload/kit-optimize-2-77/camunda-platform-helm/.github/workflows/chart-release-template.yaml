@@ -1,0 +1,191 @@
+name: "Chart - Release - Template"
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: List of charts to release.
+        required: true
+        type: string
+      chart-matrix:
+        description: List of charts to release.
+        required: true
+        type: string
+      workflow-ref:
+        description: The reference of the workflow which will be used sign the chart OCI artifact in keyless mode.
+        required: true
+        type: string
+
+jobs:
+  clean:
+    name: Clean old artifacts digest
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: /tmp
+    steps:
+      - name: Delete old artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Wait for fix in: https://github.com/cli/cli/issues/10592"
+          # # Get IDs of the untagged artifacts (the sha256 digest).
+          # artifacts_ids_to_delete="$(
+          #   gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' \
+          #     '/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions?per_page=100' |
+          #   jq '.[] | select(.metadata.container.tags | length == 0)' | jq '.id'
+          # )"
+          # # Early exit if no artifacts to delete.
+          # test -z "${artifacts_ids_to_delete}" && {
+          #   echo "No old untagged artifacts to delete ...";
+          #   exit 0;
+          # }
+          # # Delete the untagged artifacts.
+          # echo -e "Deleting the old untagged artifacts IDs:\n${artifacts_ids_to_delete}"
+          # for container_id in ${artifacts_ids_to_delete}; do
+          #   gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          #     "/orgs/camunda/packages/container/helm%2Fcamunda-platform/versions/${container_id}"
+          # done
+
+  release:
+    needs: clean
+    name: ${{ matrix.chart.name }}
+    permissions:
+      packages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart: ${{ fromJson(inputs.chart-matrix) }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.chart.directory }}
+    #
+    # Vars.
+    env:
+      REPOSITORY_NAME: "camunda/helm"
+      CHART_NAME: "camunda-platform"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.branch }}
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            yq
+      - name: Set vars
+        run: |
+          # NOTE: Helm CLI only accepts SemVer so we need to use something like "0.0.0-snapshot-latest".
+          CHART_VERSION_SUFFIX="${{ matrix.chart.versionSuffix }}"
+          CHART_VERSION_SUFFIX_DEFAULT="$(yq '.version' Chart.yaml)"
+          echo "CHART_VERSION=0.0.0-${CHART_VERSION_SUFFIX:-${CHART_VERSION_SUFFIX_DEFAULT}}" | tee -a $GITHUB_ENV
+      #
+      # Changelog.
+      - name: Generate snapshot changelog
+        run: |
+          export SNAPSHOT_DESCRIPTION="Check chart dir for more details: https://github.com/camunda/camunda-platform-helm/tree/main/charts/${{ matrix.chart.directory }}"
+          yq -i '.description |= strenv(SNAPSHOT_DESCRIPTION)' Chart.yaml
+      #
+      # Package.
+      - name: Print Helm CLI version
+        run: helm version
+      - name: ⭐ Check if the chart artifact should be published ⭐
+        id: vars
+        run: |
+          case "${{ matrix.chart.override }}" in
+            "true")
+              # For snapshots, the artifact is always overriden.
+              PUBLISH_ARTIFACT="true"
+              ;;
+            "false")
+              # If the artfact exists, then it will not republished.
+              helm pull oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \
+                --version ${{ env.CHART_VERSION }} 2> /dev/null && EXIT_CODE=0 || EXIT_CODE=1
+              test ${EXIT_CODE} -eq 0 && PUBLISH_ARTIFACT="false" || PUBLISH_ARTIFACT="true"
+              ;;
+            *)
+              echo "Unsupported value."
+              exit 1
+              ;;
+          esac
+          # Add the var to GH vars.
+          echo "PUBLISH_ARTIFACT=${PUBLISH_ARTIFACT}" | tee -a $GITHUB_ENV
+      - name: Helm dependency update
+        if: env.PUBLISH_ARTIFACT == 'true'
+        run: |
+          make -C ../.. helm.dependency-update \
+            chartPath=${{ matrix.chart.directory }}
+      - name: Package and push Helm chart
+        if: env.PUBLISH_ARTIFACT == 'true'
+        env:
+          HELM_EXPERIMENTAL_OCI: 1
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login -u ${{ github.actor }} --password-stdin ghcr.io
+          helm package --version ${{ env.CHART_VERSION }} .
+          helm push ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ env.REPOSITORY_NAME }}
+          helm registry logout ghcr.io
+      #
+      # Security signature.
+      - name: Install Cosign CLI
+        if: env.PUBLISH_ARTIFACT == 'true'
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - name: Sign Helm chart with Cosign
+        if: env.PUBLISH_ARTIFACT == 'true'
+        run: |
+          cosign sign-blob -y ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
+            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle
+      - name: Verify signed Helm chart with Cosign
+        if: env.PUBLISH_ARTIFACT == 'true'
+        run: |
+          cosign verify-blob ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.tgz \
+            --bundle ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/chart-release-template.yaml@${{ github.ref }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+      - name: Login to GitHub Container Registry
+        if: env.PUBLISH_ARTIFACT == 'true'
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install ORAS CLI
+        if: env.PUBLISH_ARTIFACT == 'true'
+        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1
+      - name: Upload Helm chart Cosign bundle
+        if: env.PUBLISH_ARTIFACT == 'true'
+        run: |
+          oras push ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}:${{ env.CHART_VERSION }}.cosign.bundle \
+            ${{ env.CHART_NAME }}-${{ env.CHART_VERSION }}.cosign.bundle:text/plain
+      - name: Add release info to workflow summary
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## Chart info
+
+            - Repository: \`oci://ghcr.io/${{ env.REPOSITORY_NAME }}\`
+            - Name: \`${{ env.CHART_NAME }}\`
+            - Version: \`${{ env.CHART_VERSION }}\`
+
+          Install:
+
+          \`\`\`
+          helm install my-camunda-devel \\
+            oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }} \\
+            --version ${{ env.CHART_VERSION }}
+          \`\`\`
+
+          ## Chart Images
+
+          $(make -s -C ../.. helm.get-images \
+              chartPath="${{ matrix.chart.directory }}" \
+              chartSource="oci://ghcr.io/${{ env.REPOSITORY_NAME }}/${{ env.CHART_NAME }}" \
+              chartVersion="${{ env.CHART_VERSION }}")
+          EOF

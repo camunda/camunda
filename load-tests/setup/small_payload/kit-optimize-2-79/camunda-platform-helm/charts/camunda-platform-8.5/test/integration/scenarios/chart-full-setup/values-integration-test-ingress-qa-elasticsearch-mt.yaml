@@ -1,0 +1,302 @@
+global:
+  image:
+    pullPolicy: Always
+  multitenancy:
+    enabled: true
+zeebe:
+  image:
+    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
+tasklist:
+  image:
+    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
+operate:
+  image:
+    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
+optimize:
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+webModeler:
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+console:
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: $TEST_NAMESPACE
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: "true"
+identity:
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  postgresql:
+    enabled: true
+  externalDatabase:
+    enabled: false
+  firstUser:
+    existingSecret: null
+    user: demo
+    existingSecret: integration-test-credentials
+    existingSecretKey: identity-user-password
+  # Keycloak client seed which is used to query Camunda APIs. 
+  env:
+    # TODO: Remove the KEYCLOAK_USERS env vars in favor of relying on the default configmap values
+    - name: KEYCLOAK_USERS_0_USERNAME
+      value: 'demo'
+    - name: KEYCLOAK_USERS_0_EMAIL
+      value: 'demo@example.com'
+    - name: KEYCLOAK_USERS_0_FIRSTNAME
+      value: 'Demo'
+    - name: KEYCLOAK_USERS_0_LASTNAME
+      value: 'User'
+    - name: KEYCLOAK_USERS_0_PASSWORD
+      value: $DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+    - name: KEYCLOAK_USERS_0_ROLES_0
+      value: Identity
+    - name: KEYCLOAK_USERS_0_ROLES_1
+      value: Operate
+    - name: KEYCLOAK_USERS_0_ROLES_2
+      value: Tasklist
+    - name: KEYCLOAK_USERS_0_ROLES_3
+      value: Optimize
+    - name: KEYCLOAK_USERS_0_ROLES_4
+      value: Web Modeler
+    - name: KEYCLOAK_USERS_0_ROLES_5
+      value: Console
+    - name: KEYCLOAK_USERS_0_ROLES_6
+      value: "Zeebe"
+    - name: KEYCLOAK_CLIENTS_2_ID
+      value: venom
+    - name: KEYCLOAK_CLIENTS_2_NAME
+      value: Venom
+    - name: KEYCLOAK_CLIENTS_2_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: identity-admin-client-password
+    - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
+      value: /dummy
+    - name: KEYCLOAK_CLIENTS_2_ROOT_URL
+      value: http://dummy
+    - name: KEYCLOAK_CLIENTS_2_TYPE
+      value: CONFIDENTIAL
+    # Identity access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION
+      value: read
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_DEFINITION
+      value: write
+    - name: KEYCLOAK_USERS_1_FIRST_NAME
+      value: Lisa
+    - name: KEYCLOAK_USERS_1_LAST_NAME
+      value: Doe
+    - name: KEYCLOAK_USERS_1_EMAIL
+      value: cawemodev+lisa@gmail.com
+    - name: KEYCLOAK_USERS_1_USERNAME
+      value: lisa
+    - name: KEYCLOAK_USERS_1_PASSWORD
+      value: $DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+    - name: KEYCLOAK_USERS_1_ROLES_0
+      value: Identity
+    - name: KEYCLOAK_USERS_1_ROLES_1
+      value: Operate
+    - name: KEYCLOAK_USERS_1_ROLES_2
+      value: Tasklist
+    - name: KEYCLOAK_USERS_1_ROLES_3
+      value: Optimize
+    - name: KEYCLOAK_USERS_1_ROLES_4
+      value: Web Modeler
+    - name: KEYCLOAK_USERS_1_ROLES_5
+      value: Console
+    - name: KEYCLOAK_USERS_1_ROLES_6
+      value: "Zeebe"
+    - name: KEYCLOAK_USERS_2_FIRST_NAME
+      value: Bart
+    - name: KEYCLOAK_USERS_2_LAST_NAME
+      value: Foo
+    - name: KEYCLOAK_USERS_2_EMAIL
+      value: cawemodev+bart@gmail.com
+    - name: KEYCLOAK_USERS_2_USERNAME
+      value: bart
+    - name: KEYCLOAK_USERS_2_PASSWORD
+      value: $DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+    - name: KEYCLOAK_USERS_2_ROLES_0
+      value: Identity
+    - name: KEYCLOAK_USERS_2_ROLES_1
+      value: Operate
+    - name: KEYCLOAK_USERS_2_ROLES_2
+      value: Tasklist
+    - name: KEYCLOAK_USERS_2_ROLES_3
+      value: Optimize
+    - name: KEYCLOAK_USERS_2_ROLES_4
+      value: Web Modeler
+    - name: KEYCLOAK_USERS_2_ROLES_5
+      value: Console
+    - name: KEYCLOAK_USERS_2_ROLES_6
+      value: "Zeebe"
+    # Operate access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
+      value: operate-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
+      value: operate-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
+      value: "write:*"
+    # Tasklist access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
+      value: tasklist-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
+      value: tasklist-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
+      value: "write:*"
+    # Optimize access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_RESOURCE_SERVER_ID
+      value: optimize-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
+      value: "write:*"
+    # Zeebe access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_RESOURCE_SERVER_ID
+      value: zeebe-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_DEFINITION
+      value: "write:*"
+    # WebModeler access.
+    # NOTE: This actually should be only in the chart-with-web-modeler scenarios,
+    # but since Helm doesn't support merge lists it's added here.
+    # It could be removed later when the env vars could be configured via ConfigMap.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_RESOURCE_SERVER_ID
+      value: web-modeler-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_DEFINITION
+      value: "write:*"
+    # Console access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_RESOURCE_SERVER_ID
+      value: console-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_9_DEFINITION
+      value: "write:*"
+    - name: KEYCLOAK_CLIENTS_3_ID
+      value: test
+    - name: KEYCLOAK_CLIENTS_3_NAME
+      value: Test
+    - name: KEYCLOAK_CLIENTS_3_SECRET
+      value: $DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
+    - name: KEYCLOAK_CLIENTS_3_REDIRECT_URIS_0
+      value: /dummy
+    - name: KEYCLOAK_CLIENTS_3_ROOT_URL
+      value: http://dummy
+    - name: KEYCLOAK_CLIENTS_3_TYPE
+      value: CONFIDENTIAL
+    # Identity access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_0_DEFINITION
+      value: read
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_1_DEFINITION
+      value: write
+    # Operate access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_RESOURCE_SERVER_ID
+      value: operate-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_2_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_RESOURCE_SERVER_ID
+      value: operate-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_3_DEFINITION
+      value: "write:*"
+    # Tasklist access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_RESOURCE_SERVER_ID
+      value: tasklist-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_4_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_RESOURCE_SERVER_ID
+      value: tasklist-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_5_DEFINITION
+      value: "write:*"
+    # Optimize access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_RESOURCE_SERVER_ID
+      value: optimize-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_6_DEFINITION
+      value: "write:*"
+    # Zeebe access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_RESOURCE_SERVER_ID
+      value: zeebe-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_7_DEFINITION
+      value: "write:*"
+    # WebModeler access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_RESOURCE_SERVER_ID
+      value: web-modeler-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_8_DEFINITION
+      value: "write:*"
+    # Console access.
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_RESOURCE_SERVER_ID
+      value: console-api
+    - name: KEYCLOAK_CLIENTS_3_PERMISSIONS_9_DEFINITION
+      value: "write:*"
+    - name: IDENTITY_TENANTS_0_NAME
+      value: Default
+    - name: IDENTITY_TENANTS_0_TENANTID
+      value: <default>
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_TYPE
+      value: USER
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_USERNAME
+      value: demo
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_APPLICATIONID
+      value: operate
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
+      value: test
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
+      value: connectors
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
+      value: zeebe
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_5_APPLICATIONID
+      value: venom
+connectors:
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
+    - name: ZEEBE_CLIENT_DEFAULT_JOB_WORKER_TENANT_IDS
+      value: "Tenant_Main_Connectors, Tenant_Second_Connectors, Tenant_1_Connectors, Tenant_2_Connectors"

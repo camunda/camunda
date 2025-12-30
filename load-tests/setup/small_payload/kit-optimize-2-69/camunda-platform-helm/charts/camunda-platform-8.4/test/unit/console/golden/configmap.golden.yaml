@@ -1,0 +1,62 @@
+---
+# Source: camunda-platform/templates/console/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-console-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.4.60"
+    app.kubernetes.io/component: console
+data:
+  application.yaml: |-
+    # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
+    camunda:
+      console:
+        managed:
+          method: plain
+          releases:
+          - name: camunda-platform-test
+            namespace: camunda-platform
+            components:
+            - name: Console
+              id: console
+              url: 
+              readiness: http://camunda-platform-test-console.camunda-platform:9100/health/readiness
+              metrics: http://camunda-platform-test-console.camunda-platform:9100/prometheus
+            - name: Keycloak
+              id: keycloak
+              url: http:///auth
+            - name: Identity
+              id: identity
+              url: 
+              readiness: http://camunda-platform-test.camunda-platform:82/actuator/health
+              metrics: http://camunda-platform-test.camunda-platform:82/actuator/prometheus
+            - name: Operate
+              id: operate
+              url: 
+              readiness: http://camunda-platform-test-operate.camunda-platform:80/actuator/health/readiness
+              metrics: http://camunda-platform-test-operate.camunda-platform:80/actuator/prometheus
+            - name: Optimize
+              id: optimize
+              url: 
+              readiness: http://camunda-platform-test-optimize.camunda-platform:80/api/readyz
+              metrics: http://camunda-platform-test-optimize.camunda-platform:8092/actuator/prometheus
+            - name: Tasklist
+              id: tasklist
+              url: 
+              readiness: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/health/readiness
+              metrics: http://camunda-platform-test-tasklist.camunda-platform:80/actuator/prometheus
+            - name: Zeebe Gateway
+              id: zeebeGateway
+              url: grpc://
+              readiness: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe-gateway.camunda-platform:9600/actuator/prometheus
+            - name: Zeebe
+              id: zeebe
+              readiness: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/health/readiness
+              metrics: http://camunda-platform-test-zeebe.camunda-platform:9600/actuator/prometheus

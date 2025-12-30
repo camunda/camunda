@@ -1,0 +1,21 @@
+{{- if and .Values.optimize.enabled (not .Values.global.noSecondaryStorage) .Values.optimize.persistence.enabled (not .Values.optimize.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-optimize-data
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+  {{- with .Values.optimize.persistence.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes: {{ .Values.optimize.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 4 }}
+  {{- with .Values.optimize.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.optimize.persistence.selector }}
+  selector: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.optimize.persistence.size | default "1Gi" | quote }}
+{{- end }}

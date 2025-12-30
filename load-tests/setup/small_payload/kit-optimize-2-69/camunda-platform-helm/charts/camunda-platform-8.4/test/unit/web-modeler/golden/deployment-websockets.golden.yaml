@@ -1,0 +1,95 @@
+---
+# Source: camunda-platform/templates/web-modeler/deployment-websockets.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-web-modeler-websockets
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: 8.4.19
+    app.kubernetes.io/component: websockets
+  annotations:
+    {}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: web-modeler
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: websockets
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: web-modeler
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/version: 8.4.19
+        app.kubernetes.io/component: websockets
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: web-modeler-websockets
+          image: "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.19"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          env:
+            - name: APP_NAME
+              value: "Web Modeler WebSockets"
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-id
+            - name: PUSHER_APP_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-key
+            - name: PUSHER_APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-secret
+          resources:
+            limits:
+              cpu: 200m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          ports:
+            - containerPort: 8060
+              name: http
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /up
+              scheme: HTTP
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true

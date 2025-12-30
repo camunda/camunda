@@ -1,0 +1,19 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webModeler.fullname" . }}-websockets-configuration
+  labels: {{- include "webModeler.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  {{- if .Values.webModeler.websockets.configuration }}
+  application.yaml: |
+    {{ .Values.webModeler.websockets.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+  {{- end }}
+  {{- range $key, $val := .Values.webModeler.websockets.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

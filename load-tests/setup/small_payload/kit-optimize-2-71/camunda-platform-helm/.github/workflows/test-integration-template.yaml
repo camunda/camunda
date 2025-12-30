@@ -1,0 +1,352 @@
+# Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md
+name: "Test - Integration - Template"
+
+on:
+  workflow_call:
+    inputs:
+      helmChartVersion:
+        description: Deploy from OCI registry using this version (overrides git-based chart packaging for install flow)
+        required: false
+        default: ""
+        type: string
+      values-config:
+        type: string
+        description: Some of the values files will allow subsitutions. For example, on the image.tags. This config supplies those values
+        default: '{}'
+        required: false
+      identifier:
+        description: The unique identifier of used in the deployment hostname.
+        required: true
+        type: string
+      camunda-helm-repo:
+        description: The Helm repo which is used during the upgrade flow.
+        required: false
+        default: camunda/camunda-platform
+        type: string
+      camunda-helm-dir:
+        required: false
+        default: camunda-platform-8.8
+        type: string
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      camunda-helm-upgrade-version:
+        description: The Helm chart version used in the upgrade-patch flow.
+        required: false
+        default: ""
+        type: string
+      camunda-version-previous:
+        description: The Camunda version used in the upgrade-minor flow.
+        required: false
+        default: ""
+        type: string
+      caller-git-ref:
+        required: false
+        default: main
+        type: string
+      deployment-ttl:
+        description: Define a TTL for the lifespan of the deployment.
+        required: false
+        default: 1h
+        type: string
+      platforms:
+        default: gke
+        type: string
+      infra-type:
+        description: Define the infrastructure that will be used to run the deployment.
+        default: "preemptible"
+        type: string
+      flows:
+        required: false
+        default: install
+        type: string
+      test-enabled:
+        required: false
+        default: true
+        type: boolean
+      e2e-enabled:
+        required: false
+        default: false
+        type: boolean
+      extra-values:
+        description: Pass extra values to the Helm chart.
+        required: false
+        type: string
+      vault-secret-mapping:
+        description: (optional) defines how to map Vault secrets to distro CI environment variables
+        required: false
+        type: string
+      auth-data:
+        required: false
+        type: string
+      cluster-type:
+        required: false
+        type: string
+      matrix-data:
+        required: false
+        type: string
+      test-case:
+        required: false
+        default: "pr"
+        type: string
+      scenario:
+        required: false
+        default: "elasticsearch"
+        type: string
+      shortname:
+        required: false
+        default: "es"
+        type: string
+      auth:
+        required: false
+        default: "keycloak"
+        type: string
+        description: the type of auth for the integration test. e.g keycloak,oidc,basic
+      exclude:
+        required: false
+        default: ""
+        type: string
+      values-enterprise:
+        required: false
+        default: "false"
+        type: string
+        description: Enable enterprise values
+      values-digest:
+        required: false
+        default: "false"
+        type: string
+        description: Enable digest values
+      camunda-helm-post-render:
+        description: Set to true if you would like to run the post-renderer script for OpenShift
+        required: false
+        default: true
+        type: boolean
+      camunda-helm-credentials-source:
+        description: |
+          Auto-generate credentials or copy them from external secret.
+          Valid options: auto-generated or external-secret-only.
+          New optional auto-generated secrets are only supported in Camunda 8.4 chart and above.
+        required: false
+        default: auto-generated
+        type: string
+      teleport-token:
+        description: The Teleport token to use for authentication.
+        required: false
+        default: infra-ci-prod-github-action-distribution
+        type: string
+      namespace-prefix:
+        description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
+        required: false
+        default: ""
+        type: string
+      run-all-e2e-tests:
+        description: "Run all E2E tests (playwright)"
+        required: false
+        default: false
+        type: boolean
+      always-delete-namespace:
+        description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
+        default: false
+        type: boolean
+        required: false
+      initialClaimValue:
+        description: This is only used for testing Entra. This is here so we can do exploratory testing with Entra.
+        required: false
+        default: ""
+        type: string
+    outputs:
+      deployment-url:
+        description: The URL of the deployed application.
+        value: ${{ jobs.print-outputs.outputs.deployment-url }}
+      namespace:
+        description: The namespace where the deployment is running.
+        value: ${{ jobs.print-outputs.outputs.namespace }}
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.identifier }}-${{ inputs.shortname }}-${{ inputs.scenario }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Vars with "CI_" prefix are used in the CI workflow only.
+  # Vars with "TEST_" prefix are used in the test runner tool (Task).
+  CI_DEPLOYMENT_TTL: ${{ inputs.deployment-ttl }}
+  # The Helm repo which is used during the upgrade flow.
+  TEST_CHART_REPO: ${{ inputs.camunda-helm-repo }}
+  # Docker Hub auth to avoid image pull rate limit.
+  TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
+  TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
+  TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
+  # Camunda registry auth to access WebModeler Docker image since it's not public.
+  TEST_DOCKER_USERNAME_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_CAMUNDA }}
+  TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_CAMUNDA }}
+  # OIDC.
+  ENTRA_APP_CLIENT_ID: ${{ secrets.ENTRA_APP_CLIENT_ID }}
+  ENTRA_APP_CLIENT_SECRET: ${{ secrets.ENTRA_APP_CLIENT_SECRET }}
+  ENTRA_APP_DIRECTORY_ID: ${{ secrets.ENTRA_APP_DIRECTORY_ID }}
+  ENTRA_APP_OBJECT_ID: ${{ secrets.ENTRA_APP_OBJECT_ID }}
+  # Misc.
+  AWS_PROFILE: distribution
+  CLUSTER_NAME: camunda-ci-eks
+  TELEPORT_TOKEN: ${{ inputs.teleport-token }}
+
+jobs:
+  init:
+    # This job is used to generate the matrix for the plaform (gke, rosa, etc.) crossed with the
+    # helm install/upgrade flows. This is not where we generate the matrix that determines which values
+    # file will be used for that install/upgrade flow. The matrix for the values file is generated in the
+    # test-chart-version-template.yaml workflow.
+    name: Generate test matrix - ${{ inputs.platforms }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-workflow-matrix.outputs.matrix }}
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          # This is needed if the workflow is triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
+      - name: CI Setup - Generate workflow matrix
+        id: generate-workflow-matrix
+        env:
+          CI_MATRIX_FILE: ".github/config/test-integration-matrix.yaml"
+          # Use GH env to safly load JSON matrix input.
+          CI_MATRIX_INPUT: "${{ inputs.matrix-data }}"
+        run: |
+          # TODO: Find a better way to handle GitHub Actions expressions substitution.
+          # Substitute vars.
+          export INPUTS_PLATFORMS_GKE=${{ contains(inputs.platforms, 'gke') }}
+          export INPUTS_PLATFORMS_EKS=${{ contains(inputs.platforms, 'eks') }}
+          export INPUTS_PLATFORMS_ROSA=${{ contains(inputs.platforms, 'rosa') }}
+          # Split flows string and check exact matches to avoid substring collisions
+          export INPUTS_FLOWS="${{ inputs.flows }}"
+          # Convert comma-separated list to array (no trimming)
+          IFS=',' read -r -a CI_FLOWS_ARR <<< "$INPUTS_FLOWS"
+
+          # Helper to check if array contains a value
+          flow_has() {
+            local needle="$1"
+            for f in "${CI_FLOWS_ARR[@]}"; do
+              if [[ "$f" == "$needle" ]]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          # Set flow flags
+          export INPUTS_FLOWS_INSTALL=$(flow_has "install" && echo true || echo false)
+          export INPUTS_FLOWS_UPGRADE_PATCH=$(flow_has "upgrade-patch" && echo true || echo false)
+          export INPUTS_FLOWS_UPGRADE_MINOR=$(flow_has "upgrade-minor" && echo true || echo false)
+          export INPUTS_FLOWS_MODULAR_UPGRADE_MINOR=$(flow_has "modular-upgrade-minor" && echo true || echo false)
+
+          cat "${CI_MATRIX_FILE}" | envsubst | tee /tmp/matrix.yaml
+          # Read matrix YAML file.
+          matrix_defult="$(yq '.matrix' --indent=0 --output-format json /tmp/matrix.yaml)"
+          matrix="${CI_MATRIX_INPUT:-${matrix_defult}}"
+          echo "\n"
+          # Print and set matrix JSON object as an output.
+          echo "${matrix}" | jq
+          echo "matrix=$(echo ${matrix} | jq -c)" > "$GITHUB_OUTPUT"
+
+  # The runner job is used to run the install/upgrade flows on the plaform (gke, rosa, etc.). This level of abstraction is needed so
+  # we can shard the tests across multiple jobs (this is done via the matrix). If the tests where another job in this workflow, we
+  # would need to wait for all the install/upgrade flows to complete before we can run the tests.
+  runner:
+    name: ${{ inputs.shortname }} - ${{ matrix.scenario.flow }} - ${{ matrix.distro.platform }}
+    needs: [init]
+    uses: ./.github/workflows/test-integration-runner.yaml
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    with:
+      helmChartVersion: ${{ inputs.helmChartVersion }}
+      auth: ${{ inputs.auth }}
+      exclude: ${{ inputs.exclude }}
+      identifier: ${{ inputs.identifier }}-${{ inputs.shortname }}
+      camunda-helm-repo: ${{ inputs.camunda-helm-repo }}
+      camunda-helm-dir: ${{ inputs.camunda-helm-dir }}
+      camunda-helm-git-ref: ${{ inputs.camunda-helm-git-ref }}
+      camunda-helm-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+      camunda-version-previous: ${{ inputs.camunda-version-previous }}
+      caller-git-ref: ${{ inputs.caller-git-ref }}
+      deployment-ttl: ${{ inputs.deployment-ttl }}
+      distro-platform: ${{ matrix.distro.platform }}
+      distro-type: ${{ matrix.distro.type }}
+      infra-type: ${{ inputs.infra-type }}
+      flow: ${{ matrix.scenario.flow }}
+      test-enabled: ${{ inputs.test-enabled }}
+      e2e-enabled: ${{ inputs.e2e-enabled }}
+      extra-values: ${{ inputs.extra-values }}
+      vault-secret-mapping: ${{ inputs.vault-secret-mapping }}
+      auth-data: ${{ inputs.auth-data }}
+      cluster-type: ${{ matrix.distro.type }}
+      cluster-name: ${{ matrix.distro.secret.cluster-name }}
+      cluster-location: ${{ matrix.distro.secret.cluster-location }}
+      workload-identity-provider: ${{ matrix.distro.secret.workload-identity-provider }}
+      service-account: ${{ matrix.distro.secret.service-account }}
+      server-url: ${{ matrix.distro.secret.server-url }}
+      username: ${{ matrix.distro.secret.username }}
+      password: ${{ matrix.distro.secret.password }}
+      scenario: ${{ inputs.scenario }}
+      camunda-helm-post-render: ${{ inputs.camunda-helm-post-render }}
+      camunda-helm-credentials-source: ${{ inputs.camunda-helm-credentials-source }}
+      run-all-e2e-tests: ${{ inputs.run-all-e2e-tests }}
+      shortname: ${{ inputs.shortname }}
+      teleport-token: ${{ inputs.teleport-token }}
+      namespace-prefix: ${{ inputs.namespace-prefix }}
+      values-digest: ${{ inputs.values-digest }}
+      values-enterprise: ${{ inputs.values-enterprise }}
+      values-config: ${{ inputs.values-config }}
+      always-delete-namespace: ${{ inputs.always-delete-namespace }}
+      initialClaimValue: ${{ inputs.initialClaimValue }}
+
+  print-outputs:
+    name: Print outputs
+    runs-on: ubuntu-latest
+    needs: [runner]
+    outputs:
+      deployment-url: ${{ steps.vars.outputs.ingress-host }}
+      namespace: ${{ needs.runner.outputs.namespace }}
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: CI Setup - ℹ️ Set workflow vars for both install and upgrade ℹ️
+        id: vars
+        uses: ./.github/actions/workflow-vars
+        with:
+          deployment-ttl: 30m
+          setup-flow: install
+          platform: ${{ inputs.platforms }}
+          identifier-base: ${{ inputs.identifier }}-${{ inputs.shortname }}
+          ingress-hostname-base: ci.distro.ultrawombat.com
+          chart-dir: ${{ inputs.camunda-helm-dir }}
+          chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+          prefix: ${{ inputs.namespace-prefix }}
+
+      - name: Print outputs
+        run: |
+          echo "Deployment URL: ${{ needs.runner.outputs.deployment-url }}"
+          echo "Namespace: ${{ needs.runner.outputs.namespace }}"
+          echo "deployment-url=${{ steps.vars.outputs.ingress-host }}" >> $GITHUB_OUTPUT
+          echo "namespace=${{ needs.runner.outputs.namespace }}" >> $GITHUB_OUTPUT

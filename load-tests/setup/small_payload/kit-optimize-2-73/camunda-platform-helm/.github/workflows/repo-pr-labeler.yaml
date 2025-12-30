@@ -1,0 +1,17 @@
+name: Repo - Pull Request Labels
+
+on:
+  pull_request_target:
+
+jobs:
+  labeler:
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Labeler
+        uses: actions/labeler@634933edcd8ababfe52f92936142cc22ac488b1b # v6
+        with:
+          configuration-path: .github/config/pr-labeler.yaml

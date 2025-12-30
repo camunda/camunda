@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-venom
+spec:
+  template:
+    spec:
+      containers:
+      - name: venom
+        env:
+        # Console uses client type "Public" so it's not tested in the machine-to-machine tests.
+        # TODO: Enable it again once 8.7 refactor is done.
+        - name: VENOM_VAR_TEST_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: identity-admin-client-token
+        - name: VENOM_VAR_ORCHESTRATION_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: identity-orchestration-client-token
+        - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: identity-connectors-client-token
+        - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: identity-optimize-client-token

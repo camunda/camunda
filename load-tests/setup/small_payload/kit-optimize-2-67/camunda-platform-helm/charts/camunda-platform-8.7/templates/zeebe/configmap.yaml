@@ -1,0 +1,143 @@
+{{- if .Values.zeebe.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe.fullname.broker" . }}-configuration
+  labels:
+    {{- include "zeebe.labels.broker" . | nindent 4 }}
+apiVersion: v1
+data:
+  {{- if .Values.zeebe.configuration }}
+  application.yaml: |
+    {{ .Values.zeebe.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    zeebe:
+      broker:
+        exporters:
+        {{- if and (not .Values.global.elasticsearch.disableExporter) .Values.global.elasticsearch.enabled }}
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              {{- if .Values.global.elasticsearch.external }}
+              authentication:
+                username: {{ .Values.global.elasticsearch.auth.username | quote }}
+              {{- end }}
+              url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+              index:
+                prefix: {{ .Values.global.elasticsearch.prefix | quote }}
+              {{- if .Values.zeebe.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
+                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+              {{- end }}
+        {{- else if .Values.global.opensearch.enabled }}
+          opensearch:
+            className: "io.camunda.zeebe.exporter.opensearch.OpensearchExporter"
+            args:
+              url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+              {{- if .Values.global.opensearch.auth.username }}
+              authentication:
+                username: {{ .Values.global.opensearch.auth.username | quote }}
+              {{- end }}
+              {{- if .Values.global.opensearch.aws.enabled }}
+              aws:
+                enabled: true
+              {{- end}}
+              {{- if .Values.zeebe.retention.enabled }}
+              retention:
+                enabled: true
+                minimumAge: {{ .Values.zeebe.retention.minimumAge | quote }}
+                policyName: {{ .Values.zeebe.retention.policyName | quote }}
+              {{- end }}
+        {{- else -}}
+          {{ " {}" }}
+        {{- end }}
+        gateway:
+          enable: true
+          network:
+            port: 26500
+          security:
+            enabled: false
+            authentication:
+              mode: none
+        network:
+          host: 0.0.0.0
+          commandApi:
+            port: {{ .Values.zeebe.service.commandPort }}
+          internalApi:
+            port: {{ .Values.zeebe.service.internalPort }}
+          monitoringApi:
+            port: {{  .Values.zeebe.service.httpPort | quote }}
+        cluster:
+          clusterSize: {{ .Values.zeebe.clusterSize | quote }}
+          replicationFactor: {{ .Values.zeebe.replicationFactor | quote }}
+          partitionsCount: {{ .Values.zeebe.partitionCount | quote }}
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+        threads:
+          cpuThreadCount: {{ .Values.zeebe.cpuThreadCount  | quote }}
+          ioThreadCount: {{ .Values.zeebe.ioThreadCount  | quote }}
+        data:
+          snapshotPeriod: {{ .Values.zeebe.data.snapshotPeriod | quote }}
+          disk:
+            freeSpace:
+              processing: {{ .Values.zeebe.data.disk.freeSpace.processing | quote }}
+              replication: {{ .Values.zeebe.data.disk.freeSpace.replication | quote }}
+
+    # Camunda Database configuration
+    {{- if .Values.global.elasticsearch.enabled }}
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: {{ .Values.global.elasticsearch.clusterName }}
+      {{- if .Values.global.elasticsearch.external }}
+      username: {{ .Values.global.elasticsearch.auth.username | quote }}
+      {{- end }}
+      # Elasticsearch full url
+      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+    {{- end }}
+    {{- if .Values.global.opensearch.enabled }}
+    camunda.database:
+      type: opensearch
+      url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+      {{- if .Values.global.opensearch.auth.username }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+
+  startup.sh: |
+    #!/usr/bin/env bash
+    set -eux -o pipefail
+
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}
+
+    if [ "$(ls -A /exporters/)" ]; then
+      mkdir -p /usr/local/zeebe/exporters/
+      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+    else
+      echo "No exporters available."
+    fi
+
+    {{- if .Values.zeebe.debug }}
+
+    env
+    {{- end }}
+
+    if [ "${ZEEBE_RESTORE}" = "true" ]; then
+      exec /usr/local/zeebe/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
+    else
+      exec /usr/local/zeebe/bin/broker
+    fi
+
+
+  broker-log4j2.xml: |
+  {{- if .Values.zeebe.log4j2 }}
+    {{ .Values.zeebe.log4j2 | indent 4 | trim }}
+  {{- end }}
+
+  {{- range $key, $val := .Values.zeebe.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

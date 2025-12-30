@@ -1,0 +1,56 @@
+{{- if .Values.tasklist.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tasklist.fullname" . }}
+  labels:
+    {{- include "tasklist.labels" . | nindent 4 }}
+data:
+  application.yml: |
+    # Tasklist configuration file
+    camunda.tasklist:
+      # Set Tasklist username and password.
+      # If user with <username> does not exists it will be created.
+      # Default: demo/demo
+      #username:
+      #password:
+      # ELS instance to store Tasklist data
+      elasticsearch:
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        # Host
+        host: {{ include "camundaPlatform.elasticsearchHost" . }}
+        # Transport port
+        port: {{ .Values.global.elasticsearch.port }}
+        {{- if .Values.global.elasticsearch.url }}
+        # Elasticsearch full url
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
+      # Zeebe instance
+      zeebe:
+        # Broker contact point
+        brokerContactPoint: "{{ tpl .Values.global.zeebeClusterName . }}-gateway:{{ .Values.global.zeebePort }}"
+      # ELS instance to export Zeebe data to
+      zeebeElasticsearch:
+        # Cluster name
+        clusterName: {{ .Values.global.elasticsearch.clusterName }}
+        # Host
+        host: {{ include "camundaPlatform.elasticsearchHost" . }}
+        # Transport port
+        port: {{ .Values.global.elasticsearch.port }}
+        # Index prefix, configured in Zeebe Elasticsearch exporter
+        prefix: {{ .Values.global.elasticsearch.prefix }}
+        {{- if .Values.global.elasticsearch.url }}
+        # Elasticsearch full url
+        url: {{ .Values.global.elasticsearch.url }}
+        {{- end }}
+      {{- if .Values.tasklist.retention.enabled }}
+      archiver:
+        ilmEnabled: true
+        ilmMinAgeForDeleteArchivedIndices: {{ .Values.tasklist.retention.minimumAge }}
+      {{- end }}
+    #Spring Boot Actuator endpoints to be exposed
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups
+    # Enable or disable metrics
+    #management.metrics.export.prometheus.enabled: false
+{{- end }}

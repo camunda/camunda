@@ -1,0 +1,21 @@
+{{- if and .Values.identity.enabled .Values.identity.persistence.enabled (not .Values.identity.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-identity-data
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+  {{- with .Values.identity.persistence.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes: {{ .Values.identity.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 4 }}
+  {{- with .Values.identity.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.identity.persistence.selector }}
+  selector: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.identity.persistence.size | default "1Gi" | quote }}
+{{- end }}

@@ -1,0 +1,125 @@
+---
+# Source: camunda-platform/templates/web-modeler/deployment-webapp.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-web-modeler-webapp
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: webapp
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: web-modeler
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: webapp
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: web-modeler
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/component: webapp
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: web-modeler-webapp
+          image: "camunda/web-modeler-webapp:8.6.23"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: NODE_ENV
+              value: "production"
+            - name: PLAY_ENABLED
+              value: "true"
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=128"
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler-configuration
+                  key: pusher-app-id
+            - name: PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler-configuration
+                  key: pusher-app-key
+            - name: PUSHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-secret
+            - name: CLIENT_PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler-configuration
+                  key: pusher-app-key
+          args:
+            - application.toml
+          resources:
+            limits:
+              cpu: 800m
+              memory: 512Mi
+            requests:
+              cpu: 400m
+              memory: 256Mi
+          ports:
+            - containerPort: 8070
+              name: http
+              protocol: TCP
+            - containerPort: 8071
+              name: http-management
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              scheme: HTTP
+              port: http-management
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: config
+              mountPath: /home/webapp/application.toml
+              subPath: application.toml
+      volumes:
+        - name: config
+          configMap:
+            name: camunda-platform-test-web-modeler-webapp-configuration
+      serviceAccountName: camunda-platform-test-web-modeler
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

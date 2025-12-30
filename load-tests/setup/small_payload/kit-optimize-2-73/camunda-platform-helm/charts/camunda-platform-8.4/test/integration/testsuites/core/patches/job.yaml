@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-venom
+spec:
+  template:
+    spec:
+      containers:
+      - name: venom
+        env:
+        # Console uses client type "Public" so it's not tested in the machine-to-machine tests.
+        - name: VENOM_VAR_TEST_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: identity-admin-client-password
+        - name: VENOM_VAR_TASKLIST_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: tasklist-secret
+        - name: VENOM_VAR_OPERATE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: operate-secret
+        - name: VENOM_VAR_OPTIMIZE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: optimize-secret
+        - name: VENOM_VAR_CONNECTORS_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: integration-test-credentials
+              key: connectors-secret

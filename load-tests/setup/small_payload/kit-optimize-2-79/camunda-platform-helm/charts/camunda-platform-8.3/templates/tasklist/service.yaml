@@ -1,0 +1,17 @@
+{{- if .Values.tasklist.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tasklist.fullname" . }}
+  labels:
+    {{- include "tasklist.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.tasklist.service.type }}
+  ports:
+    - port: {{ .Values.tasklist.service.port }}
+      name: http
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    {{- include "tasklist.matchLabels" . | nindent 4 }}
+{{- end }}

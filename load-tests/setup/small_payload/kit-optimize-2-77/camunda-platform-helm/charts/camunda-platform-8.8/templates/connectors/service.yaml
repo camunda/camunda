@@ -1,0 +1,24 @@
+{{- if .Values.connectors.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "connectors.serviceName" . }}
+  labels:
+    {{- include "connectors.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.connectors.service.annotations}}
+      {{- toYaml .Values.connectors.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.connectors.service.type }}
+  ports:
+    - name: {{ .Values.connectors.service.serverName }}
+      port: {{ .Values.connectors.service.serverPort }}
+      targetPort: {{ .Values.connectors.service.serverPort }}
+      protocol: TCP
+  selector:
+    {{- include "connectors.matchLabels" . | nindent 4 }}
+{{- end }}

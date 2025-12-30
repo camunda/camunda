@@ -1,0 +1,171 @@
+{{- if .Values.executionIdentity.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "executionIdentity.fullname" . }}
+  labels:
+    {{- include "executionIdentity.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.executionIdentity.replicas }}
+  selector:
+    matchLabels:
+      {{- include "executionIdentity.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/execution-identity/configmap.yaml") . | sha256sum }}
+      {{- with .Values.executionIdentity.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "executionIdentity.matchLabels" . | nindent 8 }}
+        {{- if .Values.executionIdentity.podLabels }}
+          {{- toYaml .Values.executionIdentity.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "executionIdentity.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.executionIdentity.initContainers | default list | toYaml | nindent 8) $ }}
+      serviceAccountName: {{ include "executionIdentity.serviceAccountName" . }}
+      {{- if .Values.executionIdentity.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.executionIdentity.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.executionIdentity.dnsPolicy }}
+      dnsPolicy: {{ .Values.executionIdentity.dnsPolicy | quote }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.executionIdentity.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.executionIdentity) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.executionIdentity.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.executionIdentity.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
+          {{- if .Values.executionIdentity.env}}
+            {{ .Values.executionIdentity.env | toYaml | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.executionIdentity.envFrom }}
+            {{- .Values.executionIdentity.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: management
+              containerPort: 9600
+              protocol: TCP
+          {{- if .Values.executionIdentity.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.executionIdentity.startupProbe.probePath }}
+              scheme: {{ .Values.executionIdentity.startupProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.executionIdentity.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.executionIdentity.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.executionIdentity.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.executionIdentity.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.executionIdentity.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.executionIdentity.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.executionIdentity.readinessProbe.probePath }}
+              scheme: {{ .Values.executionIdentity.readinessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.executionIdentity.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.executionIdentity.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.executionIdentity.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.executionIdentity.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.executionIdentity.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.executionIdentity.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.executionIdentity.livenessProbe.probePath }}
+              scheme: {{ .Values.executionIdentity.livenessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.executionIdentity.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.executionIdentity.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.executionIdentity.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.executionIdentity.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.executionIdentity.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.executionIdentity.command}}
+          command: {{ toYaml .Values.executionIdentity.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.executionIdentity.resources | nindent 12 }}
+          volumeMounts:
+            - name: execution-identity-configuration
+              mountPath: /usr/local/camunda/config
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
+          {{- if .Values.executionIdentity.extraVolumeMounts }}
+            {{- .Values.executionIdentity.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+      {{- if .Values.executionIdentity.sidecars }}
+        {{- .Values.executionIdentity.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: execution-identity-configuration
+          configMap:
+            name: {{ include "executionIdentity.fullname" . }}-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
+      {{- if .Values.executionIdentity.extraVolumes }}
+        {{- .Values.executionIdentity.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.executionIdentity.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.executionIdentity.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.executionIdentity.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,14 @@
+{{- include "zeebeGatewayRename" $ -}}
+{{- if .Values.zeebe.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe.fullname.gateway" . }}
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+apiVersion: v1
+data:
+  gateway-log4j2.xml: |
+{{- if .Values.zeebeGateway.log4j2 }}
+    {{ .Values.zeebeGateway.log4j2 | indent 4 | trim }}
+{{- end }}
+{{- end }}

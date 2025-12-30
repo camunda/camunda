@@ -1,0 +1,356 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+---
+name: "Chart - Release Public"
+
+on:
+  workflow_dispatch:
+    inputs:
+      rc-tag:
+        description: |
+          RC package tag to release.
+          Format: {version}-rc (e.g., "13.4.0-rc")
+          Or rolling tag: {chart-major}-rc-latest (e.g., "13-rc-latest")
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.rc-tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: write
+  issues: write
+
+env:
+  HARBOR_REGISTRY: registry.camunda.cloud
+  HARBOR_PROJECT: team-distribution
+  CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      app-version: ${{ steps.metadata.outputs.app_version }}
+      chart-dir-id: ${{ steps.metadata.outputs.chart_dir_id }}
+      release-tag: ${{ steps.metadata.outputs.release_tag }}
+      package-file: ${{ steps.metadata.outputs.package_file }}
+    env:
+      CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
+      CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Import Vault secrets for Harbor
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-harbor
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+          exportEnv: true
+
+      - name: Parse RC tag
+        id: parse
+        env:
+          HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
+          HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
+        run: |
+          input_tag="${{ inputs.rc-tag }}"
+          
+          # Check if it's a rolling tag format: {major}-rc-latest
+          if [[ "$input_tag" =~ ^[0-9]+-rc-latest$ ]]; then
+            echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual RC tag..."
+            
+            # Query Harbor API to get all tags for this artifact
+            tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}")
+            
+            if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
+              echo "::error::Rolling tag ${input_tag} not found in Harbor"
+              exit 1
+            fi
+            
+            # Find the actual RC tag (format: {version}-rc)
+            rc_tag=$(echo "$tags_response" | jq -r '.[].name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?-rc$"))' | head -1)
+            
+            if [[ -z "$rc_tag" ]]; then
+              echo "::error::Could not find actual RC tag for rolling tag ${input_tag}"
+              exit 1
+            fi
+            
+            echo "::notice::Resolved rolling tag ${input_tag} to: ${rc_tag}"
+          else
+            rc_tag="$input_tag"
+          fi
+          
+          echo "resolved_tag=${rc_tag}" | tee -a $GITHUB_OUTPUT
+          
+          # Validate format: {version}-rc or {version}-{prerelease}-rc
+          if [[ ! "$rc_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-rc$ ]]; then
+            echo "::error::Invalid RC tag format. Expected: {version}-rc (e.g., 13.4.0-rc or 14.0.0-alpha2-rc)"
+            exit 1
+          fi
+          
+          # Extract version (everything before -rc)
+          version="${rc_tag%-rc}"
+          echo "version=${version}" | tee -a $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            helm-cr
+            yq
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Login to Harbor
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+        with:
+          registry: ${{ env.HARBOR_REGISTRY }}
+          username: ${{ env.HARBOR_REGISTRY_USER }}
+          password: ${{ env.HARBOR_REGISTRY_PASSWORD }}
+
+      - name: Pull RC package from Harbor
+        run: |
+          mkdir -p .cr-release-packages
+          
+          helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
+            --version "${{ steps.parse.outputs.resolved_tag }}" \
+            --destination .cr-release-packages
+          
+          echo "Downloaded package:"
+          ls -la .cr-release-packages/
+
+      - name: Extract metadata from package
+        id: metadata
+        run: |
+          # helm pull names file based on Chart.yaml version, not OCI tag
+          package_file=$(ls .cr-release-packages/camunda-platform-*.tgz)
+          package_name=$(basename "${package_file}")
+          echo "package_file=${package_name}" | tee -a $GITHUB_OUTPUT
+          
+          # Extract Chart.yaml from package
+          tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
+          
+          version=$(yq '.version' /tmp/Chart.yaml)
+          app_version=$(yq '.appVersion' /tmp/Chart.yaml | sed 's/.x//')
+          prerelease=$(yq '.annotations."artifacthub.io/prerelease" // "false"' /tmp/Chart.yaml)
+          
+          echo "version=${version}" | tee -a $GITHUB_OUTPUT
+          echo "app_version=${app_version}" | tee -a $GITHUB_OUTPUT
+          echo "prerelease=${prerelease}" | tee -a $GITHUB_OUTPUT
+          
+          # Chart dir ID is the app version (e.g., 8.8)
+          echo "chart_dir_id=${app_version}" | tee -a $GITHUB_OUTPUT
+          
+          # Release tag format matches current: camunda-platform-{appVersion}-{version}
+          release_tag="camunda-platform-${app_version}-${version}"
+          echo "release_tag=${release_tag}" | tee -a $GITHUB_OUTPUT
+          
+          # Cosign file names (match current workflow naming)
+          echo "cosign_bundle=camunda-platform-${version}-cosign-bundle.json" | tee -a $GITHUB_OUTPUT
+          echo "cosign_verify=camunda-platform-${version}-cosign-verify.sh" | tee -a $GITHUB_OUTPUT
+
+      - name: Check if release already exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ steps.metadata.outputs.release_tag }}" > /dev/null 2>&1; then
+            echo "::error::Release ${{ steps.metadata.outputs.release_tag }} already exists"
+            echo "To re-release, delete the existing release first:"
+            echo "  gh release delete ${{ steps.metadata.outputs.release_tag }} --yes"
+            exit 1
+          fi
+
+      - name: Run Chart Releaser - Tagging/Uploading
+        env:
+          CR_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ steps.metadata.outputs.release_tag }}"
+
+      - name: Run Chart Releaser - Indexing
+        env:
+          CR_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ steps.metadata.outputs.release_tag }}"
+
+      - name: Set GitHub release type (prerelease)
+        if: ${{ steps.metadata.outputs.prerelease == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${{ steps.metadata.outputs.release_tag }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --prerelease
+
+      - name: Sign Helm chart with Cosign
+        working-directory: .cr-release-packages
+        run: |
+          cosign sign-blob -y "${{ steps.metadata.outputs.package_file }}" \
+            --bundle "${{ steps.metadata.outputs.cosign_bundle }}"
+
+      - name: Get Cosign Rekor log index
+        id: rekor
+        working-directory: .cr-release-packages
+        run: |
+          rekor_log_index=$(jq '.rekorBundle.Payload.logIndex' "${{ steps.metadata.outputs.cosign_bundle }}")
+          echo "log_index=${rekor_log_index}" | tee -a $GITHUB_OUTPUT
+
+      - name: Create Cosign verify script
+        working-directory: .cr-release-packages
+        run: |
+          cat << EOF > "${{ steps.metadata.outputs.cosign_verify }}"
+          # Rekor record:
+          echo "Rekor record:"
+          echo "https://search.sigstore.dev/?logIndex=${{ steps.rekor.outputs.log_index }}"
+
+          # Cosign verification:
+          cosign verify-blob ${{ steps.metadata.outputs.package_file }} \\
+            --bundle "${{ steps.metadata.outputs.cosign_bundle }}" \\
+            --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
+            --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
+          EOF
+
+      - name: Verify signed Helm chart
+        working-directory: .cr-release-packages
+        run: |
+          bash "${{ steps.metadata.outputs.cosign_verify }}"
+
+      - name: Upload Cosign bundle to release
+        working-directory: .cr-release-packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.metadata.outputs.release_tag }}" \
+            "${{ steps.metadata.outputs.cosign_bundle }}" \
+            --repo "${GITHUB_REPOSITORY}"
+
+      - name: Upload Cosign verify script to release
+        working-directory: .cr-release-packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.metadata.outputs.release_tag }}" \
+            "${{ steps.metadata.outputs.cosign_verify }}" \
+            --repo "${GITHUB_REPOSITORY}"
+
+      - name: Add release info to workflow summary
+        run: |
+          echo "ℹ️ Release Published ℹ️" >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ steps.metadata.outputs.release_tag }}
+          - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ steps.metadata.outputs.version }}
+          - Rekor record: https://search.sigstore.dev/?logIndex=${{ steps.rekor.outputs.log_index }}
+          Note: Artifact Hub link needs some time till AH scrapes the Helm repo index.
+          EOF
+
+  post-release:
+    name: Post-Release
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            git-cliff
+            gomplate
+            helm
+            helm-ct
+            yq
+
+      - name: Label PRs with version
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          chartPath: "charts/camunda-platform-${{ needs.release.outputs.chart-dir-id }}"
+        run: |
+          make release.set-prs-version-label
+
+      - name: Mark release-please PR as published
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+          CHART_DIR_ID: "${{ needs.release.outputs.chart-dir-id }}"
+        run: |
+          set -euo pipefail
+
+          head_ref="release-please--branches--main--components--camunda-platform-${CHART_DIR_ID}"
+          pr_number="$(gh pr list --state open --head "${head_ref}" --json number --jq '.[0].number // empty')"
+
+          if [[ -z "${pr_number}" ]]; then
+            echo "::error::Could not find open release-please PR with head '${head_ref}'."
+            echo "::error::Cannot update autorelease labels; refusing to continue."
+            exit 1
+          fi
+
+          current_labels="$(gh pr view "${pr_number}" --json labels --jq '.labels[].name')"
+          if echo "${current_labels}" | grep -qx "autorelease: pending"; then
+            gh pr edit "${pr_number}" --remove-label "autorelease: pending"
+          fi
+          if ! echo "${current_labels}" | grep -qx "autorelease: published"; then
+            gh pr edit "${pr_number}" --add-label "autorelease: published"
+          fi
+
+      - name: Summary
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          # Find the release-please PR for this chart
+          PR_URL=$(gh pr list --state open --head "release-please--branches--main--components--camunda-platform-${{ needs.release.outputs.chart-dir-id }}" --json url --jq '.[0].url' 2>/dev/null || echo "")
+          
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          
+          ## Post-Release Complete
+          
+          ✅ PRs labeled with version \`${{ needs.release.outputs.version }}\`
+          ✅ Release-please PR labeled with \`autorelease: published\`
+          
+          ### Manual Step Required
+          Merge the release-please PR to complete the release process.
+          ${PR_URL:+**PR:** ${PR_URL}}
+          EOF

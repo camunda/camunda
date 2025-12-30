@@ -1,0 +1,43 @@
+---
+# Source: camunda-platform/templates/zeebe-gateway/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-zeebe-gateway-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: "8.5.25"
+apiVersion: v1
+data:
+  gateway-log4j2.xml: |
+  application.yaml: |
+    management:
+
+    spring:
+      profiles:
+        active: "identity-auth"
+
+    server:
+      address: "0.0.0.0"
+      port: "8080"
+    camunda:
+      identity:
+        type: "KEYCLOAK"
+        issuerBackendUrl: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+        audience: "zeebe-api"
+        baseUrl: "http://camunda-platform-test-identity:80"
+    zeebe:
+      gateway:
+        security:
+          authentication:
+            mode: identity
+        monitoring:
+          host: 0.0.0.0
+          port: "9600"
+        cluster:
+          clusterName: camunda-platform-test-zeebe
+          port: "26502"

@@ -1,0 +1,15 @@
+defaults:
+  flows:
+    - install
+    - upgrade-patch
+    - upgrade-minor
+rules:
+  - match: "<=8.7"
+    deny:
+      - upgrade-minor
+  - match: "==8.9"
+    deny:
+      - upgrade-patch
+      - upgrade-minor
+
+

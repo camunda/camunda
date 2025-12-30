@@ -1,0 +1,115 @@
+---
+# Source: camunda-platform/templates/curator-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-curator-config
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.2.34"
+data:
+  action_file.yml: |-
+    ---
+    # Remember, leave a key empty if there is no value.  None will be a string,
+    # not a Python "NoneType"
+    #
+    # Also remember that all examples have 'disable_action' set to True.  If you
+    # want to use this action as a template, be sure to set this to False after
+    # copying it.
+    actions:
+      # delete zeebe- indices
+      1:
+        action: delete_indices
+        description: "Clean up ES by deleting old Zeebe indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+          - filtertype: pattern
+            kind: prefix
+            value: zeebe-
+          - filtertype: age
+            source: name
+            direction: older
+            timestring: '%Y-%m-%d'
+            unit: days
+            unit_count: 1
+            field:
+            stats_result:
+            epoch:
+            exclude: False
+      # delete operate- indices
+      2:
+        action: delete_indices
+        description: "Clean up ES by deleting old Operate indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+          - filtertype: pattern
+            kind: prefix
+            value: operate-
+          - filtertype: age
+            source: name
+            direction: older
+            timestring: '%Y-%m-%d'
+            unit: days
+            unit_count: 30
+            field:
+            stats_result:
+            epoch:
+            exclude: False
+      # delete tasklist- indices
+      3:
+        action: delete_indices
+        description: "Clean up ES by deleting old Tasklist indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+          - filtertype: pattern
+            kind: prefix
+            value: tasklist-
+          - filtertype: age
+            source: name
+            direction: older
+            timestring: '%Y-%m-%d'
+            unit: days
+            unit_count: 30
+            field:
+            stats_result:
+            epoch:
+            exclude: False
+      # or delete indices which exceed the total size of 10 gig
+  config.yml: |-
+    ---
+    # Remember, leave a key empty if there is no value.  None will be a string,
+    # not a Python "NoneType"
+    client:
+      hosts:
+        - elasticsearch-master-headless
+      port: 9200
+      url_prefix:
+      use_ssl: False
+      certificate:
+      client_cert:
+      client_key:
+      ssl_no_validate: False
+      http_auth:
+      timeout: 30
+      master_only: False
+    logging:
+      loglevel: INFO
+      logfile:
+      logformat: default
+      blacklist: ['elasticsearch', 'urllib3']

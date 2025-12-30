@@ -1,0 +1,125 @@
+---
+# Source: camunda-platform/templates/web-modeler/deployment-restapi.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-web-modeler-restapi
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: restapi
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: web-modeler
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: restapi
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: web-modeler
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/component: restapi
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: web-modeler-restapi
+          image: "camunda/web-modeler-restapi:8.6.23"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: JAVA_OPTIONS
+              value: "-XX:MaxRAMPercentage=80.0"
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-postgresql-web-modeler
+                  key: password
+            - name: RESTAPI_PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler-configuration
+                  key: pusher-app-id
+            - name: RESTAPI_PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler-configuration
+                  key: pusher-app-key
+            - name: RESTAPI_PUSHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-secret
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_client_cache.txt
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          ports:
+            - containerPort: 8081
+              name: http
+              protocol: TCP
+            - containerPort: 8091
+              name: http-management
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              scheme: HTTP
+              port: http-management
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /home/runner/config/application.yaml
+              subPath: application.yaml
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: camunda-platform-test-web-modeler-restapi-configuration
+      serviceAccountName: camunda-platform-test-web-modeler
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

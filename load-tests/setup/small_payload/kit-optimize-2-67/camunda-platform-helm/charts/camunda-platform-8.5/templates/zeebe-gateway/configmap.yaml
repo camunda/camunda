@@ -1,0 +1,77 @@
+{{- if .Values.zeebe.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe.fullname.gateway" . }}-configuration
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+apiVersion: v1
+data:
+  gateway-log4j2.xml: |
+{{- if .Values.zeebeGateway.log4j2 }}
+    {{ .Values.zeebeGateway.log4j2 | indent 4 | trim }}
+{{- end }}
+{{- if .Values.zeebeGateway.configuration }}
+  application.yaml: |
+    {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
+{{- else }}
+  application.yaml: |
+    {{- if or .Values.zeebeGateway.contextPath .Values.global.identity.auth.enabled }}
+    management:
+      {{- if .Values.zeebeGateway.contextPath }}
+      server:
+        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
+      {{- end }}
+
+    spring:
+      {{- if .Values.zeebeGateway.contextPath }}
+      webflux:
+        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
+      {{- end }}
+      {{- if .Values.global.identity.auth.enabled }}
+      profiles:
+        active: "identity-auth"
+      {{- end }}
+    {{- end }}
+
+    server:
+      address: "0.0.0.0"
+      port: {{  .Values.zeebeGateway.service.restPort | quote }}
+    {{- if or .Values.global.identity.auth.enabled .Values.global.multitenancy.enabled }}
+    camunda:
+      identity:
+        {{- if .Values.global.identity.auth.enabled }}
+        type: {{ include "camundaPlatform.authType" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        audience: {{ include "zeebe.authAudience" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
+        {{- end }}
+    {{- end }}
+    zeebe:
+      gateway:
+        {{- if .Values.global.identity.auth.enabled }}
+        security:
+          authentication:
+            mode: identity
+        {{- end }}
+        monitoring:
+          host: 0.0.0.0
+          port: {{ .Values.zeebeGateway.service.httpPort | quote }}
+        cluster:
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+          port: {{ .Values.zeebeGateway.service.internalPort | quote }}
+        {{- if .Values.global.multitenancy.enabled }}
+        multitenancy:
+          enabled: true
+        {{- end }}
+      {{- if .Values.global.multitenancy.enabled }}
+      broker:
+        gateway:
+          multitenancy:
+            enabled: true
+      {{- end }}
+{{- end }}
+{{- range $key, $val := .Values.zeebeGateway.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+{{- end }}
+{{- end }}

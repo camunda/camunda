@@ -1,0 +1,136 @@
+# GKE stable nodes need nodeSelector and tolerations config.
+
+# Auth.
+identity:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+  postgresql:
+    primary:
+      nodeSelector:
+        workload: standard
+      tolerations:
+      - effect: NoSchedule
+        key: workload
+        operator: Equal
+        value: standard
+  keycloak:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+    postgresql:
+      primary:
+        nodeSelector:
+          workload: standard
+        tolerations:
+        - effect: NoSchedule
+          key: workload
+          operator: Equal
+          value: standard
+
+# Web Apps.
+connectors:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+tasklist:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+operate:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+optimize:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+
+# Web Modeler.
+webModeler:
+  restapi:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+  webapp:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+  websockets:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+postgresql:
+  primary:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard
+
+# Zeebe.
+zeebe:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+zeebe-gateway:
+  nodeSelector:
+    workload: standard
+  tolerations:
+  - effect: NoSchedule
+    key: workload
+    operator: Equal
+    value: standard
+
+# Elasticsearch.
+elasticsearch:
+  master:
+    nodeSelector:
+      workload: standard
+    tolerations:
+    - effect: NoSchedule
+      key: workload
+      operator: Equal
+      value: standard

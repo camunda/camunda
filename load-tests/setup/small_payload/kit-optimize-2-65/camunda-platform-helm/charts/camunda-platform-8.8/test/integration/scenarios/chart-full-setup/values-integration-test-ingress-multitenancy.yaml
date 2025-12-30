@@ -1,0 +1,36 @@
+global:
+  multitenancy:
+    checksEnabled: true
+    apiEnabled: true
+
+  identity:
+    auth:
+      enabled: true
+      
+  security:
+    authorization:
+      enabled: true
+
+identity:
+  enabled: true
+  firstUser:
+    existingSecret: "integration-test-credentials"
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+
+orchestration:
+  security:
+    initialization:
+      mappings:
+        - mappingID: "admin-mapping"
+          claimName: "group"
+          claimValue: "admin"
+        - mappingID: "tenant-a-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-a"
+        - mappingID: "tenant-b-mapping"
+          claimName: "tenant"
+          claimValue: "tenant-b"

@@ -1,0 +1,148 @@
+#
+# Versions.
+
+version/8.10:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.10/**'
+
+version/8.9:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.9/**'
+
+version/8.8:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.8/**'
+
+version/8.7:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.7/**'
+
+version/8.6:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.6/**'
+
+version/8.5:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.5/**'
+
+version/8.4:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.4/**'
+
+version/8.3:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.3/**'
+
+version/8.2:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-8.2/**'
+
+#
+# Components.
+
+component/connectors:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/connectors/**'
+
+component/console:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/console/**'
+
+component/identity:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/identity/**'
+        - 'charts/camunda-platform-*/charts/identity/**'
+
+component/operate:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/operate/**'
+        - 'charts/camunda-platform-*/charts/operate/**'
+
+component/optimize:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/optimize/**'
+        - 'charts/camunda-platform-*/charts/optimize/**'
+
+component/monitoring:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/service-monitor/**'
+
+component/tasklist:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/tasklist/**'
+        - 'charts/camunda-platform-*/charts/tasklist/**'
+
+component/web-modeler:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/web-modeler/**'
+
+component/zeebe:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/zeebe/**'
+        - 'charts/camunda-platform-*/charts/zeebe/**'
+        - 'charts/camunda-platform-*/templates/zeebe-gateway/**'
+        - 'charts/camunda-platform-*/charts/zeebe-gateway/**'
+
+component/orchestration:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'charts/camunda-platform-*/templates/orchestration/**'
+
+#
+# Tools.
+
+tool/github-actions:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/actions/**'
+        - '.github/config/**'
+        - '.github/workflows/**'
+
+tool/release-please:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/config/release-please/**'
+        
+tool/renovatebot:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/renovate.json5'
+
+tool/asdf:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.tool-versions'
+
+tool/script:
+  - changed-files:
+    - any-glob-to-any-file:
+        - 'Makefile'
+        - 'scripts/**'
+
+#
+# Workflows.
+
+area/ci:
+  - changed-files:
+    - any-glob-to-any-file:
+        - '.github/actions/**'
+        - '.github/config/**'
+        - '.github/workflows/**'

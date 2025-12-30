@@ -1,0 +1,122 @@
+---
+# Source: camunda-platform/templates/web-modeler/deployment-restapi.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-web-modeler-restapi
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.2.20"
+    app.kubernetes.io/component: restapi
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: web-modeler
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: restapi
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: web-modeler
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/version: "8.2.20"
+        app.kubernetes.io/component: restapi
+    spec:
+      imagePullSecrets:
+        []
+      containers:
+      - name: web-modeler-restapi
+        image: "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.2.20"
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: JAVA_OPTIONS
+            value: "-Xmx1536m"
+          - name: RESTAPI_DB_HOST
+            value: "camunda-platform-test-postgresql-web-modeler"
+          - name: RESTAPI_DB_PORT
+            value: "5432"
+          - name: RESTAPI_DB_NAME
+            value: "web-modeler"
+          - name: RESTAPI_DB_USER
+            value: "web-modeler"
+          - name: RESTAPI_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: camunda-platform-test-postgresql-web-modeler
+                key: password
+          - name: RESTAPI_MAIL_HOST
+            value: ""
+          - name: RESTAPI_MAIL_PORT
+            value: "587"
+          - name: RESTAPI_MAIL_ENABLE_TLS
+            value: "true"
+          - name: RESTAPI_MAIL_FROM_ADDRESS
+            value: "example@example.com"
+          - name: RESTAPI_MAIL_FROM_NAME
+            value: "Camunda Platform"
+          - name: RESTAPI_SERVER_URL
+            value: "http://localhost:8084"
+          - name: RESTAPI_PUSHER_HOST
+            value: "camunda-platform-test-web-modeler-websockets"
+          - name: RESTAPI_PUSHER_PORT
+            value: "80"
+          - name: RESTAPI_PUSHER_APP_ID
+            valueFrom:
+              configMapKeyRef:
+                name: camunda-platform-test-web-modeler
+                key: pusher-app-id
+          - name: RESTAPI_PUSHER_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: camunda-platform-test-web-modeler
+                key: pusher-app-key
+          - name: RESTAPI_PUSHER_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: camunda-platform-test-web-modeler
+                key: pusher-app-secret
+          - name: RESTAPI_OAUTH2_TOKEN_ISSUER
+            value: "http://localhost:18080/auth/realms/camunda-platform"
+          - name: RESTAPI_OAUTH2_TOKEN_ISSUER_BACKEND_URL
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+          - name: RESTAPI_IDENTITY_BASE_URL
+            value: "http://camunda-platform-test-identity:80"
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        - containerPort: 8091
+          name: http-management
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            scheme: HTTP
+            port: http-management
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+          timeoutSeconds: 1

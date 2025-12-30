@@ -1,0 +1,63 @@
+name: "Chart - Release - Candidate"
+
+on:
+  workflow_dispatch:
+    inputs:
+      camunda-version:
+        type: choice
+        description: Camunda version in form of x.y
+        options:
+          - "8.3"
+          - "8.4"
+          - "8.5"
+          - "8.6"
+          - "8.7"
+          - "8.8"
+          - "8.9"
+
+jobs:
+  reset:
+    name: Update Branch
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: "${{ secrets.GH_APP_ID_DISTRO_CI }}"
+          private_key: "${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}"
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          ref: main
+          token: "${{ steps.generate-github-token.outputs.token }}"
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Update RC branch from main
+        run: |
+          git checkout -b release-candidate-${{ inputs.camunda-version }}
+          git push --force --set-upstream origin release-candidate-${{ inputs.camunda-version }}
+
+  release:
+    needs: reset
+    name: Release
+    uses: ./.github/workflows/chart-release-template.yaml
+    with:
+      branch: release-candidate-${{ inputs.camunda-version }}
+      workflow-ref: chart-release-template.yaml
+      chart-matrix: |
+        [
+          {
+            "name": "Helm Chart ${{ inputs.camunda-version }}",
+            "directory": "charts/camunda-platform-${{ inputs.camunda-version }}",
+            "versionSuffix": "rc-${{ inputs.camunda-version }}",
+            "override": true
+          }
+        ]

@@ -1,0 +1,45 @@
+{{- if .Values.executionIdentity.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "executionIdentity.fullname" . }}-configuration
+  labels:
+    {{- include "executionIdentity.labels" . | nindent 4 }}
+data:
+  application.yaml: |-
+    {{- if .Values.executionIdentity.configuration }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.executionIdentity.configuration "context" $ ) | nindent 4 }}
+    {{- else }}
+
+    spring:
+      profiles:
+        active: identity, auth-basic
+
+    # Camunda Database configuration
+    {{- if .Values.global.elasticsearch.enabled }}
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: {{ .Values.global.elasticsearch.clusterName }}
+      {{- if .Values.global.elasticsearch.external }}
+      username: {{ .Values.global.elasticsearch.auth.username | quote }}
+      {{- end }}
+      # Elasticsearch full url
+      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+    {{- end }}
+    {{- if .Values.global.opensearch.enabled }}
+    camunda.database:
+      type: opensearch
+      url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+      {{- if .Values.global.opensearch.auth.username }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      {{- end }}
+    {{- end }}
+
+    zeebe:
+      gateway:
+        cluster:
+          initial-contact-points: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
+          member-id: identity
+    {{- end }}
+{{- end }}

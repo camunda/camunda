@@ -1,0 +1,49 @@
+---
+# Source: camunda-platform/templates/web-modeler/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: camunda-platform-test-web-modeler
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: 8.4.19
+    app.kubernetes.io/component: web-modeler
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 128k
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: modeler.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: camunda-platform-test-web-modeler-webapp
+                port:
+                  number: 80
+    - host: modeler-ws.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: camunda-platform-test-web-modeler-websockets
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - modeler.example.com
+      secretName: webapp-tls-secret
+    - hosts:
+        - modeler-ws.example.com
+      secretName: websockets-tls-secret

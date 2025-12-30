@@ -1,0 +1,18 @@
+{{- include "zeebeGatewayRename" $ -}}
+{{- if and .Values.zeebe.enabled .Values.zeebeGateway.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "zeebe.names.gateway" . }}
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+spec:
+  {{- if .Values.zeebeGateway.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.zeebeGateway.podDisruptionBudget.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ .Values.zeebeGateway.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zeebe.matchLabels.gateway" . | nindent 6 }}
+{{ end }}

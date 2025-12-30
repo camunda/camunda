@@ -1,0 +1,38 @@
+{{/*
+The headless service is used for Zeebe brokers Pod-to-Pod communication.
+*/}}
+{{- if .Values.orchestration.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orchestration.serviceNameHeadless" . }}
+  labels:
+    {{- include "orchestration.serviceLabelsHeadless" . | nindent 4 }}
+  annotations:
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        .Values.global.annotations
+        .Values.orchestration.service.headless.annotations
+      )
+      "context" .
+    ) | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  type: {{ .Values.orchestration.service.type }}
+  ports:
+    - port: {{ .Values.orchestration.service.managementPort }}
+      protocol: TCP
+      name: {{ default "management" .Values.orchestration.service.managementName }}
+    - port: {{ .Values.orchestration.service.internalPort }}
+      protocol: TCP
+      name: {{ default "internal" .Values.orchestration.service.internalName  }}
+    - port: {{ .Values.orchestration.service.commandPort }}
+      protocol: TCP
+      name: {{ default "command" .Values.orchestration.service.commandName }}
+    {{- if .Values.orchestration.service.extraPorts }}
+    {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
+    {{- end }}
+  selector:
+    {{- include "orchestration.matchLabels" . | nindent 4 }}
+{{- end }}

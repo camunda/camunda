@@ -1,0 +1,94 @@
+global:
+  multitenancy:
+    enabled: true
+
+identity:
+  postgresql:
+    enabled: true
+    auth:
+      existingSecret: "integration-test-credentials"
+  env:
+    - name: IDENTITY_TENANTS_0_NAME
+      value: Default
+    - name: IDENTITY_TENANTS_0_TENANTID
+      value: <default>
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_TYPE
+      value: USER
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_USERNAME
+      value: demo
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_APPLICATIONID
+      value: operate
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
+      value: venom
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
+      value: connectors
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
+      value: zeebe
+    - name: KEYCLOAK_CLIENTS_2_ID
+      value: venom
+    - name: KEYCLOAK_CLIENTS_2_NAME
+      value: Venom
+    - name: KEYCLOAK_CLIENTS_2_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: integration-test-credentials
+          key: identity-admin-client-password
+    - name: KEYCLOAK_CLIENTS_2_REDIRECT_URIS_0
+      value: /dummy
+    - name: KEYCLOAK_CLIENTS_2_ROOT_URL
+      value: http://dummy
+    - name: KEYCLOAK_CLIENTS_2_TYPE
+      value: CONFIDENTIAL
+    # Identity access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_0_DEFINITION
+      value: read
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_RESOURCE_SERVER_ID
+      value: camunda-identity-resource-server
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_1_DEFINITION
+      value: write
+    # Operate access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_RESOURCE_SERVER_ID
+      value: operate-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_2_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_RESOURCE_SERVER_ID
+      value: operate-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_3_DEFINITION
+      value: "write:*"
+    # Tasklist access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_RESOURCE_SERVER_ID
+      value: tasklist-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_4_DEFINITION
+      value: "read:*"
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_RESOURCE_SERVER_ID
+      value: tasklist-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_5_DEFINITION
+      value: "write:*"
+    # Optimize access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_RESOURCE_SERVER_ID
+      value: optimize-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_6_DEFINITION
+      value: "write:*"
+    # Zeebe access.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_RESOURCE_SERVER_ID
+      value: zeebe-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_7_DEFINITION
+      value: "write:*"
+    # WebModeler access.
+    # NOTE: This actually should be only in the chart-with-web-modeler scenarios,
+    # but since Helm doesn't support merge lists it's added here.
+    # It could be removed later when the env vars could be configured via ConfigMap.
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_RESOURCE_SERVER_ID
+      value: web-modeler-api
+    - name: KEYCLOAK_CLIENTS_2_PERMISSIONS_8_DEFINITION
+      value: "write:*"

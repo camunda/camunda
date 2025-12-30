@@ -1,0 +1,12 @@
+orchestration:
+  importer:
+    enabled: true
+  migration:
+    identity:
+      enabled: true
+      backoffLimit: 12
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-migration-client-secret
+    data:
+      enabled: true

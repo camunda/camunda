@@ -1,0 +1,75 @@
+{{- if .Values.optimize.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "optimize.fullname" . }}-configuration
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+apiVersion: v1
+data:
+  {{- if .Values.optimize.configuration }}
+  environment-config.yaml: |
+    {{ .Values.optimize.configuration | indent 4 | trim }}
+  {{- else }}
+  environment-config.yaml: |
+    {{- if .Values.optimize.contextPath }}
+    container:
+      contextPath: {{ .Values.optimize.contextPath | quote }}
+    {{- end }}
+
+    zeebe:
+      enabled: true
+      partitionCount: {{ .Values.optimize.partitionCount }}
+      name: {{ .Values.global.elasticsearch.prefix }}
+
+    {{- if .Values.global.elasticsearch.enabled }}
+    es:
+      connection:
+        nodes:
+          - host: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            httpPort: {{ .Values.global.elasticsearch.url.port }}
+      {{- if .Values.global.elasticsearch.external }}
+      security:
+        username: {{ .Values.global.elasticsearch.auth.username | quote }}
+        {{- if eq .Values.global.elasticsearch.url.protocol "https" }}
+        ssl:
+          enabled: "true"
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    spring:
+      profiles:
+        active: "ccsm"
+
+    security:
+      auth:
+        cookie:
+          same-site:
+            enabled: false
+    {{- if .Values.global.identity.auth.enabled }}
+        ccsm:
+          redirectRootUrl: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+    api:
+      audience: {{ include "optimize.authAudience" . | quote }}
+      jwtSetUri: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+    {{- end }}
+  {{- end }}
+
+
+  {{- if .Values.global.identity.auth.enabled }}
+  application-ccsm.yaml: |
+    camunda:
+      identity:
+        clientId: {{ include "optimize.authClientId" . | quote }}
+        audience: {{ include "optimize.authAudience" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
+
+  {{- end }}
+
+  {{- range $key, $val := .Values.optimize.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

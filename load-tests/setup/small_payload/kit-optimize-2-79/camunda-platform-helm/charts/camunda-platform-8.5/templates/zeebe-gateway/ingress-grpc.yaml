@@ -1,0 +1,39 @@
+{{- if and .Values.zeebe.enabled .Values.zeebeGateway.ingress.grpc.enabled -}}
+{{- if not .Values.zeebeGateway.ingress.grpc.external -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "zeebe.names.gateway" . }}-grpc
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+{{- with .Values.zeebeGateway.ingress.grpc.annotations }}
+  annotations:
+  {{- tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.zeebeGateway.ingress.grpc.className }}
+  rules:
+    {{- if .Values.zeebeGateway.ingress.grpc.host }}
+    - host: {{ tpl .Values.zeebeGateway.ingress.grpc.host $ }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          - path: {{ .Values.zeebeGateway.ingress.grpc.path }}
+            pathType: {{ .Values.zeebeGateway.ingress.grpc.pathType }}
+            backend:
+              service:
+                name: {{ include "zeebe.names.gateway" . }}
+                port:
+                  number: {{ .Values.zeebeGateway.service.grpcPort }}
+  {{- if .Values.zeebeGateway.ingress.grpc.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ tpl .Values.zeebeGateway.ingress.grpc.host $ }}
+      {{- if .Values.zeebeGateway.ingress.grpc.tls.secretName }}
+      secretName: {{ .Values.zeebeGateway.ingress.grpc.tls.secretName }}
+      {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

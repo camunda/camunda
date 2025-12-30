@@ -1,0 +1,311 @@
+{{- if .Values.orchestration.enabled -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "orchestration.fullname" . }}
+  labels:
+    {{- include "orchestration.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.global.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: {{ div .Values.orchestration.clusterSize .Values.global.multiregion.regions }}
+  selector:
+    matchLabels:
+      {{- include "orchestration.matchLabels" . | nindent 6 }}
+  serviceName: {{ include "orchestration.serviceNameHeadless" . | quote }}
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        {{- include "orchestration.labels" . | nindent 8 }}
+        {{- if .Values.orchestration.podLabels }}
+        {{- toYaml .Values.orchestration.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/configmap-unified.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.orchestration.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      {{- if .Values.orchestration.priorityClassName }}
+      priorityClassName: {{ .Values.orchestration.priorityClassName | quote }}
+      {{- end }}
+      imagePullSecrets:
+        {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl ((coalesce .Values.orchestration.initContainers .Values.orchestration.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: orchestration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.orchestration.command }}
+          command: {{ toYaml .Values.orchestration.command | nindent 10 }}
+          {{- else }}
+          command: ["bash", "/usr/local/bin/startup.sh"]
+          {{- end }}
+          env:
+            - name: LC_ALL
+              value: C.UTF-8
+            - name: K8S_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_SERVICE_NAME
+              value: {{ include "orchestration.serviceNameHeadless" . | quote }}
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ORCHESTRATION_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ORCHESTRATION_CLIENT_SECRET"
+                "config" .Values.orchestration.security.authentication.oidc
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.orchestration.javaOpts }} -Djavax.net.ssl.trustStore=/usr/local/camunda/certificates/{{ include "camundaPlatform.getTlsSecretKey" . }}
+            {{- else }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.orchestration.javaOpts | quote }}
+            {{- end }}
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            {{- with .Values.orchestration.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
+            - name: AWS_SECRET_ACCESS_KEY
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
+            {{- end }}
+            {{/*
+            Variable substitution for passwords.
+            */}}
+            {{- if and .Values.global.elasticsearch.external (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ELASTICSEARCH_PASSWORD"
+                "config" .Values.global.elasticsearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.auth)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_OPENSEARCH_PASSWORD"
+                "config" .Values.global.opensearch.auth
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if and .Values.orchestration.exporters.rdbms.enabled (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.orchestration.data.secondaryStorage.rdbms)) "true") }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_ORCHESTRATION_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD"
+                "config" .Values.orchestration.data.secondaryStorage.rdbms
+            ) | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.orchestration.envFrom }}
+            {{- .Values.orchestration.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.orchestration.service.httpPort }}
+              name: {{ default "http" .Values.orchestration.service.httpName }}
+            - containerPort: {{ .Values.orchestration.service.commandPort }}
+              name: {{ default "command" .Values.orchestration.service.commandName }}
+            - containerPort: {{ .Values.orchestration.service.internalPort }}
+              name: {{ default "internal" .Values.orchestration.service.internalName }}
+            - containerPort: {{ .Values.orchestration.service.managementPort }}
+              name: {{ default "management" .Values.orchestration.service.managementName }}
+            - containerPort: {{ .Values.orchestration.service.grpcPort }}
+              name: {{ default "grpc" .Values.orchestration.service.grpcName }}
+          {{- if .Values.orchestration.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.startupProbe.probePath) }}
+              scheme: {{ .Values.orchestration.startupProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.orchestration.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}
+              scheme: {{ .Values.orchestration.readinessProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.orchestration.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.livenessProbe.probePath) }}
+              scheme: {{ .Values.orchestration.livenessProbe.scheme }}
+              port: {{ .Values.orchestration.service.managementPort }}
+            initialDelaySeconds: {{ .Values.orchestration.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.orchestration.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.orchestration.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.orchestration.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.orchestration.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.orchestration.resources | nindent 12 }}
+          volumeMounts:
+            {{- if or (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true") (eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true") }}
+            - name: keystore
+              mountPath: /usr/local/camunda/certificates/{{ include "camundaPlatform.getTlsSecretKey" . }}
+              subPath: {{ include "camundaPlatform.getTlsSecretKey" . }}
+            {{- end }}
+            - name: config
+              mountPath: /usr/local/bin/startup.sh
+              subPath: startup.sh
+            {{- if not ( eq .Values.orchestration.persistenceType "local" ) }}
+            - name: data
+              mountPath: /usr/local/camunda/data
+            {{- end }}
+            - name: exporters
+              mountPath: /exporters
+            - mountPath: /tmp
+              name: tmp
+            {{- if .Values.orchestration.log4j2 }}
+            - name: config
+              mountPath: /usr/local/camunda/config/log4j2.xml
+              subPath: log4j2.xml
+            {{- end }}
+            - name: config
+              mountPath: /usr/local/camunda/config/application.yaml
+              subPath: application.yaml
+            {{- range $key, $val := .Values.orchestration.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/camunda/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.orchestration.extraVolumeMounts }}
+            {{ .Values.orchestration.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+      {{- if .Values.orchestration.sidecars }}
+      {{- .Values.orchestration.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.elasticsearch.tls)) "true" }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "keystore"
+            "config" .Values.global.elasticsearch.tls
+        ) | nindent 8 }}
+        {{- else if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.opensearch.tls)) "true" }}
+        {{- include "camundaPlatform.emitTlsVolumeFromSecretConfig" (dict
+            "volumeName" "keystore"
+            "config" .Values.global.opensearch.tls
+        ) | nindent 8 }}
+        {{- end }}
+        {{- if eq .Values.orchestration.persistenceType "memory" }}
+        - name: data
+          emptyDir:
+            medium: "Memory"
+        {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "orchestration.fullname" . }}-configuration-unified
+            defaultMode: {{ .Values.orchestration.configMap.defaultMode }}
+        - name: exporters
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.orchestration.extraVolumes }}
+          {{ .Values.orchestration.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "orchestration.serviceAccountName" . }}
+      {{- if .Values.orchestration.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.orchestration.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.orchestration.dnsPolicy }}
+      dnsPolicy: {{ .Values.orchestration.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.orchestration.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.affinity }}
+      affinity:
+        {{- toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.tolerations }}
+      tolerations:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+  {{- if eq .Values.orchestration.persistenceType "disk" }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data
+        annotations:
+          {{- toYaml .Values.orchestration.pvcAnnotations | nindent 10 }}
+      spec:
+        accessModes: {{ .Values.orchestration.pvcAccessModes }}
+        {{- if .Values.orchestration.pvcStorageClassName }}
+        {{- if (eq "-" .Values.orchestration.pvcStorageClassName) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ .Values.orchestration.pvcStorageClassName }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.orchestration.pvcSelector }}
+        {{- with .Values.orchestration.pvcSelector }}
+        selector: {{ toYaml . | nindent 10 }}
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.orchestration.pvcSize | quote }}
+      {{- if .Values.orchestration.extraVolumeClaimTemplates }}
+      {{- toYaml .Values.orchestration.extraVolumeClaimTemplates | nindent 4 }}
+      {{- end }}
+  {{- end }}
+{{- end }}

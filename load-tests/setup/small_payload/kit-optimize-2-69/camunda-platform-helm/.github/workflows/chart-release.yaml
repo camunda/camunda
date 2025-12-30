@@ -1,0 +1,305 @@
+name: "Chart - Release"
+
+on:
+  # Allow to run the workflow from GitHub UI and other workflows.
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: "Trigger release manually"
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    types:
+      - labeled
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+jobs:
+  init:
+    name: Generate release matrix
+    if: ${{ (contains(github.event.*.labels.*.name, 'release') && github.event.pull_request.merged == false) || github.event.inputs.trigger }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.release.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - name: Generate chart versions
+        id: generate-chart-versions
+        uses: ./.github/actions/generate-chart-matrix
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            yq
+      - name: ⭐ Create release matrix
+        id: release
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          echo "Generating release matrix ..."
+          matrix_file="matrix_versions.txt"
+
+          # Create a tmp file and ensure it's empty.
+          echo "" > "${matrix_file}"
+
+          echo '${{ steps.generate-chart-versions.outputs.matrix }}' | jq -cr '.include.[0].version' | while read -r dir_id; do
+            chart_file="charts/camunda-platform-${dir_id}/Chart.yaml"
+
+            # Extract version info.
+            chart_version="$(yq '.version' "${chart_file}")"
+            camunda_version="$(yq '.appVersion' "${chart_file}" | sed 's/.x//')"
+            chart_prerelease="$(yq '.annotations."artifacthub.io/prerelease" // "false"' "${chart_file}")"
+
+            # Check if the release already exists.
+            if gh release view "camunda-platform-${chart_version}" > /dev/null 2>&1; then
+              echo "⚠️ Release Skipped ⚠️" >> "${GITHUB_STEP_SUMMARY}"
+              cat << EOF >> "${GITHUB_STEP_SUMMARY}"
+                - The release for chart dir \`camunda-platform-${dir_id}\` with version \`${chart_version}\` already exists.
+                - To rerelease, delete the GH release first.
+                - Check it on: https://github.com/${GITHUB_REPOSITORY}/releases/tag/camunda-platform-${chart_version}
+              ---
+          EOF
+            else
+              echo "[INFO] Add the chart in camunda-platform-${dir_id} to the release matrix."
+              cat << EOF >> "${matrix_file}"
+                {
+                  "dirID": "${dir_id}",
+                  "version": "${chart_version}",
+                  "appVersion": "${camunda_version}",
+                  "prerelease": ${chart_prerelease}
+                }
+          EOF
+            fi
+          done
+
+          # Generate JSON matrix and set it as a GH output.
+          matrix_versions="$(jq --slurp --compact-output '.' ${matrix_file})"
+          echo "matrix=${matrix_versions}" | tee -a $GITHUB_OUTPUT
+
+  release:
+    name: Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    needs: init
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # It's not expected to run more than one release in the same PR,
+      # but just for safety to avoid race condition of updating the Helm repo index.yaml file.
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.init.outputs.matrix) }}
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      CHART_RELEASER_CONFIG_FILE: ".github/config/chart-releaser.yaml"
+      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
+      CHART_RELEASE_VERSION: "${{ matrix.chart.version }}"
+      CHART_RELEASE_TAG_NAME: "camunda-platform-${{ matrix.chart.appVersion }}-${{ matrix.chart.version }}"
+      CHART_RELEASE_PACKAGE_FILE: "camunda-platform-${{ matrix.chart.version }}.tgz"
+      CHART_RELEASE_COSIGN_BUNDLE_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-bundle.json"
+      CHART_RELEASE_COSIGN_VERIFY_FILE: "camunda-platform-${{ matrix.chart.version }}-cosign-verify.sh"
+      CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY: "https://github.com/${{ github.workflow_ref }}"
+      CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER: "https://token.actions.githubusercontent.com"
+    steps:
+      # Init.
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            helm-cr
+            helm-ct
+            yq
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - name: Setup caching
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Add Helm repos
+        run: |
+          make helm.repos-add
+      - name: Update Helm dependency
+        run: |
+          chartPath="$(ct list-changed | tr '\n' ' ')" \
+            make helm.dependency-update
+
+      # Preparation.
+      - name: Remove Dev Comments
+        run: |
+          target_files=(
+            ${{ env.CHART_DIR }}/values*.yaml
+            ${{ env.CHART_DIR }}/Chart.yaml
+          )
+          for target_file in "${target_files[@]}"; do
+            sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' "${target_file}"
+          done
+          echo "Dev comments removed:"
+          git --no-pager diff
+      - name: Tidy up
+        run: |
+          # Clean up badges from readme to avoid showing them in Artifact Hub.
+          sed -ri '/Badge .+/d' "${{ env.CHART_DIR }}/README.md"
+
+      # Release.
+      # We moved away from "helm/chart-releaser-action" GHA because it has many limitations.
+      # Using the chart-releaser CLI provides more flexibility and control over the release process.
+      - name: Run Chart Releaser - Packaging
+        run: |
+          helm-cr package ${{ env.CHART_DIR }} --config ${{ env.CHART_RELEASER_CONFIG_FILE }}
+      # Only keep the chart in the release process to avoid releasing untargeted charts.
+      - name: Clean up packages
+        run: |
+          ls -lsa .cr-release-packages/*
+          find .cr-release-packages/* \
+            -not -name "${{ env.CHART_RELEASE_PACKAGE_FILE }}" \
+            -delete
+      - name: Run Chart Releaser - Tagging/Uploading
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          helm-cr upload --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
+      - name: Run Chart Releaser - Indexing
+        env:
+          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          helm-cr index --config ${{ env.CHART_RELEASER_CONFIG_FILE }} \
+            --push \
+            --owner "${{ github.repository_owner }}" \
+            --git-repo "$(basename ${{ github.repository }})" \
+            --release-name-template "${{ env.CHART_RELEASE_TAG_NAME }}"
+      - name: Set GitHub release type
+        if: ${{ matrix.chart.prerelease }}
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          gh release edit "${{ env.CHART_RELEASE_TAG_NAME }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --prerelease
+
+      # Sign and upload the signature.
+      - name: Sign Helm chart with Cosign
+        working-directory: .cr-release-packages
+        run: |
+          cosign sign-blob -y ${{ env.CHART_RELEASE_PACKAGE_FILE }} \
+            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}"
+      - name: Get Helm chart Cosign Rekor log index
+        working-directory: .cr-release-packages
+        run: |
+          rekor_log_index="$(cat ${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }} | jq '.rekorBundle.Payload.logIndex')"
+          echo "CHART_RELEASE_COSIGN_REKOR_LOG_INDEX=${rekor_log_index}" >> $GITHUB_ENV
+      - name: Create the script to verify signed Helm chart with Cosign
+        working-directory: .cr-release-packages
+        run: |
+          cat << EOF > ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
+          # Rekor.
+          echo "Rekor record:"
+          echo "https://search.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}"
+
+          # Cosign.
+          cosign verify-blob ${{ env.CHART_RELEASE_PACKAGE_FILE }} \\
+            --bundle "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \\
+            --certificate-identity "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_IDENTITY }}" \\
+            --certificate-oidc-issuer "${{ env.CHART_RELEASE_COSIGN_CERTIFICATE_OIDC_ISSUER }}"
+          EOF
+      - name: Verify signed Helm chart with Cosign
+        working-directory: .cr-release-packages
+        run: |
+          bash ${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}
+      - name: Upload Helm chart Cosign bundle file
+        working-directory: .cr-release-packages
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          gh release upload "${{ env.CHART_RELEASE_TAG_NAME }}" \
+            "${{ env.CHART_RELEASE_COSIGN_BUNDLE_FILE }}" \
+            --repo "${GITHUB_REPOSITORY}"
+      - name: Upload Helm chart Cosign verify file
+        working-directory: .cr-release-packages
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          gh release upload "${{ env.CHART_RELEASE_TAG_NAME }}" \
+            "${{ env.CHART_RELEASE_COSIGN_VERIFY_FILE }}" \
+            --repo "${GITHUB_REPOSITORY}"
+      - name: Add release info to workflow summary
+        run: |
+          echo "ℹ️ Release Published ℹ️" >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          - GitHub: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${{ env.CHART_RELEASE_TAG_NAME }}
+          - Artifact Hub: https://artifacthub.io/packages/helm/camunda/camunda-platform/${{ env.CHART_RELEASE_VERSION }}
+          - Rekor record: https://rekor.sigstore.dev/?logIndex=${{ env.CHART_RELEASE_COSIGN_REKOR_LOG_INDEX }}
+          Note: Artifact Hub link needs some time till it's AH scraps the Helm repo index.
+          EOF
+
+  post-release:
+    name: Post-Release - ${{ matrix.chart.appVersion }} (camunda-platform-${{ matrix.chart.dirID }})
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    needs: [init, release]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # It's not expected to run more than one release in the same PR,
+      # but just for safety to avoid race condition.
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJson(needs.init.outputs.matrix) }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      CHART_DIR: "charts/camunda-platform-${{ matrix.chart.dirID }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          # The verification step happens in the release branch before merging into the "main" branch.
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            git-cliff
+            gomplate
+            helm
+            helm-ct
+            yq
+      - name: Label PRs with app and chart version
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          # For Makefile.
+          chartPath: "${{ env.CHART_DIR }}"
+        run: |
+          make release.set-prs-version-label

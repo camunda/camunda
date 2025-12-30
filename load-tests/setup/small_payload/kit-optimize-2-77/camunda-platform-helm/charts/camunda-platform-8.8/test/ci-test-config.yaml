@@ -1,0 +1,125 @@
+# Used in the GitHub Actions unit test CI workflow.
+# auth can be the following values: basic, keycloak, oidc
+unit:
+  enabled: true
+  matrix:
+    - name: Management
+      packages: identity common console
+    - name: Orchestration
+      packages: orchestration connectors optimize
+    - name: Design
+      packages: web-modeler
+
+# Used in the GitHub Actions integration test CI workflow.
+integration:
+  vars:
+    # Using the common test dir.
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          auth: keycloak
+          shortname: eske
+          exclude: []
+        - name: upgrade-migration
+          enabled: true
+          flow: upgrade-minor
+          auth: keycloak
+          shortname: eske-upgm
+          exclude: []
+        - name: elasticsearch-basic
+          enabled: false
+          shortname: esba
+          auth: basic
+          flow: install
+          exclude: [identity,console,orchestration-grpc]
+        - name: oidc
+          enabled: true
+          exclude: [identity,console,orchestration-grpc]
+          shortname: esoi
+          auth: oidc
+          flow: upgrade-minor
+        - name: keycloak-mt
+          enabled: true
+          exclude: []
+          shortname: kemt
+          auth: keycloak
+          flow: upgrade-minor
+        - name: keycloak-rba
+          enabled: true
+          exclude: []
+          shortname: kerba
+          auth: keycloak
+          flow: upgrade-minor
+        - name: keycloak-original
+          enabled: true
+          exclude: []
+          shortname: keyc
+          auth: keycloak
+          flow: upgrade-minor
+        - name: elasticsearch
+          enabled: true
+          exclude: [orchestration-grpc]
+          shortname: eshy
+          auth: hybrid
+          flow: install
+    nightly:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          shortname: eskey
+          auth: keycloak
+          # The following integration tests need to be exluded when basic-auth is enabled.
+        - name: elasticsearch-basic
+          enabled: true
+          auth: basic
+          shortname: esba
+          exclude: [identity,console,orchestration-grpc]
+          # deployment should work but integration tests are not passing
+        - name: elasticsearch-oidc
+          enabled: false
+          exclude: []
+          shortname: esoi
+          auth: oidc
+        - name: multitenancy
+          enabled: true
+          shortname: mtke
+          exclude: []
+          auth: keycloak
+          # not supported
+        - name: opensearch
+          enabled: false
+          exclude: []
+          shortname: oske
+          auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: osba
+          exclude: [identity,console,orchestration-grpc]
+          auth: basic
+        - name: identity-migration
+          enabled: true
+          exclude: []
+          shortname: idmike
+          auth: keycloak
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          auth: basic
+          shortname: elbae
+          enterprise: true
+        - name: documentstore
+          enabled: false
+          exclude: []
+          shortname: docstr
+          auth: keycloak
+        - name: keycloak-external-mimic
+          enabled: true
+          exclude: []
+          shortname: kcextm
+          auth: keycloak

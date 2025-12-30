@@ -1,0 +1,41 @@
+{{- if .Values.orchestration.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "orchestration.serviceName" . }}
+  labels:
+    {{- include "orchestration.serviceLabels" . | nindent 4 }}
+  annotations:
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        .Values.global.annotations
+        .Values.orchestration.service.annotations
+      )
+      "context" .
+    ) | nindent 4 }}
+spec:
+  type: {{ .Values.orchestration.service.type }}
+  publishNotReadyAddresses: true
+  {{- if .Values.orchestration.service.loadBalancerIP}}
+  loadBalancerIP: {{ .Values.orchestration.service.loadBalancerIP }}
+  {{- end }}
+  {{- if .Values.orchestration.service.loadBalancerSourceRanges}}
+  loadBalancerSourceRanges:
+    {{- toYaml .Values.orchestration.service.loadBalancerSourceRanges | nindent 6 }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.orchestration.service.managementPort }}
+      protocol: TCP
+      name: {{ default "management" .Values.orchestration.service.managementName }}
+    - port: {{ .Values.orchestration.service.httpPort }}
+      protocol: TCP
+      name: {{ default "http" .Values.orchestration.service.httpName  }}
+    - port: {{ .Values.orchestration.service.grpcPort }}
+      protocol: TCP
+      name: {{ default "grpc" .Values.orchestration.service.grpcName }}
+    {{- if .Values.orchestration.service.extraPorts }}
+    {{ .Values.orchestration.service.extraPorts | toYaml | nindent 4 }}
+    {{- end }}
+  selector:
+    {{- include "orchestration.matchLabels" . | nindent 4 }}
+{{- end }}

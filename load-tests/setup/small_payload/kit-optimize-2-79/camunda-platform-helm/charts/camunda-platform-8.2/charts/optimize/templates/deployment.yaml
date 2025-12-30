@@ -1,0 +1,236 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "optimize.fullname" . }}
+  labels: {{- include "optimize.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "optimize.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: 
+        {{- include "optimize.labels" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+      {{- if .Values.migration.enabled }}
+      - name: migration
+        image: {{ include "camundaPlatform.image" . | quote }}
+        command: {{ .Values.command | default "['./upgrade/upgrade.sh', '--skip-warning']" }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+          {{- if .Values.contextPath }}
+          - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+            value: "true"
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+            value: {{ .Values.partitionCount | quote }}
+          - name: OPTIMIZE_ELASTICSEARCH_HOST
+            value: {{ .Values.global.elasticsearch.host | quote }}
+          - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+            value: {{ .Values.global.elasticsearch.port | quote }}
+          {{- if .Values.global.identity.auth.enabled }}
+          - name: SPRING_PROFILES_ACTIVE
+            value: "ccsm"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL
+            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+            value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
+            value: "optimize"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
+            {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
+                key: optimize-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameOptimizeIdentity" . }}
+                key: optimize-secret
+            {{- end }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
+            value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
+            value: "optimize-api"
+          - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+          {{- end }}
+          - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
+            value: "false"
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        {{- if .Values.extraVolumeMounts}}
+          {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- end }}
+      {{- end }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ include "camundaPlatform.image" . | quote }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+          {{- if .Values.contextPath }}
+          - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+            value: "true"
+          - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+            value: {{ .Values.partitionCount | quote }}
+          - name: OPTIMIZE_ELASTICSEARCH_HOST
+            value: {{ .Values.global.elasticsearch.host | quote }}
+          - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+            value: {{ .Values.global.elasticsearch.port | quote }}
+          {{- if .Values.global.identity.auth.enabled }}
+          - name: SPRING_PROFILES_ACTIVE
+            value: "ccsm"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL
+            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+            value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID
+            value: "optimize"
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET
+            {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
+                key: optimize-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameOptimizeIdentity" . }}
+                key: optimize-secret
+            {{- end }}
+          - name: CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE
+            value: "optimize-api"
+          - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
+            value: "optimize-api"
+          - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+          {{- end }}
+          - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
+            value: "false"
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8090
+          name: http
+          protocol: TCP
+        - containerPort: 8092
+          name: management
+          protocol: TCP
+        {{- if .Values.startupProbe.enabled }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.startupProbe.probePath }}
+            scheme: {{ .Values.startupProbe.scheme }}
+            port: http
+          initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.startupProbe.successThreshold }}
+          failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+            scheme: {{ .Values.readinessProbe.scheme }}
+            port: http
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.livenessProbe.probePath }}
+            scheme: {{ .Values.livenessProbe.scheme }}
+            port: http
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+        {{- end }}
+        volumeMounts:
+        {{- if .Values.extraVolumeMounts}}
+          {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- end }}
+      volumes:
+      {{- if .Values.extraVolumes}}
+      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

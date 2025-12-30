@@ -1,0 +1,56 @@
+version: '3'
+
+vars:
+  testID: PLACEHOLDER
+  chartDir: PLACEHOLDER
+
+env:
+  TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
+  TEST_PREFIX: integration-venom
+  TEST_TIMEOUT: 15m
+  TEST_PARENT: "../../testsuites"
+  TEST_DIR: "{{ .TEST_PARENT }}/{{ .testID }}"
+  TEST_NAME: "{{ .TEST_PREFIX }}-{{ .testID }}"
+
+tasks:
+  # TODO: Simplify the steps here when we use TestKube.
+  default:
+    cmds:
+    # Add testsuites vars.
+    - |
+      # Kustomize doesn't support dir with edit/patch.
+      # https://github.com/kubernetes-sigs/kustomize/issues/2803
+      (
+        cd {{ .chartDir }}/test/integration/testsuites/vars &&
+        kustomize edit add configmap venom-tests --disableNameSuffixHash \
+          --from-file=files/testsuite-{{ .testID }}.yaml
+      )
+    # Add testsuites secrets patch.
+    - |
+      cp -a {{ .chartDir }}/test/integration/testsuites/core/patches/* \
+        ../../testsuites/core/patches/
+    - |
+      kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars | kubectl apply -n $TEST_NAMESPACE -f -
+    # Add imagePullSecrets if needed.
+    - cmd: |
+        if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET}" ]]; then
+            cp -a $TEST_PARENT/base/patches/job-image-pull-secrets.yaml $TEST_DIR
+            # Kustomize doesn't support dir with edit/patch.
+            # https://github.com/kubernetes-sigs/kustomize/issues/2803
+            (
+              cd $TEST_DIR &&
+              kustomize edit add patch --path job-image-pull-secrets.yaml \
+                  --group batch --version v1 --kind Job --name ".*venom.*"
+            )
+        fi
+      silent: true
+    # Deploy.
+    - kubectl kustomize $TEST_DIR | kubectl apply -n $TEST_NAMESPACE -f -
+    # Get logs.
+    - while [[ ! $(kubectl logs -n $TEST_NAMESPACE job/$TEST_NAME 2> /dev/null) ]]; do
+          echo "Waiting for the test Pod to start in namespace $TEST_NAMESPACE with name $TEST_NAME ...";
+          sleep 5;
+      done
+    - kubectl logs -n $TEST_NAMESPACE --follow job/$TEST_NAME
+    # Check status.
+    - kubectl wait -n $TEST_NAMESPACE --for=condition=Complete job/$TEST_NAME --timeout=$TEST_TIMEOUT

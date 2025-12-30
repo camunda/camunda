@@ -1,0 +1,76 @@
+---
+# Source: camunda-platform/templates/operate/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-operate-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: operate
+    app.kubernetes.io/version: "8.6.34"
+data:
+  application.yaml: |
+    spring:
+      profiles:
+        active: "identity-auth"
+      security:
+        oauth2:
+          resourceserver:
+            jwt:
+              issuer-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+              jwk-set-uri: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+
+    camunda:
+      identity:
+        clientId: "operate"
+        audience: "operate-api"
+
+    # Camunda Database configuration
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: elasticsearch
+      # Elasticsearch full url
+      url: "http://camunda-platform-test-elasticsearch:9200"
+
+    # Operate configuration file
+    camunda.operate:
+      identity:
+        redirectRootUrl: "http://localhost:8081"
+
+      # ELS instance to store Operate data
+      elasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: camunda-platform-test-elasticsearch
+        # Transport port
+        port: 9200
+        # Elasticsearch full url
+        url: "http://camunda-platform-test-elasticsearch:9200"
+      # ELS instance to export Zeebe data to
+      zeebeElasticsearch:
+        # Cluster name
+        clusterName: elasticsearch
+        # Host
+        host: camunda-platform-test-elasticsearch
+        # Transport port
+        port: 9200
+        # Index prefix, configured in Zeebe Elasticsearch exporter
+        prefix: zeebe-record
+        # Elasticsearch full url
+        url: "http://camunda-platform-test-elasticsearch:9200"
+      # Zeebe instance
+      zeebe:
+        # Gateway address
+        gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
+    logging:
+      level:
+        ROOT: INFO
+        io.camunda.operate: INFO
+    #Spring Boot Actuator endpoints to be exposed
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,loggers,usage-metrics,backups

@@ -1,0 +1,10 @@
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe-gateway.fullname" . }}
+  labels: {{- include "zeebe.labels.gateway" . | nindent 4 }}
+apiVersion: v1
+data:
+  gateway-log4j2.xml: |
+{{- if .Values.log4j2 }}
+    {{ .Values.log4j2 | indent 4 | trim }}
+{{- end }}

@@ -1,0 +1,61 @@
+---
+# Source: camunda-platform/templates/connectors/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-connectors-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: connectors
+    app.kubernetes.io/version: "8.9.0-alpha2"
+data:
+  application.yaml: |    
+    server:
+      port: 8080
+    
+    management:
+      context-path: /actuator
+      endpoints:
+        web:
+          exposure:
+            include: metrics,health,prometheus
+      endpoint:
+        health:
+          show-details: always
+          show-components: always
+          group:
+            readiness:
+              include:
+              - processDefinitionImport
+              - zeebeClient
+    
+    camunda:
+      client:
+        rest-address: http://camunda-platform-test-zeebe-gateway:8080
+        grpc-address: http://camunda-platform-test-zeebe-gateway:26500
+        worker:
+          defaults:
+            max-jobs-active: 32
+            stream-enabled: true
+        mode: selfManaged
+        auth:
+          method: basic
+          username: "connectors"
+          password: "connector"
+      connector:
+        headless:
+          service-url: "camunda-platform-test-connectors-headless"
+        webhook:
+          enabled: true
+        polling:
+          enabled: true
+        agenticai:
+          enabled: true
+    
+    logging:
+      level:
+        io.camunda.connector: INFO

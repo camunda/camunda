@@ -1,0 +1,281 @@
+{{- if .Values.identity.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "identity.fullname" . }}
+  labels: {{- include "identity.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels: {{- include "identity.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "identity.labels" . | nindent 8 }}
+        {{- if .Values.identity.podLabels }}
+        {{- toYaml .Values.identity.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+      {{- if .Values.identity.podAnnotations }}
+        {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "identity.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.identity.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.identity.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            {{- if .Values.global.identity.auth.enabled }}
+            {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+            {{- if eq (include "connectors.authMethod" .) "oidc" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET"
+                "config"        .Values.connectors.security.authentication.oidc
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET"
+                "config"        .Values.orchestration.security.authentication.oidc
+            ) | nindent 12 }}
+            {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName"       "VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET"
+                "config"        .Values.global.identity.auth.optimize
+            ) | nindent 12 }}
+            - name: VALUES_KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "identity.keycloak.authExistingSecret" . }}
+                  key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+            {{- if .Values.identity.firstUser.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "VALUES_IDENTITY_FIRSTUSER_PASSWORD"
+              "config" .Values.identity.firstUser
+              "plaintextKey" "password"
+            ) | nindent 12 }}
+            {{- end }}
+            {{- if .Values.global.identity.auth.admin.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "VALUES_CAMUNDA_ADMIN_CLIENT_SECRET"
+              "config" .Values.global.identity.auth.admin
+            ) | nindent 12 }}
+            {{- end }}
+            {{- end }}
+            {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
+              "config" .Values.global.identity.auth.identity
+            ) | nindent 12 }}
+            - name: CAMUNDA_OPTIMIZE_CLIENT_ID
+              value: {{ .Values.global.identity.auth.optimize.clientId | quote }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "CAMUNDA_OPTIMIZE_SECRET"
+              "config" .Values.global.identity.auth.optimize
+            ) | nindent 12 }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.identity.externalDatabase.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+              "envName" "IDENTITY_DATABASE_PASSWORD"
+              "config" .Values.identity.externalDatabase
+              "legacyKeyField" "existingSecretPasswordKey"
+            ) | nindent 12 }}
+            {{- else if .Values.identityPostgresql.enabled }}
+            - name: IDENTITY_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "identity.postgresql.secretName" . }}
+                  key: {{ include "identity.postgresql.secretKey" . }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
+            - name: AWS_SECRET_ACCESS_KEY
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
+            {{- end }}
+          {{- if .Values.identity.users}}
+          {{- range $index, $user := .Values.identity.users }}
+          {{- if $user.secret.inlineSecret }}
+            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
+              value: {{ $user.secret.inlineSecret | quote }}
+          {{- else }}
+            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $user.secret.existingSecret }}
+                  key: {{ $user.secret.existingSecretKey }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.identity.clients}}
+            {{- range $index, $client := .Values.identity.clients }}
+            {{- if $client.secret.inlineSecret }}
+            - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
+              value: {{ $client.secret.inlineSecret | quote }}
+            {{- else }}
+            - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $client.secret.existingSecret }}
+                  key: {{ $client.secret.existingSecretKey }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.identity.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.identity.envFrom }}
+            {{- .Values.identity.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.identity.command}}
+          command: {{ toYaml .Values.identity.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.identity.resources | nindent 12 }}
+          ports:
+            - containerPort: 8084
+              name: http
+              protocol: TCP
+            - containerPort: 8082
+              name: metrics
+              protocol: TCP
+          {{- if .Values.identity.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
+              path: {{ .Values.identity.startupProbe.probePath }}
+              scheme: {{ .Values.identity.startupProbe.scheme }}
+              port: metrics
+            initialDelaySeconds: {{ .Values.identity.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.identity.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
+              path: {{ .Values.identity.readinessProbe.probePath }}
+              scheme: {{ .Values.identity.readinessProbe.scheme }}
+              port: metrics
+            initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.identity.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
+              path: {{ .Values.identity.livenessProbe.probePath }}
+              scheme: {{ .Values.identity.livenessProbe.scheme }}
+              port: metrics
+            initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /app/config/application.yaml
+              subPath: application.yaml
+          {{- range $key, $val := .Values.identity.extraConfiguration }}
+            - name: config
+              mountPath: /app/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.identity.extraVolumeMounts}}
+              {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.identity.sidecars }}
+        {{- .Values.identity.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+
+      volumes:
+        - name: tmp
+          {{- if and .Values.identity.persistence.enabled .Values.identity.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.identity.persistence.existingClaim }}
+          {{- else if .Values.identity.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-identity-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "identity.fullname" . }}-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.identity.extraVolumes}}
+        {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "identity.serviceAccountName" . }}
+      {{- if .Values.identity.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.identity.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.identity.dnsPolicy }}
+      dnsPolicy: {{ .Values.identity.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.identity.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

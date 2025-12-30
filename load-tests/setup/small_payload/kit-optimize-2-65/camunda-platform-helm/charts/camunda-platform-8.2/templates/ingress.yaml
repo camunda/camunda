@@ -1,0 +1,111 @@
+{{- if .Values.global.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+{{- with .Values.global.ingress.annotations }}
+  annotations: {{ tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.global.ingress.className }}
+  rules:
+    {{- if .Values.global.ingress.host }}
+    - host: {{ .Values.global.ingress.host }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          {{- if and .Values.console.enabled .Values.console.contextPath }}
+          - backend:
+              service:
+                name: {{ template "console.fullname" . }}
+                port:
+                  number: {{ .Values.console.service.port }}
+            path: {{ .Values.console.contextPath }}
+            pathType: Prefix
+          {{- end }}
+          {{- if .Values.identity.enabled }}
+          {{- if or .Values.identity.keycloak.enabled .Values.global.identity.keycloak.internal }}
+          - backend:
+              service:
+                name: {{ include "identity.keycloak.service" .Subcharts.identity }}
+                port:
+                  number: {{ include "identity.keycloak.port" .Subcharts.identity }}
+            path: {{ include "identity.keycloak.contextPath" .Subcharts.identity }}
+            pathType: Prefix
+          {{- end }}
+          {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
+          {{- if and .Values.identity.contextPath (not .Values.identity.ingress.enabled) }}
+          - backend:
+              service:
+                name: {{ template "identity.fullname" .Subcharts.identity }}
+                port:
+                  number: {{ .Values.identity.service.port }}
+            path: {{ .Values.identity.contextPath }}
+            pathType: Prefix
+          {{- end }}
+          {{- end }}
+          {{- if and .Values.operate.enabled .Values.operate.contextPath }}
+          - backend:
+              service:
+                name: {{ template "operate.fullname" .Subcharts.operate }}
+                port:
+                  number: {{ .Values.operate.service.port }}
+            path: {{ .Values.operate.contextPath }}
+            pathType: Prefix
+          {{- end }}
+          {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
+          - backend:
+              service:
+                name: {{ template "optimize.fullname" .Subcharts.optimize }}
+                port:
+                  number: {{ .Values.optimize.service.port }}
+            path: {{ .Values.optimize.contextPath }}
+            pathType: Prefix
+          {{- end }}
+          {{- if and .Values.tasklist.enabled .Values.tasklist.contextPath }}
+          - backend:
+              service:
+                name: {{ template "tasklist.fullname" .Subcharts.tasklist }}
+                port:
+                  number: {{ .Values.tasklist.service.port }}
+            path: {{ .Values.tasklist.contextPath }}
+            pathType: Prefix
+          {{- end }}
+          {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
+          - backend:
+              service:
+                name: {{ template "webModeler.webapp.fullname" . }}
+                port:
+                  number: {{ .Values.webModeler.webapp.service.port }}
+            path: {{ .Values.webModeler.contextPath }}
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ template "webModeler.websockets.fullname" . }}
+                port:
+                  number:  {{ .Values.webModeler.websockets.service.port }}
+            path: {{ template "webModeler.websocketContextPath" . }}
+            pathType: Prefix
+          {{- end }}
+          {{- if and .Values.connectors.enabled .Values.connectors.contextPath }}
+          - backend:
+              service:
+                name: {{ template "connectors.fullname" . }}
+                port:
+                  number: {{ .Values.connectors.service.serverPort }}
+            path: {{ .Values.connectors.contextPath }}
+            pathType: Prefix
+          {{- end }}
+  {{- if .Values.global.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.global.ingress.host }}
+      {{- if .Values.global.ingress.tls.secretName }}
+      secretName: {{ .Values.global.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+{{- end }}

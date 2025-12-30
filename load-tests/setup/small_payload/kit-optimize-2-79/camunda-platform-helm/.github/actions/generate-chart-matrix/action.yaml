@@ -1,0 +1,95 @@
+# -----------------------------------------------------------------------------
+# Camunda Platform Helm – Build Matrix Generator (Purpose & Rationale)
+#
+# Problem
+# -------
+# The repository hosts many versioned Camunda Platform Helm charts (8.2, 8.3, …).
+# Building and testing every single chart on every pull-request would slow the
+# feedback loop and needlessly consume CI resources.
+#
+# Goal
+# ----
+# Run the smallest *sufficient* set of chart builds for a given change set while
+# still guaranteeing correctness when the build or release process itself is
+# modified.
+#
+# Strategy
+# --------
+# 1. Detect which files were modified in the commit / PR.
+# 2. Derive the **minimum chart version matrix** from that file list.
+#    • Regular code or chart changes  → build only the impacted versions.
+#    • Changes in CI configuration    → build *all* versions, as any could be
+#      affected.
+# 3. Provide the resulting set as a JSON matrix so downstream workflows can
+#    fan-out their jobs.
+#
+# When is *every* chart built?
+# ---------------------------
+# If the change touches `.github/workflows/**`, `.github/actions/**`, or 
+# `.github/config/**`, the CI pipeline or shared configuration may have changed. 
+# In the absence of guarantees we take the conservative route and rebuild every 
+# chart to retain confidence.
+#
+# Manual override
+# ---------------
+# Maintainers can bypass automatic detection by passing the `manual-trigger`
+# input, forcing the matrix to contain exactly one desired version. This is
+# useful for re-publishing a chart or running ad-hoc validations.
+# -----------------------------------------------------------------------------
+name: Generate chart matrix
+description: Find changed charts and generate matrix for changed ones only.
+inputs:
+  manual-trigger:
+    description: Input used by workflow dispatch to trigger a build on a specific chart version
+    default: "none"
+  manual-scenario:
+    description: Input used by workflow dispatch to trigger a build on a specific scenario
+    default: "none"
+  manual-flow:
+    description: Optional override of flows (comma-separated)
+    default: "none"
+outputs:
+  matrix:
+    description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-chart-versions.outputs.matrix }}
+  camunda-versions:
+    description: |
+      JSON array of changed Camunda versions (e.g., [8.4, 8.5]),
+      which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-camunda-versions.outputs.camunda-versions }}
+runs:
+  using: composite
+  steps:
+    - name: ℹ️ Print workflow inputs ℹ️
+      shell: bash
+      env:
+        GITHUB_CONTEXT: ${{ toJson(inputs) }}
+      run: |
+        echo "Action Inputs:"
+        echo "${GITHUB_CONTEXT}"
+    - name: Get changed dirs
+      id: changed-files
+      uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47
+      with:
+        dir_names: "true"
+    - name: Get chart versions
+      id: get-chart-versions
+      uses: ./.github/actions/get-chart-versions
+    - name: Generate matrix
+      shell: bash
+      id: set-chart-versions
+      env:
+        ALL_MODIFIED_FILES: ${{ steps.changed-files.outputs.all_modified_files }}
+      run: |
+        bash scripts/generate-chart-matrix.sh \
+          --manual-trigger "${{ inputs.manual-trigger }}" \
+          --manual-scenario "${{ inputs.manual-scenario }}" \
+          --manual-flow "${{ inputs.manual-flow }}" \
+          --active-versions "${{ steps.get-chart-versions.outputs.active }}" \
+          --all-modified-files "${{ steps.changed-files.outputs.all_modified_files }}"
+    - name: Generate matrix Camunda versions
+      shell: bash
+      id: set-camunda-versions
+      run: |
+        camunda_versions="$(echo '${{ steps.set-chart-versions.outputs.matrix }}' | jq -c '[.include.[].version] | unique')"
+        echo "camunda-versions=${camunda_versions}" | tee -a $GITHUB_OUTPUT

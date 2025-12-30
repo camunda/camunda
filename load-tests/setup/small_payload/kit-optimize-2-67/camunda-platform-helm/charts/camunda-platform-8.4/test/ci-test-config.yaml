@@ -1,0 +1,40 @@
+# Used in the GitHub Actions unit test CI workflow.
+unit:
+  enabled: true
+  matrix:
+    - name: Core
+      packages: identity camunda console
+    - name: Apps
+      packages: connectors operate optimize tasklist
+    - name: Zeebe
+      packages: zeebe zeebe-gateway
+    - name: WebModeler
+      packages: web-modeler
+
+# Used in the GitHub Actions integration test CI workflow.
+integration:
+  vars:
+    # Using the common test dir.
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          shortname: es
+          auth: keycloak
+    nightly:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          shortname: es
+          auth: keycloak
+        - name: multitenancy
+          enabled: true
+          exclude: []
+          shortname: mt
+          auth: keycloak

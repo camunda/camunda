@@ -1,0 +1,133 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Chart Version - Template"
+
+on:
+  workflow_call:
+    inputs:
+      pr-number:
+        description: Pull Request number. Required due to a github bug that is not giving the concurrency group the pull_request number from the github event
+        required: true
+        type: string
+      camunda-version:
+        description: Camunda version to test
+        required: true
+        type: string
+      case:
+        description: Type
+        required: true
+        type: string
+      scenario:
+        description: Scenario
+        required: true
+        type: string
+      shortname:
+        description: Shortname for the scenario within the identifier
+        required: true
+        type: string
+      auth:
+        description: Auth
+        required: true
+        type: string
+      exclude:
+        description: Exclude
+        required: false
+        default: "no-exclude"
+        type: string
+      run-all-e2e-tests:
+        description: "Run all E2E tests (playwright)"
+        required: false
+        default: false
+        type: boolean
+      platforms:
+        description: The deployment cloud platform
+        default: gke
+        required: false
+        type: string
+      flows:
+        description: The flows to run
+        default: "install"
+        type: string
+        required: false
+      e2e-enabled:
+        required: false
+        default: true
+        type: boolean
+      deployment-ttl:
+        required: false
+        default: 1h
+        type: string
+      camunda-helm-upgrade-version:
+        required: false
+        type: string
+      camunda-version-previous:
+        required: false
+        type: string
+      test-enabled:
+        required: false
+        default: true
+        type: boolean
+      always-delete-namespace:
+        description: Always delete the namespace after the test run. To make sure we clean up the namespace even after a workflow is cancelled, we need to set the ttl to something. This causes a conflict with always deleting the namespace as now the empty ttl cannot be used to trigger a deletion. This flag now performs that function.
+        default: false
+        type: boolean
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.pr-number }}-${{ inputs.shortname }}-${{ inputs.flows }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.flows }}-${{ inputs.exclude }}-${{ inputs.platforms }}-${{ github.ref_name || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  parse-platforms:
+    name: Parse platforms - ${{ inputs.flows }}
+    runs-on: ubuntu-latest
+    outputs:
+      platforms: ${{ steps.make-json-array.outputs.platforms }}
+    steps:
+      - name: Convert string to JSON array and set as output
+        id: make-json-array
+        run: |
+          platforms="${{ inputs.platforms }}"
+          echo "platforms=$(jq -cn --arg p "$platforms" '$p | split(",")')" >> "$GITHUB_OUTPUT"
+          echo "platforms=$platforms"
+
+  integration:
+    name: ${{ matrix.platform }} - ITs
+    needs: [parse-platforms]
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.parse-platforms.outputs.platforms) }}
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ github.event.pull_request.number }}-intg-${{ inputs.camunda-version }}-${{ matrix.platform }}"
+      deployment-ttl: "${{ contains(github.event.pull_request.labels.*.name, 'test-persistent') && '1w' || inputs.deployment-ttl }}"
+      test-enabled: ${{ inputs.test-enabled }}
+      flows: ${{ inputs.flows }}
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+      caller-git-ref: "${{ github.event.pull_request.head.sha }}"
+      test-case: "${{ inputs.case }}"
+      scenario: "${{ inputs.scenario }}"
+      e2e-enabled: "${{ inputs.e2e-enabled }}"
+      shortname: "${{ inputs.shortname }}"
+      auth: "${{ inputs.auth }}"
+      exclude: "${{ inputs.exclude }}"
+      platforms: "${{ matrix.platform }}"
+      run-all-e2e-tests: "${{ inputs.run-all-e2e-tests }}"
+      values-digest: "true"
+      camunda-helm-upgrade-version: "${{ inputs.camunda-helm-upgrade-version }}"
+      camunda-version-previous: "${{ inputs.camunda-version-previous }}"
+      always-delete-namespace: "${{ inputs.always-delete-namespace }}"
+      vault-secret-mapping: |
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_ID;
+        secret/data/products/distribution/ci ENTRA_APP_CLIENT_SECRET;
+        secret/data/products/distribution/ci ENTRA_APP_DIRECTORY_ID;
+        secret/data/products/distribution/ci ENTRA_APP_OBJECT_ID;
+        secret/data/products/distribution/ci DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET;

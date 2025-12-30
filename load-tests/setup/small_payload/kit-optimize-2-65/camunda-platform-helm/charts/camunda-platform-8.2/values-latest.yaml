@@ -1,0 +1,84 @@
+#
+# Camunda - v8.2
+# https://docs.camunda.io/docs/reference/announcements/#camunda-82
+#
+
+global:
+  # https://hub.docker.com/u/camunda
+  image:
+    tag:
+
+connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    repository: camunda/connectors-bundle
+    tag: 0.23.2
+
+operate:
+  # https://hub.docker.com/r/camunda/operate/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.28
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    repository: camunda/optimize
+    tag: 8.2.14
+
+tasklist:
+  # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.28
+
+webModeler:
+  # Camunda Enterprise repository.
+  # registry.camunda.cloud/web-modeler-ee
+  image:
+    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
+    tag: 8.2.20
+
+zeebe:
+  # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.29
+
+zeebe-gateway:
+  # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    tag: 8.2.29
+
+#
+# Identity
+#
+
+identity:
+  # https://hub.docker.com/r/camunda/identity/tags?page=&page_size=&ordering=&name=8.2
+  image:
+    repository: camunda/identity
+    tag: 8.2.31
+  keycloak:
+    # https://hub.docker.com/r/bitnami/keycloak/tags?page=&page_size=&ordering=&name=8.2
+    image:
+      repository: bitnamilegacy/keycloak
+      tag: 19.0.3
+    postgresql:
+      # https://hub.docker.com/r/bitnami/postgresql/tags?page=&page_size=&ordering=&name=8.2
+      image:
+        repository: bitnamilegacy/postgresql
+        tag: 15.10.0
+
+#
+# Elasticsearch
+#
+
+elasticsearch:
+  # https://hub.docker.com/r/elastic/elasticsearch/tags
+  image: docker.elastic.co/elasticsearch/elasticsearch
+  # renovate: datasource=docker depName=elasticsearch/elasticsearch lookupName=docker.elastic.co/elasticsearch/elasticsearch
+  imageTag: 7.17.29
+
+retentionPolicy:
+  # https://hub.docker.com/r/bitnami/elasticsearch-curator/tags
+  image:
+    repository: bitnamilegacy/elasticsearch-curator-archived
+    tag: 5.8.4

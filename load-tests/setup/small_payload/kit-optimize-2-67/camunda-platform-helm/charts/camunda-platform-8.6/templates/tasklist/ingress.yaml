@@ -1,0 +1,43 @@
+{{- if and .Values.tasklist.enabled .Values.tasklist.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "tasklist.fullname" . }}
+  labels:
+    {{- include "tasklist.labels" . | nindent 4 }}
+{{- with .Values.tasklist.ingress.annotations }}
+  annotations:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.tasklist.ingress.className }}
+  rules:
+    {{- if .Values.tasklist.ingress.host }}
+    - host: {{ .Values.tasklist.ingress.host }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          - path: {{ .Values.tasklist.ingress.path }}
+            pathType: {{ .Values.tasklist.ingress.pathType }}
+            backend:
+              service:
+                name: {{ include "tasklist.fullname" . }}
+                port:
+                  number: 80
+  {{- if .Values.tasklist.ingress.tls.enabled }}
+  {{- if and (not .Values.tasklist.ingress.tls.secretName) (contains "openshift-"  (default "" .Values.tasklist.ingress.className)) }}
+    # The tls block is not applied because secretName is empty and className contains "openshift-".
+    # This is necessary to use the certificate managed by the OpenShift Ingress operator,
+    # which will automatically convert this Ingress into a Route (https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress).
+  {{- else }}
+  tls:
+    - hosts:
+        - {{ .Values.tasklist.ingress.host }}
+      {{- if .Values.tasklist.ingress.tls.secretName }}
+      secretName: {{ .Values.tasklist.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,33 @@
+name: "Chart - Release - Snapshot"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/chart-release-snapshot.yaml
+      - charts/camunda-platform-8.8/**
+      - charts/camunda-platform-8.9/**
+
+jobs:
+  release:
+    name: Release Snapshot
+    uses: ./.github/workflows/chart-release-template.yaml
+    with:
+      branch: ${{ github.ref_name }}
+      workflow-ref: chart-release-template.yaml
+      chart-matrix: |
+        [
+          {
+            "name": "Helm Chart rolling - Latest",
+            "directory": "charts/camunda-platform-8.8",
+            "versionSuffix": "snapshot-latest",
+            "override": true
+          },
+          {
+            "name": "Helm Chart rolling - Alpha",
+            "directory": "charts/camunda-platform-8.9",
+            "versionSuffix": "snapshot-alpha",
+            "override": true
+          }
+        ]

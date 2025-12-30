@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- job.yaml
+
+images:
+- name: ovhcom/venom
+  newTag: v1.2.0
+
+configMapGenerator:
+- name: venom-tests-common
+  options:
+    disableNameSuffixHash: true
+  files:
+  - testsuites/00-info.yaml
+- name: venom-fixtures
+  options:
+    disableNameSuffixHash: true
+  files: []

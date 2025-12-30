@@ -1,0 +1,18 @@
+# Mimic a Keycloak instance that is running outside of the Kubernetes cluster.
+# It's used during the upgrade test from 8.7 to 8.8 to verify that an external Keycloak instance.
+# NOTE: This is a "mimic" because it connect to the internall Keycloak externally.
+#       In a full setup we should install Keycloak separately.
+# TODO: Integrate with an external Keycloak instance installed separately.
+# NOTE: This file is used in charts/camunda-platform-8.8/test/ci-test-config.yaml;
+#      therefore, it's not referenced in charts/camunda-platform-8.7/test/ci-test-config.yaml.
+global:
+  identity:
+    keycloak:
+      url:
+        protocol: "http"
+        host: "integration-keycloak"
+        port: "80"
+      auth:
+        adminUser: "admin"
+        existingSecret: "integration-test-credentials"
+        existingSecretKey: "identity-keycloak-admin-password"

@@ -1,0 +1,67 @@
+---
+# Source: camunda-platform/templates/zeebe/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-zeebe-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "8.5.25"
+apiVersion: v1
+data:
+  application.yaml: |
+    zeebe:
+      broker:
+        exporters:
+          elasticsearch:
+            className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            args:
+              url: "http://camunda-platform-test-elasticsearch:9200"
+              index:
+                prefix: "zeebe-record"
+        gateway:
+          enable: true
+          network:
+            port: 26500
+          security:
+            enabled: false
+            authentication:
+              mode: none
+        network:
+          host: 0.0.0.0
+          commandApi:
+            port: 26501
+          internalApi:
+            port: 26502
+          monitoringApi:
+            port: "9600"
+        cluster:
+          clusterSize: "3"
+          replicationFactor: "3"
+          partitionsCount: "3"
+          clusterName: camunda-platform-test-zeebe
+        threads:
+          cpuThreadCount: "3"
+          ioThreadCount: "3"
+  startup.sh: |
+    #!/usr/bin/env bash
+    set -eux -o pipefail
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}
+
+    if [ "$(ls -A /exporters/)" ]; then
+      mkdir -p /usr/local/zeebe/exporters/
+      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+    else
+      echo "No exporters available."
+    fi
+    if [ "${ZEEBE_RESTORE}" = "true" ]; then
+      exec /usr/local/zeebe/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
+    else
+      exec /usr/local/zeebe/bin/broker
+    fi
+
+  broker-log4j2.xml: |

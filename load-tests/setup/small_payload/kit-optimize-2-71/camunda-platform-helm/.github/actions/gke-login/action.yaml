@@ -1,0 +1,47 @@
+name: GKE Login
+description: Login to GKE cluster
+inputs:
+  cluster-name:
+    description: GKE cluster name
+    required: true
+  cluster-location:
+    description: GKE cluster location
+    required: true
+  auth-method:
+    description: GCP auth method. Available options are workload-identity and credentials-json
+    default: workload-identity
+  credentials-json:
+    description: GCP IAM credentials
+  workload-identity-provider:
+    description: GKE Workload Identity provider full ID (project number, pool name, and provider name)
+  service-account:
+    description: GKE Service Account used in the Workload Identity auth
+
+runs:
+  using: composite
+  steps:
+  - name: Authenticate to Google Cloud - Workload Identity
+    if: ${{ inputs.auth-method == 'workload-identity' }}
+    uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+    with:
+      token_format: 'access_token'
+      workload_identity_provider: ${{ inputs.workload-identity-provider }}
+      service_account: ${{ inputs.service-account }}
+  - name: Authenticate to Google Cloud - Service Account Key
+    if: ${{ inputs.auth-method == 'credentials-json' }}
+    uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+    with:
+      credentials_json: '${{ inputs.credentials-json }}'
+  - name: Get GKE credentials
+    uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395 # v3
+    with:
+      cluster_name: ${{ inputs.cluster-name }}
+      location: ${{ inputs.cluster-location }}
+  - name: Fix KUBECONFIG permissions
+    shell: bash
+    run: chmod 600 $KUBECONFIG
+  - name: Check credentials
+    shell: bash
+    run: |
+      kubectl auth can-i create deployment
+      kubectl version

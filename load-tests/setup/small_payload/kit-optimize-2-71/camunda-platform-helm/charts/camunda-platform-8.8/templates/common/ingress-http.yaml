@@ -1,0 +1,119 @@
+{{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-http
+  labels:
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "camundaPlatform.labels" .)
+        .Values.global.ingress.labels
+      )
+      "context" .
+    ) | nindent 4 }}
+{{- with .Values.global.ingress.annotations }}
+  annotations: {{ tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.global.ingress.className }}
+  rules:
+    {{- if .Values.global.ingress.host }}
+    - host: {{ .Values.global.ingress.host }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+        {{- /* Management Group */ -}}
+          {{- if and .Values.console.enabled .Values.console.contextPath }}
+          - backend:
+              service:
+                name: {{ template "console.fullname" . }}
+                port:
+                  number: {{ .Values.console.service.port }}
+            path: {{ .Values.console.contextPath }}
+            pathType: {{ .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if .Values.identity.enabled }}
+          {{- if or .Values.identityKeycloak.enabled .Values.global.identity.keycloak.internal }}
+          - backend:
+              service:
+                name: {{ include "identity.keycloak.service" . }}
+                port:
+                  number: {{ include "identity.keycloak.port" . }}
+            path: {{ include "identity.keycloak.contextPath" . | trimSuffix "/" }}/
+            pathType: {{ .Values.identityKeycloak.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
+          {{- if .Values.identity.contextPath }}
+          - backend:
+              service:
+                name: {{ template "identity.fullname" . }}
+                port:
+                  number: {{ .Values.identity.service.port }}
+            path: {{ .Values.identity.contextPath }}
+            pathType: {{ .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- end }}
+          {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
+          - backend:
+              service:
+                name: {{ template "webModeler.webapp.fullname" . }}
+                port:
+                  number: {{ .Values.webModeler.webapp.service.port }}
+            path: {{ .Values.webModeler.contextPath }}
+            pathType: {{ .Values.global.ingress.pathType }}
+          - backend:
+              service:
+                name: {{ template "webModeler.websockets.fullname" . }}
+                port:
+                  number:  {{ .Values.webModeler.websockets.service.port }}
+            path: {{ template "webModeler.websocketContextPath" . }}
+            pathType: {{ .Values.global.ingress.pathType }}
+          {{- end }}
+        {{- /* Orchestration Cluster */ -}}
+          {{- if and .Values.orchestration.enabled .Values.orchestration.contextPath }}
+          # Orchestration.
+          - backend:
+              service:
+                name: {{ include "orchestration.serviceName" . }}
+                port:
+                  number: {{ .Values.orchestration.service.httpPort }}
+            path: {{ .Values.orchestration.contextPath }}
+            pathType: {{ .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
+          # Optimize.
+          - backend:
+              service:
+                name: {{ template "optimize.fullname" . }}
+                port:
+                  number: {{ .Values.optimize.service.port }}
+            path: {{ .Values.optimize.contextPath }}
+            pathType: {{ .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if and .Values.connectors.enabled .Values.connectors.contextPath }}
+          # Connectors.
+          - backend:
+              service:
+                name: {{ template "connectors.fullname" . }}
+                port:
+                  number: {{ .Values.connectors.service.serverPort }}
+            path: {{ .Values.connectors.contextPath }}
+            pathType: {{ .Values.global.ingress.pathType }}
+          {{- end }}
+  {{- if .Values.global.ingress.tls.enabled }}
+  tls:
+    {{- if eq .Values.global.ingress.tls.secretName "-" }}
+    {{/* Use secretName: "-" to generate an empty TLS block for automatic certificate management. */}}
+    {{/* This is useful for environments like OpenShift where the Ingress Operator manages certificates automatically. */}}
+    - {}
+    {{- else }}
+    - hosts:
+        - {{ .Values.global.ingress.host }}
+      {{- if .Values.global.ingress.tls.secretName }}
+      secretName: {{ .Values.global.ingress.tls.secretName }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}

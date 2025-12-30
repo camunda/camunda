@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "type": "object",
+  "properties": {
+    "zeebe": {
+      "type": "object",
+      "properties": {
+        "persistenceType": {
+          "type": "string",
+          "enum": ["disk", "local", "memory"]
+        }
+      }
+    }
+  }
+}

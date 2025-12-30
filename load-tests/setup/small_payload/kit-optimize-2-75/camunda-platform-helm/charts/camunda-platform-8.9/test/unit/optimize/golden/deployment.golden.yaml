@@ -1,0 +1,151 @@
+---
+# Source: camunda-platform/templates/optimize/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-optimize
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.9.0-alpha2"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: optimize
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/component: optimize
+        app.kubernetes.io/version: "8.9.0-alpha2"
+      annotations:
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        - name: migration
+          image: camunda/optimize:8.9.0-alpha2
+          command: ['./upgrade/upgrade.sh', '--skip-warning']
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: "camunda-platform-test-elasticsearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+      containers:
+        - name: optimize
+          image: camunda/optimize:8.9.0-alpha2
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: "camunda-platform-test-elasticsearch"
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: "9200"
+            - name: SPRING_PROFILES_ACTIVE
+              value: ccsm
+            - name: OPTIMIZE_LOG_LEVEL
+              value: "info"
+            - name: UPGRADE_LOG_LEVEL
+              value: "info"
+            - name: ES_LOG_LEVEL
+              value: "warn"
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 1Gi
+          ports:
+            - containerPort: 8090
+              name: http
+              protocol: TCP
+            - containerPort: 8092
+              name: management
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /api/readyz
+              scheme: HTTP
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            - mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+              name: environment-config
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+        - name: environment-config
+          configMap:
+            name: camunda-platform-test-optimize-configuration
+            defaultMode: 492
+      serviceAccountName: camunda-platform-test-optimize
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

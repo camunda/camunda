@@ -1,0 +1,22 @@
+{{- if  and .Values.prometheusServiceMonitor.enabled  .Values.connectors.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-connectors
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+      app.kubernetes.io/component: connectors
+  endpoints:
+    - honorLabels: true
+      {{- if .Values.connectors.ingress.enabled }}
+      path: /actuator/prometheus
+      {{- else }}
+      path: {{ .Values.connectors.contextPath }}/actuator/prometheus
+      {{- end }}
+      port: http
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}

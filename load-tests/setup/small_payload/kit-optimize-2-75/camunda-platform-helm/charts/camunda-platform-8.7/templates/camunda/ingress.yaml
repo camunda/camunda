@@ -1,0 +1,126 @@
+{{- if and .Values.global.ingress.enabled (not .Values.global.ingress.external) -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+{{- with .Values.global.ingress.annotations }}
+  annotations: {{ tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.global.ingress.className }}
+  rules:
+    {{- if .Values.global.ingress.host }}
+    - host: {{ .Values.global.ingress.host }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          {{- if and .Values.console.enabled .Values.console.contextPath }}
+          - backend:
+              service:
+                name: {{ template "console.fullname" . }}
+                port:
+                  number: {{ .Values.console.service.port }}
+            path: {{ .Values.console.contextPath }}
+            pathType: {{ .Values.console.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if .Values.identity.enabled }}
+          {{- if or .Values.identityKeycloak.enabled .Values.global.identity.keycloak.internal }}
+          - backend:
+              service:
+                name: {{ include "identity.keycloak.service" . }}
+                port:
+                  number: {{ include "identity.keycloak.port" . }}
+            path: {{ include "identity.keycloak.contextPath" . | trimSuffix "/" }}/
+            pathType: {{ .Values.identityKeycloak.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- /* Disable Identiy endpoint if a seperated Ingress is used because it overlaps with Keycloak endpoints */ -}}
+          {{- if and .Values.identity.contextPath (not .Values.identity.ingress.enabled) }}
+          - backend:
+              service:
+                name: {{ template "identity.fullname" . }}
+                port:
+                  number: {{ .Values.identity.service.port }}
+            path: {{ .Values.identity.contextPath }}
+            pathType: {{ .Values.identity.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- end }}
+          {{- if and .Values.operate.enabled .Values.operate.contextPath }}
+          - backend:
+              service:
+                name: {{ template "operate.fullname" . }}
+                port:
+                  number: {{ .Values.operate.service.port }}
+            path: {{ .Values.operate.contextPath }}
+            pathType: {{ .Values.operate.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if and .Values.optimize.enabled .Values.optimize.contextPath }}
+          - backend:
+              service:
+                name: {{ template "optimize.fullname" . }}
+                port:
+                  number: {{ .Values.optimize.service.port }}
+            path: {{ .Values.optimize.contextPath }}
+            pathType: {{ .Values.optimize.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if and .Values.tasklist.enabled .Values.tasklist.contextPath }}
+          - backend:
+              service:
+                name: {{ template "tasklist.fullname" . }}
+                port:
+                  number: {{ .Values.tasklist.service.port }}
+            path: {{ .Values.tasklist.contextPath }}
+            pathType: {{ .Values.tasklist.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if and .Values.webModeler.enabled .Values.webModeler.contextPath }}
+          - backend:
+              service:
+                name: {{ template "webModeler.webapp.fullname" . }}
+                port:
+                  number: {{ .Values.webModeler.webapp.service.port }}
+            path: {{ .Values.webModeler.contextPath }}
+            pathType: {{ .Values.webModeler.ingress.webapp.pathType | default .Values.global.ingress.pathType }}
+          - backend:
+              service:
+                name: {{ template "webModeler.websockets.fullname" . }}
+                port:
+                  number:  {{ .Values.webModeler.websockets.service.port }}
+            path: {{ template "webModeler.websocketContextPath" . }}
+            pathType: {{ .Values.webModeler.ingress.websockets.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if and .Values.connectors.enabled .Values.connectors.contextPath }}
+          - backend:
+              service:
+                name: {{ template "connectors.fullname" . }}
+                port:
+                  number: {{ .Values.connectors.service.serverPort }}
+            path: {{ .Values.connectors.contextPath }}
+            pathType: {{ .Values.connectors.ingress.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+          {{- if and .Values.zeebe.enabled .Values.zeebeGateway.contextPath }}
+          - backend:
+              service:
+                name: {{ template "zeebe.fullname.gateway" . }}
+                port:
+                  number: {{ .Values.zeebeGateway.service.restPort }}
+            path: {{ .Values.zeebeGateway.contextPath }}
+            pathType: {{ .Values.zeebeGateway.ingress.rest.pathType | default .Values.global.ingress.pathType }}
+          {{- end }}
+  {{- if .Values.global.ingress.tls.enabled }}
+  {{- if and (not .Values.global.ingress.tls.secretName) (contains "openshift-"  (default "" .Values.global.ingress.className)) }}
+    # The tls block is not applied because secretName is empty and className contains "openshift-".
+    # This is necessary to use the certificate managed by the OpenShift Ingress operator,
+    # which will automatically convert this Ingress into a Route (https://docs.redhat.com/en/documentation/openshift_container_platform/4.17/html/security_and_compliance/configuring-certificates#replacing-default-ingress_replacing-default-ingress).
+  {{- else }}
+  tls:
+    - hosts:
+        - {{ .Values.global.ingress.host }}
+      {{- if .Values.global.ingress.tls.secretName }}
+      secretName: {{ .Values.global.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}

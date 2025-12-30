@@ -1,0 +1,14 @@
+support:
+  - 'SUPPORT-\d+'
+
+platform/aws:
+  - '/Platform:.*(AWS|EKS).*/i'
+
+platform/gcp:
+  - '/Platform:.*(GCP|GKE).*/i'
+
+platform/openshift:
+  - '/Platform:.*OpenShift.*/i'
+
+platform/local:
+  - '/Platform:.*(KIND|K3d|Local).*/i'

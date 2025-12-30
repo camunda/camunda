@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+configMapGenerator:
+- name: playwright-vars
+  options:
+    disableNameSuffixHash: true
+  files:
+  - ./files/variables-default.yaml
+  - ./files/variables-ingress-combined.yaml
+- name: playwright-env-vars
+  options:
+    disableNameSuffixHash: true
+  envs:
+  - ./files/variables.env
+- name: playwright-test-setup
+  options:
+    disableNameSuffixHash: true
+  files:
+    - ../../playwright.config.ts
+    - ../../package.json
+    - ../../package-lock.json
+- name: playwright-test-files
+  options:
+    disableNameSuffixHash: true
+  files:
+    - ../../tests/connectors.spec.ts
+    - ../../tests/console.spec.ts
+    - ../../tests/identity.spec.ts
+    - ../../tests/orchestration-grpc.spec.ts
+    - ../../tests/orchestration-rest.spec.ts
+    - ../../tests/helper.ts

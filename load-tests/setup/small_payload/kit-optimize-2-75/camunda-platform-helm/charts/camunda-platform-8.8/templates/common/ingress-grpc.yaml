@@ -1,0 +1,51 @@
+{{- if and .Values.orchestration.enabled .Values.orchestration.ingress.grpc.enabled -}}
+{{- if not .Values.orchestration.ingress.grpc.external -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-grpc
+  labels:
+    {{- include "common.tplvalues.merge-overwrite" (dict
+      "values" (list
+        (include "camundaPlatform.labels" .)
+        .Values.orchestration.ingress.grpc.labels
+      )
+      "context" .
+    ) | nindent 4 }}
+{{- with .Values.orchestration.ingress.grpc.annotations }}
+  annotations:
+  {{- tpl (toYaml .) $ | nindent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.orchestration.ingress.grpc.className }}
+  rules:
+    {{- if .Values.orchestration.ingress.grpc.host }}
+    - host: {{ tpl .Values.orchestration.ingress.grpc.host $ }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          - path: {{ .Values.orchestration.ingress.grpc.path }}
+            pathType: {{ .Values.orchestration.ingress.grpc.pathType }}
+            backend:
+              service:
+                name: {{ include "orchestration.serviceName" . }}
+                port:
+                  number: {{ .Values.orchestration.service.grpcPort }}
+  {{- if .Values.orchestration.ingress.grpc.tls.enabled }}
+  tls:
+    {{- if eq .Values.orchestration.ingress.grpc.tls.secretName "-" }}
+    {{/* Use secretName: "-" to generate an empty TLS block for automatic certificate management. */}}
+    {{/* This is useful for environments like OpenShift where the Ingress Operator manages certificates automatically. */}}
+    - {}
+    {{- else }}
+    - hosts:
+        - {{ tpl .Values.orchestration.ingress.grpc.host $ }}
+      {{- if .Values.orchestration.ingress.grpc.tls.secretName }}
+      secretName: {{ .Values.orchestration.ingress.grpc.tls.secretName }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

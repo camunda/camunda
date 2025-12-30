@@ -1,0 +1,33 @@
+---
+# Source: camunda-platform/templates/optimize/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: camunda-platform-test-optimize
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.5.20"
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: http
+      targetPort: 8090
+      protocol: TCP
+    - port: 8092
+      name: management
+      targetPort: 8092
+      protocol: TCP
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: optimize

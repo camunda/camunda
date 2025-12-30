@@ -1,0 +1,92 @@
+{{- if .Values.console.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "console.fullname" . }}
+  labels:
+    {{- include "console.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.console.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "console.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.console.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "console.matchLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.console.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "console.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.console.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.console.securityContext | nindent 12 }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+          imagePullPolicy: {{ .Values.console.image.pullPolicy }}
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: IDENTITY_BASE
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            - name: IDENTITY_ISSUER_URL
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            - name: IDENTITY_REALM
+              value: camunda-platform
+            - name: IDENTITY_AUDIENCE
+              value: console
+            - name: IDENTITY_CLIENT_ID
+              value: console
+          {{- if .Values.console.env}}
+            {{ .Values.console.env | toYaml | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.console.service.port }}
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          resources:
+            {{- toYaml .Values.console.resources | nindent 12 }}
+          volumeMounts:
+            - name: console-admin-config
+              mountPath: /var/run/config
+          {{- if .Values.console.extraVolumeMounts }}
+            {{- .Values.console.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: console-admin-config
+          configMap:
+            name: {{ include "console.fullname" . }}-admin
+      {{- if .Values.console.extraVolumes }}
+        {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

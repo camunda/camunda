@@ -1,0 +1,82 @@
+##
+# This is a minimal values file that is compatible with Helm versions >= 3.2.0. To circumvent the following bug in Helm,
+# https://github.com/helm/helm/issues/9136, we use the pattern '@@null@@' which will be replaced via a post-renderer by
+# an actual null value. This is hopefully a temporary workaround until the issue is fixed.
+#
+# To use this, you will need its companion bash script, patch.sh. That is to say, this file is only usable if you use
+# the bundled "patch.sh" script post-renderer.
+#
+# When you have both files, you would simply call:
+#   $ helm install test camunda/camunda-platform --post-renderer openshift/patch.sh -f openshift/values-patch.yaml
+#
+# Refer to the sibling README for more about this and the other possible ways of installing the chart on OpenShift.
+##
+---
+# omit the values below if identity.enabled is false
+identity:
+  # omit the values below if identity.keycloak.enabled is false
+  keycloak:
+    containerSecurityContext:
+      runAsUser: "@@null@@"
+    podSecurityContext:
+      fsGroup: "@@null@@"
+      runAsUser: "@@null@@"
+    # omit the values below if identity.keycloak.postgresql.enabled is false
+    postgresql:
+      # omit the values below if identity.keycloak.postgresql.primary.enabled is false
+      primary:
+        containerSecurityContext:
+          runAsUser: "@@null@@"
+        podSecurityContext:
+          fsGroup: "@@null@@"
+          runAsUser: "@@null@@"
+      # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
+      readReplicas:
+        containerSecurityContext:
+          runAsUser: "@@null@@"
+        podSecurityContext:
+          fsGroup: "@@null@@"
+          runAsUser: "@@null@@"
+      # omit the values below if identity.keycloak.postgresql.metrics.enabled is false
+      metrics:
+        containerSecurityContext:
+          runAsUser: "@@null@@"
+        podSecurityContext:
+          fsGroup: "@@null@@"
+          runAsUser: "@@null@@"
+
+zeebe:
+  podSecurityContext:
+    fsGroup: "@@null@@"
+
+# omit the values below if elasticsearch.enabled is false
+elasticsearch:
+  # test resources are disabled as they aren't pass on to the post-renderer, meaning they will not be deploy-able. this
+  # has no impact on a production deployment.
+  tests:
+    enabled: false
+  securityContext:
+    runAsUser: "@@null@@"
+  podSecurityContext:
+    fsGroup: "@@null@@"
+    runAsUser: "@@null@@"
+
+postgresql:
+  primary:
+    containerSecurityContext:
+      runAsUser: "@@null@@"
+    podSecurityContext:
+      fsGroup: "@@null@@"
+      runAsUser: "@@null@@"
+  readReplicas:
+    containerSecurityContext:
+      runAsUser: "@@null@@"
+    podSecurityContext:
+      fsGroup: "@@null@@"
+      runAsUser: "@@null@@"
+  metrics:
+    containerSecurityContext:
+      runAsUser: "@@null@@"
+    podSecurityContext:
+      fsGroup: "@@null@@"
+      runAsUser: "@@null@@"

@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-playwright
+spec:
+  template:
+    spec:
+      containers:
+        - name: playwright
+          env:
+            # Console uses client type "Public" so it's not tested in the machine-to-machine tests.
+            - name: PLAYWRIGHT_VAR_TEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-admin-client-password
+            - name: PLAYWRIGHT_VAR_CONNECTORS_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-connectors-client-password
+            - name: PLAYWRIGHT_VAR_OPERATE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-operate-client-password
+            - name: PLAYWRIGHT_VAR_OPTIMIZE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-optimize-client-password
+            - name: PLAYWRIGHT_VAR_TASKLIST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-tasklist-client-password
+            - name: PLAYWRIGHT_VAR_ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-zeebe-client-password

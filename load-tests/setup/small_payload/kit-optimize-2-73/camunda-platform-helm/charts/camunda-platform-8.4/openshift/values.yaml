@@ -1,0 +1,141 @@
+##
+# This is a minimal sample values file to get you started with an Openshift cluster using the recommended default
+# policies. Using these values, you will be able to deploy the chart using the least permissive SCC, "restricted".
+#
+# Everywhere we assign "null" to a value is to ensure that default values of one of the charts, or of its dependencies,
+# will not cause issues with the "restricted" SCC (e.g. assign a fixed UID or GID). Additionally, we want to make sure
+# that all volume mounts are mounted with the minimum required permissions. You can omit these everywhere if you will
+# use a different SCC such as nonroot or anyuid.
+##
+---
+# omit the values below if zeebe.enabled is false
+zeebe:
+  configMap:
+    defaultMode: 0555
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if zeebe-gateway.enabled is false
+zeebe-gateway:
+  configMap:
+    defaultMode: 0444
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if operate.enabled is false
+operate:
+  configMap:
+    defaultMode: 0444
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if optimize.enabled is false
+optimize:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if tasklist.enabled is false
+tasklist:
+  configMap:
+    defaultMode: 0444
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if webModeler.enabled is false
+webModeler:
+  restapi:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+  webapp:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+  websockets:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+
+# omit the values below if identity.enabled is false
+connectors:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+
+# omit the values below if identity.enabled is false
+identity:
+  podSecurityContext:
+    fsGroup: null
+  containerSecurityContext:
+    runAsUser: null
+  # omit the values below if identity.keycloak.enabled is false
+  keycloak:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+    # omit the values below if identity.keycloak.postgresql.enabled is false
+    postgresql:
+      # omit the values below if identity.keycloak.postgresql.primary.enabled is false
+      primary:
+        podSecurityContext:
+          fsGroup: null
+        containerSecurityContext:
+          runAsUser: null
+      # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
+      readReplicas:
+        podSecurityContext:
+          fsGroup: null
+        containerSecurityContext:
+          runAsUser: null
+      # omit the values below if identity.keycloak.postgresql.metrics.enabled is false
+      metrics:
+        podSecurityContext:
+          fsGroup: null
+        containerSecurityContext:
+          runAsUser: null
+
+# omit the values below if elasticsearch.enabled is false
+elasticsearch:
+  master:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+  # If needed, OpenShift TuneD operator will be used to set sysctl vm.max_map_count.
+  # Apply the manifest "openshift-tuned.yaml" before install Camunda 8 chart.
+  sysctlImage:
+    enabled: false
+  commonLabels:
+    tuned.openshift.io/elasticsearch: ""
+
+postgresql:
+  primary:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+  readReplicas:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null
+  metrics:
+    podSecurityContext:
+      fsGroup: null
+    containerSecurityContext:
+      runAsUser: null

@@ -1,0 +1,112 @@
+name: "Chart - Chores"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/chart-chores.yaml"
+      - "charts/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  init:
+    name: Check Conditions
+    runs-on: ubuntu-latest
+    steps:
+      # The workflow shouldn't run on some branches where we have independent workflows for them.
+      - name: Check conditions
+        id: conditions
+        run: |
+          set -x
+          SHOULD_RUN=true
+          case "${{ github.head_ref }}" in
+              "renovate/"*)
+                  SHOULD_RUN="false"
+                  ;;
+              "release-please--"*)
+                  SHOULD_RUN="false"
+              ;;
+          esac
+          echo "should-run=${SHOULD_RUN}" | tee -a ${GITHUB_OUTPUT}
+    outputs:
+      should-run: ${{ steps.conditions.outputs.should-run }}
+  chores:
+    needs: [init]
+    if: needs.init.outputs.should-run == 'true'
+    name: Chart chores
+    runs-on: ubuntu-latest
+    steps:
+      #
+      # Checkout.
+      #
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: "${{ steps.generate-github-token.outputs.token }}"
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+      #
+      # Dependencies.
+      #
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            golang
+            helm
+            helm-ct
+            yq
+      - name: Install readme-generator-for-helm
+        run: |
+          # renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
+          npm install -g @bitnami/readme-generator-for-helm@2.7.2
+      - name: Add Helm repos
+        run: |
+          make helm.repos-add
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      #
+      # Update
+      #
+      - name: Set vars
+        run: |
+          echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
+      - name: Update golden files
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make go.update-golden-only
+      - name: Update README
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make helm.readme-update
+      - name: Update Schema
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make helm.schema-update
+      - name: Git pull
+        run: git pull --rebase --autostash .
+      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        with:
+          author_name: "distro-ci[bot]"
+          author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
+          message: "chore: chart chores"

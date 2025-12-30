@@ -1,0 +1,534 @@
+name: "Chart - Build - Dev"
+
+# Builds immutable dev packages for all active chart versions.
+# These packages are release-ready (transformations applied) and stored in Harbor
+# with unique dev tags for testing. They can be promoted to RC/release by retagging.
+#
+# Tagging scheme:
+#   Dev:     {version}-dev-{sha}           (e.g., 13.4.0-dev-abc1234)
+#   Rolling: {chart-major}-dev-latest     (e.g., 13-dev-latest)
+#
+# Chart.yaml version is the final release version (e.g., 13.4.0) computed via
+# release-please dry-run, making the artifact truly release-ready.
+#
+# Registry: oci://registry.camunda.cloud/team-distribution/camunda-platform
+#   Note: Harbor is for internal storage/testing. Public releases go to
+#   GitHub Releases → helm.camunda.io → Artifact Hub
+#
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/chart-build-dev.yaml
+      - charts/camunda-platform-*/**
+      - "!charts/camunda-platform-*/test/**"
+
+  workflow_dispatch:
+    inputs:
+      chart-version:
+        description: |
+          Specific chart version to build (e.g., "8.8").
+          Leave empty to build all active versions.
+        required: false
+        type: string
+
+env:
+  CHART_NAME: "camunda-platform"
+  HARBOR_REGISTRY_HOST: "registry.camunda.cloud"
+  HARBOR_REGISTRY_PROJECT: "team-distribution"
+
+jobs:
+  setup:
+    name: Setup build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      chart-matrix: ${{ steps.matrix.outputs.chart-matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Get chart versions
+        id: chart-versions
+        uses: ./.github/actions/get-chart-versions
+
+      - name: Build chart matrix
+        id: matrix
+        run: |
+          # Use input version if provided, otherwise use all active versions
+          if [[ -n "${{ inputs.chart-version }}" ]]; then
+            versions="${{ inputs.chart-version }}"
+          else
+            versions="${{ steps.chart-versions.outputs.active }}"
+          fi
+
+          # Build matrix JSON as single line (required for GITHUB_OUTPUT)
+          matrix="["
+          first=true
+          for version in ${versions}; do
+            if [[ "${first}" != "true" ]]; then
+              matrix+=","
+            fi
+            first=false
+            matrix+="{\"name\":\"Helm Chart ${version}\",\"directory\":\"charts/camunda-platform-${version}\",\"version\":\"${version}\"}"
+          done
+          matrix+="]"
+
+          echo "chart-matrix=${matrix}" >> $GITHUB_OUTPUT
+          echo "Building charts: ${versions}"
+
+  build:
+    needs: setup
+    name: Build ${{ matrix.chart.version }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart: ${{ fromJson(needs.setup.outputs.chart-matrix) }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ matrix.chart.directory }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+          exportEnv: true
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            yq
+
+      - name: Login to Harbor registry
+        run: |
+          echo "${HARBOR_REGISTRY_PASSWORD}" | \
+            helm registry login "${HARBOR_REGISTRY_HOST}" \
+              -u "${HARBOR_REGISTRY_USER}" \
+              --password-stdin
+
+      - name: Set version vars
+        id: vars
+        run: |
+          # Version vars will be set after release-please computes the release version
+          # For now, just set the short SHA and Camunda version
+          SHORT_SHA="${GITHUB_SHA::7}"
+          CAMUNDA_VERSION="${{ matrix.chart.version }}"
+          echo "SHORT_SHA=${SHORT_SHA}" | tee -a $GITHUB_ENV
+          echo "CAMUNDA_VERSION=${CAMUNDA_VERSION}" | tee -a $GITHUB_ENV
+
+      #
+      # Compute release version using release-please dry-run
+      # This ensures the packaged Chart.yaml has the correct version and changelog
+      # annotations that release-please would compute at release time.
+      #
+      - name: Install release-please CLI
+        run: npm install -g release-please
+
+      - name: Compute release version (release-please dry-run)
+        id: release-please
+        env:
+          RELEASE_PLEASE_CONFIG: .github/config/release-please/release-please-config.json
+          RELEASE_PLEASE_MANIFEST: .github/config/release-please/.release-please-manifest.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get current version from Chart.yaml to check if it's a prerelease
+          CURRENT_VERSION=$(yq '.version' Chart.yaml)
+          echo "Current version: ${CURRENT_VERSION}"
+
+          # Check if current version is a prerelease (alpha, beta, rc)
+          IS_PRERELEASE=false
+          if [[ "${CURRENT_VERSION}" =~ -(alpha|beta|rc)([0-9]+)$ ]]; then
+            IS_PRERELEASE=true
+            PRERELEASE_TYPE="${BASH_REMATCH[1]}"
+            PRERELEASE_NUM="${BASH_REMATCH[2]}"
+            BASE_VERSION="${CURRENT_VERSION%%-*}"
+            NEXT_PRERELEASE_NUM=$((PRERELEASE_NUM + 1))
+            RELEASE_VERSION="${BASE_VERSION}-${PRERELEASE_TYPE}${NEXT_PRERELEASE_NUM}"
+            echo "Prerelease detected: ${PRERELEASE_TYPE}${PRERELEASE_NUM} -> ${PRERELEASE_TYPE}${NEXT_PRERELEASE_NUM}"
+            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+            echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
+            echo "::notice::Computed prerelease version: ${RELEASE_VERSION}"
+          fi
+
+          # Run release-please dry-run to get changelog annotations
+          cd ../..
+          release-please release-pr \
+            --token="${GITHUB_TOKEN}" \
+            --repo-url="${{ github.repository }}" \
+            --target-branch="main" \
+            --path="${{ matrix.chart.directory }}" \
+            --config-file="${RELEASE_PLEASE_CONFIG}" \
+            --manifest-file="${RELEASE_PLEASE_MANIFEST}" \
+            --dry-run \
+            --trace 2>&1 | tee ${{ matrix.chart.directory }}/release-please-trace.log
+          cd ${{ matrix.chart.directory }}
+
+          # For stable releases, extract version from release-please output
+          if [[ "${IS_PRERELEASE}" != "true" ]]; then
+            RELEASE_VERSION=$(grep -A5 "^+.*version:" release-please-trace.log | head -1 | sed 's/^+.*version:\s*//' || echo "")
+            if [[ -z "${RELEASE_VERSION}" ]]; then
+              RELEASE_VERSION=$(grep -oP '"\Q${{ matrix.chart.directory }}\E":\s*"\K[^"]+' release-please-trace.log || echo "")
+            fi
+            if [[ -z "${RELEASE_VERSION}" ]]; then
+              echo "::warning::Could not determine release version from release-please dry-run"
+              echo "RELEASE_VERSION_COMPUTED=false" >> $GITHUB_ENV
+            else
+              echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+              echo "RELEASE_VERSION_COMPUTED=true" >> $GITHUB_ENV
+              echo "::notice::Computed release version: ${RELEASE_VERSION}"
+            fi
+          fi
+
+          # Set dev tag version: {release-version}-dev-{sha}
+          if [[ "${RELEASE_VERSION_COMPUTED}" == "true" || -n "${RELEASE_VERSION}" ]]; then
+            DEV_TAG="${RELEASE_VERSION}-dev-${SHORT_SHA}"
+          else
+            # Fallback to current version if release-please couldn't compute
+            DEV_TAG="${CURRENT_VERSION}-dev-${SHORT_SHA}"
+            RELEASE_VERSION="${CURRENT_VERSION}"
+            echo "RELEASE_VERSION=${RELEASE_VERSION}" | tee -a $GITHUB_ENV
+          fi
+          echo "DEV_TAG=${DEV_TAG}" | tee -a $GITHUB_ENV
+
+          # Extract chart major version for rolling tag (e.g., 13.4.0 -> 13)
+          CHART_MAJOR_VERSION="${RELEASE_VERSION%%.*}"
+          echo "CHART_MAJOR_VERSION=${CHART_MAJOR_VERSION}" | tee -a $GITHUB_ENV
+          echo "::notice::Dev tag: ${DEV_TAG}, Rolling tag: ${CHART_MAJOR_VERSION}-dev-latest"
+
+      - name: Check if artifact already exists
+        id: check-artifact
+        run: |
+          # Dev packages are immutable - skip if already exists
+          OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
+          helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" \
+            --version "${DEV_TAG}" 2>/dev/null && EXIT_CODE=0 || EXIT_CODE=1
+
+          if [[ ${EXIT_CODE} -eq 0 ]]; then
+            echo "SKIP_BUILD=true" | tee -a $GITHUB_ENV
+            echo "::notice::Dev package ${DEV_TAG} already exists, skipping build"
+          else
+            echo "SKIP_BUILD=false" | tee -a $GITHUB_ENV
+          fi
+
+      - name: Apply Chart.yaml version and changelog from release-please
+        if: env.SKIP_BUILD == 'false' && env.RELEASE_VERSION_COMPUTED == 'true'
+        run: |
+          # Extract the Chart.yaml diff from trace output and apply it
+          # The trace contains unified diff format for each file
+
+          echo "Applying release-please computed changes to Chart.yaml..."
+          echo "Release version: ${RELEASE_VERSION}"
+
+          # Update the version field
+          yq -i ".version = \"${RELEASE_VERSION}\"" Chart.yaml
+
+          # Extract and apply the artifacthub.io/changes annotation from trace
+          # The trace output contains the full YAML block for the annotation
+
+          # Parse the changelog entries from trace output
+          # Look for lines between artifacthub.io/changes and the next annotation or end of annotations
+          CHANGELOG_YAML=$(awk '
+            /^\+.*artifacthub.io\/changes:/ { capture=1; next }
+            capture && /^\+/ {
+              line=$0
+              sub(/^\+[ ]*/, "", line)
+              print line
+            }
+            capture && !/^\+/ { capture=0 }
+          ' release-please-trace.log)
+
+          if [[ -n "${CHANGELOG_YAML}" ]]; then
+            echo "Extracted changelog annotations:"
+            echo "${CHANGELOG_YAML}"
+
+            # Create a temp file with the changelog YAML
+            echo "${CHANGELOG_YAML}" > /tmp/changelog.yaml
+
+            # Update the annotation in Chart.yaml
+            yq -i '.annotations."artifacthub.io/changes" = load_str("/tmp/changelog.yaml")' Chart.yaml
+            echo "Applied artifacthub.io/changes annotations"
+          else
+            echo "::warning::Could not extract changelog annotations from trace output"
+          fi
+
+          echo "Updated Chart.yaml:"
+          head -50 Chart.yaml
+
+      - name: Show computed version info
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          echo "### Version Information"
+          echo "- Release Version (in Chart.yaml): ${RELEASE_VERSION}"
+          echo "- Dev Tag: ${DEV_TAG}"
+          echo "- Rolling Tag: ${CHART_MAJOR_VERSION}-dev-latest"
+
+      #
+      # Apply release transformations (makes artifact release-ready)
+      #
+      - name: Remove dev comments
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          target_files=(
+            values*.yaml
+            Chart.yaml
+          )
+          for target_file in "${target_files[@]}"; do
+            if [[ -f "${target_file}" ]]; then
+              sed -i '/# START DEV COMMENT/,/# END DEV COMMENT/d' "${target_file}"
+            fi
+          done
+          echo "Dev comments removed"
+
+      - name: Remove badges from README
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          # Clean up badges from readme to avoid showing them in Artifact Hub
+          sed -ri '/Badge .+/d' "README.md"
+          echo "Badges removed from README"
+
+      - name: Show transformations
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          echo "Applied release transformations:"
+          git --no-pager diff --stat
+
+      #
+      # Package and publish
+      #
+      - name: Add Helm repos
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          make -C ../.. helm.repos-add
+
+      - name: Helm dependency update
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          make -C ../.. helm.dependency-update \
+            chartPath=${{ matrix.chart.directory }}
+
+      - name: Package Helm chart
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          helm version
+
+          # Package WITHOUT --version flag to preserve Chart.yaml version (release version)
+          # The Chart.yaml already contains the correct release version (e.g., 11.11.3)
+          helm package .
+
+          # The package filename will be based on Chart.yaml version
+          PACKAGED_FILE=$(ls ${{ env.CHART_NAME }}-*.tgz)
+          echo "Packaged: ${PACKAGED_FILE}"
+
+          # Verify Chart.yaml inside has the release version
+          echo "Verifying packaged Chart.yaml version:"
+          tar -xzf "${PACKAGED_FILE}" -O ${{ env.CHART_NAME }}/Chart.yaml | grep "^version:"
+
+          # Store the package filename for later steps
+          echo "HELM_PACKAGE=${PACKAGED_FILE}" >> $GITHUB_ENV
+
+      - name: Push Helm chart to Harbor
+        if: env.SKIP_BUILD == 'false'
+        run: |
+          OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
+
+          # helm push creates OCI tag from Chart.yaml version (the release version)
+          # We need to retag to our dev tag and add rolling tag
+          helm push "${HELM_PACKAGE}" "oci://${OCI_REGISTRY}"
+
+          # The helm push created a tag with the release version
+          PUSHED_TAG="${RELEASE_VERSION}"
+          echo "Pushed with tag: ${PUSHED_TAG}"
+
+          # Get the digest for API operations
+          DIGEST=$(helm pull "oci://${OCI_REGISTRY}/${{ env.CHART_NAME }}" --version "${PUSHED_TAG}" 2>&1 | grep -oP 'Digest: \K[^\s]+' || \
+            curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${PUSHED_TAG}" | jq -r '.digest')
+          echo "Artifact digest: ${DIGEST}"
+
+          # Harbor API base URL for this artifact
+          HARBOR_API="https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${DIGEST}/tags"
+
+          # Add dev tag: {version}-dev-{sha}
+          echo "Adding dev tag: ${DEV_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X POST "${HARBOR_API}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\": \"${DEV_TAG}\"}"
+
+          # Delete the release version tag (we only want dev tag for now)
+          echo "Removing release version tag: ${PUSHED_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X DELETE "${HARBOR_API}/${PUSHED_TAG}"
+
+          # Add rolling tag: {chart-major}-dev-latest
+          ROLLING_TAG="${CHART_MAJOR_VERSION}-dev-latest"
+          echo "Removing existing rolling tag if present: ${ROLLING_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X DELETE "https://${HARBOR_REGISTRY_HOST}/api/v2.0/projects/${HARBOR_REGISTRY_PROJECT}/repositories/${{ env.CHART_NAME }}/artifacts/${ROLLING_TAG}/tags/${ROLLING_TAG}" || true
+
+          echo "Adding rolling tag: ${ROLLING_TAG}"
+          curl -s -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+            -X POST "${HARBOR_API}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\": \"${ROLLING_TAG}\"}"
+
+          echo "::notice::Pushed to Harbor with tags: ${DEV_TAG}, ${ROLLING_TAG}"
+
+      #
+      # Summary
+      #
+      - name: Add build info to workflow summary
+        run: |
+          # Extract key Camunda component versions from values.yaml
+          # Component structure changed in 8.8:
+          #   - 8.6, 8.7: zeebe, operate, tasklist, identity (separate images)
+          #   - 8.8+: orchestration (single camunda image) + management identity
+
+          # Use yq to extract image tags reliably
+          get_tag() {
+            local path=$1
+            yq -r "${path} // \"N/A\"" values.yaml
+          }
+
+          # Components that exist in all versions
+          IMAGE_CONSOLE=$(get_tag '.console.image.tag')
+          IMAGE_CONNECTORS=$(get_tag '.connectors.image.tag')
+          IMAGE_OPTIMIZE=$(get_tag '.optimize.image.tag')
+          IMAGE_WEBMODELER=$(get_tag '.webModeler.image.tag')
+
+          # Version-specific components
+          CAMUNDA_MINOR=$(echo "${{ env.CAMUNDA_VERSION }}" | sed 's/^8\.//')
+
+          if [[ ${CAMUNDA_MINOR} -ge 8 ]]; then
+            CHART_ARCHITECTURE="orchestration"
+            IMAGE_CAMUNDA=$(get_tag '.orchestration.image.tag')
+            IMAGE_MGMT_IDENTITY=$(get_tag '.identity.image.tag')
+          else
+            CHART_ARCHITECTURE="classic"
+            IMAGE_ZEEBE=$(get_tag '.zeebe.image.tag')
+            IMAGE_OPERATE=$(get_tag '.operate.image.tag')
+            IMAGE_TASKLIST=$(get_tag '.tasklist.image.tag')
+            IMAGE_IDENTITY=$(get_tag '.identity.image.tag')
+          fi
+
+          # Set up registry URL for summary
+          OCI_REGISTRY="${HARBOR_REGISTRY_HOST}/${HARBOR_REGISTRY_PROJECT}"
+          ROLLING_TAG="${CHART_MAJOR_VERSION}-dev-latest"
+
+          if [[ "${{ env.SKIP_BUILD }}" == "true" ]]; then
+            cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 📦 Chart Build Skipped (Camunda ${{ env.CAMUNDA_VERSION }})
+
+          Dev package already exists for this commit.
+
+          - **Dev Tag:** \`${DEV_TAG}\`
+          - **Camunda Version:** \`${{ env.CAMUNDA_VERSION }}\`
+
+          EOF
+          else
+            # Build summary based on architecture
+            if [[ "${CHART_ARCHITECTURE}" == "orchestration" ]]; then
+              # 8.8+ with orchestration cluster (single camunda image)
+              cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
+
+          ### Package Info
+
+          | Property | Value |
+          |----------|-------|
+          | **Registry** | \`oci://${OCI_REGISTRY}\` |
+          | **Chart** | \`${{ env.CHART_NAME }}\` |
+          | **Dev Tag** | \`${DEV_TAG}\` |
+          | **Rolling Tag** | \`${ROLLING_TAG}\` |
+          | **Release Version (in Chart.yaml)** | \`${RELEASE_VERSION}\` |
+          | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
+          | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+
+          ### 🐳 Image Versions (from values.yaml)
+
+          | Component | Version |
+          |-----------|---------|
+          | Camunda (Zeebe/Operate/Tasklist/Orch. Identity) | \`${IMAGE_CAMUNDA}\` |
+          | Management Identity | \`${IMAGE_MGMT_IDENTITY}\` |
+          | Optimize | \`${IMAGE_OPTIMIZE}\` |
+          | Web Modeler | \`${IMAGE_WEBMODELER}\` |
+          | Connectors | \`${IMAGE_CONNECTORS}\` |
+          | Console | \`${IMAGE_CONSOLE}\` |
+
+          > **Note:** Compare these versions with the release train announcement to verify this dev package has the correct versions for release.
+
+          ### Install (requires Harbor access)
+
+          \`\`\`bash
+          helm registry login ${HARBOR_REGISTRY_HOST}
+          helm install my-camunda-dev \\
+            oci://${OCI_REGISTRY}/${{ env.CHART_NAME }} \\
+            --version ${DEV_TAG}
+          \`\`\`
+
+          EOF
+            else
+              # 8.6, 8.7 with separate component images
+              cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 📦 Dev Package Built ✅ (Camunda ${{ env.CAMUNDA_VERSION }})
+
+          ### Package Info
+
+          | Property | Value |
+          |----------|-------|
+          | **Registry** | \`oci://${OCI_REGISTRY}\` |
+          | **Chart** | \`${{ env.CHART_NAME }}\` |
+          | **Dev Tag** | \`${DEV_TAG}\` |
+          | **Rolling Tag** | \`${ROLLING_TAG}\` |
+          | **Release Version (in Chart.yaml)** | \`${RELEASE_VERSION}\` |
+          | **Camunda Version** | \`${{ env.CAMUNDA_VERSION }}\` |
+          | **Commit** | [${{ env.SHORT_SHA }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) |
+
+          ### 🐳 Image Versions (from values.yaml)
+
+          | Component | Version |
+          |-----------|---------|
+          | Zeebe | \`${IMAGE_ZEEBE}\` |
+          | Operate | \`${IMAGE_OPERATE}\` |
+          | Tasklist | \`${IMAGE_TASKLIST}\` |
+          | Identity | \`${IMAGE_IDENTITY}\` |
+          | Optimize | \`${IMAGE_OPTIMIZE}\` |
+          | Web Modeler | \`${IMAGE_WEBMODELER}\` |
+          | Connectors | \`${IMAGE_CONNECTORS}\` |
+          | Console | \`${IMAGE_CONSOLE}\` |
+
+          > **Note:** Compare these versions with the release train announcement to verify this dev package has the correct versions for release.
+
+          ### Install (requires Harbor access)
+
+          \`\`\`bash
+          helm registry login ${HARBOR_REGISTRY_HOST}
+          helm install my-camunda-dev \\
+            oci://${OCI_REGISTRY}/${{ env.CHART_NAME }} \\
+            --version ${DEV_TAG}
+          \`\`\`
+
+          EOF
+            fi
+          fi

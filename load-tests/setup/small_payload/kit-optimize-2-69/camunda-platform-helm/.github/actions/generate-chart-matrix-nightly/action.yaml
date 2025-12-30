@@ -1,0 +1,54 @@
+name: Generate chart and Enabled Scenarios Matrix
+description: Find all scenarios for all charts and list charts with enabled scenarios.
+outputs:
+  matrix:
+    description: JSON matrix of changed charts which will be used as and input for GHA workflow matrix.
+    value: ${{ steps.set-chart-versions.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - name: ℹ️ Print workflow inputs ℹ️
+      shell: bash
+      env:
+        GITHUB_CONTEXT: ${{ toJson(inputs) }}
+      run: |
+        echo "Action Inputs:"
+        echo "${GITHUB_CONTEXT}"
+    - name: Get chart versions
+      id: get-chart-versions
+      uses: ./.github/actions/get-chart-versions
+    - name: Generate matrix
+      shell: bash
+      id: set-chart-versions
+      run: |
+        touch matrix_versions.txt
+        echo "matrix:" >> matrix_versions.txt
+
+        # TODO: Use `active` versions instead of `support-standard` versions when 8.8 is ready.
+        for camunda_version in ${{ steps.get-chart-versions.outputs.support-standard }}; do
+          chart_dir="charts/camunda-platform-${camunda_version}"
+
+          # Read the array from the yaml file.
+          readarray nightlyScenarios < <(yq e -o=j -I=0 '.integration.case.nightly.scenario.[]' ${chart_dir}/test/ci-test-config.yaml)
+
+          for nightlyScenario in "${nightlyScenarios[@]}"; do
+            enabled=$(echo "$nightlyScenario" | yq e '.enabled' -)
+            # skip if scenario is not enabled
+            if [ "$enabled" = "false" ]; then
+              continue
+            fi
+            echo "  - version: ${camunda_version}" >> matrix_versions.txt
+            echo "    case: nightly" >> matrix_versions.txt
+            echo "    scenario: $(echo "$nightlyScenario" | yq e '.name' -)" >> matrix_versions.txt
+            echo "    auth: $(echo "$nightlyScenario" | yq e '.auth' -)" >> matrix_versions.txt
+            echo "    exclude: $(echo "$nightlyScenario" | yq e '.exclude | join("|")' -)" >> matrix_versions.txt
+            echo "    values-enterprise: $(echo "$nightlyScenario" | yq e '.enterprise // "false"' -)" >> matrix_versions.txt
+          done
+            sed -i -e '$s/,$/]\n/' matrix_versions.txt
+
+        done
+
+        cat matrix_versions.txt
+
+        matrix="$(cat matrix_versions.txt | yq -o=json '.matrix' | jq -c '{ "include": . }' | jq -c 'walk(if type == "number" then tostring else . end)')"
+        echo "matrix=${matrix}" | tee -a $GITHUB_OUTPUT

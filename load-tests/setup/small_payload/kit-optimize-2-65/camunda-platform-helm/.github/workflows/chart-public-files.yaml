@@ -1,0 +1,77 @@
+# Copy files to the gh-pages branch to have clean and shorter links.
+# Example: https://helm.camunda.io/camunda-platform/values/values-latest.yaml
+name: "Chart - Public Files"
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+    - '.github/workflows/chart-public-files.yaml'
+    - 'charts/camunda-platform*/values*.yaml'
+    - 'scripts/templates/version-matrix/*'
+    - 'version-matrix/**'
+  workflow_dispatch: { }
+
+permissions:
+  contents: read
+
+jobs:
+  copy-files:
+    name: Copy chart public files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          ref: gh-pages
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          path: main
+      - name: Copy values files
+        run: |
+          #
+          # Legacy - Extra values for all chart versions.
+          # This is considered legacy as the version is part of the file name which should not be the case.
+          # Hence, the structure is kept for backward compatibility.
+          find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
+              camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              # Latest values files.
+              cp -a ${chart_id}/values-latest.yaml camunda-platform/values/values-v${camunda_version}.yaml;
+          done
+          #
+          # Extra values for all chart versions.
+          # This structure is preferred as the version is part of the directory name not the file name.
+          # Which makes it easier to manage in the docs. Which also used in the version matrix.
+          find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
+              camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+              camunda_values_dir="camunda-platform/values/camunda-${camunda_version}";
+              mkdir -p "${camunda_values_dir}";
+              # Copy all extra values files.
+              cp -a ${chart_id}/values-*.yaml ${camunda_values_dir}/;
+          done
+      - name: Copy version matrix files
+        run: |
+          mkdir -p camunda-platform/version-matrix
+          cp -a main/version-matrix/* camunda-platform/version-matrix/
+          echo "Copied version matrix files to camunda-platform/version-matrix/"
+      - name: Add public files info to workflow summary
+        run: |
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+            $(
+              find main/charts -name "camunda-platform-8*" | sort -n | while read chart_id; do
+                  camunda_version="$(echo ${chart_id} | cut -d '-' -f 3)";
+                  camunda_values_dir="camunda-platform/values/camunda-${camunda_version}";
+                  echo -e "\nPublic files for Camunda version ${camunda_version}:"
+                  printf -- "- https://helm.camunda.io/%s\n" $(ls ${camunda_values_dir}/values-*.yaml)
+              done
+            )
+          EOF
+      - name: Clean up
+        run: |
+          rm -rf main
+          find .
+      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        with:
+          message: "chore: update camunda-platform public files"

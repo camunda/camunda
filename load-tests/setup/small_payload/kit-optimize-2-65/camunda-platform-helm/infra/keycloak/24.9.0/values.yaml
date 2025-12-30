@@ -1,0 +1,67 @@
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hostname: keycloak-24-9-0.ci.distro.ultrawombat.com
+  pathType: Prefix
+  path: /auth/
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  tls: true
+  extraTls:
+    - hosts:
+        - keycloak-24-9-0.ci.distro.ultrawombat.com
+      secretName: camunda-platform
+
+# --- CI-oriented Keycloak setup (non-production) ---
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  ports:
+    http: 8080
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/keycloak
+  pullPolicy: IfNotPresent
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 20
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+auth:
+  adminUser: admin
+  existingSecret: infra-credentials
+  passwordSecretKey: keycloak-admin-password
+
+podAntiAffinityPreset: "soft"
+updateStrategy:
+  type: RollingUpdate
+pdb:
+  create: true
+  minAvailable: 1
+
+global:
+  security:
+    allowInsecureImages: true
+
+httpRelativePath: /auth/
+
+postgresql:
+  image:
+    repository: bitnamilegacy/postgresql
+
+# --- Critical for ingress behind TLS ---
+proxy: edge
+extraEnvVars:
+  - name: KC_PROXY
+    value: edge
+  - name: KC_HOSTNAME
+    value: keycloak-24-9-0.ci.distro.ultrawombat.com
+  - name: KC_HOSTNAME_STRICT_HTTPS
+    value: "true"

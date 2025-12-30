@@ -1,0 +1,150 @@
+---
+# Source: camunda-platform/templates/identity/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-identity
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.7.12"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: identity
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/component: identity
+        app.kubernetes.io/version: "8.7.12"
+      annotations:
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: camunda-platform
+          image: camunda/identity:8.7.12
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: KEYCLOAK_INIT_OPERATE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-operate-identity-secret
+                  key: operate-secret
+            - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
+              value: "http://localhost:8080"
+            - name: KEYCLOAK_INIT_TASKLIST_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-tasklist-identity-secret
+                  key: tasklist-secret
+            - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-optimize-identity-secret
+                  key: optimize-secret
+            - name: KEYCLOAK_INIT_CONNECTORS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-connectors-identity-secret
+                  key: connectors-secret
+            - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
+              value: "http://localhost:8084"
+            - name: KEYCLOAK_INIT_ZEEBE_NAME
+              value: "Zeebe"
+            - name: KEYCLOAK_INIT_ZEEBE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-zeebe-identity-secret
+                  key: zeebe-secret
+            - name: KEYCLOAK_URL
+              value: "http://camunda-platform-test-keycloak:80/auth"
+            - name: KEYCLOAK_SETUP_USER
+              value: "admin"
+            - name: KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-keycloak
+                  key: admin-password
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
+              value: "demo"
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 600m
+              memory: 400Mi
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 8082
+              name: metrics
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              scheme: HTTP
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /app/config/application.yaml
+              subPath: application.yaml
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: camunda-platform-test-identity-configuration
+      serviceAccountName: camunda-platform-test-identity
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

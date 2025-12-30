@@ -1,0 +1,174 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webModeler.restapi.fullname" . }}
+  labels: {{- include "webModeler.restapi.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.webModeler.restapi.replicas }}
+  selector:
+    matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "webModeler.restapi.labels" . | nindent 8 }}
+      {{- if .Values.webModeler.restapi.podLabels }}
+      {{- toYaml .Values.webModeler.restapi.podLabels | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.restapi.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.webModeler.restapi.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.webModeler.restapi.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: {{ include "webModeler.name" . }}-restapi
+          image: {{ include "webModeler.restapi.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.webModeler.restapi.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.webModeler.restapi.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            - name: JAVA_OPTIONS
+              value: "-XX:MaxRAMPercentage=80.0"
+            {{- if or (not .Values.webModeler.restapi.externalDatabase.enabled) .Values.webModeler.restapi.externalDatabase.password }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "webModeler.restapi.databaseSecretName" . }}
+                  key: {{ include "webModeler.restapi.databaseSecretKey" . }}
+            {{- end }}
+            {{- $smtpSecretName := (include "webModeler.restapi.smtpSecretName" .) }}
+            {{- if $smtpSecretName }}
+            - name: RESTAPI_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $smtpSecretName }}
+                  key: {{ include "webModeler.restapi.smtpSecretKey" . }}
+            {{- end }}
+            - name: RESTAPI_PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-id
+            - name: RESTAPI_PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-key
+            - name: RESTAPI_PUSHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-secret
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_client_cache.txt
+          {{- with .Values.webModeler.restapi.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          {{- if .Values.webModeler.restapi.envFrom }}
+          envFrom:
+            {{- .Values.webModeler.restapi.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.webModeler.restapi.command }}
+          command: {{ toYaml .Values.webModeler.restapi.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.webModeler.restapi.resources | nindent 12 }}
+          ports:
+            - containerPort: 8081
+              name: http
+              protocol: TCP
+            - containerPort: 8091
+              name: http-management
+              protocol: TCP
+          {{- if .Values.webModeler.restapi.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.webModeler.restapi.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.startupProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.restapi.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.restapi.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.restapi.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.restapi.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.restapi.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.webModeler.restapi.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.readinessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.restapi.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.restapi.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.restapi.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.restapi.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.restapi.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.webModeler.restapi.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.livenessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.restapi.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.restapi.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.restapi.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.restapi.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /home/runner/config/application.yaml
+              subPath: application.yaml
+          {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
+            - name: config
+              mountPath: /home/runner/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+            {{- if .Values.webModeler.restapi.extraVolumeMounts }}
+            {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.webModeler.restapi.sidecars }}
+        {{- .Values.webModeler.restapi.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "webModeler.fullname" . }}-restapi-configuration
+        {{- if .Values.webModeler.restapi.extraVolumes }}
+        {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if .Values.webModeler.restapi.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.webModeler.restapi.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.restapi.dnsPolicy }}
+      dnsPolicy: {{ .Values.webModeler.restapi.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.webModeler.restapi.podSecurityContext }}
+      securityContext: {{- toYaml .Values.webModeler.restapi.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.restapi.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.restapi.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.restapi.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

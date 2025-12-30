@@ -1,0 +1,197 @@
+{{- if .Values.console.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "console.fullname" . }}
+  labels:
+    {{- include "console.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.console.replicas }}
+  selector:
+    matchLabels:
+      {{- include "console.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/console/configmap.yaml") . | sha256sum }}
+      {{- with .Values.console.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "console.matchLabels" . | nindent 8 }}
+        {{- if .Values.console.podLabels }}
+          {{- toYaml .Values.console.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "console.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.console.initContainers | default list | toYaml | nindent 8) $ }}
+      serviceAccountName: {{ include "console.serviceAccountName" . }}
+      {{- if .Values.console.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.console.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.console.dnsPolicy }}
+      dnsPolicy: {{ .Values.console.dnsPolicy | quote }}
+      {{- end }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.console.podSecurityContext "context" $) | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.console) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.console.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.console.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: {{ printf "/usr/local/console/certificates/%s" .Values.console.tls.certKeyFilename | quote }}
+            - name: NODE_ENV
+              value: prod
+            {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerBackendUrl" .) "" | quote }}
+            - name: KEYCLOAK_BASE_URL
+              value: {{ mustRegexReplaceAllLiteral "/realms/.+" (include "camundaPlatform.authIssuerUrl" .) "" | quote }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.console.keycloak.realm | quote }}
+            {{- end }}
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ .Values.global.identity.auth.console.audience | default "console-api" }}
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ .Values.global.identity.auth.console.clientId | default "console" }}
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: {{ .Values.console.contextPath | quote }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
+          {{- if .Values.console.env}}
+            {{ .Values.console.env | toYaml | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.console.envFrom }}
+            {{- .Values.console.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: management
+              containerPort: 9100
+              protocol: TCP
+          {{- if .Values.console.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.console.startupProbe.probePath }}
+              scheme: {{ .Values.console.startupProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.console.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.console.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.console.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.console.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.console.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.console.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.console.readinessProbe.probePath }}
+              scheme: {{ .Values.console.readinessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.console.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.console.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.console.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.console.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.console.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.console.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.console.livenessProbe.probePath }}
+              scheme: {{ .Values.console.livenessProbe.scheme }}
+              port: management
+            initialDelaySeconds: {{ .Values.console.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.console.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.console.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.console.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.console.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.console.command}}
+          command: {{ toYaml .Values.console.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.console.resources | nindent 12 }}
+          volumeMounts:
+            - name: console-configuration
+              mountPath: /var/run/config
+          {{- if .Values.console.tls.enabled }}
+            - name: console-certificates
+              mountPath: /usr/local/console/certificates
+              readOnly: true
+          {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
+          {{- if .Values.console.extraVolumeMounts }}
+            {{- .Values.console.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+      {{- if .Values.console.sidecars }}
+        {{- .Values.console.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: console-configuration
+          configMap:
+            name: {{ include "console.fullname" . }}-configuration
+      {{- if .Values.console.tls.enabled }}
+        - name: console-certificates
+          secret:
+            secretName: {{ .Values.console.tls.existingSecret }}
+      {{- end }}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
+      {{- if .Values.console.extraVolumes }}
+        {{- .Values.console.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

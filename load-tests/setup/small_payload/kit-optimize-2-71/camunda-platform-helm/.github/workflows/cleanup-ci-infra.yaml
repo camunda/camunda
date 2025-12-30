@@ -1,0 +1,71 @@
+# This workflow is used to cleanup the CI infrastructure for Elasticsearch and Keycloak.
+# If the infra is a problem, we can run this workflow to cleanup the infra and deploy it again.
+# This is all CI so nothing needs to be persisted.
+# We do this rather than being admins of the infra
+name: "Cleanup CI Infra - Elasticsearch and Keycloak"
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+jobs:
+  delete-elasticsearch:
+    name: Cleanup CI Elasticsearch - ${{ matrix.version }} on ${{ matrix.distro-platform }}
+    strategy:
+      matrix:
+        distro-platform:
+          - gke
+        version:
+          - 21.6.3
+    uses: ./.github/workflows/delete-elasticsearch.yaml
+    with:
+      distro-platform: ${{ matrix.distro-platform }}
+      chart-version: ${{ matrix.version }}
+    secrets: inherit
+
+  deploy-elasticsearch:
+    name: Deploy CI Elasticsearch - ${{ matrix.version }} on ${{ matrix.distro-platform }}
+    needs: [delete-elasticsearch]
+    strategy:
+      matrix:
+        distro-platform:
+          - gke
+        version:
+          - 21.6.3
+    uses: ./.github/workflows/deploy-elasticsearch.yaml
+    with:
+      distro-platform: ${{ matrix.distro-platform }}
+      chart-version: ${{ matrix.version }}
+    secrets: inherit
+
+  delete-keycloak:
+    name: Cleanup CI Keycloak - ${{ matrix.version }} on ${{ matrix.distro-platform }}
+    strategy:
+      matrix:
+        distro-platform:
+          - gke
+        version:
+          - 24.9.0
+    uses: ./.github/workflows/delete-keycloak.yaml
+    with:
+      distro-platform: ${{ matrix.distro-platform }}
+      chart-version: ${{ matrix.version }}
+    secrets: inherit
+
+  deploy-keycloak:
+    name: Deploy CI Keycloak - ${{ matrix.version }} on ${{ matrix.distro-platform }}
+    needs: [delete-keycloak]
+    strategy:
+      matrix:
+        distro-platform:
+          - gke
+        version:
+          - 24.9.0
+    uses: ./.github/workflows/deploy-keycloak.yaml
+    secrets: inherit

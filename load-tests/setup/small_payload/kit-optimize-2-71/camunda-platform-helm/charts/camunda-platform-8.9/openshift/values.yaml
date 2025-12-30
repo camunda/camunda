@@ -1,0 +1,12 @@
+##
+# This is a minimal sample values file to get you started with an Openshift cluster using the recommended default
+# policies. Using these values, you will be able to deploy the chart using the least permissive SCC, "restricted".
+##
+---
+
+global:
+  compatibility:
+    ## Compatibility adaptations for Openshift
+    openshift:
+      ## Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)
+      adaptSecurityContext: force

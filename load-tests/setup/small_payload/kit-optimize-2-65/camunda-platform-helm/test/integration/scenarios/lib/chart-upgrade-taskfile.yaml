@@ -1,0 +1,74 @@
+version: '3'
+
+vars:
+  TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" }}'
+  TEST_CLUSTER_TYPE: '{{ env "TEST_CLUSTER_TYPE" | default "kubernetes" }}'
+  TEST_HELM_EXTRA_ARGS: '{{ env "TEST_HELM_EXTRA_ARGS" }} {{ .TEST_OPENSHIFT_ARGS }}'
+  INFRA_TYPE_SUFFIX: '{{ eq (env "PLATFORM") "eks" | ternary ("eks") "" }}-{{ .INFRA_TYPE }}'
+  TEST_CHART_FLOW: '{{ env "TEST_CHART_FLOW" }}'
+tasks:
+  pre:
+    env:
+      # Needed for sub scripts.
+      TEST_VALUES_BASE_DIR: "{{ .TEST_VALUES_BASE_DIR }}"
+      TEST_NAMESPACE: "{{ .TEST_NAMESPACE }}"
+    cmds:
+    - |
+      echo "TEST_CHART_FLOW: {{ .TEST_CHART_FLOW }}"
+    - |
+      {{ if eq .TEST_CHART_FLOW "upgrade-patch" }}
+        # Pre-run scripts in the upgrade flow.
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-upgrade-patch.sh
+      {{ end }}
+    - |
+      {{ if eq .TEST_CHART_FLOW "upgrade-minor" }}
+        # Pre-run scripts in the upgrade-minor flow.
+        bash -x {{ .TEST_VALUES_BASE_DIR }}/pre-setup-scripts/pre-upgrade-minor.sh
+      {{ end }}
+
+  # https://docs.camunda.io/docs/self-managed/setup/upgrade/
+  exec:
+    cmds:
+    - |
+      {{ if eq .TEST_VALUES_SCENARIO "oidc" }}
+      export ENTRA_APP_CLIENT_ID={{ .ENTRA_APP_CLIENT_ID }}
+      export ENTRA_APP_CLIENT_SECRET={{ .ENTRA_APP_CLIENT_SECRET }}
+      export ENTRA_APP_DIRECTORY_ID={{ .ENTRA_APP_DIRECTORY_ID }}
+      export ENTRA_APP_OBJECT_ID={{ .ENTRA_APP_OBJECT_ID }}
+
+      envsubst < {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml > {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp
+      mv {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml.tmp {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      cat {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      {{ end }}
+
+      MERGED_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}-merged.yaml
+      USE_SCENARIO_FILE={{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_VALUES_SCENARIO }}.yaml
+      {{ if (env "TEST_CHART_VERSION" | hasPrefix "13") -}}
+      {{ if (ne .TEST_CHART_FLOW "upgrade-patch") -}}
+      yq ea '. as $item ireduce ({}; . *+ $item)' \
+        "$USE_SCENARIO_FILE" \
+        {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-enable-migrator.yaml \
+        > "$MERGED_FILE"
+      USE_SCENARIO_FILE="$MERGED_FILE"
+      {{ end -}}
+      {{ end -}}
+
+      helm upgrade integration $ABSOLUTE_TEST_CHART_DIR \
+        --namespace {{ .TEST_NAMESPACE }} \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/common/values-integration-test-pull-secrets.yaml \
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-{{ .TEST_AUTH_TYPE }}.yaml \
+        --values "$USE_SCENARIO_FILE" \
+        {{ if eq .PLATFORM "eks" -}}
+        --values {{ .TEST_VALUES_BASE_DIR }}/chart-full-setup/values-integration-test-ingress-infra.yaml \
+        {{ end -}}
+        {{ if not (empty .TEST_HELM_DIGEST_VALUES) -}}
+        --values {{ .TEST_HELM_DIGEST_VALUES }} \
+        {{ end -}}
+        --values {{ .TEST_VALUES_BASE_DIR }}/infra/values-infra{{ .INFRA_TYPE_SUFFIX }}.yaml \
+        --force \
+        --timeout 20m0s \
+        --set orchestration.upgrade.allowPreReleaseImages=true \
+        --force \
+        --wait-for-jobs \
+        --wait {{ .TEST_HELM_EXTRA_ARGS }} 

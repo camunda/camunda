@@ -1,0 +1,360 @@
+{{- if .Values.identity.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "identity.fullname" . }}-configuration
+  labels: {{- include "identity.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+data:
+  {{- if .Values.identity.configuration }}
+  application.yaml: |
+    {{ .Values.identity.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    # NOTE:
+    # It is possible to override the configuration via env vars following the Spring Boot convention.
+    # For example, the "identity.url" config path is presented as the "IDENTITY_URL" environment variable.
+    # However, it's not possilbe to mix between the configuration and environment variable for the same object
+    # like arrays and maps.
+    identity:
+      url: {{ include "identity.externalUrl" . | quote }}
+      flags:
+        multi-tenancy: {{ include "identity.multitenancyEnabled" . | quote }}
+
+      {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+      client-id: {{ include "identity.authClientId" . | quote }}
+      {{- end }}
+      {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+      {{- if $config.plaintext }}
+      client-secret: {{ $config.plaintext | quote }}
+      {{- else if $config.ref }}
+      client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+      {{- end }}
+
+      authProvider:
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+        {{- end }}
+        issuer-url: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+
+      {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+      initial-claim-name: {{ .Values.global.identity.auth.identity.initialClaimName }}
+      initial-claim-value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
+      {{- end }}
+      component-presets:
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
+        connectors:
+          applications:
+            - name: Connectors
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              type: m2m
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: read:*
+        {{- end }}
+        console:
+          applications:
+            - name: "Console"
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              type: public
+              root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/"
+          apis:
+            - name: Console API
+              audience: {{ include "console.authAudience" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Console"
+              description: "Grants full access to Console"
+              permissions:
+                - audience: {{ include "console.authAudience" . | quote }}
+                  definition: write:*
+        identity:
+          apis:
+            - name: "Camunda Identity Resource Server"
+              audience: {{ include "identity.authAudience" . | quote }}
+              permissions:
+                - definition: read
+                  description: "Read permission"
+                - definition: "read:users"
+                  description: "Read users permission"
+                - definition: write
+                  description: "Write permission"
+          roles:
+            - name: "ManagementIdentity"
+              description: "Provides full access to Management Identity"
+              permissions:
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: write
+        optimize:
+          applications:
+            - name: Optimize
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              type: confidential
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              root-url: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/api/authentication/callback"
+          apis:
+            - name: Optimize API
+              audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+                - audience: {{ include "camundaPlatform.authAudienceOptimize" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        orchestration:
+          applications:
+            - name: Orchestration
+              id: ${CAMUNDA_ORCHESTRATION_CLIENT_ID:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_CLIENT_ID:orchestration}}
+              type: confidential
+              secret: ${CAMUNDA_ORCHESTRATION_SECRET:${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}}
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: write:*
+              root-url: {{ tpl .Values.orchestration.security.authentication.oidc.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/login/oauth2/code/orchestration"
+                - "/sso-callback"
+          apis:
+            - name: "Orchestration API"
+              audience: {{ include "orchestration.authAudience" . | quote }}
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Orchestration"
+              description: "Grants full access to Orchestration"
+              permissions:
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: read:*
+                - audience: {{ include "orchestration.authAudience" . | quote }}
+                  definition: write:*
+        {{- end }}
+        webmodeler:
+          applications:
+            - name: "Web Modeler"
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              type: public
+              root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+              redirect-uris:
+                - "/login-callback"
+          apis:
+            - name: Web Modeler Internal API
+              audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+                - definition: admin:*
+                  description: "Admin permission"
+            - name: Web Modeler API
+              audience: {{ include "webModeler.authPublicApiAudience" . | quote }}
+              permissions:
+                - definition: create:*
+                  description: "Allows create access for all resources"
+                - definition: read:*
+                  description: "Allows read access to all resources"
+                - definition: update:*
+                  description: "Allows update access to all resources"
+                - definition: delete:*
+                  description: "Allows delete access for all resources"
+          roles:
+            - name: "Web Modeler"
+              description: "Grants full access to Web Modeler"
+              permissions:
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Web Modeler"
+              permissions:
+                - audience: {{ include "identity.authAudience" . | quote }}
+                  definition: read:users
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: write:*
+                - audience: {{ include "webModeler.authClientApiAudience" . | quote }}
+                  definition: admin:*
+
+    {{- if .Values.global.identity.auth.enabled }}
+    {{- if eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK"}}
+    keycloak:
+      url: {{ include "identity.keycloak.url" . | quote }}
+      {{- if and .Values.identity.realm .Values.identity.realm.enabled }}
+      realm: {{ .Values.identity.realm.id | quote }}
+      {{- end }}
+      setup:
+        user: {{ include "identity.keycloak.authAdminUser" . | quote }}
+        password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      init:
+        {{- if eq (include "connectors.authMethod" .) "oidc" }}
+        connectors:
+          secret: ${VALUES_KEYCLOAK_INIT_CONNECTORS_SECRET:}
+        {{- end }}
+        console:
+          root-url: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+        optimize:
+          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+        orchestration:
+          secret: ${VALUES_KEYCLOAK_INIT_ORCHESTRATION_SECRET:}
+        {{- end }}
+        webmodeler:
+          root-url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+      clients:
+      {{- if .Values.global.identity.auth.admin.enabled }}
+        - id: {{ .Values.global.identity.auth.admin.clientId }}
+          name: {{ .Values.global.identity.auth.admin.clientId | title }}
+          secret: ${VALUES_CAMUNDA_ADMIN_CLIENT_SECRET:}
+          redirect-uris: /dummy
+          root-url: http://dummy
+          type: confidential
+          permissions:
+            - resourceServerId: camunda-identity-resource-server
+              definition: read
+            - resourceServerId: camunda-identity-resource-server
+              definition: write
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            - resourceServerId: orchestration-api
+              definition: read:*
+            - resourceServerId: orchestration-api
+              definition: write:*
+            {{- end }}
+            - resourceServerId: optimize-api
+              definition: write:*
+            - resourceServerId: web-modeler-api
+              definition: write:*
+            - resourceServerId: console-api
+              definition: write:*
+      {{- end }}
+      {{- if .Values.identity.clients }}
+        {{- range $index, $client := .Values.identity.clients }}
+        - id: {{ $client.id }}
+          name: {{ $client.name }}
+          {{- if ne $client.type "public" }}
+          secret: ${VALUES_{{ $client.id | upper}}_CLIENT_SECRET:}
+          {{- end }}
+          redirectUris: {{ $client.redirectUris }}
+          rootUrl: {{ $client.rootUrl }}
+          type: {{ $client.type }}
+          permissions:
+            {{- with $client.permissions }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+      {{- end }}
+      users:
+        {{- if .Values.identity.firstUser.enabled }}
+        - username: {{ .Values.identity.firstUser.username | quote }}
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: {{ .Values.identity.firstUser.firstName | quote }}
+          lastName: {{ .Values.identity.firstUser.lastName | quote }}
+          email: {{ .Values.identity.firstUser.email | quote }}
+          {{- if .Values.global.identity.auth.enabled }}
+          roles:
+            - ManagementIdentity
+            {{- if .Values.optimize.enabled }}
+            - Optimize
+            {{- end }}
+            {{- if .Values.webModeler.enabled }}
+            - Web Modeler
+            - Web Modeler Admin
+            {{- end }}
+            {{- if .Values.console.enabled }}
+            - Console
+            {{- end }}
+            {{- if eq (include "orchestration.authMethod" .) "oidc" }}
+            - Orchestration
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.identity.users }}
+        {{- range $index, $user := .Values.identity.users }}
+        - username: {{ $user.username }}
+          password: ${VALUES_{{ $user.username | upper}}_USER_PASSWORD:}
+          firstName: {{ $user.firstName }}
+          lastName: {{ $user.lastName }}
+          email: {{ $user.email }}
+          roles:
+            {{- with $user.roles }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+        {{- end }}
+        {{- end }}
+      environment:
+        clients:
+          - name: Identity
+            id: {{  printf "%s" (include "identity.authClientId" .) | default "camunda-identity" | quote }}
+            type: CONFIDENTIAL
+            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
+            root-url: {{ include "identity.externalUrl" . | quote }}
+            redirect-uris:
+              - "/auth/login-callback"
+    {{- end }}
+    {{- end }}
+    server:
+      port: 8084
+      {{- if .Values.identity.contextPath }}
+      servlet:
+        context-path: {{ .Values.identity.contextPath | quote }}
+      {{- end }}
+
+    spring:
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+      {{- if .Values.global.identity.auth.enabled }}
+      profiles:
+        active: {{ eq (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" | ternary "keycloak" "oidc" }}
+      {{- end }}
+
+      {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+      datasource:
+        url: {{ printf "jdbc:postgresql://%s:%s/%s" (include "identity.postgresql.host" .) (include "identity.postgresql.port" .) (include "identity.postgresql.database" .) | quote }}
+        username: {{ include "identity.postgresql.username" . | quote }}
+      {{- end }}
+
+    camunda:
+      identity:
+        audience: {{ include "identity.authAudience" . | quote }}
+        {{- if eq (include "camundaPlatform.hasSecretConfig" (dict "config" .Values.global.identity.auth.identity)) "true" }}
+        client-id: {{ include "identity.authClientId" .  | quote }}
+        {{- $config := include "camundaPlatform.normalizeSecretConfiguration" (dict "config" .Values.global.identity.auth.identity) | fromYaml }}
+        {{- if $config.plaintext }}
+        client-secret: {{ $config.plaintext | quote }}
+        {{- else if $config.ref }}
+        client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+        {{- end }}
+        {{- end }}
+        {{- if ne (include "camundaPlatform.authIssuerType" .) "KEYCLOAK" }}
+        baseUrl: {{ include "identity.internalUrl" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        {{- end }}
+    logging:
+{{- with .Values.identity.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
+  {{- end }}
+  {{- range $key, $val := .Values.identity.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

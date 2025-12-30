@@ -1,0 +1,26 @@
+preflightVars:
+  baseURLs:
+    elasticsearch: http://integration-elasticsearch:9200
+    keycloak: http://integration-keycloak
+    identity: http://integration-identity:82
+    optimize: http://integration-optimize
+    operate: http://integration-operate
+    tasklist: http://integration-tasklist
+    connectors: http://integration-connectors:8080
+    zeebeGateway: http://integration-zeebe-gateway:9600
+    webModelerRestapi: http://integration-web-modeler-restapi:8091
+    webModelerWebapp: http://integration-web-modeler-webapp:8071
+
+coreVars:
+  authURL: "http://integration-keycloak/auth/realms/camunda-platform/protocol/openid-connect/token"
+  baseURLs:
+    keycloak: http://integration-keycloak
+    identity: http://integration-identity
+    optimize: http://integration-optimize
+    operate: http://integration-operate
+    tasklist: http://integration-tasklist
+    connectors: http://integration-connectors:8080/inbound
+    webModelerRestapi: http://integration-web-modeler-restapi
+    zeebeGateway: integration-zeebe-gateway:26500
+  zbctl:
+    extraArgs: "--insecure"

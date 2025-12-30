@@ -1,0 +1,232 @@
+global:
+  documentStore:
+    activeStoreId: "aws"
+    type:
+      aws:
+        enabled: true
+        storeId: "aws"
+        bucket: "camunda-ci-eks-prod-team-bucket-qa"
+        region: "eu-central-1"
+        bucketPath: "documents"
+        class: "io.camunda.document.store.aws.AwsDocumentStoreProvider"
+        existingSecret: "s3-bucket-credentials"
+        accessKeyIdKey: "access-key-id"
+        secretAccessKeyKey: "secret-access-key"
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
+orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+  security:
+    authentication:
+      method: oidc
+      oidc:
+        groupsClaim: ""
+  env:
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+      value: "venom"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
+      value: "connectors"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"
+identityKeycloak:
+  enabled: true
+optimize:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+webModeler:
+  enabled: true
+  security:
+    authentication:
+      method: oidc
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+webModelerPostgresql:
+  enabled: true
+console:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: "$TEST_NAMESPACE"
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: 'true'      
+identity:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  firstUser:
+    user: demo
+    secret:
+      existingSecret: vault-mapped-secrets
+      existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+  # Keycloak client seed which is used to query Camunda APIs. 
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+    - id: test
+      name: Test
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+  users:
+    - username: lisa
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+      firstName: Lisa
+      lastName: Doe
+      email: cawemodev+lisa@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
+    - username: bart
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+      firstName: Bart
+      lastName: Foo
+      email: cawemodev+bart@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
+connectors:
+  security:
+    authentication:
+      method: oidc
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
+    - name: IDP_AWS_BUCKET_NAME
+      value: "$IDP_AWS_BUCKET_NAME"
+    - name: IDP_AWS_REGION
+      value: "$IDP_AWS_REGION"
+    - name: IDP_AWS_SECRETKEY
+      value: "$IDP_AWS_SECRETKEY"
+#    - name: IDP_GCP_SERVICE_ACCOUNT
+#      value: "$IDP_GCP_SERVICE_ACCOUNT"
+#    - name: IDP_GCP_VERTEX_BUCKET_NAME
+#      value: "$IDP_GCP_VERTEX_BUCKET_NAME"
+#    - name: IDP_GCP_VERTEX_PROJECT_ID
+#      value: "$IDP_GCP_VERTEX_PROJECT_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_PROJECT_ID
+#      value: "$IDP_GCP_DOCUMENT_AI_PROJECT_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_PROCESSOR_ID
+#      value: "$IDP_GCP_DOCUMENT_AI_PROCESSOR_ID"
+#    - name: IDP_GCP_DOCUMENT_AI_REGION
+#      value: "$IDP_GCP_DOCUMENT_AI_REGION"
+#    - name: IDP_GCP_VERTEX_REGION
+#      value: "$IDP_GCP_VERTEX_REGION"
+    - name: IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY
+      value: "$IDP_AZURE_DOCUMENT_INTELLIGENCE_KEY"
+    - name: IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT
+      value: "$IDP_AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
+    - name: IDP_AZURE_AI_FOUNDRY_ENDPOINT
+      value: "$IDP_AZURE_AI_FOUNDRY_ENDPOINT"
+    - name: IDP_AZURE_AI_FOUNDRY_KEY
+      value: "$IDP_AZURE_AI_FOUNDRY_KEY"
+    - name: IDP_AZURE_OPEN_AI_ENDPOINT
+      value: "$IDP_AZURE_OPEN_AI_ENDPOINT"
+    - name: IDP_AZURE_OPEN_AI_KEY
+      value: "$IDP_AZURE_OPEN_AI_KEY"
+    - name: OPENAI_API_KEY
+      value: "$OPENAI_API_KEY"

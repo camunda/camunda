@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zeebe.names.broker" . }}
+  labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
+  annotations:
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.httpPort }}
+      protocol: TCP
+      name: {{ default "http" .Values.service.httpName  }}
+    - port: {{ .Values.service.internalPort }}
+      protocol: TCP
+      name: {{ default "internal" .Values.service.internalName  }}
+    - port: {{ .Values.service.commandPort }}
+      protocol: TCP
+      name: {{ default "command" .Values.service.commandName }}
+    {{- if .Values.service.extraPorts}}
+    {{ .Values.service.extraPorts | toYaml | nindent 4 }}
+    {{- end }}
+  selector:
+    {{- include "zeebe.matchLabels.broker" . | nindent 4 }}

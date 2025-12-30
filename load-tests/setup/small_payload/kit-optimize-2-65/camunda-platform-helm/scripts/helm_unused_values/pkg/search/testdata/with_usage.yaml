@@ -1,0 +1,1 @@
+dnsConfig: {{- with .Values.identity.ingress.annotations }}

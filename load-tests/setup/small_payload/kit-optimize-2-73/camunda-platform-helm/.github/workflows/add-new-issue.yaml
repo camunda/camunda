@@ -1,0 +1,59 @@
+name: Add new Issue
+
+on:
+  issues:
+    types: [opened, reopened, transferred, labeled]
+
+jobs:
+  add-to-project:
+    name: Add new issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          echo "project_id=33" >> "$GITHUB_OUTPUT"
+          echo "now=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      
+      - name: Add to Distribution Team project
+        uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e # v1.0.2
+        with:
+          project-url: https://github.com/orgs/camunda/projects/33
+          github-token: '${{ steps.generate-github-token.outputs.token }}'
+
+      - name: Update Created At field
+        uses: github/update-project-action@993f8e40e6cb9250b7d4b476aeee44e40f2d23c2 # main
+        id: update-created-at
+        with:
+          github_token: ${{ steps.generate-github-token.outputs.token }}
+          organization: ${{ github.repository_owner }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.issue.node_id }}
+          field: Created At
+          value: ${{ steps.vars.outputs.now }}
+
+      - name: Add issue to Quality Board
+        # https://github.com/orgs/camunda/projects/187/views/15
+        id: add-bug-to-quality-board
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@main
+        with:
+          github-token: ${{ steps.generate-github-token.outputs.token }}
+          project-number: "187"
+        # Only run this job for issues labeled as 'kind/bug' and
+        # for the relevant GitHub issue events that indicate a new or updated issue.
+        if: >
+          contains(github.event.issue.labels.*.name, 'kind/bug') &&
+          (
+              github.event.action == 'opened' ||
+              github.event.action == 'reopened' ||
+              github.event.action == 'transferred' ||
+              (github.event.action == 'labeled' && github.event.label.name == 'kind/bug')
+          )
+                

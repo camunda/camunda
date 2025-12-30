@@ -1,0 +1,8 @@
+orchestration:
+  security:
+    authentication:
+      oidc:
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api

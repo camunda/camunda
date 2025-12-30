@@ -1,0 +1,141 @@
+#
+# Enterprise Bitnami-based images
+# These images are derived from Bitnami opensource, include CVE patches and extended support,
+# and are hosted on a private registry. Access is restricted to Enterprise users only.
+#
+# Kubernetes secret for accessing registry.camunda.cloud (must be created manually):
+#
+# Create the secret using:
+# kubectl create secret docker-registry registry-camunda-cloud \
+#   --docker-server=registry.camunda.cloud \
+#   --docker-username=<your-username> \
+#   --docker-password=<your-password> \
+#   --docker-email=unused@example.com
+#
+# Once created, reference the secret in your Helm values using the `registry-camunda-cloud` secret object.
+#
+# Replace <your-username> and <your-password> with your LDAP credentials.
+#
+# For more details on using pullSecrets in pods:
+# https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+
+global:
+  security:
+    # This setting is set to true to allow images issued by Camunda to be used instead of those provided by Bitnami
+    allowInsecureImages: true 
+
+identityPostgresql:
+  image:
+    registry: registry.camunda.cloud
+    repository: vendor-ee/postgresql
+    tag: 15.15.0-debian-12-r2
+    pullSecrets:
+      - name: registry-camunda-cloud
+
+  volumePermissions:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/os-shell
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+  metrics:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/postgres-exporter
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+identityKeycloak:
+  image:
+    registry: registry.camunda.cloud
+    repository: keycloak-ee/keycloak
+    tag: 26.4.7
+    pullSecrets:
+      - name: registry-camunda-cloud
+
+  keycloakConfigCli:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/keycloak-config-cli
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+  postgresql:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/postgresql
+      tag: 15.15.0-debian-12-r2
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+    volumePermissions:
+      image:
+        registry: registry.camunda.cloud
+        repository: vendor-ee/os-shell
+        pullSecrets:
+          - name: registry-camunda-cloud
+
+    metrics:
+      image:
+        registry: registry.camunda.cloud
+        repository: vendor-ee/postgres-exporter
+        pullSecrets:
+          - name: registry-camunda-cloud
+
+webModelerPostgresql:
+  image:
+    registry: registry.camunda.cloud
+    repository: vendor-ee/postgresql
+    tag: 14.20.0-debian-12-r0
+    pullSecrets:
+      - name: registry-camunda-cloud
+
+  volumePermissions:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/os-shell
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+  metrics:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/postgres-exporter
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+elasticsearch:
+  image:
+    registry: registry.camunda.cloud
+    repository: vendor-ee/elasticsearch
+    tag: 8.19.8
+    pullSecrets:
+      - name: registry-camunda-cloud
+
+  volumePermissions:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/os-shell
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+  sysctlImage:
+    registry: registry.camunda.cloud
+    repository: vendor-ee/os-shell
+    pullSecrets:
+      - name: registry-camunda-cloud
+
+  copyTlsCerts:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/os-shell
+      pullSecrets:
+        - name: registry-camunda-cloud
+
+  metrics:
+    image:
+      registry: registry.camunda.cloud
+      repository: vendor-ee/elasticsearch-exporter
+      pullSecrets:
+        - name: registry-camunda-cloud

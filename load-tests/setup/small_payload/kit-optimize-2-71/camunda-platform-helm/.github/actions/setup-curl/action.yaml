@@ -1,0 +1,12 @@
+name: Setup curl and wget
+description: To configure curl and wget settings suitable for GitHub Actions environment.
+
+runs:
+  using: composite
+  steps:
+    - name: Mark repo as safe for git
+      shell: bash
+      run: |
+        echo 'silent' >> ~/.curlrc
+        echo 'quiet = on' >> ~/.wgetrc
+

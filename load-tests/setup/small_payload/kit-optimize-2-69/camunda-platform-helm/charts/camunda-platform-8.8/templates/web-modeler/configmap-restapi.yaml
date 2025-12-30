@@ -1,0 +1,106 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webModeler.fullname" . }}-restapi-configuration
+  labels: {{- include "webModeler.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  {{- if .Values.webModeler.restapi.configuration }}
+  application.yaml: |
+    {{ .Values.webModeler.restapi.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    camunda:
+      {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+      identity:
+        {{- if .Values.identity.enabled }}
+        base-url: {{ include "camundaPlatform.identityURL" . | quote }}
+        issuer: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        {{- end }}
+        type: {{ include "camundaPlatform.authIssuerType" . | quote }}
+      {{- end }}
+
+      modeler:
+        pusher:
+          host: {{ include "webModeler.websockets.fullname" . | quote }}
+          port: {{ .Values.webModeler.websockets.service.port }}
+
+        {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+        security:
+          jwt:
+            issuer:
+              backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            audience:
+              internal-api: {{ include "webModeler.authClientApiAudience" . | quote }}
+              public-api: {{ include "webModeler.authPublicApiAudience" . | quote }}
+        {{- end }}
+
+        mail:
+          from-address: {{ required "The value 'webModeler.restapi.mail.fromAddress' is required" .Values.webModeler.restapi.mail.fromAddress | quote }}
+          from-name: {{ .Values.webModeler.restapi.mail.fromName | quote }}
+
+        server:
+          url: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+
+        {{- if or .Values.orchestration.enabled .Values.webModeler.restapi.clusters }}
+        clusters:
+          {{- if .Values.webModeler.restapi.clusters }}
+            {{- .Values.webModeler.restapi.clusters | toYaml | nindent 10 }}
+          {{- else}}
+          - id: "default-cluster"
+            name: {{ tpl .Values.global.zeebeClusterName . | quote }}
+            version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.orchestration) | quote }}
+            authentication: {{ include "webModeler.authConfigValue" . | quote }}
+            authorizations:
+              enabled: {{ .Values.orchestration.security.authorizations.enabled }}
+            url:
+              grpc: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | quote }}
+              rest: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . | quote }}
+              web-app: {{ include "camundaPlatform.orchestrationExternalURL" . | quote }}
+          {{- end }}
+        {{- end }}
+
+    spring:
+      datasource:
+        url: {{ include "webModeler.restapi.databaseUrl" . | quote }}
+        username: {{ include "webModeler.restapi.databaseUser" . | quote }}
+
+      mail:
+        host: {{ .Values.webModeler.restapi.mail.smtpHost | quote }}
+        port: {{ .Values.webModeler.restapi.mail.smtpPort }}
+        {{- if .Values.webModeler.restapi.mail.smtpUser }}
+        username: {{ .Values.webModeler.restapi.mail.smtpUser | quote }}
+        {{- end }}
+        properties:
+          mail.smtp.auth: {{ include "webModeler.restapi.mail.authEnabled" . }}
+          mail.smtp.starttls.enable: {{ .Values.webModeler.restapi.mail.smtpTlsEnabled }}
+          mail.smtp.starttls.required: {{ .Values.webModeler.restapi.mail.smtpTlsEnabled }}
+
+      security:
+        oauth2:
+          resourceserver:
+            {{- if or .Values.global.identity.auth.enabled (eq (include "webModeler.authMethod" .) "oidc") }}
+            jwt:
+              issuer-uri: {{ include "camundaPlatform.authIssuerUrlWithFallback" . | quote }}
+              jwk-set-uri: {{ include "camundaPlatform.authIssuerBackendUrlEndpointCerts" . | quote }}
+            {{- else }}
+            jwt: null
+            {{- end }}
+
+      servlet:
+        multipart:
+          max-file-size: {{ .Values.global.config.requestBodySize | quote }}
+          max-request-size: {{ .Values.global.config.requestBodySize | quote }}
+
+    logging:
+{{- with .Values.webModeler.restapi.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
+  {{- end }}
+  {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

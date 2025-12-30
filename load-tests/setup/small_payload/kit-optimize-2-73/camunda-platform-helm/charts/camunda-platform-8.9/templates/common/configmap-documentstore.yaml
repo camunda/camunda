@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  DOCUMENT_DEFAULT_STORE_ID: {{ .Values.global.documentStore.activeStoreId | quote }}
+
+  {{- $active := lower .Values.global.documentStore.activeStoreId }}
+  {{- if eq $active "aws" }}
+    {{- $awsPrefix := upper (default "AWS" .Values.global.documentStore.type.aws.storeId) }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_CLASS: {{ .Values.global.documentStore.type.aws.class | quote }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET: {{ .Values.global.documentStore.type.aws.bucket | quote }}
+  {{- if .Values.global.documentStore.type.aws.bucketPath }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_PATH: {{ .Values.global.documentStore.type.aws.bucketPath | quote }}
+  {{- end }}
+  {{- if .Values.global.documentStore.type.aws.bucketTtl }}
+  DOCUMENT_STORE_{{ $awsPrefix }}_BUCKET_TTL: {{ .Values.global.documentStore.type.aws.bucketTtl | quote }}
+  {{- end }}
+  {{- if .Values.global.documentStore.type.aws.region }}
+  AWS_REGION: {{ .Values.global.documentStore.type.aws.region | quote }}
+  {{- end }}
+  {{- else if eq $active "gcp" }}
+    {{- $gcpPrefix := upper (default "GCP" .Values.global.documentStore.type.gcp.storeId) }}
+  DOCUMENT_STORE_{{ $gcpPrefix }}_CLASS: {{ .Values.global.documentStore.type.gcp.class | quote }}
+  DOCUMENT_STORE_{{ $gcpPrefix }}_BUCKET: {{ .Values.global.documentStore.type.gcp.bucket | quote }}
+  {{- else if eq $active "inmemory" }}
+    {{- $inmemPrefix := upper (default "INMEMORY" .Values.global.documentStore.type.inmemory.storeId) }}
+  DOCUMENT_STORE_{{ $inmemPrefix }}_CLASS: {{ .Values.global.documentStore.type.inmemory.class | quote }}
+  {{- end }}

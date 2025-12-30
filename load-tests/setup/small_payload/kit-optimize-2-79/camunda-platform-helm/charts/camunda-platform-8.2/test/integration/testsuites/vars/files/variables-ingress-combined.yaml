@@ -1,0 +1,27 @@
+preflightVars:
+  baseURLs:
+    elasticsearch: http://elasticsearch-master:9200
+    keycloak: http://integration-keycloak
+    identity: http://integration-identity:82
+    optimize: http://integration-optimize/optimize
+    operate: http://integration-operate/operate
+    tasklist: http://integration-tasklist/tasklist
+    connectors: http://integration-connectors:8080/connectors
+    zeebeGateway: http://integration-zeebe-gateway:9600
+    webModelerRestapi: http://integration-web-modeler-restapi:8091
+    webModelerWebapp: http://integration-web-modeler-webapp:8071
+
+coreVars:
+  authURL: "https://{{ .TEST_INGRESS_HOST }}/auth/realms/camunda-platform/protocol/openid-connect/token"
+  baseURLs:
+    keycloak: "https://{{ .TEST_INGRESS_HOST }}/auth"
+    identity: "https://{{ .TEST_INGRESS_HOST }}/identity"
+    operate: "https://{{ .TEST_INGRESS_HOST }}/operate"
+    optimize: "https://{{ .TEST_INGRESS_HOST }}/optimize"
+    tasklist: "https://{{ .TEST_INGRESS_HOST }}/tasklist"
+    connectors: "https://{{ .TEST_INGRESS_HOST }}/connectors/inbound"
+    webModeler: "https://{{ .TEST_INGRESS_HOST }}/modeler"
+    webModelerRestapi: http://integration-web-modeler-restapi
+    zeebeGateway: "zeebe-{{ .TEST_INGRESS_HOST }}:443"
+  zbctl:
+    extraArgs: ""

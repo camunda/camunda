@@ -1,0 +1,94 @@
+version: "3"
+
+vars:
+  testID: PLACEHOLDER
+  chartDir: camunda-platform-alpha
+
+env:
+  TEST_NAMESPACE: '{{ env "TEST_NAMESPACE" | default "camunda-platform" }}'
+  TEST_PLAYWRIGHT_PREFIX: integration-playwright
+  TEST_TIMEOUT: 15m
+  TEST_PARENT: "../../testsuites"
+  TEST_DIR: "{{ .TEST_PARENT }}/{{ .testID }}"
+  TEST_PLAYWRIGHT_NAME: "{{ .TEST_PLAYWRIGHT_PREFIX }}-{{ .testID }}"
+
+tasks:
+  # TODO: Simplify the steps here when we use TestKube.
+  default:
+    cmds:
+      # Add testsuites secrets patch. This is where the permissions are set for the playwright tests.
+      - |
+        cp -a {{ .chartDir }}/test/integration/testsuites/playwright.core/patches/* \
+          ../../testsuites/playwright.core/patches/
+      # This is where the environment variables are set for the playwright tests.
+      - |
+        echo "🔧 Applying Playwright environment variables from {{ .chartDir }}/test/integration/testsuites/vars/playwright"
+        if ! kubectl kustomize {{ .chartDir }}/test/integration/testsuites/vars/playwright --load-restrictor=LoadRestrictionsNone | kubectl apply -n $TEST_NAMESPACE -f -; then
+          echo "❌ Failed to apply Playwright environment variables"
+          exit 1
+        fi
+        echo "✅ Successfully applied Playwright environment variables"
+      # Add imagePullSecrets if needed.
+      - cmd: |
+          # Enable strict mode so that any error stops execution immediately and is surfaced.
+          set -euo pipefail
+
+          echo "🔑 Checking if an imagePullSecrets patch needs to be added …"
+
+          if [[ -n "${TEST_CREATE_DOCKER_LOGIN_SECRET-}" ]]; then
+            echo "🔐 TEST_CREATE_DOCKER_LOGIN_SECRET is set – adding imagePullSecrets patch"
+
+            echo "📄 Copying $TEST_PARENT/base/patches/job-image-pull-secrets.yaml ➡️  $TEST_DIR"
+            cp -av "$TEST_PARENT/base/patches/job-image-pull-secrets.yaml" "$TEST_DIR"
+
+            echo "🛠️  Registering patch in kustomization.yaml"
+            (
+              cd "$TEST_DIR" &&
+              kustomize edit add patch --path job-image-pull-secrets.yaml \
+                  --group batch --version v1 --kind Job --name ".*playwright.*"
+            )
+            echo "✅ imagePullSecrets patch configured"
+          else
+            echo "ℹ️  TEST_CREATE_DOCKER_LOGIN_SECRET not set – skipping imagePullSecrets patch step"
+          fi
+      # Deploy.
+      - |
+        echo "🚀 Deploying Playwright test job at $TEST_DIR into namespace $TEST_NAMESPACE"
+        if ! kubectl kustomize $TEST_DIR --load-restrictor=LoadRestrictionsNone | kubectl apply -n $TEST_NAMESPACE -f -; then
+          echo "❌ Failed to deploy Playwright test job"
+          exit 1
+        fi
+        echo "✅ Successfully deployed Playwright test job"
+      # Stream logs once the Job Pod is running.
+      - cmd: |
+          # Wait until the Job's pod is *Ready* (init-containers finished)
+          POD_NAME=$(kubectl get pods -n $TEST_NAMESPACE \
+                 -l job-name=$TEST_PLAYWRIGHT_NAME \
+                 -o jsonpath='{.items[0].metadata.name}')
+
+          echo "🔎 Waiting for $POD_NAME to start (Running/Succeeded/Failed) …"
+          START=$(date +%s)
+          while true; do
+            PHASE=$(kubectl get pod $POD_NAME -n $TEST_NAMESPACE -o jsonpath='{.status.phase}' 2>/dev/null || echo "Pending")
+            if [[ "$PHASE" == "Running" || "$PHASE" == "Succeeded" || "$PHASE" == "Failed" ]]; then
+              echo "✅ Pod $POD_NAME entered phase $PHASE"
+              break
+            fi
+            NOW=$(date +%s)
+            if (( NOW - START > 300 )); then
+              echo "❌ Timeout waiting for pod to start. Current phase: $PHASE"
+              kubectl describe pod $POD_NAME -n $TEST_NAMESPACE || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "✅ $POD_NAME is Ready – streaming logs (will exit when container terminates)"
+          # Stream logs, but do not fail if the container exits with non-zero – we'll capture that afterwards.
+          kubectl logs -n $TEST_NAMESPACE --follow pod/$POD_NAME || true
+
+          echo "🔍 Fetching container exit code …"
+          EXIT_CODE=$(kubectl get pod $POD_NAME -n $TEST_NAMESPACE \
+            -o jsonpath='{.status.containerStatuses[0].state.terminated.exitCode}')
+          echo "ℹ️  Container exited with code $EXIT_CODE"
+          exit $EXIT_CODE

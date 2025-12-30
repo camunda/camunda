@@ -1,0 +1,248 @@
+{{- if .Values.tasklist.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tasklist.fullname" . }}
+  labels:
+    {{- include "tasklist.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "tasklist.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tasklist.labels" . | nindent 8 }}
+        {{- if .Values.tasklist.podLabels }}
+          {{- toYaml .Values.tasklist.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/tasklist/configmap.yaml") . | sha256sum }}
+      {{- if .Values.tasklist.podAnnotations }}
+        {{- toYaml .Values.tasklist.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "tasklist.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.tasklist.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: tasklist
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.tasklist.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            {{- if .Values.tasklist.contextPath }}
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.tasklist.contextPath | quote }}
+            {{- end }}
+            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBE_ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled (or .Values.global.opensearch.auth.existingSecret .Values.global.opensearch.auth.password) }}
+            - name: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            - name: CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -Djavax.net.ssl.trustStore=/app/certificates/externaldb.jks
+            {{- end }}
+            {{- if .Values.global.identity.auth.enabled }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
+              {{- end }}
+            - name: ZEEBE_CLIENT_ID
+              value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
+            - name: ZEEBE_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- end }}
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: {{ include "zeebe.authAudience" . | quote }}
+            {{- if .Values.global.identity.auth.zeebe.tokenScope }}
+            - name: ZEEBE_TOKEN_SCOPE
+              value: {{ include "zeebe.authTokenScope" . | quote }}
+            {{- end }}
+            - name: HOME
+              value: /parent
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_auth_cache
+            {{- end }}
+            {{- with .Values.tasklist.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          envFrom:
+          {{- if .Values.global.identity.auth.enabled }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
+          {{- if .Values.tasklist.envFrom -}}
+            {{ .Values.tasklist.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.tasklist.command }}
+          command: {{ toYaml .Values.tasklist.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.tasklist.resources | nindent 12 }}
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          {{- if .Values.tasklist.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.startupProbe.probePath) }}
+              scheme: {{ .Values.tasklist.startupProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.tasklist.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.tasklist.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.tasklist.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.tasklist.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.tasklist.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.tasklist.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.readinessProbe.probePath) }}
+              scheme: {{ .Values.tasklist.readinessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.tasklist.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.tasklist.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.tasklist.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.tasklist.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.tasklist.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.tasklist.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.tasklist.contextPath .Values.tasklist.livenessProbe.probePath) }}
+              scheme: {{ .Values.tasklist.livenessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.tasklist.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.tasklist.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.tasklist.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.tasklist.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.tasklist.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/resources/application.yml
+              subPath: application.yml
+            - name: config
+              mountPath: /usr/local/tasklist/config/application.yml
+              subPath: application.yml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            {{- range $key, $val := .Values.tasklist.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/tasklist/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
+            {{- if or .Values.global.elasticsearch.tls.existingSecret .Values.global.opensearch.tls.existingSecret }}
+            - name: keystore
+              mountPath: /app/certificates/externaldb.jks
+              subPath: externaldb.jks
+            {{- end }}
+            {{- if .Values.tasklist.extraVolumeMounts}}
+            {{- .Values.tasklist.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.tasklist.sidecars }}
+        {{- .Values.tasklist.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "tasklist.fullname" . }}-configuration
+            defaultMode: {{ .Values.tasklist.configMap.defaultMode }}
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+        {{- if .Values.global.elasticsearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.elasticsearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.global.opensearch.tls.existingSecret }}
+        - name: keystore
+          secret:
+            secretName: {{ .Values.global.opensearch.tls.existingSecret }}
+            optional: false
+        {{- end }}
+        {{- if .Values.tasklist.extraVolumes }}
+        {{- .Values.tasklist.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "tasklist.serviceAccountName" . }}
+      {{- if .Values.tasklist.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.tasklist.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tasklist.dnsPolicy }}
+      dnsPolicy: {{ .Values.tasklist.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.tasklist.podSecurityContext }}
+      securityContext: {{- toYaml .Values.tasklist.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.tasklist.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tasklist.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tasklist.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

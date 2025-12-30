@@ -1,0 +1,232 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "zeebe.names.broker" . }}
+  labels: {{- include "zeebe.labels.broker" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.global.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.clusterSize  }}
+  selector:
+    matchLabels:
+      {{- include "zeebe.matchLabels.broker" . | nindent 6 }}
+  serviceName: {{ include "zeebe.names.broker" . }}
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        {{- include "zeebe.labels.broker" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- range $key, $value := .Values.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- with .Values.extraInitContainers }}
+        {{- tpl (toYaml . ) $ | nindent 8  }}
+        {{- end }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ include "camundaPlatform.image" . | quote }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+        - name: LC_ALL
+          value: C.UTF-8
+        - name: K8S_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_SERVICE_NAME
+          value: {{ include "zeebe.names.broker" . }}
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
+          value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
+        - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+          value:
+          {{- range (untilStep 0 (int .Values.clusterSize) 1) }}
+            $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:{{$.Values.service.internalPort}},
+          {{- end }}
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
+          value: {{ tpl .Values.global.zeebeClusterName . }}
+        - name: ZEEBE_LOG_LEVEL
+          value: {{ .Values.logLevel | quote }}
+        - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
+          value: {{ .Values.partitionCount | quote }}
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
+          value: {{ .Values.clusterSize | quote }}
+        - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
+          value: {{ .Values.replicationFactor | quote }}
+        - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+          value: {{ .Values.cpuThreadCount  | quote }}
+        - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+          value: {{ .Values.ioThreadCount  | quote }}
+        - name: ZEEBE_BROKER_GATEWAY_ENABLE
+          value: "false"
+        {{- if not .Values.global.elasticsearch.disableExporter }}
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
+          value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
+          value: {{ .Values.global.elasticsearch.prefix | quote }}
+        {{- end }}
+        - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
+          value: {{ .Values.service.commandPort  | quote }}
+        - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
+          value: {{  .Values.service.internalPort | quote }}
+        - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
+          value: {{  .Values.service.httpPort | quote }}
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: JAVA_TOOL_OPTIONS
+          value: {{ .Values.javaOpts | quote }}
+        {{- with .Values.env }}
+          {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.service.httpPort  }}
+          name: {{ default "http" .Values.service.httpName  }}
+        - containerPort: {{ .Values.service.commandPort  }}
+          name: {{ default "command" .Values.service.commandName  }}
+        - containerPort: {{ .Values.service.internalPort  }}
+          name: {{ default "internal" .Values.service.internalName  }}
+        {{- if .Values.startupProbe.enabled }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.startupProbe.probePath }}
+            scheme: {{ .Values.startupProbe.scheme }}
+            port: {{ .Values.service.httpPort  }}
+          initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.startupProbe.successThreshold }}
+          failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+            scheme: {{ .Values.readinessProbe.scheme }}
+            port: {{ .Values.service.httpPort  }}
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.livenessProbe.probePath }}
+            scheme: {{ .Values.livenessProbe.scheme }}
+            port: {{ .Values.service.httpPort  }}
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/bin/startup.sh
+          subPath: startup.sh
+        {{- if not ( eq .Values.persistenceType "local" ) }}
+        - name: data
+          mountPath: /usr/local/zeebe/data
+        {{- end }}
+        - name: exporters
+          mountPath: /exporters
+        {{- if .Values.log4j2 }}
+        - name: config
+          mountPath: /usr/local/zeebe/config/log4j2.xml
+          subPath: broker-log4j2.xml
+        {{- end }}
+        {{- if .Values.extraVolumeMounts}}
+        {{ .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- end }}
+      volumes:
+        {{- if eq .Values.persistenceType "memory" }}
+        - name: data
+          emptyDir:
+            medium: "Memory"
+        {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "zeebe.fullname" . }}
+            defaultMode: {{ .Values.configMap.defaultMode }}
+        - name: exporters
+          emptyDir: {}
+        {{- if .Values.extraVolumes}}
+          {{ .Values.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+
+  {{- if eq .Values.persistenceType "disk" }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data
+      spec:
+        accessModes: {{ .Values.pvcAccessModes }}
+        {{- if .Values.pvcStorageClassName }}
+        {{- if (eq "-" .Values.pvcStorageClassName) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ .Values.pvcStorageClassName }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.pvcSelector }}
+        {{- with .Values.pvcSelector }}
+        selector: {{ toYaml . | nindent 10 }}
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.pvcSize | quote }}
+  {{- end }}

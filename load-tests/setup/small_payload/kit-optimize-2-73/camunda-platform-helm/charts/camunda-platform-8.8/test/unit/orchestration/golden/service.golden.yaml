@@ -1,0 +1,36 @@
+---
+# Source: camunda-platform/templates/orchestration/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: camunda-platform-test-zeebe-gateway
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-gateway
+    app.kubernetes.io/version: "8.8.8"
+  annotations:
+    {}
+spec:
+  type: ClusterIP
+  publishNotReadyAddresses: true
+  ports:
+    - port: 9600
+      protocol: TCP
+      name: server
+    - port: 8080
+      protocol: TCP
+      name: http
+    - port: 26500
+      protocol: TCP
+      name: grpc
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-broker

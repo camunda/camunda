@@ -1,0 +1,48 @@
+---
+# Source: camunda-platform/templates/orchestration/importer-configmap-env-vars.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-zeebe-importer-env-vars
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: orchestration-importer
+    app.kubernetes.io/version: "8.8.0"
+  annotations:
+    {}
+data:
+  SPRING_PROFILES_ACTIVE: "tasklist,operate,consolidated-auth"
+
+  # Zeebe.
+  ZEEBE_GATEWAY_CLUSTER_CLUSTER_NAME: "camunda-platform-test-zeebe"
+  ZEEBE_GATEWAY_CLUSTER_PORT: "26502"
+  ZEEBE_GATEWAY_CLUSTER_INITIAL_CONTACT_POINTS: "camunda-platform-test-zeebe:26502"
+
+  # Security.
+  CAMUNDA_SECURITY_INITIALIZATION: ""
+
+  # Operate.
+  CAMUNDA_OPERATE_IMPORTER_ENABLED: "true"
+  CAMUNDA_OPERATE_WEBAPP_ENABLED: "false"
+  CAMUNDA_OPERATE_ZEEBE_GATEWAY_ADDRESS: "camunda-platform-test-zeebe-gateway:26500"
+  CAMUNDA_OPERATE_ZEEBE_BROKER_CONTACT_POINT: "camunda-platform-test-zeebe:26500"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL: "http://camunda-platform-test-elasticsearch:9200"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_CLUSTERNAME: "elasticsearch"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX: "zeebe-record"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST: "camunda-platform-test-elasticsearch"
+  CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT: "9200"
+
+  # Tasklist.
+  CAMUNDA_TASKLIST_IMPORTER_ENABLED: "true"
+  CAMUNDA_TASKLIST_WEBAPP_ENABLED: "false"
+  CAMUNDA_TASKLIST_ZEEBE_GATEWAY_ADDRESS: "camunda-platform-test-zeebe-gateway:26500"
+  CAMUNDA_TASKLIST_ZEEBE_BROKER_CONTACT_POINT: "camunda-platform-test-zeebe:26500"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL: "http://camunda-platform-test-elasticsearch:9200"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_CLUSTERNAME: "elasticsearch"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX: "zeebe-record"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST: "camunda-platform-test-elasticsearch"
+  CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT: "9200"

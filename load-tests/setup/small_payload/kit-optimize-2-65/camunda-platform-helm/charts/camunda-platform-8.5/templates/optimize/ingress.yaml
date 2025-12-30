@@ -1,0 +1,37 @@
+{{- if and .Values.optimize.enabled .Values.optimize.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "optimize.fullname" . }}
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+  {{- with .Values.optimize.ingress.annotations }}
+  annotations:
+  {{- tpl (toYaml .) $ | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.optimize.ingress.className }}
+  rules:
+    {{- if .Values.optimize.ingress.host }}
+    - host: {{ .Values.optimize.ingress.host }}
+      http:
+    {{- else }}
+    - http:
+    {{- end }}
+        paths:
+          - path: {{ .Values.optimize.ingress.path }}
+            pathType: {{ .Values.optimize.ingress.pathType }}
+            backend:
+              service:
+                name: {{ include "optimize.fullname" . }}
+                port:
+                  number: 80
+  {{- if .Values.optimize.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.optimize.ingress.host }}
+      {{- if .Values.optimize.ingress.tls.secretName }}
+      secretName: {{ .Values.optimize.ingress.tls.secretName }}
+      {{- end }}
+  {{- end }}
+{{- end }}

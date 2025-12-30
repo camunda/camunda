@@ -1,0 +1,45 @@
+{{- if .Values.zeebe.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe.fullname.borker" . }}
+  labels:
+    {{- include "zeebe.labels.broker" . | nindent 4 }}
+apiVersion: v1
+data:
+  startup.sh: |
+    #!/usr/bin/env bash
+    set -eux -o pipefail
+
+{{- if eq .Values.global.multiregion.installationType "failOver" }}
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 2 * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}
+{{- else }}
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * {{.Values.global.multiregion.regions}} + {{.Values.global.multiregion.regionId}}]}
+{{- end }}
+
+    if [ "$(ls -A /exporters/)" ]; then
+      mkdir -p /usr/local/zeebe/exporters/
+      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+    else
+      echo "No exporters available."
+    fi
+
+    {{- if .Values.zeebe.debug }}
+
+    env
+    {{- end }}
+{{- if eq .Values.global.multiregion.installationType "failBack" }}
+    if [ $[${K8S_NAME##*-} % 2] -eq 0 ]
+    then
+      trap : TERM INT; sleep infinity & wait
+    else
+      exec /usr/local/zeebe/bin/broker
+    fi
+{{- else }}
+    exec /usr/local/zeebe/bin/broker
+{{- end }}
+
+  broker-log4j2.xml: |
+{{- if .Values.zeebe.log4j2 }}
+    {{ .Values.zeebe.log4j2 | indent 4 | trim }}
+{{- end }}
+{{- end }}

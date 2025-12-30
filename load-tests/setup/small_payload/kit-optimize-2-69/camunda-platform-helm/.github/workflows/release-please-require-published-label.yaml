@@ -1,0 +1,35 @@
+name: "Release-Please - Require Published Label"
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
+      - unlabeled
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: "Block merge until published"
+    if: >-
+      ${
+        startsWith(github.event.pull_request.head.ref, 'release-please--') ||
+        contains(github.event.pull_request.labels.*.name, 'automation/release-please')
+      }
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Require autorelease: published"
+        run: |
+          labels_json='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          echo "Labels: ${labels_json}"
+
+          if ! echo "${labels_json}" | grep -Fq '"autorelease: published"'; then
+            echo "::error::Release-please PR must have label 'autorelease: published' before merging."
+            echo "::error::Run the 'Chart - Release Public' workflow first, which will set this label on success."
+            exit 1
+          fi

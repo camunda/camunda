@@ -1,0 +1,32 @@
+name: Print basic info
+
+testcases:
+
+- name: Playwright Info
+  steps:
+  - type: exec
+    script: |
+      cat << EOF
+        - Timestamp: {{ .playwright.timestamp }}
+        - Datetime: {{ .playwright.datetime }}
+        - Output dir: {{ .playwright.outputdir }}
+        - Test files:
+      $(printf "    - %s\n" $(ls))
+      EOF
+    info: |
+      ###
+      {{ .result.systemout }}
+      ###
+
+- name: Tests Info
+  steps:
+  - type: exec
+    script: |
+      echo -e "\npreflightVars:"
+      echo "{{ .preflightVars | toPrettyJSON }}"
+      echo "coreVars:"
+      echo "{{ .coreVars | toPrettyJSON }}"
+    info: |
+      = systemout: {{ .result.systemout }}
+      = systemerr: {{ .result.systemerr }}
+      = err: {{ .result.err }}

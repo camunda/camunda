@@ -1,0 +1,64 @@
+{{/*
+This file name should start with an underscore to avoid rendering it as a template.
+It is included (imported) in the ConfigMap.
+*/}}
+server:
+  port: {{ .Values.connectors.service.serverPort }}
+  {{- if .Values.connectors.contextPath }}
+  servlet:
+    context-path: {{ .Values.connectors.contextPath | quote }}
+  {{- end }}
+
+management:
+  context-path: /actuator
+  endpoints:
+    web:
+      exposure:
+        include: metrics,health,prometheus
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      group:
+        readiness:
+          include:
+          - processDefinitionImport
+          - zeebeClient
+
+camunda:
+  client:
+    rest-address: {{ include "camundaPlatform.orchestrationHTTPInternalURL" . }}
+    grpc-address: {{ include "camundaPlatform.orchestrationGRPCInternalURL" . | replace "grpc://" "http://" }}
+    worker:
+      defaults:
+        max-jobs-active: 32
+        stream-enabled: true
+    mode: selfManaged
+    {{- if eq (include "connectors.authMethod" .) "basic" }}
+    auth:
+      {{- $user := first .Values.orchestration.security.initialization.users }}
+      method: basic
+      username: {{ $user.username | quote }}
+      password: {{ $user.password | quote }}
+    {{- else if eq (include "connectors.authMethod" .) "oidc" }}
+    auth:
+      token-url: {{ include "orchestration.authIssuerBackendUrlEndpointToken" . }}
+      client-id: {{ include "connectors.authClientId" . | quote }}
+      client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
+      audience: {{ include "connectors.authAudience" . | quote }}
+      {{- if (include "connectors.authTokenScope" .) }}
+      scope: {{ include "connectors.authTokenScope" . | quote }}
+      {{- end }}
+    {{- end }}
+  connector:
+    headless:
+      service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
+    webhook:
+      enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+    polling:
+      enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+    agenticai:
+      enabled: {{ ternary false true .Values.global.noSecondaryStorage }}
+
+logging:
+  {{- include "common.tplvalues.render" ( dict "value" .Values.connectors.logging "context" $ ) | nindent 2 }}

@@ -1,0 +1,217 @@
+{{- if .Values.tasklist.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tasklist.fullname" . }}
+  labels:
+    {{- include "tasklist.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "tasklist.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tasklist.labels" . | nindent 8 }}
+        {{- if .Values.tasklist.podLabels }}
+          {{- toYaml .Values.tasklist.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/tasklist/configmap.yaml") . | sha256sum }}
+      {{- if .Values.tasklist.podAnnotations }}
+        {{- toYaml  .Values.tasklist.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "tasklist.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.tasklist.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: tasklist
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.tasklist) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.tasklist.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.tasklist.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            {{- if .Values.tasklist.contextPath }}
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.tasklist.contextPath | quote }}
+            {{- end }}
+            {{- if .Values.global.identity.auth.enabled }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: "identity-auth"
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
+              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
+              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+            - name: CAMUNDA_TASKLIST_IDENTITY_BASEURL
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
+            - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            - name: CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID
+              value: "tasklist"
+            - name: CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
+              {{- end }}
+            - name: CAMUNDA_TASKLIST_IDENTITY_AUDIENCE
+              value: "tasklist-api"
+            - name: CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED
+              value: {{ .Values.tasklist.identity.userAccessRestrictions.enabled | quote }}
+            {{- /*
+              TODO: Remove the trimSuffix when it's fixed in Tasklist.
+              https://github.com/camunda/camunda-platform-helm/issues/714
+            */}}
+            - name: CAMUNDA_TASKLIST_IDENTITY_REDIRECT_ROOT_URL
+              value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | trimSuffix .Values.tasklist.contextPath | quote }}
+            - name: ZEEBE_CLIENT_ID
+              value: zeebe
+            - name: ZEEBE_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- end }}
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: zeebe-api
+            {{- else }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: "auth"
+            {{- end }}
+            {{- if .Values.global.multitenancy.enabled }}
+            - name: CAMUNDA_TASKLIST_MULTITENANCY_ENABLED
+              value: "true"
+            {{- end }}
+            - name: GRAPHQL_PLAYGROUND_ENABLED
+              value: {{ default "true" .Values.tasklist.graphqlPlaygroundEnabled | quote }}
+            - name: GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS
+              value: {{ default "include" .Values.tasklist.graphqlPlaygroundRequestCredentials | quote }}
+            - name: HOME
+              value: /parent
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_auth_cache
+            {{- with .Values.tasklist.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          {{- if .Values.tasklist.command}}
+          command: {{ toYaml .Values.tasklist.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.tasklist.resources | nindent 12 }}
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          {{- if .Values.tasklist.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.startupProbe.probePath }}
+              scheme: {{ .Values.tasklist.startupProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.tasklist.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.tasklist.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.tasklist.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.tasklist.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.tasklist.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.tasklist.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.readinessProbe.probePath }}
+              scheme: {{ .Values.tasklist.readinessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.tasklist.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.tasklist.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.tasklist.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.tasklist.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.tasklist.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.tasklist.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.tasklist.contextPath }}{{ .Values.tasklist.livenessProbe.probePath }}
+              scheme: {{ .Values.tasklist.livenessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.tasklist.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.tasklist.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.tasklist.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.tasklist.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.tasklist.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/resources/application.yml
+              subPath: application.yml
+            - name: config
+              mountPath: /usr/local/tasklist/config/application.yml
+              subPath: application.yml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            {{- if .Values.tasklist.extraVolumeMounts}}
+            {{- .Values.tasklist.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.tasklist.sidecars }}
+        {{- .Values.tasklist.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "tasklist.fullname" . }}
+            defaultMode: {{ .Values.tasklist.configMap.defaultMode }}
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+        {{- if .Values.tasklist.extraVolumes}}
+        {{- .Values.tasklist.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.tasklist.serviceAccount.name}}
+      serviceAccountName: {{ .Values.tasklist.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.tasklist.podSecurityContext }}
+      securityContext: {{- toYaml .Values.tasklist.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.tasklist.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tasklist.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tasklist.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

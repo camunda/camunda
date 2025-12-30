@@ -1,0 +1,56 @@
+# For more details about versions, see the readme file in the charts directory:
+# charts/README.md
+name: Get chart versions
+description: Find chart versions that should be included in the CI matrix.
+outputs:
+  all:
+    description: All Camunda versions including alpha, standard support, extended support, and end-of-life versions.
+    value: ${{ steps.get-chart-versions.outputs.all }}
+  active:
+    description: Versions with standard support and alpha versions. 
+    value: ${{ steps.get-chart-versions.outputs.active }}
+  alpha:
+    description: Alpha versions. 
+    value: ${{ steps.get-chart-versions.outputs.alpha }}
+  support-standard:
+    description: Standard support versions.
+    value: ${{ steps.get-chart-versions.outputs.support-standard }}
+  support-standard-newest:
+    description: |
+      The newest/latest standard support version.
+      For example, if the standard supported versions are 8.1, 8.2, 8.3, then the newest is 8.3 version.
+    value: ${{ steps.get-chart-versions.outputs.support-standard-newest }}
+  support-standard-oldest:
+    description: |
+      The oldest/earliest standard support version.
+      For example, if the standard supported versions are 8.1, 8.2, 8.3, then the oldest is 8.1 version.
+    value: ${{ steps.get-chart-versions.outputs.support-standard-oldest }}
+  support-extended:
+    description: |
+      Extended support versions.
+      Usually these are the versions that are no longer supported by Camunda, but still have extended support.
+    value: ${{ steps.get-chart-versions.outputs.support-extended }}
+  end-of-life:
+    description: End-of-life versions (no support at all for those versions).
+    value: ${{ steps.get-chart-versions.outputs.end-of-life }}
+
+runs:
+  using: composite
+  steps:
+    # NOTE: The checkout step is assumed to be done before this action is run.
+    - name: Get chart versions
+      shell: bash
+      id: get-chart-versions
+      run: |
+        chart_versions_file="charts/chart-versions.yaml"
+        cat << EOF | sed 's/^\s\+//g' >> $GITHUB_OUTPUT
+          all=$(yq '.camundaVersions | to_entries | map(.value) | flatten | join(" ")' ${chart_versions_file})
+          active=$(yq '.camundaVersions.alpha + .camundaVersions.supportStandard | join(" ")' ${chart_versions_file})
+          alpha=$(yq '.camundaVersions.alpha | join(" ")' ${chart_versions_file})
+          support-standard=$(yq '.camundaVersions.supportStandard | join(" ")' ${chart_versions_file})
+          support-standard-newest=$(yq '.camundaVersions.supportStandard.[0]' ${chart_versions_file})
+          support-standard-oldest=$(yq '.camundaVersions.supportStandard.[-1]' ${chart_versions_file})
+          support-extended=$(yq '.camundaVersions.supportExtended | join(" ")' ${chart_versions_file})
+          end-of-life=$(yq '.camundaVersions.endOfLife | join(" ")' ${chart_versions_file})
+        EOF
+        echo "All versions outputs set successfully."
