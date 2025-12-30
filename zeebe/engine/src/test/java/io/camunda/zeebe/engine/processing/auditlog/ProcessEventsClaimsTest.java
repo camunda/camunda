@@ -76,6 +76,7 @@ public class ProcessEventsClaimsTest {
             .withInstanceKey(processInstanceKey)
             .findFirst();
     assertAuthorizationClaims(record);
+    assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
   @Test
@@ -100,6 +101,7 @@ public class ProcessEventsClaimsTest {
             .withProcessInstanceKey(processInstanceKey)
             .findFirst();
     assertAuthorizationClaims(record);
+    assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
   @Test

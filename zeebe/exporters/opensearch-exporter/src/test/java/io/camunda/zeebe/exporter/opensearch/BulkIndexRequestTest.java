@@ -650,6 +650,9 @@ final class BulkIndexRequestTest {
           "DECISION_EVALUATION",
           "JOB",
           "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+          "PROCESS_INSTANCE_MIGRATION",
+          "PROCESS_INSTANCE_MODIFICATION",
           "PROCESS_MESSAGE_SUBSCRIPTION",
           "USER_TASK"
         })
@@ -685,6 +688,9 @@ final class BulkIndexRequestTest {
           "DECISION_EVALUATION",
           "JOB",
           "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+          "PROCESS_INSTANCE_MIGRATION",
+          "PROCESS_INSTANCE_MODIFICATION",
           "PROCESS_MESSAGE_SUBSCRIPTION",
           "USER_TASK"
         })
