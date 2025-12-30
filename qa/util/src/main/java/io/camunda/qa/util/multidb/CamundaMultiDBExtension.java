@@ -286,9 +286,24 @@ public class CamundaMultiDBExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
+    final Class<?> testClass = context.getRequiredTestClass();
+    final var store =
+        context
+            .getRoot()
+            .getStore(ExtensionContext.Namespace.create("test-extension-coordination"));
+
+    // Check if another extension has already initialized
+    final var extensionRunning = store.get("extension-running", String.class);
+    if (extensionRunning != null) {
+      LOGGER.info("Skipping CamundaMultiDBExtension - {} is already running", extensionRunning);
+      return;
+    }
+
+    // Mark this extension as running
+    store.put("extension-running", "CamundaMultiDBExtension");
+
     final var databaseType = getDatabaseType(context);
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
-    final Class<?> testClass = context.getRequiredTestClass();
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
     RecordingExporter.reset();
@@ -703,6 +718,17 @@ public class CamundaMultiDBExtension
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
+    // Only cleanup if this extension actually ran
+    final var store =
+        context
+            .getRoot()
+            .getStore(ExtensionContext.Namespace.create("test-extension-coordination"));
+    final var extensionRunning = store.get("extension-running", String.class);
+    if (!"CamundaMultiDBExtension".equals(extensionRunning)) {
+      LOGGER.debug("Skipping CamundaMultiDBExtension cleanup - extension didn't run");
+      return;
+    }
+
     CloseHelper.quietCloseAll(closeables);
     authenticatedClientFactory.close();
     RecordingExporter.reset();

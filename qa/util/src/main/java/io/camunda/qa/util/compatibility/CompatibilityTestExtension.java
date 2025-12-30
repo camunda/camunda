@@ -81,6 +81,21 @@ public class CompatibilityTestExtension
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
     final Class<?> testClass = context.getRequiredTestClass();
+    final var store =
+        context
+            .getRoot()
+            .getStore(ExtensionContext.Namespace.create("test-extension-coordination"));
+
+    // Check if another extension has already initialized
+    final var extensionRunning = store.get("extension-running", String.class);
+    if (extensionRunning != null) {
+      LOGGER.info("Skipping CompatibilityTestExtension - {} is already running", extensionRunning);
+      return;
+    }
+
+    // Mark this extension as running
+    store.put("extension-running", "CompatibilityTestExtension");
+
     final CompatibilityTest annotation = testClass.getAnnotation(CompatibilityTest.class);
 
     if (annotation == null) {
@@ -89,7 +104,8 @@ public class CompatibilityTestExtension
     }
 
     // Determine version and database type
-    final String version = System.getProperty("camunda.compatibility.test.version", annotation.version());
+    final String version =
+        System.getProperty("camunda.compatibility.test.version", annotation.version());
     databaseType = DatabaseType.ES;
     testPrefix = testClass.getSimpleName().toLowerCase();
 
