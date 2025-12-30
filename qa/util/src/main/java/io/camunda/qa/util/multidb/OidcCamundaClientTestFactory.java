@@ -8,14 +8,14 @@
 package io.camunda.qa.util.multidb;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.auth.TestMappingRule;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
-import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -36,7 +36,9 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
   private final CamundaClient adminCamundaClient;
 
   public OidcCamundaClientTestFactory(
-      final ApplicationUnderTest application,
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
       final String testPrefix,
       final String authorizationServerUrl)
       throws IOException {
@@ -44,7 +46,9 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
     this.authorizationServerUrl = authorizationServerUrl;
     adminCamundaClient =
         createAuthenticatedClient(
-            application.application(),
+            camundaClientBuilder,
+            restAddress,
+            grpcAddress,
             TestStandaloneBroker.DEFAULT_MAPPING_RULE_ID,
             TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_VALUE);
   }
@@ -65,42 +69,59 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
 
   @Override
   public CamundaClient getCamundaClient(
-      final TestGateway<?> gateway, final Authenticated authenticated) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final Authenticated authenticated) {
     if (authenticated == null) {
-      LOGGER.info(
-          "Creating unauthorized Camunda client for broker address '{}", gateway.restAddress());
-      return gateway.newClientBuilder().preferRestOverGrpc(true).build();
+      LOGGER.info("Creating unauthorized Camunda client for broker address '{}", restAddress);
+      return camundaClientBuilder.restAddress(restAddress).preferRestOverGrpc(true).build();
     }
 
     final var mappingRuleId = authenticated.value();
     LOGGER.info(
         "Retrieving Camunda client for mapping rule id '{}' and broker address '{}",
         mappingRuleId,
-        gateway.restAddress());
+        restAddress);
     return cachedClients.get(mappingRuleId);
   }
 
   public void createClientForMappingRule(
-      final TestGateway<?> gateway, final TestMappingRule mappingRule) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final TestMappingRule mappingRule) {
     final var client =
-        createAuthenticatedClient(gateway, mappingRule.id(), mappingRule.claimValue());
+        createAuthenticatedClient(
+            camundaClientBuilder,
+            restAddress,
+            grpcAddress,
+            mappingRule.id(),
+            mappingRule.claimValue());
     cachedClients.put(mappingRule.id(), client);
   }
 
-  public void createClientForClient(final TestGateway<?> gateway, final TestClient client) {
+  public void createClientForClient(
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final TestClient client) {
     final var camundaClient =
-        createAuthenticatedClient(gateway, client.clientId(), client.clientId());
+        createAuthenticatedClient(
+            camundaClientBuilder, restAddress, grpcAddress, client.clientId(), client.clientId());
     cachedClients.put(client.clientId(), camundaClient);
   }
 
   private CamundaClient createAuthenticatedClient(
-      final TestGateway<?> gateway, final String mappingRuleId, final String claimValue) {
+      final CamundaClientBuilder camundaClientBuilder,
+      final URI restAddress,
+      final URI grpcAddress,
+      final String mappingRuleId,
+      final String claimValue) {
     final var client =
-        gateway
-            .newClientBuilder()
+        camundaClientBuilder
             .preferRestOverGrpc(true)
-            .restAddress(gateway.restAddress())
-            .grpcAddress(gateway.grpcAddress())
+            .restAddress(restAddress)
+            .grpcAddress(grpcAddress)
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .credentialsProvider(
                 new OAuthCredentialsProviderBuilder()
