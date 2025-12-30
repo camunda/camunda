@@ -84,6 +84,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             AuditLogActor.anonymous(),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isFalse();
@@ -99,6 +100,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             AuditLogActor.unknown(),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isTrue();
@@ -118,6 +120,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isTrue();
@@ -137,6 +140,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.USER_TASK,
             AuditLogOperationType.UNKNOWN,
             new AuditLogActor(AuditLogActorType.CLIENT, "test-client"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isTrue();
@@ -156,6 +160,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.USER_TASK,
             AuditLogOperationType.UNKNOWN,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isFalse();
@@ -172,6 +177,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             new AuditLogActor(AuditLogActorType.CLIENT, "test-client"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isFalse();
@@ -191,6 +197,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.VARIABLE,
             AuditLogOperationType.UNKNOWN,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isFalse();
@@ -210,6 +217,7 @@ class AuditLogConfigurationTest {
             AuditLogEntityType.PROCESS_INSTANCE,
             AuditLogOperationType.MODIFY,
             new AuditLogActor(AuditLogActorType.USER, "test-user"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(config.isEnabled(auditLog)).isTrue();

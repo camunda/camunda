@@ -13,14 +13,15 @@ import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.BatchOperation;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -78,13 +79,14 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .operationType(info.operationType())
             .actorId(info.actor().actorId())
             .actorType(info.actor().actorType())
+            .tenantId(info.tenant().map(AuditLogTenant::tenantId).orElse(null))
+            .tenantScope(
+                info.tenant().map(AuditLogTenant::scope).orElse(AuditLogTenantScope.GLOBAL))
             .batchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
             .entityVersion(record.getRecordVersion())
             .entityValueType(record.getValueType().value())
             .entityOperationIntent(record.getIntent().value())
-            .timestamp(DateUtil.toOffsetDateTime(record.getTimestamp()))
-            .tenantId(getTenantId(record))
-            .tenantScope(transformer.config().scope());
+            .timestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
     if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
       auditLog.result(AuditLogEntity.AuditLogOperationResult.FAIL);
@@ -94,15 +96,5 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
       transformer.transform(record, auditLog);
     }
     return auditLog.build();
-  }
-
-  private String getTenantId(final Record<R> record) {
-    final var value = record.getValue();
-
-    if (value instanceof TenantOwned) {
-      return ((TenantOwned) value).getTenantId();
-    } else {
-      return null;
-    }
   }
 }
