@@ -22,6 +22,8 @@
   <name>Camunda QA Acceptance Tests</name>
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
+    <!-- Runtime client version for compatibility tests - can be overridden -->
+    <camunda.client.version>${project.version}</camunda.client.version>
   </properties>
 
   <dependencies>
@@ -596,7 +598,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, compatibility-test</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -630,7 +632,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
-              <excludedGroups>multi-db-test</excludedGroups>
+              <excludedGroups>multi-db-test, compatibility-test</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -656,6 +658,78 @@
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
               <excludedGroups>rdbms</excludedGroups>
+              <systemPropertyVariables>
+                <groups>multi-db-test</groups>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("compatibility-test").
+    The profile is used to run tests against different versions of Camunda components.
+
+    To test with a specific client version:
+    ./mvnw verify -Pcompatibility-test -Dcamunda.client.version=8.8.0 -Dit.test=AuthorizationIT
+
+    Tests compile against the current (SNAPSHOT) version but run with the specified client version.
+    Tests that use APIs not available in the specified version will be automatically skipped.
+    -->
+    <profile>
+      <id>compatibility-test</id>
+      <properties>
+        <!-- Default to current version if not specified -->
+        <camunda.client.version>${project.version}</camunda.client.version>
+      </properties>
+      <build>
+        <plugins>
+          <!-- Download the specified client version before tests run -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-compatibility-client</id>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>io.camunda</groupId>
+                      <artifactId>camunda-client-java</artifactId>
+                      <version>${camunda.client.version}</version>
+                      <type>jar</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/compatibility-client</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>compatibility-test</groups>
+              <excludedGroups>rdbms</excludedGroups>
+              <!-- Replace client JAR at runtime if different version specified -->
+              <classpathDependencyExcludes>
+                <classpathDependencyExclude>io.camunda:camunda-client-java</classpathDependencyExclude>
+              </classpathDependencyExcludes>
+              <additionalClasspathElements>
+                <additionalClasspathElement>${project.build.directory}/compatibility-client/camunda-client-java-${camunda.client.version}.jar</additionalClasspathElement>
+              </additionalClasspathElements>
+              <systemPropertyVariables>
+                <camunda.client.version>${camunda.client.version}</camunda.client.version>
+                <groups>compatibility-test</groups>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>
