@@ -10,7 +10,6 @@ package io.camunda.exporter.rdbms.handlers.auditlog;
 import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs.BATCH_OPERATION_CREATION_CONFIG;
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -29,9 +28,7 @@ public class BatchOperationCreationAuditLogTransformer
   public void transform(
       final Record<BatchOperationCreationRecordValue> record, final Builder entity) {
     final var value = record.getValue();
-    entity
-        .batchOperationType(
-            EnumUtil.convert(value.getBatchOperationType(), BatchOperationType.class))
-        .tenantScope(AuditLogTenantScope.GLOBAL);
+    entity.batchOperationType(
+        EnumUtil.convert(value.getBatchOperationType(), BatchOperationType.class));
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -26,7 +27,7 @@ public interface AuditLogTransformer<R extends RecordValue, T> {
 
   TransformerConfig config();
 
-  void transform(Record<R> record, final T entity);
+  default void transform(final Record<R> record, final T entity) {}
 
   default boolean supports(final Record record) {
     return config().supports(record);
@@ -36,21 +37,50 @@ public interface AuditLogTransformer<R extends RecordValue, T> {
       ValueType valueType,
       Set<Intent> supportedIntents,
       Set<Intent> supportedRejections,
-      Set<RejectionType> supportedRejectionTypes) {
+      Set<RejectionType> supportedRejectionTypes,
+      AuditLogTenantScope scope) {
 
     public static TransformerConfig with(final ValueType valueType) {
-      return new TransformerConfig(valueType, Set.of(), Set.of(), Set.of());
+      return new TransformerConfig(
+          valueType, Set.of(), Set.of(), Set.of(), AuditLogTenantScope.TENANT);
     }
 
     public TransformerConfig withIntents(final Intent... intents) {
       return new TransformerConfig(
-          valueType(), Set.of(intents), supportedRejections(), supportedRejectionTypes);
+          valueType(), Set.of(intents), supportedRejections(), supportedRejectionTypes, scope());
     }
 
     public TransformerConfig withRejections(
         final Intent rejectionIntent, final RejectionType... rejectionTypes) {
       return new TransformerConfig(
-          valueType(), supportedIntents(), Set.of(rejectionIntent), Set.of(rejectionTypes));
+          valueType(),
+          supportedIntents(),
+          Set.of(rejectionIntent),
+          Set.of(rejectionTypes),
+          scope());
+    }
+
+    public TransformerConfig withRejections(final Intent... rejectionIntents) {
+      return new TransformerConfig(
+          valueType(),
+          supportedIntents(),
+          Set.of(rejectionIntents),
+          supportedRejectionTypes(),
+          scope());
+    }
+
+    public TransformerConfig withRejectionTypes(final RejectionType... rejectionTypes) {
+      return new TransformerConfig(
+          valueType(), supportedIntents(), supportedRejections(), Set.of(rejectionTypes), scope());
+    }
+
+    public TransformerConfig withScope(final AuditLogTenantScope tenantScope) {
+      return new TransformerConfig(
+          valueType(),
+          supportedIntents(),
+          supportedRejections(),
+          supportedRejectionTypes(),
+          tenantScope);
     }
 
     boolean supports(final Record record) {

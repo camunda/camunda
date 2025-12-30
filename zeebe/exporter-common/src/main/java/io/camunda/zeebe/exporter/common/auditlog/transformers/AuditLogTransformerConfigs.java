@@ -23,6 +23,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -41,31 +42,31 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import java.util.Set;
 
 public class AuditLogTransformerConfigs {
   public static final TransformerConfig AUTHORIZATION_CONFIG =
       TransformerConfig.with(AUTHORIZATION)
           .withIntents(
-              AuthorizationIntent.CREATED,
-              AuthorizationIntent.UPDATED,
-              AuthorizationIntent.DELETED);
+              AuthorizationIntent.CREATED, AuthorizationIntent.UPDATED, AuthorizationIntent.DELETED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig BATCH_OPERATION_CREATION_CONFIG =
-      TransformerConfig.with(BATCH_OPERATION_CREATION).withIntents(BatchOperationIntent.CREATED);
+      TransformerConfig.with(BATCH_OPERATION_CREATION)
+          .withIntents(BatchOperationIntent.CREATED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig BATCH_OPERATION_LIFECYCLE_MANAGEMENT_CONFIG =
-      new TransformerConfig(
-          BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-          Set.of(
+      TransformerConfig.with(BATCH_OPERATION_LIFECYCLE_MANAGEMENT)
+          .withIntents(
               BatchOperationIntent.RESUMED,
               BatchOperationIntent.SUSPENDED,
-              BatchOperationIntent.CANCELED),
-          Set.of(
+              BatchOperationIntent.CANCELED)
+          .withRejections(
               BatchOperationIntent.RESUME,
               BatchOperationIntent.SUSPEND,
-              BatchOperationIntent.CANCEL),
-          Set.of(RejectionType.INVALID_STATE));
+              BatchOperationIntent.CANCEL)
+          .withRejectionTypes(RejectionType.INVALID_STATE)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
@@ -73,11 +74,13 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig GROUP_CONFIG =
       TransformerConfig.with(GROUP)
-          .withIntents(GroupIntent.CREATED, GroupIntent.UPDATED, GroupIntent.DELETED);
+          .withIntents(GroupIntent.CREATED, GroupIntent.UPDATED, GroupIntent.DELETED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig GROUP_ENTITY_CONFIG =
       TransformerConfig.with(GROUP)
-          .withIntents(GroupIntent.ENTITY_ADDED, GroupIntent.ENTITY_REMOVED);
+          .withIntents(GroupIntent.ENTITY_ADDED, GroupIntent.ENTITY_REMOVED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig INCIDENT_RESOLUTION_CONFIG =
       TransformerConfig.with(ValueType.INCIDENT)
@@ -87,7 +90,8 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig MAPPING_RULE_CONFIG =
       TransformerConfig.with(MAPPING_RULE)
           .withIntents(
-              MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED);
+              MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)
@@ -115,29 +119,34 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig TENANT_CONFIG =
       TransformerConfig.with(TENANT)
-          .withIntents(TenantIntent.CREATED, TenantIntent.UPDATED, TenantIntent.DELETED);
+          .withIntents(TenantIntent.CREATED, TenantIntent.UPDATED, TenantIntent.DELETED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig TENANT_ENTITY_CONFIG =
       TransformerConfig.with(TENANT)
-          .withIntents(TenantIntent.ENTITY_ADDED, TenantIntent.ENTITY_REMOVED);
+          .withIntents(TenantIntent.ENTITY_ADDED, TenantIntent.ENTITY_REMOVED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig ROLE_CONFIG =
       TransformerConfig.with(ROLE)
-          .withIntents(RoleIntent.CREATED, RoleIntent.UPDATED, RoleIntent.DELETED);
+          .withIntents(RoleIntent.CREATED, RoleIntent.UPDATED, RoleIntent.DELETED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig ROLE_ENTITY_CONFIG =
-      TransformerConfig.with(ROLE).withIntents(RoleIntent.ENTITY_ADDED, RoleIntent.ENTITY_REMOVED);
+      TransformerConfig.with(ROLE)
+          .withIntents(RoleIntent.ENTITY_ADDED, RoleIntent.ENTITY_REMOVED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig USER_CONFIG =
       TransformerConfig.with(USER)
-          .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED);
+          .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED)
+          .withScope(AuditLogTenantScope.GLOBAL);
 
   public static final TransformerConfig USER_TASK_CONFIG =
-      new TransformerConfig(
-          USER_TASK,
-          Set.of(UserTaskIntent.UPDATED, UserTaskIntent.ASSIGNED, UserTaskIntent.COMPLETED),
-          Set.of(UserTaskIntent.UPDATE, UserTaskIntent.ASSIGN, UserTaskIntent.COMPLETE),
-          Set.of(RejectionType.INVALID_STATE));
+      TransformerConfig.with(USER_TASK)
+          .withIntents(UserTaskIntent.UPDATED, UserTaskIntent.ASSIGNED, UserTaskIntent.COMPLETED)
+          .withRejections(UserTaskIntent.UPDATE, UserTaskIntent.ASSIGN, UserTaskIntent.COMPLETE)
+          .withRejectionTypes(RejectionType.INVALID_STATE);
 
   public static final TransformerConfig VARIABLE_ADD_UPDATE_CONFIG =
       TransformerConfig.with(VARIABLE).withIntents(VariableIntent.CREATED, VariableIntent.UPDATED);

@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashSet;
@@ -107,6 +108,8 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setOperationType(mapOperationType(info))
         .setActorType(mapActorType(info))
         .setActorId(info.actor().actorId())
+        .setTenantId(getTenantId(record))
+        .setTenantScope(getTenantScope())
         .setBatchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
         .setEntityVersion(record.getRecordVersion())
         .setEntityValueType(record.getValueType().value())
@@ -136,6 +139,21 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   @VisibleForTesting
   public AuditLogTransformer<?, ?> getTransformer() {
     return transformer;
+  }
+
+  private String getTenantId(final Record<R> record) {
+    final var value = record.getValue();
+
+    if (value instanceof TenantOwned) {
+      return ((TenantOwned) value).getTenantId();
+    } else {
+      return null;
+    }
+  }
+
+  private io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope getTenantScope() {
+    final var scope = transformer.config().scope();
+    return io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope.valueOf(scope.name());
   }
 
   private AuditLogEntityType mapEntityType(final AuditLogInfo info) {

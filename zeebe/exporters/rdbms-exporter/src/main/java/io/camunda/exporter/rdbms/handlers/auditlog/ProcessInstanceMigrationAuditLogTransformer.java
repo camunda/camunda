@@ -11,7 +11,6 @@ import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTra
 
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel.Builder;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
@@ -30,8 +29,6 @@ public class ProcessInstanceMigrationAuditLogTransformer
     final var value = record.getValue();
     entity
         .processDefinitionKey(value.getTargetProcessDefinitionKey())
-        .processInstanceKey(value.getProcessInstanceKey())
-        .tenantId(value.getTenantId())
-        .tenantScope(AuditLogTenantScope.TENANT);
+        .processInstanceKey(value.getProcessInstanceKey());
   }
 }

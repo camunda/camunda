@@ -8,7 +8,6 @@
 package io.camunda.exporter.handlers.auditlog;
 
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
@@ -26,8 +25,6 @@ public class BatchOperationCreationAuditLogTransformer
   public void transform(
       final Record<BatchOperationCreationRecordValue> record, final AuditLogEntity entity) {
     final var value = record.getValue();
-    entity
-        .setBatchOperationType(value.getBatchOperationType())
-        .setTenantScope(AuditLogTenantScope.GLOBAL);
+    entity.setBatchOperationType(value.getBatchOperationType());
   }
 }
