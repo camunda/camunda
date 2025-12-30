@@ -109,6 +109,21 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
           e);
     }
 
+    mapToEntity(log, entity);
+  }
+
+  @Override
+  public void flush(final AuditLogEntity entity, final BatchRequest batchRequest)
+      throws PersistenceException {
+    batchRequest.add(indexName, entity);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
+  private void mapToEntity(final AuditLogEntry log, final AuditLogEntity entity) {
     // generic fields
     entity
         .setEntityKey(log.getEntityKey())
@@ -145,17 +160,6 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setFormKey(log.getFormKey())
         .setResourceKey(log.getResourceKey())
         .setRootProcessInstanceKey(log.getRootProcessInstanceKey());
-  }
-
-  @Override
-  public void flush(final AuditLogEntity entity, final BatchRequest batchRequest)
-      throws PersistenceException {
-    batchRequest.add(indexName, entity);
-  }
-
-  @Override
-  public String getIndexName() {
-    return indexName;
   }
 
   @VisibleForTesting

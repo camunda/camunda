@@ -5,12 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms.handlers.auditlog;
+package io.camunda.exporter.rdbms.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -145,7 +144,7 @@ class AuditLogExportHandlerTest {
 
     assertCommonEntityFields(entity, rejectedRecord);
     assertThat(entity.result()).isEqualTo(AuditLogOperationResult.FAIL);
-    verify(transformer, never()).transform(any(), any());
+    verify(transformer).transform(any(), any());
   }
 
   @Test
