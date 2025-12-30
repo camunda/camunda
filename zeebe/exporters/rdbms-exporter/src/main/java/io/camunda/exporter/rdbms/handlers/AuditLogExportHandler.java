@@ -21,12 +21,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
-  public static final Logger LOG = LoggerFactory.getLogger(AuditLogExportHandler.class);
-
   private final AuditLogWriter auditLogWriter;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final AuditLogTransformer<R> transformer;
@@ -61,17 +57,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   }
 
   private AuditLogDbModel map(final Record<R> record) {
-    final AuditLogEntry log = AuditLogEntry.of(record);
-
-    try {
-      transformer.transform(record, log);
-    } catch (final Exception e) {
-      LOG.error(
-          "Error transforming audit log entity for record with key {}: {}",
-          record.getKey(),
-          e.getMessage(),
-          e);
-    }
+    final AuditLogEntry log = transformer.create(record);
 
     return toAuditLogModel(log);
   }

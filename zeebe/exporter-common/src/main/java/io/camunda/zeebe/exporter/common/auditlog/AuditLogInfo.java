@@ -14,7 +14,6 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -43,7 +42,6 @@ public record AuditLogInfo(
     AuditLogEntityType entityType,
     AuditLogOperationType operationType,
     AuditLogActor actor,
-    Optional<BatchOperation> batchOperation,
     Optional<AuditLogTenant> tenant) {
 
   public static AuditLogInfo of(final Record<?> record) {
@@ -52,7 +50,6 @@ public record AuditLogInfo(
         getEntityType(record.getValueType()),
         getOperationType(record),
         AuditLogActor.of(record),
-        BatchOperation.of(record),
         AuditLogTenant.of(record));
   }
 
@@ -311,17 +308,6 @@ public record AuditLogInfo(
         return Optional.of(new AuditLogTenant(tenantId));
       }
 
-      return Optional.empty();
-    }
-  }
-
-  public record BatchOperation(long key) {
-
-    public static Optional<BatchOperation> of(final Record<?> record) {
-      final var batchOperationKey = record.getBatchOperationReference();
-      if (RecordMetadataDecoder.batchOperationReferenceNullValue() != batchOperationKey) {
-        return Optional.of(new BatchOperation(batchOperationKey));
-      }
       return Optional.empty();
     }
   }

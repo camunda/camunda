@@ -16,25 +16,14 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
-import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,14 +39,12 @@ class AuditLogExportHandlerTest {
   private static final String TENANT = "test-tenant";
 
   private final ProtocolFactory factory = new ProtocolFactory();
-
   final ImmutableProcessInstanceModificationRecordValue value =
       ImmutableProcessInstanceModificationRecordValue.builder()
           .from(factory.generateObject(ImmutableProcessInstanceModificationRecordValue.class))
           .withTenantId(TENANT)
           .build();
-
-  private final Record authorizedRecord =
+  private final Record record =
       factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MODIFICATION,
           r ->
@@ -71,9 +58,6 @@ class AuditLogExportHandlerTest {
   private AuditLogTransformer transformer;
   private AuditLogExportHandler handler;
   @Captor private ArgumentCaptor<AuditLogDbModel> auditLogCaptor;
-  private final Record unauthorizedRecord =
-      factory.generateRecordWithIntent(
-          ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationIntent.MODIFIED);
 
   @BeforeEach
   void setUp() {
@@ -88,7 +72,7 @@ class AuditLogExportHandlerTest {
   void shouldNotHandleRecordWhenTransformerDoesNotSupport() {
     when(transformer.supports(any())).thenReturn(false);
 
-    assertThat(handler.canExport(authorizedRecord)).isFalse();
+    assertThat(handler.canExport(record)).isFalse();
   }
 
   @Test
@@ -96,13 +80,7 @@ class AuditLogExportHandlerTest {
     when(transformer.supports(any())).thenReturn(true);
     when(config.isEnabled(any())).thenReturn(false);
 
-    assertThat(handler.canExport(authorizedRecord)).isFalse();
-  }
-
-  @Test
-  void shouldNotHandleRecordWhenAuthorizationIsMissing() {
-
-    assertThat(handler.canExport(unauthorizedRecord)).isFalse();
+    assertThat(handler.canExport(record)).isFalse();
   }
 
   @Test
@@ -110,86 +88,110 @@ class AuditLogExportHandlerTest {
     when(transformer.supports(any())).thenReturn(true);
     when(config.isEnabled(any())).thenReturn(true);
 
-    assertThat(handler.canExport(authorizedRecord)).isTrue();
+    assertThat(handler.canExport(record)).isTrue();
   }
 
   @Test
-  void shouldUpdateEntityForSuccessfulOperation() {
-    handler.export(authorizedRecord);
+  void shouldExport() {
+    // Create a properly populated AuditLogEntry that the transformer will return
+    final var entry =
+        new io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry()
+            .setEntityKey(String.valueOf(record.getKey()))
+            .setEntityType(
+                io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.PROCESS_INSTANCE)
+            .setOperationType(
+                io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.MODIFY)
+            .setCategory(
+                io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory
+                    .DEPLOYED_RESOURCES)
+            .setActor(
+                io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor.of(record))
+            .setTenant(
+                io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant.of(record))
+            .setBatchOperationKey(123L)
+            .setBatchOperationType(
+                io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setProcessInstanceKey(value.getProcessInstanceKey())
+            .setEntityVersion(record.getRecordVersion())
+            .setEntityValueType(
+                io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION.value())
+            .setEntityOperationIntent(
+                io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED
+                    .value())
+            .setTimestamp(
+                java.time.OffsetDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(record.getTimestamp()),
+                    java.time.ZoneOffset.UTC))
+            .setAnnotation("test annotation")
+            .setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+            .setProcessDefinitionId("process-def-id")
+            .setProcessDefinitionKey(456L)
+            .setElementInstanceKey(789L)
+            .setJobKey(101L)
+            .setUserTaskKey(202L)
+            .setDecisionEvaluationKey(303L)
+            .setDecisionRequirementsId("drg-id")
+            .setDecisionRequirementsKey(404L)
+            .setDecisionDefinitionId("decision-id")
+            .setDecisionDefinitionKey(505L)
+            .setDeploymentKey(606L)
+            .setFormKey(707L)
+            .setResourceKey(808L)
+            .setRootProcessInstanceKey(909L);
 
-    verify(writer).create(auditLogCaptor.capture());
-    final AuditLogDbModel entity = auditLogCaptor.getValue();
-
-    assertCommonEntityFields(entity, authorizedRecord);
-    assertThat(entity.result()).isEqualTo(AuditLogOperationResult.SUCCESS);
-    verify(transformer).transform(any(), any());
-  }
-
-  @Test
-  void shouldUpdateEntityForRejection() {
-    final var rejectedRecord =
-        factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_MODIFICATION,
-            r ->
-                r.withRecordType(RecordType.COMMAND_REJECTION)
-                    .withValue(value)
-                    .withRejectionType(RejectionType.INVALID_STATE)
-                    .withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                    .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, USERNAME)));
-
-    handler.export(rejectedRecord);
-
-    verify(writer).create(auditLogCaptor.capture());
-    final AuditLogDbModel entity = auditLogCaptor.getValue();
-
-    assertCommonEntityFields(entity, rejectedRecord);
-    assertThat(entity.result()).isEqualTo(AuditLogOperationResult.FAIL);
-    verify(transformer).transform(any(), any());
-  }
-
-  @Test
-  void shouldHandleNonTenantOwnedRecords() {
-    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
-
+    when(transformer.create(record)).thenReturn(entry);
     handler.export(record);
 
     verify(writer).create(auditLogCaptor.capture());
     final AuditLogDbModel entity = auditLogCaptor.getValue();
 
-    assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
-    verify(transformer).transform(any(), any());
-  }
-
-  @Test
-  void shouldHandleNonProcessInstanceRelatedRecords() {
-    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
-
-    handler.export(record);
-
-    verify(writer).create(auditLogCaptor.capture());
-    final AuditLogDbModel entity = auditLogCaptor.getValue();
-
-    assertThat(entity.processInstanceKey()).isNull();
-    verify(transformer).transform(any(), any());
-  }
-
-  private void assertCommonEntityFields(final AuditLogDbModel entity, final Record record) {
+    // Verify all fields are properly mapped
     assertThat(entity.auditLogKey()).isNotNull();
     assertThat(entity.entityKey()).isEqualTo(String.valueOf(record.getKey()));
-    assertThat(entity.entityType()).isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
-    assertThat(entity.operationType()).isEqualTo(AuditLogOperationType.MODIFY);
-    assertThat(entity.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
-    assertThat(entity.actorType()).isEqualTo(AuditLogActorType.USER);
+    assertThat(entity.entityType())
+        .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.PROCESS_INSTANCE);
+    assertThat(entity.operationType())
+        .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.MODIFY);
+    assertThat(entity.category())
+        .isEqualTo(
+            io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory.DEPLOYED_RESOURCES);
+    assertThat(entity.actorType())
+        .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogActorType.USER);
     assertThat(entity.actorId()).isEqualTo(USERNAME);
     assertThat(entity.tenantId()).isEqualTo(TENANT);
-    assertThat(entity.tenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+    assertThat(entity.tenantScope())
+        .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope.TENANT);
+    assertThat(entity.batchOperationKey()).isEqualTo(123L);
+    assertThat(entity.batchOperationType())
+        .isEqualTo(io.camunda.search.entities.BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(entity.processInstanceKey()).isEqualTo(value.getProcessInstanceKey());
     assertThat(entity.entityVersion()).isEqualTo(record.getRecordVersion());
-    assertThat(entity.entityValueType()).isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION.value());
+    assertThat(entity.entityValueType())
+        .isEqualTo(
+            io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION.value());
     assertThat(entity.entityOperationIntent())
-        .isEqualTo(ProcessInstanceModificationIntent.MODIFIED.value());
+        .isEqualTo(
+            io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED
+                .value());
     assertThat(entity.timestamp())
         .isEqualTo(
-            OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC));
+            java.time.OffsetDateTime.ofInstant(
+                java.time.Instant.ofEpochMilli(record.getTimestamp()), java.time.ZoneOffset.UTC));
+    assertThat(entity.annotation()).isEqualTo("test annotation");
+    assertThat(entity.result())
+        .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS);
+    assertThat(entity.processDefinitionId()).isEqualTo("process-def-id");
+    assertThat(entity.processDefinitionKey()).isEqualTo(456L);
+    assertThat(entity.elementInstanceKey()).isEqualTo(789L);
+    assertThat(entity.jobKey()).isEqualTo(101L);
+    assertThat(entity.userTaskKey()).isEqualTo(202L);
+    assertThat(entity.decisionEvaluationKey()).isEqualTo(303L);
+    assertThat(entity.decisionRequirementsId()).isEqualTo("drg-id");
+    assertThat(entity.decisionRequirementsKey()).isEqualTo(404L);
+    assertThat(entity.decisionDefinitionId()).isEqualTo("decision-id");
+    assertThat(entity.decisionDefinitionKey()).isEqualTo(505L);
+    assertThat(entity.deploymentKey()).isEqualTo(606L);
+    assertThat(entity.formKey()).isEqualTo(707L);
+    assertThat(entity.resourceKey()).isEqualTo(808L);
   }
 }

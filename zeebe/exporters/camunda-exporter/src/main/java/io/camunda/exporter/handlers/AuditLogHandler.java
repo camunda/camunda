@@ -30,8 +30,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A generic handler for audit log records that delegates record-type-specific transformation to an
@@ -52,7 +50,6 @@ import org.slf4j.LoggerFactory;
  */
 public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogEntity, R> {
 
-  public static final Logger LOG = LoggerFactory.getLogger(AuditLogHandler.class);
   protected static final int ID_LENGTH = 32;
 
   private final String indexName;
@@ -97,17 +94,8 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
   @Override
   public void updateEntity(final Record<R> record, final AuditLogEntity entity) {
-    final AuditLogEntry log = AuditLogEntry.of(record);
 
-    try {
-      transformer.transform(record, log);
-    } catch (final Exception e) {
-      LOG.error(
-          "Error transforming audit log entity for record with key {}: {}",
-          record.getKey(),
-          e.getMessage(),
-          e);
-    }
+    final var log = transformer.create(record);
 
     mapToEntity(log, entity);
   }

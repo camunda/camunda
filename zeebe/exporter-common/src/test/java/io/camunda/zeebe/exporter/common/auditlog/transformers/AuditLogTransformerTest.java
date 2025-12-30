@@ -9,11 +9,16 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class AuditLogTransformerTest {
@@ -146,5 +151,82 @@ class AuditLogTransformerTest {
 
     assertThat(config.supports(invalidStateRecord)).isTrue();
     assertThat(config.supports(invalidArgumentRecord)).isTrue();
+  }
+
+  @Nested
+  class CreateTest {
+    @Test
+    void shouldCreateAuditLogEntryWithSuccess() {
+      final Record record =
+          factory.generateRecord(
+              ValueType.PROCESS_INSTANCE_MODIFICATION,
+              r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED));
+
+      final var transformer =
+          new AuditLogTransformer<>() {
+            @Override
+            public TransformerConfig config() {
+              return TransformerConfig.with(record.getValueType()).withIntents(record.getIntent());
+            }
+          };
+
+      final var log = transformer.create(record);
+
+      assertThat(log).isNotNull();
+      assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.SUCCESS);
+    }
+
+    @Test
+    void shouldCreateAuditLogEntryWithRejection() {
+      final var record =
+          factory.generateRecord(
+              ValueType.PROCESS_INSTANCE_MODIFICATION,
+              r ->
+                  r.withRecordType(RecordType.COMMAND_REJECTION)
+                      .withRejectionType(RejectionType.INVALID_STATE)
+                      .withIntent(ProcessInstanceModificationIntent.MODIFIED));
+
+      final var transformer =
+          new AuditLogTransformer<>() {
+            @Override
+            public TransformerConfig config() {
+              return TransformerConfig.with(record.getValueType())
+                  .withRejections(record.getIntent(), record.getRejectionType());
+            }
+          };
+
+      final var log = transformer.create(record);
+
+      assertThat(log).isNotNull();
+      assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
+    }
+
+    @Test
+    void shouldCreateAuditLogEntryWithCustomTransformerResult() {
+      final Record record =
+          factory.generateRecord(
+              ValueType.PROCESS_INSTANCE_MODIFICATION,
+              r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED));
+
+      final var transformer =
+          new AuditLogTransformer<>() {
+            @Override
+            public TransformerConfig config() {
+              return TransformerConfig.with(record.getValueType()).withIntents(record.getIntent());
+            }
+
+            @Override
+            public void transform(
+                final Record<io.camunda.zeebe.protocol.record.RecordValue> record,
+                final AuditLogEntry log) {
+              log.setResult(AuditLogOperationResult.FAIL);
+            }
+          };
+
+      final var log = transformer.create(record);
+
+      assertThat(log).isNotNull();
+      assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
+    }
   }
 }

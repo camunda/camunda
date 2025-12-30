@@ -13,9 +13,8 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.BatchOperation;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
@@ -344,8 +343,9 @@ public class AuditLogEntry {
     return decisionEvaluationKey;
   }
 
-  public void setDecisionEvaluationKey(final Long decisionEvaluationKey) {
+  public AuditLogEntry setDecisionEvaluationKey(final Long decisionEvaluationKey) {
     this.decisionEvaluationKey = decisionEvaluationKey;
+    return this;
   }
 
   public Long getRootProcessInstanceKey() {
@@ -360,26 +360,20 @@ public class AuditLogEntry {
   public static <R extends RecordValue> AuditLogEntry of(final Record<R> record) {
     final AuditLogInfo info = AuditLogInfo.of(record);
 
-    final AuditLogEntry log = new AuditLogEntry();
-    log.setEntityKey(String.valueOf(record.getKey()))
-        .setEntityType(info.entityType())
-        .setCategory(info.category())
-        .setOperationType(info.operationType())
-        .setActor(info.actor())
-        .setTenant(info.tenant())
-        .setBatchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
-        .setProcessInstanceKey(getProcessInstanceKey(record))
-        .setEntityVersion(record.getRecordVersion())
-        .setEntityValueType(record.getValueType().value())
-        .setEntityOperationIntent(record.getIntent().value())
-        .setTimestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
-
-    if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
-      // TODO: set rejection type and reason to AuditLogEntity#details
-      log.setResult(AuditLogOperationResult.FAIL);
-    } else {
-      log.setResult(AuditLogOperationResult.SUCCESS);
-    }
+    final AuditLogEntry log =
+        new AuditLogEntry()
+            .setEntityKey(String.valueOf(record.getKey()))
+            .setEntityType(info.entityType())
+            .setCategory(info.category())
+            .setOperationType(info.operationType())
+            .setActor(info.actor())
+            .setTenant(AuditLogTenant.of(record))
+            .setBatchOperationKey(getBatchOperationKey(record))
+            .setProcessInstanceKey(getProcessInstanceKey(record))
+            .setEntityVersion(record.getRecordVersion())
+            .setEntityValueType(record.getValueType().value())
+            .setEntityOperationIntent(record.getIntent().value())
+            .setTimestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
     return log;
   }
@@ -389,6 +383,15 @@ public class AuditLogEntry {
 
     if (value instanceof ProcessInstanceRelated) {
       return ((ProcessInstanceRelated) value).getProcessInstanceKey();
+    } else {
+      return null;
+    }
+  }
+
+  private static <R extends RecordValue> Long getBatchOperationKey(final Record<R> record) {
+    final var batchOperationKey = record.getBatchOperationReference();
+    if (RecordMetadataDecoder.batchOperationReferenceNullValue() != batchOperationKey) {
+      return batchOperationKey;
     } else {
       return null;
     }
