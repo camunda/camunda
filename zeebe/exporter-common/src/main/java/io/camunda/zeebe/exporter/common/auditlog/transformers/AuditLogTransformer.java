@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -22,11 +23,11 @@ import java.util.Set;
  *
  * @param <R> the record value type for this transformer
  */
-public interface AuditLogTransformer<R extends RecordValue, T> {
+public interface AuditLogTransformer<R extends RecordValue> {
 
   TransformerConfig config();
 
-  default void transform(final Record<R> record, final T entity) {}
+  default void transform(final Record<R> record, final AuditLogEntry log) {}
 
   default boolean supports(final Record record) {
     return config().supports(record);

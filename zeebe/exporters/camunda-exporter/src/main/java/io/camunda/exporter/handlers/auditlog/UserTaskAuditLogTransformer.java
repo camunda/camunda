@@ -7,14 +7,13 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 
-public class UserTaskAuditLogTransformer
-    implements AuditLogTransformer<UserTaskRecordValue, AuditLogEntity> {
+public class UserTaskAuditLogTransformer implements AuditLogTransformer<UserTaskRecordValue> {
 
   @Override
   public TransformerConfig config() {
@@ -22,10 +21,9 @@ public class UserTaskAuditLogTransformer
   }
 
   @Override
-  public void transform(final Record<UserTaskRecordValue> record, final AuditLogEntity entity) {
+  public void transform(final Record<UserTaskRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    entity
-        .setProcessDefinitionId(value.getBpmnProcessId())
+    log.setProcessDefinitionId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setElementInstanceKey(value.getElementInstanceKey())

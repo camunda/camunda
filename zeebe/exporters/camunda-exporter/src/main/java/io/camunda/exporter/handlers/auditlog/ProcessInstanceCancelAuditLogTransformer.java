@@ -9,13 +9,13 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs.PROCESS_INSTANCE_CANCEL_CONFIG;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 public class ProcessInstanceCancelAuditLogTransformer
-    implements AuditLogTransformer<ProcessInstanceRecordValue, AuditLogEntity> {
+    implements AuditLogTransformer<ProcessInstanceRecordValue> {
 
   @Override
   public TransformerConfig config() {
@@ -23,11 +23,9 @@ public class ProcessInstanceCancelAuditLogTransformer
   }
 
   @Override
-  public void transform(
-      final Record<ProcessInstanceRecordValue> record, final AuditLogEntity entity) {
+  public void transform(final Record<ProcessInstanceRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    entity
-        .setProcessDefinitionId(record.getValue().getBpmnProcessId())
+    log.setProcessDefinitionId(record.getValue().getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey());
   }

@@ -9,13 +9,13 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs.PROCESS_INSTANCE_MODIFICATION_CONFIG;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
 public class ProcessInstanceModificationAuditLogTransformer
-    implements AuditLogTransformer<ProcessInstanceModificationRecordValue, AuditLogEntity> {
+    implements AuditLogTransformer<ProcessInstanceModificationRecordValue> {
 
   @Override
   public TransformerConfig config() {
@@ -24,8 +24,8 @@ public class ProcessInstanceModificationAuditLogTransformer
 
   @Override
   public void transform(
-      final Record<ProcessInstanceModificationRecordValue> record, final AuditLogEntity entity) {
+      final Record<ProcessInstanceModificationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    entity.setProcessInstanceKey(value.getProcessInstanceKey());
+    log.setProcessInstanceKey(value.getProcessInstanceKey());
   }
 }

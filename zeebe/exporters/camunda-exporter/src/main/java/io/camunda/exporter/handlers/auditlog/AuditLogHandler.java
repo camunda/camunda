@@ -18,16 +18,13 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.BatchOperation;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
-import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashSet;
 import java.util.List;
@@ -60,12 +57,12 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   protected static final int ID_LENGTH = 32;
 
   private final String indexName;
-  private final AuditLogTransformer<R, AuditLogEntity> transformer;
+  private final AuditLogTransformer<R> transformer;
   private final AuditLogConfiguration configuration;
 
   public AuditLogHandler(
       final String indexName,
-      final AuditLogTransformer<R, AuditLogEntity> transformer,
+      final AuditLogTransformer<R> transformer,
       final AuditLogConfiguration configuration) {
     this.indexName = indexName;
     this.transformer = transformer;
@@ -101,31 +98,54 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
   @Override
   public void updateEntity(final Record<R> record, final AuditLogEntity entity) {
-    final AuditLogInfo info = AuditLogInfo.of(record);
+    final AuditLogEntry log = AuditLogEntry.of(record);
 
-    entity
-        .setEntityKey(String.valueOf(record.getKey()))
-        .setEntityType(mapEntityType(info))
-        .setCategory(mapCategory(info))
-        .setOperationType(mapOperationType(info))
-        .setActorType(mapActorType(info))
-        .setActorId(info.actor().actorId())
-        .setTenantScope(mapTenantScope(info))
-        .setTenantId(info.tenant().map(AuditLogTenant::tenantId).orElse(null))
-        .setBatchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
-        .setProcessInstanceKey(getProcessInstanceKey(record))
-        .setEntityVersion(record.getRecordVersion())
-        .setEntityValueType(record.getValueType().value())
-        .setEntityOperationIntent(record.getIntent().value())
-        .setTimestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
-
-    if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
-      // TODO: set rejection type and reason to AuditLogEntity#details
-      entity.setResult(AuditLogOperationResult.FAIL);
-    } else {
-      transformer.transform(record, entity);
-      entity.setResult(AuditLogOperationResult.SUCCESS);
+    try {
+      transformer.transform(record, log);
+    } catch (final Exception e) {
+      LOG.error(
+          "Error transforming audit log entity for record with key {}: {}",
+          record.getKey(),
+          e.getMessage(),
+          e);
     }
+
+    // generic fields
+    entity
+        .setEntityKey(log.getEntityKey())
+        .setEntityType(mapEntityType(log))
+        .setCategory(mapCategory(log))
+        .setOperationType(mapOperationType(log))
+        .setActorType(mapActorType(log))
+        .setActorId(log.getActor().actorId())
+        .setTenantScope(mapTenantScope(log))
+        .setTenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
+        .setBatchOperationKey(log.getBatchOperationKey())
+        .setBatchOperationType(log.getBatchOperationType())
+        .setProcessInstanceKey(log.getProcessInstanceKey())
+        .setEntityVersion(log.getEntityVersion())
+        .setEntityValueType(log.getEntityValueType())
+        .setEntityOperationIntent(log.getEntityOperationIntent())
+        .setTimestamp(log.getTimestamp())
+        .setAnnotation(log.getAnnotation());
+
+    // transformer specific fields
+    entity
+        .setResult(mapResult(log))
+        .setProcessDefinitionId(log.getProcessDefinitionId())
+        .setProcessDefinitionKey(log.getProcessDefinitionKey())
+        .setElementInstanceKey(log.getElementInstanceKey())
+        .setJobKey(log.getJobKey())
+        .setUserTaskKey(log.getUserTaskKey())
+        .setDecisionEvaluationKey(log.getDecisionEvaluationKey())
+        .setDecisionRequirementsId(log.getDecisionRequirementsId())
+        .setDecisionRequirementsKey(log.getDecisionRequirementsKey())
+        .setDecisionDefinitionId(log.getDecisionDefinitionId())
+        .setDecisionDefinitionKey(log.getDecisionDefinitionKey())
+        .setDeploymentKey(log.getDeploymentKey())
+        .setFormKey(log.getFormKey())
+        .setResourceKey(log.getResourceKey())
+        .setRootProcessInstanceKey(log.getRootProcessInstanceKey());
   }
 
   @Override
@@ -140,49 +160,45 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   @VisibleForTesting
-  public AuditLogTransformer<?, ?> getTransformer() {
+  public AuditLogTransformer<?> getTransformer() {
     return transformer;
   }
 
-  private AuditLogEntityType mapEntityType(final AuditLogInfo info) {
-    return Objects.nonNull(info.entityType())
-        ? AuditLogEntityType.valueOf(info.entityType().name())
+  private AuditLogEntityType mapEntityType(final AuditLogEntry info) {
+    return Objects.nonNull(info.getEntityType())
+        ? AuditLogEntityType.valueOf(info.getEntityType().name())
         : null;
   }
 
-  private AuditLogOperationCategory mapCategory(final AuditLogInfo info) {
-    return Objects.nonNull(info.category())
-        ? AuditLogOperationCategory.valueOf(info.category().name())
+  private AuditLogOperationResult mapResult(final AuditLogEntry log) {
+    return Objects.nonNull(log.getResult())
+        ? AuditLogOperationResult.valueOf(log.getResult().name())
         : null;
   }
 
-  private AuditLogOperationType mapOperationType(final AuditLogInfo info) {
-    return Objects.nonNull(info.operationType())
-        ? AuditLogOperationType.valueOf(info.operationType().name())
+  private AuditLogOperationCategory mapCategory(final AuditLogEntry info) {
+    return Objects.nonNull(info.getCategory())
+        ? AuditLogOperationCategory.valueOf(info.getCategory().name())
         : null;
   }
 
-  private AuditLogActorType mapActorType(final AuditLogInfo info) {
-    return Objects.nonNull(info.actor()) && Objects.nonNull(info.actor().actorType())
-        ? AuditLogActorType.valueOf(info.actor().actorType().name())
+  private AuditLogOperationType mapOperationType(final AuditLogEntry info) {
+    return Objects.nonNull(info.getOperationType())
+        ? AuditLogOperationType.valueOf(info.getOperationType().name())
         : null;
   }
 
-  private AuditLogTenantScope mapTenantScope(final AuditLogInfo info) {
-    return info.tenant()
+  private AuditLogActorType mapActorType(final AuditLogEntry info) {
+    return Objects.nonNull(info.getActor()) && Objects.nonNull(info.getActor().actorType())
+        ? AuditLogActorType.valueOf(info.getActor().actorType().name())
+        : null;
+  }
+
+  private AuditLogTenantScope mapTenantScope(final AuditLogEntry info) {
+    return info.getTenant()
         .map(AuditLogTenant::scope)
         .map(t -> io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope.valueOf(t.name()))
         .orElse(AuditLogTenantScope.GLOBAL);
-  }
-
-  private Long getProcessInstanceKey(final Record<R> record) {
-    final var value = record.getValue();
-
-    if (value instanceof ProcessInstanceRelated) {
-      return ((ProcessInstanceRelated) value).getProcessInstanceKey();
-    } else {
-      return null;
-    }
   }
 
   public static AuditLogHandlerBuilder builder(
@@ -191,7 +207,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   public static class AuditLogHandlerBuilder {
-    final Set<AuditLogHandler> handlers = new HashSet<>();
+    final Set<AuditLogHandler<?>> handlers = new HashSet<>();
     private final String indexName;
     private final AuditLogConfiguration auditLog;
 
@@ -200,12 +216,12 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
       this.auditLog = auditLog;
     }
 
-    public AuditLogHandlerBuilder addHandler(final AuditLogTransformer transformer) {
+    public AuditLogHandlerBuilder addHandler(final AuditLogTransformer<?> transformer) {
       handlers.add(new AuditLogHandler<>(indexName, transformer, auditLog));
       return this;
     }
 
-    public Set<AuditLogHandler> build() {
+    public Set<AuditLogHandler<?>> build() {
       return new HashSet<>(handlers);
     }
   }

@@ -7,14 +7,14 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 
 public class ProcessInstanceCreationAuditLogTransformer
-    implements AuditLogTransformer<ProcessInstanceCreationRecordValue, AuditLogEntity> {
+    implements AuditLogTransformer<ProcessInstanceCreationRecordValue> {
 
   @Override
   public TransformerConfig config() {
@@ -23,10 +23,9 @@ public class ProcessInstanceCreationAuditLogTransformer
 
   @Override
   public void transform(
-      final Record<ProcessInstanceCreationRecordValue> record, final AuditLogEntity entity) {
+      final Record<ProcessInstanceCreationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    entity
-        .setProcessInstanceKey(value.getProcessInstanceKey())
+    log.setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey());
   }

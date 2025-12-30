@@ -9,7 +9,7 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -39,7 +39,7 @@ class ResourceAuditLogHandlerTest {
             ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(recordValue));
 
     // when
-    final AuditLogEntity entity = new AuditLogEntity();
+    final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then

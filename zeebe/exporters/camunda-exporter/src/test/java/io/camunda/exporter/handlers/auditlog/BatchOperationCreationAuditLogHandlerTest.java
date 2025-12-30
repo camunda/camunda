@@ -10,7 +10,7 @@ package io.camunda.exporter.handlers.auditlog;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -50,7 +50,7 @@ class BatchOperationCreationAuditLogHandlerTest {
             ValueType.BATCH_OPERATION_CREATION, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
-    final AuditLogEntity entity = new AuditLogEntity();
+    final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then

@@ -7,13 +7,11 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 
-public class GroupAuditLogTransformer
-    implements AuditLogTransformer<GroupRecordValue, AuditLogEntity> {
+public class GroupAuditLogTransformer implements AuditLogTransformer<GroupRecordValue> {
 
   @Override
   public TransformerConfig config() {

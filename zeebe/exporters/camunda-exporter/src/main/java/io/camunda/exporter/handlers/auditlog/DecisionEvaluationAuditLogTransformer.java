@@ -7,8 +7,7 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
@@ -19,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class DecisionEvaluationAuditLogTransformer
-    implements AuditLogTransformer<DecisionEvaluationRecordValue, AuditLogEntity> {
+    implements AuditLogTransformer<DecisionEvaluationRecordValue> {
 
   @Override
   public TransformerConfig config() {
@@ -28,20 +27,20 @@ public class DecisionEvaluationAuditLogTransformer
 
   @Override
   public void transform(
-      final Record<DecisionEvaluationRecordValue> record, final AuditLogEntity entity) {
+      final Record<DecisionEvaluationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    entity.setDecisionDefinitionId(value.getDecisionId());
-    entity.setDecisionDefinitionKey(value.getDecisionKey());
-    entity.setDecisionRequirementsId(value.getDecisionRequirementsId());
-    entity.setDecisionRequirementsKey(value.getDecisionRequirementsKey());
-    entity.setDecisionEvaluationKey(
+    log.setDecisionDefinitionId(value.getDecisionId());
+    log.setDecisionDefinitionKey(value.getDecisionKey());
+    log.setDecisionRequirementsId(value.getDecisionRequirementsId());
+    log.setDecisionRequirementsKey(value.getDecisionRequirementsKey());
+    log.setDecisionEvaluationKey(
         Optional.ofNullable(value.getEvaluatedDecisions())
             .filter(list -> !list.isEmpty())
             .map(List::getFirst)
             .map(EvaluatedDecisionValue::getDecisionKey)
             .orElse(null));
     if (record.getIntent() == DecisionEvaluationIntent.FAILED) {
-      entity.setResult(AuditLogOperationResult.FAIL);
+      log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
     }
   }
 }

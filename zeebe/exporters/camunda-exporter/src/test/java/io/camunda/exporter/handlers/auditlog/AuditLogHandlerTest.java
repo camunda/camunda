@@ -9,8 +9,8 @@ package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -144,7 +144,7 @@ class AuditLogHandlerTest {
 
     assertCommonEntityFields(entity, authorizedRecord, ENTITY_ID);
     assertThat(entity.getResult()).isEqualTo(AuditLogOperationResult.SUCCESS);
-    verify(transformer).transform(authorizedRecord, entity);
+    verify(transformer).transform(eq(authorizedRecord), any());
   }
 
   @Test
@@ -165,7 +165,7 @@ class AuditLogHandlerTest {
 
     assertCommonEntityFields(entity, rejectedRecord, ENTITY_ID);
     assertThat(entity.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
-    verify(transformer, never()).transform(any(), any());
+    verify(transformer).transform(eq(rejectedRecord), any());
   }
 
   @Test
@@ -177,7 +177,7 @@ class AuditLogHandlerTest {
     handler.updateEntity(record, entity);
 
     assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
-    verify(transformer).transform(record, entity);
+    verify(transformer).transform(eq(record), any());
   }
 
   @Test
@@ -189,7 +189,7 @@ class AuditLogHandlerTest {
     handler.updateEntity(record, entity);
 
     assertThat(entity.getProcessInstanceKey()).isNull();
-    verify(transformer).transform(record, entity);
+    verify(transformer).transform(eq(record), any());
   }
 
   private void assertCommonEntityFields(

@@ -7,14 +7,13 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 
-public class MappingRuleAuditLogTransformer
-    implements AuditLogTransformer<MappingRuleRecordValue, AuditLogEntity> {
+public class MappingRuleAuditLogTransformer implements AuditLogTransformer<MappingRuleRecordValue> {
 
   @Override
   public TransformerConfig config() {
@@ -22,8 +21,8 @@ public class MappingRuleAuditLogTransformer
   }
 
   @Override
-  public void transform(final Record<MappingRuleRecordValue> record, final AuditLogEntity entity) {
+  public void transform(final Record<MappingRuleRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    entity.setEntityKey(value.getMappingRuleId());
+    log.setEntityKey(value.getMappingRuleId());
   }
 }

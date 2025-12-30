@@ -7,14 +7,14 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 
 public class BatchOperationCreationAuditLogTransformer
-    implements AuditLogTransformer<BatchOperationCreationRecordValue, AuditLogEntity> {
+    implements AuditLogTransformer<BatchOperationCreationRecordValue> {
 
   @Override
   public TransformerConfig config() {
@@ -23,8 +23,8 @@ public class BatchOperationCreationAuditLogTransformer
 
   @Override
   public void transform(
-      final Record<BatchOperationCreationRecordValue> record, final AuditLogEntity entity) {
+      final Record<BatchOperationCreationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    entity.setBatchOperationType(value.getBatchOperationType());
+    log.setBatchOperationType(value.getBatchOperationType());
   }
 }
