@@ -73,7 +73,8 @@ public class IncidentTools {
     try {
       final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(sort);
       if (sortRequest.isLeft()) {
-        return sortRequest.mapLeft(CallToolResultMapper::mapViolationsToResult).getLeft();
+        return CallToolResultMapper.mapProblemToResult(
+            CallToolResultMapper.mapViolationsToProblem(sortRequest.getLeft()));
       }
 
       final var result =
