@@ -7,10 +7,12 @@
  */
 
 import {getAuditLog, queryAuditLogs} from './audit-log';
+import {deleteProcessInstance} from './process-instance';
 
 const endpoints = {
 	queryAuditLogs,
 	getAuditLog,
+  deleteProcessInstance,
 } as const;
 
 export {endpoints};
@@ -38,3 +40,8 @@ export {
 	type QueryAuditLogsResponseBody,
 	type GetAuditLogResponseBody,
 } from './audit-log';
+
+export {
+  deleteProcessInstanceRequestBodySchema,
+  type DeleteProcessInstanceRequestBody
+} from './process-instance';
