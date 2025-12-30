@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT;
 import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.STATE;
@@ -16,12 +15,10 @@ import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTem
 import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.ACTIVE;
 import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.COMPLETED;
 import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.TERMINATED;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -31,15 +28,9 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -54,81 +45,112 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
 
   @Override
   protected void buildFiltering(
-      final Query<FlowNodeStatistics> query, final SearchSourceBuilder searchSourceBuilder) {
+      final Query<FlowNodeStatistics> query, final SearchSourceBuilder searchSourceBuilder) {}
 
-    final FlowNodeStatistics filter = query.getFilter();
-    final List<QueryBuilder> queryBuilders = new ArrayList<>();
-    if (filter != null) {
-      queryBuilders.add(buildTermQuery(FlowNodeStatistics.ACTIVITY_ID, filter.getActivityId()));
+  @Override
+  protected void buildFiltering(
+      final Query<FlowNodeStatistics> query,
+      final Builder searchRequestBuilder,
+      final boolean isTenantAware) {
+    final var filter = query.getFilter();
+
+    if (filter == null) {
+      return;
     }
-    searchSourceBuilder.query(joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
+
+    final var activityIdQ =
+        buildIfPresent(
+            FlowNodeStatistics.ACTIVITY_ID, filter.getActivityId(), ElasticsearchUtil::termsQuery);
+
+    final var finalQuery =
+        isTenantAware ? tenantHelper.makeQueryTenantAware(activityIdQ) : activityIdQ;
+
+    searchRequestBuilder.query(finalQuery);
   }
 
   @Override
   public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(
       final Long processInstanceKey) {
+    final var incidentFilter =
+        new Aggregation.Builder()
+            .filter(f -> f.bool(b -> b.must(ElasticsearchUtil.termsQuery(INCIDENT, true))))
+            .build();
+
+    final var canceledFilter =
+        new Aggregation.Builder()
+            .filter(
+                f ->
+                    f.bool(
+                        b ->
+                            b.mustNot(
+                                    ElasticsearchUtil.termsQuery(
+                                        TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
+                                .must(ElasticsearchUtil.termsQuery(STATE, TERMINATED))))
+            .build();
+
+    final var completedFilter =
+        new Aggregation.Builder()
+            .filter(
+                f ->
+                    f.bool(
+                        b ->
+                            b.mustNot(
+                                    ElasticsearchUtil.termsQuery(
+                                        TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
+                                .must(ElasticsearchUtil.termsQuery(STATE, COMPLETED))))
+            .build();
+
+    final var activeFilter =
+        new Aggregation.Builder()
+            .filter(
+                f ->
+                    f.bool(
+                        b ->
+                            b.mustNot(
+                                    ElasticsearchUtil.termsQuery(
+                                        TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
+                                .must(ElasticsearchUtil.termsQuery(STATE, ACTIVE))
+                                .must(ElasticsearchUtil.termsQuery(INCIDENT, false))))
+            .build();
+
+    final var subAggs =
+        Map.of(
+            COUNT_INCIDENT, incidentFilter,
+            COUNT_CANCELED, canceledFilter,
+            COUNT_COMPLETED, completedFilter,
+            COUNT_ACTIVE, activeFilter);
+
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+    final var request =
+        new SearchRequest.Builder()
+            .index(flowNodeInstanceTemplate.getAlias())
+            .query(tenantAwareQuery)
+            .aggregations(
+                FLOW_NODE_ID_AGG,
+                a -> a.terms(t -> t.field(FLOW_NODE_ID).size(TERMS_AGG_SIZE)).aggregations(subAggs))
+            .size(0)
+            .build();
+
     try {
-      final SearchRequest request =
-          ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-              .source(
-                  new SearchSourceBuilder()
-                      .query(
-                          constantScoreQuery(
-                              termQuery(
-                                  FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY,
-                                  processInstanceKey)))
-                      .aggregation(
-                          terms(FLOW_NODE_ID_AGG)
-                              .field(FLOW_NODE_ID)
-                              .size(TERMS_AGG_SIZE)
-                              .subAggregation(
-                                  filter(
-                                      COUNT_INCIDENT,
-                                      boolQuery()
-                                          // Need to count when MULTI_INSTANCE_BODY itself has an
-                                          // incident
-                                          // .mustNot(termQuery(TYPE,
-                                          // FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(INCIDENT, true))))
-                              .subAggregation(
-                                  filter(
-                                      COUNT_CANCELED,
-                                      boolQuery()
-                                          .mustNot(
-                                              termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(STATE, TERMINATED))))
-                              .subAggregation(
-                                  filter(
-                                      COUNT_COMPLETED,
-                                      boolQuery()
-                                          .mustNot(
-                                              termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(STATE, COMPLETED))))
-                              .subAggregation(
-                                  filter(
-                                      COUNT_ACTIVE,
-                                      boolQuery()
-                                          .mustNot(
-                                              termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(STATE, ACTIVE))
-                                          .must(termQuery(INCIDENT, false)))))
-                      .size(0));
-      final SearchResponse response = tenantAwareClient.search(request);
-      final Aggregations aggregations = response.getAggregations();
-      final Terms flowNodeAgg = aggregations.get(FLOW_NODE_ID_AGG);
-      return flowNodeAgg.getBuckets().stream()
+      final var response = es8Client.search(request, Void.class);
+
+      final var flowNodeAgg = response.aggregations().get(FLOW_NODE_ID_AGG).sterms();
+
+      return flowNodeAgg.buckets().array().stream()
           .map(
-              bucket ->
-                  new FlowNodeStatistics()
-                      .setActivityId(bucket.getKeyAsString())
-                      .setCanceled(
-                          ((Filter) bucket.getAggregations().get(COUNT_CANCELED)).getDocCount())
-                      .setIncidents(
-                          ((Filter) bucket.getAggregations().get(COUNT_INCIDENT)).getDocCount())
-                      .setCompleted(
-                          ((Filter) bucket.getAggregations().get(COUNT_COMPLETED)).getDocCount())
-                      .setActive(
-                          ((Filter) bucket.getAggregations().get(COUNT_ACTIVE)).getDocCount()))
+              bucket -> {
+                final var aggs = bucket.aggregations();
+                return new FlowNodeStatistics()
+                    .setActivityId(bucket.key().stringValue())
+                    .setCanceled(aggs.get(COUNT_CANCELED).filter().docCount())
+                    .setIncidents(aggs.get(COUNT_INCIDENT).filter().docCount())
+                    .setCompleted(aggs.get(COUNT_COMPLETED).filter().docCount())
+                    .setActive(aggs.get(COUNT_ACTIVE).filter().docCount());
+              })
           .collect(Collectors.toList());
     } catch (final IOException e) {
       final String message =
