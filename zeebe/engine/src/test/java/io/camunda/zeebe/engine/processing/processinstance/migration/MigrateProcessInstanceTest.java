@@ -136,6 +136,7 @@ public class MigrateProcessInstanceTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1)
         .hasElementInstancePath(List.of(processInstanceKey))
+        .hasRootProcessInstanceKey(processInstanceKey)
         .describedAs(
             "Expect that process definition path changed to contain new process definition key")
         .hasProcessDefinitionPath(List.of(otherProcessDefinitionKey))
@@ -199,6 +200,7 @@ public class MigrateProcessInstanceTest {
         .describedAs("Expect that bpmn process id and element id did not change")
         .hasBpmnProcessId(processId)
         .hasElementInstancePath(List.of(processInstanceKey))
+        .hasRootProcessInstanceKey(processInstanceKey)
         .describedAs(
             "Expect that process definition path changed to contain new process definition key")
         .hasProcessDefinitionPath(List.of(v2ProcessDefinitionKey))
