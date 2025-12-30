@@ -68,8 +68,6 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
