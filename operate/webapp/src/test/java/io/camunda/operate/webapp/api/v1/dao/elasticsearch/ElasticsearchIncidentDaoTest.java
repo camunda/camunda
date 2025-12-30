@@ -8,27 +8,23 @@
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -41,13 +37,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchIncidentDaoTest {
 
-  @Mock private IncidentTemplate mockIncidentIndex;
+  private static final JacksonJsonpMapper MAPPER = new JacksonJsonpMapper();
 
   @Mock private OperateDateTimeFormatter mockDateTimeFormatter;
-
   @InjectMocks private ElasticsearchIncidentDao underTest;
 
-  @Captor private ArgumentCaptor<QueryBuilder> queryCaptor;
+  @Captor
+  private ArgumentCaptor<co.elastic.clients.elasticsearch._types.query_dsl.Query> queryCaptor;
 
   @Test
   public void testBuildFilteringWithIncidentFilter() {
@@ -64,76 +60,88 @@ public class ElasticsearchIncidentDaoTest {
         .setTenantId("fakeTenant")
         .setCreationTime("2024-02-13T15:10:33.013+0000");
 
-    final SearchSourceBuilder mockBuilder = Mockito.mock(SearchSourceBuilder.class);
+    final var reqBuilder = Mockito.mock(SearchRequest.Builder.class);
     final Query<Incident> mockQuery = Mockito.mock(Query.class);
 
     when(mockQuery.getFilter()).thenReturn(testFilter);
 
-    final String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
-    when(mockDateTimeFormatter.getApiDateTimeFormatString()).thenReturn(expectedDateFormat);
-
-    underTest.buildFiltering(mockQuery, mockBuilder);
+    underTest.buildFiltering(mockQuery, reqBuilder, false);
 
     // Capture the queryBuilder object
-    verify(mockBuilder).query(queryCaptor.capture());
-    final QueryBuilder capturedArgument = queryCaptor.getValue();
-    assertThat(capturedArgument instanceof BoolQueryBuilder).isTrue();
+    verify(reqBuilder).query(queryCaptor.capture());
+    final var capturedArgument = queryCaptor.getValue();
+    assertThat(capturedArgument instanceof co.elastic.clients.elasticsearch._types.query_dsl.Query)
+        .isTrue();
 
     // Check that 9 filters are present
-    final List<QueryBuilder> mustClauses = ((BoolQueryBuilder) capturedArgument).must();
+    final var mustClauses = capturedArgument.bool().must();
     assertThat(mustClauses.size()).isEqualTo(9);
 
     // Check the validity of each filter
-    assertThat(((TermQueryBuilder) (mustClauses.get(0))).fieldName()).isEqualTo(Incident.KEY);
-    assertThat(((TermQueryBuilder) (mustClauses.get(0))).value()).isEqualTo(testFilter.getKey());
-    assertThat(((TermQueryBuilder) (mustClauses.get(1))).fieldName())
-        .isEqualTo(Incident.PROCESS_DEFINITION_KEY);
-    assertThat(((TermQueryBuilder) (mustClauses.get(1))).value())
+    assertThat(mustClauses.get(0).terms().field()).isEqualTo(Incident.KEY);
+    assertThat(unwrapQueryVal(mustClauses.get(0), Long.class)).isEqualTo(testFilter.getKey());
+
+    assertThat(mustClauses.get(1).terms().field()).isEqualTo(Incident.PROCESS_DEFINITION_KEY);
+    assertThat(unwrapQueryVal(mustClauses.get(1), Long.class))
         .isEqualTo(testFilter.getProcessDefinitionKey());
-    assertThat(((TermQueryBuilder) (mustClauses.get(2))).fieldName())
-        .isEqualTo(Incident.PROCESS_INSTANCE_KEY);
-    assertThat(((TermQueryBuilder) (mustClauses.get(2))).value())
+
+    assertThat(mustClauses.get(2).terms().field()).isEqualTo(Incident.PROCESS_INSTANCE_KEY);
+    assertThat(unwrapQueryVal(mustClauses.get(2), Long.class))
         .isEqualTo(testFilter.getProcessInstanceKey());
-    assertThat(((TermQueryBuilder) (mustClauses.get(3))).fieldName()).isEqualTo(Incident.TYPE);
-    assertThat(((TermQueryBuilder) (mustClauses.get(3))).value()).isEqualTo(testFilter.getType());
-    assertThat(((MatchQueryBuilder) (mustClauses.get(4))).fieldName()).isEqualTo(Incident.MESSAGE);
-    assertThat(((MatchQueryBuilder) (mustClauses.get(4))).value())
-        .isEqualTo(testFilter.getMessage());
-    assertThat(((TermQueryBuilder) (mustClauses.get(5))).fieldName()).isEqualTo(Incident.STATE);
-    assertThat(((TermQueryBuilder) (mustClauses.get(5))).value()).isEqualTo(testFilter.getState());
-    assertThat(((TermQueryBuilder) (mustClauses.get(6))).fieldName()).isEqualTo(Incident.JOB_KEY);
-    assertThat(((TermQueryBuilder) (mustClauses.get(6))).value()).isEqualTo(testFilter.getJobKey());
-    assertThat(((TermQueryBuilder) (mustClauses.get(7))).fieldName()).isEqualTo(Incident.TENANT_ID);
-    assertThat(((TermQueryBuilder) (mustClauses.get(7))).value())
+
+    assertThat(mustClauses.get(3).terms().field()).isEqualTo(Incident.TYPE);
+    assertThat(unwrapQueryVal(mustClauses.get(3), String.class)).isEqualTo(testFilter.getType());
+
+    assertThat(mustClauses.get(4).match().field()).isEqualTo(Incident.MESSAGE);
+    assertThat(unwrapQueryVal(mustClauses.get(4), String.class)).isEqualTo(testFilter.getMessage());
+
+    assertThat(mustClauses.get(5).terms().field()).isEqualTo(Incident.STATE);
+    assertThat(unwrapQueryVal(mustClauses.get(5), String.class)).isEqualTo(testFilter.getState());
+
+    assertThat(mustClauses.get(6).terms().field()).isEqualTo(Incident.JOB_KEY);
+    assertThat(unwrapQueryVal(mustClauses.get(6), Long.class)).isEqualTo(testFilter.getJobKey());
+
+    assertThat(mustClauses.get(7).terms().field()).isEqualTo(Incident.TENANT_ID);
+    assertThat(unwrapQueryVal(mustClauses.get(7), String.class))
         .isEqualTo(testFilter.getTenantId());
-    assertThat(((RangeQueryBuilder) (mustClauses.get(8))).fieldName())
-        .isEqualTo(Incident.CREATION_TIME);
-    assertThat(((RangeQueryBuilder) (mustClauses.get(8))).format()).isEqualTo(expectedDateFormat);
-    assertThat(((RangeQueryBuilder) (mustClauses.get(8))).from())
-        .isEqualTo("2024-02-13T15:10:33.013+0000");
+
+    assertThat(mustClauses.get(8).range().term().field()).isEqualTo(Incident.CREATION_TIME);
+    assertThat(mustClauses.get(8).range().term().lte()).isEqualTo("2024-02-13T15:10:33.013+0000");
+    assertThat(mustClauses.get(8).range().term().gte()).isEqualTo("2024-02-13T15:10:33.013+0000");
+  }
+
+  // only supports necessary types to unwrap for test
+  private <T> T unwrapQueryVal(
+      final co.elastic.clients.elasticsearch._types.query_dsl.Query query, final Class<T> clazz) {
+    if (query.isTerms()) {
+      return query.terms().terms().value().get(0).anyValue().to(clazz, MAPPER);
+    }
+
+    if (query.isMatch() && query.match().query().isString()) {
+      return (T) query.match().query().stringValue();
+    }
+
+    throw new IllegalStateException("not supported field value");
   }
 
   @Test
   public void testFilteringWithNoIncidentFilter() {
-    final SearchSourceBuilder mockBuilder = Mockito.mock(SearchSourceBuilder.class);
+    final var reqBuilder = Mockito.mock(SearchRequest.Builder.class);
     final Query<Incident> mockQuery = Mockito.mock(Query.class);
 
     when(mockQuery.getFilter()).thenReturn(null);
 
-    underTest.buildFiltering(mockQuery, mockBuilder);
+    underTest.buildFiltering(mockQuery, reqBuilder, true);
 
     // Capture the queryBuilder object
-    verify(mockBuilder).query(queryCaptor.capture());
-    final QueryBuilder capturedArgument = queryCaptor.getValue();
-    assertThat(capturedArgument).isNull();
+    verify(reqBuilder, times(0))
+        .query(any(co.elastic.clients.elasticsearch._types.query_dsl.Query.class));
 
     verifyNoInteractions(mockDateTimeFormatter);
   }
 
   @Test
   public void testSearchHitToIncident() {
-    final SearchHit mockSearchHit = Mockito.mock(SearchHit.class);
-
     final Map<String, Object> searchHitAsMap = new HashMap<>();
     searchHitAsMap.put(IncidentTemplate.KEY, 123L);
     searchHitAsMap.put(IncidentTemplate.PROCESS_INSTANCE_KEY, 222L);
@@ -145,11 +153,12 @@ public class ElasticsearchIncidentDaoTest {
     searchHitAsMap.put(IncidentTemplate.JOB_KEY, 444L);
     searchHitAsMap.put(IncidentTemplate.TENANT_ID, "tenant");
 
-    when(mockSearchHit.getSourceAsMap()).thenReturn(searchHitAsMap);
     final String parsedDateTime = "2024-02-13T15:10:33.013+00:00";
     when(mockDateTimeFormatter.convertGeneralToApiDateTime(anyString())).thenReturn(parsedDateTime);
 
-    final Incident result = underTest.searchHitToIncident(mockSearchHit);
+    final var objectMapper = new ObjectMapper();
+    final var result =
+        underTest.postProcessIncidents(objectMapper.convertValue(searchHitAsMap, Incident.class));
 
     assertThat(result).isNotNull();
     assertThat(result.getKey()).isEqualTo(searchHitAsMap.get(IncidentTemplate.KEY));
@@ -163,7 +172,5 @@ public class ElasticsearchIncidentDaoTest {
     assertThat(result.getState()).isEqualTo(searchHitAsMap.get(IncidentTemplate.STATE));
     assertThat(result.getJobKey()).isEqualTo(searchHitAsMap.get(IncidentTemplate.JOB_KEY));
     assertThat(result.getTenantId()).isEqualTo(searchHitAsMap.get(IncidentTemplate.TENANT_ID));
-
-    verify(mockSearchHit, times(1)).getSourceAsMap();
   }
 }
