@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashSet;
@@ -112,17 +113,18 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setTenantScope(mapTenantScope(info))
         .setTenantId(info.tenant().map(AuditLogTenant::tenantId).orElse(null))
         .setBatchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
+        .setProcessInstanceKey(getProcessInstanceKey(record))
         .setEntityVersion(record.getRecordVersion())
         .setEntityValueType(record.getValueType().value())
         .setEntityOperationIntent(record.getIntent().value())
         .setTimestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
     if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
-      entity.setResult(AuditLogOperationResult.FAIL);
       // TODO: set rejection type and reason to AuditLogEntity#details
+      entity.setResult(AuditLogOperationResult.FAIL);
     } else {
-      entity.setResult(AuditLogOperationResult.SUCCESS);
       transformer.transform(record, entity);
+      entity.setResult(AuditLogOperationResult.SUCCESS);
     }
   }
 
@@ -171,6 +173,16 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .map(AuditLogTenant::scope)
         .map(t -> io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope.valueOf(t.name()))
         .orElse(AuditLogTenantScope.GLOBAL);
+  }
+
+  private Long getProcessInstanceKey(final Record<R> record) {
+    final var value = record.getValue();
+
+    if (value instanceof ProcessInstanceRelated) {
+      return ((ProcessInstanceRelated) value).getProcessInstanceKey();
+    } else {
+      return null;
+    }
   }
 
   public static AuditLogHandlerBuilder builder(

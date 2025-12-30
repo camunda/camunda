@@ -22,6 +22,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -83,18 +84,30 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .tenantScope(
                 info.tenant().map(AuditLogTenant::scope).orElse(AuditLogTenantScope.GLOBAL))
             .batchOperationKey(info.batchOperation().map(BatchOperation::key).orElse(null))
+            .processInstanceKey(getProcessInstanceKey(record))
             .entityVersion(record.getRecordVersion())
             .entityValueType(record.getValueType().value())
             .entityOperationIntent(record.getIntent().value())
             .timestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
     if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
-      auditLog.result(AuditLogEntity.AuditLogOperationResult.FAIL);
       // TODO: set rejection type and reason to AuditLogEntity#details
+      auditLog.result(AuditLogEntity.AuditLogOperationResult.FAIL);
     } else {
-      auditLog.result(AuditLogEntity.AuditLogOperationResult.SUCCESS);
       transformer.transform(record, auditLog);
+      auditLog.result(AuditLogEntity.AuditLogOperationResult.SUCCESS);
     }
+
     return auditLog.build();
+  }
+
+  private Long getProcessInstanceKey(final Record<R> record) {
+    final var value = record.getValue();
+
+    if (value instanceof ProcessInstanceRelated) {
+      return ((ProcessInstanceRelated) value).getProcessInstanceKey();
+    } else {
+      return null;
+    }
   }
 }
