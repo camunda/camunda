@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
@@ -149,7 +150,14 @@ public class RdbmsExporterWrapper implements Exporter {
     final var historyCleanupService = new HistoryCleanupService(rdbmsWriterConfig, rdbmsWriters);
     builder.historyCleanupService(historyCleanupService);
     final var historyDeletionService =
-        new HistoryDeletionService(rdbmsWriters, rdbmsService.getHistoryDeletionDbReader());
+        new HistoryDeletionService(
+            rdbmsWriters,
+            rdbmsService.getHistoryDeletionDbReader(),
+            new HistoryDeletionConfig(
+                config.getHistoryDeletion().getDelayBetweenRuns(),
+                config.getHistoryDeletion().getMaxDelayBetweenRuns(),
+                config.getHistoryDeletion().getQueueBatchSize(),
+                config.getHistoryDeletion().getDependentRowLimit()));
     builder.historyDeletionService(historyDeletionService);
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
