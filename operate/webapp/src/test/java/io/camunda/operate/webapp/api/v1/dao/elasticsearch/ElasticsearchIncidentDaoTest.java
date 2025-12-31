@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -140,9 +139,7 @@ public class ElasticsearchIncidentDaoTest {
     final String parsedDateTime = "2024-02-13T15:10:33.013+00:00";
     when(mockDateTimeFormatter.convertGeneralToApiDateTime(anyString())).thenReturn(parsedDateTime);
 
-    final var objectMapper = new ObjectMapper();
-    final var result =
-        underTest.postProcessIncidents(objectMapper.convertValue(searchHitAsMap, Incident.class));
+    final var result = underTest.createIncidentFromIncidentMap(searchHitAsMap);
 
     assertThat(result).isNotNull();
     assertThat(result.getKey()).isEqualTo(searchHitAsMap.get(IncidentTemplate.KEY));
