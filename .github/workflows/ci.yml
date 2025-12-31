@@ -89,6 +89,7 @@ jobs:
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
             condition "false" is always evaluated to false
+            constant expression "false" in condition
           use_shellcheck: true
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
