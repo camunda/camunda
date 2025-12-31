@@ -216,6 +216,8 @@ export class OperateDiagramPage {
   }
 
   async verifyIncidentInPopover(incidentPattern: RegExp) {
+    await this.monacoAriaContainer.waitFor({state: 'visible'});
+
     await expect(
       this.popover.getByRole('heading', {
         name: 'Incident',
