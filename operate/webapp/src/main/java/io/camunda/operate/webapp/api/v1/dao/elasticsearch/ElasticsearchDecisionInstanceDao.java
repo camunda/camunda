@@ -38,6 +38,10 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
     final List<DecisionInstance> decisionInstances;
     try {
       decisionInstances = searchFor(ElasticsearchUtil.termsQuery(ID, id));
+      decisionInstances.forEach(
+          di ->
+              di.setEvaluationDate(
+                  dateTimeFormatter.convertGeneralToApiDateTime(di.getEvaluationDate())));
     } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading decision instance for id %s", id), e);
@@ -187,6 +191,9 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       if (msg != null) {
         item.setEvaluationFailure(msg);
       }
+
+      item.setEvaluationDate(
+          dateTimeFormatter.convertGeneralToApiDateTime(item.getEvaluationDate()));
     }
   }
 
@@ -204,10 +211,6 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
             .flatMap(res -> res.hits().hits().stream())
             .map(Hit::source)
             .toList();
-
-    for (final var di : decisionInstances) {
-      di.setEvaluationDate(dateTimeFormatter.convertGeneralToApiDateTime(di.getEvaluationDate()));
-    }
 
     return decisionInstances;
   }
