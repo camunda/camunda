@@ -23,7 +23,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.io.IOException;
 import java.util.List;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -101,10 +100,6 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     throw new ResourceNotFoundException(
         String.format("Process definition for key %s not found.", key));
   }
-
-  @Override
-  protected void buildFiltering(
-      final Query<ProcessDefinition> query, final SearchSourceBuilder searchSourceBuilder) {}
 
   @Override
   protected void buildFiltering(
