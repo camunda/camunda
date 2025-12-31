@@ -64,14 +64,20 @@ The documentation site will be available at `http://localhost:3000/camunda/`.
 ### Adding Documentation
 
 1. Add new markdown files to the [`docs/`](docs/) directory
-2. Configure frontmatter for proper sidebar positioning:
-   ```markdown
-   ---
-   sidebar_position: 1
-   title: Your Title
-   description: Your description
-   ---
-   ```
+2. Update the sidebar configuration in [`monorepo-docs-site/sidebars.js`](monorepo-docs-site/sidebars.js) to include your new documentation file in the appropriate array position.
+   For example:
+
+```js
+// in monorepo-docs-site/sidebars.js
+module.exports = {
+  docs: [
+    'introduction',
+    'getting-started',
+    // add your new doc ID here
+    'your-doc-id',
+  ],
+};
+```
 
 For more details, see the [documentation site README](monorepo-docs-site/README.md).
 

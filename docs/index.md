@@ -1,8 +1,9 @@
 ---
+
 slug: /
 title: Camunda Platform Documentation
 description: Developer documentation for the Camunda platform and orchestration cluster
----
+---------------------------------------------------------------------------------------
 
 # Camunda Platform Documentation
 

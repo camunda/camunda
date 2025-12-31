@@ -46,6 +46,7 @@ jobs:
             docs-changes:
               - 'docs/**'
               - 'monorepo-docs-site/**'
+              - '.github/workflows/docs-preview.yml'
 
   build-preview:
     if: |

@@ -50,6 +50,7 @@ To add new documentation pages:
 
 1. **Add new markdown files** to the `../docs` directory
 2. **Configure frontmatter** for proper metadata:
+
    ```markdown
    ---
    title: Page Title
@@ -58,6 +59,7 @@ To add new documentation pages:
    ---
    ```
 3. **Update sidebar configuration** in `sidebars.js`:
+
    ```javascript
    const sidebars = {
      tutorialSidebar: [
@@ -106,7 +108,7 @@ Key configuration files:
 This site includes:
 
 - 🔍 **Lunr Search** - Full-text search functionality
-- 🎨 **GitHub Codeblock Theme** - Enhanced code block styling  
+- 🎨 **GitHub Codeblock Theme** - Enhanced code block styling
 - 📊 **Mermaid Diagrams** - Support for diagram rendering
 - 🎯 **Camunda Branding** - Custom colors and styling
 - 📱 **Responsive Design** - Mobile-friendly interface
