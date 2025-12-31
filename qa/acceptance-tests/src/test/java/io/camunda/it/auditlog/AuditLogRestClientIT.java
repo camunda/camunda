@@ -111,4 +111,34 @@ public class AuditLogRestClientIT {
     assertThat(fetchedAuditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(fetchedAuditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
+
+  @Test
+  void shouldTrackUserCreationForAdminUser() {
+    // when
+    final var auditLogUserCreateItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.USER)
+                        .operationType(AuditLogOperationTypeEnum.CREATE))
+            .send()
+            .join();
+
+    // then - verify that the admin/demo user creation was tracked
+    assertThat(auditLogUserCreateItems.items()).hasSizeGreaterThanOrEqualTo(1);
+
+    final var adminUserCreateLog =
+        auditLogUserCreateItems.items().stream()
+            .filter(al -> DEFAULT_USERNAME.equals(al.getEntityKey()))
+            .findFirst();
+
+    assertThat(adminUserCreateLog).isPresent();
+    final var auditLogCreate = adminUserCreateLog.get();
+    assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER);
+    assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
+    assertThat(auditLogCreate.getEntityKey()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLogCreate.getTenantId()).isNull();
+    assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
 }
