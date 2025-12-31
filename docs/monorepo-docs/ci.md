@@ -1,8 +1,9 @@
 ---
+
 title: CI & Automation
 description: Information about continuous integration and automation processes
 tags: ["ci", "automation", "github-actions", "build"]
----
+-----------------------------------------------------
 
 # CI & Automation
 
