@@ -104,7 +104,7 @@ public class ProcessCache {
     }
 
     @Override
-    public void completedClusterChange() {
+    public void clusterIncarnationChanged() {
       cache.invalidate();
       LOGGER.debug("Process cache invalidated");
     }
