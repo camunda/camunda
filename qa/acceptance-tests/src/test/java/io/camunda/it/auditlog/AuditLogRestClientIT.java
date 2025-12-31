@@ -19,9 +19,12 @@ import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.MappingRuleDefinition;
+import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.collection.Tuple;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,6 +47,15 @@ public class AuditLogRestClientIT {
           .withMultiTenancyEnabled()
           .withAuthorizationsEnabled()
           .withAuthenticatedAccess();
+
+  private static final String MAPPING_RULE_CLAIM_VALUE = "test-claim-value";
+
+  @MappingRuleDefinition
+  private static final TestMappingRule MAPPING_RULE_A =
+      new TestMappingRule(
+          Strings.newRandomValidIdentityId(),
+          TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_NAME,
+          MAPPING_RULE_CLAIM_VALUE);
 
   private static CamundaClient adminClient;
   private static ProcessInstanceEvent processInstanceEvent;
@@ -138,6 +150,36 @@ public class AuditLogRestClientIT {
     assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER);
     assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLogCreate.getEntityKey()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLogCreate.getTenantId()).isNull();
+    assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
+
+  @Test
+  void shouldTrackMappingRuleCreation() {
+    // when
+    final var auditLogMappingRuleCreateItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.MAPPING_RULE)
+                        .operationType(AuditLogOperationTypeEnum.CREATE))
+            .send()
+            .join();
+
+    // then - verify that the mapping rule creation was tracked
+    assertThat(auditLogMappingRuleCreateItems.items()).hasSizeGreaterThanOrEqualTo(1);
+
+    final var mappingRuleCreateLog =
+        auditLogMappingRuleCreateItems.items().stream()
+            .filter(al -> MAPPING_RULE_A.id().equals(al.getEntityKey()))
+            .findFirst();
+
+    assertThat(mappingRuleCreateLog).isPresent();
+    final var auditLogCreate = mappingRuleCreateLog.get();
+    assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.MAPPING_RULE);
+    assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
+    assertThat(auditLogCreate.getEntityKey()).isEqualTo(MAPPING_RULE_A.id());
     assertThat(auditLogCreate.getTenantId()).isNull();
     assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
