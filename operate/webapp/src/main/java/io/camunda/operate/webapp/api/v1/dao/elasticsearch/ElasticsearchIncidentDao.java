@@ -22,6 +22,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,11 +110,12 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
           new SearchRequest.Builder().index(incidentIndex.getAlias()).query(tenantAwareQuery);
 
       incidents =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchReqBuilder, Incident.class)
+          ElasticsearchUtil.scrollAllStream(
+                  es8Client, searchReqBuilder, ElasticsearchUtil.MAP_CLASS)
               .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .filter(Objects::nonNull)
-              .map(this::postProcessIncidents)
+              .map(this::createIncidentFromIncidentMap)
               .toList();
 
     } catch (final Exception e) {
@@ -128,13 +130,6 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
     return incidents.get(0);
   }
 
-  protected Incident postProcessIncidents(final Incident incident) {
-    incident.setCreationTime(
-        dateTimeFormatter.convertGeneralToApiDateTime(incident.getCreationTime()));
-
-    return incident;
-  }
-
   @Override
   public Results<Incident> search(final Query<Incident> query) throws APIException {
     logger.debug("search {}", query);
@@ -146,7 +141,12 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
     try {
       final var searchReq = searchReqBuilder.index(incidentIndex.getAlias()).build();
 
-      return searchWithResultsReturn(searchReq, Incident.class);
+      final var results = searchWithResultsReturn(searchReq, ElasticsearchUtil.MAP_CLASS);
+
+      return new Results<Incident>()
+          .setSortValues(results.getSortValues())
+          .setTotal(results.getTotal())
+          .setItems(results.getItems().stream().map(this::createIncidentFromIncidentMap).toList());
     } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }
@@ -163,5 +163,19 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
                     s.setField(
                         Incident.OBJECT_TO_SEARCH_MAP.getOrDefault(s.getField(), s.getField())))
             .collect(Collectors.toList()));
+  }
+
+  protected Incident createIncidentFromIncidentMap(final Map<String, Object> map) {
+    return new Incident()
+        .setKey((Long) map.get(IncidentTemplate.KEY))
+        .setProcessInstanceKey((Long) map.get(IncidentTemplate.PROCESS_INSTANCE_KEY))
+        .setProcessDefinitionKey((Long) map.get(IncidentTemplate.PROCESS_DEFINITION_KEY))
+        .setType((String) map.get(IncidentTemplate.ERROR_TYPE))
+        .setMessage((String) map.get(IncidentTemplate.ERROR_MSG))
+        .setCreationTime(
+            dateTimeFormatter.convertGeneralToApiDateTime((String) map.get(Incident.CREATION_TIME)))
+        .setState((String) map.get(Incident.STATE))
+        .setJobKey((Long) map.get(Incident.JOB_KEY))
+        .setTenantId((String) map.get(Incident.TENANT_ID));
   }
 }
