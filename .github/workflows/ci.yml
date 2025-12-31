@@ -77,7 +77,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.9'
+      ACTIONLINT_VERSION: '1.7.10'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.64.0'
     steps:
@@ -89,6 +89,7 @@ jobs:
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
             condition "false" is always evaluated to false
+            constant expression "false" in condition
           use_shellcheck: true
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
