@@ -381,7 +381,12 @@ public final class EngineProcessors {
         authCheckBehavior);
 
     JobMetricsProcessors.addJobMetricsProcessors(
-        typedRecordProcessors, processingState.getJobMetricsState(), writers, keyGenerator, clock);
+        typedRecordProcessors,
+        config,
+        processingState.getJobMetricsState(),
+        writers,
+        keyGenerator,
+        clock);
 
     return typedRecordProcessors;
   }

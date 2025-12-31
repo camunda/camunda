@@ -82,7 +82,8 @@ public interface Intent {
           ConditionalSubscriptionIntent.class,
           ConditionalEvaluationIntent.class,
           ExpressionIntent.class,
-          GlobalListenerBatchIntent.class);
+          GlobalListenerBatchIntent.class,
+          JobMetricsBatchIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -222,6 +223,8 @@ public interface Intent {
         return ExpressionIntent.from(intent);
       case GLOBAL_LISTENER_BATCH:
         return GlobalListenerBatchIntent.from(intent);
+      case JOB_METRICS_BATCH:
+        return JobMetricsBatchIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

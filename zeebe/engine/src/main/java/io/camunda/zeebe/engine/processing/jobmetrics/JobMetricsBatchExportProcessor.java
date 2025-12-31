@@ -54,8 +54,7 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
 
   @Override
   public void processRecord(final TypedRecord<JobMetricsBatchRecord> command) {
-    final long now = clock.millis();
-    final JobMetricsBatchRecord exportedRecord = createExportedRecord(command.getValue(), now);
+    final JobMetricsBatchRecord exportedRecord = createExportedRecord(command.getValue());
 
     LOG.debug(
         "Exporting job metrics batch with {} entries, time range: {} - {}",
@@ -67,15 +66,10 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
         keyGenerator.nextKey(), JobMetricsBatchIntent.EXPORTED, exportedRecord);
   }
 
-  private JobMetricsBatchRecord createExportedRecord(
-      final JobMetricsBatchRecord commandRecord, final long now) {
+  private JobMetricsBatchRecord createExportedRecord(final JobMetricsBatchRecord commandRecord) {
     final JobMetricsBatchRecord record = new JobMetricsBatchRecord();
 
-    // Set batch time window
-    final long batchStartTime =
-        commandRecord.getBatchStartTime() > 0 ? commandRecord.getBatchStartTime() : now;
-    record.setBatchStartTime(batchStartTime);
-    record.setBatchEndTime(now);
+    record.setBatchStartTime(clock.millis());
 
     // Iterate over all job metrics in the state and populate the record
     jobMetricsState.forEachJobMetrics(
@@ -105,6 +99,7 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
           addWorkerCounters(valueRecord, metricsValue, record);
         });
 
+    record.setBatchEndTime(clock.millis());
     return record;
   }
 
