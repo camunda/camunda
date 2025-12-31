@@ -216,7 +216,10 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
   private static final class MessageSubscriptionMixin {}
 
-  @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  @JsonIgnoreProperties({
+    MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY,
+    ROOT_PROCESS_INSTANCE_KEY_PROPERTY
+  })
   private static final class ProcessMessageSubscriptionMixin {}
 
   @JsonIgnoreProperties({PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY})

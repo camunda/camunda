@@ -193,7 +193,8 @@ public class MigrateMessageSubscriptionTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("boundary2")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey("key1")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
@@ -318,7 +319,9 @@ public class MigrateMessageSubscriptionTest {
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey("key1")
         .describedAs("Expected that the interrupting status is updated")
-        .isInterrupting();
+        .isInterrupting()
+        .describedAs("Expect the root process instance key is set")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
@@ -455,7 +458,9 @@ public class MigrateMessageSubscriptionTest {
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey("key1")
         .describedAs("Expected that the interrupting status is updated")
-        .isNotInterrupting();
+        .isNotInterrupting()
+        .describedAs("Expect the root process instance key is set")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
@@ -597,7 +602,9 @@ public class MigrateMessageSubscriptionTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("boundary3")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey("key1")
+        .describedAs("Expect the root process instance key is set")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
@@ -625,7 +632,9 @@ public class MigrateMessageSubscriptionTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("boundary4")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key2");
+        .hasCorrelationKey("key2")
+        .describedAs("Expect the root process instance key is set")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
@@ -749,7 +758,9 @@ public class MigrateMessageSubscriptionTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("boundary3")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey("key1")
+        .describedAs("Expect the root process instance key is set")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
@@ -873,7 +884,9 @@ public class MigrateMessageSubscriptionTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("boundary2")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey("key1")
+        .describedAs("Expect the root process instance key is set")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)

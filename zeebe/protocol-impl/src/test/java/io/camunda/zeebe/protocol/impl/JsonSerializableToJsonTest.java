@@ -1466,6 +1466,7 @@ final class JsonSerializableToJsonTest {
               final long processInstanceKey = 1345;
               final long processDefinitionKey = 444;
               final String correlationKey = "key";
+              final long rootProcessInstanceKey = 5678L;
 
               return new ProcessMessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1477,7 +1478,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setVariables(VARIABLES_MSGPACK)
                   .setCorrelationKey(wrapString(correlationKey))
-                  .setElementId(wrapString("A"));
+                  .setElementId(wrapString("A"))
+                  .setRootProcessInstanceKey(rootProcessInstanceKey);
             },
         """
                 {
@@ -1493,7 +1495,8 @@ final class JsonSerializableToJsonTest {
                   "correlationKey": "key",
                   "elementId": "A",
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "rootProcessInstanceKey": 5678
                 }
                 """
       },
@@ -1526,7 +1529,8 @@ final class JsonSerializableToJsonTest {
                   "correlationKey": "",
                   "elementId": "",
                   "interrupting": true,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "rootProcessInstanceKey": -1
                 }
                 """
       },

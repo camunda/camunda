@@ -193,7 +193,9 @@ public class MigrateReceiveTaskTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("receive2")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey("key1")
+        .describedAs("Expect that the process instance is still the same")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)

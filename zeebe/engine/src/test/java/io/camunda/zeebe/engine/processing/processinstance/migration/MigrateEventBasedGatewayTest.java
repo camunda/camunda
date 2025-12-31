@@ -215,6 +215,8 @@ public class MigrateEventBasedGatewayTest {
         .hasCorrelationKey(processMessageSubscriptionA.getValue().getCorrelationKey())
         .hasTenantId(processMessageSubscriptionA.getValue().getTenantId())
         .hasProcessInstanceKey(processMessageSubscriptionA.getValue().getProcessInstanceKey())
+        .hasRootProcessInstanceKey(
+            processMessageSubscriptionA.getValue().getRootProcessInstanceKey())
         .hasElementInstanceKey(processMessageSubscriptionA.getValue().getElementInstanceKey())
         .hasMessageKey(processMessageSubscriptionA.getValue().getMessageKey())
         .hasVariables(processMessageSubscriptionA.getValue().getVariables());
