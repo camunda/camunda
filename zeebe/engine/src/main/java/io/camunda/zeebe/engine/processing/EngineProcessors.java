@@ -47,6 +47,7 @@ import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
+import io.camunda.zeebe.engine.processing.jobmetrics.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.UsageMetricsProcessors;
@@ -378,6 +379,9 @@ public final class EngineProcessors {
         bpmnBehaviors.expressionBehavior(),
         bpmnBehaviors.expressionLanguage(),
         authCheckBehavior);
+
+    JobMetricsProcessors.addJobMetricsProcessors(
+        typedRecordProcessors, processingState.getJobMetricsState(), writers, keyGenerator, clock);
 
     return typedRecordProcessors;
   }

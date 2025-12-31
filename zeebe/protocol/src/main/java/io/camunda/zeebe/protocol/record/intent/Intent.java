@@ -349,6 +349,8 @@ public interface Intent {
         return ExpressionIntent.valueOf(intent);
       case GLOBAL_LISTENER_BATCH:
         return GlobalListenerBatchIntent.valueOf(intent);
+      case JOB_METRICS_BATCH:
+        return JobMetricsBatchIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
