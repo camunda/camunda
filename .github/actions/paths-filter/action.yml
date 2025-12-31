@@ -358,7 +358,7 @@ runs:
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
         docs-change:
-          - 'docs/**'
+          - 'docs/monorepo-docs/**'
           - 'monorepo-docs-site/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events

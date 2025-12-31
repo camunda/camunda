@@ -48,7 +48,7 @@ npm run serve
 
 To add new documentation pages:
 
-1. **Add new markdown files** to the `../docs` directory
+1. **Add new markdown files** to the `../docs/monorepo-docs` directory
 2. **Configure frontmatter** for proper metadata:
 
    ```markdown

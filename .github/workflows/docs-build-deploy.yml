@@ -44,7 +44,7 @@ jobs:
         with:
           filters: |
             docs-changes:
-              - 'docs/**'
+              - 'docs/monorepo-docs/**'
               - 'monorepo-docs-site/**'
               - '.github/workflows/docs-build-deploy.yml'
 
