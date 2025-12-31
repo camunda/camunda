@@ -21,7 +21,7 @@ public record ClusterVariableEntity(
     implements TenantOwnedEntity {
 
   @Override
-  public boolean isInTenantScope() {
+  public boolean hasTenantScope() {
     return ClusterVariableScope.TENANT.equals(scope);
   }
 }
