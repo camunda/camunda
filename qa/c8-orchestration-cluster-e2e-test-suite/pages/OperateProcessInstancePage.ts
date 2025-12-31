@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -339,16 +340,23 @@ class OperateProcessInstancePage {
     itemName: string,
     expectedStatus: string[],
   ): Promise<void> {
-    const filteredElementsData =
-      await this.getHistoryElementsDataByName(itemName);
-    expect(filteredElementsData.length).toBeGreaterThan(0);
-    if (filteredElementsData.length !== expectedStatus.length) {
-      throw new Error(`Number does not match expected count.`);
-    }
-    expect(filteredElementsData.length).toBe(expectedStatus.length);
-    for (let i = 0; i < filteredElementsData.length; i++) {
-      expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
-    }
+    await waitForAssertion({
+      assertion: async () => {
+        const filteredElementsData =
+          await this.getHistoryElementsDataByName(itemName);
+        expect(filteredElementsData.length).toBeGreaterThan(0);
+        if (filteredElementsData.length !== expectedStatus.length) {
+          throw new Error(`Number does not match expected count.`);
+        }
+        expect(filteredElementsData.length).toBe(expectedStatus.length);
+        for (let i = 0; i < filteredElementsData.length; i++) {
+          expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
+        }
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
   }
 
   async clickFlowNode(flowNodeName: string) {
