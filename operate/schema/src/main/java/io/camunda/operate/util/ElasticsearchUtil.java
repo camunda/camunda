@@ -477,7 +477,7 @@ public abstract class ElasticsearchUtil {
   }
 
   public static Query termsQuery(final String name, final Collection<?> values) {
-    if (values.contains(null)) {
+    if (values.stream().anyMatch(Objects::isNull)) {
       throw new IllegalArgumentException(
           "Cannot use terms query with null value, trying to query ["
               + name
