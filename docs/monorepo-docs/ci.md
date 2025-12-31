@@ -159,9 +159,9 @@ To include a workflow fitting the criteria into the Unified CI all of the follow
    - The output condition should reuse existing filters and combine them as needed.
    - If no matching existing filter, add a new one in a step.
    - Adjust the [detect-changes job](https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L25) to re-expose the new `output` under the same name.
-
 2. **CI Check**: Relies on the previous step to run the new job only if relevant files changed. Add the new job definition to the [ci.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml) file, by:
    - Following this pattern:
+
      ```yaml
      descriptive-job-name:
        # reuse information from change detection on whether to run this job
@@ -188,7 +188,6 @@ To include a workflow fitting the criteria into the Unified CI all of the follow
    - It is important to depend on the `detect-changes` job and use the newly defined output as a condition.
    - If the new job has many steps, you need to refactor them into a reusable workflow or composite action to keep `ci.yml` lean.
    - Adding observability for CI health is required.
-
 3. **Results Check**: Include the new job as `needs` dependency in [check-results](https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L166) job (required status check). This is needed so that the Unified CI is marked as failure if one of its jobs fails.
 
 Related resources:
@@ -562,11 +561,9 @@ Available commands:
     - pipeline timeouts
     - DockerHub connection problems
     - deep links to GHA logs for generic job failures
-
 - **`/ci-disable-cache` comment on a Pull Request:**
   - **Synopsis**: Adds a new label `ci:no-cache` to the list of labels of the Pull Request and creates a new empty commit to trigger a new CI run without cache restoration.
   - **Use case**: Can be used by any engineer to test workflows run from scratch without cache restoration.
-
 - **`/ci-enable-cache` comment on a Pull Request:**
   - **Synopsis**: Removes the `ci:no-cache` label from the list of labels of the Pull Request and creates a new empty commit to trigger a new CI run.
   - **Use case**: Complements the `/ci-disable-cache` commands and can be used to restore CI regular cache restoration step.

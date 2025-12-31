@@ -191,18 +191,18 @@ For BPMN User Tasks:
 
 For BPMN activities using REST connector:
 - Configure retries with appropriate interval for idempotent requests, to workaround network problems/short service interruption
-  - e.g. use 3 retries with 10 seconds interval on `GET` requests
+- e.g. use 3 retries with 10 seconds interval on `GET` requests
 - HTTP error handling of the remote API via [escalation events](https://docs.camunda.io/docs/components/modeler/bpmn/escalation-events/)
-  - Also consider using retries for transient errors
-  - e.g. send a notification via Slack in #top-monorepo-release
+- Also consider using retries for transient errors
+- e.g. send a notification via Slack in #top-monorepo-release
 - Use authentication to avoid API ratelimits of [GitHub](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api) and [DockerHub](https://docs.docker.com/docker-hub/usage/) for increased reliability
 
 Calling and integrating with GitHub Actions workflows:
 - Use [C8 REST connector](https://docs.camunda.io/docs/components/connectors/protocol/rest/) to [call GitHub REST API to dispatch workflows](https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event)
 - Use GHA `workflow_dispatch` inputs to give custom data as parameters like release branch names or versions
 - Avoid release managers polling for GHA workflow completion either by:
-  - Create 2nd BPMN activity that queries completion in a loop and makes the process wait for GHA
-  - Send a Slack notification from GHA workflow in #top-monorepo-release to notify the release manager
+- Create 2nd BPMN activity that queries completion in a loop and makes the process wait for GHA
+- Send a Slack notification from GHA workflow in #top-monorepo-release to notify the release manager
 
 ## Change Management & Testing
 
@@ -412,9 +412,9 @@ The Monorepo release produces core backend artifacts, while the Big Release Trai
 
 While Monorepo (camunda/camunda) releases artifacts for:
 - [Camunda](https://hub.docker.com/r/camunda/camunda/)
-  - [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
-  - [Operate](https://hub.docker.com/r/camunda/operate/)
-  - [Tasklist](https://hub.docker.com/r/camunda/tasklist/)
+- [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
+- [Operate](https://hub.docker.com/r/camunda/operate/)
+- [Tasklist](https://hub.docker.com/r/camunda/tasklist/)
 
 The big release train releases:
 - Identity Management Component (camunda-cloud/identity)
