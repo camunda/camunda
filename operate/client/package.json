@@ -91,7 +91,7 @@
     "@vitest/ui": "4.0.15",
     "browserslist": "4.28.1",
     "browserslist-to-esbuild": "2.1.1",
-    "cross-env": "10.0.0",
+    "cross-env": "10.1.0",
     "eslint": "9.38.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-license-header": "0.8.0",
