@@ -89,51 +89,6 @@ jobs:
           umbrella-dir: pr-preview
           action: auto
 
-      - name: Comment PR with preview URL
-        if: github.event.action == 'opened' || github.event.action == 'synchronize'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const previewUrl = `https://camunda.github.io/camunda/pr-preview/pr-${prNumber}/`;
-            
-            // Find existing preview comment
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-            
-            const existingComment = comments.data.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('📚 Documentation Preview')
-            );
-            
-            const commentBody = `## 📚 Documentation Preview
-            
-            Your documentation changes are available for preview at:
-            🔗 **[Preview Documentation](${previewUrl})**
-            
-            This preview will be automatically updated when you push new commits to this PR.
-            
-            > ℹ️ Preview deployments may take a few minutes to become available.`;
-            
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: commentBody
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-            }
-
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -160,23 +115,6 @@ jobs:
           preview-branch: gh-pages
           umbrella-dir: pr-preview
           action: remove
-
-      - name: Comment PR with cleanup notification
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: `## 🧹 Preview Cleanup
-              
-              The documentation preview for this PR has been cleaned up and is no longer available.
-              
-              Thank you for your contribution! 🎉`
-            });
 
       - name: Observe build status
         if: always()
