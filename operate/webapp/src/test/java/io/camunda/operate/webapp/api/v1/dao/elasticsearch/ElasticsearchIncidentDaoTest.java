@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
+import static io.camunda.operate.util.ElasticsearchTestHelper.unwrapQueryVal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyString;
@@ -16,7 +17,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
@@ -36,8 +36,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchIncidentDaoTest {
-
-  private static final JacksonJsonpMapper MAPPER = new JacksonJsonpMapper();
 
   @Mock private OperateDateTimeFormatter mockDateTimeFormatter;
   @InjectMocks private ElasticsearchIncidentDao underTest;
@@ -108,20 +106,6 @@ public class ElasticsearchIncidentDaoTest {
     assertThat(mustClauses.get(8).range().term().field()).isEqualTo(Incident.CREATION_TIME);
     assertThat(mustClauses.get(8).range().term().lte()).isEqualTo("2024-02-13T15:10:33.013+0000");
     assertThat(mustClauses.get(8).range().term().gte()).isEqualTo("2024-02-13T15:10:33.013+0000");
-  }
-
-  // only supports necessary types to unwrap for test
-  private <T> T unwrapQueryVal(
-      final co.elastic.clients.elasticsearch._types.query_dsl.Query query, final Class<T> clazz) {
-    if (query.isTerms()) {
-      return query.terms().terms().value().get(0).anyValue().to(clazz, MAPPER);
-    }
-
-    if (query.isMatch() && query.match().query().isString()) {
-      return (T) query.match().query().stringValue();
-    }
-
-    throw new IllegalStateException("not supported field value");
   }
 
   @Test
