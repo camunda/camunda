@@ -1,0 +1,16 @@
+plugins:
+  helmCLIVersion:
+    cmd: scripts/generate-version-matrix.sh
+    args:
+      - --helm-cli-version
+    timeout: 30s
+  chartImagesCamunda:
+    cmd: scripts/generate-version-matrix.sh
+    args:
+      - --chart-images-camunda
+    timeout: 30s
+  chartImagesNonCamunda:
+    cmd: scripts/generate-version-matrix.sh
+    args:
+      - --chart-images-non-camunda
+    timeout: 30s

@@ -1,0 +1,315 @@
+# NOTE: WebModeler has its own step because Venom doesn't support skip in loops yet.
+# https://github.com/ovh/venom/issues/651
+name: Test core functionality of Camunda
+
+# Vars without defaults are passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
+vars:
+  releaseName: integration
+  venomClientID: '{{ .TEST_CLIENT_ID | default "venom" }}'
+  venomClientSecret: '{{ .TEST_CLIENT_SECRET }}'
+  skipTestIngress: '{{ .SKIP_TEST_INGRESS }}'
+  skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
+
+testcases:
+
+# https://docs.camunda.io/docs/self-managed/identity/user-guide/generating-m2m-tokens/
+- name: TEST - Generating machine-to-machine token
+  description: |
+    Test generating tokens from Keycloak for components that use client type "CONFIDENTIAL".
+    This test will not work with type "PUBLIC" because "Public client not allowed to retrieve service account".
+    https://datatracker.ietf.org/doc/html/rfc6749#section-2.1
+  steps:
+  - name: "{{ .value.component }}"
+    type: http
+    range:
+    - component: Tasklist
+      clientID: tasklist
+      clientSecret: "{{ .TASKLIST_CLIENT_SECRET }}"
+    - component: Operate
+      clientID: operate
+      clientSecret: "{{ .OPERATE_CLIENT_SECRET }}"
+    - component: Optimize
+      clientID: optimize
+      clientSecret: "{{ .OPTIMIZE_CLIENT_SECRET }}"
+    - component: Connectors
+      clientID: connectors
+      clientSecret: "{{ .CONNECTORS_CLIENT_SECRET }}"
+    method: POST
+    url: "{{ .coreVars.authURL }}"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: |-
+      client_id={{ .value.clientID }}&client_secret={{ .value.clientSecret }}&grant_type=client_credentials
+    # info: |
+    #   Component: {{ .value.component }}
+    #   = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+
+# Helper to get access token for Venom Identity client which's seeded during Helm deployment.
+- name: helperVenomToken
+  steps:
+  - name: Get Venom token
+    type: http
+    method: POST
+    url: "{{ .coreVars.authURL }}"
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: "client_id={{ .venomClientID }}&client_secret={{ .venomClientSecret }}&grant_type=client_credentials"
+    # info: |
+    #   = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    vars:
+      jwt:
+        from: result.bodyjson.access_token
+
+- name: TEST - Interacting with Camunda login page
+  steps:
+  - name: "{{ .value.component }}"
+    skip:
+    - skiptestingress ShouldBeFalse
+    type: http
+    range:
+    - component: Console
+      url: "{{ .coreVars.baseURLs.console }}"
+    - component: Keycloak
+      url: "{{ .coreVars.baseURLs.keycloak }}"
+    - component: Identity
+      url: "{{ .coreVars.baseURLs.identity }}"
+    - component: Operate
+      url: "{{ .coreVars.baseURLs.operate }}"
+    - component: Optimize
+      url: "{{ .coreVars.baseURLs.optimize }}"
+    - component: Tasklist
+      url: "{{ .coreVars.baseURLs.tasklist }}"
+    - component: WebModeler
+      url: "{{ .coreVars.baseURLs.webModeler }}"
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 15
+    # info: |
+    #   Component: {{ .value.component }}
+    #   = Request Method: {{ .value.method }}
+    #   = Request Body: {{ .result.request.body }}
+    #   = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.body ShouldNotContainSubstring error
+
+# Connectors Inbound doesn't have the same flow like the rest of the components.
+# So it needs different check.
+- name: TEST - Interacting with Camunda login page - Connectors
+  steps:
+  - name: "Check Inbound Connectors"
+    skip:
+    - skiptestingress ShouldBeFalse
+    type: http
+    method: GET
+    url: "{{ .coreVars.baseURLs.connectors }}"
+    retry: 3
+    delay: 15
+    info: |
+      = Request Method: {{ .value.method }}
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    # - result.bodyjson.items.items0.health.status ShouldEqual UP
+
+# TODO: Add Optimize.
+- name: TEST - Interacting with Camunda web API
+  steps:
+  - name: "{{ .value.component }}"
+    type: http
+    range:
+    - component: Console
+      url: "{{ .coreVars.baseURLs.console }}/api/clusters"
+      method: GET
+      body: ''
+    - component: Identity
+      url: "{{ .coreVars.baseURLs.identity }}/api/users"
+      method: GET
+      body: ''
+    - component: Operate
+      docs: https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/
+      url: "{{ .coreVars.baseURLs.operate }}/v1/process-definitions/search"
+      method: POST
+      body: '{}'
+    - component: Tasklist
+      docs: https://docs.camunda.io/docs/self-managed/tasklist-deployment/tasklist-authentication/
+      url: "{{ .coreVars.baseURLs.tasklist }}/graphql"
+      method: POST
+      body: '{"query": "{tasks(query:{}){id name}}"}'
+    method: "{{ .value.method }}"
+    url: "{{ .value.url }}"
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+    body: "{{ .value.body }}"
+    # info: |
+    #   Component: {{ .value.component }}
+    #   = Request Method: {{ .value.method }}
+    #   = Request Body: {{ .result.request.body }}
+    #   = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+
+# Unlike other apps, WebModeler by default expects the JWT token to be acquired from external Keycloak URL.
+# Hence, this test is added in the extra tests when Ingress is enabled.
+- name: TEST - Interacting with WebModeler
+  steps:
+  # TODO: Check why WM 8.3.0 cannot be accessed internally.
+  # - name: Check WebModeler internal API
+  #   skip:
+  #   - skipTestWebModeler ShouldBeFalse
+  #   type: http
+  #   method: GET
+  #   url: "{{ .coreVars.baseURLs.webModelerRestapi }}/api/v1/info"
+  #   headers:
+  #     Content-Type: application/json
+  #     Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+  #   # info: |
+  #   #   = Request Body: {{ .result.request.body }}
+  #   #   = Response Body: {{ .result.body }}
+  #   assertions:
+  #   - result.statuscode ShouldEqual 200
+  #   - result.bodyjson.version ShouldNotBeEmpty
+  - name: Check WebModeler login page
+    skip:
+    - skiptestingress ShouldBeFalse
+    - skipTestWebModeler ShouldBeFalse
+    type: http
+    method: GET
+    url: "{{ .coreVars.baseURLs.webModeler }}"
+    retry: 3
+    delay: 15
+    # info: |
+    #   Component: {{ .value.component }}
+    #   = Request Method: {{ .value.method }}
+    #   = Request Body: {{ .result.request.body }}
+    #   = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.body ShouldNotContainSubstring error
+
+- name: TEST - Interacting with Zeebe Gateway
+  steps:
+  - name: Check Zeebe Gateway status - gRPC
+    type: exec
+    script: |
+      zbctl --clientCache=/tmp/zeebe \
+          --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGRPC }}" \
+          {{ .coreVars.zbctl.extraArgs }} \
+          status
+    retry: 2
+    delay: 10
+    # info: |
+    #   = systemerr: {{ .result.systemerr }}
+    #   = err: {{ .result.err }}
+    assertions:
+    - result.code ShouldEqual 0
+    - result.systemout ShouldContainSubstring "Leader, Healthy"
+    - result.systemout ShouldNotContainSubstring Unhealthy
+    - result.timeseconds ShouldBeLessThan 1
+  - name: Check Zeebe Gateway status - REST
+    type: http
+    method: GET
+    url: "{{ .coreVars.baseURLs.zeebeGatewayREST }}/v1/topology"
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+    retry: 2
+    delay: 10
+    info: |
+     = Request Body: {{ .result.request.body }}
+     = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson ShouldContainKey brokers
+
+- name: TEST - Deploying BPMN process
+  steps:
+  - name: Deploy BPMN process to Zeebe - {{ .value.name }}
+    type: exec
+    range:
+    - name: Basic
+      file: test-process.bpmn
+    - name: Inbound Connector
+      file: test-inbound-process.bpmn
+    script: |
+      zbctl --clientCache=/tmp/zeebe \
+          --clientId {{ .venomClientID }} --clientSecret {{ .venomClientSecret }} \
+          --authzUrl "{{ .coreVars.authURL }}" --address "{{ .coreVars.baseURLs.zeebeGatewayGRPC }}" \
+          {{ .coreVars.zbctl.extraArgs }} \
+          deploy /mnt/fixtures/{{ .value.file }}
+    # info: |
+    #   = systemerr: {{ .result.systemerr }}
+    #   = err: {{ .result.err }}
+    assertions:
+    - result.code ShouldEqual 0
+
+- name: TEST - Check deployed BPMN process
+  steps:
+  - name: Check deployed BPMN process in Operate - {{ .value.name }}
+    type: http
+    range:
+    - name: Basic
+      id: it-test-process
+    - name: Inbound Connector
+      id: test-inbound-process
+    method: POST
+    url: "{{ .coreVars.baseURLs.operate }}/v1/process-definitions/search"
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+    body: '{}'
+    retry: 3
+    delay: 15
+    info: |
+      = Request Body: {{ .result.request.body }}
+      = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson.items.items{{ .index }}.bpmnProcessId ShouldEqual {{ .value.id }}
+
+- name: TEST - Check Connectors webhook
+  steps:
+  - name: Check deployed BPMN webhook
+    type: http
+    method: POST
+    url: "{{ .coreVars.baseURLs.connectors }}/test-mywebhook"
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ .helperVenomToken.jwt }}"
+    body: '{"webhookDataKey":"webhookDataValue"}'
+    retry: 4
+    delay: 15
+    # info: |
+    #   = Request Body: {{ .result.request.body }}
+    #   = Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+
+# - name: TEST - Check ServiceMonitor
+#   steps:
+#   - name: Check prometheus could query containers
+#     type: http
+#     method: GET
+#     url: "http://{{ .coreVars.baseURLs.prometheus }}/api/v1/query?query=system_cpu_count%7Bnamespace%3D%22{{ .coreVars.testNamespace }}%22%7D"
+#     retry: 4
+#     delay: 15
+#     # info: |
+#     #   = Request Body: {{ .result.request.body }}
+#     #   = Response Body: {{ .result.body }}
+#     assertions:
+#     - result.body ShouldContainSubstring connectors
+#     - result.body ShouldContainSubstring identity
+#     - result.body ShouldContainSubstring operate
+#     - result.body ShouldContainSubstring optimize
+#     - result.body ShouldContainSubstring tasklist
+#     - result.body ShouldContainSubstring web-modeler-restapi
+#     - result.body ShouldContainSubstring zeebe
+#     - result.body ShouldContainSubstring zeebe-gateway

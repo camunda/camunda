@@ -1,0 +1,20 @@
+{{- if .Values.identity.enabled -}}
+{{- if and (.Values.global.identity.keycloak.url).host .Values.global.identity.keycloak.internal -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "identity.keycloak.service" . }}
+  labels:
+    {{- include "identity.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.identity.service.annotations}}
+      {{- toYaml .Values.identity.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: ExternalName
+  externalName: {{ .Values.global.identity.keycloak.url.host }}
+{{- end -}}
+{{- end }}

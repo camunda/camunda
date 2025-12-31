@@ -1,0 +1,34 @@
+{{- include "zeebeGatewayRename" $ -}}
+{{- if .Values.zeebe.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zeebe.names.gateway" . }}
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml  .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.zeebeGateway.service.annotations}}
+      {{ .Values.zeebeGateway.service.annotations | toYaml | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.zeebeGateway.service.type }}
+  {{- if .Values.zeebeGateway.service.loadBalancerIP}}
+  loadBalancerIP: {{ .Values.zeebeGateway.service.loadBalancerIP }}
+  {{- end }}
+  {{- if .Values.zeebeGateway.service.loadBalancerSourceRanges}}
+  loadBalancerSourceRanges:
+    {{- toYaml .Values.zeebeGateway.service.loadBalancerSourceRanges | nindent 6 }}
+  {{- end }}
+  selector:
+    {{- include "zeebe.matchLabels.gateway" . | nindent 4 }}
+  ports:
+    - port: {{ .Values.zeebeGateway.service.httpPort }}
+      protocol: TCP
+      name: {{ default "http" .Values.zeebeGateway.service.httpName  }}
+    - port: {{ .Values.zeebeGateway.service.gatewayPort }}
+      protocol: TCP
+      name: {{ default "gateway" .Values.zeebeGateway.service.gatewayName }}
+{{- end }}

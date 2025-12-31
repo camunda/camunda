@@ -1,0 +1,69 @@
+name: Repo - Pull Request Conventions
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches:
+      - 'release-please--branches--*'
+
+jobs:
+  check:
+    name: Check PR Conventions
+    # Do NOT run PR conventions on release-please PRs.
+    # The required "Check PR Conventions" status is instead reported by a
+    # lightweight push-triggered run on release-please branches.
+    if: ${{ github.event_name == 'push' || !startsWith(github.head_ref, 'release-please--') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report required status for release-please branch pushes
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          echo "Release-please branch push detected (${GITHUB_REF_NAME}); reporting required status only."
+
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            refactor
+            revert
+            test
+            docs
+            style
+            build
+            ci
+            cd
+            chore
+            chore(deps)
+            chore(release)
+            deps
+          # Configure additional validation for the subject based on a regex.
+          # Ensures the subject doesn't start with an uppercase character.
+          # Also ensures the subject doesn't contain parentheses (we don't use scope in commit titles).
+          subjectPattern: ^(?![A-Z])(?!.*[()]).+$
+          # Ignore release PR since it's different and already automated.
+          ignoreLabels: |
+            release/pr
+            dependencies
+            automation/renovatebot
+          # When using "Squash and merge" on a PR with only one commit, GitHub
+          # will suggest using that commit message instead of the PR title for the
+          # merge commit, and it's easy to commit this by mistake. Enable this option
+          # to also validate the commit message for one commit PRs.
+          validateSingleCommit: true
+      - name: Checkout
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Ensure PR branch is up to date
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          (git rev-list --left-right --count origin/main...HEAD | grep -q "^0") \
+            || (echo "PR branch is not up to date with main. Please rebase or merge main into your branch." && exit 1) \
+            && echo "PR branch is up to date with main."

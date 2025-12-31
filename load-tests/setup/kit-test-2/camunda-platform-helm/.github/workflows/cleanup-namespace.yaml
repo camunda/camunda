@@ -1,0 +1,97 @@
+# Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md
+name: "Clean Up Namespace"
+
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: The namespace where the deployment is running.
+        required: true
+        type: string
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      distro-platform:
+        default: gke
+        type: string
+      auth-data:
+        required: false
+        type: string
+      teleport-token:
+        description: The Teleport token to use for authentication.
+        required: false
+        default: infra-ci-prod-github-action-distribution
+        type: string
+
+env:
+  TELEPORT_TOKEN: ${{ inputs.teleport-token }}
+
+jobs:
+  cleanup:
+    name: Cleanup - ${{ inputs.namespace }} on ${{ inputs.distro-platform }}
+    # This if is here to protect against important namespaces getting deleted accidentally.
+    # Right now this is scoped to QA namespaces only. I don't see a reason to
+    # run this on any other namespaces are the helm repo can clean up during it runs.
+    # There might be a case for the mono repo to run this but if/when that happens, this will be easy to extend.
+    if: startsWith(inputs.namespace, 'qa-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write 
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref }}
+
+      - name: Load and filter distro config
+        id: load-config
+        shell: bash
+        run: |
+          config=$(cat ./.github/config/test-integration-matrix.yaml)
+
+          filtered=$(echo "$config" | yq -o json | jq -r '.matrix.distro[] | select(.platform == ("${{ inputs.distro-platform }}" | ascii_downcase))')
+
+          if [[ -z "$filtered" ]]; then
+            echo "No distro found for platform ${{ inputs.distro-platform }}"
+            exit 1
+          fi
+
+          echo "distro_config<<EOF" >> $GITHUB_OUTPUT
+          echo "$filtered" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: CI Setup - Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            kubectl
+            oc
+
+      - name: CI Setup - Authenticate to cluster
+        id: cluster-auth
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.cluster-name] }}
+          GKE_CLUSTER_LOC:  ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.cluster-location] }}
+          GKE_WIP:          ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.workload-identity-provider] }}
+          GKE_SA:           ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.service-account] }}
+          ROSA_URL:         ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.server-url] }}
+          ROSA_USER:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.username] }}
+          ROSA_PASS:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.password] }}
+          CLUSTER_NAME:     camunda-ci-eks
+
+      - name: CI Cleanup
+        shell: bash
+        run: |
+          kubectl annotate ns ${{ inputs.namespace }} cleaner/ttl=1s --overwrite=true
+          kubectl annotate ns ${{ inputs.namespace }} janitor/ttl=1s --overwrite=true

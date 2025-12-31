@@ -1,0 +1,28 @@
+{{- if .Values.executionIdentity.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "executionIdentity.fullname" . }}
+  labels:
+    {{- include "executionIdentity.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.executionIdentity.service.annotations}}
+      {{- toYaml .Values.executionIdentity.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.executionIdentity.service.type }}
+  ports:
+    - port: {{ .Values.executionIdentity.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.executionIdentity.service.managementPort }}
+      name: management
+      targetPort: management
+      protocol: TCP
+  selector:
+    {{- include "executionIdentity.matchLabels" . | nindent 4 }}
+{{- end }}

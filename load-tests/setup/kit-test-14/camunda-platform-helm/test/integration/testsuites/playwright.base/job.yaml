@@ -1,0 +1,140 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-playwright
+  labels:
+    app: playwright
+    test: integration
+spec:
+  template:
+    metadata:
+      labels:
+        app: playwright
+        test: integration
+    spec:
+      imagePullSecrets: []
+      initContainers:
+        - name: download-tools
+          image: alpine
+          envFrom:
+            - configMapRef:
+                name: playwright-env-vars
+          command:
+            - sh
+            - -c
+            # TODO: Check if we can use asdf here to unify and simplify tools management.
+            - |
+              get_zbctl () {
+                wget https://github.com/camunda-community-hub/zeebe-client-go/releases/download/v8.6.0/zbctl -O /tools/zbctl
+              }
+              echo "Downloading additional tools";
+              get_zbctl "${ZEEBE_VERSION}" || get_zbctl "${ZEEBE_VERSION_FALLBACK}"
+              chmod +x /tools/zbctl
+              echo Finished downloading;
+          volumeMounts:
+            - mountPath: /tools
+              name: tools
+        - name: copy-e2e-setup
+          image: busybox
+          command: ["/bin/sh", "-c", "cp -r /setup/. /workdir"]
+          volumeMounts:
+            - name: playwright-test-setup # ConfigMap (read-only)
+              mountPath: /setup
+            - name: e2e-workdir # emptyDir (writable)
+              mountPath: /workdir
+      containers:
+        - name: playwright
+          image: mcr.microsoft.com/playwright:v1.50.0-noble
+          workingDir: /e2e
+          command:
+            - sh
+            - -c
+            - |
+              npm ci
+              if [ -z "$TEST_EXCLUDE" ]; then
+                npx playwright test
+              else
+                npx playwright test --grep-invert "$TEST_EXCLUDE" || exit 1
+              fi
+          envFrom:
+            - configMapRef:
+                name: playwright-env-vars
+          volumeMounts:
+            - name: e2e-workdir # same writable emptyDir
+              mountPath: /e2e
+            - name: playwright-test-files
+              mountPath: /e2e/tests
+            - name: results
+              mountPath: /results
+            - mountPath: /usr/local/bin/zbctl
+              name: tools
+              subPath: zbctl
+            - name: playwright-vars
+              mountPath: /workdir/vars
+            - name: playwright-fixtures
+              mountPath: /mnt/fixtures
+      volumes:
+        - name: tools
+          emptyDir: {}
+        - name: playwright-vars
+          configMap:
+            name: playwright-vars
+        - name: playwright-fixtures
+          configMap:
+            name: playwright-fixtures
+        - name: playwright-test-setup
+          configMap:
+            name: playwright-test-setup
+        - name: playwright-test-files
+          configMap:
+            name: playwright-test-files
+        - name: results
+          emptyDir: {}
+        - name: e2e-workdir
+          emptyDir: {} # writable, lives for the Job
+      restartPolicy: Never
+  backoffLimit: 0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-pod
+spec:
+  containers:
+    - name: shell
+      image: busybox
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - name: e2e-workdir # same writable emptyDir
+          mountPath: /e2e
+        - name: playwright-test-files
+          mountPath: /e2e/tests
+        - name: results
+          mountPath: /results
+        - mountPath: /usr/local/bin/zbctl
+          name: tools
+          subPath: zbctl
+        - name: playwright-vars
+          mountPath: /workdir/vars
+        - name: playwright-fixtures
+          mountPath: /mnt/fixtures
+  volumes:
+    - name: tools
+      emptyDir: {}
+    - name: playwright-vars
+      configMap:
+        name: playwright-vars
+    - name: playwright-fixtures
+      configMap:
+        name: playwright-fixtures
+    - name: playwright-test-setup
+      configMap:
+        name: playwright-test-setup
+    - name: playwright-test-files
+      configMap:
+        name: playwright-test-files
+    - name: results
+      emptyDir: {}
+    - name: e2e-workdir
+      emptyDir: {} # writable, lives for the Job
+  restartPolicy: Never

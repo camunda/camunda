@@ -1,0 +1,155 @@
+name: Playwright Integration Tests
+description: Run Playwright integration tests using existing CI actions
+inputs:
+  camunda-helm-git-ref:
+    description: Git ref for camunda-platform-helm checkout
+    required: false
+    default: main
+  camunda-helm-dir:
+    description: Chart directory to test (e.g., camunda-platform-8.8)
+    required: false
+    default: camunda-platform-8.8
+  camunda-helm-upgrade-version:
+    description: Helm chart version used in upgrade-patch flow
+    required: false
+    default: ""
+  flow:
+    description: Setup flow (install, upgrade-patch, upgrade-minor)
+    required: false
+    default: install
+  distro-platform:
+    description: Target platform (gke, rosa, eks)
+    required: true
+  infra-type:
+    description: Infrastructure type (standard or preemptible)
+    required: true
+  identifier:
+    description: Unique identifier used for namespace/host
+    required: true
+  namespace-prefix:
+    description: Optional namespace prefix
+    required: false
+    default: ""
+  deployment-ttl:
+    description: TTL for deployment lifespan
+    required: false
+    default: "12h"
+  auth:
+    description: Authentication type to use for tests
+    required: true
+  auth-data:
+    description: Serialized auth data for cluster-auth action
+    required: false
+    default: ""
+  exclude:
+    description: Test suites to exclude
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      with:
+        repository: camunda/camunda-platform-helm
+        ref: ${{ inputs.camunda-helm-git-ref }}
+
+    - name: Install tools
+      uses: ./.github/actions/install-tool-versions
+      with:
+        tools: |
+          golang
+          helm
+          kubectl
+          oc
+          task
+          yq
+          zbctl
+          jq
+
+    - name: Install CLI deps (envsubst)
+      shell: bash
+      run: |
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y gettext-base
+        envsubst --version
+
+    - name: Set workflow vars
+      id: vars
+      uses: ./.github/actions/workflow-vars
+      with:
+        deployment-ttl: ${{ inputs.deployment-ttl }}
+        setup-flow: ${{ inputs.flow }}
+        platform: ${{ inputs.distro-platform }}
+        identifier-base: ${{ inputs.identifier }}
+        ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+        prefix: ${{ inputs.namespace-prefix }}
+
+    - name: Set test type vars
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+        infra-type: ${{ inputs.infra-type }}
+        platform: ${{ inputs.distro-platform }}
+        flow: ${{ inputs.flow }}
+
+    - name: Authenticate to cluster
+      id: cluster-auth
+      uses: ./.github/actions/cluster-auth
+      with:
+        platform: ${{ inputs.distro-platform }}
+        auth-data: ${{ inputs.auth-data }}
+      env:
+        GH_APP_ID:        ${{ env.GH_APP_ID }}
+        GH_APP_KEY:       ${{ env.GH_APP_KEY }}
+        GKE_CLUSTER_NAME: ${{ env.GKE_CLUSTER_NAME }}
+        GKE_CLUSTER_LOC:  ${{ env.GKE_CLUSTER_LOC }}
+        GKE_WIP:          ${{ env.GKE_WIP }}
+        GKE_SA:           ${{ env.GKE_SA }}
+        ROSA_URL:         ${{ env.ROSA_URL }}
+        ROSA_USER:        ${{ env.ROSA_USER }}
+        ROSA_PASS:        ${{ env.ROSA_PASS }}
+        CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
+    - name: Cache - node_modules
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/node_modules
+        key: node_modules-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
+        restore-keys: |
+          node_modules-${{ runner.os }}-
+
+    - name: Cache - Playwright
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-automation-${{ runner.os }}-${{ hashFiles(format('{0}/test/integration/testsuites/package-lock.json', env.ABSOLUTE_TEST_CHART_DIR)) }}
+        restore-keys: |
+          playwright-automation-${{ runner.os }}-
+
+    - name: Test - ⭐️ Run Playwright Core TestSuite (Github Runner) ⭐️
+      shell: bash
+      env:
+        TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+        ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+      run: |
+        cd "$GITHUB_WORKSPACE/scripts"
+        ./run-integration-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --platform "${{ inputs.distro-platform }}" --test-auth-type "${{ inputs.auth }}" --test-exclude "${{ inputs.exclude }}"
+
+    - name: Set report date
+      id: report_date
+      shell: bash
+      run: echo "date=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_OUTPUT
+
+    - name: Test - Upload Playwright report
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/integration/testsuites/playwright-report
+        name: playwright-report-${{ github.run_id }}-${{ inputs.identifier }}-${{ inputs.flow }}-${{ inputs.distro-platform }}-runner-${{ steps.report_date.outputs.date }}
+        if-no-files-found: error
+        retention-days: 5
+
+

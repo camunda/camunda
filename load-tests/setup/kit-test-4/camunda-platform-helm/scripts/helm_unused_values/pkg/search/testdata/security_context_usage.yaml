@@ -1,0 +1,8 @@
+
+
+
+securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.test.containerSecurityContext "context" $) | nindent 12 }}
+
+securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.containerSecurityContext "context" $) | nindent 12 }}
+
+securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.podSecurityContext "context" $) | nindent 12 }}

@@ -1,0 +1,41 @@
+# Configuration for Bitnami Legacy repositories
+# This file contains overrides for components that use bitnamilegacy/* repositories
+
+# Identity Keycloak configuration
+identity:
+  keycloak:
+    postgresql:
+      image:
+        repository: bitnamilegacy/postgresql
+      volumePermissions:
+        image:
+          repository: bitnamilegacy/os-shell
+      metrics:
+        image:
+          repository: bitnamilegacy/postgres-exporter
+    image:
+      repository: bitnamilegacy/keycloak
+    volumePermissions:
+      image:
+        repository: bitnamilegacy/bitnami-shell
+    metrics:
+      image:
+        repository: bitnamilegacy/postgres-exporter
+    keycloakConfigCli:
+      image:
+        repository: bitnamilegacy/keycloak-config-cli
+
+# WebModeler PostgreSQL configuration
+webModeler:
+  postgresql:
+    volumePermissions:
+      image:
+        repository: bitnamilegacy/bitnami-shell
+    metrics:
+      image:
+        repository: bitnamilegacy/postgres-exporter
+
+# Connectors configuration
+connectors:
+  image:
+    repository: bitnamilegacy/elasticsearch-curator-archived

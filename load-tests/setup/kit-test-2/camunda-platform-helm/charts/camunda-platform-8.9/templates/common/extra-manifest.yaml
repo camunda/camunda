@@ -1,0 +1,4 @@
+{{- range .Values.global.extraManifests }}
+---
+{{ include "common.tplvalues.render" (dict "value" . "context" $) }}
+{{- end }}

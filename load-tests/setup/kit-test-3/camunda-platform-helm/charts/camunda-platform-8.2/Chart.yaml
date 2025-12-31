@@ -1,0 +1,83 @@
+apiVersion: v2
+name: camunda-platform
+version: 8.2.34
+appVersion: 8.2.x
+description: |
+  Camunda Platform 8 Self-Managed Helm charts.
+  Camunda's process automation platform allows developers to design, automate and improve processes.
+type: application
+icon: https://helm.camunda.io/imgs/camunda.svg
+home: https://docs.camunda.io/docs/self-managed/overview/
+sources:
+  - https://github.com/camunda/camunda-platform-helm
+keywords:
+  - automation
+  - business-rules
+  - bpm
+  - bpmn
+  - camunda-platform
+  - decision-engine
+  - dmn
+  - modeling
+  - orchestration
+  - process-automation
+  - process-engine
+  - process-orchestration
+  - workflow
+  - workflow-engine
+dependencies:
+  # Camunda Platform charts.
+  - name: identity
+    version: 8.2.x
+    condition: identity.enabled
+    import-values:
+      # NOTE: This is used to share Identity image details with its subchart Keycloak.
+      #       It should be part of Identity but Helm 3 missing this option currently (v3.10.x).
+      # TODO: Move this to Identity subchart once "export-values" is implemented.
+      #       https://github.com/helm/helm/pull/10804
+      - child: image
+        parent: global.identity.image
+  - name: operate
+    version: 8.2.x
+    condition: "operate.enabled"
+  - name: optimize
+    version: 8.2.x
+    condition: "optimize.enabled"
+  - name: tasklist
+    version: 8.2.x
+    condition: "tasklist.enabled"
+  - name: zeebe
+    version: 8.2.x
+    condition: "zeebe.enabled"
+  - name: zeebe-gateway
+    version: 8.2.x
+    condition: "zeebe.enabled"
+  # Dependency charts.
+  - name: elasticsearch
+    repository: "https://helm.elastic.co"
+    version: 7.17.3
+    condition: "elasticsearch.enabled"
+  - name: postgresql
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 11.x.x
+    condition: "postgresql.enabled"
+  # Helpers charts.
+  - name: common
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 2.x.x
+maintainers:
+  - name: ChrisKujawa
+    email: christopher.zell@camunda.com
+  - name: aabouzaid
+    email: ahmed.abouzaid@camunda.com
+annotations:
+  artifacthub.io/links: |
+    - name: Camunda Platform 8 docs
+      url: https://docs.camunda.io/
+    - name: Camunda Platform 8 Self-Managed docs
+      url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    - name: Camunda Platform 8 Self-Managed Helm charts
+      url: https://github.com/camunda/camunda-platform-helm
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/changes: ""
+  camunda.io/helmCLIVersion: 3.16.3

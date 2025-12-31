@@ -1,0 +1,24 @@
+{{- if .Values.operate.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "operate.fullname" . }}
+  labels:
+    {{- include "operate.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.operate.service.annotations}}
+      {{- toYaml .Values.operate.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.operate.service.type }}
+  ports:
+    - port: {{ .Values.operate.service.port }}
+      name: http
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    {{- include "operate.matchLabels" . | nindent 4 }}
+{{- end }}

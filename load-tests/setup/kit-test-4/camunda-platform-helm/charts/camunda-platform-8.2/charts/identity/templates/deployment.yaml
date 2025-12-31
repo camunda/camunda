@@ -1,0 +1,294 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "identity.fullname" . }}
+  labels: {{- include "identity.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels: {{- include "identity.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "identity.labels" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ include "camundaPlatform.image" . | quote }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+          {{- if .Values.fullURL }}
+          - name: IDENTITY_URL
+            value: {{ tpl .Values.fullURL $ | quote }}
+          {{- end }}
+          {{- if .Values.contextPath }}
+          - name: IDENTITY_BASE_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+          - name: KEYCLOAK_INIT_OPERATE_SECRET
+            {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
+                key: operate-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameOperateIdentity" . }}
+                key: operate-secret
+            {{- end }}
+          - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
+            value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | quote }}
+          - name: KEYCLOAK_INIT_TASKLIST_SECRET
+            {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: "{{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}"
+                key: tasklist-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameTasklistIdentity" . }}
+                key: tasklist-secret
+            {{- end }}
+          - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
+            value: {{ tpl .Values.global.identity.auth.tasklist.redirectUrl $ | quote }}
+          - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
+            {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
+                key: optimize-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameOptimizeIdentity" . }}
+                key: optimize-secret
+            {{- end }}
+          - name: KEYCLOAK_INIT_OPTIMIZE_ROOT_URL
+            value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+          - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
+            value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+          - name: KEYCLOAK_INIT_ZEEBE_NAME
+            value: "Zeebe"
+          # TODO: Use ".Values.connectors.inbound.mode=oauth" as a condition when we migrate
+          # to flat chart structure. Also then remove the optional flag from the secret.
+          - name: KEYCLOAK_CLIENTS_0_NAME
+            value: Connectors
+          - name: KEYCLOAK_CLIENTS_0_ID
+            value: connectors
+          - name: KEYCLOAK_CLIENTS_0_SECRET
+            {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
+                key: connectors-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                key: connectors-secret
+                name: {{ include "identity.secretNameConnectorsIdentity" . }}
+            {{- end }}
+          - name: KEYCLOAK_CLIENTS_0_ROOT_URL
+            value: http://placeholder
+          - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
+            value: /
+          - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: operate-api
+          - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
+            value: "read:*"
+          - name: KEYCLOAK_CLIENTS_1_NAME
+            value: "Zeebe"
+          - name: KEYCLOAK_CLIENTS_1_ID
+            value: "zeebe"
+          - name: KEYCLOAK_CLIENTS_1_SECRET
+            {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
+                key: zeebe-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameZeebeIdentity" . }}
+                key: zeebe-secret
+            {{- end }}
+          - name: KEYCLOAK_CLIENTS_1_TYPE
+            value: "M2M"
+          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: "zeebe-api"
+          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
+            value: "write:*"
+          {{- end }}
+          - name: SERVER_PORT
+            value: "8080"
+          - name: KEYCLOAK_URL
+            value: {{ include "identity.keycloak.url" . | quote }}
+          - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+          - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
+            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+          - name: KEYCLOAK_SETUP_USER
+            value: {{ include "identity.keycloak.authAdminUser" . | quote }}
+          - name: KEYCLOAK_SETUP_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.keycloak.authExistingSecret" . }}
+                key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+        {{- if .Values.firstUser.enabled }}
+          - name: KEYCLOAK_USERS_0_USERNAME
+            value: {{ .Values.firstUser.username | quote }}
+        {{- if .Values.firstUser.existingSecret }}
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.firstUser.existingSecret }}
+                key: "identity-firstuser-password"
+        {{- else }}
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            value: {{ .Values.firstUser.password | quote }}
+        {{- end }}
+          - name: KEYCLOAK_USERS_0_EMAIL
+            value: {{ .Values.firstUser.email | quote }}
+          - name: KEYCLOAK_USERS_0_FIRST_NAME
+            value: {{ .Values.firstUser.firstName | quote }}
+          - name: KEYCLOAK_USERS_0_LAST_NAME
+            value: {{ .Values.firstUser.lastName | quote }}
+          - name: KEYCLOAK_USERS_0_ROLES_0
+            value: "Identity"
+        {{- if .Values.global.identity.auth.enabled }}
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: "Operate"
+          - name: KEYCLOAK_USERS_0_ROLES_2
+            value: "Tasklist"
+          - name: KEYCLOAK_USERS_0_ROLES_3
+            value: "Optimize"
+          - name: KEYCLOAK_USERS_0_ROLES_4
+            value: "Web Modeler"
+        {{- end }}
+        {{- end }}
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8082
+          name: metrics
+          protocol: TCP
+        {{- if .Values.startupProbe.enabled }}
+        startupProbe:
+          httpGet:
+            # NOTE: Identity doesn't support contextPath for health endpoints.
+            path: {{ .Values.startupProbe.probePath }}
+            scheme: {{ .Values.startupProbe.scheme }}
+            port: metrics
+          initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.startupProbe.successThreshold }}
+          failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            # NOTE: Identity doesn't support contextPath for health endpoints.
+            path: {{ .Values.readinessProbe.probePath }}
+            scheme: {{ .Values.readinessProbe.scheme }}
+            port: metrics
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            # NOTE: Identity doesn't support contextPath for health endpoints.
+            path: {{ .Values.livenessProbe.probePath }}
+            scheme: {{ .Values.livenessProbe.scheme }}
+            port: metrics
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.extraVolumeMounts}}
+        volumeMounts:
+        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- end }}
+
+      {{- if .Values.extraVolumes}}
+      volumes:
+      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}

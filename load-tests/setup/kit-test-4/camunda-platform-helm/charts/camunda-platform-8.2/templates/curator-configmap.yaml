@@ -1,0 +1,128 @@
+{{- if .Values.retentionPolicy.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-curator-config
+  labels:
+    {{- include "retentionPolicy.labels" . | nindent 4 }}
+data:
+  action_file.yml: |-
+    ---
+    # Remember, leave a key empty if there is no value.  None will be a string,
+    # not a Python "NoneType"
+    #
+    # Also remember that all examples have 'disable_action' set to True.  If you
+    # want to use this action as a template, be sure to set this to False after
+    # copying it.
+    actions:
+      # delete zeebe- indices
+      1:
+        action: delete_indices
+        description: "Clean up ES by deleting old Zeebe indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+          - filtertype: pattern
+            kind: prefix
+            value: zeebe-
+          - filtertype: age
+            source: name
+            direction: older
+            timestring: '%Y-%m-%d'
+            unit: days
+            unit_count: {{ .Values.retentionPolicy.zeebeIndexTTL }}
+            field:
+            stats_result:
+            epoch:
+            exclude: False
+      # delete operate- indices
+      2:
+        action: delete_indices
+        description: "Clean up ES by deleting old Operate indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+          - filtertype: pattern
+            kind: prefix
+            value: operate-
+          - filtertype: age
+            source: name
+            direction: older
+            timestring: '%Y-%m-%d'
+            unit: days
+            unit_count: {{ .Values.retentionPolicy.operateIndexTTL }}
+            field:
+            stats_result:
+            epoch:
+            exclude: False
+      # delete tasklist- indices
+      3:
+        action: delete_indices
+        description: "Clean up ES by deleting old Tasklist indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+          - filtertype: pattern
+            kind: prefix
+            value: tasklist-
+          - filtertype: age
+            source: name
+            direction: older
+            timestring: '%Y-%m-%d'
+            unit: days
+            unit_count: {{ .Values.retentionPolicy.tasklistIndexTTL }}
+            field:
+            stats_result:
+            epoch:
+            exclude: False
+      # or delete indices which exceed the total size of 10 gig
+    {{- if .Values.retentionPolicy.zeebeIndexMaxSize }}
+      4:
+        action: delete_indices
+        description: "Clean up ES by deleting too big Zeebe indices"
+        options:
+          timeout_override:
+          continue_if_exception: False
+          disable_action: False
+          ignore_empty_list: True
+        filters:
+          - filtertype: pattern
+            kind: prefix
+            value: zeebe-
+          - filtertype: space
+            disk_space: {{ .Values.retentionPolicy.zeebeIndexMaxSize }}
+            source: name
+            timestring: '%Y-%m-%d'
+    {{- end }}
+  config.yml: |-
+    ---
+    # Remember, leave a key empty if there is no value.  None will be a string,
+    # not a Python "NoneType"
+    client:
+      hosts:
+        - elasticsearch-master-headless
+      port: 9200
+      url_prefix:
+      use_ssl: False
+      certificate:
+      client_cert:
+      client_key:
+      ssl_no_validate: False
+      http_auth:
+      timeout: 30
+      master_only: False
+    logging:
+      loglevel: INFO
+      logfile:
+      logformat: default
+      blacklist: ['elasticsearch', 'urllib3']
+{{- end }}

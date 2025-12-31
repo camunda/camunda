@@ -1,0 +1,21 @@
+{{- if and .Values.connectors.enabled .Values.connectors.persistence.enabled (not .Values.connectors.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-connectors-data
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+  {{- with .Values.connectors.persistence.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes: {{ .Values.connectors.persistence.accessModes | default (list "ReadWriteOnce") | toYaml | nindent 4 }}
+  {{- with .Values.connectors.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.connectors.persistence.selector }}
+  selector: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.connectors.persistence.size | default "1Gi" | quote }}
+{{- end }}

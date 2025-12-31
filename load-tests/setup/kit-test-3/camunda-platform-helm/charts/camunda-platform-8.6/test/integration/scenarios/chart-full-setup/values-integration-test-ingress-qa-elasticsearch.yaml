@@ -1,0 +1,136 @@
+global:
+  image:
+    pullPolicy: Always
+zeebe:
+  image:
+    tag: "$E2E_TESTS_ZEEBE_IMAGE_TAG"
+tasklist:
+  image:
+    tag: "$E2E_TESTS_TASKLIST_IMAGE_TAG"
+operate:
+  image:
+    tag: "$E2E_TESTS_OPERATE_IMAGE_TAG"
+optimize:
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+webModeler:
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+console:
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+identity:
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  firstUser:
+    user: demo
+    existingSecret: vault-mapped-secrets
+    existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+  # Keycloak client seed which is used to query Camunda APIs. 
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+    - id: test
+      name: Test
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+  users:
+    - username: lisa
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+      firstName: Lisa
+      lastName: Doe
+      email: cawemodev+lisa@gmail.com
+      roles:
+        - Identity
+        - Operate
+        - Tasklist
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Zeebe
+    - username: bart
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+      firstName: Bart
+      lastName: Foo
+      email: cawemodev+bart@gmail.com
+      roles:
+        - Identity
+        - Operate
+        - Tasklist
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Zeebe
+connectors:
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password

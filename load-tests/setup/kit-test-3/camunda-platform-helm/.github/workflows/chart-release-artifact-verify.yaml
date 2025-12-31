@@ -1,0 +1,150 @@
+name: "Test - Chart Released Artifact Verification"
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch: { }
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify released chart artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+      - name: Get chart versions
+        id: get-chart-versions
+        uses: ./.github/actions/get-chart-versions
+      - name: ⭐ Verify artifacts ⭐
+        id: verify-artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # NOTE: Once we move to Helm OCI repo, the logic here will be simpler
+        #       as Cosign can work directly with the OCI registry.
+        run: |
+          # Track verification results.
+          skipped_tags=()
+          skipped_verifications=()
+          failed_verifications=()
+          successful_verifications=()
+
+          # Loop over the chart versions to check the artifact integrity.
+          for camunda_version in ${{ steps.get-chart-versions.outputs.active }}; do
+            echo ""
+            echo "##################################################"
+            echo "# 🏢 Camunda ${camunda_version}"
+            echo "##################################################"
+
+            chart_version_prefix="camunda-platform-${camunda_version}"
+            chart_git_tags=$(git tag -l | grep "${chart_version_prefix}-" || true)
+            for chart_tag_name in ${chart_git_tags}; do
+              chart_version="$(echo "${chart_tag_name}" | sed "s/${chart_version_prefix}-//")"
+              chart_cosign_verify_file="camunda-platform-${chart_version}-cosign-verify.sh"
+
+              # Print chart details.
+              echo ""
+              echo "📜 Chart ${chart_version}:"
+              echo "=========================="
+
+              echo "- 🏷️ Release tag \"${chart_tag_name}\"."
+
+              # Early return if the chart release doesn't exist.
+              if ! gh release view "${chart_tag_name}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+                echo "- ⚠️ Chart GitHub release does not exist."
+                skipped_tags+=("${chart_tag_name}")
+                continue
+              fi
+
+              echo "- 📥 Download release artifacts."
+              gh release download "${chart_tag_name}" --dir chart-release-artifacts
+
+              # Run only if the release has a verify file.
+              cd chart-release-artifacts
+
+              # Early return if the verify file is not present.
+              if [ ! -f "${chart_cosign_verify_file}" ]; then
+                echo "- ⛔ The chart release doesn't have a Cosign verification script."
+                skipped_verifications+=("${chart_tag_name}")
+                continue
+              fi
+
+              # Run the Cosign verification script.
+              echo "- 🔐 Running Cosign verification"
+              if bash "${chart_cosign_verify_file}"; then
+                echo "- ✅ Cosign verification successful."
+                successful_verifications+=("${chart_tag_name}")
+              else
+                echo "- ❌ Cosign verification failed."
+                cat "${chart_cosign_verify_file}"
+                failed_verifications+=("${chart_tag_name}")
+              fi
+
+              # Clean up.
+              cd ..
+              rm -rf chart-release-artifacts
+
+            done # End of chart version loop.
+          done # End of Camunda minor version loop.
+
+          echo "##################################################"
+          echo "# Export outputs."
+          echo "##################################################"
+          echo "skipped-tags-count=${#skipped_tags[@]}" | tee >> $GITHUB_OUTPUT
+          echo "skipped-verifications-count=${#skipped_verifications[@]}" | tee >> $GITHUB_OUTPUT
+          echo "failed-verifications-count=${#failed_verifications[@]}" | tee >> $GITHUB_OUTPUT
+          echo "successful-verifications-count=${#successful_verifications[@]}" | tee >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "##################################################"
+          echo "# 📊 Verification Summary"
+          echo "##################################################"
+
+          echo -e "\n⚠️ Skipped tags (${#skipped_tags[@]}):"
+          printf -- "- %s\n" "${skipped_tags[@]:-🎉 No skipped tags}"
+
+          echo -e "\n⛔ Skipped verifications (${#skipped_verifications[@]}):"
+          printf -- "- %s\n" "${skipped_verifications[@]:-🎉 No skipped verifications}"
+
+          echo -e "\n❌ Failed verifications (${#failed_verifications[@]}):"
+          printf -- "- %s\n" "${failed_verifications[@]:-🎉 No failed verifications}"
+
+          echo -e "\n✅ Successful verifications (${#successful_verifications[@]}):"
+          printf -- "- %s\n" "${successful_verifications[@]:-⚠️ No successful verifications ⚠️}"
+
+          if [[ ${#failed_verifications[@]} -gt 0 || ${#successful_verifications[@]} -eq 0 ]]; then
+            exit 1
+          fi
+      # NOTE: If needed, we can limit the scope of the Slack notification to failed verifications only.
+      - name: 🚨 Notify the team via Slack 🚨
+        if: failure()
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_DISTRO_TEAM_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: header
+                text:
+                  type: plain_text
+                  text: Chart Released Artifact Verification Failed
+                  emoji: true
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |
+                    🚨 *Action Required* 🚨
+                    There could be a compromised Helm chart artifact! Please investigate the issue immediately.
+
+                    *Summary:*
+                      • Failed verifications: ${{ steps.verify-artifacts.outputs.failed-verifications-count }}
+                      • Successful verifications: ${{ steps.verify-artifacts.outputs.successful-verifications-count }}
+                      • Skipped verifications: ${{ steps.verify-artifacts.outputs.skipped-verifications-count }}
+                      • Skipped tags: ${{ steps.verify-artifacts.outputs.skipped-tags-count }}
+
+                    <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Check failed workflow>

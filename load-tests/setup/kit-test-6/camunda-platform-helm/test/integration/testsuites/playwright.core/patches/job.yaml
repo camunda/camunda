@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-playwright
+spec:
+  template:
+    spec:
+      containers:
+        - name: playwright
+          # All env vars here assume that the Helm deployment is called "integration".
+          env:
+            # Used to access get token from Keycloak to access Camunda APIs.
+            - name: PLAYWRIGHT_VAR_TEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: identity-admin-client-password
+                  # Making it optional for debugging Venom where is no Camunda is deployed.
+                  optional: true
+            - name: PLAYWRIGHT_VAR_CONSOLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: console-secret
+            - name: PLAYWRIGHT_VAR_TASKLIST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: tasklist-secret
+            - name: PLAYWRIGHT_VAR_OPERATE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: operate-secret
+            - name: PLAYWRIGHT_VAR_OPTIMIZE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: optimize-secret
+            - name: PLAYWRIGHT_VAR_CONNECTORS_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: integration-test-credentials
+                  key: connectors-secret

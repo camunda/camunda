@@ -1,0 +1,65 @@
+name: "Chart - Release - PR"
+
+on:
+  workflow_dispatch:
+    inputs:
+      id:
+        description: Camunda chart dir id like x.y
+        required: true
+        type: string
+  push:
+    branches:
+      # Must be in the format of release-candidate-VERSION,
+      # e.g. release-candidate-8.8 or release-candidate-alpha,
+      # it must match the name used in the charts dir.
+      # We rely on that format in this workflow.
+      - release-candidate-*
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
+
+jobs:
+  release-please:
+    name: Run Release Please
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      # NOTE: This is a bit fragile as it depends on the branch name,
+      # but it's the best option so far to allow release-please creates a PR for a single version.
+      - name: Get chart folder from branch name
+        run: |
+          chart_dir_id_input="${{ inputs.id }}"
+          chart_dir_id_fallback="$(echo "${{ github.ref_name }}" | sed 's/release-candidate-//')"
+          chart_dir_id="${chart_dir_id_input:-$chart_dir_id_fallback}"
+          echo "CHART_PATH=charts/camunda-platform-${chart_dir_id}" | tee -a $GITHUB_ENV
+      - name: Install release-please
+        run: |
+          npm i release-please -g
+      - name: ⭐ Run release-please ⭐
+        run: |
+          release-please release-pr \
+            --token="${{ steps.generate-github-token.outputs.token }}" \
+            --repo-url="${{ github.repository }}" \
+            --target-branch="main" \
+            --path="${{ env.CHART_PATH }}" \
+            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
+            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
+            --debug | tee release-please.log
+      - name: Get release PR number
+        run: |
+          release_pr_number="$(grep "Successfully opened pull request:" release-please.log | grep -Po "\d+" || true)"
+          echo="release_pr_number=${release_pr_number}" | tee -a $GITHUB_ENV
+      - name: Add release PR number to workflow summary
+        if: env.release_pr_number
+        run: |
+          echo "⭐ Release PR URL: https://github.com/${{ github.repository }}/pull/${{ env.release_pr_number }}" >> $GITHUB_STEP_SUMMARY

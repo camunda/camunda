@@ -1,0 +1,34 @@
+---
+# Source: camunda-platform/templates/execution-identity/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-execution-identity-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: execution-identity
+    app.kubernetes.io/version: "SNAPSHOT"
+data:
+  application.yaml: |-
+
+    spring:
+      profiles:
+        active: identity, auth-basic
+
+    # Camunda Database configuration
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: elasticsearch
+      # Elasticsearch full url
+      url: "http://camunda-platform-test-elasticsearch:9200"
+
+    zeebe:
+      gateway:
+        cluster:
+          initial-contact-points: camunda-platform-test-zeebe:26502
+          member-id: identity

@@ -1,0 +1,288 @@
+---
+# Source: camunda-platform/templates/identity/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-identity-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.7.12"
+  annotations:
+    {}
+data:
+  application.yaml: |
+    identity:
+      url: "http://localhost:8080"
+
+      authProvider:
+        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
+        backend-url: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+
+      component-presets:
+        connectors:
+          applications:
+            - name: Connectors
+              id: ${CAMUNDA_CONNECTORS_CLIENT_ID:${KEYCLOAK_INIT_CONNECTORS_CLIENT_ID:connectors}}
+              type: m2m
+              secret: ${CAMUNDA_CONNECTORS_SECRET:${KEYCLOAK_INIT_CONNECTORS_SECRET:}}
+              permissions:
+                - audience: "operate-api"
+                  definition: read:*
+        console:
+          applications:
+            - name: "Console"
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              type: public
+              root-url: "http://localhost:8080"
+              redirect-uris:
+                - "/"
+          apis:
+            - name: Console API
+              audience: "console-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Console"
+              description: "Grants full access to Console"
+              permissions:
+                - audience: "console-api"
+                  definition: write:*
+        identity:
+          apis:
+            - name: "Camunda Identity Resource Server"
+              audience: "camunda-identity-resource-server"
+              permissions:
+                - definition: read
+                  description: "Read permission"
+                - definition: "read:users"
+                  description: "Read users permission"
+                - definition: write
+                  description: "Write permission"
+          roles:
+            - name: "Identity"
+              description: "Provides full access to Identity"
+              permissions:
+                - audience: "camunda-identity-resource-server"
+                  definition: read
+                - audience: "camunda-identity-resource-server"
+                  definition: write
+        operate:
+          applications:
+            - name: Operate
+              id: ${CAMUNDA_OPERATE_CLIENT_ID:${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}}
+              type: confidential
+              secret: ${CAMUNDA_OPERATE_SECRET:${KEYCLOAK_INIT_OPERATE_SECRET:}}
+              root-url: "http://localhost:8081"
+              redirect-uris:
+                - "/identity-callback"
+          apis:
+            - name: Operate API
+              audience: "operate-api"
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Operate"
+              description: "Grants full access to Operate"
+              permissions:
+                - audience: "operate-api"
+                  definition: read:*
+                - audience: "operate-api"
+                  definition: write:*
+        optimize:
+          applications:
+            - name: Optimize
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              type: confidential
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              root-url: "http://localhost:8083"
+              redirect-uris:
+                - "/api/authentication/callback"
+          apis:
+            - name: Optimize API
+              audience: "optimize-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+                - audience: "optimize-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+        tasklist:
+          applications:
+            - name: Tasklist
+              id: ${CAMUNDA_TASKLIST_CLIENT_ID:${KEYCLOAK_INIT_TASKLIST_CLIENT_ID:tasklist}}
+              type: confidential
+              secret: ${CAMUNDA_TASKLIST_SECRET:${KEYCLOAK_INIT_TASKLIST_SECRET:}}
+              root-url: "http://localhost:8082"
+              redirect-uris:
+                - "/identity-callback"
+          apis:
+            - name: Tasklist API
+              audience: "tasklist-api"
+              permissions:
+                - definition: read:*
+                  description: "Read permission"
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Tasklist"
+              description: "Grants full access to Tasklist"
+              permissions:
+                - audience: "tasklist-api"
+                  definition: read:*
+                - audience: "tasklist-api"
+                  definition: write:*
+        webmodeler:
+          applications:
+            - name: "Web Modeler"
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              type: public
+              root-url: "http://localhost:8084"
+              redirect-uris:
+                - "/login-callback"
+          apis:
+            - name: Web Modeler Internal API
+              audience: "web-modeler-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+                - definition: admin:*
+                  description: "Admin permission"
+            - name: Web Modeler API
+              audience: "web-modeler-public-api"
+              permissions:
+                - definition: create:*
+                  description: "Allows create access for all resources"
+                - definition: read:*
+                  description: "Allows read access to all resources"
+                - definition: update:*
+                  description: "Allows update access to all resources"
+                - definition: delete:*
+                  description: "Allows delete access for all resources"
+          roles:
+            - name: "Web Modeler"
+              description: "Grants full access to Web Modeler"
+              permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Web Modeler"
+              permissions:
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "web-modeler-api"
+                  definition: admin:*
+        zeebe:
+          apis:
+            - name: Zeebe API
+              audience: "zeebe-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Zeebe"
+              description: "Grants full access to the Zeebe API"
+              permissions:
+                - audience: "zeebe-api"
+                  definition: write:*
+    keycloak:
+      clients:
+        - name: Zeebe
+          id: zeebe
+          secret: ${KEYCLOAK_INIT_ZEEBE_SECRET:${ZEEBE_CLIENT_SECRET}}
+          type: M2M
+          permissions:
+            - resource-server-id: "zeebe-api"
+              definition: write:*
+      users:
+        - username: "demo"
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: "Demo"
+          lastName: "User"
+          email: "demo@example.org"
+          roles:
+            - Identity
+            - Operate
+            - Tasklist
+            - Optimize
+            - Web Modeler
+            - Web Modeler Admin
+            - Console
+            - Zeebe
+      environment:
+        clients:
+          - name: Identity
+            id: "camunda-identity"
+            type: CONFIDENTIAL
+            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
+            root-url: "http://localhost:8080"
+            redirect-uris:
+              - "/auth/login-callback"
+      # The presets key should be removed when 8.6.0 of the applications are released
+      presets:
+        tasklist:
+          clients:
+            - name: Tasklist
+              id: tasklist
+              type: confidential
+              secret: ${KEYCLOAK_INIT_TASKLIST_SECRET:}
+              root-url: "http://localhost:8082"
+              redirect-uris:
+                - "/identity-callback"
+        operate:
+          clients:
+            - name: Operate
+              id: ${KEYCLOAK_INIT_OPERATE_CLIENT_ID:operate}
+              type: confidential
+              secret: ${KEYCLOAK_INIT_OPERATE_SECRET:}
+              root-url: "http://localhost:8081"
+              redirect-uris:
+                - "/identity-callback"
+        optimize:
+          clients:
+            - name: Optimize
+              id: ${KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}
+              type: confidential
+              secret: ${KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+              root-url: "http://localhost:8083"
+              redirect-uris:
+                - "/api/authentication/callback"
+        console:
+          clients:
+            - name: "Console"
+              id: ${KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}
+              type: public
+              root-url: "http://localhost:8080"
+              redirect-uris:
+                - "/"
+    server:
+      port: 8080
+
+    spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+      profiles:
+        active: keycloak
+
+    camunda:
+      identity:
+        audience: "camunda-identity-resource-server"

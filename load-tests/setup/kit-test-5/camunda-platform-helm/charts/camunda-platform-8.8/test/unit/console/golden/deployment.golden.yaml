@@ -1,0 +1,113 @@
+---
+# Source: camunda-platform/templates/console/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-console
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: console
+    app.kubernetes.io/version: "8.8.69"
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: console
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/component: console
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      serviceAccountName: camunda-platform-test-console
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: camunda-platform
+          image: camunda/console:8.8.69
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            
+            - name: NODE_EXTRA_CA_CERTS
+              value: "/usr/local/console/certificates/"
+            - name: NODE_ENV
+              value: prod
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              value: "http://camunda-platform-test-keycloak/auth"
+            - name: KEYCLOAK_BASE_URL
+              value: "http://localhost:18080/auth"
+            - name: KEYCLOAK_REALM
+              value: "camunda-platform"
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: console-api
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: console
+            - name: CAMUNDA_CONSOLE_CONTEXT_PATH
+              value: ""
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-documentstore-env-vars
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: management
+              containerPort: 9100
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              scheme: HTTP
+              port: management
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: console-configuration
+              mountPath: /var/run/config
+      volumes:
+        - name: console-configuration
+          configMap:
+            name: camunda-platform-test-console-configuration

@@ -1,0 +1,224 @@
+{{- if .Values.optimize.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "optimize.fullname" . }}
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "optimize.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: 
+        {{- include "optimize.labels" . | nindent 8 }}
+        {{- if .Values.optimize.podLabels }}
+        {{- toYaml .Values.optimize.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.optimize.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.optimize.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "optimize.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- if .Values.optimize.initContainers }}
+          {{- tpl (.Values.optimize.initContainers | toYaml | nindent 8) $ }}
+        {{- end }}
+        {{- if .Values.optimize.migration.enabled }}
+        - name: migration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          command: ['./upgrade/upgrade.sh', '--skip-warning']
+          {{- if .Values.optimize.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+              value: "true"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+              value: {{ .Values.optimize.partitionCount | quote }}
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+              value: {{ .Values.global.elasticsearch.prefix }}
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.global.elasticsearch.port | quote }}
+            {{- with .Values.optimize.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+            {{- with .Values.optimize.migration.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            {{- if .Values.optimize.extraVolumeMounts }}
+            {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- end }}
+      containers:
+        - name: optimize
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.optimize) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.optimize.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.optimize.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            {{- if .Values.optimize.contextPath }}
+            - name: CAMUNDA_OPTIMIZE_CONTEXT_PATH
+              value: {{ .Values.optimize.contextPath | quote }}
+            {{- end }}
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_ENABLED
+              value: "true"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT
+              value: {{ .Values.optimize.partitionCount | quote }}
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+              value: {{ .Values.global.elasticsearch.prefix }}
+            - name: OPTIMIZE_ELASTICSEARCH_HOST
+              value: {{ include "camundaPlatform.elasticsearchHost" . | quote }}
+            - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
+              value: {{ .Values.global.elasticsearch.port | quote }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: "ccsm"
+            {{- if .Values.global.identity.auth.enabled }}
+            - name: CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL
+              value: {{ tpl .Values.global.identity.auth.optimize.redirectUrl $ | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_ID
+              value: {{ include "optimize.authClientId" . | quote }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
+              {{- end }}
+            - name: CAMUNDA_IDENTITY_AUDIENCE
+              value: {{ include "optimize.authAudience" . | quote }}
+            - name: CAMUNDA_OPTIMIZE_API_AUDIENCE
+              value: {{ include "optimize.authAudience" . | quote }}
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+              {{- end }}
+            - name: CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED
+              value: "false"
+            {{- if .Values.global.multitenancy.enabled }}
+            - name: CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED
+              value: "true"
+            - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MAX_SIZE
+              value: "10000"
+            - name: CAMUNDA_OPTIMIZE_CACHES_CLOUD_TENANT_AUTHORIZATIONS_MIN_FETCH_INTERVAL_SECONDS
+              value: "600000"
+            {{- end }}
+          {{- with .Values.optimize.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
+          {{- if .Values.optimize.command }}
+          command: {{ toYaml .Values.optimize.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.optimize.resources | nindent 12 }}
+          ports:
+            - containerPort: 8090
+              name: http
+              protocol: TCP
+            - containerPort: 8092
+              name: management
+              protocol: TCP
+          {{- if .Values.optimize.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.startupProbe.probePath) }}
+              scheme: {{ .Values.optimize.startupProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.optimize.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.optimize.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.optimize.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.optimize.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.optimize.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.optimize.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.readinessProbe.probePath) }}
+              scheme: {{ .Values.optimize.readinessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.optimize.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.optimize.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.optimize.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.optimize.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.optimize.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.optimize.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.optimize.contextPath .Values.optimize.livenessProbe.probePath) }}
+              scheme: {{ .Values.optimize.livenessProbe.scheme }}
+              port: http
+            initialDelaySeconds: {{ .Values.optimize.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.optimize.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.optimize.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.optimize.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.optimize.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+            {{- if .Values.optimize.extraVolumeMounts }}
+            {{- .Values.optimize.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.optimize.sidecars }}
+        {{- .Values.optimize.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+        {{- if .Values.optimize.extraVolumes }}
+        {{- .Values.optimize.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.optimize.serviceAccount.name }}
+      serviceAccountName: {{ .Values.optimize.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.optimize.podSecurityContext }}
+      securityContext: {{- toYaml .Values.optimize.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.optimize.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.optimize.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.optimize.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

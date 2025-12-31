@@ -1,0 +1,74 @@
+apiVersion: v2
+name: camunda-platform
+version: 10.11.3
+appVersion: 8.5.x
+description: |
+  Camunda 8 Self-Managed Helm charts.
+  Camunda's process automation platform allows developers to design, automate and improve processes.
+type: application
+icon: https://helm.camunda.io/imgs/camunda.svg
+home: https://docs.camunda.io/docs/self-managed/overview/
+sources:
+  - https://github.com/camunda/camunda-platform-helm
+keywords:
+  - automation
+  - business-rules
+  - bpm
+  - bpmn
+  - camunda-platform
+  - decision-engine
+  - dmn
+  - modeling
+  - orchestration
+  - process-automation
+  - process-engine
+  - process-orchestration
+  - workflow
+  - workflow-engine
+dependencies:
+  # Identity Dependencies.
+  - name: keycloak
+    alias: identityKeycloak
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 19.4.1
+    condition: "identity.keycloak.enabled,identityKeycloak.enabled"
+  - name: postgresql
+    alias: identityPostgresql
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 12.x.x
+    condition: "identity.postgresql.enabled,identityPostgresql.enabled"
+  # WebModeler Dependencies.
+  - name: web-modeler-postgresql
+    alias: postgresql
+    repository: "file://../web-modeler-postgresql"
+    version: 11.x.x
+    condition: "postgresql.enabled"
+  # Shared Dependencies.
+  - name: elasticsearch
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 20.0.4
+    condition: "elasticsearch.enabled"
+  # Helpers.
+  - name: common
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 2.x.x
+maintainers:
+  - name: ChrisKujawa
+    email: christopher.zell@camunda.com
+  - name: aabouzaid
+    email: ahmed.abouzaid@camunda.com
+annotations:
+  camunda.io/helmCLIVersion: "3.18.6"
+  artifacthub.io/links: |
+    - name: Camunda 8 docs
+      url: https://docs.camunda.io/
+    - name: Camunda 8 Self-Managed docs
+      url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    - name: Camunda 8 Self-Managed Helm charts
+      url: https://github.com/camunda/camunda-platform-helm
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "Correct sysctlImage structure in values-enterprise.yaml"
+    - kind: fixed
+      description: "Web modeler extraConfiguration uses subcomponent subkey"

@@ -1,0 +1,119 @@
+name: "Test - Unit - Template"
+
+on:
+  workflow_call:
+    inputs:
+      identifier:
+        description: The unique identifier of used in the deployment hostname.
+        required: true
+        type: string
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      camunda-helm-dir:
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.identifier }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  init:
+    name: Unit - Generate test matrix
+    runs-on: ubuntu-latest
+    outputs:
+      unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}
+      unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}
+    steps:
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      with:
+        ref: "${{ inputs.camunda-helm-git-ref }}"
+    - name: Get CI unit test matrix
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: "${{ inputs.camunda-helm-dir }}"
+    - name: ℹ️ Print outputs ℹ️
+      run: |
+        echo "unitTestEnabled: ${{ steps.test-type-vars.outputs.unitTestEnabled }}"
+        echo "unitTestMatrix: ${{ steps.test-type-vars.outputs.unitTestMatrix }}"
+
+  unitScripts:
+    name: UnitTest Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            bats
+      - name: Install bats-assert
+        run: |
+          git clone https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
+          git clone https://github.com/bats-core/bats-support.git test/test_helper/bats-support
+      - name: Run bats
+        run: |
+          bats test/scripts/*.bats
+
+  unit:
+    name: Unit - ${{ matrix.test.name }}
+    if: ${{ needs.init.outputs.unitTestEnabled == 'true' && needs.init.outputs.unitTestMatrix != '' }}
+    needs: init
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.init.outputs.unitTestMatrix) }}
+    env:
+      chartPath: "charts/${{ inputs.camunda-helm-dir }}"
+    steps:
+    - name: ℹ️ Print workflow inputs ℹ️
+      env:
+        GITHUB_CONTEXT: ${{ toJson(inputs) }}
+      run: |
+        echo "Workflow Inputs:"
+        echo "${GITHUB_CONTEXT}"
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+    - name: Install tools
+      uses: ./.github/actions/install-tool-versions
+      with:
+        tools: |
+          golang
+          helm
+    - name: Configure curl and wget
+      uses: ./.github/actions/setup-curl
+    - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+          ~/.asdf/installs/golang/*/packages/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Format
+      run: |
+        make go.fmt
+    - name: Install License Tool
+      run: |
+        make go.addlicense-install
+        asdf reshim golang
+    - name: Check License
+      run: |
+        make go.addlicense-check
+    - name: Add helm repos
+      run: |
+        make helm.repos-add
+    - name: Get Helm dependency
+      run: |
+        make helm.dependency-update
+    - name: ⭐️ Test ⭐️
+      run: |
+        cd charts/${{ inputs.camunda-helm-dir }}/test/unit
+        go test $(printf "./%s " ${{ matrix.test.packages }})

@@ -1,0 +1,211 @@
+global:
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
+  elasticsearch:
+    enabled: false
+  opensearch:
+    enabled: true
+    auth:
+      username: "$OPENSEARCH_USERNAME"
+      password: "$OPENSEARCH_PASSWORD"
+    url:
+      protocol: https
+      host: "$AWS_HOST_URL"
+      port: 443
+    prefix: $E2E_AWS_OS_INDEX_PREFIX_ZEEBE
+elasticsearch:
+  enabled: false
+orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+  security:
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        groupsClaim: ""
+  env:
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+      value: "venom"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
+      value: "connectors"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPERATE"
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+identityKeycloak:
+  enabled: true
+optimize:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+  env: 
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: "$E2E_AWS_OS_INDEX_PREFIX_ZEEBE"
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+      value: "$E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE"
+webModelerPostgresql:
+  enabled: true
+webModeler:
+  enabled: true
+  security:
+    authentication:
+      method: oidc
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+console:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: "$TEST_NAMESPACE"
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: 'true'
+identity:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  firstUser:
+    user: demo
+    secret:
+      existingSecret: vault-mapped-secrets
+      existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD
+  # Keycloak client seed which is used to query Camunda APIs. 
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+    - id: test
+      name: Test
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: orchestration-api
+          definition: read:*
+        - resourceServerId: orchestration-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+  users:
+    - username: lisa
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_SECONDUSER_PASSWORD
+      firstName: Lisa
+      lastName: Doe
+      email: cawemodev+lisa@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
+    - username: bart
+      secret:
+        existingSecret: vault-mapped-secrets
+        existingSecretKey: DISTRO_QA_E2E_TESTS_IDENTITY_THIRDUSER_PASSWORD
+      firstName: Bart
+      lastName: Foo
+      email: cawemodev+bart@gmail.com
+      roles:
+        - ManagementIdentity
+        - Optimize
+        - Web Modeler
+        - Web Modeler Admin
+        - Console
+        - Orchestration
+connectors:
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
+  security:
+    authentication:
+      method: oidc

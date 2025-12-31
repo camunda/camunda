@@ -1,0 +1,20 @@
+{{- if and .Values.prometheusServiceMonitor.enabled .Values.zeebe.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-zeebe
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.zeebe) | quote }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+      app.kubernetes.io/component: zeebe-broker
+  endpoints:
+    - honorLabels: true
+      path: {{ .Values.zeebe.metrics.prometheus }}
+      port: http
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}

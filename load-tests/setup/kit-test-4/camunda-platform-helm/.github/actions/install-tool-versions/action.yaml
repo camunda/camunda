@@ -1,0 +1,173 @@
+name: Install Tools
+description: Install tools via asdf vm.
+inputs:
+  tools:
+    default: ""
+    description: |
+      Line separated tool names to be installed,
+      as asdf action doesn't have to install certain tools from .tool-versions file.
+      Note: The tool name should match what's in the .tool-versions file.
+
+runs:
+  using: composite
+  steps:
+    - name: Mark repo as safe for git
+      shell: bash
+      run: |
+        # Mark the repo as safe for Git by setting the safe.directory config option. This is required for running jobs in containers like the playwright integration tests.
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    - name: Filter .tool-versions
+      shell: bash
+      run: |
+        cp -a .tool-versions .tool-versions-orig
+        echo "${{ inputs.tools }}" | sed '/^$/d' > .tool-versions-input
+        echo "⭐ Input tool names content:"
+        cat .tool-versions-input
+        grep -w -f .tool-versions-input .tool-versions-orig > .tool-versions
+        echo "⭐ Filtered .tool-versions content:"
+        cat .tool-versions
+
+    - name: Restore cache
+      id: restore-tools-cache
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        # Using $HOME instead of /home/runner as inside of the container the home directory is might not be /home/runner.
+        path: $HOME/.asdf
+        key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
+
+    - name: Install asdf and tools
+      uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4
+      id: asdf-install
+      continue-on-error: true
+      env:
+        # Use GNU mirror to avoid overloading ftp.gnu.org
+        # See: https://www.gnu.org/prep/ftp.en.html
+        # Used by asdf-make: https://github.com/yacchi/asdf-make/blob/2b8c33adca11b79158298f1e35fe6a9ea363b6b0/lib/utils.bash#L7
+        MAKE_CUSTOM_MIRROR: https://ftpmirror.gnu.org/
+      with:
+        # TODO: Upgrade to 0.16 when it's supported in the GHA.
+        asdf_branch: v0.15.0
+
+    - name: Retry failed tool installations
+      if: steps.asdf-install.outcome == 'failure'
+      shell: bash
+      env:
+        ASDF_DIR: ${{ env.ASDF_DIR }}
+      run: |
+        set -uo pipefail  # Note: no -e so we can capture exit codes
+        MAX_RETRIES=5
+        FAILED_TOOLS=()
+
+        echo "⚠️ Initial asdf install failed, retrying individual tools with backoff..."
+
+        # Source asdf
+        . "${ASDF_DIR:-$HOME/.asdf}/asdf.sh"
+
+        while IFS= read -r line; do
+          [[ -z "$line" || "$line" =~ ^# ]] && continue
+          tool=$(echo "$line" | awk '{print $1}')
+          version=$(echo "$line" | awk '{print $2}')
+
+          echo "::group::🔧 $tool $version"
+
+          # Check if already installed
+          if asdf list "$tool" 2>/dev/null | grep -qF "$version"; then
+            echo "✅ $tool $version already installed, skipping"
+            echo "::endgroup::"
+            continue
+          fi
+
+          echo "📦 $tool $version not found, will install..."
+
+          # Add plugin if not present
+          if ! asdf plugin list 2>/dev/null | grep -q "^${tool}$"; then
+            echo "Adding plugin for $tool..."
+            asdf plugin add "$tool" || true
+          fi
+
+          # Retry loop for installation
+          RETRY_DELAY=10
+          installed=false
+          asdf_dir="${ASDF_DIR:-$HOME/.asdf}"
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "🔄 Attempt $attempt/$MAX_RETRIES for $tool $version..."
+            
+            # Clean up any partial downloads/installs from previous failed attempts
+            # (includes leftovers from the initial asdf-install step that failed)
+            echo "🧹 Cleaning up partial downloads/installs..."
+            rm -rf "${asdf_dir}/downloads/${tool}/${version}" 2>/dev/null || true
+            rm -rf "${asdf_dir}/installs/${tool}/${version}" 2>/dev/null || true
+            
+            # Capture exit code without exiting on failure
+            set +e
+            asdf install "$tool" "$version"
+            exit_code=$?
+            set -e
+            
+            if [ $exit_code -eq 0 ]; then
+              echo "✅ $tool $version installed successfully"
+              installed=true
+              break
+            else
+              echo "⚠️ Attempt $attempt failed (exit code: $exit_code)"
+              if [ $attempt -lt $MAX_RETRIES ]; then
+                echo "⏳ Waiting ${RETRY_DELAY}s before retry..."
+                sleep $RETRY_DELAY
+                RETRY_DELAY=$((RETRY_DELAY * 2))
+              fi
+            fi
+          done
+          
+          if [ "$installed" = false ]; then
+            echo "❌ Failed to install $tool $version after $MAX_RETRIES attempts"
+            FAILED_TOOLS+=("$tool@$version")
+          fi
+          echo "::endgroup::"
+        done < .tool-versions
+
+        # Report results
+        if [ ${#FAILED_TOOLS[@]} -gt 0 ]; then
+          echo ""
+          echo "❌ The following tools failed to install after retries:"
+          printf '  - %s\n' "${FAILED_TOOLS[@]}"
+          exit 1
+        fi
+        echo "✅ All tools installed successfully"
+
+    - name: Print asdf build logs
+      if: always()
+      shell: bash
+      env:
+        ASDF_DIR: ${{ env.ASDF_DIR }}
+      run: |
+        set -euo pipefail
+        root="${ASDF_DIR:-$HOME/.asdf}/downloads"
+        if [ -d "$root" ]; then
+          echo "=== asdf installer logs under $root ==="
+          # Group each log in the Actions UI
+          while IFS= read -r -d '' f; do
+            echo "::group::${f#$root/}"
+            cat "$f" || true
+            echo "::endgroup::"
+          done < <(find "$root" -type f -name install.log -print0)
+        else
+          echo "No asdf downloads dir at $root"
+        fi
+
+    - name: Save cache
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: $HOME/.asdf
+        key: ${{ runner.os }}-tools-${{ hashFiles('.tool-versions') }}
+
+    - name: List installed versions
+      shell: bash
+      run: |
+        asdf current
+
+    - name: Checkout .tool-versions changes
+      shell: bash
+      run: |
+        git clean -f .tool-versions*
+        git checkout .tool-versions

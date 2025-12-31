@@ -1,0 +1,98 @@
+{{- if .Values.zeebe.enabled -}}
+kind: ConfigMap
+metadata:
+  name: {{ include "zeebe.fullname.gateway" . }}-configuration
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+apiVersion: v1
+data:
+  gateway-log4j2.xml: |
+{{- if .Values.zeebeGateway.log4j2 }}
+    {{ .Values.zeebeGateway.log4j2 | indent 4 | trim }}
+{{- end }}
+{{- if .Values.zeebeGateway.configuration }}
+  application.yaml: |
+    {{ .Values.zeebeGateway.configuration | indent 4 | trim }}
+{{- else }}
+  application.yaml: |
+    {{- if .Values.global.identity.auth.enabled }}
+    spring:
+      profiles:
+        active: "identity-auth"
+    {{- end }}
+
+    {{- if .Values.zeebeGateway.contextPath }}
+    management:
+      server:
+        base-path: {{ .Values.zeebeGateway.contextPath | quote }}
+    {{- end }}
+
+    # Camunda Database configuration
+    {{- if .Values.global.elasticsearch.enabled }}
+    camunda.database:
+      type: elasticsearch
+      # Cluster name
+      clusterName: {{ .Values.global.elasticsearch.clusterName }}
+      {{- if .Values.global.elasticsearch.external }}
+      username: {{ .Values.global.elasticsearch.auth.username | quote }}
+      {{- end }}
+      # Elasticsearch full url
+      url: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+    {{- end }}
+    {{- if .Values.global.opensearch.enabled }}
+    camunda.database:
+      type: opensearch
+      url: {{ include "camundaPlatform.opensearchURL" . | quote }}
+      {{- if .Values.global.opensearch.auth.username }}
+      username: {{ .Values.global.opensearch.auth.username | quote }}
+      {{- end }}
+    {{- end }}
+
+    server:
+      address: "0.0.0.0"
+      port: {{  .Values.zeebeGateway.service.restPort | quote }}
+      {{- if .Values.zeebeGateway.contextPath }}
+      servlet:
+        context-path: {{ .Values.zeebeGateway.contextPath | quote }}
+      {{- end }}
+    {{- if .Values.global.identity.auth.enabled }}
+    camunda:
+      identity:
+        type: {{ include "camundaPlatform.authType" . | quote }}
+        issuerBackendUrl: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+        audience: {{ include "zeebe.authAudience" . | quote }}
+        baseUrl: {{ include "camundaPlatform.identityURL" . | quote }}
+    {{- end }}
+    zeebe:
+      gateway:
+        enable: true
+        {{- if .Values.global.identity.auth.enabled }}
+        security:
+          authentication:
+            mode: identity
+        {{- end }}
+        monitoring:
+          host: 0.0.0.0
+          port: {{ .Values.zeebeGateway.service.httpPort | quote }}
+        cluster:
+          clusterName: {{ tpl .Values.global.zeebeClusterName . }}
+          port: {{ .Values.zeebeGateway.service.internalPort | quote }}
+        network:
+          host: 0.0.0.0
+          port: {{ .Values.zeebeGateway.service.grpcPort | quote }}
+        {{- if .Values.global.multitenancy.enabled }}
+        multitenancy:
+          enabled: true
+        {{- end }}
+      {{- if .Values.global.multitenancy.enabled }}
+      broker:
+        gateway:
+          multitenancy:
+            enabled: true
+      {{- end }}
+{{- end }}
+{{- range $key, $val := .Values.zeebeGateway.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+{{- end }}
+{{- end }}

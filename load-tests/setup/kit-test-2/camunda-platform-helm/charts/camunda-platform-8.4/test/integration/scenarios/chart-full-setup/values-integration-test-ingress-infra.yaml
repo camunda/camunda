@@ -1,0 +1,30 @@
+global:
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
+  ingress:
+    tls:
+      secretName: aws-camunda-cloud-tls
+identity:
+  keycloak:
+    commonLabels:
+      janitor/ttl: 1h
+      camunda.cloud/ephemeral: "true"
+    postgresql:
+      commonLabels:
+        janitor/ttl: 1h
+        camunda.cloud/ephemeral: "true"
+postgresql:
+    commonLabels:
+      janitor/ttl: 1h
+      camunda.cloud/ephemeral: "true"
+zeebe-gateway:
+  ingress:
+    tls:
+      secretName: aws-camunda-cloud-tls
+elasticsearch:
+  commonLabels:
+    janitor/ttl: 1h
+    camunda.cloud/ephemeral: "true"
+prometheusServiceMonitor:
+  enabled: false

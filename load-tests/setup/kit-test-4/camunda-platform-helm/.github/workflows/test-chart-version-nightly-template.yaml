@@ -1,0 +1,69 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Chart Version Nightly - Template"
+
+on:
+  workflow_call:
+    inputs:
+      camunda-version:
+        description: Camunda version to test
+        required: true
+        type: string
+      case:
+        description: Type
+        required: true
+        type: string
+      scenario:
+        description: Scenario
+        required: true
+        type: string
+      auth:
+        description: Scenario
+        required: true
+        type: string
+      exclude:
+        description: Scenario
+        required: true
+        type: string
+      values-enterprise:
+        description: Enable enterprise values
+        required: false
+        default: "false"
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.scenario }}-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    name: Camunda ${{ inputs.camunda-version }} - Validation
+    uses: ./.github/workflows/chart-validate-template.yaml
+    with:
+      identifier: "${{ inputs.case }}-${{ inputs.scenario }}-vald-${{ inputs.camunda-version }}-${{ inputs.auth }}-${{ inputs.exclude }}"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"
+
+  integration:
+    name: Camunda ${{ inputs.camunda-version }} - ${{ matrix.scenario }}
+    needs: validation
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    secrets: inherit
+    uses: ./.github/workflows/test-integration-template.yaml
+    with:
+      identifier: "${{ inputs.camunda-version }}"
+      platforms: "gke"
+      flows: "install,upgrade-patch,upgrade-minor"
+      camunda-helm-dir: "camunda-platform-${{ inputs.camunda-version }}"
+      test-case: "${{ inputs.case }}"
+      scenario: "${{ inputs.scenario }}"
+      auth: "${{ inputs.auth }}"
+      exclude: "${{ inputs.exclude }}"
+      values-enterprise: "${{ inputs.values-enterprise }}"
+      values-digest: "true"
+      camunda-helm-git-ref: "${{ github.event.pull_request.head.sha }}"

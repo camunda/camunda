@@ -1,0 +1,339 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+---
+name: "Chart - Promote RC"
+
+on:
+  workflow_dispatch:
+    inputs:
+      dev-tag:
+        description: |
+          Dev package tag to promote to RC.
+          Format: {version}-dev-{sha} (e.g., "13.4.0-dev-abc1234")
+          Or rolling tag: {chart-major}-dev-latest (e.g., "13-dev-latest")
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.dev-tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  HARBOR_REGISTRY: registry.camunda.cloud
+  HARBOR_PROJECT: team-distribution
+  RELEASE_PLEASE_CONFIG_FILE: .github/config/release-please/release-please-config.json
+  RELEASE_PLEASE_MANIFEST_FILE: .github/config/release-please/.release-please-manifest.json
+
+jobs:
+  promote-rc:
+    name: Promote to RC
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+      sha: ${{ steps.parse.outputs.sha }}
+      chart-major: ${{ steps.parse.outputs.chart_major }}
+      camunda-version: ${{ steps.package.outputs.camunda_version }}
+      chart-dir-id: ${{ steps.package.outputs.chart_dir_id }}
+      rc-tag: ${{ steps.parse.outputs.rc_tag }}
+      release-pr-url: ${{ steps.release-please.outputs.pr_url }}
+    steps:
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Import Vault secrets for Harbor
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        id: vault-harbor
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+          exportEnv: true
+
+      - name: Parse dev tag
+        id: parse
+        env:
+          HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
+          HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
+        run: |
+          input_tag="${{ inputs.dev-tag }}"
+          
+          # Check if it's a rolling tag format: {major}-dev-latest
+          if [[ "$input_tag" =~ ^[0-9]+-dev-latest$ ]]; then
+            echo "::notice::Rolling tag detected: ${input_tag}, resolving to actual dev tag..."
+            
+            # Query Harbor API to get all tags for this artifact
+            tags_response=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${input_tag}/tags" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}")
+            
+            if [[ -z "$tags_response" || "$tags_response" == "null" ]]; then
+              echo "::error::Rolling tag ${input_tag} not found in Harbor"
+              exit 1
+            fi
+            
+            # Find the actual dev tag (format: {version}-dev-{sha})
+            dev_tag=$(echo "$tags_response" | jq -r '.[].name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$"))' | head -1)
+            
+            if [[ -z "$dev_tag" ]]; then
+              echo "::error::Could not find actual dev tag for rolling tag ${input_tag}"
+              exit 1
+            fi
+            
+            echo "::notice::Resolved rolling tag ${input_tag} to: ${dev_tag}"
+          else
+            dev_tag="$input_tag"
+          fi
+          
+          echo "resolved_tag=${dev_tag}" | tee -a $GITHUB_OUTPUT
+          
+          # Validate format: {version}-dev-{sha}
+          if [[ ! "$dev_tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?-dev-[a-f0-9]+$ ]]; then
+            echo "::error::Invalid dev tag format. Expected: {version}-dev-{sha} (e.g., 13.4.0-dev-abc1234)"
+            exit 1
+          fi
+          
+          # Extract version (everything before -dev-)
+          version="${dev_tag%-dev-*}"
+          echo "version=${version}" | tee -a $GITHUB_OUTPUT
+          
+          # Extract SHA (everything after -dev-)
+          sha="${dev_tag##*-dev-}"
+
+          # Resolve short SHA to full 40-char commit SHA.
+          # actions/checkout treats short SHAs as branch/tag names and fails.
+          if [[ ${#sha} -lt 40 ]]; then
+            echo "::notice::Short SHA detected (${sha}); resolving via GitHub API..."
+            full_sha=$(curl -sfL \
+              -H "Authorization: Bearer ${{ steps.generate-github-token.outputs.token }}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${{ github.repository }}/commits/${sha}" | jq -r '.sha')
+            if [[ -z "${full_sha}" || "${full_sha}" == "null" ]]; then
+              echo "::error::Failed to resolve short SHA '${sha}' to a full commit SHA"
+              exit 1
+            fi
+            sha="${full_sha}"
+            echo "::notice::Resolved to full SHA: ${sha}"
+          fi
+
+          echo "sha=${sha}" | tee -a $GITHUB_OUTPUT
+          
+          # Extract chart major (first number of version)
+          chart_major="${version%%.*}"
+          echo "chart_major=${chart_major}" | tee -a $GITHUB_OUTPUT
+          
+          # RC tag format
+          echo "rc_tag=${version}-rc" | tee -a $GITHUB_OUTPUT
+          echo "rc_latest_tag=${chart_major}-rc-latest" | tee -a $GITHUB_OUTPUT
+
+      - name: Checkout at commit SHA
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ steps.parse.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Validate commit is on main
+        run: |
+          if ! git branch -r --contains ${{ steps.parse.outputs.sha }} | grep -q "origin/main"; then
+            echo "::error::Commit ${{ steps.parse.outputs.sha }} is not on main branch"
+            exit 1
+          fi
+
+      - name: Login to Harbor
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+        with:
+          registry: ${{ env.HARBOR_REGISTRY }}
+          username: ${{ env.HARBOR_REGISTRY_USER }}
+          password: ${{ env.HARBOR_REGISTRY_PASSWORD }}
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            yq
+
+      - name: Pull and validate dev package
+        id: package
+        run: |
+          echo "Checking for package: ${{ steps.parse.outputs.resolved_tag }}"
+          
+          helm pull "oci://${{ env.HARBOR_REGISTRY }}/${{ env.HARBOR_PROJECT }}/camunda-platform" \
+            --version "${{ steps.parse.outputs.resolved_tag }}" \
+            --destination /tmp || {
+              echo "::error::Dev package not found in Harbor: ${{ steps.parse.outputs.resolved_tag }}"
+              exit 1
+            }
+          
+          package_file=$(ls /tmp/camunda-platform-*.tgz)
+          echo "✅ Dev package exists: ${package_file}"
+          
+          # Extract Camunda version from Chart.yaml inside the package
+          tar -xzf "${package_file}" camunda-platform/Chart.yaml -O > /tmp/Chart.yaml
+          camunda_version=$(yq '.appVersion' /tmp/Chart.yaml | sed 's/.x//')
+          
+          echo "camunda_version=${camunda_version}" | tee -a $GITHUB_OUTPUT
+          echo "chart_dir_id=${camunda_version}" | tee -a $GITHUB_OUTPUT
+
+      - name: Install release-please
+        run: npm i release-please -g
+
+      - name: Run release-please
+        id: release-please
+        env:
+          GH_TOKEN: ${{ steps.generate-github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          chart_path="charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
+          head_ref="release-please--branches--main--components--camunda-platform-${{ steps.package.outputs.chart_dir_id }}"
+
+          # For prerelease charts (alpha/beta/rc), force release-please to use the
+          # version already embedded in the dev tag. This avoids manual PR edits.
+          release_as_args=()
+          if [[ "${{ steps.parse.outputs.version }}" =~ -(alpha|beta|rc)[0-9]+$ ]]; then
+            echo "::notice::Prerelease dev tag detected; forcing release-please version to '${{ steps.parse.outputs.version }}'"
+            release_as_args+=("--release-as=${{ steps.parse.outputs.version }}")
+          fi
+          
+          release-please release-pr \
+            --token="${{ steps.generate-github-token.outputs.token }}" \
+            --repo-url="${{ github.repository }}" \
+            --target-branch="main" \
+            --path="${chart_path}" \
+            --config-file="${{ env.RELEASE_PLEASE_CONFIG_FILE }}" \
+            --manifest-file="${{ env.RELEASE_PLEASE_MANIFEST_FILE }}" \
+            "${release_as_args[@]}" \
+            --debug 2>&1 | tee release-please.log
+
+          if grep -qiE 'aborting|untagged, merged release PRs outstanding' release-please.log; then
+            echo "::error::release-please aborted (likely due to a merged release PR still labeled as pending)."
+            echo "::error::Fix the outstanding release PR labels (e.g., set 'autorelease: published') and re-run this workflow."
+            exit 1
+          fi
+
+          # Determine the release-please PR for this component deterministically.
+          pr_url="$(gh pr list --state open --head "${head_ref}" --base main --json url --jq '.[0].url // empty' 2>/dev/null || true)"
+          if [[ -z "${pr_url}" ]]; then
+            echo "::error::No open release-please PR found for component head '${head_ref}'."
+            echo "::error::This indicates release-please did not create/update a PR (or there are no releasable changes)."
+            echo "::error::Refusing to retag Harbor RC without a corresponding open release-please PR for review/merge."
+            exit 1
+          fi
+          echo "pr_url=${pr_url}" | tee -a "$GITHUB_OUTPUT"
+          
+          echo "::notice::Release-please PR: ${pr_url}"
+
+      - name: Add RC tags to Harbor package
+        env:
+          HARBOR_API: "https://${{ env.HARBOR_REGISTRY }}/api/v2.0"
+          HARBOR_REPO: "projects/${{ env.HARBOR_PROJECT }}/repositories/camunda-platform"
+        run: |
+          set -euo pipefail
+
+          # Get artifact digest from dev tag
+          echo "Getting digest for dev tag: ${{ steps.parse.outputs.resolved_tag }}"
+          digest=$(curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${{ steps.parse.outputs.resolved_tag }}" \
+            -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" | jq -r '.digest')
+          
+          if [[ -z "$digest" || "$digest" == "null" ]]; then
+            echo "::error::Failed to get digest for dev tag"
+            exit 1
+          fi
+          echo "Digest: ${digest}"
+          
+          # Helpers for idempotent tagging.
+          tag_digest() {
+            local tag_name="$1"
+            curl -sf "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              | jq -r '.digest // empty' || true
+          }
+
+          delete_tag_if_exists() {
+            local tag_name="$1"
+            echo "Removing existing tag if present: ${tag_name}"
+            curl -sf -X DELETE "${HARBOR_API}/${HARBOR_REPO}/artifacts/${tag_name}" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" || true
+          }
+
+          add_or_update_tag() {
+            local tag_name="$1"
+            local must_move="$2" # true for rolling tags
+
+            existing_digest="$(tag_digest "${tag_name}")"
+            if [[ -n "${existing_digest}" ]]; then
+              if [[ "${existing_digest}" == "${digest}" ]]; then
+                echo "✅ Tag already present and up-to-date: ${tag_name} -> ${digest}"
+                return 0
+              fi
+
+              if [[ "${must_move}" == "true" ]]; then
+                echo "ℹ️ Tag exists but points elsewhere; will move: ${tag_name} (${existing_digest} -> ${digest})"
+              else
+                echo "ℹ️ Tag exists but points elsewhere; will overwrite: ${tag_name} (${existing_digest} -> ${digest})"
+              fi
+              delete_tag_if_exists "${tag_name}"
+            fi
+
+            echo "Adding tag: ${tag_name}"
+            http_code="$(curl -sS -o /tmp/harbor-tag.json -w "%{http_code}" -X POST "${HARBOR_API}/${HARBOR_REPO}/artifacts/${digest}/tags" \
+              -u "${HARBOR_REGISTRY_USER}:${HARBOR_REGISTRY_PASSWORD}" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\": \"${tag_name}\"}" || true)"
+
+            if [[ "${http_code}" != "201" && "${http_code}" != "200" && "${http_code}" != "409" ]]; then
+              echo "::error::Failed to add tag: ${tag_name} (HTTP ${http_code})"
+              cat /tmp/harbor-tag.json || true
+              exit 1
+            fi
+
+            # If Harbor returned conflict (409), verify whether the tag now exists and points to the desired digest.
+            final_digest="$(tag_digest "${tag_name}")"
+            if [[ "${final_digest}" != "${digest}" ]]; then
+              echo "::error::Tag '${tag_name}' does not point to expected digest after update."
+              echo "::error::Expected: ${digest}; got: ${final_digest:-<missing>}"
+              exit 1
+            fi
+          }
+          
+          # Add RC version tag (make reruns safe: overwrite if already exists)
+          add_or_update_tag "${{ steps.parse.outputs.rc_tag }}" "false"
+          
+          # Add RC rolling latest tag (always move to the selected digest)
+          add_or_update_tag "${{ steps.parse.outputs.rc_latest_tag }}" "true"
+          
+          echo "✅ RC tags added successfully"
+
+      - name: Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## RC Promotion Summary
+          
+          | Property | Value |
+          |----------|-------|
+          | **Input Tag** | `${{ inputs.dev-tag }}` |
+          | **Resolved Dev Tag** | `${{ steps.parse.outputs.resolved_tag }}` |
+          | **RC Tag** | `${{ steps.parse.outputs.rc_tag }}` |
+          | **RC Latest Tag** | `${{ steps.parse.outputs.rc_latest_tag }}` |
+          | **Version** | `${{ steps.parse.outputs.version }}` |
+          | **Commit SHA** | `${{ steps.parse.outputs.sha }}` |
+          | **Camunda Version** | `${{ steps.package.outputs.camunda_version }}` |
+          | **Chart Path** | `charts/camunda-platform-${{ steps.package.outputs.chart_dir_id }}` |
+          
+          ### Release Please PR
+          ${{ steps.release-please.outputs.pr_url || 'PR URL not captured - check release-please output' }}
+          
+          ### Next Steps
+          1. QA: Test RC package from Harbor using tag `${{ steps.parse.outputs.rc_tag }}`
+          2. Review the release-please PR for correctness
+          3. Once tests pass, run **Public Release** workflow with RC tag
+          EOF

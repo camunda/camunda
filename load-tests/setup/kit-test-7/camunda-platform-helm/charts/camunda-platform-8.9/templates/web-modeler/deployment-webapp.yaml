@@ -1,0 +1,204 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webModeler.webapp.fullname" . }}
+  labels: {{- include "webModeler.webapp.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.webModeler.webapp.replicas }}
+  selector:
+    matchLabels: {{- include "webModeler.webapp.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "webModeler.webapp.labels" . | nindent 8 }}
+      {{- if .Values.webModeler.webapp.podLabels }}
+      {{- toYaml .Values.webModeler.webapp.podLabels | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.webapp.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.webModeler.webapp.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.webModeler.webapp.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: {{ include "webModeler.name" . }}-webapp
+          image: {{ include "webModeler.webapp.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.webModeler.webapp.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.webapp.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            - name: NODE_ENV
+              value: "production"
+            - name: PLAY_ENABLED
+              value: {{ ternary "false" "true" .Values.global.noSecondaryStorage | quote }}
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=128"
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-id
+            - name: PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-key
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "PUSHER_SECRET"
+                "config" .Values.webModeler.restapi.pusher
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
+            ) | nindent 12 }}
+            - name: CLIENT_PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-key
+            {{- with .Values.webModeler.webapp.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
+            - name: AWS_SECRET_ACCESS_KEY
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.webModeler.webapp.envFrom }}
+            {{- .Values.webModeler.webapp.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.webModeler.webapp.command }}
+          command: {{ toYaml .Values.webModeler.webapp.command | nindent 10 }}
+          {{- end }}
+          args:
+            - application.toml
+          resources:
+            {{- toYaml .Values.webModeler.webapp.resources | nindent 12 }}
+          ports:
+            - containerPort: 8070
+              name: http
+              protocol: TCP
+            - containerPort: 8071
+              name: http-management
+              protocol: TCP
+          {{- if .Values.webModeler.webapp.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
+              path: {{ .Values.webModeler.webapp.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.startupProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.webapp.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.webapp.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.webapp.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.webapp.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.webapp.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.webapp.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
+              path: {{ .Values.webModeler.webapp.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.readinessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.webapp.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.webapp.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.webapp.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.webapp.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.webapp.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.webapp.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              {{- /* NOTE: WebApp does not support contextPath for health endpoints. */}}
+              path: {{ .Values.webModeler.webapp.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.livenessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.webapp.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.webapp.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.webapp.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.webapp.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.webapp.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /home/webapp/application.toml
+              subPath: application.toml
+          {{- range $key, $val := .Values.webModeler.webapp.extraConfiguration }}
+            - name: config
+              mountPath: /home/webapp/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
+              readOnly: true
+            {{- end }}
+          {{- if .Values.webModeler.webapp.extraVolumeMounts }}
+          {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+        {{- if .Values.webModeler.webapp.sidecars }}
+        {{- .Values.webModeler.webapp.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "webModeler.fullname" . }}-webapp-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.webModeler.webapp.extraVolumes }}
+        {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if .Values.webModeler.webapp.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.webModeler.webapp.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.webapp.dnsPolicy }}
+      dnsPolicy: {{ .Values.webModeler.webapp.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.webModeler.webapp.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.webapp.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.webapp.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.webapp.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.webapp.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

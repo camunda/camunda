@@ -1,0 +1,20 @@
+{{- if .Values.connectors.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "connectors.fullname" . }}-configuration
+  labels:
+    {{- include "connectors.labels" . | nindent 4 }}
+data:
+  {{- if .Values.connectors.configuration }}
+  application.yaml: |
+    {{ .Values.connectors.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yaml: |
+    {{- (include (print $.Template.BasePath "/connectors/files/_application.yaml") $) | indent 4 }}
+  {{- end }}
+  {{- range $key, $val := .Values.connectors.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

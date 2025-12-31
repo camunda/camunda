@@ -1,0 +1,57 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "webModeler.fullname" . }}-webapp-configuration
+  labels: {{- include "webModeler.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+data:
+  {{- if .Values.webModeler.webapp.configuration }}
+  application.toml: |
+    {{ .Values.webModeler.webapp.configuration | indent 4 | trim }}
+  {{- else }}
+  application.toml: |
+    httpWorkers = 2
+
+    [restapi]
+    host = {{ include "webModeler.restapi.fullname" . | quote }}
+    port = {{ .Values.webModeler.restapi.service.port | quote }}
+    managementPort = {{ .Values.webModeler.restapi.service.managementPort | quote }}
+
+    [server]
+    url = {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+    httpsOnly = {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
+
+    [oAuth2]
+    type = {{ include "camundaPlatform.authType" . | quote }}
+    clientId = {{ include "webModeler.authClientId" . | quote }}
+
+    [oAuth2.token]
+    jwksUrl = {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+    audience = {{ include "webModeler.authClientApiAudience" . | quote }}
+    issuer = {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+
+    [pusher]
+    host = {{ include "webModeler.websockets.fullname" . | quote }}
+    port = {{ .Values.webModeler.websockets.service.port | quote }}
+
+    [client.pusher]
+    host = {{ include "webModeler.publicWebsocketHost" . | quote }}
+    port = {{ include "webModeler.publicWebsocketPort" . | quote }}
+    {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+    path = {{ include "webModeler.websocketContextPath" . | quote }}
+    {{- end }}
+    forceTLS = {{ include "webModeler.websocketTlsEnabled" . | quote }}
+
+    {{- if .Values.identity.enabled }}
+
+    [identity]
+    baseUrl = {{ include "camundaPlatform.identityURL" . | quote }}
+    {{- end }}
+
+  {{- end }}
+  {{- range $key, $val := .Values.webModeler.webapp.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

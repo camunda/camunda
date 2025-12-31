@@ -1,0 +1,73 @@
+{{- if .Values.connectors.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "connectors.fullname" . }}-configuration
+  labels:
+    {{- include "connectors.labels" . | nindent 4 }}
+data:
+  {{- if .Values.connectors.configuration }}
+  application.yml: |
+    {{ .Values.connectors.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yml: |
+    server:
+      port: {{ .Values.connectors.service.serverPort }}
+    {{- if .Values.connectors.contextPath }}
+      servlet:
+        context-path: {{ .Values.connectors.contextPath | quote }}
+    {{- end }}
+    camunda:
+      client:
+        mode: "selfManaged"
+        zeebe:
+          rest-address: {{ include "connectors.zeebeRestEndpoint" . | quote }}
+          grpc-address: {{ include "connectors.zeebeGrpcEndpoint" . | quote }}
+      {{- if eq .Values.connectors.inbound.mode "disabled" }}
+      connector:
+        polling:
+          enabled: false
+        webhook:
+          enabled: false
+        headless:
+          service-url: {{ include "connectors.serviceHeadlessName" . | quote }}
+      {{- end }}
+      {{- if .Values.global.identity.auth.enabled }}
+      {{- if eq .Values.connectors.inbound.mode "oauth" }}
+      identity:
+        audience: {{ include "operate.authAudience" . | quote }}
+        client-id: {{ include "connectors.authClientId" . | quote }}
+      {{- end }}
+      {{- end }}
+    {{- if or (eq .Values.connectors.inbound.mode "credentials") (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") ) }}
+    operate:
+      client:
+        base-url: {{ include "camundaPlatform.operateURL" . | quote }}
+        {{- if (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth")) }}
+        auth-url: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
+        {{- end }}
+        {{- if eq .Values.connectors.inbound.mode "oauth" }}
+        profile: "oidc"
+        audience: {{ include "operate.authAudience" . | quote }}
+        {{- end }}
+        {{- if eq .Values.connectors.inbound.mode "credentials" }}
+        username: connectors
+        profile: "simple"
+        {{- end }}
+    {{- end }}
+    {{- if eq .Values.connectors.inbound.mode "disabled" }}
+    operate:
+      client:
+        enabled: false
+    {{- end }}
+    logging:
+{{- with .Values.connectors.logging }}
+{{ . | toYaml | indent 6 }}
+{{- end }}
+  {{- end }}
+
+{{- range $key, $val := .Values.connectors.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

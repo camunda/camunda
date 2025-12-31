@@ -1,0 +1,23 @@
+---
+# Source: camunda-platform/templates/service-monitor/connectors-service-monitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: camunda-platform-test-connectors
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    release: metrics
+spec:
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/component: connectors
+  endpoints:
+    - honorLabels: true
+      path: /actuator/prometheus
+      port: http
+      interval: 10s

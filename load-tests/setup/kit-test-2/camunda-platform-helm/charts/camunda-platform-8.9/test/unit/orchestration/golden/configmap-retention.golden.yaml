@@ -1,0 +1,207 @@
+---
+# Source: camunda-platform/templates/orchestration/configmap-unified.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-zeebe-configuration-unified
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-broker
+    app.kubernetes.io/version: "8.9.0-alpha2"
+apiVersion: v1
+data:
+  startup.sh: |
+    # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+    # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+    export VALUES_ORCHESTRATION_NODE_ID="${VALUES_ORCHESTRATION_NODE_ID:-$[${K8S_NAME##*-} * 1 + 0]}"
+    echo "export VALUES_ORCHESTRATION_NODE_ID=${VALUES_ORCHESTRATION_NODE_ID}"
+
+    if [ "${ZEEBE_RESTORE}" = "true" ]; then
+      exec /usr/local/camunda/bin/restore --backupId=${ZEEBE_RESTORE_FROM_BACKUP_ID}
+    else
+      exec /usr/local/camunda/bin/camunda
+    fi
+  application.yaml: |    
+    spring:
+      profiles:
+        active: "broker,identity,operate,tasklist,consolidated-auth"
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+    
+    server:
+      address: 0.0.0.0
+      port: 8080
+    
+    management:
+      server:
+        address: 0.0.0.0
+        port: 9600
+        base-path: "/"
+    
+    camunda:
+      license:
+        key: "${VALUES_ORCHESTRATION_LICENSE_KEY}"
+    
+      system:
+        cpu-thread-count: 3
+        io-thread-count: 3
+        clock-controlled: false
+        validate-restore-config: true
+        upgrade:
+          enable-version-check: true
+    
+      cluster:
+        # The Node ID depends on the StatefulSet Pod's name so it cannot be templated in the StatefulSet level.
+        # The value of "node-id" is calculated in the "startup.sh" file and exported as "VALUES_ORCHESTRATION_NODE_ID" env var.
+        node-id: "${VALUES_ORCHESTRATION_NODE_ID:}"
+        size: "3"
+        replication-factor: "3"
+        partition-count: "3"
+        # zeebe.broker.cluster
+        initial-contact-points:
+          - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+          - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
+    
+      api:
+        grpc:
+          address: 0.0.0.0
+          port: 26500
+    
+      # Database configuration - Separated syntax.
+      database:
+    
+      data:
+        snapshot-period: "5m"
+        primary-storage:
+          disk:
+            free-space:
+              processing: "2GB"
+              replication: "1GB"
+        secondary-storage:
+          autoconfigure-camunda-exporter: true
+          type: "elasticsearch"
+          retention:
+            enabled: true
+            minimum-age: "30d"
+          elasticsearch:
+            url: "http://camunda-platform-test-elasticsearch:9200"
+            cluster-name: "elasticsearch"
+            username: ""
+            password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
+            index-prefix: ""
+            number-of-replicas: "1"
+            history:
+              policy-name: "camunda-history-retention-policy"
+    
+      # Security configuration - Separated syntax.
+      security:
+        authentication:
+          method: "basic"
+          unprotectedApi: false
+        authorizations:
+          enabled: true
+        initialization:
+          default-roles:
+            admin:
+              users:
+              - demo
+            connectors:
+              clients:
+              - connectors
+              users:
+              - connectors
+          users:
+            - email: connector@demo.com
+              name: Connector User
+              password: connector
+              username: connectors
+            - email: demo@demo.com
+              name: Demo User
+              password: demo
+              username: demo
+        multiTenancy:
+          checksEnabled: false
+          apiEnabled: true
+    
+      #
+      # Camunda Operate Configuration - Separated syntax.
+      #
+      operate:
+        persistentSessionsEnabled: true
+        multiTenancy:
+          enabled: false
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 30d
+    
+      #
+      # Camunda Tasklist Configuration - Separated syntax.
+      #
+      tasklist:
+        multiTenancy:
+          enabled: false
+        # Zeebe instance
+        zeebe:
+          # Gateway address
+          gatewayAddress: "camunda-platform-test-zeebe-gateway:26500"
+          restAddress: "http://camunda-platform-test-zeebe-gateway:8080"
+        archiver:
+          ilmEnabled: true
+          ilmMinAgeForDeleteArchivedIndices: 30d
+    
+    #
+    # Camunda Zeebe Configuration - Separated syntax.
+    #
+    zeebe:
+      host: 0.0.0.0
+      log:
+        level: "info"
+    
+      broker:
+        # zeebe.broker.gateway
+        gateway:
+          enable: true
+          multitenancy:
+            enabled: false
+    
+        # zeebe.broker.network
+        network:
+          advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
+          host: 0.0.0.0
+          commandApi:
+            port: 26501
+          internalApi:
+            port: 26502
+    
+        # zeebe.broker.cluster
+        cluster:
+          clusterName: camunda-platform-test-zeebe
+    
+        # zeebe.broker.exporters
+        exporters:
+          camundaexporter:
+            className: "io.camunda.exporter.CamundaExporter"
+            args:
+              connect:
+                type: "elasticsearch"
+                url: "http://camunda-platform-test-elasticsearch:9200"
+                awsEnabled: false
+              history:
+                elsRolloverDateFormat: "date"
+                rolloverInterval: "1d"
+                rolloverBatchSize: 100
+                waitPeriodBeforeArchiving: "1h"
+                delayBetweenRuns: 2000
+                maxDelayBetweenRuns: 60000
+    
+  log4j2.xml: |

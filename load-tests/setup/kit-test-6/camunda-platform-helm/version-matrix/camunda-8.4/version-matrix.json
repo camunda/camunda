@@ -1,0 +1,591 @@
+[
+  {
+    "chart_version": "9.4.8",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.17",
+      "docker.io/camunda/identity:8.4.19",
+      "docker.io/camunda/operate:8.4.18",
+      "docker.io/camunda/optimize:8.4.15",
+      "docker.io/camunda/tasklist:8.4.18",
+      "docker.io/camunda/zeebe:8.4.17",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.15",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.15",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.15"
+    ]
+  },
+  {
+    "chart_version": "9.4.7",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.16",
+      "docker.io/camunda/identity:8.4.18",
+      "docker.io/camunda/operate:8.4.17",
+      "docker.io/camunda/optimize:8.4.14",
+      "docker.io/camunda/tasklist:8.4.17",
+      "docker.io/camunda/zeebe:8.4.16",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.14",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.14",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.14"
+    ]
+  },
+  {
+    "chart_version": "9.4.6",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.16",
+      "docker.io/camunda/identity:8.4.16",
+      "docker.io/camunda/operate:8.4.16",
+      "docker.io/camunda/optimize:8.4.13",
+      "docker.io/camunda/tasklist:8.4.16",
+      "docker.io/camunda/zeebe:8.4.15",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.13",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.13",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.13"
+    ]
+  },
+  {
+    "chart_version": "9.4.5",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.15",
+      "docker.io/camunda/identity:8.4.15",
+      "docker.io/camunda/operate:8.4.15",
+      "docker.io/camunda/optimize:8.4.12",
+      "docker.io/camunda/tasklist:8.4.15",
+      "docker.io/camunda/zeebe:8.4.14",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.12",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.12",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.12"
+    ]
+  },
+  {
+    "chart_version": "9.4.4",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0-debian-12-r19",
+      "docker.io/camunda/connectors-bundle:8.4.14",
+      "docker.io/camunda/identity:8.4.14",
+      "docker.io/camunda/operate:8.4.14",
+      "docker.io/camunda/optimize:8.4.10",
+      "docker.io/camunda/tasklist:8.4.14",
+      "docker.io/camunda/zeebe:8.4.13",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.11",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.11",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.11"
+    ]
+  },
+  {
+    "chart_version": "9.4.3",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.14",
+      "docker.io/camunda/identity:8.4.13",
+      "docker.io/camunda/operate:8.4.14",
+      "docker.io/camunda/optimize:8.4.10",
+      "docker.io/camunda/tasklist:8.4.14",
+      "docker.io/camunda/zeebe:8.4.13",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.11",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.11",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.11"
+    ]
+  },
+  {
+    "chart_version": "9.4.2",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.14",
+      "docker.io/camunda/identity:8.4.12",
+      "docker.io/camunda/operate:8.4.13",
+      "docker.io/camunda/optimize:8.4.9",
+      "docker.io/camunda/tasklist:8.4.13",
+      "docker.io/camunda/zeebe:8.4.12",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.10",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.10",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.10"
+    ]
+  },
+  {
+    "chart_version": "9.4.1",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.13",
+      "docker.io/camunda/identity:8.4.12",
+      "docker.io/camunda/operate:8.4.13",
+      "docker.io/camunda/optimize:8.4.9",
+      "docker.io/camunda/tasklist:8.4.13",
+      "docker.io/camunda/zeebe:8.4.12",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.10",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.10",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.10"
+    ]
+  },
+  {
+    "chart_version": "9.4.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.11",
+      "docker.io/camunda/identity:8.4.11",
+      "docker.io/camunda/operate:8.4.12",
+      "docker.io/camunda/optimize:8.4.8",
+      "docker.io/camunda/tasklist:8.4.12",
+      "docker.io/camunda/zeebe:8.4.11",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.9",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.9",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.9"
+    ]
+  },
+  {
+    "chart_version": "9.3.9",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.10",
+      "docker.io/camunda/identity:8.4.10",
+      "docker.io/camunda/operate:8.4.11",
+      "docker.io/camunda/optimize:8.4.7",
+      "docker.io/camunda/tasklist:8.4.11",
+      "docker.io/camunda/zeebe:8.4.10",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.8",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.8",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.8"
+    ]
+  },
+  {
+    "chart_version": "9.3.8",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.9",
+      "docker.io/camunda/identity:8.4.10",
+      "docker.io/camunda/operate:8.4.10",
+      "docker.io/camunda/optimize:8.4.6",
+      "docker.io/camunda/tasklist:8.4.10",
+      "docker.io/camunda/zeebe:8.4.9",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.7",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.7",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.7"
+    ]
+  },
+  {
+    "chart_version": "9.3.7",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.9",
+      "docker.io/camunda/identity:8.4.9",
+      "docker.io/camunda/operate:8.4.10",
+      "docker.io/camunda/optimize:8.4.6",
+      "docker.io/camunda/tasklist:8.4.10",
+      "docker.io/camunda/zeebe:8.4.9",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.7",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.7",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.7"
+    ]
+  },
+  {
+    "chart_version": "9.3.6",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.8",
+      "docker.io/camunda/identity:8.4.8",
+      "docker.io/camunda/operate:8.4.9",
+      "docker.io/camunda/optimize:8.4.5",
+      "docker.io/camunda/tasklist:8.4.8",
+      "docker.io/camunda/zeebe:8.4.8",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.6",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.6",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.6"
+    ]
+  },
+  {
+    "chart_version": "9.3.5",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.7",
+      "docker.io/camunda/identity:8.4.7",
+      "docker.io/camunda/operate:8.4.8",
+      "docker.io/camunda/optimize:8.4.4",
+      "docker.io/camunda/tasklist:8.4.7",
+      "docker.io/camunda/zeebe:8.4.7",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.5",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.5",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.5"
+    ]
+  },
+  {
+    "chart_version": "9.3.4",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.7.0",
+      "docker.io/camunda/connectors-bundle:8.4.7",
+      "docker.io/camunda/identity:8.4.7",
+      "docker.io/camunda/operate:8.4.7",
+      "docker.io/camunda/optimize:8.4.4",
+      "docker.io/camunda/tasklist:8.4.7",
+      "docker.io/camunda/zeebe:8.4.7",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.5",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.5",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.5"
+    ]
+  },
+  {
+    "chart_version": "9.3.3",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.6.0",
+      "docker.io/camunda/connectors-bundle:8.4.6",
+      "docker.io/camunda/identity:8.4.6",
+      "docker.io/camunda/operate:8.4.6",
+      "docker.io/camunda/optimize:8.4.3",
+      "docker.io/camunda/tasklist:8.4.6",
+      "docker.io/camunda/zeebe:8.4.6",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.4",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.4",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.4"
+    ]
+  },
+  {
+    "chart_version": "9.3.2",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.6.0",
+      "docker.io/camunda/connectors-bundle:8.4.5",
+      "docker.io/camunda/identity:8.4.5",
+      "docker.io/camunda/operate:8.4.5",
+      "docker.io/camunda/optimize:8.4.2",
+      "docker.io/camunda/tasklist:8.4.5",
+      "docker.io/camunda/zeebe:8.4.5",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.3",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.3"
+    ]
+  },
+  {
+    "chart_version": "9.3.1",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.6.0",
+      "docker.io/camunda/connectors-bundle:8.4.5",
+      "docker.io/camunda/identity:8.4.5",
+      "docker.io/camunda/operate:8.4.5",
+      "docker.io/camunda/optimize:8.4.2",
+      "docker.io/camunda/tasklist:8.4.5",
+      "docker.io/camunda/zeebe:8.4.5",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.3",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.3"
+    ]
+  },
+  {
+    "chart_version": "9.3.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.6.0",
+      "docker.io/camunda/connectors-bundle:8.4.5",
+      "docker.io/camunda/identity:8.4.5",
+      "docker.io/camunda/operate:8.4.5",
+      "docker.io/camunda/optimize:8.4.2",
+      "docker.io/camunda/tasklist:8.4.5",
+      "docker.io/camunda/zeebe:8.4.5",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.3",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.3",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.3"
+    ]
+  },
+  {
+    "chart_version": "9.2.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.6.0",
+      "docker.io/camunda/connectors-bundle:8.4.4",
+      "docker.io/camunda/identity:8.4.4",
+      "docker.io/camunda/operate:8.4.4",
+      "docker.io/camunda/optimize:8.4.1",
+      "docker.io/camunda/tasklist:8.4.4",
+      "docker.io/camunda/zeebe:8.4.4",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.2",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.2",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.2"
+    ]
+  },
+  {
+    "chart_version": "9.1.2",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:11-debian-11-r96",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.6.0",
+      "docker.io/camunda/connectors-bundle:8.4.4",
+      "docker.io/camunda/identity:8.4.3",
+      "docker.io/camunda/operate:8.4.3",
+      "docker.io/camunda/optimize:8.4.1",
+      "docker.io/camunda/tasklist:8.4.3",
+      "docker.io/camunda/zeebe:8.4.3",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.2",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.2",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.2"
+    ]
+  },
+  {
+    "chart_version": "9.1.1",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:11-debian-11-r96",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.6.0",
+      "docker.io/camunda/connectors-bundle:8.4.4",
+      "docker.io/camunda/identity:8.4.2",
+      "docker.io/camunda/operate:8.4.2",
+      "docker.io/camunda/optimize:8.4.1",
+      "docker.io/camunda/tasklist:8.4.2",
+      "docker.io/camunda/zeebe:8.4.2",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.2",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.2",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.2"
+    ]
+  },
+  {
+    "chart_version": "9.1.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:11-debian-11-r93",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.5.0",
+      "docker.io/camunda/connectors-bundle:8.4.3",
+      "docker.io/camunda/identity:8.4.1",
+      "docker.io/camunda/operate:8.4.1",
+      "docker.io/camunda/optimize:8.4.0",
+      "docker.io/camunda/tasklist:8.4.1",
+      "docker.io/camunda/zeebe:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
+    ]
+  },
+  {
+    "chart_version": "9.0.2",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:11-debian-11-r93",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.5.0",
+      "docker.io/camunda/connectors-bundle:8.4.3",
+      "docker.io/camunda/identity:8.4.0",
+      "docker.io/camunda/operate:8.4.0",
+      "docker.io/camunda/optimize:8.4.0",
+      "docker.io/camunda/tasklist:8.4.0",
+      "docker.io/camunda/zeebe:8.4.0",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
+    ]
+  },
+  {
+    "chart_version": "9.0.1",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:11-debian-11-r93",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.5.0",
+      "docker.io/camunda/connectors-bundle:8.4.2",
+      "docker.io/camunda/identity:8.4.0",
+      "docker.io/camunda/operate:8.4.0",
+      "docker.io/camunda/optimize:8.4.0",
+      "docker.io/camunda/tasklist:8.4.0",
+      "docker.io/camunda/zeebe:8.4.0",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
+    ]
+  },
+  {
+    "chart_version": "9.0.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:11-debian-11-r93",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.5.0",
+      "docker.io/camunda/connectors-bundle:8.4.1",
+      "docker.io/camunda/identity:8.4.0",
+      "docker.io/camunda/operate:8.4.0",
+      "docker.io/camunda/optimize:8.4.0",
+      "docker.io/camunda/tasklist:8.4.0",
+      "docker.io/camunda/zeebe:8.4.0",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.1",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.1"
+    ]
+  },
+  {
+    "chart_version": "9.5.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.18",
+      "docker.io/camunda/identity:8.4.20",
+      "docker.io/camunda/operate:8.4.19",
+      "docker.io/camunda/optimize:8.4.16",
+      "docker.io/camunda/tasklist:8.4.19",
+      "docker.io/camunda/zeebe:8.4.18",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.16",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.16",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.16"
+    ]
+  },
+  {
+    "chart_version": "9.5.1",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.19",
+      "docker.io/camunda/identity:8.4.21",
+      "docker.io/camunda/operate:8.4.20",
+      "docker.io/camunda/optimize:8.4.18",
+      "docker.io/camunda/tasklist:8.4.20",
+      "docker.io/camunda/zeebe:8.4.19",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.17",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.17",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.17"
+    ]
+  },
+  {
+    "chart_version": "9.5.2",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.19",
+      "docker.io/camunda/identity:8.4.21",
+      "docker.io/camunda/operate:8.4.20",
+      "docker.io/camunda/optimize:8.4.18",
+      "docker.io/camunda/tasklist:8.4.21",
+      "docker.io/camunda/zeebe:8.4.19",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.18",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.18",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.18"
+    ]
+  },
+  {
+    "chart_version": "9.6.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.20",
+      "docker.io/camunda/identity:8.4.22",
+      "docker.io/camunda/operate:8.4.21",
+      "docker.io/camunda/optimize:8.4.19",
+      "docker.io/camunda/tasklist:8.4.22",
+      "docker.io/camunda/zeebe:8.4.20",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.18",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.18",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.18"
+    ]
+  },
+  {
+    "chart_version": "9.7.0",
+    "chart_images": [
+      "docker.io/bitnami/elasticsearch:8.9.2",
+      "docker.io/bitnami/keycloak:22.0.5",
+      "docker.io/bitnami/os-shell:12-debian-12-r16",
+      "docker.io/bitnami/postgresql:14.5.0-debian-11-r35",
+      "docker.io/bitnami/postgresql:15.10.0-debian-12-r2",
+      "docker.io/camunda/connectors-bundle:8.4.21",
+      "docker.io/camunda/identity:8.4.23",
+      "docker.io/camunda/operate:8.4.22",
+      "docker.io/camunda/optimize:8.4.20",
+      "docker.io/camunda/tasklist:8.4.23",
+      "docker.io/camunda/zeebe:8.4.21",
+      "registry.camunda.cloud/web-modeler-ee/modeler-restapi:8.4.19",
+      "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.4.19",
+      "registry.camunda.cloud/web-modeler-ee/modeler-websockets:8.4.19"
+    ]
+  }
+]

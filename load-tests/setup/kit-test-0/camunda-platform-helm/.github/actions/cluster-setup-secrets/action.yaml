@@ -1,0 +1,95 @@
+name: "Cluster Setup - Configure TLS Certificates/Secrets"
+description: "Configures TLS certificates/secrets for GKE, ROSA, or EKS clusters."
+inputs:
+  distro-platform:
+    description: "Kubernetes distro platform (gke | rosa | eks)"
+    required: true
+  chart-path:
+    description: "Path to Helm chart"
+    required: true
+  namespace:
+    description: "Target namespace for test secrets"
+    required: true
+  namespace-prefix:
+    description: "Namespace prefix (used only for EKS)"
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Configure TLS Certificates/Secrets
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        DISTRO_PLATFORM="${{ inputs.distro-platform }}"
+        TEST_NAMESPACE="${{ inputs.namespace }}"
+        CHART_PATH="${{ inputs.chart-path }}"
+        NAMESPACE_PREFIX="${{ inputs.namespace-prefix }}"
+
+        # Function to apply external secrets with retry logic
+        # This handles the case where the external-secrets webhook is not yet ready
+        apply_external_secret_with_retry() {
+          local file="$1"
+          local namespace="$2"
+          local max_retries=5
+          local retry_delay=10
+          
+          for ((i=1; i<=max_retries; i++)); do
+            echo "🔄 Attempt $i/$max_retries: Applying $file"
+            if kubectl apply -n "$namespace" -f "$file" 2>&1; then
+              echo "✅ Successfully applied $file"
+              return 0
+            else
+              if [[ $i -lt $max_retries ]]; then
+                echo "⚠️ Failed to apply $file, retrying in ${retry_delay}s... (webhook may not be ready)"
+                sleep $retry_delay
+                retry_delay=$((retry_delay * 2))
+              else
+                echo "❌ Failed to apply $file after $max_retries attempts"
+                return 1
+              fi
+            fi
+          done
+        }
+
+        if [[ "$DISTRO_PLATFORM" == "gke" || "$DISTRO_PLATFORM" == "rosa" ]]; then
+          echo "🔧 Applying external secret certificates for $DISTRO_PLATFORM"
+          apply_external_secret_with_retry \
+            ".github/config/external-secret/external-secret-certificates.yaml" \
+            "$TEST_NAMESPACE"
+
+          # Apply external secret configuration for integration tests
+          # Check for chart-specific external secret first (better approach)
+          CHART_SPECIFIC_FILE="${CHART_PATH}/test/integration/external-secrets/external-secret-integration-test-credentials.yaml"
+          
+          if [[ -f "$CHART_SPECIFIC_FILE" ]]; then
+            echo "✅ Applying chart-specific external secret for integration tests: $CHART_SPECIFIC_FILE"
+            apply_external_secret_with_retry "$CHART_SPECIFIC_FILE" "$TEST_NAMESPACE"
+          else
+            echo "⚠️ Chart-specific external secret not found, using fallback"
+            # For backward compatibility with other versions (alpha, future versions).
+            apply_external_secret_with_retry \
+              ".github/config/external-secret/external-secret-integration-test-credentials.yaml" \
+              "$TEST_NAMESPACE"
+          fi
+
+          for secret in $(kubectl get externalsecret -n $TEST_NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+            echo "⏳ Waiting for ExternalSecret: $secret"
+            kubectl get externalsecret/"$secret" -n $TEST_NAMESPACE
+            kubectl wait --for=condition=Ready externalsecret/"$secret" -n $TEST_NAMESPACE --timeout=300s
+          done
+
+        else
+          echo "🔧 Running in EKS mode"
+          kubectl get secret -n "${NAMESPACE_PREFIX}-certs" aws-camunda-cloud-tls -o yaml > aws-camunda-cloud-tls.yaml
+          sed -i "s/namespace: ${NAMESPACE_PREFIX}-certs/namespace: $TEST_NAMESPACE/g" aws-camunda-cloud-tls.yaml
+          kubectl apply -f aws-camunda-cloud-tls.yaml -n "$TEST_NAMESPACE"
+        fi
+
+        echo "🔧 Applying external secret infra configuration"
+        apply_external_secret_with_retry \
+          ".github/config/external-secret/external-secret-infra.yaml" \
+          "$TEST_NAMESPACE"
+
+        echo "✅ TLS Certificates/Secrets configuration completed."
+

@@ -1,0 +1,39 @@
+{{- if .Values.orchestration.migration.data.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "orchestration.fullname" . }}-migration-data-env-vars
+  labels:
+    {{- include "orchestration.labelsMigration" . | nindent 4 }}
+  annotations:
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: "process-migration,task-migration,usage-metric-migration"
+  MIGRATION_PROCESS_BATCHSIZE: {{ .Values.orchestration.migration.data.process.batchSize | quote }}
+  MIGRATION_PROCESS_IMPORTERFINISHEDTIMEOUT: {{ .Values.orchestration.migration.data.process.importerFinishedTimeout | quote }}
+  MIGRATION_PROCESS_RETRY_MAXRETRIES: {{ .Values.orchestration.migration.data.process.retry.maxRetries | quote }}
+  MIGRATION_PROCESS_RETRY_MAXRETRYDELAY: {{ .Values.orchestration.migration.data.process.retry.maxRetryDelay | quote }}
+  MIGRATION_PROCESS_RETRY_MINRETRYDELAY: {{ .Values.orchestration.migration.data.process.retry.minRetryDelay | quote }}
+  MIGRATION_PROCESS_RETRY_RETRYDELAYMULTIPLIER: {{ .Values.orchestration.migration.data.process.retry.retryDelayMultiplier | quote }}
+  MIGRATION_METRICS_BATCHSIZE: {{ .Values.orchestration.migration.data.metrics.batchSize | quote }}
+  MIGRATION_METRICS_IMPORTERFINISHEDTIMEOUT: {{ .Values.orchestration.migration.data.metrics.importerFinishedTimeout | quote }}
+  MIGRATION_METRICS_RETRY_MAXRETRIES: {{ .Values.orchestration.migration.data.metrics.retry.maxRetries | quote }}
+  MIGRATION_METRICS_RETRY_MAXRETRYDELAY: {{ .Values.orchestration.migration.data.metrics.retry.maxRetryDelay | quote }}
+  MIGRATION_METRICS_RETRY_MINRETRYDELAY: {{ .Values.orchestration.migration.data.metrics.retry.minRetryDelay | quote }}
+  MIGRATION_METRICS_RETRY_RETRYDELAYMULTIPLIER: {{ .Values.orchestration.migration.data.metrics.retry.retryDelayMultiplier | quote }}
+  MIGRATION_TUMETRICS_BATCHSIZE: {{ .Values.orchestration.migration.data.tumetrics.batchSize | quote }}
+  MIGRATION_TUMETRICS_IMPORTERFINISHEDTIMEOUT: {{ .Values.orchestration.migration.data.tumetrics.importerFinishedTimeout | quote }}
+  MIGRATION_TUMETRICS_RETRY_MAXRETRIES: {{ .Values.orchestration.migration.data.tumetrics.retry.maxRetries | quote }}
+  MIGRATION_TUMETRICS_RETRY_MAXRETRYDELAY: {{ .Values.orchestration.migration.data.tumetrics.retry.maxRetryDelay | quote }}
+  MIGRATION_TUMETRICS_RETRY_MINRETRYDELAY: {{ .Values.orchestration.migration.data.tumetrics.retry.minRetryDelay | quote }}
+  MIGRATION_TUMETRICS_RETRY_RETRYDELAYMULTIPLIER: {{ .Values.orchestration.migration.data.tumetrics.retry.retryDelayMultiplier | quote }}
+  MIGRATION_TASKS_BATCHSIZE: {{ .Values.orchestration.migration.data.tasks.batchSize | quote }}
+  MIGRATION_TASKS_IMPORTERFINISHEDTIMEOUT: {{ .Values.orchestration.migration.data.tasks.importerFinishedTimeout | quote }}
+  MIGRATION_TASKS_RETRY_MAXRETRIES: {{ .Values.orchestration.migration.data.process.retry.maxRetries | quote }}
+  MIGRATION_TASKS_RETRY_MAXRETRYDELAY: {{ .Values.orchestration.migration.data.process.retry.maxRetryDelay | quote }}
+  MIGRATION_TASKS_RETRY_MINRETRYDELAY: {{ .Values.orchestration.migration.data.process.retry.minRetryDelay | quote }}
+  MIGRATION_TASKS_RETRY_RETRYDELAYMULTIPLIER: {{ .Values.orchestration.migration.data.process.retry.retryDelayMultiplier | quote }}
+{{- if .Values.orchestration.history.retention.enabled }}
+  MIGRATION_TASKS_LEGACYINDEXRETENTIONAGE: {{ .Values.orchestration.migration.data.tasks.legacyIndexRetentionAge | default .Values.orchestration.history.retention.minimumAge | quote }}
+{{- end }}
+{{- end }}

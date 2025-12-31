@@ -1,0 +1,39 @@
+{{- if and .Values.prometheusServiceMonitor.enabled .Values.webModeler.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-modeler
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler.restapi) | quote }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+      app.kubernetes.io/component: restapi
+  endpoints:
+    - honorLabels: true
+      path: {{ .Values.webModeler.restapi.metrics.prometheus }}
+      port: http-management
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-modeler-webapp
+  labels:
+    {{- include "camundaPlatform.labels" . | nindent 4 }}
+    app.kubernetes.io/version: {{ include "camundaPlatform.imageTagByParams" (dict "base" .Values.global "overlay" .Values.webModeler.webapp) | quote }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+      app.kubernetes.io/component: webapp
+  endpoints:
+    - honorLabels: true
+      path: {{ .Values.webModeler.webapp.metrics.prometheus }}
+      port: http-management
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}

@@ -1,0 +1,96 @@
+##
+# This is a minimal sample values file to get you started with an Openshift cluster using the recommended default
+# policies. Using these values, you will be able to deploy the chart using the least permissive SCC, "restricted".
+#
+# Everywhere we assign "null" to a value is to ensure that default values of one of the charts, or of its dependencies,
+# will not cause issues with the "restricted" SCC (e.g. assign a fixed UID or GID). Additionally, we want to make sure
+# that all volume mounts are mounted with the minimum required permissions. You can omit these everywhere if you will
+# use a different SCC such as nonroot or anyuid.
+##
+---
+# omit the values below if zeebe.enabled is false
+zeebe:
+  configMap:
+    defaultMode: 0555
+
+# omit the values below if zeebe-gateway.enabled is false
+zeebe-gateway:
+  # ensure we can run this pod as a random user
+  configMap:
+    defaultMode: 0444
+
+# omit the values below if operate.enabled is false
+operate:
+  configMap:
+    defaultMode: 0444
+
+# omit the values below if optimize.enabled is false
+optimize: {}
+
+# omit the values below if tasklist.enabled is false
+tasklist:
+  configMap:
+    defaultMode: 0444
+
+# omit the values below if identity.enabled is false
+identity:
+  # omit the values below if identity.keycloak.enabled is false
+  keycloak:
+    containerSecurityContext:
+      runAsUser: null
+    podSecurityContext:
+      fsGroup: null
+      runAsUser: null
+    # omit the values below if identity.keycloak.postgresql.enabled is false
+    postgresql:
+      # omit the values below if identity.keycloak.postgresql.primary.enabled is false
+      primary:
+        containerSecurityContext:
+          runAsUser: null
+        podSecurityContext:
+          fsGroup: null
+          runAsUser: null
+      # omit the values below if identity.keycloak.postgresql.readReplicas.enabled is false
+      readReplicas:
+        containerSecurityContext:
+          runAsUser: null
+        podSecurityContext:
+          fsGroup: null
+          runAsUser: null
+      # omit the values below if identity.keycloak.postgresql.metrics.enabled is false
+      metrics:
+        containerSecurityContext:
+          runAsUser: null
+        podSecurityContext:
+          fsGroup: null
+          runAsUser: null
+
+# omit the values below if elasticsearch.enabled is false
+elasticsearch:
+  securityContext:
+    runAsUser: null
+  sysctlInitContainer:
+    enabled: false
+  podSecurityContext:
+    fsGroup: null
+    runAsUser: null
+
+postgresql:
+  primary:
+    containerSecurityContext:
+      runAsUser: null
+    podSecurityContext:
+      fsGroup: null
+      runAsUser: null
+  readReplicas:
+    containerSecurityContext:
+      runAsUser: null
+    podSecurityContext:
+      fsGroup: null
+      runAsUser: null
+  metrics:
+    containerSecurityContext:
+      runAsUser: null
+    podSecurityContext:
+      fsGroup: null
+      runAsUser: null

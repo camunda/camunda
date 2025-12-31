@@ -1,0 +1,186 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webModeler.webapp.fullname" . }}
+  labels: {{- include "webModeler.webapp.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels: {{- include "webModeler.webapp.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "webModeler.webapp.labels" . | nindent 8 }}
+      {{- if .Values.webModeler.webapp.podLabels }}
+      {{- toYaml .Values.webModeler.webapp.podLabels | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.webapp.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.webModeler.webapp.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.webModeler.webapp.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: {{ include "webModeler.name" . }}-webapp
+          image: {{ include "webModeler.webapp.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.webModeler.webapp.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.webModeler.webapp.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=128"
+            - name: HTTP_WORKERS
+              value: "2"
+            - name: RESTAPI_HOST
+              value: {{ include "webModeler.restapi.fullname" . | quote }}
+            - name: RESTAPI_PORT
+              value: {{ .Values.webModeler.restapi.service.port | quote }}
+            - name: RESTAPI_MANAGEMENT_PORT
+              value: {{ .Values.webModeler.restapi.service.managementPort | quote }}
+            - name: SERVER_URL
+              value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+            - name: SERVER_HTTPS_ONLY
+              value: {{ hasPrefix "https://" (tpl .Values.global.identity.auth.webModeler.redirectUrl $) | quote }}
+            - name: OAUTH2_CLIENT_ID
+              value: "web-modeler"
+            - name: OAUTH2_TOKEN_AUDIENCE
+              value: "web-modeler"
+            - name: OAUTH2_TOKEN_ISSUER
+              value: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+            - name: KEYCLOAK_BASE_URL
+              value: {{ include "camundaPlatform.authIssuerUrl" . | trimSuffix (print (.Values.global.identity.keycloak.contextPath | trimSuffix "/") .Values.global.identity.keycloak.realm) | quote }}
+            - name: KEYCLOAK_CONTEXT_PATH
+              value: {{ .Values.global.identity.keycloak.contextPath | quote }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.global.identity.keycloak.realm | trimPrefix "/realms/" | quote }}
+            - name: KEYCLOAK_JWKS_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrlCertsEndpoint" . | quote }}
+            - name: PUSHER_HOST
+              value: {{ include "webModeler.websockets.fullname" . | quote }}
+            - name: PUSHER_PORT
+              value: {{ .Values.webModeler.websockets.service.port | quote }}
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-id
+            - name: PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-key
+            - name: PUSHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-secret
+            - name: CLIENT_PUSHER_HOST
+              value: {{ include "webModeler.publicWebsocketHost" . | quote }}
+            - name: CLIENT_PUSHER_PORT
+              value: {{ include "webModeler.publicWebsocketPort" . | quote }}
+            {{- if and .Values.global.ingress.enabled .Values.webModeler.contextPath }}
+            - name: CLIENT_PUSHER_PATH
+              value: {{ include "webModeler.websocketContextPath" . | quote }}
+            {{- end }}
+            - name: CLIENT_PUSHER_FORCE_TLS
+              value: {{ include "webModeler.websocketTlsEnabled" . | quote }}
+            - name: CLIENT_PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}
+                  key: pusher-app-key
+            - name: IDENTITY_BASE_URL
+              value: {{ include "camundaPlatform.identityURL" . | quote }}
+            {{- with .Values.webModeler.webapp.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          {{- if .Values.webModeler.webapp.command }}
+          command: {{ toYaml .Values.webModeler.webapp.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.webModeler.webapp.resources | nindent 12 }}
+          ports:
+            - containerPort: 8070
+              name: http
+              protocol: TCP
+            - containerPort: 8071
+              name: http-management
+              protocol: TCP
+          {{- if .Values.webModeler.webapp.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              # NOTE: WebApp doesn't support contextPath for health endpoints.
+              path: {{ .Values.webModeler.webapp.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.startupProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.webapp.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.webapp.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.webapp.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.webapp.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.webapp.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.webapp.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              # NOTE: WebApp doesn't support contextPath for health endpoints.
+              path: {{ .Values.webModeler.webapp.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.readinessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.webapp.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.webapp.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.webapp.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.webapp.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.webapp.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.webapp.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              # NOTE: WebApp doesn't support contextPath for health endpoints.
+              path: {{ .Values.webModeler.webapp.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.webapp.livenessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.webapp.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.webapp.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.webapp.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.webapp.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.webapp.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.webapp.extraVolumeMounts }}
+          volumeMounts:
+          {{- .Values.webModeler.webapp.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+        {{- if .Values.webModeler.webapp.sidecars }}
+        {{- .Values.webModeler.webapp.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.webModeler.webapp.extraVolumes }}
+      volumes:
+        {{- .Values.webModeler.webapp.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+        {{- if .Values.webModeler.serviceAccount.name }}
+      serviceAccountName: {{ .Values.webModeler.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.webModeler.webapp.podSecurityContext }}
+      securityContext: {{- toYaml .Values.webModeler.webapp.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.webapp.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.webapp.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.webapp.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,252 @@
+{{- if .Values.zeebe.enabled -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "zeebe.names.broker" . }}
+  labels:
+    {{- include "zeebe.labels.broker" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.global.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  {{- if eq .Values.global.multiregion.installationType "failOver" }}
+  replicas: {{ div (div .Values.zeebe.clusterSize .Values.global.multiregion.regions) 2 }}
+  {{- end }}
+  {{- if ne .Values.global.multiregion.installationType "failOver" }}
+  replicas: {{ div .Values.zeebe.clusterSize .Values.global.multiregion.regions }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zeebe.matchLabels.broker" . | nindent 6 }}
+  serviceName: {{ include "zeebe.names.broker" . }}
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        {{- include "zeebe.labels.broker" . | nindent 8 }}
+        {{- if .Values.zeebe.podLabels }}
+        {{- toYaml .Values.zeebe.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- range $key, $value := .Values.zeebe.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      {{- if .Values.zeebe.priorityClassName }}
+      priorityClassName: {{ .Values.zeebe.priorityClassName | quote }}
+      {{- end }}
+      imagePullSecrets:
+        {{- include "zeebe.imagePullSecrets.broker" . | nindent 8 }}
+      initContainers:
+        {{- tpl ((coalesce .Values.zeebe.initContainers .Values.zeebe.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: zeebe
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.zeebe) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.zeebe.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.zeebe.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          env:
+            - name: LC_ALL
+              value: C.UTF-8
+            - name: K8S_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_SERVICE_NAME
+              value: {{ include "zeebe.names.broker" . }}
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
+              value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
+            - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+              value:
+              {{- range (untilStep 0 (int .Values.zeebe.clusterSize) 1) }}
+                $(K8S_SERVICE_NAME)-{{ . }}.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:{{$.Values.zeebe.service.internalPort}},
+              {{- end }}
+            - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
+              value: {{ tpl .Values.global.zeebeClusterName . }}
+            - name: ZEEBE_LOG_LEVEL
+              value: {{ .Values.zeebe.logLevel | quote }}
+            - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
+              value: {{ .Values.zeebe.partitionCount | quote }}
+            - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
+              value: {{ .Values.zeebe.clusterSize | quote }}
+            - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
+              value: {{ .Values.zeebe.replicationFactor | quote }}
+            - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+              value: {{ .Values.zeebe.cpuThreadCount  | quote }}
+            - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+              value: {{ .Values.zeebe.ioThreadCount  | quote }}
+            - name: ZEEBE_BROKER_GATEWAY_ENABLE
+              value: "false"
+            {{- if not .Values.global.elasticsearch.disableExporter }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+              value: "io.camunda.zeebe.exporter.ElasticsearchExporter"
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
+              value: {{ include "camundaPlatform.elasticsearchURL" . | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX
+              value: {{ .Values.global.elasticsearch.prefix | quote }}
+            {{- if .Values.zeebe.retention.enabled }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_ENABLED
+              value: "true"
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_MINIMUMAGE
+              value: {{ .Values.zeebe.retention.minimumAge | quote }}
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_RETENTION_POLICYNAME
+              value: {{ .Values.zeebe.retention.policyName | quote }}
+            {{- end }}
+            {{- end }}
+            - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
+              value: {{ .Values.zeebe.service.commandPort  | quote }}
+            - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
+              value: {{  .Values.zeebe.service.internalPort | quote }}
+            - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
+              value: {{  .Values.zeebe.service.httpPort | quote }}
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.zeebe.javaOpts | quote }}
+            {{- with .Values.zeebe.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          {{- if .Values.zeebe.command}}
+          command: {{ toYaml .Values.zeebe.command | nindent 10 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.zeebe.service.httpPort  }}
+              name: {{ default "http" .Values.zeebe.service.httpName  }}
+            - containerPort: {{ .Values.zeebe.service.commandPort  }}
+              name: {{ default "command" .Values.zeebe.service.commandName  }}
+            - containerPort: {{ .Values.zeebe.service.internalPort  }}
+              name: {{ default "internal" .Values.zeebe.service.internalName  }}
+          {{- if .Values.zeebe.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.zeebe.contextPath }}{{ .Values.zeebe.startupProbe.probePath }}
+              scheme: {{ .Values.zeebe.startupProbe.scheme }}
+              port: {{ .Values.zeebe.service.httpPort  }}
+            initialDelaySeconds: {{ .Values.zeebe.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.zeebe.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.zeebe.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.zeebe.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.zeebe.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.zeebe.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.zeebe.contextPath }}{{ .Values.zeebe.readinessProbe.probePath }}
+              scheme: {{ .Values.zeebe.readinessProbe.scheme }}
+              port: {{ .Values.zeebe.service.httpPort  }}
+            initialDelaySeconds: {{ .Values.zeebe.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.zeebe.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.zeebe.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.zeebe.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.zeebe.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.zeebe.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.zeebe.contextPath }}{{ .Values.zeebe.livenessProbe.probePath }}
+              scheme: {{ .Values.zeebe.livenessProbe.scheme }}
+              port: {{ .Values.zeebe.service.httpPort  }}
+            initialDelaySeconds: {{ .Values.zeebe.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.zeebe.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.zeebe.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.zeebe.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.zeebe.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.zeebe.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/bin/startup.sh
+              subPath: startup.sh
+            {{- if not ( eq .Values.zeebe.persistenceType "local" ) }}
+            - name: data
+              mountPath: /usr/local/zeebe/data
+            {{- end }}
+            - name: exporters
+              mountPath: /exporters
+            - mountPath: /tmp
+              name: tmp
+            {{- if .Values.zeebe.log4j2 }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/log4j2.xml
+              subPath: broker-log4j2.xml
+            {{- end }}
+            {{- if .Values.zeebe.extraVolumeMounts}}
+            {{ .Values.zeebe.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+      {{- if .Values.zeebe.sidecars }}
+      {{- .Values.zeebe.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if eq .Values.zeebe.persistenceType "memory" }}
+        - name: data
+          emptyDir:
+            medium: "Memory"
+        {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "zeebe.fullname.borker" . }}
+            defaultMode: {{ .Values.zeebe.configMap.defaultMode }}
+        - name: exporters
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.zeebe.extraVolumes}}
+          {{ .Values.zeebe.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.zeebe.serviceAccount.name }}
+      serviceAccountName: {{ .Values.zeebe.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.zeebe.podSecurityContext }}
+      securityContext: {{- toYaml .Values.zeebe.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.zeebe.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+# yamllint disable
+{{- with .Values.zeebe.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+# yamllint enable
+{{- with .Values.zeebe.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+
+  {{- if eq .Values.zeebe.persistenceType "disk" }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data
+      spec:
+        accessModes: {{ .Values.zeebe.pvcAccessModes }}
+        {{- if .Values.zeebe.pvcStorageClassName }}
+        {{- if (eq "-" .Values.zeebe.pvcStorageClassName) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ .Values.zeebe.pvcStorageClassName }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.zeebe.pvcSelector }}
+        {{- with .Values.zeebe.pvcSelector }}
+        selector: {{ toYaml . | nindent 10 }}
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.zeebe.pvcSize | quote }}
+  {{- end }}
+{{- end }}

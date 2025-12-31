@@ -1,0 +1,1 @@
+dnsConfig: {{ - toYaml .Values.toYamlTest | nindent 8 }}

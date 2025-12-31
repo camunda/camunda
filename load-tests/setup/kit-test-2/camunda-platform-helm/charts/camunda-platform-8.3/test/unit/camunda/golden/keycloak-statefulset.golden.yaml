@@ -1,0 +1,190 @@
+---
+# Source: camunda-platform/charts/identity/charts/keycloak/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: camunda-platform-test-keycloak
+  namespace: "camunda"
+  labels:
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/version: 22.0.3
+    app.kubernetes.io/component: keycloak
+spec:
+  replicas: 1
+  podManagementPolicy: Parallel
+  serviceName: camunda-platform-test-keycloak-headless
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/name: keycloak
+      app.kubernetes.io/component: keycloak
+  template:
+    metadata:
+      annotations:
+      labels:
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: keycloak
+        app.kubernetes.io/version: 22.0.3
+        app.kubernetes.io/component: keycloak
+    spec:
+      serviceAccountName: camunda-platform-test-keycloak
+      
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: camunda-platform-test
+                    app.kubernetes.io/name: keycloak
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      securityContext:
+        fsGroup: 1001
+      enableServiceLinks: true
+      initContainers:
+        - command:
+          - sh
+          - -c
+          - cp -a /app/keycloak-theme/* /mnt
+          image: 'camunda/identity:8.3.21'
+          imagePullPolicy: 'IfNotPresent'
+          name: copy-camunda-theme
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1005
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+          - mountPath: /mnt
+            name: camunda-theme
+        - command:
+          - sh
+          - -c
+          - cp -ar /opt/bitnami/keycloak/conf/* /config && cp -a /opt/bitnami/keycloak/lib/quarkus/*
+            /quarkus
+          image: bitnami/keycloak:22.0.5
+          imagePullPolicy: Always
+          name: copy-configs
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+          - mountPath: /config
+            name: config
+          - mountPath: /quarkus
+            name: quarkus
+      containers:
+        - name: keycloak
+          image: docker.io/bitnamilegacy/keycloak:22.0.5
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-keycloak
+                  key: admin-password
+            - name: KEYCLOAK_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-postgresql
+                  key: password
+            - name: KEYCLOAK_HTTP_RELATIVE_PATH
+              value: "/auth/"
+            - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+              value: 'false'
+          envFrom:
+            - configMapRef:
+                name: camunda-platform-test-keycloak-env-vars
+          resources:
+            limits: {}
+            requests: {}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: infinispan
+              containerPort: 7800
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 300
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 5
+            httpGet:
+              path: /auth/
+              port: http
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            httpGet:
+              path: /auth/realms/master
+              port: http
+          volumeMounts:
+            - mountPath: /opt/bitnami/keycloak/conf/
+              name: config
+            - mountPath: /opt/bitnami/keycloak/lib/quarkus
+              name: quarkus
+            - mountPath: /opt/bitnami/keycloak/themes/identity
+              name: camunda-theme
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /opt/bitnami/keycloak/data/tmp
+              name: data-tmp
+      volumes:
+        - emptyDir: {}
+          name: config
+        - emptyDir: {}
+          name: quarkus
+        - emptyDir: {}
+          name: tmp
+        - emptyDir: {}
+          name: data-tmp
+        - emptyDir:
+            sizeLimit: 10Mi
+          name: camunda-theme

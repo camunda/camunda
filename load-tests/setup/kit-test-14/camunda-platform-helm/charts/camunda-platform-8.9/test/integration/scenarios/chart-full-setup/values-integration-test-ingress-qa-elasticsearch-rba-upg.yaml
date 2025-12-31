@@ -1,0 +1,107 @@
+global:
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
+orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+  security:
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      backwardsCompatibleAudiences:
+        - operate-api
+        - tasklist-api
+        - zeebe-api
+  env:
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
+identityKeycloak:
+  enabled: true
+optimize:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+webModeler:
+  enabled: true
+  security:
+    authentication:
+      method: oidc
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+webModelerPostgresql:
+  enabled: true
+console:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: "$TEST_NAMESPACE"
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: 'true'      
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+      userPasswordKey: "identity-keycloak-postgresql-user-password"
+identity:
+  enabled: true
+  externalDatabase:
+    enabled: false
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  firstUser:
+    enabled: false
+  env:
+    - name: RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
+connectors:
+  security:
+    authentication:
+      method: oidc
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
+tasklist:
+  env:
+    - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
+operate:
+  env:
+    - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
+      value: 'true'
+

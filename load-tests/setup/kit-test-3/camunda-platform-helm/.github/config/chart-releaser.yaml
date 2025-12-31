@@ -1,0 +1,5 @@
+release-notes-file: RELEASE-NOTES.md
+skip-existing: true
+# Marking the latest version is done in the CI workflow.
+make-release-latest: false
+index-path: index.yaml

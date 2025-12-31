@@ -1,0 +1,165 @@
+---
+# Source: camunda-platform/charts/identity/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-identity
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: identity
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.2.31"
+    app.kubernetes.io/component: identity
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: identity
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: identity
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: identity
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/version: "8.2.31"
+        app.kubernetes.io/component: identity
+    spec:
+      imagePullSecrets:
+        []
+      containers:
+      - name: identity
+        image: "camunda/identity:8.2.31"
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: KEYCLOAK_INIT_OPERATE_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-operate-identity-secret"
+                key: operate-secret
+          - name: KEYCLOAK_INIT_OPERATE_ROOT_URL
+            value: "http://localhost:8081"
+          - name: KEYCLOAK_INIT_TASKLIST_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-tasklist-identity-secret"
+                key: tasklist-secret
+          - name: KEYCLOAK_INIT_TASKLIST_ROOT_URL
+            value: "http://localhost:8082"
+          - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-optimize-identity-secret"
+                key: optimize-secret
+          - name: KEYCLOAK_INIT_OPTIMIZE_ROOT_URL
+            value: "http://localhost:8083"
+          - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
+            value: "http://localhost:8084"
+          - name: KEYCLOAK_INIT_ZEEBE_NAME
+            value: "Zeebe"
+          # TODO: Use ".Values.connectors.inbound.mode=oauth" as a condition when we migrate
+          # to flat chart structure. Also then remove the optional flag from the secret.
+          - name: KEYCLOAK_CLIENTS_0_NAME
+            value: Connectors
+          - name: KEYCLOAK_CLIENTS_0_ID
+            value: connectors
+          - name: KEYCLOAK_CLIENTS_0_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: connectors-secret
+                name: "camunda-platform-test-connectors-identity-secret"
+          - name: KEYCLOAK_CLIENTS_0_ROOT_URL
+            value: http://placeholder
+          - name: KEYCLOAK_CLIENTS_0_REDIRECT_URIS_0
+            value: /
+          - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: operate-api
+          - name: KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION
+            value: "read:*"
+          - name: KEYCLOAK_CLIENTS_1_NAME
+            value: "Zeebe"
+          - name: KEYCLOAK_CLIENTS_1_ID
+            value: "zeebe"
+          - name: KEYCLOAK_CLIENTS_1_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: "camunda-platform-test-zeebe-identity-secret"
+                key: zeebe-secret
+          - name: KEYCLOAK_CLIENTS_1_TYPE
+            value: "M2M"
+          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_RESOURCE_SERVER_ID
+            value: "zeebe-api"
+          - name: KEYCLOAK_CLIENTS_1_PERMISSIONS_0_DEFINITION
+            value: "write:*"
+          - name: SERVER_PORT
+            value: "8080"
+          - name: KEYCLOAK_URL
+            value: "http://camunda-platform-test-keycloak:80/auth"
+          - name: IDENTITY_AUTH_PROVIDER_ISSUER_URL
+            value: "http://localhost:18080/auth/realms/camunda-platform"
+          - name: IDENTITY_AUTH_PROVIDER_BACKEND_URL
+            value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform"
+          - name: KEYCLOAK_SETUP_USER
+            value: "admin"
+          - name: KEYCLOAK_SETUP_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: camunda-platform-test-keycloak
+                key: admin-password
+          - name: KEYCLOAK_USERS_0_USERNAME
+            value: "demo"
+          - name: KEYCLOAK_USERS_0_PASSWORD
+            value: "demo"
+          - name: KEYCLOAK_USERS_0_EMAIL
+            value: "demo@example.org"
+          - name: KEYCLOAK_USERS_0_FIRST_NAME
+            value: "Demo"
+          - name: KEYCLOAK_USERS_0_LAST_NAME
+            value: "User"
+          - name: KEYCLOAK_USERS_0_ROLES_0
+            value: "Identity"
+          - name: KEYCLOAK_USERS_0_ROLES_1
+            value: "Operate"
+          - name: KEYCLOAK_USERS_0_ROLES_2
+            value: "Tasklist"
+          - name: KEYCLOAK_USERS_0_ROLES_3
+            value: "Optimize"
+          - name: KEYCLOAK_USERS_0_ROLES_4
+            value: "Web Modeler"
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+          requests:
+            cpu: 600m
+            memory: 400Mi
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8082
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            # NOTE: Identity doesn't support contextPath for health endpoints.
+            path: /actuator/health
+            scheme: HTTP
+            port: metrics
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 5
+          timeoutSeconds: 1

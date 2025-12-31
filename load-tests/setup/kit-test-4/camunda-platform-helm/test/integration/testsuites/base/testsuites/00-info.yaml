@@ -1,0 +1,32 @@
+name: Print basic info
+
+testcases:
+
+- name: Venom Info
+  steps:
+  - type: exec
+    script: |
+      cat << EOF
+        - Timestamp: {{ .venom.timestamp }}
+        - Datetime: {{ .venom.datetime }}
+        - Output dir: {{ .venom.outputdir }}
+        - Test files:
+      $(printf "    - %s\n" $(ls))
+      EOF
+    info: |
+      ###
+      {{ .result.systemout }}
+      ###
+
+- name: Tests Info
+  steps:
+  - type: exec
+    script: |
+      echo -e "\npreflightVars:"
+      echo "{{ .preflightVars | toPrettyJSON }}"
+      echo "coreVars:"
+      echo "{{ .coreVars | toPrettyJSON }}"
+    info: |
+      = systemout: {{ .result.systemout }}
+      = systemerr: {{ .result.systemerr }}
+      = err: {{ .result.err }}

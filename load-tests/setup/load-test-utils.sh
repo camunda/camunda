@@ -19,7 +19,7 @@ for i in 3 5 7 9 11 13 15; do
   cd ..
 done
 
-for i in 3 5 7 9 11 13 15; do
+for i in 1 2 3 4; do
   ns="kit-optimize-2-${i}"
 
   # Create namespace only if it doesn't exist

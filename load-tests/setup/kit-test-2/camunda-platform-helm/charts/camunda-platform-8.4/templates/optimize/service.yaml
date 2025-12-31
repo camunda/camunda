@@ -1,0 +1,28 @@
+{{- if .Values.optimize.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "optimize.fullname" . }}
+  labels:
+    {{- include "optimize.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.optimize.service.annotations}}
+      {{- toYaml .Values.optimize.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.optimize.service.type }}
+  ports:
+    - port: {{ .Values.optimize.service.port }}
+      name: http
+      targetPort: 8090
+      protocol: TCP
+    - port: {{ .Values.optimize.service.managementPort }}
+      name: management
+      targetPort: 8092
+      protocol: TCP
+  selector:
+    {{- include "optimize.matchLabels" . | nindent 4 }}
+{{- end }}

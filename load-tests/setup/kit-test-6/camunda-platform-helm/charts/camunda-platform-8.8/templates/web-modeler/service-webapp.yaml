@@ -1,0 +1,28 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "webModeler.webapp.fullname" . }}
+  labels:
+    {{- include "webModeler.webapp.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.webModeler.webapp.service.annotations}}
+      {{- toYaml .Values.webModeler.webapp.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.webModeler.webapp.service.type }}
+  ports:
+    - port: {{ .Values.webModeler.webapp.service.port }}
+      name: http
+      targetPort: 8070
+      protocol: TCP
+    - port: {{ .Values.webModeler.webapp.service.managementPort }}
+      name: http-management
+      targetPort: 8071
+      protocol: TCP
+  selector:
+    {{- include "webModeler.webapp.matchLabels" . | nindent 4 }}
+{{- end }}

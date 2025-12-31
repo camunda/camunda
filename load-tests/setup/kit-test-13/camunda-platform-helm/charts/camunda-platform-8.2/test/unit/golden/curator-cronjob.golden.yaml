@@ -1,0 +1,43 @@
+---
+# Source: camunda-platform/templates/curator-cronjob.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: camunda-platform-curator
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.2.34"
+spec:
+  schedule: "0 0 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - image: "bitnamilegacy/elasticsearch-curator-archived:5.8.4"
+              name: curator
+              args: ["--config", "/etc/config/config.yml", "/etc/config/action_file.yml"]
+              resources: 
+                limits:
+                  cpu: 2000m
+                  memory: 2Gi
+                requests:
+                  cpu: 600m
+                  memory: 1Gi
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/config
+          volumes:
+            - name: config
+              configMap:
+                name: camunda-platform-curator-config
+                defaultMode: 0744
+          restartPolicy: OnFailure

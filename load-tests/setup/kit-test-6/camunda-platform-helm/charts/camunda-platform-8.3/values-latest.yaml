@@ -1,0 +1,82 @@
+#
+# Camunda - v8.3
+# https://docs.camunda.io/docs/reference/announcements/#camunda-83
+#
+
+global:
+  # https://hub.docker.com/u/camunda
+  image:
+    tag:
+
+connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags?page=&page_size=&ordering=&name=8.3
+  image:
+    repository: camunda/connectors-bundle
+    tag: 8.3.23
+
+operate:
+  # https://hub.docker.com/r/camunda/operate/tags?page=&page_size=&ordering=&name=8.3
+  image:
+    repository: camunda/operate
+    tag: 8.3.22
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags?page=&page_size=&ordering=&name=8.3
+  image:
+    repository: camunda/optimize
+    tag: 8.3.21
+
+tasklist:
+  # https://hub.docker.com/r/camunda/tasklist/tags?page=&page_size=&ordering=&name=8.3
+  image:
+    repository: camunda/tasklist
+    tag: 8.3.24
+
+webModeler:
+  # Camunda Enterprise repository.
+  # registry.camunda.cloud/web-modeler-ee
+  image:
+    # renovate: datasource=docker depName=camunda/web-modeler lookupName=registry.camunda.cloud/web-modeler-ee/modeler-restapi
+    tag: 8.3.18
+
+zeebe:
+  # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.3
+  image:
+    repository: camunda/zeebe
+    tag: 8.3.22
+
+zeebe-gateway:
+  # https://hub.docker.com/r/camunda/zeebe/tags?page=&page_size=&ordering=&name=8.3
+  image:
+    repository: camunda/zeebe
+    tag: 8.3.22
+
+#
+# Identity
+#
+
+identity:
+  # https://hub.docker.com/r/camunda/identity/tags?page=&page_size=&ordering=&name=8.3
+  image:
+    repository: camunda/identity
+    tag: 8.3.21
+  keycloak:
+    # https://hub.docker.com/r/bitnami/keycloak/tags
+    image:
+      repository: bitnamilegacy/keycloak
+      tag: 22.0.5
+    postgresql:
+      # https://hub.docker.com/r/bitnami/postgresql/tags
+      image:
+        repository: bitnamilegacy/postgresql
+        tag: 15.10.0-debian-12-r2
+
+#
+# Elasticsearch
+#
+
+elasticsearch:
+  # https://hub.docker.com/r/bitnami/elasticsearch/tags
+  image:
+    repository: bitnamilegacy/elasticsearch
+    tag: 8.8.2

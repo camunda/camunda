@@ -1,0 +1,52 @@
+global:
+  elasticsearch:
+    enabled: false
+
+orchestration:
+  data:
+    secondaryStorage:
+      rdbms:
+        url: jdbc:postgresql://${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
+        username: ${POSTGRESQL_USERNAME}
+        secret:
+          inlineSecret: ${POSTGRESQL_PASSWORD}
+        #url: jdbc:oracle:thin:@//${POSTGRESQL_HOSTNAME}:${POSTGRESQL_PORT}/${POSTGRESQL_DATABASE}
+        #username: ${POSTGRESQL_USERNAME}
+        #secret:
+        #  inlineSecret: ${POSTGRESQL_PASSWORD}
+  security:
+    authorizations:
+      enabled: false
+    authentication:
+      unprotectedApi: true
+
+  exporters:
+    rdbms:
+      enabled: true
+  extraVolumeMounts:
+    - name: jdbcdrivers
+      mountPath: /driver-lib
+  extraVolumes:
+    - name: jdbcdrivers
+      emptyDir: {}
+#  initContainers:
+#    - name: fetch-jdbc-drivers
+#      image: alpine:3.19
+#      imagePullPolicy: "Always"
+#      command:
+#        [
+#          "sh",
+#          "-c",
+#          "wget https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.9.0.25.07/ojdbc11-23.9.0.25.07.jar -O /driver-lib/ojdbc.jar",
+#        ]
+#      volumeMounts:
+#        - name: jdbcdrivers
+#          mountPath: /driver-lib
+#      securityContext:
+#        runAsUser: 1001
+
+elasticsearch:
+  enabled: false
+
+optimize:
+  enabled: false

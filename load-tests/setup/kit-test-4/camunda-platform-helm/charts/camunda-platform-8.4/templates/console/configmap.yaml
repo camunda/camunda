@@ -1,0 +1,21 @@
+{{- if .Values.console.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "console.fullname" . }}-configuration
+  labels:
+    {{- include "console.labels" . | nindent 4 }}
+data:
+  application.yaml: |-
+    {{- if .Values.console.configuration }}
+      {{- include "common.tplvalues.render" ( dict "value" .Values.console.configuration "context" $ ) | nindent 4 }}
+    {{- else }}
+    # https://docs.camunda.io/docs/self-managed/console-deployment/configuration/
+    camunda:
+      console:
+        managed:
+          method: plain
+          releases:
+            {{- include "camundaPlatform.releaseInfo" . | nindent 10 }}
+    {{- end }}
+{{- end }}

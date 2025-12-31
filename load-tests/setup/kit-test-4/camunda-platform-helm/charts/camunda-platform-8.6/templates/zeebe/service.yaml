@@ -1,0 +1,34 @@
+{{- if .Values.zeebe.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zeebe.names.broker" . }}
+  labels:
+    {{- include "zeebe.labels.broker" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.zeebe.service.annotations}}
+      {{ .Values.zeebe.service.annotations | toYaml | nindent 4 }}
+    {{- end }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  type: {{ .Values.zeebe.service.type }}
+  ports:
+    - port: {{ .Values.zeebe.service.httpPort }}
+      protocol: TCP
+      name: {{ default "http" .Values.zeebe.service.httpName  }}
+    - port: {{ .Values.zeebe.service.internalPort }}
+      protocol: TCP
+      name: {{ default "internal" .Values.zeebe.service.internalName  }}
+    - port: {{ .Values.zeebe.service.commandPort }}
+      protocol: TCP
+      name: {{ default "command" .Values.zeebe.service.commandName }}
+    {{- if .Values.zeebe.service.extraPorts}}
+    {{ .Values.zeebe.service.extraPorts | toYaml | nindent 4 }}
+    {{- end }}
+  selector:
+    {{- include "zeebe.matchLabels.broker" . | nindent 4 }}
+{{- end }}

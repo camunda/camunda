@@ -1,0 +1,22 @@
+{{- if  and .Values.prometheusServiceMonitor.enabled  .Values.tasklist.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-tasklist
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+      app.kubernetes.io/component: tasklist
+  endpoints:
+    - honorLabels: true
+      {{- if .Values.tasklist.ingress.enabled }}
+      path: /actuator/prometheus
+      {{- else }}
+      path: {{ .Values.tasklist.contextPath }}/actuator/prometheus
+      {{- end }}
+      port: http
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}

@@ -1,0 +1,33 @@
+{{- if .Values.retentionPolicy.enabled -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: camunda-platform-curator
+  labels:
+    {{- include "retentionPolicy.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.retentionPolicy.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            {{- $curatorImageParams := (dict "base" .Values.global "overlay" .Values.retentionPolicy) }}
+            - image: {{ include "camundaPlatform.imageByParams" $curatorImageParams | quote }}
+              name: curator
+              args: ["--config", "/etc/config/config.yml", "/etc/config/action_file.yml"]
+              resources: {{ toYaml .Values.retentionPolicy.resources | nindent 16 }}
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/config
+          volumes:
+            - name: config
+              configMap:
+                name: camunda-platform-curator-config
+                defaultMode: 0744
+          restartPolicy: OnFailure
+{{- end }}

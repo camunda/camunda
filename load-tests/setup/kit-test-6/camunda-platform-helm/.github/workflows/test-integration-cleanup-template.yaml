@@ -1,0 +1,80 @@
+name: "Test - Integration Cleanup - Template"
+
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        default: gke
+        type: string
+      github-run-id:
+        description: |
+          The GitHub Action run that deployed Helm chart
+          which will be used to delete the deployment namespace.
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.github-run-id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Cleanup Namespace
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+        - name: Kubernetes 1.27
+          type: kubernetes
+          platform: gke
+          secret:
+            cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
+            cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
+            workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
+            service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
+          if: ${{ contains(inputs.platforms, 'gke') }}
+        - name: OpenShift 4.14
+          type: openshift
+          version: 4.14
+          platform: rosa
+          secret:
+            server-url: DISTRO_CI_OPENSHIFT_CLUSTER_URL
+            username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+            password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+          if: ${{ contains(inputs.platforms, 'rosa') }}
+        exclude:
+        - distro:
+            if: false
+    steps:
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      with:
+        # This is needed to load repo GH composite actions if the workflow triggered by workflow_call.
+        repository: camunda/camunda-platform-helm
+    # TODO: Later, find a way to abstract the auth for different platforms.
+    - name: Authenticate to GKE
+      if: matrix.distro.platform == 'gke'
+      uses: ./.github/actions/gke-login
+      with:
+        cluster-name: ${{ secrets[matrix.distro.secret.cluster-name] }}
+        cluster-location: ${{ secrets[matrix.distro.secret.cluster-location] }}
+        workload-identity-provider: ${{ secrets[matrix.distro.secret.workload-identity-provider] }}
+        service-account: ${{ secrets[matrix.distro.secret.service-account] }}
+    - name: Authenticate to OpenShift
+      if: matrix.distro.platform == 'rosa'
+      uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1
+      with:
+        openshift_server_url: ${{ secrets[matrix.distro.secret.server-url] }}
+        openshift_username: ${{ secrets[matrix.distro.secret.username] }}
+        openshift_password: ${{ secrets[matrix.distro.secret.password] }}
+    - name: Delete Namespace on ${{ matrix.distro.name }}
+      run: |
+        kubectl delete ns --ignore-not-found=true \
+          -l github-run-id="${{ inputs.github-run-id }}"

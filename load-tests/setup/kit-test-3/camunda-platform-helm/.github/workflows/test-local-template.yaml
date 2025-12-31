@@ -1,0 +1,98 @@
+name: "Test - Local Cluster - Template"
+
+on:
+  workflow_call:
+    inputs:
+      identifier:
+        description: The unique identifier of used in the deployment.
+        required: true
+        type: string
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      camunda-helm-dir:
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.identifier }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  local:
+    name: Local cluster - KIND
+    # This job needs to run on self-hosted runners because it requires more resources
+    # than the default GitHub runners provide.
+    runs-on: gcp-core-8-default
+    env:
+      TEST_NAMESPACE: camunda-platform
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          ref: "${{ inputs.camunda-helm-git-ref }}"
+      - name: Install common software tooling
+        uses: camunda/infra-global-github-actions/common-tooling@main
+        with:
+          overwrite: "false"
+          build-essential-enabled: "true"
+          node-enabled: "false"
+          yarn-enabled: "false"
+          buildx-enabled: "false"
+          java-enabled: "false"
+          python-enabled: "false"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential gawk make
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            kind
+            kubectl
+            task
+      - name: CI Setup - Set test type vars
+        uses: ./.github/actions/test-type-vars
+        with:
+          chart-dir: "${{ inputs.camunda-helm-dir }}"
+          values-enterprise: false
+          values-digest: true
+      - name: Create KIND cluster
+        run: |
+          kind create cluster --name camunda-platform-local
+          kubectl config use-context kind-camunda-platform-local
+      # Login to Docker registry to avoid image pull rate limit.
+      - name: Create Docker login secret
+        env:
+          TEST_CREATE_DOCKER_LOGIN_SECRET: "TRUE"
+          TEST_DOCKER_USERNAME: ${{ secrets.DISTRO_CI_DOCKER_USERNAME_DOCKERHUB }}
+          TEST_DOCKER_PASSWORD: ${{ secrets.DISTRO_CI_DOCKER_PASSWORD_DOCKERHUB }}
+        run: |
+          kubectl create namespace ${{ env.TEST_NAMESPACE }}
+          task docker-login --taskfile test/integration/scenarios/lib/init-seed-taskfile.yaml
+      - name: Prepare Camunda Helm chart installation
+        run: |
+          make helm.repos-add
+          helm package --dependency-update "charts/${{ inputs.camunda-helm-dir }}"
+      - name: ⭐ Install Camunda Helm chart ⭐
+        timeout-minutes: 10
+        run: |
+          test -n "${{ env.TEST_HELM_DIGEST_VALUES }}" &&
+            TEST_HELM_EXTRA_ARGS="--values charts/${{ inputs.camunda-helm-dir }}/values-digest.yaml"
+          helm install camunda-platform *.tgz --wait --timeout 10m0s \
+            --namespace ${{ env.TEST_NAMESPACE }} \
+            --values "charts/${{ inputs.camunda-helm-dir }}/test/integration/scenarios/common/values-integration-test-pull-secrets.yaml" \
+            --values "charts/${{ inputs.camunda-helm-dir }}/values-local.yaml" \
+            ${TEST_HELM_EXTRA_ARGS}
+      - name: Get Pods
+        if: failure()
+        run: |
+          kubectl get pods --namespace ${{ env.TEST_NAMESPACE }}
+      - name: Debug - Get Pods info
+        if: failure()
+        run: |
+          kubectl get pods --namespace ${{ env.TEST_NAMESPACE }} -o yaml
+          kubectl describe pods --namespace ${{ env.TEST_NAMESPACE }}

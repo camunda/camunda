@@ -1,0 +1,50 @@
+# Basic test for maintenance Camunda 8 Helm charts.
+name: "Test - Chart Version Nightly"
+
+on:
+  schedule:
+    # Set the cron schedule to run nightly at midnight US time, EST (4AM UTC)
+    - cron: "0 4 * * *"
+  push:
+    branches:
+    - "feature/ee-images-prem"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+jobs:
+  init:
+    name: Generate chart matrix Nightly
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-chart-versions.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          repository: camunda/camunda-platform-helm
+      - name: Generate chart versions
+        id: generate-chart-versions
+        uses: ./.github/actions/generate-chart-matrix-nightly
+
+  test:
+    if: ${{ needs.init.outputs.matrix != '[]' }}
+    name: Camunda ${{ matrix.version }}
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.init.outputs.matrix) }}
+    uses: ./.github/workflows/test-chart-version-nightly-template.yaml
+    secrets: inherit
+    with:
+      camunda-version: ${{ matrix.version }}
+      case: ${{ matrix.case }}
+      scenario: ${{ matrix.scenario }}
+      auth: ${{ matrix.auth }}
+      exclude: ${{ matrix.exclude }}
+      values-enterprise: ${{ matrix.values-enterprise }}

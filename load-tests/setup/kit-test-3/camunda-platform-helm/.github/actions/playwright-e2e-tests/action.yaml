@@ -1,0 +1,150 @@
+name: Playwright E2E Tests
+description: Run Playwright e2e tests using existing CI actions
+inputs:
+  camunda-helm-git-ref:
+    description: Git ref for camunda-platform-helm checkout
+    required: false
+    default: main
+  camunda-helm-dir:
+    description: Chart directory to test (e.g., camunda-platform-8.8)
+    required: false
+    default: camunda-platform-8.8
+  camunda-helm-upgrade-version:
+    description: Helm chart version used in upgrade-patch flow
+    required: false
+    default: ""
+  flow:
+    description: Setup flow (install, upgrade-patch, upgrade-minor)
+    required: false
+    default: install
+  distro-platform:
+    description: Target platform (gke, rosa, eks)
+    required: true
+  infra-type:
+    description: Infrastructure type (standard or preemptible)
+    required: true
+  identifier:
+    description: Unique identifier used for namespace/host
+    required: true
+  namespace-prefix:
+    description: Optional namespace prefix
+    required: false
+    default: ""
+  deployment-ttl:
+    description: TTL for deployment lifespan
+    required: false
+    default: "12h"
+  auth:
+    description: Authentication type to use for tests
+    required: true
+  auth-data:
+    description: Serialized auth data for cluster-auth action
+    required: false
+    default: ""
+  exclude:
+    description: Test suites to exclude
+    required: false
+    default: ""
+  test-stage:
+    description: Test stage identifier (after-install or after-upgrade)
+    required: true
+  shard-index:
+    description: Shard index for parallel test execution
+    required: false
+    default: "1"
+runs:
+  using: composite
+  steps:
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        # Install gettext for envsubst command used by render-e2e-env.sh
+        if command -v apt-get &> /dev/null; then
+          sudo apt-get update && sudo apt-get install -y gettext-base
+        elif command -v apk &> /dev/null; then
+          apk add --no-cache gettext
+        fi
+        
+    - name: Install if required common software tooling
+      uses: camunda/infra-global-github-actions/common-tooling@main
+      with:
+        overwrite: "false"
+        build-essential-enabled: "true"
+        node-enabled: "true"
+        yarn-enabled: "false"
+        buildx-enabled: "false"
+        java-enabled: "false"
+        python-enabled: "false"
+
+    - name: Install tools
+      uses: ./.github/actions/install-tool-versions
+      with:
+        tools: |
+          helm
+          kubectl
+          oc
+          task
+          yq
+          zbctl
+          jq
+
+    - name: Authenticate to cluster
+      id: cluster-auth
+      uses: ./.github/actions/cluster-auth
+      with:
+        platform: ${{ inputs.distro-platform }}
+        auth-data: ${{ inputs.auth-data }}
+      env:
+        GH_APP_ID:        ${{ env.GH_APP_ID }}
+        GH_APP_KEY:       ${{ env.GH_APP_KEY }}
+        GKE_CLUSTER_NAME: ${{ env.GKE_CLUSTER_NAME }}
+        GKE_CLUSTER_LOC:  ${{ env.GKE_CLUSTER_LOC }}
+        GKE_WIP:          ${{ env.GKE_WIP }}
+        GKE_SA:           ${{ env.GKE_SA }}
+        ROSA_URL:         ${{ env.ROSA_URL }}
+        ROSA_USER:        ${{ env.ROSA_USER }}
+        ROSA_PASS:        ${{ env.ROSA_PASS }}
+        CLUSTER_NAME:     ${{ env.CLUSTER_NAME }}
+
+    - name: Set workflow vars
+      id: vars
+      uses: ./.github/actions/workflow-vars
+      with:
+        deployment-ttl: ${{ inputs.deployment-ttl }}
+        setup-flow: ${{ inputs.flow }}
+        platform: ${{ inputs.distro-platform }}
+        identifier-base: ${{ inputs.identifier }}
+        ingress-hostname-base: ${{ env.CI_HOSTNAME_BASE }}
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+        chart-upgrade-version: ${{ inputs.camunda-helm-upgrade-version }}
+        prefix: ${{ inputs.namespace-prefix }}
+
+    - name: Set test type vars
+      id: test-type-vars
+      uses: ./.github/actions/test-type-vars
+      with:
+        chart-dir: ${{ inputs.camunda-helm-dir }}
+        infra-type: ${{ inputs.infra-type }}
+        platform: ${{ inputs.distro-platform }}
+        flow: ${{ inputs.flow }}
+
+    - name: Run Playwright E2E Tests
+      shell: bash
+      env:
+        TEST_NAMESPACE: ${{ env.TEST_NAMESPACE }}
+        ABSOLUTE_TEST_CHART_DIR: ${{ env.ABSOLUTE_TEST_CHART_DIR }}
+        TEST_EXCLUDE: ${{ inputs.exclude }}
+        TEST_AUTH_TYPE: ${{ inputs.auth }}
+      run: |
+        cd "$GITHUB_WORKSPACE/scripts"
+        # Unset KEYCLOAK_REALM to avoid conflicts with the integration tests
+        unset KEYCLOAK_REALM
+        ./run-e2e-tests.sh --absolute-chart-path "${ABSOLUTE_TEST_CHART_DIR}" --namespace "${TEST_NAMESPACE}" --run-smoke-tests --verbose
+
+    - name: Upload blob report to GitHub Actions Artifacts
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: blob-report-${{ inputs.identifier }}-${{ inputs.flow }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.test-stage }}-${{ inputs.shard-index }}
+        path: ${{ env.ABSOLUTE_TEST_CHART_DIR }}/test/e2e/blob-report
+        retention-days: 1

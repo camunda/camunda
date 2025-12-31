@@ -1,0 +1,176 @@
+name: Workflow vars
+description: Set common vars for workflow
+inputs:
+  setup-flow:
+    description: The chart setup flow either "install", "upgrade-patch", or "upgrade-minor".
+    default: "install"
+  ingress-hostname-base:
+    description: The base of the Ingress hostname.
+    required: true
+  platform:
+    description: The deployment cloud platform like GKE or ROSA.
+  deployment-ttl:
+    description: Define a ttl for the lifespan of the deployment
+    required: false
+    default: ""
+  identifier-base:
+    description: The fixed string in the identifier of the deployment it could be PR number or another specified name.
+  chart-dir:
+    description: A reference for the Camunda Helm chart directory which allows to test unreleased chagnes from Git repo.
+    required: true
+  chart-upgrade-version:
+    description: The Helm chart version used in the upgrade-patch flow.
+    required: false
+    default: ""
+  prefix:
+    description: The prefix for the namespace. This is necessary because we only have permissions to create namespaces with a specific prefix.
+    required: false
+    default: ""
+
+# NOTE: This is not an exclusive list, some vars are exported as env var not an output.
+outputs:
+  identifier:
+    description: The unique identifier of the deployment where the workflow could be triggered by pull_request or workflow_dispatch.
+    value: ${{ steps.vars.outputs.identifier }}
+  ingress-host:
+    description: Ingress hostname that will be used in the test
+    value: ${{ steps.vars.outputs.ingress-host }}
+
+runs:
+  using: composite
+  steps:
+  - name: Set workflow vars
+    id: vars
+    shell: bash
+    run: |
+      # Generate workflow vars.
+      is_pr() {
+        echo ${{ github.event.pull_request.number }} | grep -q .
+      }
+
+      if [[ -z "${{ inputs.prefix }}" ]]; then
+        if [[ "${{ inputs.platform }}" == 'eks' ]]; then
+          export NAMESPACE_PREFIX=distribution
+        else
+          export NAMESPACE_PREFIX=camunda
+        fi
+      else
+        export NAMESPACE_PREFIX="${{ inputs.prefix }}"
+      fi
+      echo NAMESPACE_PREFIX=$NAMESPACE_PREFIX | tee -a $GITHUB_ENV
+
+      PLATFORM=${{ inputs.platform }}
+      echo PLATFORM=${{ inputs.platform }} | tee -a $GITHUB_ENV
+
+      echo "Env vars:"
+      # Namespace.
+      TRIGGER_KEY=$(is_pr && echo "pr" || echo "id")
+      TEST_NAMESPACE="$NAMESPACE_PREFIX-$(echo ${TRIGGER_KEY}-${{ inputs.identifier-base }} | sed 's/\./-/g')"
+    
+      # NOTE: We should use the matrix job id var once it's available.
+      # https://github.com/orgs/community/discussions/40291
+      # NOTE we are using a hash here rather than a random value so that the namepsace is deterministic
+      GITHUB_WORKFLOW_JOB_ID=$(echo -n "$TEST_NAMESPACE-${{ github.run_id }}-${{ github.run_attempt }}" | sha256sum | head -c 6)
+      # Workflow.
+      echo "GITHUB_WORKFLOW_JOB_ID=$GITHUB_WORKFLOW_JOB_ID" | tee -a $GITHUB_ENV
+      echo "GITHUB_WORKFLOW_RUN_ID=${{ github.run_id }}" | tee -a $GITHUB_ENV
+
+      if [[ "${{ inputs.deployment-ttl }}" == '' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-${GITHUB_WORKFLOW_JOB_ID}"
+      fi
+
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgp"
+      fi
+
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
+        TEST_NAMESPACE="${TEST_NAMESPACE}-upgm"
+      fi
+
+      if [[ "${{ inputs.setup-flow }}" == 'modular-upgrade-minor' ]]; then
+        : # no-op; this flow depends on the namespace given during installation so we don't adjust it here
+      fi
+
+      echo "TEST_NAMESPACE=$(printf '%s' "$TEST_NAMESPACE" | head -c 63 | sed 's/-$//')" | tee -a "$GITHUB_ENV"
+
+      # Get alpha chart dir.
+      TEST_CAMUNDA_HELM_DIR_ALPHA="$(basename $(ls -d1 charts/camunda-platform-8.* | sort -V | tail -n1))"
+      echo "TEST_CAMUNDA_HELM_DIR_ALPHA=${TEST_CAMUNDA_HELM_DIR_ALPHA}" | tee -a $GITHUB_ENV
+
+      echo "Output vars:"
+
+      # Identifier
+      local_identifier=${{ inputs.identifier-base }}
+      if [[ -z "${{ inputs.identifier-base }}" ]]; then
+        local_identifier="no-id-use-ran-$(uuidgen | head -c 6)"
+      fi
+
+      # Deployment identifier.
+      TEST_IDENTIFIER="$(echo ${{ inputs.platform }}-${local_identifier} | sed 's/\./-/g')"
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' ]]; then
+        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgp"
+      fi
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-minor' ]]; then
+        TEST_IDENTIFIER="${TEST_IDENTIFIER}-upgm"
+      fi
+      echo "identifier=${TEST_IDENTIFIER}" | tee -a $GITHUB_OUTPUT
+
+      # Ingress hostname.
+      if [[ "${{ inputs.platform }}" == 'eks' ]]; then
+        export INGRESS_HOSTNAME_BASE=${NAMESPACE_PREFIX}.aws.camunda.cloud
+      else
+        export INGRESS_HOSTNAME_BASE=ci.distro.ultrawombat.com
+      fi
+
+      TEST_INGRESS_HOST="${TEST_IDENTIFIER}.${INGRESS_HOSTNAME_BASE}"
+      if [[ "${{ inputs.deployment-ttl }}" == "" ]] && is_pr; then
+        TEST_INGRESS_HOST="${GITHUB_WORKFLOW_JOB_ID}-${TEST_INGRESS_HOST}"
+      fi
+      # The var is needed in some non-shell steps.
+      echo "ingress-host=${TEST_INGRESS_HOST}" | tee -a $GITHUB_OUTPUT
+
+      ## Setting values for the external infra
+      echo "ORCHESTRATION_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-orchestration" | tee -a $GITHUB_ENV
+      echo "OPTIMIZE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-optimize" | tee -a $GITHUB_ENV
+      echo "OPERATE_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-operate" | tee -a $GITHUB_ENV
+      echo "TASKLIST_INDEX_PREFIX=$GITHUB_WORKFLOW_JOB_ID-tasklist" | tee -a $GITHUB_ENV
+      echo "FLOW=$FLOW" | tee -a $GITHUB_ENV
+      keycloakRealm="${GITHUB_WORKFLOW_JOB_ID}-realm"
+      export KEYCLOAK_REALM=$keycloakRealm
+      echo "KEYCLOAK_REALM=$KEYCLOAK_REALM" | tee -a $GITHUB_ENV
+
+      ## Keycloak external URL for Keycloak 24.9.0
+      # NOTE: In the future, if we test other Keycloak versions, we might need to generalize this.
+      export  KEYCLOAK_EXT_HOST_24_9_0="keycloak-24-9-0.${INGRESS_HOSTNAME_BASE}"
+      echo "KEYCLOAK_EXT_HOST_24_9_0=$KEYCLOAK_EXT_HOST_24_9_0" | tee -a $GITHUB_ENV
+      echo "KEYCLOAK_EXT_PROTOCOL_24_9_0=https" | tee -a $GITHUB_ENV
+
+  - name: Set workflow vars - Chart version
+    shell: bash
+    run: |
+      # In the upgrade flow, the latest released chart for certain minor Camunda version will installed,
+      # then upgraded from the PR branch to ensure upgradability.
+      if [[ "${{ inputs.setup-flow }}" == 'upgrade-patch' || "${{ inputs.setup-flow }}" == 'upgrade-minor' || "${{ inputs.setup-flow }}" == 'modular-upgrade-minor' ]]; then
+        if [[ -n "${{ inputs.chart-upgrade-version }}" ]]; then
+          TEST_CHART_VERSION="${{ inputs.chart-upgrade-version }}"
+        fi
+        if [[ -z "${{ inputs.chart-upgrade-version }}" ]]; then
+          test "$(git branch --show-current)" != "main" &&
+          git fetch origin main:main --no-tags
+          if [[ -n "$(git ls-tree main -- charts/${{ inputs.chart-dir }}/Chart.yaml)" ]]; then
+            TEST_CHART_VERSION="$(git show main:charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
+          else
+            # Fallback (needed only when we add a new chart directory).
+            TEST_CHART_VERSION="$(cat charts/${{ inputs.chart-dir }}/Chart.yaml | yq '.version')"
+          fi
+        fi
+        echo "TEST_CHART_VERSION=${TEST_CHART_VERSION}" | tee -a $GITHUB_ENV
+      fi
+
+    # Avoid confusion about the chart version since we only change the version during the release process
+    # as the "version" field in "Chart.yaml" file doesn't reflect the changes since the latest release.
+  - name: Set chart version
+    shell: bash
+    run: |
+      chart_version="$(echo ${{ inputs.chart-dir }} | sed 's/camunda-platform/0.0.0-ci-snapshot/g')" \
+        yq -i '.version = env(chart_version)' charts/${{ inputs.chart-dir }}/Chart.yaml

@@ -1,0 +1,32 @@
+annotations:
+  category: Database
+  camunda.io/helmCLIVersion: 3.15.1
+  artifacthub.io/changes: |
+    - kind: fixed
+      description: "embed web-modeler postregsql chart in camunda chart"
+apiVersion: v2
+appVersion: 14.5.0
+dependencies:
+  - name: common
+    repository: oci://registry-1.docker.io/bitnamicharts
+    tags:
+      - bitnami-common
+    version: 2.x.x
+description: PostgreSQL (Postgres) is an open source object-relational database known for reliability and data integrity. ACID-compliant, it supports foreign keys, joins, views, triggers and stored procedures.
+home: https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+icon: https://bitnami.com/assets/stacks/postgresql/img/postgresql-stack-220x234.png
+keywords:
+  - postgresql
+  - postgres
+  - database
+  - sql
+  - replication
+  - cluster
+maintainers:
+  - name: Bitnami
+    url: https://github.com/bitnami/charts
+name: web-modeler-postgresql
+sources:
+  - https://github.com/bitnami/containers/tree/main/bitnami/postgresql
+  - https://www.postgresql.org/
+version: 11.9.13

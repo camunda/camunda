@@ -1,0 +1,5 @@
+apiVersion: v2
+description: Optimize Helm Chart for Kubernetes
+name: optimize
+version: 8.2.34
+icon: https://helm.camunda.io/imgs/camunda.svg

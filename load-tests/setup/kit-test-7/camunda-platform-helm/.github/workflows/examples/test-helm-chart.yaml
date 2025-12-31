@@ -1,0 +1,29 @@
+#
+# Example of using Distro team GHA workflow to test Helm chart with each PR.
+# Just replace "<USE_CASE>" with a clear identifier for your use case.
+# For more details:
+# https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md#camunda-helm-chart-deployment
+#
+name: "Test - Helm Chart"
+
+on:
+  pull_request:
+  # It could also be used to test the Helm chart when changes are pushed to some branches.
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  helm-deploy:
+    name: Helm chart Integration Tests
+    secrets: inherit
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    # For full inputs:
+    # https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md#workflow-inputs
+    with:
+      identifier: "<USE_CASE>-${{ github.event.pull_request.number }}"
+      camunda-helm-dir: "camunda-platform-8.8"
+      # For full value options (ensure to select the correct chart version from the right side):
+      # https://artifacthub.io/packages/helm/camunda/camunda-platform
+      extra-values: |
+        # Pass extra Helm chart values accoring to your use case.

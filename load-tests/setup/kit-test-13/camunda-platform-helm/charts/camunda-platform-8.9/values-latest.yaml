@@ -1,0 +1,74 @@
+#
+# Camunda - Alpha
+#
+
+global:
+  # https://github.com/camunda/camunda/releases
+  # https://hub.docker.com/u/camunda
+  image:
+    tag:
+
+console:
+  # https://hub.docker.com/r/camunda/console/tags
+  image:
+    repository: camunda/console
+    tag: 8.9-SNAPSHOT
+
+connectors:
+  # https://hub.docker.com/r/camunda/connectors-bundle/tags
+  image:
+    repository: camunda/connectors-bundle
+    tag: SNAPSHOT
+
+optimize:
+  # https://hub.docker.com/r/camunda/optimize/tags
+  image:
+    repository: camunda/optimize
+    tag: 8-latest
+
+webModeler:
+  # https://hub.docker.com/r/camunda/web-modeler-restapi
+  image:
+    # renovate: datasource=docker depName=camunda/web-modeler-restapi
+    tag: SNAPSHOT
+
+#
+# Orchestration Cluster
+#
+
+orchestration:
+  # https://hub.docker.com/r/camunda/camunda/tags
+  image:
+    repository: camunda/camunda
+    tag: SNAPSHOT
+
+#
+# Identity
+#
+
+identity:
+  # https://hub.docker.com/r/camunda/identity/tags
+  image:
+    repository: camunda/identity
+    tag: SNAPSHOT
+
+identityKeycloak:
+  # https://hub.docker.com/r/bitnami/keycloak/tags
+  image:
+    repository: camunda/keycloak
+    tag: 26.3.3
+  postgresql:
+    # https://hub.docker.com/r/bitnami/postgresql/tags
+    image:
+      repository: bitnamilegacy/postgresql
+      tag: 15.10.0-debian-12-r2
+
+#
+# Elasticsearch
+#
+
+elasticsearch:
+  # https://hub.docker.com/r/bitnami/elasticsearch/tags
+  image:
+    repository: bitnamilegacy/elasticsearch
+    tag: 8.18.0
