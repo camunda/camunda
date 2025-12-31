@@ -187,7 +187,8 @@ public class MigrateIntermediateCatchEventTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("catch2")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey("key1")
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)

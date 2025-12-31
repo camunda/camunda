@@ -127,7 +127,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     final ProcessMessageSubscriptionRecord subscriptionRecord = subscription.getRecord();
     record
         .setElementId(subscriptionRecord.getElementIdBuffer())
-        .setInterrupting(subscriptionRecord.isInterrupting());
+        .setInterrupting(subscriptionRecord.isInterrupting())
+        .setRootProcessInstanceKey(subscriptionRecord.getRootProcessInstanceKey());
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);

@@ -398,10 +398,11 @@ public final class MessageCorrelationTest {
                     ProcessMessageSubscriptionIntent.CORRELATED)
                 .limit(2))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getMessageKey(), v.getProcessInstanceKey()))
+        .extracting(
+            v -> tuple(v.getMessageKey(), v.getProcessInstanceKey(), v.getRootProcessInstanceKey()))
         .contains(
-            tuple(message.getKey(), processInstanceKey1),
-            tuple(message.getKey(), processInstanceKey2));
+            tuple(message.getKey(), processInstanceKey1, processInstanceKey1),
+            tuple(message.getKey(), processInstanceKey2, processInstanceKey2));
   }
 
   @Test
