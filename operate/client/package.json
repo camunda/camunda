@@ -22,7 +22,7 @@
     "date-fns": "4.1.0",
     "dmn-js": "17.3.0",
     "dmn-js-decision-table": "17.3.0",
-    "dmn-js-drd": "17.3.0",
+    "dmn-js-drd": "17.5.0",
     "dmn-js-literal-expression": "17.3.0",
     "dmn-js-shared": "17.3.0",
     "final-form": "5.0.0",
