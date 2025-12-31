@@ -22,8 +22,10 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Membership;
+import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
+import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -56,6 +58,7 @@ public class AuditLogRestClientIT {
 
   private static final String MAPPING_RULE_CLAIM_VALUE = "test-claim-value";
   private static final String GROUP_A_ID = "AGroupName";
+  private static final String ROLE_A_ID = "ARoleName";
 
   @MappingRuleDefinition
   private static final TestMappingRule MAPPING_RULE_A =
@@ -68,6 +71,11 @@ public class AuditLogRestClientIT {
   private static final TestGroup GROUP_A =
       TestGroup.withoutPermissions(
           GROUP_A_ID, GROUP_A_ID, List.of(new Membership(DEFAULT_USERNAME, EntityType.USER)));
+
+  @RoleDefinition
+  private static final TestRole ROLE_A =
+      TestRole.withoutPermissions(
+          ROLE_A_ID, ROLE_A_ID, List.of(new Membership(DEFAULT_USERNAME, EntityType.USER)));
 
   private static CamundaClient adminClient;
   private static ProcessInstanceEvent processInstanceEvent;
@@ -254,6 +262,73 @@ public class AuditLogRestClientIT {
     assertThat(auditLogAssign.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.GROUP);
     assertThat(auditLogAssign.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
     assertThat(auditLogAssign.getEntityKey()).isEqualTo(GROUP_A_ID);
+    assertThat(auditLogAssign.getTenantId()).isNull();
+    assertThat(auditLogAssign.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
+
+  @Test
+  void shouldTrackRoleOperationsCorrectly() {
+    // when
+    final var auditLogRoleItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(fn -> fn.entityType(AuditLogEntityTypeEnum.ROLE))
+            .send()
+            .join();
+    final var auditLogRoleCreateItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.ROLE)
+                        .operationType(AuditLogOperationTypeEnum.CREATE))
+            .send()
+            .join();
+    final var auditLogRoleAssignItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.ROLE)
+                        .operationType(AuditLogOperationTypeEnum.ASSIGN))
+            .send()
+            .join();
+
+    // then
+    final var auditLogRoleAItems =
+        auditLogRoleItems.items().stream()
+            .filter(alr -> ROLE_A_ID.equals(alr.getEntityKey()))
+            .collect(Collectors.toList());
+    assertThat(auditLogRoleAItems).hasSize(2);
+    final var auditLogOperations =
+        auditLogRoleAItems.stream().map(alr -> alr.getOperationType()).collect(Collectors.toSet());
+    assertThat(auditLogOperations)
+        .containsExactlyInAnyOrder(
+            AuditLogOperationTypeEnum.CREATE, AuditLogOperationTypeEnum.ASSIGN);
+
+    final var auditLogRoleACreateItems =
+        auditLogRoleCreateItems.items().stream()
+            .filter(alr -> ROLE_A_ID.equals(alr.getEntityKey()))
+            .collect(Collectors.toList());
+    assertThat(auditLogRoleACreateItems).hasSize(1);
+    final var auditLogCreate = auditLogRoleACreateItems.get(0);
+    assertThat(auditLogCreate).isNotNull();
+    assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.ROLE);
+    assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
+    assertThat(auditLogCreate.getEntityKey()).isEqualTo(ROLE_A_ID);
+    assertThat(auditLogCreate.getTenantId()).isNull();
+    assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+
+    final var auditLogRoleAAssignItems =
+        auditLogRoleAssignItems.items().stream()
+            .filter(alr -> ROLE_A_ID.equals(alr.getEntityKey()))
+            .collect(Collectors.toList());
+    assertThat(auditLogRoleAAssignItems).hasSize(1);
+    final var auditLogAssign = auditLogRoleAAssignItems.get(0);
+    assertThat(auditLogAssign).isNotNull();
+    assertThat(auditLogAssign.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.ROLE);
+    assertThat(auditLogAssign.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
+    assertThat(auditLogAssign.getEntityKey()).isEqualTo(ROLE_A_ID);
     assertThat(auditLogAssign.getTenantId()).isNull();
     assertThat(auditLogAssign.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
