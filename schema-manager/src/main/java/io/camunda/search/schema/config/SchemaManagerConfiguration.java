@@ -15,6 +15,7 @@ public class SchemaManagerConfiguration {
   private boolean isCreateSchema = true;
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
   private boolean versionCheckRestrictionEnabled = true;
+  private boolean runSchemaUpdatesOnSameVersion = true;
 
   public boolean isCreateSchema() {
     return isCreateSchema;
@@ -38,6 +39,14 @@ public class SchemaManagerConfiguration {
 
   public void setVersionCheckRestrictionEnabled(final boolean versionCheckRestrictionEnabled) {
     this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
+  }
+
+  public boolean isRunSchemaUpdatesOnSameVersion() {
+    return runSchemaUpdatesOnSameVersion;
+  }
+
+  public void setRunSchemaUpdatesOnSameVersion(final boolean runSchemaUpdatesOnSameVersion) {
+    this.runSchemaUpdatesOnSameVersion = runSchemaUpdatesOnSameVersion;
   }
 
   public static class SchemaManagerRetryConfiguration extends RetryConfiguration {
