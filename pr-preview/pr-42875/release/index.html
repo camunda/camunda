@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-42875/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-42875/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-42875/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-42875/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-42875/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.155cab4d.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-42875/assets/js/main.28a24a47.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.c736761d.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/main.e498eddf.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -217,29 +217,20 @@
 </ul>
 <p>For BPMN activities using REST connector:</p>
 <ul>
-<li class="">Configure retries with appropriate interval for idempotent requests, to workaround network problems/short service interruption<!-- -->
-<ul>
+<li class="">Configure retries with appropriate interval for idempotent requests, to workaround network problems/short service interruption</li>
 <li class="">e.g. use 3 retries with 10 seconds interval on <code>GET</code> requests</li>
-</ul>
-</li>
-<li class="">HTTP error handling of the remote API via <a href="https://docs.camunda.io/docs/components/modeler/bpmn/escalation-events/" target="_blank" rel="noopener noreferrer" class="">escalation events</a>
-<ul>
+<li class="">HTTP error handling of the remote API via <a href="https://docs.camunda.io/docs/components/modeler/bpmn/escalation-events/" target="_blank" rel="noopener noreferrer" class="">escalation events</a></li>
 <li class="">Also consider using retries for transient errors</li>
 <li class="">e.g. send a notification via Slack in #top-monorepo-release</li>
-</ul>
-</li>
 <li class="">Use authentication to avoid API ratelimits of <a href="https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api" target="_blank" rel="noopener noreferrer" class="">GitHub</a> and <a href="https://docs.docker.com/docker-hub/usage/" target="_blank" rel="noopener noreferrer" class="">DockerHub</a> for increased reliability</li>
 </ul>
 <p>Calling and integrating with GitHub Actions workflows:</p>
 <ul>
 <li class="">Use <a href="https://docs.camunda.io/docs/components/connectors/protocol/rest/" target="_blank" rel="noopener noreferrer" class="">C8 REST connector</a> to <a href="https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event" target="_blank" rel="noopener noreferrer" class="">call GitHub REST API to dispatch workflows</a></li>
 <li class="">Use GHA <code>workflow_dispatch</code> inputs to give custom data as parameters like release branch names or versions</li>
-<li class="">Avoid release managers polling for GHA workflow completion either by:<!-- -->
-<ul>
+<li class="">Avoid release managers polling for GHA workflow completion either by:</li>
 <li class="">Create 2nd BPMN activity that queries completion in a loop and makes the process wait for GHA</li>
 <li class="">Send a Slack notification from GHA workflow in #top-monorepo-release to notify the release manager</li>
-</ul>
-</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="change-management--testing">Change Management &amp; Testing<a href="#change-management--testing" class="hash-link" aria-label="Direct link to Change Management &amp; Testing" title="Direct link to Change Management &amp; Testing" translate="no">​</a></h2>
 <p>Changes to the release process are done in these steps:</p>
@@ -438,13 +429,10 @@
 <p>The Monorepo release produces core backend artifacts, while the Big Release Train bundles downstream services and UI components. The train can only depart once the Monorepo artifacts are confirmed as released.</p>
 <p>While Monorepo (camunda/camunda) releases artifacts for:</p>
 <ul>
-<li class=""><a href="https://hub.docker.com/r/camunda/camunda/" target="_blank" rel="noopener noreferrer" class="">Camunda</a>
-<ul>
+<li class=""><a href="https://hub.docker.com/r/camunda/camunda/" target="_blank" rel="noopener noreferrer" class="">Camunda</a></li>
 <li class=""><a href="https://hub.docker.com/r/camunda/zeebe/" target="_blank" rel="noopener noreferrer" class="">Zeebe</a></li>
 <li class=""><a href="https://hub.docker.com/r/camunda/operate/" target="_blank" rel="noopener noreferrer" class="">Operate</a></li>
 <li class=""><a href="https://hub.docker.com/r/camunda/tasklist/" target="_blank" rel="noopener noreferrer" class="">Tasklist</a></li>
-</ul>
-</li>
 </ul>
 <p>The big release train releases:</p>
 <ul>
