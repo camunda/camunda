@@ -101,7 +101,7 @@
     "eslint-plugin-testing-library": "7.13.3",
     "globals": "16.4.0",
     "jsdom": "26.1.0",
-    "knip": "5.67.1",
+    "knip": "5.78.0",
     "monaco-editor": "0.52.2",
     "msw": "2.12.2",
     "playwright": "1.54.0",
