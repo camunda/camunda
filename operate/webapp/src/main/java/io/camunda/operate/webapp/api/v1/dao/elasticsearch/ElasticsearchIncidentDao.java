@@ -24,7 +24,6 @@ import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -34,10 +33,6 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> implements IncidentDao {
 
   @Autowired private IncidentTemplate incidentIndex;
-
-  @Override
-  protected void buildFiltering(
-      final Query<Incident> query, final SearchSourceBuilder searchSourceBuilder) {}
 
   @Override
   protected void buildFiltering(
@@ -83,8 +78,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
         buildIfPresent(Incident.TENANT_ID, filter.getTenantId(), ElasticsearchUtil::termsQuery);
 
     final var creationTimeQ =
-        buildIfPresent(
-            Incident.CREATION_TIME, filter.getCreationTime(), this::buildMatchDateQueryEs8);
+        buildIfPresent(Incident.CREATION_TIME, filter.getCreationTime(), this::buildMatchDateQuery);
 
     final var andOfAllQueries =
         ElasticsearchUtil.joinWithAnd(

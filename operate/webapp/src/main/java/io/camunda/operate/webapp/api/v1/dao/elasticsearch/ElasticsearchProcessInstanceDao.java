@@ -25,7 +25,6 @@ import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.util.List;
 import java.util.Objects;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -121,10 +120,6 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
 
   @Override
   protected void buildFiltering(
-      final Query<ProcessInstance> query, final SearchSourceBuilder searchSourceBuilder) {}
-
-  @Override
-  protected void buildFiltering(
       final Query<ProcessInstance> query,
       final Builder searchRequestBuilder,
       final boolean isTenantAware) {
@@ -186,10 +181,10 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
 
     final var startDateQ =
         buildIfPresent(
-            ProcessInstance.START_DATE, filter.getStartDate(), this::buildMatchDateQueryEs8);
+            ProcessInstance.START_DATE, filter.getStartDate(), this::buildMatchDateQuery);
 
     final var endDateQ =
-        buildIfPresent(ProcessInstance.END_DATE, filter.getEndDate(), this::buildMatchDateQueryEs8);
+        buildIfPresent(ProcessInstance.END_DATE, filter.getEndDate(), this::buildMatchDateQuery);
 
     final var andOfAllQueries =
         ElasticsearchUtil.joinWithAnd(

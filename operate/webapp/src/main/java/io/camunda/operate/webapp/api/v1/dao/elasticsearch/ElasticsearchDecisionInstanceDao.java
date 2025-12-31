@@ -22,7 +22,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import java.util.List;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -80,10 +79,6 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
 
   @Override
   protected void buildFiltering(
-      final Query<DecisionInstance> query, final SearchSourceBuilder searchSourceBuilder) {}
-
-  @Override
-  protected void buildFiltering(
       final Query<DecisionInstance> query,
       final Builder searchRequestBuilder,
       final boolean isTenantAware) {
@@ -108,7 +103,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
         buildIfPresent(
             DecisionInstance.EVALUATION_DATE,
             filter.getEvaluationDate(),
-            this::buildMatchDateQueryEs8);
+            this::buildMatchDateQuery);
 
     final var evalFailureQ =
         filter.getEvaluationFailure() == null
