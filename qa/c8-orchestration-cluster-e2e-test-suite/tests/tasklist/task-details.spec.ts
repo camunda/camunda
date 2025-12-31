@@ -284,6 +284,15 @@ test.describe('task details page', () => {
     await taskDetailsPage.clickCompleteTaskButton();
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
+    await expect(async () => {
+      await expect(
+        taskPanelPage.availableTasks
+
+          .getByText('processWithDeployedForm')
+
+          .first(),
+      ).toBeVisible();
+    }).toPass();
     await taskPanelPage.openTask('processWithDeployedForm');
 
     await taskDetailsPage.assertFieldValue('Client Name*', 'Jon');
@@ -580,7 +589,6 @@ test.describe('task details page', () => {
   test('task completion with large variable form', async ({
     taskPanelPage,
     taskDetailsPage,
-    page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Big Variable Usertask');
