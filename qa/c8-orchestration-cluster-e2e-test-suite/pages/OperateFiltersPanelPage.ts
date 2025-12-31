@@ -42,6 +42,7 @@ export class OperateFiltersPanelPage {
   readonly variableValueFilter: Locator;
   readonly multipleVariablesSwitch: Locator;
   readonly moreFiltersButton: Locator;
+  readonly moreFiltersMenu: Locator;
   readonly dateFilterDialog: Locator;
   readonly fromTimeInput: Locator;
   readonly toTimeInput: Locator;
@@ -117,6 +118,7 @@ export class OperateFiltersPanelPage {
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
     });
+    this.moreFiltersMenu = this.page.getByRole('menu');
     this.dateFilterDialog = this.page.getByRole('dialog');
     this.fromTimeInput = page.getByTestId('fromTime');
     this.toTimeInput = page.getByTestId('toTime');
@@ -153,10 +155,11 @@ export class OperateFiltersPanelPage {
 
   async displayOptionalFilter(filterName: OptionalFilter) {
     await this.moreFiltersButton.click();
+    await this.moreFiltersMenu.waitFor({state: 'visible'});
     const menuitem = this.page.getByRole('menuitem', {
       name: filterName,
     });
-    await menuitem.waitFor({state: 'visible'});
+    await menuitem.waitFor({state: 'visible', timeout: 30000});
     await menuitem.click();
   }
 
