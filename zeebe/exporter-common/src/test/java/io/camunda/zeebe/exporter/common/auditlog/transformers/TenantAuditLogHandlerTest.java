@@ -57,5 +57,6 @@ class TenantAuditLogHandlerTest {
     // then
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
     assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
+    assertThat(entity.getEntityKey()).isEqualTo("test-tenant");
   }
 }
