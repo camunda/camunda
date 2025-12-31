@@ -332,4 +332,76 @@ public class AuditLogRestClientIT {
     assertThat(auditLogAssign.getTenantId()).isNull();
     assertThat(auditLogAssign.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
+
+  @Test
+  void shouldTrackTenantOperationsCorrectly() {
+    // when
+    final var auditLogTenantItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(fn -> fn.entityType(AuditLogEntityTypeEnum.TENANT))
+            .send()
+            .join();
+    final var auditLogTenantCreateItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.TENANT)
+                        .operationType(AuditLogOperationTypeEnum.CREATE))
+            .send()
+            .join();
+    final var auditLogTenantAssignItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.TENANT)
+                        .operationType(AuditLogOperationTypeEnum.ASSIGN))
+            .send()
+            .join();
+
+    // then
+    final var auditLogTenantAItems =
+        auditLogTenantItems.items().stream()
+            .filter(alr -> TENANT_A.equals(alr.getEntityKey()))
+            .collect(Collectors.toList());
+    assertThat(auditLogTenantAItems).hasSize(2);
+    final var auditLogEntities =
+        auditLogTenantAItems.stream().map(alr -> alr.getEntityType()).collect(Collectors.toSet());
+    assertThat(auditLogEntities).containsExactlyInAnyOrder(AuditLogEntityTypeEnum.TENANT);
+    final var auditLogOperations =
+        auditLogTenantAItems.stream()
+            .map(alr -> alr.getOperationType())
+            .collect(Collectors.toSet());
+    assertThat(auditLogOperations)
+        .containsExactlyInAnyOrder(
+            AuditLogOperationTypeEnum.CREATE, AuditLogOperationTypeEnum.ASSIGN);
+
+    // Verify TENANT_A creation
+    final var auditLogTenantACreateItems =
+        auditLogTenantCreateItems.items().stream()
+            .filter(alr -> TENANT_A.equals(alr.getEntityKey()))
+            .collect(Collectors.toList());
+    assertThat(auditLogTenantACreateItems).hasSize(1);
+    final var auditLogCreate = auditLogTenantACreateItems.get(0);
+    assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.TENANT);
+    assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
+    assertThat(auditLogCreate.getEntityKey()).isEqualTo(TENANT_A);
+    assertThat(auditLogCreate.getTenantId()).isNull();
+    assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+
+    // Verify TENANT_A user assignment
+    final var auditLogTenantAAssignItems =
+        auditLogTenantAssignItems.items().stream()
+            .filter(alr -> TENANT_A.equals(alr.getEntityKey()))
+            .collect(Collectors.toList());
+    assertThat(auditLogTenantAAssignItems).hasSize(1);
+    final var auditLogAssign = auditLogTenantAAssignItems.get(0);
+    assertThat(auditLogAssign.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.TENANT);
+    assertThat(auditLogAssign.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
+    assertThat(auditLogAssign.getEntityKey()).isEqualTo(TENANT_A);
+    assertThat(auditLogAssign.getTenantId()).isNull();
+    assertThat(auditLogAssign.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
 }
