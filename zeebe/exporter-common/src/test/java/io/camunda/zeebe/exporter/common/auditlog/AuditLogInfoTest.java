@@ -15,7 +15,6 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -132,36 +131,6 @@ class AuditLogInfoTest {
     final var info = AuditLogInfo.of(record);
 
     assertThat(info.tenant()).isNotPresent();
-  }
-
-  @Test
-  void shouldMapBatchOperationWhenPresent() {
-    final var record =
-        factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_MODIFICATION,
-            r ->
-                r.withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                    .withBatchOperationReference(12345L));
-
-    final var info = AuditLogInfo.of(record);
-
-    assertThat(info.batchOperation()).isPresent();
-    assertThat(info.batchOperation().get().key()).isEqualTo(12345L);
-  }
-
-  @Test
-  void shouldReturnEmptyBatchOperationWhenNotPresent() {
-    final var record =
-        factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_MODIFICATION,
-            r ->
-                r.withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                    .withBatchOperationReference(
-                        RecordMetadataDecoder.batchOperationReferenceNullValue()));
-
-    final var info = AuditLogInfo.of(record);
-
-    assertThat(info.batchOperation()).isEmpty();
   }
 
   @Test

@@ -5,129 +5,102 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.auditlog;
+package io.camunda.zeebe.exporter.common.auditlog;
 
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import io.camunda.webapps.schema.entities.SinceVersion;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
-public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
+public class AuditLogEntry {
 
-  // the key of the affected entity
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String entityKey;
 
   // the type of the affected entity
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogEntityType entityType;
+  private io.camunda.search.entities.AuditLogEntity.AuditLogEntityType entityType;
 
   // the type of operation that was performed, i.e. the Zeebe record intent
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogOperationType operationType;
+  private io.camunda.search.entities.AuditLogEntity.AuditLogOperationType operationType;
 
   // the version of the affected entity, i.e. the Zeebe record version
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Integer entityVersion;
 
   // the value type of the affected entity, i.e. the Zeebe record value type
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Short entityValueType;
 
   // the intent of the affected entity, i.e. the Zeebe record intent
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Short entityOperationIntent;
 
   // the creation timestamp of the Zeebe event that triggered the audit log entry
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private OffsetDateTime timestamp;
 
   // the category of the operation (ADMIN, DEPLOYED_RESOURCES, USER_TASKS)
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogOperationCategory category;
+  private io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory category;
 
-  // the type of the actor that performed the operation, (USER or CLIENT)
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogActorType actorType;
-
-  // the id of the actor that performed the operation
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String actorId;
+  // the actor that performed the operation
+  private AuditLogActor actor;
 
   // marks if the operations was successful or failed
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogOperationResult result;
+  private io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult result;
 
   // the key of the batch operation, if applicable
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long batchOperationKey;
 
   // the type of the batch operation, if applicable
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private BatchOperationType batchOperationType;
 
-  // the id of the tenant the operation was performed in
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String tenantId;
-
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private AuditLogTenantScope tenantScope;
+  // the tenant the operation was performed in
+  private Optional<AuditLogTenant> tenant;
 
   // the explanation on why the operation was performed
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String annotation;
 
   // searchable fields dependent on the entity type
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String processDefinitionId;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long processDefinitionKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long processInstanceKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long elementInstanceKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long jobKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long userTaskKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String decisionRequirementsId;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long decisionRequirementsKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private String decisionDefinitionId;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long decisionDefinitionKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long decisionEvaluationKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long deploymentKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long formKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long resourceKey;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
   public String getEntityKey() {
     return entityKey;
   }
 
-  public AuditLogEntity setEntityKey(final String entityKey) {
+  public AuditLogEntry setEntityKey(final String entityKey) {
     this.entityKey = entityKey;
     return this;
   }
@@ -136,7 +109,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return entityType;
   }
 
-  public AuditLogEntity setEntityType(final AuditLogEntityType auditLogEntityType) {
+  public AuditLogEntry setEntityType(final AuditLogEntityType auditLogEntityType) {
     entityType = auditLogEntityType;
     return this;
   }
@@ -145,7 +118,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return operationType;
   }
 
-  public AuditLogEntity setOperationType(final AuditLogOperationType operationType) {
+  public AuditLogEntry setOperationType(final AuditLogOperationType operationType) {
     this.operationType = operationType;
     return this;
   }
@@ -154,7 +127,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return entityVersion;
   }
 
-  public AuditLogEntity setEntityVersion(final Integer entityVersion) {
+  public AuditLogEntry setEntityVersion(final Integer entityVersion) {
     this.entityVersion = entityVersion;
     return this;
   }
@@ -163,7 +136,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return entityValueType;
   }
 
-  public AuditLogEntity setEntityValueType(final Short entityValueType) {
+  public AuditLogEntry setEntityValueType(final Short entityValueType) {
     this.entityValueType = entityValueType;
     return this;
   }
@@ -172,7 +145,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return entityOperationIntent;
   }
 
-  public AuditLogEntity setEntityOperationIntent(final Short entityOperationIntent) {
+  public AuditLogEntry setEntityOperationIntent(final Short entityOperationIntent) {
     this.entityOperationIntent = entityOperationIntent;
     return this;
   }
@@ -181,7 +154,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return batchOperationKey;
   }
 
-  public AuditLogEntity setBatchOperationKey(final Long batchOperationKey) {
+  public AuditLogEntry setBatchOperationKey(final Long batchOperationKey) {
     this.batchOperationKey = batchOperationKey;
     return this;
   }
@@ -190,7 +163,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return batchOperationType;
   }
 
-  public AuditLogEntity setBatchOperationType(final BatchOperationType batchOperationType) {
+  public AuditLogEntry setBatchOperationType(final BatchOperationType batchOperationType) {
     this.batchOperationType = batchOperationType;
     return this;
   }
@@ -199,35 +172,26 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return timestamp;
   }
 
-  public AuditLogEntity setTimestamp(final OffsetDateTime timestamp) {
+  public AuditLogEntry setTimestamp(final OffsetDateTime timestamp) {
     this.timestamp = timestamp;
     return this;
   }
 
-  public String getActorId() {
-    return actorId;
+  public AuditLogActor getActor() {
+    return actor;
   }
 
-  public AuditLogEntity setActorId(final String actorId) {
-    this.actorId = actorId;
+  public AuditLogEntry setActor(final AuditLogActor actor) {
+    this.actor = actor;
     return this;
   }
 
-  public AuditLogActorType getActorType() {
-    return actorType;
+  public Optional<AuditLogTenant> getTenant() {
+    return tenant;
   }
 
-  public AuditLogEntity setActorType(final AuditLogActorType actorType) {
-    this.actorType = actorType;
-    return this;
-  }
-
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public AuditLogEntity setTenantId(final String tenantId) {
-    this.tenantId = tenantId;
+  public AuditLogEntry setTenant(final Optional<AuditLogTenant> tenant) {
+    this.tenant = tenant;
     return this;
   }
 
@@ -235,7 +199,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return result;
   }
 
-  public AuditLogEntity setResult(final AuditLogOperationResult result) {
+  public AuditLogEntry setResult(final AuditLogOperationResult result) {
     this.result = result;
     return this;
   }
@@ -244,7 +208,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return annotation;
   }
 
-  public AuditLogEntity setAnnotation(final String annotation) {
+  public AuditLogEntry setAnnotation(final String annotation) {
     this.annotation = annotation;
     return this;
   }
@@ -253,7 +217,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return category;
   }
 
-  public AuditLogEntity setCategory(final AuditLogOperationCategory category) {
+  public AuditLogEntry setCategory(final AuditLogOperationCategory category) {
     this.category = category;
     return this;
   }
@@ -262,7 +226,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return deploymentKey;
   }
 
-  public AuditLogEntity setDeploymentKey(final Long deploymentKey) {
+  public AuditLogEntry setDeploymentKey(final Long deploymentKey) {
     this.deploymentKey = deploymentKey;
     return this;
   }
@@ -271,7 +235,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return formKey;
   }
 
-  public AuditLogEntity setFormKey(final Long formKey) {
+  public AuditLogEntry setFormKey(final Long formKey) {
     this.formKey = formKey;
     return this;
   }
@@ -280,7 +244,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return resourceKey;
   }
 
-  public AuditLogEntity setResourceKey(final Long resourceKey) {
+  public AuditLogEntry setResourceKey(final Long resourceKey) {
     this.resourceKey = resourceKey;
     return this;
   }
@@ -289,7 +253,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return processDefinitionKey;
   }
 
-  public AuditLogEntity setProcessDefinitionKey(final Long processDefinitionKey) {
+  public AuditLogEntry setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -298,7 +262,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return processInstanceKey;
   }
 
-  public AuditLogEntity setProcessInstanceKey(final Long processInstanceKey) {
+  public AuditLogEntry setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -307,7 +271,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return elementInstanceKey;
   }
 
-  public AuditLogEntity setElementInstanceKey(final Long elementInstanceKey) {
+  public AuditLogEntry setElementInstanceKey(final Long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
     return this;
   }
@@ -316,7 +280,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return jobKey;
   }
 
-  public AuditLogEntity setJobKey(final Long jobKey) {
+  public AuditLogEntry setJobKey(final Long jobKey) {
     this.jobKey = jobKey;
     return this;
   }
@@ -325,7 +289,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return userTaskKey;
   }
 
-  public AuditLogEntity setUserTaskKey(final Long userTaskKey) {
+  public AuditLogEntry setUserTaskKey(final Long userTaskKey) {
     this.userTaskKey = userTaskKey;
     return this;
   }
@@ -334,7 +298,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return decisionRequirementsKey;
   }
 
-  public AuditLogEntity setDecisionRequirementsKey(final Long decisionRequirementsKey) {
+  public AuditLogEntry setDecisionRequirementsKey(final Long decisionRequirementsKey) {
     this.decisionRequirementsKey = decisionRequirementsKey;
     return this;
   }
@@ -343,17 +307,8 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return decisionDefinitionKey;
   }
 
-  public AuditLogEntity setDecisionDefinitionKey(final Long decisionDefinitionKey) {
+  public AuditLogEntry setDecisionDefinitionKey(final Long decisionDefinitionKey) {
     this.decisionDefinitionKey = decisionDefinitionKey;
-    return this;
-  }
-
-  public AuditLogTenantScope getTenantScope() {
-    return tenantScope;
-  }
-
-  public AuditLogEntity setTenantScope(final AuditLogTenantScope tenantScope) {
-    this.tenantScope = tenantScope;
     return this;
   }
 
@@ -361,7 +316,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return processDefinitionId;
   }
 
-  public AuditLogEntity setProcessDefinitionId(final String processDefinitionId) {
+  public AuditLogEntry setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -370,7 +325,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return decisionRequirementsId;
   }
 
-  public AuditLogEntity setDecisionRequirementsId(final String decisionRequirementsId) {
+  public AuditLogEntry setDecisionRequirementsId(final String decisionRequirementsId) {
     this.decisionRequirementsId = decisionRequirementsId;
     return this;
   }
@@ -379,7 +334,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return decisionDefinitionId;
   }
 
-  public AuditLogEntity setDecisionDefinitionId(final String decisionDefinitionId) {
+  public AuditLogEntry setDecisionDefinitionId(final String decisionDefinitionId) {
     this.decisionDefinitionId = decisionDefinitionId;
     return this;
   }
@@ -388,7 +343,7 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return decisionEvaluationKey;
   }
 
-  public AuditLogEntity setDecisionEvaluationKey(final Long decisionEvaluationKey) {
+  public AuditLogEntry setDecisionEvaluationKey(final Long decisionEvaluationKey) {
     this.decisionEvaluationKey = decisionEvaluationKey;
     return this;
   }
@@ -397,8 +352,48 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return rootProcessInstanceKey;
   }
 
-  public AuditLogEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+  public AuditLogEntry setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
+  }
+
+  public static <R extends RecordValue> AuditLogEntry of(final Record<R> record) {
+    final AuditLogInfo info = AuditLogInfo.of(record);
+
+    final AuditLogEntry log =
+        new AuditLogEntry()
+            .setEntityKey(String.valueOf(record.getKey()))
+            .setEntityType(info.entityType())
+            .setCategory(info.category())
+            .setOperationType(info.operationType())
+            .setActor(info.actor())
+            .setTenant(AuditLogTenant.of(record))
+            .setBatchOperationKey(getBatchOperationKey(record))
+            .setProcessInstanceKey(getProcessInstanceKey(record))
+            .setEntityVersion(record.getRecordVersion())
+            .setEntityValueType(record.getValueType().value())
+            .setEntityOperationIntent(record.getIntent().value())
+            .setTimestamp(DateUtil.toOffsetDateTime(record.getTimestamp()));
+
+    return log;
+  }
+
+  private static <R extends RecordValue> Long getProcessInstanceKey(final Record<R> record) {
+    final var value = record.getValue();
+
+    if (value instanceof ProcessInstanceRelated) {
+      return ((ProcessInstanceRelated) value).getProcessInstanceKey();
+    } else {
+      return null;
+    }
+  }
+
+  private static <R extends RecordValue> Long getBatchOperationKey(final Record<R> record) {
+    final var batchOperationKey = record.getBatchOperationReference();
+    if (RecordMetadataDecoder.batchOperationReferenceNullValue() != batchOperationKey) {
+      return batchOperationKey;
+    } else {
+      return null;
+    }
   }
 }
