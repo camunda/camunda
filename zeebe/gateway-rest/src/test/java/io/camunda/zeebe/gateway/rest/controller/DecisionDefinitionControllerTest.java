@@ -39,21 +39,21 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   private static final String EVALUATION_URL = DECISION_BASE_URL + "/evaluation";
   private static final String EXPECTED_EVALUATION_RESPONSE =
       """
-          {
-             "decisionDefinitionKey":"123456",
-             "decisionDefinitionId":"decisionId",
-             "decisionDefinitionName":"decisionName",
-             "decisionDefinitionVersion":1,
-             "decisionRequirementsId":"decisionRequirementsId",
-             "decisionRequirementsKey":"123456",
-             "output":"null",
-             "failedDecisionDefinitionId":"",
-             "failureMessage":"",
-             "tenantId":"tenantId",
-             "decisionInstanceKey":"123",
-             "decisionEvaluationKey":"123",
-             "evaluatedDecisions":[]
-          }""";
+      {
+         "decisionDefinitionKey":"123456",
+         "decisionDefinitionId":"decisionId",
+         "decisionDefinitionName":"decisionName",
+         "decisionDefinitionVersion":1,
+         "decisionRequirementsId":"decisionRequirementsId",
+         "decisionRequirementsKey":"123456",
+         "output":"null",
+         "failedDecisionDefinitionId":"",
+         "failureMessage":"",
+         "tenantId":"tenantId",
+         "decisionInstanceKey":"123",
+         "decisionEvaluationKey":"123",
+         "evaluatedDecisions":[]
+      }""";
 
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean private DecisionDefinitionServices decisionServices;
@@ -73,18 +73,18 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
+    when(decisionServices.evaluateDecision(anyString(), anyLong(), any(), anyMap(), anyString()))
         .thenReturn((buildResponse("tenantId")));
 
     final var request =
         """
-            {
-              "decisionDefinitionKey": "123456",
-              "variables": {
-                "key": "value"
-              },
-              "tenantId": "tenantId"
-            }""";
+        {
+          "decisionDefinitionKey": "123456",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "tenantId"
+        }""";
 
     // when/then
     final ResponseSpec response =
@@ -100,25 +100,25 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(decisionServices)
-        .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
+        .evaluateDecision("", 123456L, -1, Map.of("key", "value"), "tenantId");
   }
 
   @Test
   void shouldEvaluateDecisionWithMultitenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
+    when(decisionServices.evaluateDecision(anyString(), anyLong(), any(), anyMap(), anyString()))
         .thenReturn((buildResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
 
     final var request =
         """
-            {
-              "decisionDefinitionKey": "123456",
-              "variables": {
-                "key": "value"
-              },
-              "tenantId": "<default>"
-            }""";
+        {
+          "decisionDefinitionKey": "123456",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "<default>"
+        }""";
 
     // when/then
     webClient
@@ -132,7 +132,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         .isOk();
     Mockito.verify(decisionServices)
         .evaluateDecision(
-            "", 123456L, Map.of("key", "value"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            "", 123456L, -1, Map.of("key", "value"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
@@ -141,18 +141,18 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
+    when(decisionServices.evaluateDecision(anyString(), anyLong(), any(), anyMap(), anyString()))
         .thenReturn((buildResponse("tenantId")));
 
     final var request =
         """
-            {
-              "decisionDefinitionId": "decisionId",
-              "variables": {
-                "key": "value"
-              },
-              "tenantId": "tenantId"
-            }""";
+        {
+          "decisionDefinitionId": "decisionId",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "tenantId"
+        }""";
 
     // when/then
     final ResponseSpec response =
@@ -168,7 +168,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(decisionServices)
-        .evaluateDecision("decisionId", -1L, Map.of("key", "value"), "tenantId");
+        .evaluateDecision("decisionId", -1L, -1, Map.of("key", "value"), "tenantId");
   }
 
   @Test
@@ -176,23 +176,23 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-            {
-              "decisionDefinitionId": "decisionId",
-              "decisionDefinitionKey": "123456",
-              "variables": {
-                "key": "value"
-              }
-            }""";
+        {
+          "decisionDefinitionId": "decisionId",
+          "decisionDefinitionKey": "123456",
+          "variables": {
+            "key": "value"
+          }
+        }""";
 
     final var expectedBody =
         """
-            {
-                "type":"about:blank",
-                "title":"Bad Request",
-                "status":400,
-                "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed",
-                "instance":"/v2/decision-definitions/evaluation"
-             }""";
+        {
+            "type":"about:blank",
+            "title":"Bad Request",
+            "status":400,
+            "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed",
+            "instance":"/v2/decision-definitions/evaluation"
+         }""";
 
     // when then
     webClient
@@ -213,21 +213,21 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-            {
-              "variables": {
-                "key": "value"
-              }
-            }""";
+        {
+          "variables": {
+            "key": "value"
+          }
+        }""";
 
     final var expectedBody =
         """
-            {
-                "type":"about:blank",
-                "title":"Bad Request",
-                "status":400,
-                "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required",
-                "instance":"/v2/decision-definitions/evaluation"
-             }""";
+        {
+            "type":"about:blank",
+            "title":"Bad Request",
+            "status":400,
+            "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required",
+            "instance":"/v2/decision-definitions/evaluation"
+         }""";
 
     // when then
     webClient

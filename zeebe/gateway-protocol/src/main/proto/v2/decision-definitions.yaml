@@ -119,8 +119,9 @@ paths:
       description: |
         Evaluates a decision.
         You specify the decision to evaluate either by using its unique key (as returned by
-        DeployResource), or using the decision ID. When using the decision ID, the latest deployed
-        version of the decision is used.
+        DeployResource), or using the decision ID and optionally a version. When using the decision 
+        ID without a version, the latest deployed version of the decision is used. When using the 
+        decision ID with a version, that specific version is used.
       requestBody:
         required: true
         content:
@@ -134,9 +135,10 @@ paths:
                   decisionDefinitionKey: "12345"
                   variables: {}
               By decision definition ID:
-                summary: Evaluate the decision by decisionDefinitionId.
+                summary: Evaluate the decision by decisionDefinitionId and version.
                 value:
-                  decisionDefinitionId: 1234-5678
+                  decisionDefinitionId: invoice-classification
+                  decisionDefinitionVersion: 1
                   variables: {}
       responses:
         "200":
@@ -296,6 +298,12 @@ components:
             deployed version of the decision is used.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+        decisionDefinitionVersion:
+          description: |
+            The version of the decision. By default, the latest version of the decision is used.
+          type: integer
+          format: int32
+          default: -1
         variables:
           description: The message variables as JSON document.
           type: object

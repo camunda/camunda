@@ -130,18 +130,28 @@ public class DecisionEvaluationEvaluateProcessor
 
     final String decisionId = record.getDecisionId();
     final long decisionKey = record.getDecisionKey();
+    final int decisionVersion = record.getDecisionVersion();
 
     if (!decisionId.isEmpty()) {
-      return decisionBehavior
-          .findLatestDecisionByIdAndTenant(decisionId, record.getTenantId())
-          .mapLeft(failure -> new Rejection(RejectionType.NOT_FOUND, failure.getMessage()));
-      // TODO: expand DecisionState API to find decisions by ID AND VERSION (#11230)
+      // Decision ID is specified
+      if (decisionVersion >= 0) {
+        // Both ID and version are specified - find by ID and version
+        return decisionBehavior
+            .findDecisionByIdVersionAndTenant(decisionId, decisionVersion, record.getTenantId())
+            .mapLeft(failure -> new Rejection(RejectionType.NOT_FOUND, failure.getMessage()));
+      } else {
+        // Only ID is specified - find latest version by ID
+        return decisionBehavior
+            .findLatestDecisionByIdAndTenant(decisionId, record.getTenantId())
+            .mapLeft(failure -> new Rejection(RejectionType.NOT_FOUND, failure.getMessage()));
+      }
     } else if (decisionKey > -1L) {
+      // Only key is specified - find by key
       return decisionBehavior
           .findDecisionByKeyAndTenant(decisionKey, record.getTenantId())
           .mapLeft(failure -> new Rejection(RejectionType.NOT_FOUND, failure.getMessage()));
     } else {
-      // if both ID and KEY are missing
+      // Neither ID nor KEY is specified
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }

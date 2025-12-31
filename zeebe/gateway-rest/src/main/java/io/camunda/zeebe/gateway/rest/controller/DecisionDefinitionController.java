@@ -123,6 +123,7 @@ public class DecisionDefinitionController {
                 .evaluateDecision(
                     request.decisionId(),
                     request.decisionKey(),
+                    request.decisionVersion(),
                     request.variables(),
                     request.tenantId()),
         ResponseMapper::toEvaluateDecisionResponse);

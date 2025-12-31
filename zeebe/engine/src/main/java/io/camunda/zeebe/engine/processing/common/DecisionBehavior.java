@@ -95,6 +95,17 @@ public class DecisionBehavior {
                     .formatted(decisionId, versionTag)));
   }
 
+  public Either<Failure, PersistedDecision> findDecisionByIdVersionAndTenant(
+      final String decisionId, final int version, final String tenantId) {
+    return Either.ofOptional(
+            decisionState.findDecisionByIdAndVersion(
+                tenantId, BufferUtil.wrapString(decisionId), version))
+        .orElse(
+            new Failure(
+                "Expected to evaluate decision with id '%s' and version '%d', but no such decision found"
+                    .formatted(decisionId, version)));
+  }
+
   public Either<Failure, PersistedDecision> findDecisionByKeyAndTenant(
       final long decisionKey, final String tenantId) {
     return Either.ofOptional(decisionState.findDecisionByTenantAndKey(tenantId, decisionKey))

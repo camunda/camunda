@@ -73,6 +73,11 @@ public class DecisionEvaluationClient {
     return this;
   }
 
+  public DecisionEvaluationClient withVersion(final int version) {
+    decisionEvaluationRecord.setDecisionVersion(version);
+    return this;
+  }
+
   public DecisionEvaluationClient withTenant(final String tenantId) {
     decisionEvaluationRecord.setTenantId(tenantId);
     return this;

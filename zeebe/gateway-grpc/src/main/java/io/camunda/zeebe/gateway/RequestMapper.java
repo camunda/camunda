@@ -300,6 +300,7 @@ public final class RequestMapper extends RequestUtil {
     brokerRequest
         .setDecisionId(grpcRequest.getDecisionId())
         .setDecisionKey(grpcRequest.getDecisionKey())
+        .setDecisionVersion(grpcRequest.getDecisionVersion())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setTenantId(ensureTenantIdSet("EvaluateDecision", grpcRequest.getTenantId()));
 

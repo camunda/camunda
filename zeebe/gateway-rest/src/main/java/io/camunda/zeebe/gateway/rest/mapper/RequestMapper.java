@@ -1155,6 +1155,7 @@ public class RequestMapper {
             new DecisionEvaluationRequest(
                 getStringOrEmpty(request, DecisionEvaluationById::getDecisionDefinitionId),
                 -1L,
+                getIntOrDefault(request, DecisionEvaluationById::getDecisionDefinitionVersion, -1),
                 getMapOrEmpty(request, DecisionEvaluationById::getVariables),
                 tenantId));
   }
@@ -1169,6 +1170,7 @@ public class RequestMapper {
             new DecisionEvaluationRequest(
                 "",
                 getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
+                -1,
                 getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
                 tenantId));
   }
@@ -1489,5 +1491,9 @@ public class RequestMapper {
       String signalName, Map<String, Object> variables, String tenantId) {}
 
   public record DecisionEvaluationRequest(
-      String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+      String decisionId,
+      Long decisionKey,
+      Integer decisionVersion,
+      Map<String, Object> variables,
+      String tenantId) {}
 }

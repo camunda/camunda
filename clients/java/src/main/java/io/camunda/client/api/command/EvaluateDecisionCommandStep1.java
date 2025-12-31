@@ -46,6 +46,26 @@ public interface EvaluateDecisionCommandStep1
           CommandWithVariables<EvaluateDecisionCommandStep2> {
 
     /**
+     * Set the version of the decision to evaluate. The version is assigned by the broker while
+     * deploying the decision. It can be picked from the deployment or decision event. If not set,
+     * the latest deployed version of the decision is used.
+     *
+     * @param version the version of the decision
+     * @return the builder for this command
+     */
+    EvaluateDecisionCommandStep2 version(int version);
+
+    /**
+     * Use the latest version of the decision to evaluate.
+     *
+     * <p>If the latest version was deployed few moments before then it can happen that an older
+     * version is evaluated.
+     *
+     * @return the builder for this command
+     */
+    EvaluateDecisionCommandStep2 latestVersion();
+
+    /**
      * Set the variables for the decision evaluation.
      *
      * @param variables the variables JSON document as String
