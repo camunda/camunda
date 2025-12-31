@@ -1,43 +1,425 @@
----
-
-title: Release Process
-description: Information about the software release process and procedures
-tags: ["release", "deployment", "versioning", "process"]
---------------------------------------------------------
-
 # Release Process
 
-## Overview
+This document will become a knowledge base around the [C8 monorepo](https://github.com/camunda/camunda) release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+).
 
-This document describes the release process and procedures for the Camunda platform and its components.
+For CI automation details, see [CI & Automation](./ci.md).
 
-> [!NOTE]
-> This page is migrated from the internal wiki and is currently being expanded with detailed content.
+## Scope & Goal
 
-## Release Types
+The goal of the C8 monorepo release process is to produce artifacts for patch, alpha and minor version releases of Camunda 8 components like Zeebe and (on 8.6+) most C8 webapps for SaaS and Self-Managed usage in a timely fashion. This includes [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-process-test). Optimize is released separately for 8.6 to 8.8 (at least).
 
-_Content coming soon..._
+It also involves automated and manual QA activities on release candidate builds to ensure bug-free artifacts on the final artifacts, e.g. certain benchmarks for Zeebe and interactive tests for C8 webapps.
 
-## Versioning Strategy
+Required inputs:
+- version of [camunda-cloud/identity](https://github.com/camunda-cloud/identity) to use for any given C8 monorepo release
+- whether a release candidate build and manual QA is necessary for patch releases
 
-_Content coming soon..._
+Produced artifacts include Maven artifacts on Maven Central, Docker images on DockerHub, GitHub releases with release notes and announcements.
 
-## Release Checklist
+There must not be 2 concurrent releases ongoing with the same major and minor version (e.g. no 8.99.1 and 8.99.2 patch releases at the same time).
 
-_Content coming soon..._
+Caveat: Many places still refer to this process as "Zeebe release process" although with 8.6+ it is the monorepo release process also involving other components like C8 webapps.
 
-## Deployment Process
+Not in scope of this process are [SNAPSHOT releases](./ci.md#available-snapshot-artifacts).
 
-_Content coming soon..._
+### Release Types
 
-## Rollback Procedures
+- **[Minor](https://confluence.camunda.com/display/HAN/Product+Releases)** (version format is 8.x.0):
+  - includes new features, for production use
+  - usually released every 6 months
+  - supported for certain time with new patch releases after the minor release
+  - code freeze before the release, to allow QA on a release candidate build
+  - source branch is `stable/${minor_version}`
+- **[Alpha](https://confluence.camunda.com/display/HAN/Alpha+Releases)** (version format 8.x.0-alphaN)
+  - includes new features to get early customer feedback, not for production use
+  - usually released every 1 month
+  - code freeze before the release, to allow QA on a release candidate build
+  - source branch is `main`
+- **Patch** (version format 8.x.y):
+  - includes security updates and bug fixes, for production use
+  - usually released every 1 month (or on demand, e.g. if critical CVE needs to be fixed sooner)
+  - no code freeze and no release candidate build
+  - source branch is `stable/${minor_version}`
 
-_Content coming soon..._
+### Release Dependencies
 
-## Communication Guidelines
+Caveat: While Optimize is part of the C8 monorepo, it has its own release process separate from the C8 monorepo release process (covers only Operate/Tasklist/Zeebe).
 
-_Content coming soon..._
+Component releases that the C8 monorepo releases depend on:
+- [camunda-cloud/identity](https://github.com/camunda-cloud/identity)
 
----
+Components that depend on the C8 monorepo releases:
+- C8 SaaS
+- [Helm Chart](https://github.com/camunda/camunda-platform-helm)
+- C8 Optimize
 
-*This documentation is under active development as we migrate content from the wiki system.*
+### Artifacts
+
+- [Maven Central](https://mvnrepository.com/artifact/io.camunda)
+- DockerHub:
+  - [https://hub.docker.com/r/camunda/zeebe/](https://hub.docker.com/r/camunda/zeebe/)
+  - [https://hub.docker.com/r/camunda/operate/](https://hub.docker.com/r/camunda/operate/)
+  - [https://hub.docker.com/r/camunda/tasklist/](https://hub.docker.com/r/camunda/tasklist/)
+  - [https://hub.docker.com/r/camunda/optimize/](https://hub.docker.com/r/camunda/optimize/)
+  - [https://hub.docker.com/r/camunda/camunda/](https://hub.docker.com/r/camunda/camunda/) (future "Single Application" Docker image)
+- [GitHub releases](https://github.com/camunda/camunda/releases)
+- SBOM information on FOSSA
+
+## Implementation
+
+The C8 monorepo release process is implemented using [BPMN](https://en.wikipedia.org/wiki/BPMN) models orchestrated by Camunda 8 SaaS, GitHub Action workflows and manual tasks (called "User tasks"). The GitHub Action workflows listen on [webhook events](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#repository_dispatch) via the `repository_dispatch` mechanism. Those events are generated by C8 via the GitHub API.
+
+For detailed information about the CI automation that supports these workflows, see [CI & Automation](./ci.md).
+
+### BPMN models
+
+The BPMN models are developed, versioned and tested in [this (internal) repository](https://github.com/camunda/zeebe-engineering-processes/tree/main?tab=readme-ov-file#release-process). BPMN models for noteworthy processes are:
+
+- **[Camunda Patch Release](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/patch_release.bpmn)**: is run for performing patch releases for versions 8.6+. Gathers the required inputs from the release manager and then starts "Camunda Release" process
+- **[Camunda Release](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/camunda_release.bpmn)**: Implements a unified release process for all release type since version 8.6:
+  - is started by the release manager with all the required inputs.
+  - for non-patch releases waits for code freeze time.
+  - performs the release process including artifact generation, uploads and QA, for a specific version
+
+Caveat: Some places still refer to those BPMN models as "Zeebe Release" although with 8.6+ the processes are responsible for multiple components including Zeebe and C8 webapps.
+
+Resources:
+- [Free BPMN course](https://academy.camunda.com/page/bpmn) on Camunda Academy
+- (Internal) [Recording on the release process implementation](https://camunda.slack.com/archives/C06UWQNCU7M/p1739978722627379)
+
+### Runtime
+
+Those BPMN models are [tested and deployed from main via GitHub Actions](https://github.com/camunda/zeebe-engineering-processes/actions) into an (internal) [Camunda 8 SaaS cluster](https://console.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6). Resources:
+
+- [Camunda Release process in Operate](https://bru-2.operate.camunda.io/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/operate)
+- [User tasks in Tasklist](https://bru-2.tasklist.camunda.io/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/tasklist)
+
+[Secrets are configured](https://console.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/a5d45cd5-3aad-48a4-9fe1-2d25d8e0b5a6/secrets) as part of the C8 SaaS cluster and available ones are for APIs of e.g. GitHub, Slack, Opsgenie, Testrail. Used C8 connectors:
+
+- GitHub Webhook
+- HTTP (for other APIs)
+- Slack (mainly for notifications)
+
+### GitHub Action workflows
+
+Centerpiece for the `camunda/camunda` monorepo is a [reusable workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-platform-release.yml) on `main` and each `stable/*` branch. This workflow handles the full release pipeline: building, scanning, publishing artifacts and Docker images, and notifying teams via Slack.
+
+**🔧 How It's Triggered**
+
+Releases are triggered in two ways:
+
+1. For dry runs, by using `on: schedule` triggers defined in the workflow itself (no Slack noise here).
+2. For real releases, by calling the GitHub Actions REST API directly with a `workflow_dispatch` request:
+
+```bash
+curl -X POST https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-platform-release.yml/dispatches \
+  -H "Authorization: token $TOKEN" \
+  -d '{"ref": "stable/8.7", "inputs": {"releaseVersion": "8.7.x", "nextDevelopmentVersion": "8.7.y-SNAPSHOT", ...}}'
+```
+
+**📝** This replaces the older `dispatch-release-*` workflows, which have now been removed.
+
+For [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-process-test) there is automation to create the release branch, build and upload the Maven artifacts, only merging a release branch is manual.
+
+### Benchmark Tests
+
+**🤔 What are the benchmarks**
+
+- There's a GKE Kubernetes cluster to run the benchmarks:
+  - GCP project: `zeebe-io`, cluster name: `zeebe-cluster`
+  - Run by the Zeebe team
+- This Kubernetes cluster has a monitoring stack installed (Prometheus, Grafana)
+  - There's a [dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m&from=now-24h&to=now&timezone=browser&var-DS_PROMETHEUS=prometheus&var-cluster=$__all&var-namespace=$__all&var-pod=$__all&var-partition=$__all) to observe the status of the benchmarks
+- Every created benchmark has a dedicated namespace in the Kubernetes cluster (e.g. `release-8-7-x`)
+- There's a benchmark for every currently supported ([maintained](https://docs.camunda.io/docs/next/reference/announcements-release-notes/overview/#announcements--release-notes)) version + previously released alpha version.
+- A benchmark is installed/upgraded by this [GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-benchmark.yml)
+  - Under the hood, it's running a `helm install --upgrade` command for a benchmark creation/update
+  - Helm installs a special [Helm chart](https://github.com/camunda/zeebe-benchmark-helm) that is a thin wrapper around the standard Camunda 8 [Helm chart](https://github.com/camunda/camunda-platform-helm), with additional components for benchmark testing (workload generators)
+
+**🍃 Benchmark flow**
+
+- A benchmark is automatically created via GitHub Action call after a release candidate (RC) is triggered ([GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-benchmark.yml))
+  - Benchmark creation applies only to alpha, minor, and major releases.
+  - Patches don't require a new benchmark creation. What is required is to re-use the same namespace + the recently released patch version, and update the the applicable benchmark with the newest patch version.
+- If during the release, new commits are merged into the release branch (major, minor, alpha), the corresponding benchmark needs to be updated to run the code from latest commit of the release branch.
+- At the end of the release process:
+  - For the alpha/minor/major release, a benchmark for this version is to be updated to its latest image (i.e. no RC running in the benchmark)
+    - E.g. if a version 8.8.0 is released, the benchmark should be running 8.8.0 not 8.8.0-RC1
+    - Additionally, for alpha releases, previous alpha for the current version is to be removed
+      - E.g. if 8.8.0-alpha6 is released, a benchmark for 8.8.0-alpha5 is be removed, for 8.8.0-alpha6 running
+  - For the patch releases, a benchmark for this minor version is to be update to this version)
+    - E.g. if a version 8.7.10 is released, the benchmark for 8.7 (`release-8-7-x`) will be updated to use this version as a part of the 8.7.10 patch release.
+
+More details on how benchmark tests work can be found at: [https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md](https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md)
+
+### Camunda 8 Testing Clusters
+
+Camunda 8 testing clusters provide isolated environments for validating release builds, executing targeted test flows, and verifying features and bug fixes across all core components. The cluster creation and management processes can be manual or automated depending on the test type and the stage of the monorepo release process.
+
+**📡 Cluster Usage Scenarios**
+
+- **Component Coverage**: Identity, Operate, Optimize, and Tasklist.
+- **Pre-release Validation**: Isolate new release builds before broad deployment and confirm fixes or features behave as expected.
+- **Test Isolation**: Support E2E, chaos, benchmark, reliability, and load test types.
+
+**🚂 Monorepo Release Process Mapping**
+
+**Manual Clusters**
+
+- Clusters are provisioned manually for manual testing flows. They are used to enable Webapp testing across the four main apps (Identity, Operate, Optimize, and Tasklist).
+- Manual creation is carried out by QA engineers via UI - soon to be automated by [CAMUNDA-32765](https://github.com/camunda/camunda/issues/32765).
+  - The process follows qa_manual_create_cluster.md.
+- For each Release Candidate, a new manual test cluster generation is created with the current RC version.
+
+**Automated Clusters**
+
+- Automated flows use GitHub workflows like: [zeebe-qa-testbench.yaml](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-qa-testbench.yaml) and [zeebe-testbench.yaml](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-testbench.yaml) to orchestrate the creation of clusters for benchmark, reliability, E2E, and chaos tests.
+- The clusters for automated tests are created for every Release Candidate, mirroring the manual flow but managed programmatically.
+- [In this documentation](https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md) you can find more about this tests set up.
+
+**👥 Ownership and Terminology**
+
+- **Manual Test Clusters and Manual Tests**: Owned by QA engineers.
+- **Automated Test Clusters and Automated Tests**: Development & Maintainability owned by the Zeebe team, Release monitoring owned by Monorepo Release Manager, orchestrated via GitHub Actions.
+- **Post-release QA**: Historically managed by the Monorepo Release Manager.
+- **Terminology Note**: The label "QA" is a catch-all for testing steps in the release process, not a strict indicator of team ownership. Consider replacing "QA" with more precise terms such as "Test Validation" or "Release Testing" for documentation clarity. ([CAMUNDA-35223](https://github.com/camunda/camunda/issues/35223))
+
+### Best Practices
+
+For BPMN User Tasks:
+- [Assign on creation automatically](https://docs.camunda.io/docs/components/modeler/bpmn/user-tasks/#assignments) to the correct person for better UX and ownership
+
+For BPMN activities using REST connector:
+- Configure retries with appropriate interval for idempotent requests, to workaround network problems/short service interruption
+  - e.g. use 3 retries with 10 seconds interval on `GET` requests
+- HTTP error handling of the remote API via [escalation events](https://docs.camunda.io/docs/components/modeler/bpmn/escalation-events/)
+  - Also consider using retries for transient errors
+  - e.g. send a notification via Slack in #top-monorepo-release
+- Use authentication to avoid API ratelimits of [GitHub](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api) and [DockerHub](https://docs.docker.com/docker-hub/usage/) for increased reliability
+
+Calling and integrating with GitHub Actions workflows:
+- Use [C8 REST connector](https://docs.camunda.io/docs/components/connectors/protocol/rest/) to [call GitHub REST API to dispatch workflows](https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event)
+- Use GHA `workflow_dispatch` inputs to give custom data as parameters like release branch names or versions
+- Avoid release managers polling for GHA workflow completion either by:
+  - Create 2nd BPMN activity that queries completion in a loop and makes the process wait for GHA
+  - Send a Slack notification from GHA workflow in #top-monorepo-release to notify the release manager
+
+## Change Management & Testing
+
+Changes to the release process are done in these steps:
+
+- **Implementation:**
+  - Check out [this (internal) repository](https://github.com/camunda/zeebe-engineering-processes/tree/main?tab=readme-ov-file#release-process) locally
+  - Use the [Desktop Modeler](https://camunda.com/download/modeler/) locally to modify the BPMN models
+  - Adjust/extend the Java/Kotlin unit tests covering the relevant BPMN models
+  - Create a Pull Request against `main` including screenshots + description to explain the change
+- **Testing:**
+  - If testable in isolation/with dry run: demonstrate that change works
+  - If not testable with dry run: wait for next release
+- **Review:**
+  - Get a peer review from a Monorepo DevOps team member or C8 engineer familiar with the process
+- **Rollout:**
+  - Merge the Pull Request
+  - If necessary, migrate currently running process instances in Operate to new version of the process
+
+## Issue Tracking
+
+All problems, bugs and feature requests regarding the C8 release process are tracked using [GitHub Issues](https://github.com/camunda/camunda/issues).
+
+For visibility and prioritization there is the (internal) [Monorepo Release project board](https://github.com/orgs/camunda/projects/115/views/4) that tracks high-level issues.
+
+## DRIs
+
+This section is subject to change in [#28528](https://github.com/camunda/camunda/issues/28528).
+
+### Release Manager
+
+There is one DRI called the "monorepo release manager" who oversees all running and newly launched release process instances end-to-end and is responsible for successfully finishing the releases (8.6+) according to their timelines. This DRI rotates every month (Slack groups etc. are manually updated) at the start of the month. Handover notes are [documented in tabs here](https://docs.google.com/document/d/1PYOMGEW5vcIhgDBY_BIe62s4sE26C2EbDqjgSM30URE/edit?tab=t.7bl3xug6y4a3).
+
+Some tasks during the release process are also taking care of other DRIs. The release manager can also rely on help from medics.
+
+The release manager is currently selected manually for each release.
+
+Caveat: Some places still refer to this as "Zeebe release manager" although with 8.6+ the release manager is responsible for multiple components including Zeebe and C8 webapps.
+
+### Others
+
+**QA Release Manager**: can help with questions around steps the QA team performs.
+
+Caveat: Not all steps with "QA" in the name mean that the QA team is actually involved, so check twice
+
+**Zeebe Release Manager**: can help with Zeebe-specific questions and tasks.
+
+## Backporting Guidelines
+
+We want the release process for all supported versions 8.6+ to be as similar as possible, to reduce maintenance effort, surprises and mental load. Improvements and fixes to the release process should always apply to all supported versions, if possible.
+
+For CI-related changes [these guidelines apply](./ci.md#backporting-guidelines).
+
+## Minor Release Considerations
+
+Minor releases happen less often than other release types, so not all steps are automated (yet) in the `camunda/camunda` monorepo:
+
+1. Bump the `pom.xml` versions to `8.(x+1).0-SNAPSHOT` on `main`, after the last `release-8.x.0-alphaN` branch is created
+   - This may reveal implicit assumptions or actual bugs in upgrade tests that check for clean upgrade behavior of the software between different minor versions!
+   - This can be done with the following command `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
+2. Create the `stable/8.x` release branch from latest `release-8.x.0-alphaN`, to enforce code freeze
+   - Ensure all expected SNAPSHOT artifacts are produced correctly.
+3. [Configure unified-ci-merges-stable-branches branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
+   - This may need temporary admin permissions for the initial manual push of the new branch.
+4. Bump configured versions in upgrade tests of the previous minor version to `8.x`
+   - TODO: add references to known upgrade tests if possible
+
+Also, we have to do similar steps for the [ZPT repository](https://github.com/camunda/zeebe-process-test) in coordination with stakeholders from Camunda Ex team:
+
+1. Creating `stable/8.x` release branch from `main`, to enforce code freeze
+2. Bumping `pom.xml` versions to `8.(x+1).0-SNAPSHOT` on `main`
+
+### Additional Minor Release Learnings (8.8+)
+
+In addition to the standard steps above, recent minor releases have surfaced several process improvements and considerations worth incorporating into future release cycles:
+
+- **Feature Freeze Communication**
+  - The freeze notice should clearly describe not just alpha branch behavior, but expectations for the entire minor release phase (including post-alpha, backports to `stable/<minor>`, etc.).
+  - Current notice is too narrow; see [engineering-processes#712](https://github.com/camunda/zeebe-engineering-processes/pull/712) and [Slack discussion](https://camunda.slack.com/archives/CHY2S7KDJ/p1758632876658599?thread_ts=1757683374.580399&cid=CHY2S7KDJ).
+  - Action: Iterate a more generic, minor-release–aware template for next minor releases.
+- **Benchmark Namespace Naming**
+  - Namespace for benchmarks during RCs may become `8-8-0` (when performing RC) instead of the expected `8-8-x`.
+  - Current handling is accepted; document and monitor naming in future minors for reproducibility.
+- **Merge-Back Conflicts**
+  - Merge conflicts can occur when merging the release branch back into `stable/<minor>`, especially due to timing of backports versus release branch changes.
+  - Reference: [Slack thread](https://camunda.slack.com/archives/C06UWQNCU7M/p1760046632109499?thread_ts=1760012606.937389&cid=C06UWQNCU7M)
+  - Action: Evaluate sources and refine merge sequencing guidelines.
+- **Heavy Merge-Back CI Load**
+  - Merge-back PRs currently run almost the full test matrix, resulting in long CI runtimes (see [example run](https://github.com/camunda/camunda/actions/runs/18385775955/job/52383810975)).
+  - Action: The task [https://github.com/camunda/camunda/issues/39659](https://github.com/camunda/camunda/issues/39659) was created to fix the existing issue and optimize merge-back test scope or introduce selective module test strategies.
+- **Change of source branch**
+  - For 8.8 minor release the source branch `stable/8.8` based on `release-8.8.0-alpha8`
+  - Currently an automated script decides the source branch for the release type, in case of change in future release process, the code needs to be adjusted [here](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/decide_dev_version_and_is_latest_for_release.bpmn#L39)
+
+## Troubleshooting
+
+### How to correlate [Git commits](https://github.com/camunda/zeebe-engineering-processes/commits) with deployed process version in C8 Operate?
+
+There is currently no way to see metadata (e.g. deploy timestamp) in or [download BPMN XML for a certain version](https://github.com/camunda/camunda/issues/22005) from Operate UI.
+
+Workaround: Open a process instance in the Operate UI and use network tab of browser and look at `/xml` endpoint response after a page refresh.
+
+### I lack permissions in the (internal) [Camunda 8 SaaS cluster](https://console.cloud.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/689a796f-7efa-487f-9e44-76ca3a98c77b)?
+
+Reach out via Slack to ask for the permissions.
+
+### How to retry a [camunda-platform-release.yml](https://github.com/camunda/camunda/wiki/camunda-platform-release.yml) job that failed mid-build?
+
+The [camunda-platform-release.yml](https://github.com/camunda/camunda/wiki/camunda-platform-release.yml) GHA workflow uploads artifacts (Maven, Docker) to certain 3rd party services. If it fails unexpectedly after having already uploaded some, but not all artifacts, there is some cleanup needed. Only after the cleanup you can retry safely:
+
+Procedure:
+- remove new info on GitHub (reset branch to before new Git commits, delete new Git tag)
+- drop staged Maven artifacts from Maven Central
+- do nothing re Artifactory (artifacts will be overwritten)
+- do nothing re DockerHub (artifacts will be overwritten)
+- retrigger the failing [camunda-platform-release.yml](https://github.com/camunda/camunda/wiki/camunda-platform-release.yml) job
+
+### I want/need to retry/skip certain parts of a BPMN process?
+
+In C8 Operate, you can use [process instance modification](https://docs.camunda.io/docs/components/operate/userguide/process-instance-modification/) to change variables of the process or move to a different activity. If that activity is earlier in the process, it will be retried. If it is later, it will skip intermediate steps.
+
+All of the above operations can be dangerous and lead to unexpected behavior or inconsistencies (outdated/lacking variables, lacking preconditions for later steps, duplicate effects that are visible externally). Proceed with caution and ask another engineer to review beforehand!
+
+### How to remove accidentally published artifacts from [Artifactory](https://artifacts.camunda.com/)?
+
+As a first step, you need to find out how to best identify the artifacts to be deleted:
+
+1. Do all affected artifacts (and only those) have a specific version (e.g. 8.99.0-dryrun)?
+2. Do you have a log of GitHub Actions workflow run uploading the files to identify them?
+
+If you know a specific version (and ideally have the log of a GHA workflow run), [you can use this script](https://github.com/camunda/infra-core/blob/stage/cmd/artifactory/delete_artifacts.py). The script source code has detailed usage instructions. Since the C8 monorepo currently publishes Operate, Tasklist and Zeebe a suitable deletion command for example for version `8.99.0-dryrun` is:
+
+```bash
+REPOSITORY=zeebe-io ARTIFACTORY_PATH="io/camunda*" VERSION=8.99.0-dryrun python delete_artifacts.py
+REPOSITORY=camunda-operate ARTIFACTORY_PATH="io/camunda*" VERSION=8.99.0-dryrun python delete_artifacts.py
+REPOSITORY=camunda-zeebe-tasklist ARTIFACTORY_PATH="io/camunda*" VERSION=8.99.0-dryrun python delete_artifacts.py
+```
+
+If you have a log of a GHA workflow run called `log.txt`, you can use `grep` to identify exact URLs of all uploaded files to [Artifactory](https://artifacts.camunda.com/):
+
+```bash
+cat log.txt | grep "Uploaded to camunda-nexus" | grep -oP "https://artifacts.camunda.com/[^\s]+"
+```
+
+You can identify affected repositories of Artifactory from a `log.txt`, you can use the previous command and "group" by repository name:
+
+```bash
+cat log.txt | grep "Uploaded to camunda-nexus" | grep -oP "https://artifacts.camunda.com/[^\s]+" | cut -d'/' -f5 | sort | uniq
+```
+
+### I have another problem?
+
+There is a document with [known problems](https://docs.google.com/document/d/1PYOMGEW5vcIhgDBY_BIe62s4sE26C2EbDqjgSM30URE/edit?tab=t.0) and workarounds (if available) that should be consulted first, alongside with open issues from Issue Tracking. The user tasks of the release process have documentation attached that gives guidance.
+
+If there are still questions, reach out via Slack.
+
+Consider opening an incident for serious issues (see below).
+
+## Incident Process
+
+If you discover serious issues during the Monorepo Release process (while working on any of its subtasks), you can start the incident (per usual process with `/inc` command in Slack).
+
+Please select incident type: `C8 Monorepo Release incident`.
+
+Who can start the incident:
+- Anyone participating in the current release process (Release Manager, QA Engineers, etc.)
+- Anyone from the Orchestration cluster teams
+
+## FAQ
+
+### 1. Should I request a patch release or a customer-specific (hotfix) Docker image?
+
+**🔧 Request a customer-specific Docker image (hotfix) when:**
+- The fix has not yet been merged into main or a stable branch
+- You want to test the fix early with a specific customer or in an internal environment (e.g., Camunda SaaS dev)
+- You are not yet sure if the fix is correct or complete
+
+**➡️ How to**: [follow these instructions](https://confluence.camunda.com/x/dwMNE).
+
+Note: Hotfixes are not part of the official release process and should not be used as a substitute for patch releases. Hotfixes should be used by teams to validate a solution without impacting the general release flow.
+
+**📦 Request a general patch release when:**
+- The fix has been merged and verified
+- It's relevant to all users or addresses a broad issue, not just one customer
+- You're ready to make the change available in an official release
+
+**➡️ How to**: use the `Request Monorepo Patch release` Slack workflow in [this channel](https://camunda.slack.com/archives/C06UWQNCU7M) and fill the form.
+
+### 2. What's the git commit mechanics of the maven-release-plugin?
+
+Release process roughly looks like this:
+
+- release branch is created (forked from `main` or `stable/x.y`)
+- on the release branch, as a part of the release process, maven-release-plugin creates 2 commits sequentially:
+  - **commit 1** ([example](https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c)): bumping pom.xml files to the version we want to release (e.g. `8.8.0-SNAPSHOT` -> `8.8.0-alpha6`)
+    - A git tag for the release (e.g. `8.8.0-alpha6`) is created from this commit
+    - The release is built from this commit.
+  - **commit 2** ([example](https://github.com/camunda/camunda/commit/d8cd12a8fd73c3bf5237c33a9c5fb1ed0c4f9bab)): bumping pom.xml files for the next development version (e.g. `8.8.0-alpha6` -> `8.8.0-SNAPSHOT`)
+
+If one needs to retry the failed release (assuming no need to clear the released artifacts), need to do:
+- delete these two commits from the git history
+- delete the GitHub release and git tag from GitHub
+
+### 3. How do Monorepo releases relate to the Big Release Train?
+
+The Monorepo release produces core backend artifacts, while the Big Release Train bundles downstream services and UI components. The train can only depart once the Monorepo artifacts are confirmed as released.
+
+While Monorepo (camunda/camunda) releases artifacts for:
+- [Camunda](https://hub.docker.com/r/camunda/camunda/)
+  - [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
+  - [Operate](https://hub.docker.com/r/camunda/operate/)
+  - [Tasklist](https://hub.docker.com/r/camunda/tasklist/)
+
+The big release train releases:
+- Identity Management Component (camunda-cloud/identity)
+- Connectors (camunda/connectors)
+- Web Modeler (camunda/web-modeler)
+- Monorepo ⭐ ← can only be done once monorepo artifacts are released (information gathered by `confirm-success-release-train` form)
+- Optimize (camunda/camunda)
+- Console (camunda/camunda-cloud-management-apps)

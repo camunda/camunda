@@ -11,10 +11,37 @@ Welcome to the developer documentation for the Camunda platform and orchestratio
 
 ## Documentation
 
-This site contains essential documentation for the Camunda platform development and deployment:
+This site contains comprehensive documentation for the Camunda platform development and deployment:
 
-- **[CI & Automation](./ci)** - Continuous integration and automation processes
-- **[Release Process](./release)** - Software release procedures and guidelines
+### CI & Automation
+
+**[CI & Automation](./ci)** - Complete guide to continuous integration and automation processes including:
+
+- Git branch strategy and SNAPSHOT artifacts
+- Issue tracking and prioritization
+- GitHub Merge Queue configuration
+- Unified CI implementation and workflow inclusion criteria
+- Test file ownership and naming conventions
+- Renovate dependency automation
+- CI health metrics and monitoring
+- Security best practices and secret management
+- Self-hosted runners and caching strategies
+- Preview environments and backporting guidelines
+- ChatOps commands and flaky test handling
+- Comprehensive troubleshooting guide
+
+### Release Process
+
+**[Release Process](./release)** - Complete software release procedures and guidelines including:
+
+- Release types (Minor, Alpha, Patch) and artifacts
+- BPMN-based release process implementation
+- GitHub Action workflows and automation
+- Benchmark tests and testing clusters
+- Change management and DRI responsibilities
+- Minor release considerations and learnings
+- Incident process and troubleshooting procedures
+- FAQ covering common release scenarios
 
 ## Platform Components
 
