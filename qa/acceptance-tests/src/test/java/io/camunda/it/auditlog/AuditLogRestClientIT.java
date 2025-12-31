@@ -19,13 +19,19 @@ import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
+import io.camunda.qa.util.auth.Membership;
+import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -49,6 +55,7 @@ public class AuditLogRestClientIT {
           .withAuthenticatedAccess();
 
   private static final String MAPPING_RULE_CLAIM_VALUE = "test-claim-value";
+  private static final String GROUP_A_ID = "AGroupName";
 
   @MappingRuleDefinition
   private static final TestMappingRule MAPPING_RULE_A =
@@ -56,6 +63,11 @@ public class AuditLogRestClientIT {
           Strings.newRandomValidIdentityId(),
           TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_NAME,
           MAPPING_RULE_CLAIM_VALUE);
+
+  @GroupDefinition
+  private static final TestGroup GROUP_A =
+      TestGroup.withoutPermissions(
+          GROUP_A_ID, GROUP_A_ID, List.of(new Membership(DEFAULT_USERNAME, EntityType.USER)));
 
   private static CamundaClient adminClient;
   private static ProcessInstanceEvent processInstanceEvent;
@@ -182,5 +194,67 @@ public class AuditLogRestClientIT {
     assertThat(auditLogCreate.getEntityKey()).isEqualTo(MAPPING_RULE_A.id());
     assertThat(auditLogCreate.getTenantId()).isNull();
     assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
+
+  @Test
+  void shouldTrackGroupOperationsCorrectly() {
+    // when
+    final var auditLogGroupItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(fn -> fn.entityType(AuditLogEntityTypeEnum.GROUP))
+            .send()
+            .join();
+    final var auditLogGroupCreateItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.GROUP)
+                        .operationType(AuditLogOperationTypeEnum.CREATE))
+            .send()
+            .join();
+    final var auditLogGroupAssignItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.GROUP)
+                        .operationType(AuditLogOperationTypeEnum.ASSIGN))
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogGroupItems.items()).hasSize(2);
+    final var auditLogEntities =
+        auditLogGroupItems.items().stream()
+            .map(alr -> alr.getEntityType())
+            .collect(Collectors.toSet());
+    assertThat(auditLogEntities).containsExactlyInAnyOrder(AuditLogEntityTypeEnum.GROUP);
+    final var auditLogOperations =
+        auditLogGroupItems.items().stream()
+            .map(alr -> alr.getOperationType())
+            .collect(Collectors.toSet());
+    assertThat(auditLogOperations)
+        .containsExactlyInAnyOrder(
+            AuditLogOperationTypeEnum.CREATE, AuditLogOperationTypeEnum.ASSIGN);
+
+    assertThat(auditLogGroupCreateItems.items()).hasSize(1);
+    final var auditLogCreate = auditLogGroupCreateItems.items().get(0);
+    assertThat(auditLogCreate).isNotNull();
+    assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.GROUP);
+    assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
+    assertThat(auditLogCreate.getEntityKey()).isEqualTo(GROUP_A_ID);
+    assertThat(auditLogCreate.getTenantId()).isNull();
+    assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+
+    assertThat(auditLogGroupAssignItems.items()).hasSize(1);
+    final var auditLogAssign = auditLogGroupAssignItems.items().get(0);
+    assertThat(auditLogAssign).isNotNull();
+    assertThat(auditLogAssign.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.GROUP);
+    assertThat(auditLogAssign.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
+    assertThat(auditLogAssign.getEntityKey()).isEqualTo(GROUP_A_ID);
+    assertThat(auditLogAssign.getTenantId()).isNull();
+    assertThat(auditLogAssign.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
 }
