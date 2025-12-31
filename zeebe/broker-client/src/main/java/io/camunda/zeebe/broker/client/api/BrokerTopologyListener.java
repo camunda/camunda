@@ -20,4 +20,6 @@ public interface BrokerTopologyListener {
   default void brokerRemoved(final MemberId memberId) {}
 
   default void completedClusterChange() {}
+
+  default void clusterIncarnationChanged() {}
 }
