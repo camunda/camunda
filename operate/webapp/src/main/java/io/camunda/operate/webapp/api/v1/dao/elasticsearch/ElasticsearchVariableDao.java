@@ -23,7 +23,6 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -33,10 +32,6 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> implements VariableDao {
 
   @Autowired private VariableTemplate variableIndex;
-
-  @Override
-  protected void buildFiltering(
-      final Query<Variable> query, final SearchSourceBuilder searchSourceBuilder) {}
 
   @Override
   protected void buildFiltering(

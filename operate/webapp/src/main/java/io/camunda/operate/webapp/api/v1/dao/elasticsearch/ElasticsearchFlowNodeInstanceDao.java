@@ -23,7 +23,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import java.util.List;
 import java.util.Objects;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -36,10 +35,6 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Autowired private ProcessCache processCache;
-
-  @Override
-  protected void buildFiltering(
-      final Query<FlowNodeInstance> query, final SearchSourceBuilder searchSourceBuilder) {}
 
   @Override
   protected void buildFiltering(
@@ -68,11 +63,10 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
 
     final var startDateQ =
         buildIfPresent(
-            FlowNodeInstance.START_DATE, filter.getStartDate(), this::buildMatchDateQueryEs8);
+            FlowNodeInstance.START_DATE, filter.getStartDate(), this::buildMatchDateQuery);
 
     final var endDateQ =
-        buildIfPresent(
-            FlowNodeInstance.END_DATE, filter.getEndDate(), this::buildMatchDateQueryEs8);
+        buildIfPresent(FlowNodeInstance.END_DATE, filter.getEndDate(), this::buildMatchDateQuery);
 
     final var stateQ =
         buildIfPresent(FlowNodeInstance.STATE, filter.getState(), ElasticsearchUtil::termsQuery);
