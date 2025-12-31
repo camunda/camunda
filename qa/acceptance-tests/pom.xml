@@ -21,7 +21,7 @@
 
   <name>Camunda QA Acceptance Tests</name>
   <properties>
-    <version.maven-surefire-junit5-tree-reporter>1.4.0</version.maven-surefire-junit5-tree-reporter>
+    <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
   </properties>
 
   <dependencies>
