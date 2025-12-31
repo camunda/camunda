@@ -9,6 +9,7 @@ package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
+import static io.camunda.it.auditlog.AuditLogUtils.createAuthorization;
 import static io.camunda.it.auditlog.AuditLogUtils.generateData;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,6 +19,8 @@ import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
@@ -80,12 +83,19 @@ public class AuditLogRestClientIT {
   private static CamundaClient adminClient;
   private static ProcessInstanceEvent processInstanceEvent;
   private static String auditLogKey;
+  private static Long authorizationKey;
 
   @BeforeAll
   static void setup() {
     final Tuple<String, ProcessInstanceEvent> tuple = generateData(adminClient, USE_REST_API);
     auditLogKey = tuple.getLeft();
     processInstanceEvent = tuple.getRight();
+    authorizationKey =
+        createAuthorization(
+            adminClient,
+            DEFAULT_USERNAME,
+            ResourceType.PROCESS_DEFINITION,
+            PermissionType.READ_PROCESS_INSTANCE);
   }
 
   @Test
@@ -200,6 +210,50 @@ public class AuditLogRestClientIT {
     assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.MAPPING_RULE);
     assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLogCreate.getEntityKey()).isEqualTo(MAPPING_RULE_A.id());
+    assertThat(auditLogCreate.getTenantId()).isNull();
+    assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
+
+  @Test
+  void shouldTrackAuthorizationOperationsCorrectly() {
+    // when
+    final var auditLogAuthorizationItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(fn -> fn.entityType(AuditLogEntityTypeEnum.AUTHORIZATION))
+            .send()
+            .join();
+    final var auditLogAuthorizationCreateItems =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityType(AuditLogEntityTypeEnum.AUTHORIZATION)
+                        .operationType(AuditLogOperationTypeEnum.CREATE))
+            .send()
+            .join();
+
+    // then
+    assertThat(auditLogAuthorizationItems.items()).hasSizeGreaterThanOrEqualTo(1);
+    final var auditLogEntities =
+        auditLogAuthorizationItems.items().stream()
+            .map(alr -> alr.getEntityType())
+            .collect(Collectors.toSet());
+    assertThat(auditLogEntities).contains(AuditLogEntityTypeEnum.AUTHORIZATION);
+
+    assertThat(auditLogAuthorizationCreateItems.items()).hasSizeGreaterThanOrEqualTo(1);
+
+    // Find the specific authorization we created
+    final var authorizationCreateLog =
+        auditLogAuthorizationCreateItems.items().stream()
+            .filter(al -> String.valueOf(authorizationKey).equals(al.getEntityKey()))
+            .findFirst();
+
+    assertThat(authorizationCreateLog).isPresent();
+    final var auditLogCreate = authorizationCreateLog.get();
+    assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.AUTHORIZATION);
+    assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
+    assertThat(auditLogCreate.getEntityKey()).isEqualTo(String.valueOf(authorizationKey));
     assertThat(auditLogCreate.getTenantId()).isNull();
     assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }

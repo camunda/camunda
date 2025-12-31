@@ -14,8 +14,11 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -204,5 +207,36 @@ public class AuditLogUtils {
                       .join();
               assertThat(auditLogItems.items()).hasSize(1);
             });
+  }
+
+  public static long createAuthorization(
+      final CamundaClient camundaClient,
+      final String username,
+      final ResourceType authorizationResourceType,
+      final PermissionType permission) {
+    final var authorizationResponse =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(username)
+            .ownerType(io.camunda.client.api.search.enums.OwnerType.USER)
+            .resourceId("*")
+            .resourceType(authorizationResourceType)
+            .permissionTypes(permission)
+            .send()
+            .join();
+    final var authorizationKey = authorizationResponse.getAuthorizationKey();
+
+    RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED).limit(1L);
+    Awaitility.await("Audit log entry is created for the authorization")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var authorization =
+                  camundaClient.newAuthorizationGetRequest(authorizationKey).send().join();
+              assertThat(authorization).isNotNull();
+            });
+
+    return authorizationKey;
   }
 }
