@@ -22,7 +22,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import java.io.IOException;
 import java.util.*;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -126,10 +125,6 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
         .map(Hit::source)
         .toList();
   }
-
-  @Override
-  protected void buildFiltering(
-      final Query<DecisionRequirements> query, final SearchSourceBuilder searchSourceBuilder) {}
 
   @Override
   protected void buildFiltering(

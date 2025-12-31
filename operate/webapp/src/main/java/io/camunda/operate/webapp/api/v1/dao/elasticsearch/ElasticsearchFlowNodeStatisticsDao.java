@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -42,10 +41,6 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
     implements FlowNodeStatisticsDao {
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-
-  @Override
-  protected void buildFiltering(
-      final Query<FlowNodeStatistics> query, final SearchSourceBuilder searchSourceBuilder) {}
 
   @Override
   protected void buildFiltering(
