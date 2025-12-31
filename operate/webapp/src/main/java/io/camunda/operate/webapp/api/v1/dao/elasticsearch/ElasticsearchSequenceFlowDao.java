@@ -18,7 +18,6 @@ import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -29,10 +28,6 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
     implements SequenceFlowDao {
 
   @Autowired private SequenceFlowTemplate sequenceFlowIndex;
-
-  @Override
-  protected void buildFiltering(
-      final Query<SequenceFlow> query, final SearchSourceBuilder searchSourceBuilder) {}
 
   @Override
   protected void buildFiltering(
