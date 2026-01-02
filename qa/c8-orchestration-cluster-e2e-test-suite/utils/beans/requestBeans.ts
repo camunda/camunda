@@ -165,8 +165,6 @@ export const getDecisionInstanceResponseRequiredFields: string[] = [
   'elementInstanceKey',
   'evaluatedInputs',
   'matchedRules',
-  // 'evaluationFailure',          // optional, present on failure
-  // 'rootDecisionDefinitionKey',  // present from 8.9
 ];
 export const evaluateDecisionRequiredFields: string[] = [
   'decisionDefinitionId',
