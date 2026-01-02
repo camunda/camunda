@@ -571,6 +571,11 @@ If the CI change matches one of the following:
   * e.g. related are [CI Security](#ci-security), [secrets](#ci-secret-management)
 * is related to cost reduction, increased reliability or observability: **SHOULD** backport to all `stable/*` branches
   * e.g. related are [CI health](#ci-health-metrics), [GHA caching](#caching-strategy), [self-hosted runners](#ci-self-hosted-runners)
+* is an in-repository documentation change: **SHOULD** backport if it:
+  * updates procedures, guidelines, or troubleshooting steps that AI agents need for accurate assistance on stable branches
+  * fixes incorrect information that would mislead AI agents or developers working on stable versions
+  * adds new knowledge about practices, tools, or procedures that apply to stable branch development
+  * corrects build, test, or development instructions that affect stable branch workflows
 * is a new CI job for new product feature or test cases: backport **only if** the product feature is backported
 * is a new CI feature: backport **only if** required in the ticket
 * is related to an `on: schedule` GHA workflow: **no need** to backport, only works on `main`
