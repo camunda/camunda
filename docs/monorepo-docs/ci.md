@@ -2,7 +2,6 @@
 
 This page has information and answers questions around how the [C8 monorepo CI](https://github.com/camunda/camunda/actions) and related tools like [Renovate](#renovate) work. It should serve as a knowledge base including FAQ for Camunda and external contributors.
 
-
 ## Git Branches
 
 * `main`: permanent branch for feature development of next C8 minor version (GitHub default branch)
@@ -18,19 +17,15 @@ Maven artifacts are available on [Artifactory](https://artifacts.camunda.com/) a
   * Maven artifacts with version `8.9.0-SNAPSHOT` for all C8 components
   * Docker images with tag `SNAPSHOT` for [Operate](https://hub.docker.com/r/camunda/operate/tags?name=SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=SNAPSHOT)
   * Docker images with tag `8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8-SNAPSHOT)
-
 * Pushed commits to `stable/8.8` branch produce:
   * Maven artifacts with version `8.8.0-SNAPSHOT` for Operate, Tasklist, Zeebe
   * Docker images with tag `8.8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.8-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.8-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.8-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.8-SNAPSHOT)
-
 * Pushed commits to `stable/8.7` branch produce:
   * Maven artifacts with version `8.7.0-SNAPSHOT` for Operate, Tasklist, Zeebe
   * Docker images with tag `8.7-SNAPSHOT` for [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.7-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.7-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.7-SNAPSHOT)
-
 * Pushed commits to `stable/optimize-8.7` branch produce:
   * Maven artifacts with version `8.7.0-SNAPSHOT` for **Optimize**
   * Docker images with tag `8.7-SNAPSHOT` for **[Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.7-SNAPSHOT)**
-
 
 ## Issue Tracking
 
@@ -50,17 +45,17 @@ Related resources:
 Prioritization of issues is done by the Monorepo CI DRI according to severity which follows from these criteria:
 
 1. Impacted functionality:
-    * **Highest severity** for issues related to workflows that are:
-        * marked as [GitHub required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging)
-        * part of the [GitHub merge queue](#github-merge-queue) to `main`
-        * run on `main` branch
-        * part of release process
-    * Lower severity for any other workflows
-1. Amount of users impacted:
-    * Generally severity scales with the amount of affected people that interact with the monorepo (Camundi/external contributors)
-    * Can be assessed with [CI health](#ci-health-metrics) or on anecdotal level
-1. Available workarounds:
-    * Severity is lower if a workaround is available, especially if that workaround is easy to use/low effort
+   * **Highest severity** for issues related to workflows that are:
+     * marked as [GitHub required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging)
+     * part of the [GitHub merge queue](#github-merge-queue) to `main`
+     * run on `main` branch
+     * part of release process
+   * Lower severity for any other workflows
+2. Amount of users impacted:
+   * Generally severity scales with the amount of affected people that interact with the monorepo (Camundi/external contributors)
+   * Can be assessed with [CI health](#ci-health-metrics) or on anecdotal level
+3. Available workarounds:
+   * Severity is lower if a workaround is available, especially if that workaround is easy to use/low effort
 
 Dealing with reported issues that are identified as urgent/**high severity**:
 
@@ -72,11 +67,12 @@ Dealing with reported issues that are identified as urgent/**high severity**:
 ### FAQ
 
 **Q: What do I do when I see the CI failing with a seemingly unrelated error?**
+
 > A: Search the open [GitHub Issues](https://github.com/camunda/camunda/issues) with the failure message to see if the problem is known: If you find an issue for the same problem, leave a comment with the new occurrance. Otherwise raise a new issue labelled `area/build` to start tracking that CI failure or reach out via Slack to the Monorepo CI DRI.
 
 **Q: How to deal with flaky tests that block CI?**
-> A: Disable the flaky test(s) and comment on existing ticket or create a new one that the flaky test needs to be re-enabled _after_ fixing it. No single test can be more important that the stability of the remaining CI system impacting dozens of developers.
 
+> A: Disable the flaky test(s) and comment on existing ticket or create a new one that the flaky test needs to be re-enabled _after_ fixing it. No single test can be more important that the stability of the remaining CI system impacting dozens of developers.
 
 ## GitHub Merge Queue
 
@@ -93,21 +89,25 @@ Related resources:
 ### FAQ
 
 **Q: Why do we use merge queues instead of manually merging PRs?**
+
 > A: In repositories like the C8 monorepo with a high number of contributing engineers and high development velocity dozens of Pull Requests can get created and merged each day. Avoiding downtimes like waiting for a window to merge PRs [boosts productivity](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue) and allows us to scale.
 
 **Q: Why do we have [required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging) for PRs and merge queues?**
+
 > A: Automated software tests increase our confidence into delivering a working software product. Required status checks are a way to technically ensure that engineers get early feedback about potential problems. This way we only merge Pull Requests to `main` branch that will not fail those automated tests impacting quality or other engineers. This also helps with automerging dependency updates using [Renovate](#renovate).
 
 **Q: What are the current [required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging) for PRs and merge queue to `main`?**
+
 > A: You can find the up2date list [here](https://github.com/camunda/camunda/rules?ref=refs%2Fheads%2Fmain):
 > * `check-results` check from [ci.yml](https://github.com/camunda/camunda/blob/df3a8296085cb7bbc1065d86e43f2b77bd02b017/.github/workflows/ci.yml#L158) ([Unified CI](#unified-ci))
 
 **Q: Do those [required status checks](https://github.com/camunda/camunda/rules?ref=refs%2Fheads%2Fmain) of `main` guarantee that all commits are green?**
+
 > A: Yes, for the scope of the [Unified CI](#unified-ci) except for an admin bypass of the merge queue in case of incidents.
 
 **Q: My PR had only green checks when I queued it, why was it removed from the merge queue?**
-> A: The merge queue creates a temporary branch from the latest target branch (e.g. `main`) with your PR merged and then runs CI again. Your changes could be incompatible with the target branch or CI failed e.g. due to flakiness. Look up the check results for details on the CI failure.
 
+> A: The merge queue creates a temporary branch from the latest target branch (e.g. `main`) with your PR merged and then runs CI again. Your changes could be incompatible with the target branch or CI failed e.g. due to flakiness. Look up the check results for details on the CI failure.
 
 ## Unified CI
 
@@ -154,41 +154,40 @@ This section explains how to achieve including a CI check into the Unified CI as
 To include a workflow [fitting the criteria](#workflow-inclusion-criteria) into the Unified CI **all** of the following steps have to be taken for each job of that workflow:
 
 1. **Change Detection:** Define path filter for all file changes that should trigger the new job in this [composite action](https://github.com/camunda/camunda/blob/main/.github/actions/paths-filter/action.yml). This information is relevant for the next step, make sure to:
-    * Add a new `output` to the [composite action](https://github.com/camunda/camunda/blob/main/.github/actions/paths-filter/action.yml) representing the condition when the new job should be triggered.
-    * The output have the same name as the new job it triggers.
-    * The output condition should reuse existing filters and combine them as needed.
-    * If no matching existing filter, add a new one in a step.
-    * Adjust the [`detect-changes` job](https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L25) to re-expose the new `output` under the same name.
-
+   * Add a new `output` to the [composite action](https://github.com/camunda/camunda/blob/main/.github/actions/paths-filter/action.yml) representing the condition when the new job should be triggered.
+   * The output have the same name as the new job it triggers.
+   * The output condition should reuse existing filters and combine them as needed.
+   * If no matching existing filter, add a new one in a step.
+   * Adjust the [`detect-changes` job](https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L25) to re-expose the new `output` under the same name.
 2. **CI Check:** Relies on the previous step to run the new job only if relevant files changed. Add the new job defintion to the [ci.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml) file, by:
-    * Following this pattern:
-      ```yaml
-      descriptive-job-name:
-        # reuse information from change detection on whether to run this job
-        if: needs.detect-changes.outputs.descriptive-job-name == 'true'
-        needs: [detect-changes]
-        runs-on: ubuntu-latest  # or other
-        timeout-minutes: 10  # or less
-        permissions: {}  # unless GITHUB_TOKEN is needed
-        steps:
-          - uses: actions/checkout@v4
-          #
-          # ...ACTUAL CI CHECK STEPS HERE...
-          #
-          - name: Observe build status
-            if: always()
-            continue-on-error: true
-            uses: ./.github/actions/observe-build-status
-            with:
-              build_status: ${{ job.status }}
-              secret_vault_address: ${{ secrets.VAULT_ADDR }}
-              secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-              secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-        ```
-    * It is important to depend on the `detect-changes` job and use the newly defined output as a condition.
-    * If the new job has many steps, you need to refactor them into a reusable workflow or composite action to keep `ci.yml` lean.
-    * Adding [observability for CI health](#ci-health-metrics) is required.
+   * Following this pattern:
 
+     ```yaml
+     descriptive-job-name:
+       # reuse information from change detection on whether to run this job
+       if: needs.detect-changes.outputs.descriptive-job-name == 'true'
+       needs: [detect-changes]
+       runs-on: ubuntu-latest  # or other
+       timeout-minutes: 10  # or less
+       permissions: {}  # unless GITHUB_TOKEN is needed
+       steps:
+         - uses: actions/checkout@v4
+         #
+         # ...ACTUAL CI CHECK STEPS HERE...
+         #
+         - name: Observe build status
+           if: always()
+           continue-on-error: true
+           uses: ./.github/actions/observe-build-status
+           with:
+             build_status: ${{ job.status }}
+             secret_vault_address: ${{ secrets.VAULT_ADDR }}
+             secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+             secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+     ```
+   * It is important to depend on the `detect-changes` job and use the newly defined output as a condition.
+   * If the new job has many steps, you need to refactor them into a reusable workflow or composite action to keep `ci.yml` lean.
+   * Adding [observability for CI health](#ci-health-metrics) is required.
 3. **Results Check:** Include the new job as `needs` dependency in [`check-results`](https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L166) job (required status check). This is needed so that the Unified CI is marked as failure if one of its jobs fails.
 
 Related resources:
@@ -227,22 +226,26 @@ Suite names must follow a naming convention of `{componentName}{team}TestSuite`.
 Names for CI tests are composed by Github Actions, which is a combination of CI job names. The composed name is shown on PRs and when viewing an individual test run in the Github UI. The composed name should follow the below naming convention to ensure consistency, clarity across the CI system, make it easy to identify the owning team, and which component is being tested.
 
 For Names of tests in the Unified CI, the name should be structured as follows:
+
 ```
 CI / <componentName> / [<testType>] <testName> / <ownerName> / ...
 ```
+
 `testType` can be things like: `UT` for Unit Tests, `IT` for Integration Tests, `Smoke` for smoke tests, etc.
 
 For example, Core Features Unit Tests for Tasklist would be appear as
+
 ```
 CI / Tasklist / [UT] Core Features / Run Unit Tests
 ```
+
 Importer Integration Tests for Operate would appear as
+
 ```
 CI / Operate / [IT] Importer Tests / Data Layer / run-test
 ```
 
 For Names for Legacy tests should be prefixed with `[Legacy] <componentName>` so that Legacy tests are organized and appear together when run on a PR. The rest of the name should be descriptive of what the test is doing.
-
 
 ## Renovate
 
@@ -273,15 +276,19 @@ Related resources:
 ### FAQ
 
 **Q: Why do we use Renovate instead of manually looking for dependency updates?**
+
 > A: We automate repetitive and error-prone tasks as much as possible to save valuable Engineering time for solving problems requiring more creativity, e.g. complex major version upgrades of dependencies.
 
 **Q: Why do we use Renovate instead of Dependabot etc.?**
+
 > A: Renovate is more flexible, supports more package ecosystems, has a detailed configuration and already used successfully in other places in Camunda so we can reuse existing experience.
 
 **Q: Why does Renovate attempt to merge a PR with failing status checks?**
+
 > A: Renovate will always try to automerge dependency update PRs since it does not know about CI failures. It is GitHub's task to enforce [required status checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging) and reject the merge attempt - as long as no PR with failing status check gets actually merged, everything is working as intended.
 
 **Q: Why does Renovate not detect dependency XYZ?**
+
 > A: Renovate parses and analyzes most well known dependency management files (e.g. `pom.xml`) automatically. Not detecting a dependency can be due to an unrecognized file format, a typo in the name, a bug in Renovate or the dependency being missing from the package ecosystem. This will usually be reported in the Renovate logs.
 
 **Q: How to access the Renovate logs?**
@@ -289,8 +296,8 @@ Related resources:
 > A: Click on the most recent run in the [Renovate Dashboard](https://developer.mend.io/github/camunda/camunda) and make sure to show debug information.
 
 **Q: Why are updates for dependency XYZ ignored in the [Renovate configuration file](https://github.com/camunda/camunda/blob/main/.github/renovate.json)?**
-> A: The reasons for manually ignoring certain updates should be described in the comments. Using `git annotate` to figure out who put the ignore can also be a way to get more details.
 
+> A: The reasons for manually ignoring certain updates should be described in the comments. Using `git annotate` to figure out who put the ignore can also be a way to get more details.
 
 ## CI Health Metrics
 
@@ -359,7 +366,6 @@ Related resources:
 
 * [CI Health Grafana dashboard (internal)](https://dashboard.int.camunda.com/d/bdmo5l8puugaoc/ci-health-camunda-camunda-monorepo)
 
-
 ## CI Secret Management
 
 All GitHub Action workflows of the [C8 monorepo CI](https://github.com/camunda/camunda/actions) must use [Vault](https://confluence.camunda.com/display/HAN/CI+Secrets+Self-Service#CISecretsSelfService-GitHubActions) to retrieve secrets e.g. with the [Hashicorp Vault action](https://github.com/hashicorp/vault-action) as a best practice. Other approaches like [GitHub Action Secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions) will be [sunset](https://github.com/camunda/camunda/issues/18211) (outside of bootstrapping connection to Vault).
@@ -372,7 +378,6 @@ Related resources:
 
 * [Vault for GitHub Actions (internal)](https://confluence.camunda.com/display/HAN/CI+Secrets+Self-Service#CISecretsSelfService-GitHubActions)
 
-
 ## CI Self-Hosted Runners
 
 GitHub offers customers to use their own machines to execute GitHub Action workflows via [self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners). We use this feature in cases when more resources are needed than what GitHub can provide or at a cheaper price. See the [internal documentation](https://confluence.camunda.com/display/HAN/Github+Actions+Self-Hosted+Runners) for what is available.
@@ -382,12 +387,11 @@ GitHub offers customers to use their own machines to execute GitHub Action workf
 How to choose which runner to use for a GHA workflow:
 
 1. Use [GitHub-hosted runners](https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners) by default (free for public repositories)
-1. Use self-hosted runners (with `-default` name suffix) when a workflow needs:
-    1. more resources (memory, CPU) than available on GitHub-hosted runners
-    1. ARM CPU architecture
+2. Use self-hosted runners (with `-default` name suffix) when a workflow needs:
+   1. more resources (memory, CPU) than available on GitHub-hosted runners
+   2. ARM CPU architecture
 
 The `-default` self-hosted runners have no durability guarantees which makes them very cheap and the default choice, if GitHub-hosted runners are not sufficient. **Exceptions:** in case of reliability problems one can use the `-longrunning` suffix after approval by Monorepo CI DRI.
-
 
 ## GitHub Actions Cache
 
@@ -429,7 +433,6 @@ Implementation:
 You can temporarily turn off cache restore functionality in a PR by using the `/ci-disable-cache` command as described under [ChatOps](#chatops). This could be useful to test GHA workflows without the caching mechanism. To restore standard functionality, you need to issue the `/ci-enable-cache` command or drop the empty commit.
 
 **Note**: Disabling cache restore mechanism is only possible on PRs.
-
 
 ## CI Security
 
@@ -521,7 +524,6 @@ tibdex/github-app-token@*,
 wagoid/commitlint-github-action@*,
 </details>
 
-
 ## Preview Environments
 
 Engineers can request Preview Environments for specific Pull Requests of the C8 monorepo to be available via a designated URL, to allow more thorough testing and demonstration of the product features before the feature branches are merged into the base branch. For the C8 monorepo the components Identity, Operate, Optimize, Tasklist and Zeebe will get provisioned based on the [camunda-platform](https://github.com/camunda/camunda-platform-helm/) Helm chart.
@@ -545,7 +547,6 @@ Preview Environments are provisioned on cheap but sometimes less reliable hardwa
 Related resources:
 
 * [internal documentation](https://confluence.camunda.com/display/HAN/Preview+Environments)
-
 
 ## Backporting Guidelines
 
@@ -580,7 +581,6 @@ If the CI change matches one of the following:
 * is a new CI feature: backport **only if** required in the ticket
 * is related to an `on: schedule` GHA workflow: **no need** to backport, only works on `main`
 * is related to [Preview Environments](#preview-environments): **no need** to backport, only supported on `main`
-
 
 ## Slack Notifications
 
@@ -621,7 +621,6 @@ job-with-notification:
                 text: "Hello World"
 ```
 
-
 ## ChatOps
 
 In the [camunda/camunda monorepo](https://github.com/camunda/camunda) certain automated workflows can be triggered by posting comments with commands on GitHub Issues and/or Pull Requests. Those commands are then processed by a [GitHub Actions workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/chatops-command-dispatch.yml).
@@ -636,15 +635,12 @@ Available commands:
     * pipeline timeouts
     * DockerHub connection problems
     * deep links to GHA logs for generic job failures
-
 * `/ci-disable-cache` comment on a Pull Request:
   * Synopsis: Adds a new label `ci:no-cache` to the list of labels of the Pull Request and creates a new empty commit to trigger a new CI run without cache restoration.
   * Use case: Can be used by any engineer to test workflows run from scratch without cache restoration.
-
 * `/ci-enable-cache` comment on a Pull Request:
   * Synopsis: Removes the `ci:no-cache` label from the list of labels of the Pull Request and creates a new empty commit to trigger a new CI run.
   * Use case: Complements the `/ci-disable-cache` commands and can be used to restore CI regular cache restoration step.
-
 
 ## Flaky tests
 
@@ -669,7 +665,6 @@ Some Maven modules in the monorepo [rerun failing Java tests multiple times](htt
   * this will cause the whole build to fail
   * see [the FAQ](#faq) on how to deal with such cases
 
-
 ## License Checks
 
 We use [FOSSA](https://app.fossa.com/) to check dependencies for license compliance with Camunda's policies in order to detect risks early and be aware of licenses of our BOM.
@@ -679,7 +674,6 @@ The scan is performed by a GitHub Actions workflows for:
 * each tag
 * each commit pushed to `main` and `stable*` (8.6+) branches
 * each Pull Request opened against the above branches
-
 
 ## Troubleshooting
 
@@ -692,17 +686,17 @@ Follow the Monorepo CI medic routines and check out the available [CI runbooks](
 There can be many factors influencing that and it is sometimes hard to find the root caues. Below list should provide guidance:
 
 1. Try to rerun the failing CI check(s) at least to overcome transient problems.
-1. If on a Pull Request, consider whether the code changes on that Pull Request might cause the CI check failure.
-1. Check if there is an [open issue](#issue-tracking) about that failing CI check, e.g. by searching for the error message.
-1. [Ask Copilot about the failure](https://github.blog/changelog/2025-01-15-copilot-users-can-ask-about-a-failed-actions-job-ga/) using the `Explain error` button
-    * If this doesn't work, find and google the error message.
-1. If the failing CI checks are **not** part of the [Unified CI](#unified-ci), contact their [owner](#ci-test-files) and see if those CI checks are known to be unstable or flaky.
-    * Technically, failing CI checks **outside** the Unified CI do not prevent merging a PR. If the owners of those failing CI checks agree, you can still merge.
-1. If your PR is removed from the merge queue, check if concurrently there was another PR merged that changes code which your code depends on (e.g. leading to compilation errors in the merge queue).
-1. If a check from the Unified CI is failing on `main` or a stable branch, try to find the [first build](https://github.com/camunda/camunda/actions/workflows/ci.yml?query=branch%3Amain) with that failing check and investigate the recently merged code changes.
-    * Experience shows that most CI check failures are (indirectly) caused by `camunda/camunda` code changes, and not by external factors like 3rd party services or infrastructure.
-    * [CI Health metrics](#ci-health-metrics) can also be used to narrow down the time range, less precise.
-1. Reach out on Slack for help!
+2. If on a Pull Request, consider whether the code changes on that Pull Request might cause the CI check failure.
+3. Check if there is an [open issue](#issue-tracking) about that failing CI check, e.g. by searching for the error message.
+4. [Ask Copilot about the failure](https://github.blog/changelog/2025-01-15-copilot-users-can-ask-about-a-failed-actions-job-ga/) using the `Explain error` button
+   * If this doesn't work, find and google the error message.
+5. If the failing CI checks are **not** part of the [Unified CI](#unified-ci), contact their [owner](#ci-test-files) and see if those CI checks are known to be unstable or flaky.
+   * Technically, failing CI checks **outside** the Unified CI do not prevent merging a PR. If the owners of those failing CI checks agree, you can still merge.
+6. If your PR is removed from the merge queue, check if concurrently there was another PR merged that changes code which your code depends on (e.g. leading to compilation errors in the merge queue).
+7. If a check from the Unified CI is failing on `main` or a stable branch, try to find the [first build](https://github.com/camunda/camunda/actions/workflows/ci.yml?query=branch%3Amain) with that failing check and investigate the recently merged code changes.
+   * Experience shows that most CI check failures are (indirectly) caused by `camunda/camunda` code changes, and not by external factors like 3rd party services or infrastructure.
+   * [CI Health metrics](#ci-health-metrics) can also be used to narrow down the time range, less precise.
+8. Reach out on Slack for help!
 
 ### How to verify that a CI check is robust and stable, not flaky?
 
@@ -716,12 +710,13 @@ Is your CI check part of the [Unified CI's](#unified-ci) `ci.yml`?
 
 2. Yes! Then you can use the [GitHub CLI tool](https://cli.github.com/) to start repeated runs.
 
-    _Optional: remove CI checks you are not interested in from the `ci.yml` on `YOURBRANCHNAME` to speed up the execution and save resources._
+   _Optional: remove CI checks you are not interested in from the `ci.yml` on `YOURBRANCHNAME` to speed up the execution and save resources._
 
-    Open a new terminal, go to your checkout of `camunda/camunda` and execute in `bash` shell:
+   Open a new terminal, go to your checkout of `camunda/camunda` and execute in `bash` shell:
 
-    ```bash
-    for i in {1..10}; do gh workflow run ci.yml --ref YOURBRANCHNAME; done
-    ```
+   ```bash
+   for i in {1..10}; do gh workflow run ci.yml --ref YOURBRANCHNAME; done
+   ```
 
-    This loop will take a while (1 hour or more depending on the CI check) so let it run in the background. After it finished, visit https://github.com/camunda/camunda/actions/workflows/ci.yml?query=branch%3AYOURBRANCHNAME and see if there are any failures (indicates lack of robustness).
+   This loop will take a while (1 hour or more depending on the CI check) so let it run in the background. After it finished, visit https://github.com/camunda/camunda/actions/workflows/ci.yml?query=branch%3AYOURBRANCHNAME and see if there are any failures (indicates lack of robustness).
+
