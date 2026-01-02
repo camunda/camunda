@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">CI &amp; Automation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI &amp; Automation | Camunda Platform"><meta data-rh="true" name="description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><meta data-rh="true" property="og:description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-42875/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI & Automation","item":"https://camunda.github.io/camunda/pr-preview/pr-42875/ci"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-42875/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.74ec97b1.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-42875/assets/js/main.fc25f935.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.de9ac137.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/main.634a06ea.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -23,30 +23,26 @@
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="available-snapshot-artifacts">Available SNAPSHOT Artifacts<a href="#available-snapshot-artifacts" class="hash-link" aria-label="Direct link to Available SNAPSHOT Artifacts" title="Direct link to Available SNAPSHOT Artifacts" translate="no">​</a></h3>
 <p>Maven artifacts are available on <a href="https://artifacts.camunda.com/" target="_blank" rel="noopener noreferrer" class="">Artifactory</a> and Docker images are available on <a href="https://hub.docker.com/u/camunda/" target="_blank" rel="noopener noreferrer" class="">DockerHub</a>:</p>
 <ul>
-<li class="">
-<p>Pushed commits to <code>main</code> branch produce:</p>
+<li class="">Pushed commits to <code>main</code> branch produce:<!-- -->
 <ul>
 <li class="">Maven artifacts with version <code>8.9.0-SNAPSHOT</code> for all C8 components</li>
 <li class="">Docker images with tag <code>SNAPSHOT</code> for <a href="https://hub.docker.com/r/camunda/operate/tags?name=SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Operate</a>, <a href="https://hub.docker.com/r/camunda/tasklist/tags?name=SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Tasklist</a>, <a href="https://hub.docker.com/r/camunda/zeebe/tags?name=SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Zeebe</a></li>
 <li class="">Docker images with tag <code>8-SNAPSHOT</code> for <a href="https://hub.docker.com/r/camunda/optimize/tags?name=8-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Optimize</a></li>
 </ul>
 </li>
-<li class="">
-<p>Pushed commits to <code>stable/8.8</code> branch produce:</p>
+<li class="">Pushed commits to <code>stable/8.8</code> branch produce:<!-- -->
 <ul>
 <li class="">Maven artifacts with version <code>8.8.0-SNAPSHOT</code> for Operate, Tasklist, Zeebe</li>
 <li class="">Docker images with tag <code>8.8-SNAPSHOT</code> for <a href="https://hub.docker.com/r/camunda/optimize/tags?name=8.8-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Optimize</a>, <a href="https://hub.docker.com/r/camunda/operate/tags?name=8.8-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Operate</a>, <a href="https://hub.docker.com/r/camunda/tasklist/tags?name=8.8-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Tasklist</a>, <a href="https://hub.docker.com/r/camunda/zeebe/tags?name=8.8-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Zeebe</a></li>
 </ul>
 </li>
-<li class="">
-<p>Pushed commits to <code>stable/8.7</code> branch produce:</p>
+<li class="">Pushed commits to <code>stable/8.7</code> branch produce:<!-- -->
 <ul>
 <li class="">Maven artifacts with version <code>8.7.0-SNAPSHOT</code> for Operate, Tasklist, Zeebe</li>
 <li class="">Docker images with tag <code>8.7-SNAPSHOT</code> for <a href="https://hub.docker.com/r/camunda/operate/tags?name=8.7-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Operate</a>, <a href="https://hub.docker.com/r/camunda/tasklist/tags?name=8.7-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Tasklist</a>, <a href="https://hub.docker.com/r/camunda/zeebe/tags?name=8.7-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Zeebe</a></li>
 </ul>
 </li>
-<li class="">
-<p>Pushed commits to <code>stable/optimize-8.7</code> branch produce:</p>
+<li class="">Pushed commits to <code>stable/optimize-8.7</code> branch produce:<!-- -->
 <ul>
 <li class="">Maven artifacts with version <code>8.7.0-SNAPSHOT</code> for <strong>Optimize</strong></li>
 <li class="">Docker images with tag <code>8.7-SNAPSHOT</code> for <strong><a href="https://hub.docker.com/r/camunda/optimize/tags?name=8.7-SNAPSHOT" target="_blank" rel="noopener noreferrer" class="">Optimize</a></strong></li>
@@ -179,8 +175,7 @@
 <p>This section explains how to achieve including a CI check into the Unified CI as a required status check so that it is executed only when relevant files changed in a PR.</p>
 <p>To include a workflow <a href="#workflow-inclusion-criteria" class="">fitting the criteria</a> into the Unified CI <strong>all</strong> of the following steps have to be taken for each job of that workflow:</p>
 <ol>
-<li class="">
-<p><strong>Change Detection:</strong> Define path filter for all file changes that should trigger the new job in this <a href="https://github.com/camunda/camunda/blob/main/.github/actions/paths-filter/action.yml" target="_blank" rel="noopener noreferrer" class="">composite action</a>. This information is relevant for the next step, make sure to:</p>
+<li class=""><strong>Change Detection:</strong> Define path filter for all file changes that should trigger the new job in this <a href="https://github.com/camunda/camunda/blob/main/.github/actions/paths-filter/action.yml" target="_blank" rel="noopener noreferrer" class="">composite action</a>. This information is relevant for the next step, make sure to:<!-- -->
 <ul>
 <li class="">Add a new <code>output</code> to the <a href="https://github.com/camunda/camunda/blob/main/.github/actions/paths-filter/action.yml" target="_blank" rel="noopener noreferrer" class="">composite action</a> representing the condition when the new job should be triggered.</li>
 <li class="">The output have the same name as the new job it triggers.</li>
@@ -189,20 +184,24 @@
 <li class="">Adjust the <a href="https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L25" target="_blank" rel="noopener noreferrer" class=""><code>detect-changes</code> job</a> to re-expose the new <code>output</code> under the same name.</li>
 </ul>
 </li>
-<li class="">
-<p><strong>CI Check:</strong> Relies on the previous step to run the new job only if relevant files changed. Add the new job defintion to the <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml" target="_blank" rel="noopener noreferrer" class="">ci.yml</a> file, by:</p>
+<li class=""><strong>CI Check:</strong> Relies on the previous step to run the new job only if relevant files changed. Add the new job defintion to the <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml" target="_blank" rel="noopener noreferrer" class="">ci.yml</a> file, by:<!-- -->
 <ul>
-<li class="">Following this pattern:<!-- -->
+<li class="">
+<p>Following this pattern:</p>
 <div class="language-yaml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-yaml codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token key atrule" style="color:#00a4db">descriptive-job-name</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token comment" style="color:#999988;font-style:italic"># reuse information from change detection on whether to run this job</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">if</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> needs.detect</span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain">changes.outputs.descriptive</span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain">job</span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain">name == &#x27;true&#x27;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">needs</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">[</span><span class="token plain">detect</span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain">changes</span><span class="token punctuation" style="color:#393A34">]</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">runs-on</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> ubuntu</span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain">latest  </span><span class="token comment" style="color:#999988;font-style:italic"># or other</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">timeout-minutes</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> </span><span class="token number" style="color:#36acaa">10</span><span class="token plain">  </span><span class="token comment" style="color:#999988;font-style:italic"># or less</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">permissions</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain">  </span><span class="token comment" style="color:#999988;font-style:italic"># unless GITHUB_TOKEN is needed</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token key atrule" style="color:#00a4db">steps</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain"> </span><span class="token key atrule" style="color:#00a4db">uses</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> actions/checkout@v4</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token comment" style="color:#999988;font-style:italic">#</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token comment" style="color:#999988;font-style:italic"># ...ACTUAL CI CHECK STEPS HERE...</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token comment" style="color:#999988;font-style:italic">#</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain"> </span><span class="token key atrule" style="color:#00a4db">name</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> Observe build status</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token key atrule" style="color:#00a4db">if</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> always()</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token key atrule" style="color:#00a4db">continue-on-error</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> </span><span class="token boolean important" style="color:#36acaa">true</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token key atrule" style="color:#00a4db">uses</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> ./.github/actions/observe</span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain">build</span><span class="token punctuation" style="color:#393A34">-</span><span class="token plain">status</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token key atrule" style="color:#00a4db">with</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        </span><span class="token key atrule" style="color:#00a4db">build_status</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> $</span><span class="token punctuation" style="color:#393A34">{</span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> job.status </span><span class="token punctuation" style="color:#393A34">}</span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        </span><span class="token key atrule" style="color:#00a4db">secret_vault_address</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> $</span><span class="token punctuation" style="color:#393A34">{</span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> secrets.VAULT_ADDR </span><span class="token punctuation" style="color:#393A34">}</span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        </span><span class="token key atrule" style="color:#00a4db">secret_vault_roleId</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> $</span><span class="token punctuation" style="color:#393A34">{</span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> secrets.VAULT_ROLE_ID </span><span class="token punctuation" style="color:#393A34">}</span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        </span><span class="token key atrule" style="color:#00a4db">secret_vault_secretId</span><span class="token punctuation" style="color:#393A34">:</span><span class="token plain"> $</span><span class="token punctuation" style="color:#393A34">{</span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> secrets.VAULT_SECRET_ID </span><span class="token punctuation" style="color:#393A34">}</span><span class="token punctuation" style="color:#393A34">}</span><br></span></code></pre></div></div>
 </li>
-<li class="">It is important to depend on the <code>detect-changes</code> job and use the newly defined output as a condition.</li>
-<li class="">If the new job has many steps, you need to refactor them into a reusable workflow or composite action to keep <code>ci.yml</code> lean.</li>
-<li class="">Adding <a href="#ci-health-metrics" class="">observability for CI health</a> is required.</li>
-</ul>
+<li class="">
+<p>It is important to depend on the <code>detect-changes</code> job and use the newly defined output as a condition.</p>
 </li>
 <li class="">
-<p><strong>Results Check:</strong> Include the new job as <code>needs</code> dependency in <a href="https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L166" target="_blank" rel="noopener noreferrer" class=""><code>check-results</code></a> job (required status check). This is needed so that the Unified CI is marked as failure if one of its jobs fails.</p>
+<p>If the new job has many steps, you need to refactor them into a reusable workflow or composite action to keep <code>ci.yml</code> lean.</p>
 </li>
+<li class="">
+<p>Adding <a href="#ci-health-metrics" class="">observability for CI health</a> is required.</p>
+</li>
+</ul>
+</li>
+<li class=""><strong>Results Check:</strong> Include the new job as <code>needs</code> dependency in <a href="https://github.com/camunda/camunda/blob/b46d8ba974152d7b2cf1f1f5dac9585657fda7cb/.github/workflows/ci.yml#L166" target="_blank" rel="noopener noreferrer" class=""><code>check-results</code></a> job (required status check). This is needed so that the Unified CI is marked as failure if one of its jobs fails.</li>
 </ol>
 <p>Related resources:</p>
 <ul>
@@ -503,8 +502,7 @@ wagoid/commitlint-github-action@*,<p></p></div></div></details>
 <p>In the <a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="">camunda/camunda monorepo</a> certain automated workflows can be triggered by posting comments with commands on GitHub Issues and/or Pull Requests. Those commands are then processed by a <a href="https://github.com/camunda/camunda/blob/main/.github/workflows/chatops-command-dispatch.yml" target="_blank" rel="noopener noreferrer" class="">GitHub Actions workflow</a>.</p>
 <p>Available commands:</p>
 <ul>
-<li class="">
-<p><code>/ci-problems</code> comment on a Pull Request:</p>
+<li class=""><code>/ci-problems</code> comment on a Pull Request:<!-- -->
 <ul>
 <li class="">Synopsis: Triggers a <a href="https://github.com/camunda/camunda/blob/main/.ci/chatops-commands/ci-problems-analyze.sh" target="_blank" rel="noopener noreferrer" class="">script</a> that analyzes all CI runs related to that PR for CI failures and posts summary as new PR comment.</li>
 <li class="">Use case: Can be used by any engineer to get actionable hints on how to address CI problems in a PR.</li>
@@ -518,15 +516,13 @@ wagoid/commitlint-github-action@*,<p></p></div></div></details>
 </li>
 </ul>
 </li>
-<li class="">
-<p><code>/ci-disable-cache</code> comment on a Pull Request:</p>
+<li class=""><code>/ci-disable-cache</code> comment on a Pull Request:<!-- -->
 <ul>
 <li class="">Synopsis: Adds a new label <code>ci:no-cache</code> to the list of labels of the Pull Request and creates a new empty commit to trigger a new CI run without cache restoration.</li>
 <li class="">Use case: Can be used by any engineer to test workflows run from scratch without cache restoration.</li>
 </ul>
 </li>
-<li class="">
-<p><code>/ci-enable-cache</code> comment on a Pull Request:</p>
+<li class=""><code>/ci-enable-cache</code> comment on a Pull Request:<!-- -->
 <ul>
 <li class="">Synopsis: Removes the <code>ci:no-cache</code> label from the list of labels of the Pull Request and creates a new empty commit to trigger a new CI run.</li>
 <li class="">Use case: Complements the <code>/ci-disable-cache</code> commands and can be used to restore CI regular cache restoration step.</li>

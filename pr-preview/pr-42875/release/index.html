@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-42875/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-42875/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-42875/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-42875/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-42875/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.74ec97b1.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-42875/assets/js/main.fc25f935.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.de9ac137.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/main.634a06ea.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -117,8 +117,11 @@
 <p><strong>🔧 How It&#x27;s Triggered</strong></p>
 <p>Releases are triggered in two ways:</p>
 <ol>
-<li class="">For dry runs, by using <code>on: schedule</code> triggers defined in the workflow itself (no Slack noise here).</li>
-<li class="">For real releases, by calling the GitHub Actions REST API directly with a <code>workflow_dispatch</code> request:<!-- -->
+<li class="">
+<p>For dry runs, by using <code>on: schedule</code> triggers defined in the workflow itself (no Slack noise here).</p>
+</li>
+<li class="">
+<p>For real releases, by calling the GitHub Actions REST API directly with a <code>workflow_dispatch</code> request:</p>
 <div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">curl -X POST https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-platform-release.yml/dispatches \</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  -H &quot;Authorization: token $TOKEN&quot; \</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  -d &#x27;{&quot;ref&quot;: &quot;stable/8.7&quot;, &quot;inputs&quot;: {&quot;releaseVersion&quot;: &quot;8.7.x&quot;, &quot;nextDevelopmentVersion&quot;: &quot;8.7.y-SNAPSHOT&quot;, ...}}&#x27;</span><br></span></code></pre></div></div>
 </li>
 </ol>
@@ -245,8 +248,7 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="change-management--testing">Change Management &amp; Testing<a href="#change-management--testing" class="hash-link" aria-label="Direct link to Change Management &amp; Testing" title="Direct link to Change Management &amp; Testing" translate="no">​</a></h2>
 <p>Changes to the release process are done in these steps:</p>
 <ul>
-<li class="">
-<p>Implementation:</p>
+<li class="">Implementation:<!-- -->
 <ul>
 <li class="">Check out <a href="https://github.com/camunda/zeebe-engineering-processes/tree/main?tab=readme-ov-file#release-process" target="_blank" rel="noopener noreferrer" class="">this (internal) repository</a> locally</li>
 <li class="">Use the <a href="https://camunda.com/download/modeler/" target="_blank" rel="noopener noreferrer" class="">Desktop Modeler</a> locally to modify the BPMN models</li>
@@ -254,21 +256,18 @@
 <li class="">Create a Pull Request against <code>main</code> including screenshots + description to explain the change</li>
 </ul>
 </li>
-<li class="">
-<p>Testing:</p>
+<li class="">Testing:<!-- -->
 <ul>
 <li class="">If testable in isolation/with dry run: demonstrate that change works</li>
 <li class="">If not testable with dry run: wait for next release</li>
 </ul>
 </li>
-<li class="">
-<p>Review:</p>
+<li class="">Review:<!-- -->
 <ul>
 <li class="">Get a peer review from a Monorepo DevOps team member or C8 engineer familiar with the process</li>
 </ul>
 </li>
-<li class="">
-<p>Rollout:</p>
+<li class="">Rollout:<!-- -->
 <ul>
 <li class="">Merge the Pull Request</li>
 <li class="">If necessary, migrate currently running process instances in <a href="#runtime" class="">Operate</a> to new version of the process</li>
@@ -276,7 +275,7 @@
 </li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="issue-tracking">Issue Tracking<a href="#issue-tracking" class="hash-link" aria-label="Direct link to Issue Tracking" title="Direct link to Issue Tracking" translate="no">​</a></h2>
-<p>All problems, bugs and feature requests regarding the C8 release process are tracked using<a href="https://github.com/camunda/camunda/issues" target="_blank" rel="noopener noreferrer" class=""> GitHub Issues</a>.</p>
+<p>All problems, bugs and feature requests regarding the C8 release process are tracked using<a href="https://github.com/camunda/camunda/issues" target="_blank" rel="noopener noreferrer" class="">GitHub Issues</a>.</p>
 <p>For visibility and prioritization there is the (internal) <a href="https://github.com/orgs/camunda/projects/115/views/4" target="_blank" rel="noopener noreferrer" class="">Monorepo Release project board</a> that tracks high-level issues.</p>
 <p>For CI-related issues in the release process, also see our <a class="" href="/camunda/pr-preview/pr-42875/ci/#issue-tracking">CI &amp; Automation documentation</a>.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="dris">DRIs<a href="#dris" class="hash-link" aria-label="Direct link to DRIs" title="Direct link to DRIs" translate="no">​</a></h2>
@@ -326,38 +325,33 @@
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="additional-minor-release-learnings-88">Additional Minor Release Learnings (8.8+)<a href="#additional-minor-release-learnings-88" class="hash-link" aria-label="Direct link to Additional Minor Release Learnings (8.8+)" title="Direct link to Additional Minor Release Learnings (8.8+)" translate="no">​</a></h4>
 <p>In addition to the standard steps above, recent minor releases have surfaced several process improvements and considerations worth incorporating into future release cycles:</p>
 <ul>
-<li class="">
-<p><strong>Feature Freeze Communication</strong></p>
+<li class=""><strong>Feature Freeze Communication</strong>
 <ul>
 <li class="">The freeze notice should clearly describe not just alpha branch behavior, but expectations for the entire minor release phase (including post-alpha, backports to <code>stable/&lt;minor&gt;</code>, etc.).</li>
 <li class="">Current notice is too narrow; see <a href="https://github.com/camunda/zeebe-engineering-processes/pull/712" target="_blank" rel="noopener noreferrer" class="">engineering-processes#712</a> and <a href="https://camunda.slack.com/archives/CHY2S7KDJ/p1758632876658599?thread_ts=1757683374.580399&amp;cid=CHY2S7KDJ" target="_blank" rel="noopener noreferrer" class="">Slack discussion</a>.</li>
 <li class=""><strong>Action:</strong> Iterate a more generic, minor-release–aware template for next minor releases.</li>
 </ul>
 </li>
-<li class="">
-<p><strong>Benchmark Namespace Naming</strong></p>
+<li class=""><strong>Benchmark Namespace Naming</strong>
 <ul>
 <li class="">Namespace for benchmarks during RCs may become <code>8-8-0</code> (when performing RC) instead of the expected <code>8-8-x</code>.</li>
 <li class="">Current handling is accepted; document and monitor naming in future minors for reproducibility.</li>
 </ul>
 </li>
-<li class="">
-<p><strong>Merge-Back Conflicts</strong></p>
+<li class=""><strong>Merge-Back Conflicts</strong>
 <ul>
 <li class="">Merge conflicts can occur when merging the release branch back into <code>stable/&lt;minor&gt;</code>, especially due to timing of backports versus release branch changes.</li>
 <li class="">Reference: <a href="https://camunda.slack.com/archives/C06UWQNCU7M/p1760046632109499?thread_ts=1760012606.937389&amp;cid=C06UWQNCU7M" target="_blank" rel="noopener noreferrer" class="">Slack thread</a></li>
 <li class=""><strong>Action:</strong> Evaluate sources and refine merge sequencing guidelines.</li>
 </ul>
 </li>
-<li class="">
-<p><strong>Heavy Merge-Back CI Load</strong></p>
+<li class=""><strong>Heavy Merge-Back CI Load</strong>
 <ul>
 <li class="">Merge-back PRs currently run almost the full test matrix, resulting in long CI runtimes (see <a href="https://github.com/camunda/camunda/actions/runs/18385775955/job/52383810975" target="_blank" rel="noopener noreferrer" class="">example run</a>).</li>
 <li class=""><strong>Action:</strong> The task <a href="https://github.com/camunda/camunda/issues/39659" target="_blank" rel="noopener noreferrer" class="">https://github.com/camunda/camunda/issues/39659</a> was created to fix the existing issue and optimize merge-back test scope or introduce selective module test strategies.</li>
 </ul>
 </li>
-<li class="">
-<p><strong>Change of source branch</strong></p>
+<li class=""><strong>Change of source branch</strong>
 <ul>
 <li class="">For 8.8 minor release the source branch <code>stable/8.8</code> based on <code>release-8.8.0-alpha8</code></li>
 <li class="">Currently  an automated script decides the source branch for the release type, in case of change in future release process, the code needs to be adjusted <a href="https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/decide_dev_version_and_is_latest_for_release.bpmn#L39" target="_blank" rel="noopener noreferrer" class="">here</a></li>
@@ -428,17 +422,11 @@
 <p>Release process roughly looks like this:</p>
 <ul>
 <li class="">release branch is created (forked from <code>main</code> or <code>stable/x.y</code>)</li>
-<li class="">on the release branch, as a part of the release process, maven-release-plugin creates 2 commits sequentially:<!-- -->
-<ul>
-<li class="">commit 1 (<a href="https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c" target="_blank" rel="noopener noreferrer" class="">example</a>): bumping pom.xml files to the version we want to release (e.g. <code>8.8.0-SNAPSHOT</code> -&gt; <code>8.8.0-alpha6</code>)<!-- -->
-<ul>
+<li class="">on the release branch, as a part of the release process, maven-release-plugin creates 2 commits sequentially:</li>
+<li class="">commit 1 (<a href="https://github.com/camunda/camunda/commit/472b0d32a15e25c6f494169b10ca4f799b55766c" target="_blank" rel="noopener noreferrer" class="">example</a>): bumping pom.xml files to the version we want to release (e.g. <code>8.8.0-SNAPSHOT</code> -&gt; <code>8.8.0-alpha6</code>)</li>
 <li class="">A git tag for the release (e.g. <code>8.8.0-alpha6</code>) is created from this commit</li>
 <li class="">The release is built from this commit.</li>
-</ul>
-</li>
 <li class="">commit 2 (<a href="https://github.com/camunda/camunda/commit/d8cd12a8fd73c3bf5237c33a9c5fb1ed0c4f9bab" target="_blank" rel="noopener noreferrer" class="">example</a>): bumping pom.xml files for the next development version (e.g. <code>8.8.0-alpha6</code> -&gt; <code>8.8.0-SNAPSHOT</code>)</li>
-</ul>
-</li>
 </ul>
 <p>If one needs to retry the failed release (assuming no need to clear the released artifacts), need to do:</p>
 <ul>
@@ -449,13 +437,10 @@
 <p>The Monorepo release produces core backend artifacts, while the Big Release Train bundles downstream services and UI components. The train can only depart once the Monorepo artifacts are confirmed as released.</p>
 <p>While Monorepo (camunda/camunda) releases artifacts for:</p>
 <ul>
-<li class=""><a href="https://hub.docker.com/r/camunda/camunda/" target="_blank" rel="noopener noreferrer" class="">Camunda</a>
-<ul>
+<li class=""><a href="https://hub.docker.com/r/camunda/camunda/" target="_blank" rel="noopener noreferrer" class="">Camunda</a></li>
 <li class=""><a href="https://hub.docker.com/r/camunda/zeebe/" target="_blank" rel="noopener noreferrer" class="">Zeebe</a></li>
 <li class=""><a href="https://hub.docker.com/r/camunda/operate/" target="_blank" rel="noopener noreferrer" class="">Operate</a></li>
 <li class=""><a href="https://hub.docker.com/r/camunda/tasklist/" target="_blank" rel="noopener noreferrer" class="">Tasklist</a></li>
-</ul>
-</li>
 </ul>
 <p>The big release train releases:</p>
 <ul>
