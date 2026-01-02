@@ -59,11 +59,11 @@ Components that depend on the C8 monorepo releases:
 
 * [Maven Central](https://mvnrepository.com/artifact/io.camunda)
 * DockerHub:
-  * <https://hub.docker.com/r/camunda/zeebe/>
-  * <https://hub.docker.com/r/camunda/operate/>
-  * <https://hub.docker.com/r/camunda/tasklist/>
-  * <https://hub.docker.com/r/camunda/optimize/>
-  * <https://hub.docker.com/r/camunda/camunda/> (future “Single Application” Docker image)
+  * [Zeebe](https://hub.docker.com/r/camunda/zeebe/)
+  * [Operate](https://hub.docker.com/r/camunda/operate/)
+  * [Tasklist](https://hub.docker.com/r/camunda/tasklist/)
+  * [Optimize](https://hub.docker.com/r/camunda/optimize/)
+  * [Camunda](https://hub.docker.com/r/camunda/camunda/) (future "Single Application" Docker image)
 * [GitHub releases](https://github.com/camunda/camunda/releases)
 * SBOM information on FOSSA
 
@@ -155,10 +155,10 @@ For [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-proc
 
 | Release Version | Benchmark Namespace in Kubernetes | Patch Release | Alpha Release |
 |-----------------|-----------------------------------|---------------|---------------|
-| 8.5.x | release-8-5-x | • Update benchmark to use newly released image version via GHA workflow<br>• Other benchmarks are untouched | (does not happen) |
-| 8.6.x | release-8-6-x | • Update benchmark to use newly released image version via GHA workflow<br>• Other benchmarks are untouched | (does not happen) |
-| 8.7.x | release-8-7-x | • Update benchmark to use newly released image version via GHA workflow<br>• Other benchmarks are untouched | (does not happen) |
-| 8.8.0-alphaN | release-8-8-0-alphaN | (does not happen) | • `release-8.8.0-alphaN` and `release-8.8.0-alpha(N+1)` benchmarks coexist during the release of `release-8.8.0-alpha(N+1)`<br>• after `8.8.0-alpha(N+1)` release → `release-8-8-0-alphaN` is deleted<br>• Other benchmarks are untouched |
+| 8.5.x | release-8-5-x | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen) |
+| 8.6.x | release-8-6-x | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen) |
+| 8.7.x | release-8-7-x | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen) |
+| 8.8.0-alphaN | release-8-8-0-alphaN | (does not happen) | • `release-8.8.0-alphaN` and `release-8.8.0-alpha(N+1)` benchmarks coexist during the release of `release-8.8.0-alpha(N+1)`<br />• after `8.8.0-alpha(N+1)` release → `release-8-8-0-alphaN` is deleted<br />• Other benchmarks are untouched |
 
 More details on how benchmark tests work can be found in our [reliability testing documentation](https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md).
 
