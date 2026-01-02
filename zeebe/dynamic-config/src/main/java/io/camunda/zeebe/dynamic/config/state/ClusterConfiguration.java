@@ -242,7 +242,7 @@ public record ClusterConfiguration(
           mergedChanges,
           mergedRoutingState,
           clusterId,
-          incarnationNumber);
+          Math.max(incarnationNumber, other.incarnationNumber()));
     }
   }
 

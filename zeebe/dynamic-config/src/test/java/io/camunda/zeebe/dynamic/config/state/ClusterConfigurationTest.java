@@ -383,6 +383,38 @@ class ClusterConfigurationTest {
     assertThat(merged.routingState()).isEqualTo(newRoutingState);
   }
 
+  @Test
+  void shouldMergeIncarnationNumber() {
+    // given
+    final var oldConfig =
+        ClusterConfiguration.builder()
+            .version(1)
+            .members(Map.of())
+            .lastChange(Optional.empty())
+            .pendingChanges(Optional.empty())
+            .routingState(Optional.empty())
+            .clusterId(Optional.empty())
+            .incarnationNumber(5)
+            .build();
+
+    final var newConfig =
+        ClusterConfiguration.builder()
+            .version(1)
+            .members(Map.of())
+            .lastChange(Optional.empty())
+            .pendingChanges(Optional.empty())
+            .routingState(Optional.empty())
+            .clusterId(Optional.empty())
+            .incarnationNumber(6)
+            .build();
+
+    // when
+    final var merged = oldConfig.merge(newConfig);
+
+    // then
+    assertThat(merged.incarnationNumber()).isEqualTo(6);
+  }
+
   private MemberId member(final int id) {
     return MemberId.from(Integer.toString(id));
   }
