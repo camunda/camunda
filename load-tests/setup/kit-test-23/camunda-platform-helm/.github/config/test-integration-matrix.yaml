@@ -1,0 +1,46 @@
+matrix:
+  distro:
+    - name: Kubernetes
+      type: kubernetes
+      platform: gke
+      secret:
+        cluster-name: DISTRO_CI_GCP_GKE_CLUSTER_NAME
+        cluster-location: DISTRO_CI_GCP_GKE_CLUSTER_LOCATION
+        workload-identity-provider: DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER
+        service-account: DISTRO_CI_GCP_SERVICE_ACCOUNT
+      if: $INPUTS_PLATFORMS_GKE
+    - name: Kubernetes
+      type: kubernetes
+      platform: eks
+      secret: {}
+      if: $INPUTS_PLATFORMS_EKS
+    - name: OpenShift
+      type: openshift
+      platform: rosa
+      secret:
+        server-url: DISTRO_CI_OPENSHIFT_CLUSTER_URL
+        username: DISTRO_CI_OPENSHIFT_CLUSTER_USERNAME
+        password: DISTRO_CI_OPENSHIFT_CLUSTER_PASSWORD
+      if: $INPUTS_PLATFORMS_ROSA
+  scenario:
+    - name: Chart Install
+      desc: Install chart in production-like setup with Ingress and TLS.
+      flow: install
+      if: $INPUTS_FLOWS_INSTALL
+    - name: Chart Upgrade Patch (from the same minor version)
+      desc: Upgrade chart from the latest released version to the current branch.
+      flow: upgrade-patch
+      if: $INPUTS_FLOWS_UPGRADE_PATCH
+    - name: Chart Upgrade Minor (from the previous minor version)
+      desc: Upgrade chart from the latest released version to the current branch.
+      flow: upgrade-minor
+      if: $INPUTS_FLOWS_UPGRADE_MINOR
+    - name: Chart Modular Upgrade Minor (from the previous minor version)
+      desc: Upgrade chart from the latest released version to the current branch.
+      flow: modular-upgrade-minor
+      if: $INPUTS_FLOWS_MODULAR_UPGRADE_MINOR
+  exclude:
+    - distro:
+        if: false
+    - scenario:
+        if: false

@@ -1,0 +1,14 @@
+elasticsearch:
+  maxUnavailable: 0
+
+orchestration:
+  security:
+    authentication:
+      oidc:
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
+  env:
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"

@@ -1,0 +1,13 @@
+{{- if .Values.console.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "console.fullname" . }}-admin
+  labels:
+    {{ include "console.labels" . | nindent 4 }}
+data:
+  managed-resources.yaml: |
+    console:
+      managed:
+        {{- toYaml .Values.console.managed | nindent 8 }}
+{{- end }}

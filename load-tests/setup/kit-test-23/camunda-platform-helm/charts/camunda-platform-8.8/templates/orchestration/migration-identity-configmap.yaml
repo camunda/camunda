@@ -1,0 +1,46 @@
+{{- if .Values.orchestration.migration.identity.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "identity.fullname" . }}-migration-configuration
+  labels: {{- include "orchestration.labelsMigration" . | nindent 4 }}
+data:
+  application.yaml: |
+    camunda:
+      migration:
+        identity:
+          {{- if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" }}
+          mode: KEYCLOAK
+          {{- else }}
+          mode: OIDC
+          {{- end }}
+          resource-authorizations-enabled: {{ .Values.orchestration.migration.identity.resourceAuthorizationsEnabled }}
+          {{- if not ( eq (include "orchestration.authIssuerType" .) "KEYCLOAK" ) }}
+          oidc:
+            audiences:
+              identity: {{ include "identity.authAudience" . | quote }}
+              operate: {{ include "orchestration.authAudience" . | quote }}
+              tasklist: {{ include "orchestration.authAudience" . | quote }}
+              zeebe: {{ include "orchestration.authAudience" . | quote }}
+          {{- end }}
+          cluster:
+            cluster-name: {{ tpl .Values.global.zeebeClusterName . }}
+            cluster-size: {{ .Values.orchestration.clusterSize }}
+            partitions-count: {{ .Values.orchestration.partitionCount }}
+            replication-factor: {{ .Values.orchestration.replicationFactor }}
+            initial-contact-points:
+            {{- range (untilStep 0 (int .Values.orchestration.clusterSize) 1) }}
+              - {{ include "orchestration.fullname" $ }}-{{ . }}.${K8S_SERVICE_NAME}:{{ $.Values.orchestration.service.internalPort }}
+            {{- end }}
+          management-identity:
+            audience: {{ include "identity.authAudience" . | quote }}
+            base-url: http://{{ include "identity.fullname" . }}:{{ .Values.identity.service.port }}{{ .Values.identity.contextPath }}
+          {{- if eq (include "orchestration.authIssuerType" .) "KEYCLOAK" }}
+            client-id: migration
+          {{- else }}
+            client-id: {{ .Values.orchestration.migration.identity.clientId }}
+          {{- end }}
+            client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
+            issuer-backend-url: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+            issuer-type: {{ include "orchestration.authIssuerType" . }}
+{{- end }}

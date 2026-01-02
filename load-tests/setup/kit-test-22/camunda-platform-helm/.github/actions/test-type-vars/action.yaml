@@ -1,0 +1,99 @@
+name: Test type vars
+description: Get vars for different type of tests
+inputs:
+  chart-dir:
+    description: A reference for the Camunda Helm chart directory.
+  infra-type:
+    description: standard or preemptible
+  platform:
+    description: matrix.distro.platform
+  values-enterprise:
+    description: Enable enterprise values
+  values-digest:
+    description: Enable digest values
+  flow:
+    description: Flow type, e.g., install, upgrade-patch, upgrade-minor
+  camunda-version-previous:
+    description: Previous Camunda version, e.g., 8.7
+outputs:
+  unitTestEnabled:
+    description: Should the unit test be executed or not.
+    value: ${{ steps.vars.outputs.unit-enabled }}
+  unitTestMatrix:
+    description: JSON matrix of changed charts which will be used as input for GHA workflow matrix.
+    value: ${{ steps.vars.outputs.unit-matrix }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get test type vars
+      shell: bash
+      id: vars
+      run: |
+        matrix_file="charts/${{ inputs.chart-dir }}/test/ci-test-config.yaml"
+
+        # Chart path.
+        if [[ "${{ inputs.flow }}" == "upgrade-minor" && -n "${{ inputs.camunda-version-previous }}" ]]; then
+          chart_path="charts/camunda-platform-${{ inputs.camunda-version-previous }}"
+        else
+          chart_path="charts/${{ inputs.chart-dir }}"
+        fi
+
+        echo "CHART_PATH=${chart_path}" | tee -a $GITHUB_ENV
+
+        # Relative path needed for the chart-full-setup Taskfile (test/integration/scenarios/chart-full-setup)
+        chart_path_relative="../../../../${chart_path}"
+
+        #
+        # Unit Tests.
+
+        # Unit test enabled or not. Assume it's enabled by default.
+        unit_enabled="$(yq '.unit.enabled' --indent=0 --output-format json ${matrix_file})"
+        echo "unit-enabled=${unit_enabled}" | tee -a $GITHUB_OUTPUT
+
+        # Unit test matrix.
+        unit_matrix="$(yq '.unit.matrix' --indent=0 --output-format json ${matrix_file})"
+        echo "unit-matrix=${unit_matrix}" | tee -a $GITHUB_OUTPUT
+
+        #
+        # Integration Tests.
+        integration_vars="$(yq '.integration' --indent=0 --output-format json ${matrix_file})"
+        charts_base_dir="$(echo ${integration_vars} | jq -r '.vars.chartsBaseDir')"
+
+        # Scenarios config.
+
+        # Tasks dir.
+        tasks_base_dir="$(echo ${integration_vars} | jq -r '.vars.tasksBaseDir')"
+        integration_scenarios_tasks_dir="${chart_path}/test/${tasks_base_dir}"
+        echo "CI_TASKS_BASE_DIR=${integration_scenarios_tasks_dir}" | tee -a $GITHUB_ENV
+
+        # Values dir.
+        values_base_dir="$(echo ${integration_vars} | jq -r '.vars.valuesBaseDir')"
+
+        integration_scenarios_values_dir="${chart_path_relative}/test/${values_base_dir}"
+        echo "TEST_VALUES_BASE_DIR=${integration_scenarios_values_dir}" | tee -a $GITHUB_ENV
+
+        # Charts dir.
+        echo "TEST_CHART_DIR=${charts_base_dir}/${chart_path}" | tee -a $GITHUB_ENV
+        echo "ABSOLUTE_TEST_CHART_DIR=${GITHUB_WORKSPACE}/${chart_path}" | tee -a $GITHUB_ENV
+
+        # Configuring TEST_HELM_EXTRA_ARGS
+        if [[ "${{ inputs.values-enterprise }}" == "true" ]]; then
+          helm_extra_args="--values ${chart_path_relative}/values-enterprise.yaml"
+          echo "TEST_HELM_EXTRA_ARGS=${helm_extra_args}" | tee -a $GITHUB_ENV
+        fi
+
+        # The values-digest file is used only in:
+        #  - The install step in the install flow.
+        #  - The upgrade step in the upgrade flow.
+        # It's not used in the install step in the upgrade flow.
+        if [[ "${{ inputs.values-digest }}" == "true" ]] && [[ -f "${chart_path}/values-digest.yaml" ]]; then
+          test_helm_digest_values="${chart_path_relative}/values-digest.yaml"
+          echo "TEST_HELM_DIGEST_VALUES=${test_helm_digest_values}" | tee -a $GITHUB_ENV
+        fi
+
+        # DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET is used in the E2E tests
+        if [[ -z "${{ env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}" ]]; then
+          echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=dummyValueNotUsed"
+        fi
+        echo "DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET=${{ env.DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET }}" | tee -a $GITHUB_ENV

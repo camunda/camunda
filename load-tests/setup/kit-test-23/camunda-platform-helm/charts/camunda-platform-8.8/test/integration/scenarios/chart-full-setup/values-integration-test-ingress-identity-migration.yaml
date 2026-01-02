@@ -1,0 +1,13 @@
+orchestration:
+  security:
+    authentication:
+      oidc:
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
+  migration:
+    identity:
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-migration-client-secret

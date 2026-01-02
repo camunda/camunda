@@ -77,7 +77,7 @@ orchestration:
   ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "12"
   ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
-  ioThreadCount: "3"
+  ioThreadCount: "12"
   # Resources of the orchestration cluster
   resources:
     requests:

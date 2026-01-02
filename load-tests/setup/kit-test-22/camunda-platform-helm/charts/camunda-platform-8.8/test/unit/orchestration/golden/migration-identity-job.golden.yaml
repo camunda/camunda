@@ -1,0 +1,102 @@
+---
+# Source: camunda-platform/templates/orchestration/migration-identity-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: camunda-platform-test-zeebe-migration-identity
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: orchestration-migration
+    app.kubernetes.io/version: "8.8.8"
+  annotations:
+    {}
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/component: orchestration-migration
+        app.kubernetes.io/version: "8.8.8"
+      annotations:
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        []
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-orchestration
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          image: curlimages/curl:8.17.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://camunda-platform-test-zeebe-gateway:9600/actuator/health/readiness; do
+                echo "Waiting for Orchestration Cluster"; sleep 5;
+              done
+      containers:
+        - name: camunda-migration
+          image: camunda/camunda:8.8.8
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: K8S_SERVICE_NAME
+              value: "camunda-platform-test-zeebe"
+            - name: VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET
+              value: "very-secret-thus-plaintext"
+          command:
+            - /usr/local/camunda/bin/identity-migration
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 500m
+              memory: 500Mi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/camunda/config/application.yaml
+              subPath: application.yaml
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - zeebe-broker
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+      volumes:
+        - name: config
+          configMap:
+            name: camunda-platform-test-identity-migration-configuration

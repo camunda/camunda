@@ -1,0 +1,171 @@
+global:
+  image:
+    pullPolicy: Always
+
+tasklist:
+  contextPath: "/tasklist"
+  env:
+    - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
+
+operate:
+  contextPath: "/operate"
+  env:
+    - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
+      value: 'true'
+
+optimize:
+  contextPath: "/optimize"
+
+zeebeGateway:
+  contextPath: "/zeebe"
+  ingress:
+    grpc:
+      enabled: true
+      className: nginx
+      host: "zeebe-{{ .Values.global.ingress.host }}"
+      tls:
+        enabled: true
+        # A wildcard certificate will be used.
+        secretName: camunda-platform-zeebe-gateway
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: "zeebe-{{ .Values.global.ingress.host }}"
+        external-dns.alpha.kubernetes.io/ttl: "60"
+
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  image:
+    pullSecrets:
+    - name: index-docker-io
+    - name: registry-camunda-cloud
+  restapi:
+    mail:
+      # This value is required, otherwise the restapi pod wouldn't start.
+      fromAddress: noreply@example.com
+
+console:
+  enabled: true
+  contextPath: "/"
+  overrideConfiguration: |
+    camunda:
+      console:
+        managed:
+          releases:
+            - name: integration
+              namespace: $TEST_NAMESPACE
+              tags:
+                - dev
+                - custom
+                - stage
+                - prod
+                - test
+              custom-properties:
+                - description: "This is the main integration environment for the Camunda Platform."
+                  links:
+                    - name: "Camunda"
+                      url: "https://camunda.com"
+                    - name: "Camunda Docs"
+                      url: "https://docs.camunda.io"
+  env:
+    - name: CAMUNDA_CONSOLE_EXPERIMENTAL_TAGS
+      value: "true"
+
+identity:
+  enabled: true
+  postgresql:
+    enabled: true
+  firstUser:
+    existingSecret: null
+    user: demo
+    existingSecret: integration-test-credentials
+    existingSecretKey: identity-user-password
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+    - id: test
+      name: Test
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+  env:
+    - name: RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
+
+identityKeycloak:
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+      userPasswordKey: "identity-keycloak-postgresql-user-password"
+
+connectors:
+  contextPath: "/connectors"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password

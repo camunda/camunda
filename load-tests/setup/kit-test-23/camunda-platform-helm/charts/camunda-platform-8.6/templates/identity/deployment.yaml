@@ -1,0 +1,318 @@
+{{- if .Values.identity.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "identity.fullname" . }}
+  labels: {{- include "identity.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels: {{- include "identity.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "identity.labels" . | nindent 8 }}
+        {{- if .Values.identity.podLabels }}
+        {{- toYaml .Values.identity.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/identity/configmap.yaml") . | sha256sum }}
+      {{- if .Values.identity.podAnnotations }}
+        {{- toYaml .Values.identity.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "identity.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.identity.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.identity) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.identity.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            {{- if .Values.global.identity.auth.enabled }}
+            {{- if eq .Values.global.identity.auth.type "KEYCLOAK"}}
+            - name: KEYCLOAK_INIT_OPERATE_SECRET
+              {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "operate") }}
+                  key: {{ .Values.global.identity.auth.operate.existingSecretKey }}
+              {{- end }}
+            - name: KEYCLOAK_INIT_CONSOLE_ROOT_URL
+              value: {{ tpl .Values.global.identity.auth.console.redirectUrl $ | quote }}
+            - name: KEYCLOAK_INIT_TASKLIST_SECRET
+              {{- if and .Values.global.identity.auth.tasklist.existingSecret (not (typeIs "string" .Values.global.identity.auth.tasklist.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: "{{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.tasklist.existingSecret "context" $) }}"
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "tasklist") }}
+                  key: {{ .Values.global.identity.auth.tasklist.existingSecretKey }}
+              {{- end }}
+            - name: KEYCLOAK_INIT_OPTIMIZE_SECRET
+              {{- if and .Values.global.identity.auth.optimize.existingSecret (not (typeIs "string" .Values.global.identity.auth.optimize.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.optimize.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "optimize") }}
+                  key: {{ .Values.global.identity.auth.optimize.existingSecretKey }}
+              {{- end }}
+            - name: KEYCLOAK_INIT_CONNECTORS_SECRET
+              {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+              {{- end }}
+            - name: KEYCLOAK_INIT_WEBMODELER_ROOT_URL
+              value: {{ tpl .Values.global.identity.auth.webModeler.redirectUrl $ | quote }}
+            - name: KEYCLOAK_INIT_ZEEBE_NAME
+              value: "Zeebe"
+            - name: KEYCLOAK_INIT_ZEEBE_SECRET
+              {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  {{- /*
+                      Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                      Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                      and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                  */}}
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- end }}
+            - name: KEYCLOAK_URL
+              value: {{ include "identity.keycloak.url" . | quote }}
+            - name: KEYCLOAK_SETUP_USER
+              value: {{ include "identity.keycloak.authAdminUser" . | quote }}
+            - name: KEYCLOAK_SETUP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "identity.keycloak.authExistingSecret" . }}
+                  key: {{ include "identity.keycloak.authExistingSecretKey" . }}
+            {{- if .Values.identity.firstUser.enabled }}
+            {{- if .Values.identity.firstUser.existingSecret }}
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.identity.firstUser.existingSecret }}
+                  key: {{ .Values.identity.firstUser.existingSecretKey }}
+            {{- else }}
+            - name: VALUES_IDENTITY_FIRSTUSER_PASSWORD
+              value: {{ .Values.identity.firstUser.password | quote }}
+            {{- end }}
+            {{- end }}
+            {{- else }}
+            - name: IDENTITY_INITIAL_CLAIM_NAME
+              value: {{ .Values.global.identity.auth.identity.initialClaimName }}
+            - name: IDENTITY_INITIAL_CLAIM_VALUE
+              value: {{ .Values.global.identity.auth.identity.initialClaimValue }}
+            {{- if (tpl ( include "identity.authClientSecret" . ) .)}}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              {{- if (typeIs "string" .Values.global.identity.auth.identity.existingSecret) }}
+              value: {{ .Values.global.identity.auth.identity.existingSecret | quote }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.identity.auth.identity.existingSecret.name }}
+                  key: {{ .Values.global.identity.auth.identity.existingSecretKey }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if or .Values.identityPostgresql.enabled .Values.identity.externalDatabase.enabled }}
+            - name: IDENTITY_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "identity.postgresql.secretName" . }}
+                  key: {{ include "identity.postgresql.secretKey" . }}
+            {{- end }}
+            {{- if .Values.identity.users}}
+            {{- range $index, $user := .Values.identity.users }}
+            {{- if $user.secret.inlineSecret }}
+            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
+              value: {{ $user.secret.inlineSecret | quote }}
+            {{- else }}
+            - name: VALUES_{{ $user.username | upper}}_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $user.secret.existingSecret }}
+                  key: {{ $user.secret.existingSecretKey }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+          {{- if .Values.identity.clients}}
+            {{- range $index, $client := .Values.identity.clients }}
+            {{- if $client.secret.inlineSecret }}
+            - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
+              value: {{ $client.secret.inlineSecret | quote }}
+            {{- else }}
+            - name: VALUES_{{ $client.id | upper}}_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $client.secret.existingSecret }}
+                  key: {{ $client.secret.existingSecretKey }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.identity.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+          {{- end }}
+          {{- if .Values.identity.envFrom }}
+          envFrom:
+            {{- .Values.identity.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.identity.command}}
+          command: {{ toYaml .Values.identity.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.identity.resources | nindent 12 }}
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 8082
+              name: metrics
+              protocol: TCP
+          {{- if .Values.identity.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
+              path: {{ .Values.identity.startupProbe.probePath }}
+              scheme: {{ .Values.identity.startupProbe.scheme }}
+              port: metrics
+            initialDelaySeconds: {{ .Values.identity.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.identity.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
+              path: {{ .Values.identity.readinessProbe.probePath }}
+              scheme: {{ .Values.identity.readinessProbe.scheme }}
+              port: metrics
+            initialDelaySeconds: {{ .Values.identity.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.identity.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              {{- /* NOTE: Identity does not support contextPath for health endpoints. */}}
+              path: {{ .Values.identity.livenessProbe.probePath }}
+              scheme: {{ .Values.identity.livenessProbe.scheme }}
+              port: metrics
+            initialDelaySeconds: {{ .Values.identity.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.identity.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.identity.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.identity.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.identity.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /app/config/application.yaml
+              subPath: application.yaml
+          {{- range $key, $val := .Values.identity.extraConfiguration }}
+            - name: config
+              mountPath: /app/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+            {{- if .Values.identity.extraVolumeMounts}}
+              {{- .Values.identity.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.identity.sidecars }}
+        {{- .Values.identity.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "identity.fullname" . }}-configuration
+        {{- if .Values.identity.extraVolumes}}
+        {{- .Values.identity.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "identity.serviceAccountName" . }}
+      {{- if .Values.identity.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.identity.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.identity.dnsPolicy }}
+      dnsPolicy: {{ .Values.identity.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.identity.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.identity.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.identity.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

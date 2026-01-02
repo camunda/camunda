@@ -1,0 +1,46 @@
+#
+# This values file is used for local development and testing.
+# It disables some features and reduces the resource requirements to run the Camunda Platform locally.
+#
+global:
+  identity:
+    auth:
+      # Disable the Identity authentication for local development
+      # it will fall back to basic-auth: demo/demo as default user
+      enabled: false
+
+#
+# Management Cluster.
+#
+
+identity:
+  enabled: false
+
+identityKeycloak:
+  enabled: false
+
+#
+# Orchestration Cluster.
+#
+
+connectors:
+  inbound:
+    mode: disabled
+
+optimize:
+  enabled: false
+
+zeebe:
+  clusterSize: 1
+  partitionCount: 1
+  replicationFactor: 1
+  pvcSize: 10Gi
+
+zeebeGateway:
+  replicas: 1
+
+elasticsearch:
+  master:
+    replicaCount: 1
+    persistence:
+      size: 15Gi

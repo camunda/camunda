@@ -1,0 +1,79 @@
+# Used in the GitHub Actions unit test CI workflow.
+unit:
+  enabled: true
+  matrix:
+    - name: Core
+      packages: identity camunda console
+    - name: Apps
+      packages: connectors operate optimize tasklist
+    - name: Zeebe
+      packages: zeebe zeebe-gateway
+    - name: WebModeler
+      packages: web-modeler
+
+# Used in the GitHub Actions integration test CI workflow.
+integration:
+  vars:
+    # Using the common test dir.
+    tasksBaseDir: ../../../test/integration/scenarios
+    valuesBaseDir: integration/scenarios
+    chartsBaseDir: ../../../..
+  case:
+    pr:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          shortname: es
+          exclude: []
+          auth: keycloak
+          flow: install,upgrade-patch
+        - name: keycloak-mt
+          enabled: false
+          shortname: kemt
+          exclude: []
+          auth: keycloak
+          flow: install,upgrade-patch
+        - name: oidc
+          enabled: true
+          shortname: esoi
+          exclude: []
+          auth: oidc
+          flow: install,upgrade-patch
+        - name: keycloak-original
+          enabled: true
+          shortname: keyc
+          exclude: []
+          auth: keycloak
+          flow: install,upgrade-patch
+    nightly:
+      scenario:
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          shortname: es
+          auth: keycloak
+        - name: multitenancy
+          enabled: true
+          exclude: []
+          shortname: mt
+          auth: keycloak
+        - name: oidc
+          enabled: false
+          exclude: []
+          shortname: oi
+          auth: keycloak
+        - name: opensearch
+          enabled: true
+          shortname: os
+          exclude: []
+          auth: keycloak
+        - name: elasticsearch
+          enabled: true
+          exclude: []
+          auth: keycloak
+          enterprise: true
+        - name: documentstore
+          enabled: false
+          exclude: []
+          shortname: docstr
+          auth: keycloak

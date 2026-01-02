@@ -1,0 +1,37 @@
+---
+# Source: camunda-platform/templates/orchestration/migration-identity-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-identity-migration-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: orchestration-migration
+    app.kubernetes.io/version: "8.8.8"
+data:
+  application.yaml: |
+    camunda:
+      migration:
+        identity:
+          mode: KEYCLOAK
+          resource-authorizations-enabled: false
+          cluster:
+            cluster-name: camunda-platform-test-zeebe
+            cluster-size: 3
+            partitions-count: 3
+            replication-factor: 3
+            initial-contact-points:
+              - camunda-platform-test-zeebe-0.${K8S_SERVICE_NAME}:26502
+              - camunda-platform-test-zeebe-1.${K8S_SERVICE_NAME}:26502
+              - camunda-platform-test-zeebe-2.${K8S_SERVICE_NAME}:26502
+          management-identity:
+            audience: "camunda-identity-resource-server"
+            base-url: http://camunda-platform-test-identity:80
+            client-id: migration
+            client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET:}
+            issuer-backend-url: "http://:/auth/realms/camunda-platform"
+            issuer-type: KEYCLOAK

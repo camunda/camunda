@@ -1,0 +1,74 @@
+global:
+  elasticsearch:
+    enabled: false
+  exporter:
+    zeebe:
+      enabled: true
+  opensearch:
+    enabled: true
+    aws:
+      enabled: false
+    auth:
+      username: "$OPENSEARCH_USERNAME"
+      password: "$OPENSEARCH_PASSWORD"
+    url:
+      protocol: $OPENSEARCH_PROTOCOL
+      host: "$OPENSEARCH_HOST"
+      port: $OPENSEARCH_PORT
+    prefix: "custom-zeebe"
+
+elasticsearch:
+  enabled: false
+
+orchestration:
+  index:
+    prefix: "custom-zeebe"
+  env:
+    # group1
+    - name: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX
+      value: custom
+    - name: ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX
+      value: custom
+    # group2
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX
+      value: custom-zeebe
+    #################### Only needed for keycloak auth
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_MAPPINGRULEID
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMNAME
+      value: "preferred_username"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_0_CLAIMVALUE
+      value: "demo"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_MAPPINGRULEID
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_1_CLAIMVALUE
+      value: "venom"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_MAPPINGRULEID
+      value: "connectors-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMNAME
+      value: "client_id"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_MAPPINGRULES_2_CLAIMVALUE
+      value: "connectors"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_0
+      value: "demo-user-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_1
+      value: "venom-client-mapping-rule"
+    - name: CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_MAPPINGRULES_2
+      value: "connectors-client-mapping-rule"
+    ####################
+
+optimize:
+  enabled: false
+  env:
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+      value: custom-optimize
+    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+      value: custom-zeebe
+  migration:
+    env:
+      - name: CAMUNDA_OPTIMIZE_ZEEBE_NAME
+        value: custom-optimize
+      - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX
+        value: custom-zeebe

@@ -1,0 +1,92 @@
+---
+name: Check values-latest.yaml
+
+"on":
+  schedule:
+    # Run daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  pull_request:
+    paths:
+      - 'charts/camunda-platform-*/values-latest.yaml'
+      - 'scripts/check-values-latest.sh'
+      - '.github/workflows/check-values-latest.yaml'
+  workflow_dispatch:
+    inputs:
+      chart-version:
+        description: |
+          Specific chart version to check (e.g., 8.7), leave empty for all
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-values-latest:
+    name: Check values-latest.yaml files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6
+        with:
+          fetch-depth: 1
+
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            yq
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Run validation script
+        run: |
+          if [[ -n "${{ inputs.chart-version }}" ]]; then
+            bash scripts/check-values-latest.sh \
+              "${{ inputs.chart-version }}"
+          else
+            bash scripts/check-values-latest.sh
+          fi
+        id: validation
+
+      - name: Comment on PR (if validation failed)
+        if: failure() && github.event_name == 'pull_request'
+        # yamllint disable-line rule:line-length
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **values-latest.yaml validation failed**\n\n' +
+                'Some image versions in `values-latest.yaml` files are ' +
+                'not up-to-date with the latest releases. Please review ' +
+                'the workflow logs for details.'
+            })
+
+      # - name: 🚨 Notify the team via Slack 🚨
+      #   if: failure() && !(contains(github.event.*.labels.*.name, 'skip-slack-notify'))
+      #   uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+      #   with:
+      #     webhook: ${{ secrets.SLACK_DISTRO_TEAM_WEBHOOK }}
+      #     webhook-type: incoming-webhook
+      #     payload: |
+      #       blocks:
+      #         - type: header
+      #           text:
+      #             type: plain_text
+      #             text: values-latest Verification Failed
+      #             emoji: true
+      #         - type: section
+      #           text:
+      #             type: mrkdwn
+      #             text: |
+      #               🚨 *Action Required* 🚨
+      #               values-latest.yaml is referencing an old image version. Please investigate.
+      #               <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Check failed workflow>

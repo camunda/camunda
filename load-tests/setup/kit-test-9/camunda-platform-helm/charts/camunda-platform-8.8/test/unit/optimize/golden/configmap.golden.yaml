@@ -1,0 +1,40 @@
+---
+# Source: camunda-platform/templates/optimize/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-optimize-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: optimize
+    app.kubernetes.io/version: "8.8.3"
+apiVersion: v1
+data:
+  environment-config.yaml: |
+
+    zeebe:
+      enabled: true
+      partitionCount: 3
+      name: "zeebe-record"
+    es:
+      connection:
+        nodes:
+          - host: "camunda-platform-test-elasticsearch"
+            httpPort: 9200
+
+    spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+      profiles:
+        active: "ccsm"
+
+    security:
+      auth:
+        cookie:
+          same-site:
+            enabled: false

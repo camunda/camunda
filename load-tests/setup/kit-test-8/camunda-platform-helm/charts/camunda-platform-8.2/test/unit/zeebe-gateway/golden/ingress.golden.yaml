@@ -1,0 +1,30 @@
+---
+# Source: camunda-platform/charts/zeebe-gateway/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "camunda-platform-test-zeebe-gateway"
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: zeebe-gateway
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.2.32"
+    app.kubernetes.io/component: zeebe-gateway
+  annotations: 
+    ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/backend-protocol: GRPC
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: "camunda-platform-test-zeebe-gateway"
+                port:
+                  number: 26500

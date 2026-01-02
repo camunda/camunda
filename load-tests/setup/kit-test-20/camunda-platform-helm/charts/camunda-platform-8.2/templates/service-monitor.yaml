@@ -1,0 +1,17 @@
+{{- if .Values.prometheusServiceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}
+  labels:
+    {{- include "prometheusServiceMonitor.labels" . }}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+  endpoints:
+    - honorLabels: true
+      path: /actuator/prometheus
+      port: http
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}

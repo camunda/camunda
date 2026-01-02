@@ -1,0 +1,28 @@
+{{- if .Values.identity.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "identity.fullname" . }}
+  labels:
+    {{- include "identity.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.global.annotations}}
+      {{- toYaml .Values.global.annotations | nindent 4 }}
+    {{- end }}
+    {{- if .Values.identity.service.annotations}}
+      {{- toYaml .Values.identity.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.identity.service.type }}
+  ports:
+    - port: {{ .Values.identity.service.port }}
+      name: http
+      targetPort: 8080
+      protocol: TCP
+    - port: {{ .Values.identity.service.metricsPort }}
+      name: {{ .Values.identity.service.metricsName }}
+      targetPort: 8082
+      protocol: TCP
+  selector:
+    {{- include "identity.matchLabels" . | nindent 4 }}
+{{- end }}

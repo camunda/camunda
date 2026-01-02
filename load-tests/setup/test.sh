@@ -5,7 +5,7 @@
 # Licensed under the Camunda License 1.0. You may not use this file
 # except in compliance with the Camunda License 1.0.
 #
-for i in 7; do
+for i in 22 23; do
   ns="kit-test-${i}"
 
   # Create namespace only if it doesn't exist

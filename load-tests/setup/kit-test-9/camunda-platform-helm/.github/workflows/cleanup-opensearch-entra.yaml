@@ -1,0 +1,80 @@
+name: "Clean Up OpenSearch Indices and entra URIs"
+
+on:
+  schedule:
+    # Set the cron schedule to run nightly at US time, EST (1AM UTC)
+    - cron: "0 1 * * *"
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+jobs:
+  clean:
+    name: Clean up Indices
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          repository: camunda/camunda-platform-helm
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+      - name: Authenticate to GKE
+        uses: ./.github/actions/gke-login
+        with:
+          cluster-name: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_NAME }}
+          cluster-location: ${{ secrets.DISTRO_CI_GCP_GKE_CLUSTER_LOCATION }}
+          workload-identity-provider: ${{ secrets.DISTRO_CI_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ secrets.DISTRO_CI_GCP_SERVICE_ACCOUNT }}
+      - name: cleanup OpenSerach
+        env:
+          OPENSEARCH_BASIC_AUTH_BASE64: ${{ secrets.OPENSEARCH_BASIC_AUTH_BASE64 }}
+        shell: bash
+        run: |
+          # OpenSearch endpoint
+          OPENSEARCH_HOST="https://search-qa-e2e-5q5uium4w7pgfz7i5tviimmmgm.eu-north-1.es.amazonaws.com:443"
+          # Get all namespaces and extract run-IDs from namespaces
+          KEEP_PREFIXES=($(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -oP '\d+$'))
+          # this element is needed since the master user does not have permissions to delete default OpenSearch prefixes which start with "."
+          KEEP_PREFIXES+=(".")
+          echo "prefixes to keep:"
+          echo "${KEEP_PREFIXES[@]}"
+          #Exclude prefixes from `KEEP_PREFIXES`array
+          EXCLUSIONS=$(printf -- ",-%s*" "${KEEP_PREFIXES[@]}" | cut -c2-)
+          curl -L -X DELETE ${OPENSEARCH_HOST}/*,${EXCLUSIONS} -H "Authorization: Basic $OPENSEARCH_BASIC_AUTH_BASE64"
+      - name: cleanup Entra
+        env: 
+          ENTRA_PARENT_APP_DIRECTORY_ID: ${{ secrets.ENTRA_PARENT_APP_DIRECTORY_ID }}
+          ENTRA_PARENT_APP_CLIENT_ID: ${{ secrets.ENTRA_PARENT_APP_CLIENT_ID }}
+          ENTRA_PARENT_APP_CLIENT_SECRET: ${{ secrets.ENTRA_PARENT_APP_CLIENT_SECRET }}
+          ENTRA_CHILD_APP_OBJECT_ID: ${{ secrets.ENTRA_CHILD_APP_OBJECT_ID }}
+        shell: bash
+        run: |
+          RESPONSE=$(curl -X POST \
+            https://login.microsoftonline.com/${ENTRA_PARENT_APP_DIRECTORY_ID}/oauth2/v2.0/token \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=${ENTRA_PARENT_APP_CLIENT_ID}" \
+            -d "scope=https://graph.microsoft.com/.default" \
+            -d "client_secret=${ENTRA_PARENT_APP_CLIENT_SECRET}" \
+            -d "grant_type=client_credentials")
+
+          BEARER_TOKEN=$(echo "$RESPONSE" | jq -r ".access_token")
+
+          curl -X PATCH \
+          "https://graph.microsoft.com/v1.0/applications/${ENTRA_CHILD_APP_OBJECT_ID}" \
+          -H "Authorization: Bearer ${BEARER_TOKEN}" \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "web": {
+              "redirectUris": [
+                "https://cleanup",
+              ]
+            },
+            "spa": {
+              "redirectUris": [
+                "https://cleanup",
+              ]
+            }
+          }'
+

@@ -1,0 +1,187 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "operate.fullname" . }}
+  labels: {{- include "operate.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels: {{- include "operate.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: 
+        {{- include "operate.labels" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ include "camundaPlatform.image" . | quote }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        {{- if .Values.containerSecurityContext }}
+        securityContext: {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        {{- end }}
+        env:
+          {{- if .Values.contextPath }}
+          - name: SERVER_SERVLET_CONTEXT_PATH
+            value: {{ .Values.contextPath | quote }}
+          {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+          - name: SPRING_PROFILES_ACTIVE
+            value: "identity-auth"
+          - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI
+            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+          - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI
+            value: {{ printf "%s%s" (include "camundaPlatform.issuerBackendUrl" .) "/protocol/openid-connect/certs" | quote }}
+          - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_URL
+            value: {{ tpl .Values.global.identity.auth.publicIssuerUrl $ | quote }}
+          - name: CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL
+            value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+          - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_ID
+            value: "operate"
+          - name: CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET
+            {{- if and .Values.global.identity.auth.operate.existingSecret (not (typeIs "string" .Values.global.identity.auth.operate.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.operate.existingSecret "context" $) }}
+                key: operate-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                {{- /*
+                    Helper: https://github.com/bitnami/charts/blob/master/bitnami/common/templates/_secrets.tpl
+                    Usage in keycloak secrets https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/secrets.yaml
+                    and in statefulset https://github.com/bitnami/charts/blob/master/bitnami/keycloak/templates/statefulset.yaml
+                */}}
+                name: {{ include "identity.secretNameOperateIdentity" . }}
+                key: operate-secret
+            {{- end }}
+          - name: CAMUNDA_OPERATE_IDENTITY_AUDIENCE
+            value: "operate-api"
+          {{- /*
+            TODO: Remove the trimSuffix when it's fixed in Operate.
+            https://github.com/camunda/camunda-platform-helm/issues/714
+          */}}
+          - name: CAMUNDA_OPERATE_IDENTITY_REDIRECT_ROOT_URL
+            value: {{ tpl .Values.global.identity.auth.operate.redirectUrl $ | trimSuffix "/operate" | quote }}
+          - name: ZEEBE_CLIENT_ID
+            value: zeebe
+          - name: ZEEBE_CLIENT_SECRET
+            {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
+                key: zeebe-secret
+            {{- else }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "identity.secretNameZeebeIdentity" . }}
+                key: zeebe-secret
+            {{- end }}
+          - name: ZEEBE_AUTHORIZATION_SERVER_URL
+            value: {{ include "camundaPlatform.authTokenUrl" . | quote }}
+          - name: ZEEBE_TOKEN_AUDIENCE
+            value: zeebe-api
+          {{- else }}
+          - name: SPRING_PROFILES_ACTIVE
+            value: "auth"
+          {{- end }}
+        {{- with .Values.env }}
+            {{- tpl (toYaml .) $ | nindent 10 }}
+        {{- end }}
+        {{- if .Values.command}}
+        command: {{ .Values.command }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        {{- if .Values.startupProbe.enabled }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.startupProbe.probePath }}
+            scheme: {{ .Values.startupProbe.scheme }}
+            port: http
+          initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          successThreshold: {{ .Values.startupProbe.successThreshold }}
+          failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+            scheme: {{ .Values.readinessProbe.scheme }}
+            port: http
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.contextPath }}{{ .Values.livenessProbe.probePath }}
+            scheme: {{ .Values.livenessProbe.scheme }}
+            port: http
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+        {{- end }}
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/operate/config/application.yml
+          subPath: application.yml
+        {{- if .Values.extraVolumeMounts}}
+        {{- .Values.extraVolumeMounts | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 6 }}
+      {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "operate.fullname" . }}
+          defaultMode: {{ .Values.configMap.defaultMode }}
+      {{- if .Values.extraVolumes}}
+      {{- .Values.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

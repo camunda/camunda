@@ -1,0 +1,63 @@
+global:
+  multitenancy:
+    enabled: true
+
+identity:
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: operate-api
+          definition: read:*
+        - resourceServerId: operate-api
+          definition: write:*
+        - resourceServerId: tasklist-api
+          definition: read:*
+        - resourceServerId: tasklist-api
+          definition: write:*
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: zeebe-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+  env:
+    - name: IDENTITY_TENANTS_0_NAME
+      value: Default
+    - name: IDENTITY_TENANTS_0_TENANTID
+      value: <default>
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_TYPE
+      value: USER
+    - name: IDENTITY_TENANTS_0_MEMBERS_0_USERNAME
+      value: demo
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_1_APPLICATIONID
+      value: operate
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_2_APPLICATIONID
+      value: venom
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_3_APPLICATIONID
+      value: connectors
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_TYPE
+      value: APPLICATION
+    - name: IDENTITY_TENANTS_0_MEMBERS_4_APPLICATIONID
+      value: zeebe
+
+identityPostgresql:
+  enabled: true

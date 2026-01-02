@@ -1,0 +1,186 @@
+---
+# Source: camunda-platform/templates/identity/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-identity-configuration
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: identity
+    app.kubernetes.io/version: "8.9.0-alpha2"
+  annotations:
+    {}
+data:
+  application.yaml: |
+    # NOTE:
+    # It is possible to override the configuration via env vars following the Spring Boot convention.
+    # For example, the "identity.url" config path is presented as the "IDENTITY_URL" environment variable.
+    # However, it's not possilbe to mix between the configuration and environment variable for the same object
+    # like arrays and maps.
+    identity:
+      url: "http://localhost:8084"
+      flags:
+        multi-tenancy: "false"
+
+      authProvider:
+        issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
+        backend-url: "http://camunda-platform-test-keycloak/auth/realms/camunda-platform"
+      component-presets:
+        console:
+          applications:
+            - name: "Console"
+              id: ${CAMUNDA_CONSOLE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_CONSOLE_CLIENT_ID:console}}
+              type: public
+              root-url: "http://localhost:8087"
+              redirect-uris:
+                - "/"
+          apis:
+            - name: Console API
+              audience: "console-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Console"
+              description: "Grants full access to Console"
+              permissions:
+                - audience: "console-api"
+                  definition: write:*
+        identity:
+          apis:
+            - name: "Camunda Identity Resource Server"
+              audience: "camunda-identity-resource-server"
+              permissions:
+                - definition: read
+                  description: "Read permission"
+                - definition: "read:users"
+                  description: "Read users permission"
+                - definition: write
+                  description: "Write permission"
+          roles:
+            - name: "ManagementIdentity"
+              description: "Provides full access to Management Identity"
+              permissions:
+                - audience: "camunda-identity-resource-server"
+                  definition: read
+                - audience: "camunda-identity-resource-server"
+                  definition: write
+        optimize:
+          applications:
+            - name: Optimize
+              id: ${CAMUNDA_OPTIMIZE_CLIENT_ID:${VALUES_KEYCLOAK_INIT_OPTIMIZE_CLIENT_ID:optimize}}
+              type: confidential
+              secret: ${CAMUNDA_OPTIMIZE_SECRET:${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}}
+              root-url: "http://localhost:8083"
+              redirect-uris:
+                - "/api/authentication/callback"
+          apis:
+            - name: Optimize API
+              audience: "optimize-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+          roles:
+            - name: "Optimize"
+              description: "Grants full access to Optimize"
+              permissions:
+                - audience: "optimize-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+        webmodeler:
+          applications:
+            - name: "Web Modeler"
+              id: ${CAMUNDA_WEBMODELER_CLIENT_ID:${VALUES_KEYCLOAK_INIT_WEBMODELER_CLIENT_ID:web-modeler}}
+              type: public
+              root-url: "http://localhost:8070"
+              redirect-uris:
+                - "/login-callback"
+          apis:
+            - name: Web Modeler Internal API
+              audience: "web-modeler-api"
+              permissions:
+                - definition: write:*
+                  description: "Write permission"
+                - definition: admin:*
+                  description: "Admin permission"
+            - name: Web Modeler API
+              audience: "web-modeler-public-api"
+              permissions:
+                - definition: create:*
+                  description: "Allows create access for all resources"
+                - definition: read:*
+                  description: "Allows read access to all resources"
+                - definition: update:*
+                  description: "Allows update access to all resources"
+                - definition: delete:*
+                  description: "Allows delete access for all resources"
+          roles:
+            - name: "Web Modeler"
+              description: "Grants full access to Web Modeler"
+              permissions:
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+            - name: "Web Modeler Admin"
+              description: "Grants elevated access to Web Modeler"
+              permissions:
+                - audience: "camunda-identity-resource-server"
+                  definition: read:users
+                - audience: "web-modeler-api"
+                  definition: write:*
+                - audience: "web-modeler-api"
+                  definition: admin:*
+    keycloak:
+      url: "http://camunda-platform-test-keycloak/auth"
+      setup:
+        user: "admin"
+        password: ${VALUES_KEYCLOAK_SETUP_PASSWORD:}
+      init:
+        console:
+          root-url: "http://localhost:8087"
+        optimize:
+          secret: ${VALUES_KEYCLOAK_INIT_OPTIMIZE_SECRET:}
+        webmodeler:
+          root-url: "http://localhost:8070"
+      clients:
+      users:
+        - username: "demo"
+          password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}
+          firstName: "Demo"
+          lastName: "User"
+          email: "demo@example.org"
+          roles:
+            - ManagementIdentity
+      environment:
+        clients:
+          - name: Identity
+            id: "camunda-identity"
+            type: CONFIDENTIAL
+            secret: ${CAMUNDA_IDENTITY_CLIENT_SECRET:${IDENTITY_CLIENT_SECRET}}
+            root-url: "http://localhost:8084"
+            redirect-uris:
+              - "/auth/login-callback"
+    server:
+      port: 8084
+
+    spring:
+      servlet:
+        multipart:
+          max-file-size: "10MB"
+          max-request-size: "10MB"
+      profiles:
+        active: keycloak
+
+    camunda:
+      identity:
+        audience: "camunda-identity-resource-server"
+    logging:
+      level:
+        ROOT: INFO
+        io.camunda.identity: INFO

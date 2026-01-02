@@ -1,0 +1,78 @@
+apiVersion: v2
+name: camunda-platform
+version: 12.7.4
+appVersion: 8.7.x
+description: |
+  Camunda 8 Self-Managed Helm charts.
+  Camunda's process automation platform allows developers to design, automate and improve processes.
+type: application
+icon: https://helm.camunda.io/imgs/camunda.svg
+home: https://docs.camunda.io/docs/self-managed/overview/
+sources:
+  - https://github.com/camunda/camunda-platform-helm
+keywords:
+  - automation
+  - business-rules
+  - bpm
+  - bpmn
+  - camunda-platform
+  - decision-engine
+  - dmn
+  - modeling
+  - orchestration
+  - process-automation
+  - process-engine
+  - process-orchestration
+  - workflow
+  - workflow-engine
+dependencies:
+  # Identity Dependencies.
+  - name: keycloak
+    alias: identityKeycloak
+    repository: "file://../keycloak-24"
+    version: 24.x.x
+    condition: "identity.keycloak.enabled,identityKeycloak.enabled"
+  - name: postgresql
+    alias: identityPostgresql
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 15.x.x
+    condition: "identity.postgresql.enabled,identityPostgresql.enabled"
+  # WebModeler Dependencies.
+  - name: web-modeler-postgresql
+    alias: postgresql
+    repository: "file://../web-modeler-postgresql-15"
+    version: 15.x.x
+    condition: "postgresql.enabled"
+  # Shared Dependencies.
+  - name: elasticsearch
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 21.6.3
+    condition: "elasticsearch.enabled"
+  # Helpers.
+  - name: common
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 2.x.x
+maintainers:
+  - name: aabouzaid
+    email: ahmed.abouzaid@camunda.com
+  - name: drodriguez-305
+    email: daniel.rodriguez@camunda.com
+  - name: hamza-m-masood
+    email: hamza.masood@camunda.com
+  - name: jessesimpson36
+    email: jesse.simpson@camunda.com
+annotations:
+  camunda.io/helmCLIVersion: "3.19.2"
+  artifacthub.io/links: |
+    - name: Camunda 8 docs
+      url: https://docs.camunda.io/
+    - name: Camunda 8 Self-Managed docs
+      url: https://docs.camunda.io/docs/self-managed/about-self-managed/
+    - name: Camunda 8 Self-Managed Helm charts
+      url: https://github.com/camunda/camunda-platform-helm
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/changes: |
+    - kind: changed
+      description: "Remove unused identity redirect-url"
+    - kind: fixed
+      description: "Apply tpl to issuerBackendUrl"

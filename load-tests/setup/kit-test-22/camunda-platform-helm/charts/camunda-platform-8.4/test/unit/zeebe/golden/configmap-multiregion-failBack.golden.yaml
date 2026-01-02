@@ -1,0 +1,34 @@
+---
+# Source: camunda-platform/templates/zeebe/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: camunda-platform-test-zeebe
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.4.21"
+    app.kubernetes.io/component: zeebe-broker
+apiVersion: v1
+data:
+  startup.sh: |
+    #!/usr/bin/env bash
+    set -eux -o pipefail
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-$[${K8S_NAME##*-} * 1 + 0]}
+
+    if [ "$(ls -A /exporters/)" ]; then
+      mkdir -p /usr/local/zeebe/exporters/
+      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+    else
+      echo "No exporters available."
+    fi
+    if [ $[${K8S_NAME##*-} % 2] -eq 0 ]
+    then
+      trap : TERM INT; sleep infinity & wait
+    else
+      exec /usr/local/zeebe/bin/broker
+    fi
+
+  broker-log4j2.xml: |

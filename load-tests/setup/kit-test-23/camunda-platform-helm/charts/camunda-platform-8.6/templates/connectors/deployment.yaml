@@ -1,0 +1,192 @@
+{{- if .Values.connectors.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "connectors.fullname" . }}
+  labels: {{- include "connectors.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  replicas: {{ .Values.connectors.replicas }}
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels: {{- include "connectors.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "connectors.labels" . | nindent 8 }}
+        {{- if .Values.connectors.podLabels }}
+        {{- toYaml .Values.connectors.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/connectors/configmap.yaml") . | sha256sum }}
+      {{- if .Values.connectors.podAnnotations }}
+      {{- toYaml .Values.connectors.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets: {{- include "connectors.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.connectors.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: connectors
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.connectors) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.connectors.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.connectors.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.connectors.service.serverPort }}
+              name: {{ .Values.connectors.service.serverName }}
+              protocol: TCP
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+          {{- if eq .Values.connectors.inbound.mode "credentials" }}
+            - name: CAMUNDA_OPERATE_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "connectors.authCredentialsSecretName" . }}
+                  key: {{ .Values.connectors.inbound.auth.existingSecretKey }}
+          {{- end }}
+          {{- if .Values.global.identity.auth.enabled }}
+            {{- if eq .Values.connectors.inbound.mode "oauth" }}
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.connectors.existingSecret (not (typeIs "string" .Values.global.identity.auth.connectors.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.connectors.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "connectors") }}
+                  key: {{ .Values.global.identity.auth.connectors.existingSecretKey }}
+              {{- end }}
+            {{- end }}
+            - name: ZEEBE_CLIENT_ID
+              value: {{ tpl .Values.global.identity.auth.zeebe.clientId $ | quote }}
+            - name: ZEEBE_CLIENT_SECRET
+              {{- if and .Values.global.identity.auth.zeebe.existingSecret (not (typeIs "string" .Values.global.identity.auth.zeebe.existingSecret)) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.secrets.name" (dict "existingSecret" .Values.global.identity.auth.zeebe.existingSecret "context" $) }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- else }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.identitySecretName" (dict "context" . "component" "zeebe") }}
+                  key: {{ .Values.global.identity.auth.zeebe.existingSecretKey }}
+              {{- end }}
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: {{ include "camundaPlatform.authIssuerBackendUrlTokenEndpoint" . | quote }}
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: {{ include "zeebe.authAudience" . | quote }}
+            {{- if .Values.global.identity.auth.zeebe.tokenScope }}
+            - name: ZEEBE_TOKEN_SCOPE
+              value: {{ include "zeebe.authTokenScope" . | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.connectors.env}}
+            {{ .Values.connectors.env | toYaml | nindent 12 }}
+          {{- end }}
+          envFrom:
+          {{- if .Values.global.identity.auth.enabled }}
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+          {{- end }}
+          {{- if .Values.connectors.envFrom -}}
+            {{ .Values.connectors.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.connectors.command}}
+          command: {{ toYaml .Values.connectors.command | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.connectors.resources | nindent 12 }}
+          {{- if .Values.connectors.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.startupProbe.probePath) }}
+              port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ default "HTTP" .Values.connectors.scheme }}
+            initialDelaySeconds: {{ .Values.connectors.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.connectors.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.readinessProbe.probePath) }}
+              port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ default "HTTP" .Values.connectors.scheme }}
+            initialDelaySeconds: {{ .Values.connectors.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.connectors.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.connectors.contextPath .Values.connectors.livenessProbe.probePath) }}
+              port: {{ .Values.connectors.service.serverName }}
+              scheme: {{ default "HTTP" .Values.connectors.scheme }}
+            initialDelaySeconds: {{ .Values.connectors.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.connectors.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.connectors.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.connectors.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.connectors.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - name: config
+              mountPath: /config/application.yml
+              subPath: application.yml
+          {{- range $key, $val := .Values.connectors.extraConfiguration }}
+            - name: config
+              mountPath: /config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+          {{- if .Values.connectors.extraVolumeMounts }}
+            {{- .Values.connectors.extraVolumeMounts | toYaml | nindent 12 }}
+          {{- end }}
+        {{- if .Values.connectors.sidecars }}
+        {{- .Values.connectors.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "connectors.fullname" . }}-configuration
+      {{- if .Values.connectors.extraVolumes }}
+        {{- .Values.connectors.extraVolumes | toYaml | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "connectors.serviceAccountName" . }}
+      {{- if .Values.connectors.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.connectors.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.connectors.dnsPolicy }}
+      dnsPolicy: {{ .Values.connectors.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.connectors.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.connectors.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.connectors.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,56 @@
+{{- if .Values.connectors.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "connectors.fullname" . }}-configuration
+  labels:
+    {{- include "connectors.labels" . | nindent 4 }}
+data:
+  {{- if .Values.connectors.configuration }}
+  application.yml: |
+    {{ .Values.connectors.configuration | indent 4 | trim }}
+  {{- else }}
+  application.yml: |
+    server:
+      port: {{ .Values.connectors.service.serverPort }}
+    {{- if .Values.connectors.contextPath }}
+      servlet:
+        context-path: {{ .Values.connectors.contextPath | quote }}
+    {{- end }}
+    camunda:
+      {{- if eq .Values.connectors.inbound.mode "disabled" }}
+      connector:
+        polling:
+          enabled: false
+        webhook:
+          enabled: false
+      {{- end }}
+      {{- if or (eq .Values.connectors.inbound.mode "credentials") (and .Values.global.identity.auth.enabled (eq .Values.connectors.inbound.mode "oauth") ) }}
+      operate:
+        client:
+          url: {{ include "camundaPlatform.operateURL" . | quote }}
+          {{- if eq .Values.connectors.inbound.mode "credentials" }}
+          username: connectors
+          {{- end }}
+      {{- end }}
+      {{- if .Values.global.identity.auth.enabled }}
+      {{- if eq .Values.connectors.inbound.mode "oauth" }}
+      identity:
+        audience: {{ include "operate.authAudience" . | quote }}
+        client-id: {{ include "connectors.authClientId" . | quote }}
+      {{- end }}
+      {{- end }}
+
+    zeebe:
+      client:
+        broker:
+          gateway-address: {{ include "connectors.zeebeEndpoint" . | quote }}
+        security:
+          plaintext: true
+  {{- end }}
+
+  {{- range $key, $val := .Values.connectors.extraConfiguration }}
+  {{ $key }}: |
+    {{ $val | indent 4 | trim }}
+  {{- end }}
+{{- end }}

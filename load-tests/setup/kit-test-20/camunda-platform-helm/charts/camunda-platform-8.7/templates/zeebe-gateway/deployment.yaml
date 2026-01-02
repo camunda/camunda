@@ -1,0 +1,227 @@
+{{- if .Values.zeebe.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zeebe.names.gateway" . }}
+  labels:
+    {{- include "zeebe.labels.gateway" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.zeebeGateway.replicas  }}
+  selector:
+    matchLabels:
+      {{- include "zeebe.matchLabels.gateway" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zeebe.labels.gateway" . | nindent 8 }}
+        {{- if .Values.zeebeGateway.podLabels }}
+          {{- toYaml .Values.zeebeGateway.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/zeebe-gateway/configmap.yaml") . | sha256sum }}
+        {{- if .Values.zeebeGateway.podAnnotations }}
+        {{- toYaml .Values.zeebeGateway.podAnnotations | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.zeebeGateway.priorityClassName }}
+      priorityClassName: {{ .Values.zeebeGateway.priorityClassName | quote }}
+      {{- end }}
+      imagePullSecrets:
+        {{- include "zeebe.imagePullSecrets.gateway" . | nindent 8 }}
+      initContainers:
+        {{- tpl ((coalesce .Values.zeebeGateway.initContainers .Values.zeebeGateway.extraInitContainers) | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: zeebe-gateway
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.zeebeGateway) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.zeebeGateway.service.httpPort }}
+              name: {{  default "http" .Values.zeebeGateway.service.httpName }}
+            - containerPort: {{ .Values.zeebeGateway.service.grpcPort }}
+              name: {{ default "gateway" .Values.zeebeGateway.service.grpcName  }}
+            - containerPort: {{ .Values.zeebeGateway.service.internalPort }}
+              name: {{ default "internal" .Values.zeebeGateway.service.internalName  }}
+            - containerPort: {{  .Values.zeebeGateway.service.restPort }}
+              name: {{ default "gateway" .Values.zeebeGateway.service.restName  }}
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "camundaPlatform.licenseSecretName" . }}
+                  key: {{ include "camundaPlatform.licenseSecretKey" . }}
+            - name: ZEEBE_STANDALONE_GATEWAY
+              value: "true"
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ZEEBE_LOG_LEVEL
+              value: {{ .Values.zeebeGateway.logLevel | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.zeebeGateway.javaOpts | quote }}
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+              value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.zeebeGateway.service.internalPort }}
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            {{- if and .Values.global.elasticsearch.external (include "elasticsearch.passwordIsDefined" .) }}
+            - name: CAMUNDA_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "elasticsearch.authExistingSecret" . | quote }}
+                  key: {{ include "elasticsearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if and .Values.global.opensearch.enabled (include "opensearch.passwordIsDefined" .) }}
+            - name: CAMUNDA_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "opensearch.authExistingSecret" . | quote }}
+                  key: {{ include "opensearch.authExistingSecretKey" . | quote }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.accessKeyIdKey | quote }}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.documentStore.type.aws.existingSecret | quote }}
+                  key: {{ .Values.global.documentStore.type.aws.secretAccessKeyKey | quote }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" (default "/var/secrets/gcp" .Values.global.documentStore.type.gcp.mountPath) (default "service-account.json" .Values.global.documentStore.type.gcp.fileName) | quote }}
+            {{- end }}
+            {{- with .Values.zeebeGateway.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+            {{- if .Values.zeebeGateway.envFrom -}}
+              {{ .Values.zeebeGateway.envFrom | toYaml | nindent 12 }}
+            {{- end }}
+          {{- if .Values.zeebeGateway.command}}
+          command:
+          {{- toYaml .Values.zeebeGateway.command | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            {{- if .Values.zeebeGateway.log4j2 }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/log4j2.xml
+              subPath: gateway-log4j2.xml
+            {{- end }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/application.yaml
+              subPath: application.yaml
+            {{- range $key, $val := .Values.zeebeGateway.extraConfiguration }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/{{ $key }}
+              subPath: {{ $key }}
+            {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | default "/var/secrets/gcp" | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.zeebeGateway.extraVolumeMounts}}
+            {{ .Values.zeebeGateway.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+          {{- if .Values.zeebeGateway.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.zeebeGateway.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.zeebeGateway.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.zeebeGateway.contextPath .Values.zeebeGateway.startupProbe.probePath) }}
+              scheme: {{ .Values.zeebeGateway.startupProbe.scheme }}
+              port: {{ .Values.zeebeGateway.service.httpPort }}
+            initialDelaySeconds: {{ .Values.zeebeGateway.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.zeebeGateway.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.zeebeGateway.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.zeebeGateway.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.zeebeGateway.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.zeebeGateway.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ include "zeebe.readinessProbePath.gateway" . }}
+              scheme: {{ .Values.zeebeGateway.readinessProbe.scheme }}
+              port: {{ .Values.zeebeGateway.service.httpPort }}
+            initialDelaySeconds: {{ .Values.zeebeGateway.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.zeebeGateway.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.zeebeGateway.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.zeebeGateway.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.zeebeGateway.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.zeebeGateway.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ include "camundaPlatform.joinpath" (list .Values.zeebeGateway.contextPath .Values.zeebeGateway.livenessProbe.probePath) }}
+              scheme: {{ .Values.zeebeGateway.livenessProbe.scheme }}
+              port: {{ .Values.zeebeGateway.service.httpPort }}
+            initialDelaySeconds: {{ .Values.zeebeGateway.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.zeebeGateway.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.zeebeGateway.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.zeebeGateway.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.zeebeGateway.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.zeebeGateway.resources}}
+          resources:
+            {{- toYaml .Values.zeebeGateway.resources | nindent 12 }}
+          {{- end }}
+      {{- if .Values.zeebeGateway.sidecars }}
+      {{- .Values.zeebeGateway.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ include "zeebe.fullname.gateway" . }}-configuration
+            defaultMode: {{ .Values.zeebeGateway.configMap.defaultMode }}
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        - name: gcp-credentials-volume
+          secret:
+            secretName: {{ .Values.global.documentStore.type.gcp.existingSecret | quote }}
+            items:
+              - key: {{ .Values.global.documentStore.type.gcp.credentialsKey | default "service-account.json" | quote }}
+                path: {{ .Values.global.documentStore.type.gcp.fileName | default "service-account.json" | quote }}
+        {{- end }}
+        {{- if .Values.zeebeGateway.extraVolumes}}
+        {{- .Values.zeebeGateway.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "zeebe.serviceAccountName.gateway" . }}
+      {{- if .Values.zeebeGateway.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.zeebeGateway.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.zeebeGateway.dnsPolicy }}
+      dnsPolicy: {{ .Values.zeebeGateway.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.zeebeGateway.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.zeebeGateway.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+{{- with .Values.zeebeGateway.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+  # yamllint disable
+{{- with .Values.zeebeGateway.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+  # yamllint enable
+{{- with .Values.zeebeGateway.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

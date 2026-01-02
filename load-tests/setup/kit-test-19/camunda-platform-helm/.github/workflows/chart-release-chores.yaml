@@ -1,0 +1,126 @@
+name: "Chart - Release - Chores"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/chart-release-chores.yaml
+      - '**/.release-please-config.json'
+      - '../../../../../../operate/client/target/node/node_modules/npm/node_modules/node-gyp/.release-please-manifest.json'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  chores:
+    if: ${{ contains(github.head_ref, 'release-please--branches--') }}
+    name: Generate release files
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout.
+      - name: Generate GitHub token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        id: generate-github-token
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+      #
+      # Dependencies.
+      #
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            git-cliff
+            golang
+            gomplate
+            helm
+            helm-ct
+            yq
+      - name: Install readme-generator-for-helm
+        run: |
+          # renovate: datasource=npm depName=@bitnami/readme-generator-for-helm
+          npm install -g @bitnami/readme-generator-for-helm@2.7.2
+      - name: Add Helm repos
+        run: |
+          make helm.repos-add
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+            ~/.asdf/installs/golang/*/packages/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      #
+      # Release chores.
+      #
+      - name: Set vars
+        run: |
+          echo "CHANGED_CHARTS=$(ct list-changed | tr '\n' ' ')" | tee -a $GITHUB_ENV
+      - name: Update PR info
+        env:
+          GH_TOKEN: "${{ steps.generate-github-token.outputs.token }}"
+        run: |
+          set -euo pipefail
+
+          git fetch origin main:main
+
+          pr_number="$(echo "$GITHUB_REF" | awk 'BEGIN { FS = "/" } { print $3 }')"
+          gh project item-add --owner camunda --number 33 \
+            --url "https://github.com/camunda/camunda-platform-helm/pull/$pr_number" >/dev/null || true
+      - name: Update golden files
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make go.update-golden-only
+      - name: Update README
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make helm.readme-update
+      - name: Generate release notes
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make release.generate-notes
+      - name: Generate release note footer
+        run: |
+          chartPath="${CHANGED_CHARTS}" \
+            make release.generate-notes-footer
+      - name: Git pull
+        run: git pull --rebase --autostash .
+      - name: Generate version matrix
+        run: |
+          make helm.repos-add
+          make release.generate-version-matrix-released
+          for chartPath in "${CHANGED_CHARTS}"; do
+            chartPath=$chartPath make -e release.generate-version-matrix-index
+            chartPath=$chartPath make -e release.generate-version-matrix-unreleased
+          done
+      # We use git-chglog to generate the release notes and release-please
+      # doesn't have an option to disable the generation of CHANGELOG.md files.
+      # https://github.com/googleapis/release-please/issues/2007
+      - name: Clean up release-please changelog files
+        run: |
+          for chartPath in "${CHANGED_CHARTS}"; do
+            rm -f "$chartPath/CHANGELOG.md"
+          done
+      - uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        with:
+          # IMPORTANT: use a GitHub App token instead of the default GITHUB_TOKEN.
+          # Commits pushed with GITHUB_TOKEN do not trigger other workflows, which
+          # prevents required checks (e.g. "Check PR Conventions") from reporting
+          # a status on the latest head SHA of release-please PRs.
+          github_token: "${{ steps.generate-github-token.outputs.token }}"
+          author_name: "distro-ci[bot]"
+          author_email: "122795778+distro-ci[bot]@users.noreply.github.com"
+          message: "chore(release): update chart files + version matrix"

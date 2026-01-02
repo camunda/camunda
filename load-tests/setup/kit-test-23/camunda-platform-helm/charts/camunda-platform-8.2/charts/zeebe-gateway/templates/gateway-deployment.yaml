@@ -1,0 +1,172 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zeebe.names.gateway" . }}
+  labels: {{- include "zeebe.labels.gateway" . | nindent 4 }}
+  annotations:
+    {{- toYaml  .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.replicas  }}
+  selector:
+    matchLabels:
+      {{- include "zeebe.matchLabels.gateway" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "zeebe.labels.gateway" . | nindent 8 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- toYaml  .Values.podAnnotations | nindent 8 }}
+    spec:
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      imagePullSecrets:
+        {{- include "camundaPlatform.imagePullSecrets" . | nindent 8 }}
+      {{- if .Values.extraInitContainers }}
+      initContainers:
+        {{- with .Values.extraInitContainers }}
+          {{- tpl (toYaml . ) $ | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "camundaPlatform.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          ports:
+            - containerPort: {{  .Values.service.httpPort }}
+              name: {{  default "http" .Values.service.httpName }}
+            - containerPort: {{  .Values.service.gatewayPort }}
+              name: {{ default "gateway" .Values.service.gatewayName  }}
+            - containerPort: {{  .Values.service.internalPort }}
+              name: {{ default "internal" .Values.service.internalName  }}
+          env:
+            - name: ZEEBE_STANDALONE_GATEWAY
+              value: "true"
+            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
+              value: {{ tpl .Values.global.zeebeClusterName . }}
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ZEEBE_LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.javaOpts | quote }}
+            - name: ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT
+              value: {{ tpl .Values.global.zeebeClusterName . }}:{{ .Values.service.internalPort }}
+            - name: ZEEBE_GATEWAY_NETWORK_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_NETWORK_PORT
+              value: {{  .Values.service.gatewayPort | quote }}
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ZEEBE_GATEWAY_CLUSTER_PORT
+              value: {{  .Values.service.internalPort | quote }}
+            - name: ZEEBE_GATEWAY_MONITORING_HOST
+              value: 0.0.0.0
+            - name: ZEEBE_GATEWAY_MONITORING_PORT
+              value: {{  .Values.service.httpPort | quote }}
+            {{- if .Values.global.identity.auth.enabled }}
+            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE
+              value: "keycloak"
+            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE
+              value: "identity"
+            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL
+              value: {{ include "camundaPlatform.issuerBackendUrl" . | quote }}
+            - name: ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE
+              value: "zeebe-api"
+            {{- end }}
+            {{- with .Values.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          {{- if .Values.command}}
+          command: {{ .Values.command }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.log4j2 }}
+            - name: config
+              mountPath: /usr/local/zeebe/config/log4j2.xml
+              subPath: gateway-log4j2.xml
+            {{- end }}
+            {{- if .Values.extraVolumeMounts}}
+            {{ .Values.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+          {{- if .Values.containerSecurityContext }}
+          securityContext: {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.contextPath }}{{ .Values.startupProbe.probePath }}
+              scheme: {{ .Values.startupProbe.scheme }}
+              port: {{ .Values.service.httpPort }}
+            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.contextPath }}{{ .Values.readinessProbe.probePath }}
+              scheme: {{ .Values.readinessProbe.scheme }}
+              port: {{ .Values.service.httpPort }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.contextPath }}{{ .Values.livenessProbe.probePath }}
+              scheme: {{ .Values.livenessProbe.scheme }}
+              port: {{ .Values.service.httpPort }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.resources}}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+      {{- if .Values.sidecars }}
+      {{- .Values.sidecars | toYaml | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "zeebe-gateway.fullname" . }}
+            defaultMode: {{ .Values.configMap.defaultMode }}
+        {{- if .Values.extraVolumes}}
+        {{- .Values.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      {{- if .Values.serviceAccount.name}}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.podSecurityContext }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

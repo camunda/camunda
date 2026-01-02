@@ -1,0 +1,74 @@
+name: cluster-auth
+description: Generate GH token and log in to GKE/ROSA or decrypt kubeconfig
+inputs:
+  platform:         { required: true,  description: gke | rosa | custom }
+  auth-data:        { required: false, description: base64-encrypted kubeconfig }
+
+outputs:
+  token:
+    description: GitHub token
+    value: ${{ steps.generate-github-token.outputs.token }}
+
+env:
+  GH_APP_ID:        {}
+  GH_APP_KEY:       {}
+  GKE_CLUSTER_NAME: {}
+  GKE_CLUSTER_LOC:  {}
+  GKE_WIP:          {}
+  GKE_SA:           {}
+  ROSA_URL:         {}
+  ROSA_USER:        {}
+  ROSA_PASS:        {}
+  CLUSTER_NAME:     {}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate GitHub token
+      uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+      id: generate-github-token
+      with:
+        app_id:      ${{ env.GH_APP_ID }}
+        private_key: ${{ env.GH_APP_KEY }}
+
+    - name: Authenticate to GKE
+      if: inputs.platform == 'gke' && inputs.auth-data == ''
+      uses: ./.github/actions/gke-login
+      with:
+        cluster-name:                ${{ env.GKE_CLUSTER_NAME }}
+        cluster-location:            ${{ env.GKE_CLUSTER_LOC }}
+        workload-identity-provider:  ${{ env.GKE_WIP }}
+        service-account:             ${{ env.GKE_SA }}
+
+    - name: Authenticate to OpenShift
+      if: inputs.platform == 'rosa' && inputs.auth-data == ''
+      uses: redhat-actions/oc-login@5eb45e848b168b6bf6b8fe7f1561003c12e3c99d # v1
+      with:
+        openshift_server_url: ${{ env.ROSA_URL }}
+        openshift_username:   ${{ env.ROSA_USER }}
+        openshift_password:   ${{ env.ROSA_PASS }}
+
+    - name: Set up Teleport
+      if: inputs.platform == 'eks'
+      uses: teleport-actions/setup@a820ebbf1bc1a496efca348ad21042d6e8df73a6 # v1
+      with:
+        version: 17.2.2
+
+    - name: Authenticate with Teleport
+      if: inputs.platform == 'eks' && inputs.auth-data == ''
+      uses: teleport-actions/auth-k8s@171cc0ad4b6b7cebcb33c672defe3f6dc58967ba # v2
+      with:
+        proxy: camunda.teleport.sh:443
+        token: ${{ env.TELEPORT_TOKEN }}
+        kubernetes-cluster: ${{ env.CLUSTER_NAME }}
+
+    - name: Authenticate via var
+      if: inputs.auth-data != ''
+      shell: bash
+      run: |
+        mkdir -p "$HOME/.kube"
+        echo "${{ inputs.auth-data }}" | base64 -d > enc.cfg
+        openssl enc -aes-256-cbc -d -in enc.cfg -out "$HOME/.kube/config" \
+               -pass pass:"${{ steps.generate-github-token.outputs.token }}" -pbkdf2
+        rm enc.cfg
+        chmod 600 "$HOME/.kube/config"

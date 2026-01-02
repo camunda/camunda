@@ -1,0 +1,18 @@
+{{- if  and .Values.prometheusServiceMonitor.enabled  .Values.optimize.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-optimize
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+    {{- toYaml .Values.prometheusServiceMonitor.labels | nindent 4}}
+spec:
+  selector:
+    matchLabels:
+      {{- toYaml .Values.global.labels | nindent 6 }}
+      app.kubernetes.io/component: optimize
+  endpoints:
+    - honorLabels: true
+      path: /actuator/prometheus
+      port: management
+      interval: {{ .Values.prometheusServiceMonitor.scrapeInterval }}
+{{- end }}

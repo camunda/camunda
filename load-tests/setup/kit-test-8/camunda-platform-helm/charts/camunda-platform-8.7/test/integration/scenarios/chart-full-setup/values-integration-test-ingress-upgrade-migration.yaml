@@ -1,0 +1,4 @@
+# Added for upgrade-migration scenario in 8.8
+# No migration options are needed to be configured as it's only needed for 8.8 values.
+elasticsearch:
+  maxUnavailable: 0

@@ -1,0 +1,144 @@
+---
+# Source: camunda-platform/templates/web-modeler/deployment-webapp.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-platform-test-web-modeler-webapp
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/version: "8.3.18"
+    app.kubernetes.io/component: webapp
+  annotations:
+    {}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: web-modeler
+      app.kubernetes.io/instance: camunda-platform-test
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: webapp
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: web-modeler
+        app.kubernetes.io/instance: camunda-platform-test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        app.kubernetes.io/version: "8.3.18"
+        app.kubernetes.io/component: webapp
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+        []
+      containers:
+        - name: web-modeler-webapp
+          image: "registry.camunda.cloud/web-modeler-ee/modeler-webapp:8.3.18"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=128"
+            - name: HTTP_WORKERS
+              value: "2"
+            - name: RESTAPI_HOST
+              value: "camunda-platform-test-web-modeler-restapi"
+            - name: RESTAPI_PORT
+              value: "80"
+            - name: RESTAPI_MANAGEMENT_PORT
+              value: "8091"
+            - name: SERVER_URL
+              value: "http://localhost:8084"
+            - name: SERVER_HTTPS_ONLY
+              value: "false"
+            - name: OAUTH2_CLIENT_ID
+              value: "web-modeler"
+            - name: OAUTH2_TOKEN_AUDIENCE
+              value: "web-modeler"
+            - name: OAUTH2_TOKEN_ISSUER
+              value: "http://localhost:18080/auth/realms/camunda-platform"
+            - name: KEYCLOAK_BASE_URL
+              value: "http://localhost:18080"
+            - name: KEYCLOAK_CONTEXT_PATH
+              value: "/auth"
+            - name: KEYCLOAK_REALM
+              value: "camunda-platform"
+            - name: KEYCLOAK_JWKS_URL
+              value: "http://camunda-platform-test-keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+            - name: PUSHER_HOST
+              value: "camunda-platform-test-web-modeler-websockets"
+            - name: PUSHER_PORT
+              value: "80"
+            - name: PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-id
+            - name: PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-key
+            - name: PUSHER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-secret
+            - name: CLIENT_PUSHER_HOST
+              value: "localhost"
+            - name: CLIENT_PUSHER_PORT
+              value: "8085"
+            - name: CLIENT_PUSHER_FORCE_TLS
+              value: "false"
+            - name: CLIENT_PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: camunda-platform-test-web-modeler
+                  key: pusher-app-key
+            - name: IDENTITY_BASE_URL
+              value: "http://camunda-platform-test-identity:80"
+          resources:
+            limits:
+              cpu: 800m
+              memory: 512Mi
+            requests:
+              cpu: 400m
+              memory: 256Mi
+          ports:
+            - containerPort: 8070
+              name: http
+              protocol: TCP
+            - containerPort: 8071
+              name: http-management
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              # NOTE: WebApp doesn't support contextPath for health endpoints.
+              path: /health/readiness
+              scheme: HTTP
+              port: http-management
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 1
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true

@@ -1,0 +1,13 @@
+{{- if .Values.global.identity.auth.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "camundaPlatform.fullname" . }}-identity-env-vars
+  labels: {{- include "camundaPlatform.labels" . | nindent 4 }}
+  annotations: {{- toYaml  .Values.global.annotations | nindent 4 }}
+data:
+  CAMUNDA_IDENTITY_BASEURL: {{ include "camundaPlatform.identityURL" . | quote }}
+  CAMUNDA_IDENTITY_TYPE: {{ include "camundaPlatform.authType" . | quote }}
+  CAMUNDA_IDENTITY_ISSUER: {{ include "camundaPlatform.authIssuerUrl" . | quote }}
+  CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: {{ include "camundaPlatform.authIssuerBackendUrl" . | quote }}
+{{- end }}

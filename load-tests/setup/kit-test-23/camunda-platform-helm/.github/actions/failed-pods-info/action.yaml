@@ -1,0 +1,16 @@
+name: Get failed Pods info
+description: In case of failure, get Pods details like name, logs, and description
+
+runs:
+  using: composite
+  steps:
+  - name: Get failed Pods info
+    shell: bash
+    # TODO: Better way to collect logs and store them as artifacts in GitHub Actions.
+    run: |
+      kubectl -n $TEST_NAMESPACE get po
+      kubectl -n $TEST_NAMESPACE get po | grep -v "Completed" | awk '/0\//{print $1}' | while read pod_name; do
+        echo -e "\n###Failed Pod: ${pod_name}###\n";
+        kubectl -n $TEST_NAMESPACE describe po ${pod_name};
+        kubectl -n $TEST_NAMESPACE logs ${pod_name};
+      done

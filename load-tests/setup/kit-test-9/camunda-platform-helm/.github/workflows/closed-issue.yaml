@@ -1,0 +1,35 @@
+name: Close Issue
+
+on:
+  issues:
+    types:
+      - closed
+
+jobs:
+  update-closed-at-field:
+    name: Update closed at field
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          echo "project_id=33" >> "$GITHUB_OUTPUT"
+          echo "now=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub token
+        id: generate-github-token
+        uses: tibdex/github-app-token@a3da042061e3b5d09ad01f41d2328f429d8d1c62
+        with:
+          app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+
+      - name: Update Closed At field
+        uses: github/update-project-action@993f8e40e6cb9250b7d4b476aeee44e40f2d23c2 # main
+        id: update-closed-at
+        with:
+            github_token: ${{ steps.generate-github-token.outputs.token }}
+            organization: ${{ github.repository_owner }}
+            project_number: ${{ steps.vars.outputs.project_id }}
+            content_id: ${{ github.event.issue.node_id }}
+            field: Closed At
+            value: ${{ steps.vars.outputs.now }}

@@ -1,0 +1,105 @@
+name: "Chart - Validate - Template"
+
+on:
+  workflow_call:
+    inputs:
+      identifier:
+        description: The unique identifier of the workflow run.
+        required: true
+        type: string
+      camunda-helm-git-ref:
+        required: false
+        default: main
+        type: string
+      camunda-helm-dir:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ inputs.identifier }}"
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: ℹ️ Print workflow inputs ℹ️
+        env:
+          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+        run: |
+          echo "Workflow Inputs:"
+          echo "${GITHUB_CONTEXT}"
+      # Checkout.
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 1
+          ref: "${{ inputs.camunda-helm-git-ref }}"
+      - name: Configure curl and wget
+        uses: ./.github/actions/setup-curl
+      # Configurtion.
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git fetch --depth=1 origin main
+      - name: Don't check version increment if there is no release label
+        if: ${{ ! contains(github.event.*.labels.*.name, 'release') }}
+        run: |
+          echo "check-version-increment: false" >> .github/config/chart-testing.yaml
+      # Dependencies.
+      - name: Cache Helm chart dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: charts/${{ inputs.camunda-helm-dir }}/charts
+          key: ${{ runner.os }}-helm-${{ inputs.camunda-helm-dir }}-${{ hashFiles(format('charts/{0}/Chart.lock', inputs.camunda-helm-dir)) || hashFiles(format('charts/{0}/Chart.yaml', inputs.camunda-helm-dir)) || 'nohash' }}
+          restore-keys: |
+            ${{ runner.os }}-helm-${{ inputs.camunda-helm-dir }}-
+      - name: Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            yamllint
+      - name: Cache Helm client cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            $HOME/.cache/helm
+          key: ${{ runner.os }}-helmcache-${{ inputs.camunda-helm-dir }}-${{ hashFiles(format('charts/{0}/Chart.lock', inputs.camunda-helm-dir)) || hashFiles(format('charts/{0}/Chart.yaml', inputs.camunda-helm-dir)) || 'nohash' }}
+          restore-keys: |
+            ${{ runner.os }}-helmcache-${{ inputs.camunda-helm-dir }}-
+      - name: Add helm repos
+        run: |
+          make helm.repos-add
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
+      - name: Get Helm dependency
+        run: |
+          export chartPath="charts/${{ inputs.camunda-helm-dir }}"
+          make helm.dependency-update
+      - name: Install Chart Verifier
+        if: ${{ contains(github.event.*.labels.*.name, 'release') }}
+        uses: redhat-actions/openshift-tools-installer@144527c7d98999f2652264c048c7a9bd103f8a82 # v1
+        with:
+          source: "github"
+          chart-verifier: "latest"
+      # Lint.
+      - name: Run CT lint
+        run: |
+          ct lint --charts charts/${{ inputs.camunda-helm-dir }} \
+            --lint-conf .github/config/chart-testing.yaml \
+            --config .github/config/chart-testing.yaml
+      - name: Run Chart Verifier
+        if: ${{ contains(github.event.*.labels.*.name, 'release') }}
+        run: |
+          cd charts/${{ inputs.camunda-helm-dir }}
+          chart-verifier verify .
+      - name: Run YAMLlint
+        run: |
+          # Call yamllint via asdf because there is an issue loading the correct version of yamllint in GHA workflow.
+          $(asdf which yamllint) -c .github/config/yamllint.yaml ./charts/${{ inputs.camunda-helm-dir }}/test/unit

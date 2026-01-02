@@ -1,0 +1,88 @@
+# Docs: https://github.com/camunda/camunda-platform-helm/blob/main/docs/gha-workflows.md
+name: "Deploy Keycloak"
+
+on:
+  workflow_call:
+    inputs:
+      distro-platform:
+        description: gke | rosa | eks | custom
+        default: gke
+        type: string
+      chart-version:
+        description: Helm chart version for Keycloak
+        required: false
+        default: "24.9.0"
+        type: string
+  workflow_dispatch:
+    inputs:
+      distro-platform:
+        description: gke | rosa | eks | custom
+        default: gke
+        type: choice
+        options: [gke, rosa, eks, custom]
+      chart-version:
+        description: Helm chart version for Keycloak
+        required: false
+        default: "24.9.0"
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy Keycloak - ${{ inputs.chart-version }} on ${{ inputs.distro-platform }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+    steps:
+      - name: CI Setup - Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          repository: camunda/camunda-platform-helm
+          ref: ${{ inputs.camunda-helm-git-ref || github.ref_name }}
+
+      - name: Load and filter distro config
+        id: load-config
+        shell: bash
+        run: |
+          config=$(cat ./.github/config/test-integration-matrix.yaml)
+          filtered=$(echo "$config" | yq -o json | jq -r '.matrix.distro[] | select(.platform == ("${{ inputs.distro-platform }}" | ascii_downcase))')
+          if [[ -z "$filtered" ]]; then
+            echo "No distro found for platform ${{ inputs.distro-platform }}"
+            exit 1
+          fi
+          echo "distro_config<<EOF" >> $GITHUB_OUTPUT
+          echo "$filtered" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: CI Setup - Install tools
+        uses: ./.github/actions/install-tool-versions
+        with:
+          tools: |
+            helm
+            kubectl
+
+      - name: CI Setup - Authenticate to cluster
+        id: cluster-auth
+        uses: ./.github/actions/cluster-auth
+        with:
+          platform: ${{ inputs.distro-platform }}
+          auth-data: ${{ inputs.auth-data || '' }}
+        env:
+          GH_APP_ID:        ${{ secrets.GH_APP_ID || secrets.GH_APP_ID_DISTRO_CI_MANAGE_GH_ENVS }}
+          GH_APP_KEY:       ${{ secrets.GH_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY_DISTRO_CI_MANAGE_GH_ENVS }}
+          GKE_CLUSTER_NAME: ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.cluster-name] }}
+          GKE_CLUSTER_LOC:  ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.cluster-location] }}
+          GKE_WIP:          ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.workload-identity-provider] }}
+          GKE_SA:           ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.service-account] }}
+          ROSA_URL:         ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.server-url] }}
+          ROSA_USER:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.username] }}
+          ROSA_PASS:        ${{ secrets[fromJson(steps.load-config.outputs.distro_config).secret.password] }}
+          CLUSTER_NAME:     camunda-ci-eks
+
+      - name: Deploy Keycloak
+        shell: bash
+        run: |
+          scripts/deploy-keycloak.sh --version "${{ inputs.chart-version }}"
+
+

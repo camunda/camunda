@@ -1,0 +1,114 @@
+# NOTE: WebModeler has its own step because Venom doesn't support skip in loops yet.
+# https://github.com/ovh/venom/issues/651
+name: Run preflight checks for Camunda
+
+# Vars without defaults are passed as a Venom var, e.g. "VENOM_VAR_TEST_CLIENT_SECRET".
+vars:
+  releaseName: integration
+  skipTestWebModeler: '{{ .SKIP_TEST_WEBMODELER }}'
+
+testcases:
+
+- name: TEST - Readiness
+  steps:
+  - name: "{{ .value.component }}"
+    type: http
+    range:
+    # Dependencies.
+    - component: Elasticsearch
+      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?&timeout=1s"
+    - component: Keycloak
+      url: "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/master"
+    # Camunda.
+    - component: Identity
+      url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
+    - component: Optimize
+      url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
+    - component: Operate
+      url: "{{ .preflightVars.baseURLs.operate }}/actuator/health/readiness"
+    - component: Tasklist
+      url: "{{ .preflightVars.baseURLs.tasklist }}/actuator/health/readiness"
+    - component: Connectors
+      url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/readiness"
+    - component: ZeebeGateway
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/readiness"
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 10
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+  - name: "WebModeler - {{ .value.component }}"
+    skip:
+    - skipTestWebModeler ShouldBeFalse
+    type: http
+    range:
+    - component: RESTAPI
+      url: "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/readiness"
+    - component: WebApp
+      url: "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/readiness"
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 10
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+
+- name: TEST - Liveness
+  steps:
+  - name: "{{ .value.component }}"
+    type: http
+    range:
+    # Dependencies.
+    - component: Elasticsearch
+      url: "{{ .preflightVars.baseURLs.elasticsearch }}/_cluster/health?wait_for_status=green&timeout=1s"
+    - component: Keycloak
+      url:  "{{ .preflightVars.baseURLs.keycloak }}/auth/realms/camunda-platform"
+    # Camunda.
+    - component: Identity
+      url: "{{ .preflightVars.baseURLs.identity }}/actuator/health"
+    - component: Optimize
+      url: "{{ .preflightVars.baseURLs.optimize }}/api/readyz"
+    - component: Operate
+      url: "{{ .preflightVars.baseURLs.operate }}/actuator/health/liveness"
+    - component: Tasklist
+      url: "{{ .preflightVars.baseURLs.tasklist }}/actuator/health/liveness"
+    - component: Connectors
+      url: "{{ .preflightVars.baseURLs.connectors }}/actuator/health/liveness"
+    - component: ZeebeGateway
+      url: "{{ .preflightVars.baseURLs.zeebeGateway }}/actuator/health/liveness"
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 10
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+  - name: "WebModeler - {{ .value.component }}"
+    skip:
+    - skipTestWebModeler ShouldBeFalse
+    type: http
+    range:
+    - component: RESTAPI
+      url:  "{{ .preflightVars.baseURLs.webModelerRestapi }}/health/liveness"
+    - component: WebApp
+      url:  "{{ .preflightVars.baseURLs.webModelerWebapp }}/health/liveness"
+    method: GET
+    url: "{{ .value.url }}"
+    retry: 3
+    delay: 10
+    info: |
+      {{ .value.component }} URL: {{ .value.url }}
+      Response Body: {{ .result.body }}
+    assertions:
+    - result.statuscode ShouldEqual 200
+
+# TODO: Check seed config like ES indexes.

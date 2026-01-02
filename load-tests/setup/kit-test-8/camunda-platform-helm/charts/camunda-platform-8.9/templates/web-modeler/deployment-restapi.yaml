@@ -1,0 +1,223 @@
+{{- if .Values.webModeler.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webModeler.restapi.fullname" . }}
+  labels: {{- include "webModeler.restapi.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: {{ .Values.webModeler.restapi.replicas }}
+  selector:
+    matchLabels: {{- include "webModeler.restapi.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "webModeler.restapi.labels" . | nindent 8 }}
+      {{- if .Values.webModeler.restapi.podLabels }}
+      {{- toYaml .Values.webModeler.restapi.podLabels | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.restapi.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.webModeler.restapi.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "webModeler.imagePullSecrets" . | nindent 8 }}
+      initContainers:
+        {{- tpl (.Values.webModeler.restapi.initContainers | default list | toYaml | nindent 8) $ }}
+      containers:
+        - name: {{ include "webModeler.name" . }}-restapi
+          image: {{ include "webModeler.restapi.image" . | quote }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.webModeler.restapi.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.restapi.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "CAMUNDA_LICENSE_KEY"
+                "config" .Values.global.license
+                "plaintextKey" "key"
+            ) | nindent 12 }}
+            - name: JAVA_OPTIONS
+              value: "-XX:MaxRAMPercentage=80.0"
+            {{- if not .Values.webModelerPostgresql.enabled }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "SPRING_DATASOURCE_PASSWORD"
+                "config" .Values.webModeler.restapi.externalDatabase
+                "legacyKeyField" "existingSecretPasswordKey"
+            ) | nindent 12 }}
+            {{- else }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.webModelerPostgresql.auth.existingSecret }}
+                  key: {{ .Values.webModelerPostgresql.auth.secretKeys.userPasswordKey }}
+            {{- end }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "RESTAPI_MAIL_PASSWORD"
+                "config" .Values.webModeler.restapi.mail
+                "plaintextKey" "smtpPassword"
+                "legacyKeyField" "existingSecretPasswordKey"
+            ) | nindent 12 }}
+            - name: RESTAPI_PUSHER_APP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-id
+            - name: RESTAPI_PUSHER_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "webModeler.fullname" . }}-configuration
+                  key: pusher-app-key
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "RESTAPI_PUSHER_SECRET"
+                "config" .Values.webModeler.restapi.pusher
+                "defaultSecretName" (include "webModeler.fullname" .)
+                "defaultSecretKey" "pusher-app-secret"
+            ) | nindent 12 }}
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_client_cache.txt
+            {{- if .Values.global.documentStore.type.aws.enabled }}
+            - name: AWS_ACCESS_KEY_ID
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "accessKeyId"
+                  "context" .
+              ) | nindent 14 }}
+            - name: AWS_SECRET_ACCESS_KEY
+              {{- include "camundaPlatform.emitAwsDocumentStoreSecret" (dict
+                  "secretType" "secretAccessKey"
+                  "context" .
+              ) | nindent 14 }}
+            {{- end }}
+            {{- if eq (lower .Values.global.documentStore.activeStoreId) "gcp" }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ printf "%s/%s" .Values.global.documentStore.type.gcp.mountPath .Values.global.documentStore.type.gcp.fileName | quote }}
+            {{- end }}
+          {{- with .Values.webModeler.restapi.env }}
+            {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "camundaPlatform.fullname" . }}-documentstore-env-vars
+          {{- if .Values.webModeler.restapi.envFrom }}
+            {{- .Values.webModeler.restapi.envFrom | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.webModeler.restapi.command }}
+          command: {{ toYaml .Values.webModeler.restapi.command | nindent 10 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.webModeler.restapi.resources | nindent 12 }}
+          ports:
+            - containerPort: 8081
+              name: http
+              protocol: TCP
+            - containerPort: 8091
+              name: http-management
+              protocol: TCP
+          {{- if .Values.webModeler.restapi.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.webModeler.restapi.startupProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.startupProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.restapi.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.restapi.startupProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.restapi.startupProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.restapi.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.restapi.startupProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.restapi.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.webModeler.restapi.readinessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.readinessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.restapi.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.restapi.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.restapi.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.restapi.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.restapi.readinessProbe.timeoutSeconds }}
+          {{- end }}
+          {{- if .Values.webModeler.restapi.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.webModeler.restapi.livenessProbe.probePath }}
+              scheme: {{ .Values.webModeler.restapi.livenessProbe.scheme }}
+              port: http-management
+            initialDelaySeconds: {{ .Values.webModeler.restapi.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webModeler.restapi.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.webModeler.restapi.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webModeler.restapi.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ .Values.webModeler.restapi.livenessProbe.timeoutSeconds }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /home/runner/config/application.yaml
+              subPath: application.yaml
+          {{- range $key, $val := .Values.webModeler.restapi.extraConfiguration }}
+            - name: config
+              mountPath: /home/runner/config/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+            {{- if .Values.global.documentStore.type.gcp.enabled }}
+            - name: gcp-credentials-volume
+              mountPath: {{ .Values.global.documentStore.type.gcp.mountPath | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.webModeler.restapi.extraVolumeMounts }}
+            {{- .Values.webModeler.restapi.extraVolumeMounts | toYaml | nindent 12 }}
+            {{- end }}
+        {{- if .Values.webModeler.restapi.sidecars }}
+        {{- .Values.webModeler.restapi.sidecars | toYaml | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: tmp
+          {{- if and .Values.webModeler.persistence.enabled .Values.webModeler.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.webModeler.persistence.existingClaim }}
+          {{- else if .Values.webModeler.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "camundaPlatform.fullname" . }}-webModeler-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: config
+          configMap:
+            name: {{ include "webModeler.fullname" . }}-restapi-configuration
+        {{- if .Values.global.documentStore.type.gcp.enabled }}
+        {{- include "camundaPlatform.emitVolumeFromSecretConfig" (dict
+            "volumeName" "gcp-credentials-volume"
+            "config" .Values.global.documentStore.type.gcp
+            "legacyKeyField" "credentialsKey"
+            "fileName" .Values.global.documentStore.type.gcp.fileName
+        ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.webModeler.restapi.extraVolumes }}
+        {{- .Values.webModeler.restapi.extraVolumes | toYaml | nindent 8 }}
+        {{- end }}
+      serviceAccountName: {{ include "webModeler.serviceAccountName" . }}
+      {{- if .Values.webModeler.restapi.dnsConfig }}
+      dnsConfig: {{- toYaml .Values.webModeler.restapi.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.webModeler.restapi.dnsPolicy }}
+      dnsPolicy: {{ .Values.webModeler.restapi.dnsPolicy | quote }}
+      {{- end }}
+      {{- if .Values.webModeler.restapi.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.webModeler.restapi.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.restapi.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.restapi.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webModeler.restapi.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

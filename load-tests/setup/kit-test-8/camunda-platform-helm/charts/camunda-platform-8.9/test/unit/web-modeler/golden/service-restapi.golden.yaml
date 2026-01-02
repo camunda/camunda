@@ -1,0 +1,32 @@
+---
+# Source: camunda-platform/templates/web-modeler/service-restapi.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: camunda-platform-test-web-modeler-restapi
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: restapi
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: http
+      targetPort: 8081
+      protocol: TCP
+    - port: 8091
+      name: http-management
+      targetPort: 8091
+      protocol: TCP
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/name: web-modeler
+    app.kubernetes.io/instance: camunda-platform-test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: restapi

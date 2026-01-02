@@ -1,0 +1,134 @@
+global:
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
+
+orchestration:
+  contextPath: "/orchestration"
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        existingSecret:
+          name: "integration-test-credentials"
+  env:
+    - name: CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK
+      value: 'false'
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: 'false'
+    - name: CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
+    - name: CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED
+      value: 'true'
+  migration:
+    identity:
+      resourceAuthorizationsEnabled: true
+      backoffLimit: 12
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-migration-client-secret
+
+optimize:
+  enabled: true
+  contextPath: "/optimize"
+
+webModeler:
+  enabled: true
+  contextPath: "/modeler"
+  security:
+    authentication:
+      method: oidc
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+  restapi:
+    mail:
+      # This value is required, otherwise the restapi pod wouldn't start.
+      fromAddress: noreply@example.com
+
+webModelerPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "webmodeler-postgresql-admin-password"
+      userPasswordKey: "webmodeler-postgresql-user-password"
+
+console:
+  enabled: true
+  contextPath: "/"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+
+identity:
+  enabled: true
+  firstUser:
+    existingSecret: "integration-test-credentials"
+    existingSecretKey: "identity-user-password"
+  contextPath: "/identity"
+  clients:
+    - id: venom
+      name: Venom
+      secret:
+        existingSecret: integration-test-credentials
+        existingSecretKey: identity-admin-client-password
+      redirectUris: /dummy
+      rootUrl: http://dummy
+      type: confidential
+      permissions:
+        - resourceServerId: camunda-identity-resource-server
+          definition: read
+        - resourceServerId: camunda-identity-resource-server
+          definition: write
+        - resourceServerId: optimize-api
+          definition: write:*
+        - resourceServerId: web-modeler-api
+          definition: write:*
+        - resourceServerId: console-api
+          definition: write:*
+  env:
+  # Keycloak client seed which is used to query Camunda APIs. 
+    - name: RESOURCE_PERMISSIONS_ENABLED
+      value: 'true'
+
+identityPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+      userPasswordKey: "identity-keycloak-postgresql-user-password"
+
+identityKeycloak:
+  enabled: true
+
+connectors:
+  contextPath: "/connectors"
+  security:
+    authentication:
+      oidc:
+        existingSecret:
+          name: "integration-test-credentials"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password

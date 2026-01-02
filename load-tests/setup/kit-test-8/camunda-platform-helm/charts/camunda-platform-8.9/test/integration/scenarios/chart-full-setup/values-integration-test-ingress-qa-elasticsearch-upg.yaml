@@ -1,0 +1,119 @@
+global:
+  image:
+    pullPolicy: Always
+  identity:
+    auth:
+      enabled: true
+      publicIssuerUrl: "https://{{ .Values.global.ingress.host }}/auth/realms/camunda-platform"
+      admin:
+        enabled: true
+        existingSecret:
+          name: "integration-test-credentials"
+      webModeler:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/modeler"
+      console:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}"
+        existingSecret:
+          name: "integration-test-credentials"
+      optimize:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/optimize"
+        existingSecret:
+          name: "integration-test-credentials"
+      orchestration:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        existingSecret:
+          name: "integration-test-credentials"
+      connectors:
+        existingSecret:
+          name: "integration-test-credentials"
+orchestration:
+  image:
+    tag: "$E2E_TESTS_ORCHESTRATION_IMAGE_TAG"
+  security:
+    initialization:
+      defaultRoles:
+        admin:
+          users:
+            - demo
+          clients:
+            - venom
+    authentication:
+      method: oidc
+      authenticationRefreshInterval: "PT30S"
+      oidc:
+        redirectUrl: "https://{{ .Values.global.ingress.host }}/orchestration"
+        existingSecret:
+          name: "integration-test-credentials"
+        backwardsCompatibleAudiences:
+          - operate-api
+          - tasklist-api
+          - zeebe-api
+  env:
+    - name: JAVA_TOOL_OPTIONS
+      value: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5007"
+    - name: CAMUNDA_DATABASE_SCHEMAMANAGER_VERSIONCHECKRESTRICTIONENABLED
+      value: "false"
+identityKeycloak:
+  enabled: true
+  postgresql:
+    auth:
+      existingSecret: "integration-test-credentials"
+      secretKeys:
+        adminPasswordKey: "identity-keycloak-postgresql-admin-password"
+        userPasswordKey: "identity-keycloak-postgresql-user-password"
+  auth:
+    existingSecret: "integration-test-credentials"
+    passwordSecretKey: "identity-keycloak-admin-password"
+optimize:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_OPTIMIZE_IMAGE_TAG"
+webModeler:
+  enabled: true
+  restapi:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+    mail:
+      # This value is required, otherwise the restapi pod wouldn't start.
+      fromAddress: noreply@example.com
+  webapp:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  websockets:
+    image:
+      tag: "$E2E_TESTS_WEBMODELER_IMAGE_TAG"
+  image:
+    pullSecrets:
+      - name: index-docker-io
+      - name: registry-camunda-cloud
+webModelerPostgresql:
+  enabled: true
+  auth:
+    existingSecret: "integration-test-credentials"
+    secretKeys:
+      adminPasswordKey: "webmodeler-postgresql-admin-password"
+      userPasswordKey: "webmodeler-postgresql-user-password"
+console:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_CONSOLE_IMAGE_TAG"
+identity:
+  enabled: true
+  image:
+    tag: "$E2E_TESTS_IDENTITY_IMAGE_TAG"
+  firstUser:
+    enabled: false
+connectors:
+  image:
+    tag: "$E2E_TESTS_CONNECTORS_IMAGE_TAG"
+  security:
+    authentication:
+      oidc:
+        existingSecret:
+          name: "integration-test-credentials"
+  env:
+    - name: username
+      value: username
+    - name: password
+      value: password
+

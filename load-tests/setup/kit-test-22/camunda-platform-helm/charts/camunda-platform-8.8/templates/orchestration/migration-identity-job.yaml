@@ -1,0 +1,84 @@
+{{- if .Values.orchestration.migration.identity.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "orchestration.fullname" . }}-migration-identity
+  labels: {{- include "orchestration.labelsMigration" . | nindent 4 }}
+  annotations: {{- toYaml .Values.global.annotations | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.orchestration.migration.identity.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "orchestration.labelsMigration" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/orchestration/migration-identity-configmap.yaml") . | sha256sum }}
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets: {{- include "orchestration.imagePullSecrets" . | nindent 8 }}
+      {{- if .Values.orchestration.podSecurityContext }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-orchestration
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration.migration.identity.waitContainer) }}
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://{{ include "orchestration.serviceName" . }}:{{ .Values.orchestration.service.managementPort }}{{ include "camundaPlatform.joinpath" (list .Values.orchestration.contextPath .Values.orchestration.readinessProbe.probePath) }}; do
+                echo "Waiting for Orchestration Cluster"; sleep 5;
+              done
+      containers:
+        - name: camunda-migration
+          image: {{ include "camundaPlatform.imageByParams" (dict "base" .Values.global "overlay" .Values.orchestration) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          {{- if .Values.orchestration.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" $.Values.orchestration.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            - name: K8S_SERVICE_NAME
+              value: {{ include "orchestration.serviceNameHeadless" . | quote }}
+            {{- include "camundaPlatform.emitEnvVarFromSecretConfig" (dict
+                "envName" "VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET"
+                "config" .Values.orchestration.migration.identity
+            ) | nindent 12 }}
+            {{- with .Values.orchestration.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+            {{- with .Values.orchestration.migration.identity.env }}
+              {{- tpl (toYaml .) $ | nindent 12 }}
+            {{- end }}
+          command:
+            - /usr/local/camunda/bin/identity-migration
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 500m
+              memory: 500Mi
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/camunda/config/application.yaml
+              subPath: application.yaml
+      {{- with .Values.orchestration.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.migration.affinity }}
+      affinity:
+        {{- toYamlPretty . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestration.tolerations }}
+      tolerations:
+        {{ toYamlPretty . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "identity.fullname" . }}-migration-configuration
+{{- end }}
