@@ -86,12 +86,15 @@ public class ESClient implements DocumentClient {
   }
 
   @Override
-  public List<String> cat() throws IOException {
-    return esClient.cat().indices().valueBody().stream().map(IndicesRecord::index).toList();
+  public List<String> cat(final String indexPrefix) throws IOException {
+    return esClient.cat().indices(r -> r.index(indexPrefix + "*")).valueBody().stream()
+        .map(IndicesRecord::index)
+        .toList();
   }
 
   @Override
-  public void index(String indexName, String documentId, Object document) throws IOException {
+  public void index(final String indexName, final String documentId, final Object document)
+      throws IOException {
     final var indexRequest =
         IndexRequest.of(i -> i.index(indexName).id(documentId).document(document));
 
@@ -110,7 +113,7 @@ public class ESClient implements DocumentClient {
   }
 
   @Override
-  public void refresh(String indexName) throws IOException {
+  public void refresh(final String indexName) throws IOException {
     final var refreshRequest = RefreshRequest.of(r -> r.index(indexName));
     final var response = esClient.indices().refresh(refreshRequest);
 
@@ -125,7 +128,8 @@ public class ESClient implements DocumentClient {
   }
 
   @Override
-  public void bulkIndex(String indexName, Collection<DocumentWithId> documents) throws IOException {
+  public void bulkIndex(final String indexName, final Collection<DocumentWithId> documents)
+      throws IOException {
     if (documents.isEmpty()) {
       return; // Nothing to index
     }
