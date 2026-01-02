@@ -41,5 +41,5 @@ public interface BackupDBClient extends AutoCloseable {
   BackupRepository zeebeBackupRepository(
       String repositoryName, SnapshotNameProvider snapshotNameProvider);
 
-  List<String> cat() throws IOException;
+  List<String> cat(String indexPrefix) throws IOException;
 }
