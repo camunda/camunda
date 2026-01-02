@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">CI &amp; Automation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI &amp; Automation | Camunda Platform"><meta data-rh="true" name="description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><meta data-rh="true" property="og:description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-42875/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-42875/ci/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI & Automation","item":"https://camunda.github.io/camunda/pr-preview/pr-42875/ci"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-42875/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.ac75200a.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-42875/assets/js/main.424552de.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/runtime~main.74ec97b1.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-42875/assets/js/main.fc25f935.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -479,6 +479,14 @@ wagoid/commitlint-github-action@*,<p></p></div></div></details>
 <li class="">is related to cost reduction, increased reliability or observability: <strong>SHOULD</strong> backport to all <code>stable/*</code> branches<!-- -->
 <ul>
 <li class="">e.g. related are <a href="#ci-health-metrics" class="">CI health</a>, <a href="#caching-strategy" class="">GHA caching</a>, <a href="#ci-self-hosted-runners" class="">self-hosted runners</a></li>
+</ul>
+</li>
+<li class="">is an in-repository documentation change: <strong>SHOULD</strong> backport if it:<!-- -->
+<ul>
+<li class="">updates procedures, guidelines, or troubleshooting steps that AI agents need for accurate assistance on stable branches</li>
+<li class="">fixes incorrect information that would mislead AI agents or developers working on stable versions</li>
+<li class="">adds new knowledge about practices, tools, or procedures that apply to stable branch development</li>
+<li class="">corrects build, test, or development instructions that affect stable branch workflows</li>
 </ul>
 </li>
 <li class="">is a new CI job for new product feature or test cases: backport <strong>only if</strong> the product feature is backported</li>
