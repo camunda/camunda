@@ -23,6 +23,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.impl.dsl.instructions.AssertElementInstanceInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.AssertProcessInstanceInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
 import java.time.Duration;
@@ -43,6 +44,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
 
   static {
     // register instruction handlers here
+    registerHandler(new AssertElementInstanceInstructionHandler());
     registerHandler(new AssertProcessInstanceInstructionHandler());
     registerHandler(new CreateProcessInstanceInstructionHandler());
   }

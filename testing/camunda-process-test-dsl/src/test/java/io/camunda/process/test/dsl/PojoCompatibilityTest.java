@@ -25,14 +25,17 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import io.camunda.process.test.api.dsl.ImmutableElementSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.ImmutableTestScenario;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
@@ -155,6 +158,41 @@ public class PojoCompatibilityTest {
                             .build())
                     .state(ProcessInstanceState.IS_COMPLETED)
                     .hasActiveIncidents(false)
+                    .build())),
+        Arguments.of(
+            "assert element instance: minimal with elementId",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instance: minimal with elementName",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementName("Task A").build())
+                    .state(ElementInstanceState.IS_COMPLETED)
+                    .build())),
+        Arguments.of(
+            "assert element instance: full",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_TERMINATED)
+                    .amount(3)
                     .build())));
   }
 

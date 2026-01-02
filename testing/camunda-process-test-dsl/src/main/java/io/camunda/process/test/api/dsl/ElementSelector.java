@@ -15,10 +15,26 @@
  */
 package io.camunda.process.test.api.dsl;
 
-/** A collection of supported test case instruction types. */
-public class TestCaseInstructionType {
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Optional;
+import org.immutables.value.Value;
 
-  public static final String ASSERT_ELEMENT_INSTANCE = "ASSERT_ELEMENT_INSTANCE";
-  public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
-  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
+/** A selector to identify a BPMN element. */
+@Value.Immutable
+@JsonDeserialize(builder = ImmutableElementSelector.Builder.class)
+public interface ElementSelector {
+
+  /**
+   * The ID of the BPMN element.
+   *
+   * @return the element id
+   */
+  Optional<String> getElementId();
+
+  /**
+   * The name of the BPMN element.
+   *
+   * @return the element name
+   */
+  Optional<String> getElementName();
 }
