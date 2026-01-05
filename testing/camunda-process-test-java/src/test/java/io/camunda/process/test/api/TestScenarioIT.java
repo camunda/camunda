@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.byProcessId;
+import static io.camunda.process.test.api.assertions.UserTaskSelectors.byElementId;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.dsl.TestCase;
@@ -35,13 +36,26 @@ public class TestScenarioIT {
   @TestScenarioSource
   void shouldPass(final TestCase testCase, final String scenarioFile) {
     // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent("start")
-            .name("Start")
-            .endEvent("end")
-            .name("End")
-            .done();
+    final BpmnModelInstance process;
+    if (scenarioFile.contains("user-task")) {
+      process =
+          Bpmn.createExecutableProcess("user-task-process")
+              .startEvent("start")
+              .name("Start")
+              .userTask("userTask")
+              .name("Review Task")
+              .endEvent("end")
+              .name("End")
+              .done();
+    } else {
+      process =
+          Bpmn.createExecutableProcess("process")
+              .startEvent("start")
+              .name("Start")
+              .endEvent("end")
+              .name("End")
+              .done();
+    }
 
     client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
@@ -49,6 +63,11 @@ public class TestScenarioIT {
     testScenarioRunner.run(testCase);
 
     // then
-    CamundaAssert.assertThatProcessInstance(byProcessId("process")).isCreated();
+    if (scenarioFile.contains("user-task")) {
+      CamundaAssert.assertThatProcessInstance(byProcessId("user-task-process")).isCreated();
+      CamundaAssert.assertThatUserTask(byElementId("userTask")).isCreated();
+    } else {
+      CamundaAssert.assertThatProcessInstance(byProcessId("process")).isCreated();
+    }
   }
 }
