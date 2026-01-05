@@ -147,7 +147,7 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     final var index1 = createTestIndexDescriptor("index_name", "/mappings-complex-property.json");
-    final var index2 = createTestIndexDescriptor("index_dynamic", "/mappings-dynamic.json");
+    final var index2 = createTestIndexDescriptor("index_dynamic", "/mappings-default-dynamic.json");
 
     elsEngineClient.createIndex(index1, new IndexConfiguration());
     elsEngineClient.createIndex(index2, new IndexConfiguration());
