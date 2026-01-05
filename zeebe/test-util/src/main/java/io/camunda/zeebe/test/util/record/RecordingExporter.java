@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -595,7 +596,7 @@ public final class RecordingExporter implements Exporter {
   }
 
   public static BatchOperationExecutionRecordStream batchOperationExecutionRecords(
-      final BatchOperationIntent intent) {
+      final BatchOperationExecutionIntent intent) {
     return batchOperationExecutionRecords().withIntent(intent);
   }
 
