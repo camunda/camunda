@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.dsl;
+package io.camunda.process.test.api.dsl.instructions.assertUserTask;
 
-/** A collection of supported test case instruction types. */
-public class TestCaseInstructionType {
-
-  public static final String ASSERT_ELEMENT_INSTANCE = "ASSERT_ELEMENT_INSTANCE";
-  public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
-  public static final String ASSERT_USER_TASK = "ASSERT_USER_TASK";
-  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
+/** The possible states of a user task to assert. */
+public enum UserTaskState {
+  IS_CREATED,
+  IS_COMPLETED,
+  IS_CANCELED,
+  IS_FAILED
 }
