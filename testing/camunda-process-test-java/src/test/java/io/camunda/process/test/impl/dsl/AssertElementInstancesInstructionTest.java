@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
@@ -30,7 +31,7 @@ import io.camunda.process.test.api.dsl.ImmutableElementSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.instructions.AssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
-import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.impl.dsl.instructions.AssertElementInstancesInstructionHandler;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -51,6 +52,7 @@ public class AssertElementInstancesInstructionTest {
   private static final String PROCESS_DEFINITION_ID = "process";
   private static final String ELEMENT_ID_1 = "task1";
   private static final String ELEMENT_ID_2 = "task2";
+  private static final String ELEMENT_NAME = "Task A";
 
   @Mock private CamundaProcessTestContext processTestContext;
   @Mock private CamundaClient camundaClient;
@@ -59,7 +61,9 @@ public class AssertElementInstancesInstructionTest {
   private AssertionFacade assertionFacade;
 
   @Mock private ProcessInstanceFilter processInstanceFilter;
+  @Mock private ElementInstanceFilter elementInstanceFilter;
   @Captor private ArgumentCaptor<ProcessInstanceSelector> processInstanceSelectorCaptor;
+  @Captor private ArgumentCaptor<ElementSelector> elementSelectorCaptor;
 
   private final AssertElementInstancesInstructionHandler instructionHandler =
       new AssertElementInstancesInstructionHandler();
@@ -75,7 +79,7 @@ public class AssertElementInstancesInstructionTest {
                     .build())
             .addElementSelectors(ImmutableElementSelector.builder().elementId(ELEMENT_ID_1).build())
             .addElementSelectors(ImmutableElementSelector.builder().elementId(ELEMENT_ID_2).build())
-            .state(ElementInstanceState.IS_ACTIVE)
+            .state(ElementInstancesState.IS_ACTIVE)
             .build();
 
     // when
@@ -93,8 +97,7 @@ public class AssertElementInstancesInstructionTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("stateAssertionArgumentStream")
   void shouldAssertElementsState(
-      final ElementInstanceState state,
-      final Consumer<ProcessInstanceAssert> expectedAssertion) {
+      final ElementInstancesState state, final Consumer<ProcessInstanceAssert> expectedAssertion) {
     // given
     final AssertElementInstancesInstruction instruction =
         ImmutableAssertElementInstancesInstruction.builder()
@@ -128,7 +131,7 @@ public class AssertElementInstancesInstructionTest {
         ImmutableAssertElementInstancesInstruction.builder()
             .processInstanceSelector(ImmutableProcessInstanceSelector.builder().build())
             .addElementSelectors(ImmutableElementSelector.builder().elementId(ELEMENT_ID_1).build())
-            .state(ElementInstanceState.IS_ACTIVE)
+            .state(ElementInstancesState.IS_ACTIVE)
             .build();
 
     // when/then
@@ -150,7 +153,7 @@ public class AssertElementInstancesInstructionTest {
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .build())
             .addElementSelectors(ImmutableElementSelector.builder().build())
-            .state(ElementInstanceState.IS_ACTIVE)
+            .state(ElementInstancesState.IS_ACTIVE)
             .build();
 
     // when/then
@@ -162,40 +165,99 @@ public class AssertElementInstancesInstructionTest {
         .hasMessage("Element selector must have either elementId or elementName");
   }
 
+  @Test
+  void shouldSelectElementById() {
+    // given
+    final AssertElementInstancesInstruction instruction =
+        ImmutableAssertElementInstancesInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .addElementSelectors(ImmutableElementSelector.builder().elementId(ELEMENT_ID_1).build())
+            .state(ElementInstancesState.IS_ACTIVE)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(assertionFacade).assertThatProcessInstance(any());
+
+    final ProcessInstanceAssert processInstanceAssert =
+        assertionFacade.assertThatProcessInstance(any());
+
+    verify(processInstanceAssert).hasActiveElements(elementSelectorCaptor.capture());
+
+    // Verify that the element selector applies the filter with elementId
+    elementSelectorCaptor.getValue().applyFilter(elementInstanceFilter);
+    verify(elementInstanceFilter).elementId(ELEMENT_ID_1);
+  }
+
+  @Test
+  void shouldSelectElementByName() {
+    // given
+    final AssertElementInstancesInstruction instruction =
+        ImmutableAssertElementInstancesInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .addElementSelectors(
+                ImmutableElementSelector.builder().elementName(ELEMENT_NAME).build())
+            .state(ElementInstancesState.IS_COMPLETED)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(assertionFacade).assertThatProcessInstance(any());
+
+    final ProcessInstanceAssert processInstanceAssert =
+        assertionFacade.assertThatProcessInstance(any());
+
+    verify(processInstanceAssert).hasCompletedElements(elementSelectorCaptor.capture());
+
+    // Verify that the element selector applies the filter with elementName
+    elementSelectorCaptor.getValue().applyFilter(elementInstanceFilter);
+    verify(elementInstanceFilter).elementName(ELEMENT_NAME);
+  }
+
   private static Stream<Arguments> stateAssertionArgumentStream() {
     return Stream.of(
         stateAssertionArguments(
-            ElementInstanceState.IS_ACTIVE,
+            ElementInstancesState.IS_ACTIVE,
             processInstanceAssert ->
                 processInstanceAssert.hasActiveElements(any(ElementSelector[].class))),
         stateAssertionArguments(
-            ElementInstanceState.IS_COMPLETED,
+            ElementInstancesState.IS_COMPLETED,
             processInstanceAssert ->
                 processInstanceAssert.hasCompletedElements(any(ElementSelector[].class))),
         stateAssertionArguments(
-            ElementInstanceState.IS_TERMINATED,
+            ElementInstancesState.IS_TERMINATED,
             processInstanceAssert ->
                 processInstanceAssert.hasTerminatedElements(any(ElementSelector[].class))),
         stateAssertionArguments(
-            ElementInstanceState.IS_NOT_ACTIVE,
+            ElementInstancesState.IS_NOT_ACTIVE,
             processInstanceAssert ->
                 processInstanceAssert.hasNoActiveElements(any(ElementSelector[].class))),
         stateAssertionArguments(
-            ElementInstanceState.IS_NOT_ACTIVATED,
+            ElementInstancesState.IS_NOT_ACTIVATED,
             processInstanceAssert ->
                 processInstanceAssert.hasNotActivatedElements(any(ElementSelector[].class))),
         stateAssertionArguments(
-            ElementInstanceState.IS_ACTIVE_EXACTLY,
+            ElementInstancesState.IS_ACTIVE_EXACTLY,
             processInstanceAssert ->
                 processInstanceAssert.hasActiveElementsExactly(any(ElementSelector[].class))),
         stateAssertionArguments(
-            ElementInstanceState.IS_COMPLETED_IN_ORDER,
+            ElementInstancesState.IS_COMPLETED_IN_ORDER,
             processInstanceAssert ->
                 processInstanceAssert.hasCompletedElementsInOrder(any(ElementSelector[].class))));
   }
 
   private static Arguments stateAssertionArguments(
-      final ElementInstanceState state, final Consumer<ProcessInstanceAssert> verification) {
+      final ElementInstancesState state, final Consumer<ProcessInstanceAssert> verification) {
     return Arguments.of(state, verification);
   }
 }

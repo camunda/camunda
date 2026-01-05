@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.dsl.instructions;
 
+import io.camunda.process.test.api.assertions.ElementSelector;
+import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
@@ -76,5 +78,24 @@ final class InstructionSelectorFactory {
     }
 
     return selector;
+  }
+
+  /**
+   * Builds an element selector from a DSL element selector.
+   *
+   * @param dslSelector the DSL element selector
+   * @return the element selector
+   * @throws IllegalArgumentException if neither elementId nor elementName is set
+   */
+  static ElementSelector buildElementSelector(
+      final io.camunda.process.test.api.dsl.ElementSelector dslSelector) {
+    if (dslSelector.getElementId().isPresent()) {
+      return ElementSelectors.byId(dslSelector.getElementId().get());
+    } else if (dslSelector.getElementName().isPresent()) {
+      return ElementSelectors.byName(dslSelector.getElementName().get());
+    } else {
+      throw new IllegalArgumentException(
+          "Element selector must have either elementId or elementName");
+    }
   }
 }
