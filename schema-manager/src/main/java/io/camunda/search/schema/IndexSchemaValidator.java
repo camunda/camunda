@@ -95,7 +95,7 @@ public class IndexSchemaValidator {
       if (!difference.entriesDiffering().isEmpty()) {
         final String errorMsg =
             String.format(
-                "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
+                "Index name: %s. Unsupported index changes have been introduced. Data migration is required. Changes found: %s",
                 indexDescriptor.getFullQualifiedName(), difference.entriesDiffering());
         LOGGER.error(errorMsg);
         throw new IndexSchemaValidationException(errorMsg);
