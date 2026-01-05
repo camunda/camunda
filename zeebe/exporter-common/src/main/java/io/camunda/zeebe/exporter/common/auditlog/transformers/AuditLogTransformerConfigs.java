@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -75,6 +76,9 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
           .withIntents(DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED);
+
+  public static final TransformerConfig FORM_CONFIG =
+      TransformerConfig.with(ValueType.FORM).withIntents(FormIntent.CREATED, FormIntent.DELETED);
 
   public static final TransformerConfig GROUP_CONFIG =
       TransformerConfig.with(GROUP)

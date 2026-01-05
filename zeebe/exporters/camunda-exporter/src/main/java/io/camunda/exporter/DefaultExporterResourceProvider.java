@@ -122,6 +122,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCrea
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.FormAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
@@ -478,6 +479,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
           .addHandler(new DecisionAuditLogTransformer())
           .addHandler(new DecisionEvaluationAuditLogTransformer())
+          .addHandler(new FormAuditLogTransformer())
           .addHandler(new GroupAuditLogTransformer())
           .addHandler(new GroupEntityAuditLogTransformer())
           .addHandler(new IncidentResolutionAuditLogTransformer())
