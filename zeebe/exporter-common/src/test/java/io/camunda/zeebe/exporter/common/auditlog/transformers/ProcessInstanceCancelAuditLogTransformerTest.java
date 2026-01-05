@@ -11,56 +11,55 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class ProcessInstanceMigrationAuditLogHandlerTest {
+class ProcessInstanceCancelAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final ProcessInstanceMigrationAuditLogTransformer transformer =
-      new ProcessInstanceMigrationAuditLogTransformer();
+  private final ProcessInstanceCancelAuditLogTransformer transformer =
+      new ProcessInstanceCancelAuditLogTransformer();
 
   public static Stream<Arguments> getIntentMappings() {
     return Stream.of(
-        Arguments.of(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
-        Arguments.of(ProcessInstanceMigrationIntent.MIGRATE, AuditLogOperationType.MIGRATE));
+        Arguments.of(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
+        Arguments.of(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL));
   }
 
   @MethodSource("getIntentMappings")
   @ParameterizedTest
-  void shouldTransformProcessInstanceMigrationRecord(
-      final ProcessInstanceMigrationIntent intent, final AuditLogOperationType operationType) {
+  void shouldTransformProcessInstanceCancelRecord(
+      final ProcessInstanceIntent intent, final AuditLogOperationType operationType) {
     // given
-    final ProcessInstanceMigrationRecordValue recordValue =
-        ImmutableProcessInstanceMigrationRecordValue.builder()
-            .from(factory.generateObject(ProcessInstanceMigrationRecordValue.class))
-            .withTargetProcessDefinitionKey(123L)
+    final ProcessInstanceRecordValue recordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withProcessDefinitionKey(123L)
+            .withBpmnProcessId("bpmn-process-id")
             .withProcessInstanceKey(234L)
             .withTenantId("tenant-1")
             .build();
 
-    final Record<ProcessInstanceMigrationRecordValue> record =
+    final Record<ProcessInstanceRecordValue> record =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_MIGRATION, r -> r.withIntent(intent).withValue(recordValue));
+            ValueType.PROCESS_INSTANCE, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then
+    assertThat(entity.getProcessDefinitionId()).isEqualTo("bpmn-process-id");
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(123L);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(234L);
-
-    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
-    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(operationType);
   }
 }

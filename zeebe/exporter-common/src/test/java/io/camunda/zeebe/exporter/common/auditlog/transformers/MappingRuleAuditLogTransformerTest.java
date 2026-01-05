@@ -11,52 +11,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableMappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class AuthorizationAuditLogHandlerTest {
+class MappingRuleAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final AuthorizationAuditLogTransformer transformer =
-      new AuthorizationAuditLogTransformer();
+  private final MappingRuleAuditLogTransformer transformer = new MappingRuleAuditLogTransformer();
 
   public static Stream<Arguments> getIntentMappings() {
     return Stream.of(
-        Arguments.of(AuthorizationIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(AuthorizationIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(AuthorizationIntent.DELETED, AuditLogOperationType.DELETE));
+        Arguments.of(MappingRuleIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(MappingRuleIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(MappingRuleIntent.DELETED, AuditLogOperationType.DELETE));
   }
 
   @MethodSource("getIntentMappings")
   @ParameterizedTest
-  void shouldTransformAuthorizationRecord(
-      final AuthorizationIntent intent, final AuditLogOperationType operationType) {
+  void shouldTransformMappingRuleRecord(
+      final MappingRuleIntent intent, final AuditLogOperationType operationType) {
     // given
-    final AuthorizationRecordValue recordValue =
-        ImmutableAuthorizationRecordValue.builder()
-            .from(factory.generateObject(AuthorizationRecordValue.class))
-            .withAuthorizationKey(123L)
+    final MappingRuleRecordValue recordValue =
+        ImmutableMappingRuleRecordValue.builder()
+            .from(factory.generateObject(MappingRuleRecordValue.class))
+            .withMappingRuleId("mapping-rule-1")
+            .withMappingRuleKey(123L)
+            .withClaimName("department")
+            .withClaimValue("engineering")
+            .withName("Engineering Mapping")
             .build();
 
-    final Record<AuthorizationRecordValue> record =
+    final Record<MappingRuleRecordValue> record =
         factory.generateRecord(
-            ValueType.AUTHORIZATION, r -> r.withIntent(intent).withValue(recordValue));
+            ValueType.MAPPING_RULE, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then
-    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
-    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
+    assertThat(entity.getEntityKey()).isEqualTo("mapping-rule-1");
+    assertThat(entity.getOperationType()).isEqualTo(operationType);
   }
 }
