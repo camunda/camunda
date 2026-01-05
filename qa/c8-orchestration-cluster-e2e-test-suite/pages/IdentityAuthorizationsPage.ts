@@ -264,8 +264,12 @@ export class IdentityAuthorizationsPage {
     ownerId: string,
     ownerType: string,
     accessPermissions?: string[],
+    authorizationTab?: string,
   ) {
-    const exists = await this.findAuthorizationInPaginatedList(ownerId);
+    const exists = await this.findAuthorizationInPaginatedList(
+      ownerId,
+      authorizationTab,
+    );
 
     if (!exists) {
       throw new Error(
