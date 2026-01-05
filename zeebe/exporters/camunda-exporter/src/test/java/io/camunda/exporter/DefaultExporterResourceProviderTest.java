@@ -22,6 +22,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
@@ -186,6 +187,7 @@ public class DefaultExporterResourceProviderTest {
             Map.entry(
                 BatchOperationLifecycleManagementAuditLogTransformer.class,
                 ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
+            Map.entry(DecisionAuditLogTransformer.class, ValueType.DECISION),
             Map.entry(DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
             Map.entry(GroupAuditLogTransformer.class, ValueType.GROUP),
             Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),

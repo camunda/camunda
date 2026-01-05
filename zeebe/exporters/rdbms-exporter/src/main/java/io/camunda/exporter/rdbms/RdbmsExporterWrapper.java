@@ -57,6 +57,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
@@ -317,6 +318,7 @@ public class RdbmsExporterWrapper implements Exporter {
             new AuthorizationAuditLogTransformer(),
             new BatchOperationCreationAuditLogTransformer(),
             new BatchOperationLifecycleManagementAuditLogTransformer(),
+            new DecisionAuditLogTransformer(),
             new DecisionEvaluationAuditLogTransformer(),
             new GroupAuditLogTransformer(),
             new GroupEntityAuditLogTransformer(),

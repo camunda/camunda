@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -61,6 +62,7 @@ public record AuditLogInfo(
       case PROCESS_INSTANCE_MIGRATION:
       case INCIDENT:
       case VARIABLE:
+      case DECISION:
       case DECISION_EVALUATION:
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
@@ -93,6 +95,7 @@ public record AuditLogInfo(
         return AuditLogEntityType.INCIDENT;
       case VARIABLE:
         return AuditLogEntityType.VARIABLE;
+      case DECISION:
       case DECISION_EVALUATION:
         return AuditLogEntityType.DECISION;
       case BATCH_OPERATION_CREATION:
@@ -142,6 +145,11 @@ public record AuditLogInfo(
       case BatchOperationIntent.CANCELED:
       case BatchOperationIntent.CANCEL:
         return AuditLogOperationType.CANCEL;
+
+      case DecisionIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case DecisionIntent.DELETED:
+        return AuditLogOperationType.DELETE;
 
       case DecisionEvaluationIntent.EVALUATED:
       case DecisionEvaluationIntent.FAILED:
