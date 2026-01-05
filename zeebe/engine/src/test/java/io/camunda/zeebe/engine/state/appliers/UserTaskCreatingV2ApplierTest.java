@@ -128,12 +128,12 @@ public class UserTaskCreatingV2ApplierTest {
     userTaskCreatingV2Applier.applyState(userTaskKey, userTaskRecord);
 
     // then
-    // ensure the user task has the correct rootProcessInstanceKey
     assertThat(userTaskState.getUserTask(userTaskKey).getRootProcessInstanceKey())
+        .describedAs("Expect user task to have the correct rootProcessInstanceKey")
         .isEqualTo(rootProcessInstanceKey);
-    // ensure the intermediate state has the correct rootProcessInstanceKey
     assertThat(
             userTaskState.getIntermediateState(userTaskKey).getRecord().getRootProcessInstanceKey())
+        .describedAs("Expect intermediate state to have the correct rootProcessInstanceKey")
         .isEqualTo(rootProcessInstanceKey);
   }
 }
