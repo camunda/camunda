@@ -122,6 +122,7 @@ import io.camunda.zeebe.gateway.protocol.rest.SourceElementIdInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.SourceElementInstanceKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UseSourceParentKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -1309,6 +1310,8 @@ public class RequestMapper {
                 case final DirectAncestorKeyInstruction direct ->
                     mappedInstruction.setAncestorScopeKey(
                         getAncestorKey(direct.getAncestorElementInstanceKey()));
+                case final UseSourceParentKeyInstruction sourceParent ->
+                    mappedInstruction.setUseSourceParentKeyAsAncestorScopeKey(true);
                 default -> mappedInstruction.setInferAncestorScopeFromSourceHierarchy(true);
               }
               instruction.getVariableInstructions().stream()

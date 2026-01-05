@@ -101,7 +101,9 @@ public final class BrokerModifyProcessInstanceRequest
                       .setTargetElementId(moveInstruction.getTargetElementId())
                       .setAncestorScopeKey(moveInstruction.getAncestorElementInstanceKey())
                       .setInferAncestorScopeFromSourceHierarchy(
-                          moveInstruction.getInferAncestorScopeFromSourceHierarchy());
+                          moveInstruction.getInferAncestorScopeFromSourceHierarchy())
+                      .setUseSourceParentKeyAsAncestorScopeKey(
+                          moveInstruction.getUseSourceParentKeyAsAncestorScopeKey());
               moveInstruction.getVariableInstructionsList().stream()
                   .map(this::mapVariableInstruction)
                   .forEach(mappedInstruction::addVariableInstruction);
