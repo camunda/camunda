@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
@@ -35,6 +36,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   private final DecisionInstanceTemplate decisionInstanceTemplate =
       new DecisionInstanceTemplate("", true);
   private final SequenceFlowTemplate sequenceFlowTemplate = new SequenceFlowTemplate("", true);
+  private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
 
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
@@ -43,7 +45,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
       new ProcessInstanceArchiverJob(
           repository,
           processInstanceTemplate,
-          List.of(decisionInstanceTemplate, sequenceFlowTemplate),
+          List.of(decisionInstanceTemplate, sequenceFlowTemplate, auditLogTemplate),
           metrics,
           LOGGER,
           executor);
@@ -114,6 +116,12 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     assertThat(repository.moves)
         .containsExactly(
             new DocumentMove(
+                auditLogTemplate.getFullQualifiedName(),
+                auditLogTemplate.getFullQualifiedName() + "2024-01-01",
+                auditLogTemplate.getProcessInstanceDependantField(),
+                List.of("1", "2", "3"),
+                executor),
+            new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),
                 decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
                 decisionInstanceTemplate.getProcessInstanceDependantField(),
@@ -147,6 +155,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     assertThat(repository.moves)
         .map(DocumentMove::sourceIndexName)
         .containsExactly(
+            auditLogTemplate.getFullQualifiedName(),
             decisionInstanceTemplate.getFullQualifiedName(),
             sequenceFlowTemplate.getFullQualifiedName(),
             processInstanceTemplate.getFullQualifiedName());
