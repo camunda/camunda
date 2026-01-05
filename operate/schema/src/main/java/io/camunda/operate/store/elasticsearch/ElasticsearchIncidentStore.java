@@ -21,13 +21,16 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ScrollException;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -38,10 +41,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,6 +59,13 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   public static final Query ACTIVE_INCIDENT_QUERY_ES8 =
       ElasticsearchUtil.termsQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
+  @Autowired private RestHighLevelClient esClient;
+
+  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private ElasticsearchClient es8Client;
 
@@ -122,24 +134,14 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             .aggregations(errorTypesAggName, errorTypesAgg);
 
     try {
-      final var resStream =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class);
+      final var scrollResponses =
+          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class)
+              .toList();
 
-      return resStream
-          .peek(
-              res -> {
-                final var errorTypesAggRes = res.aggregations().get(errorTypesAggName);
+      final var searchResponse = scrollResponses.getFirst();
+      populateErrorTypes(errorTypes, searchResponse, errorTypesAggName);
 
-                errorTypesAggRes
-                    .sterms()
-                    .buckets()
-                    .array()
-                    .forEach(
-                        b -> {
-                          final var errorType = ErrorType.valueOf(b.key().stringValue());
-                          errorTypes.add(Map.of(errorType, b.docCount()));
-                        });
-              })
+      return scrollResponses.stream()
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -254,5 +256,23 @@ public class ElasticsearchIncidentStore implements IncidentStore {
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private void populateErrorTypes(
+      final List<Map<ErrorType, Long>> errorTypes,
+      final ResponseBody<IncidentEntity> res,
+      final String errorTypesAggName) {
+
+    final var errorTypesAggRes = res.aggregations().get(errorTypesAggName);
+
+    errorTypesAggRes
+        .sterms()
+        .buckets()
+        .array()
+        .forEach(
+            b -> {
+              final var errorType = ErrorType.valueOf(b.key().stringValue());
+              errorTypes.add(Map.of(errorType, b.docCount()));
+            });
   }
 }
