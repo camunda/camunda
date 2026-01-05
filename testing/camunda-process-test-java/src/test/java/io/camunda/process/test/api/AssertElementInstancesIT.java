@@ -31,7 +31,7 @@ public class AssertElementInstancesIT {
   private TestScenarioRunner testScenarioRunner;
 
   @ParameterizedTest
-  @TestScenarioSource(scenarios = "scenarios/assert-element-instances-test-scenario.json")
+  @TestScenarioSource(fileNames = "assert-element-instances-test-scenario.json")
   void shouldAssertElementInstances(final TestCase testCase, final String scenarioFile) {
     // given
     if (testCase.getName().equals("Assert active elements")) {
