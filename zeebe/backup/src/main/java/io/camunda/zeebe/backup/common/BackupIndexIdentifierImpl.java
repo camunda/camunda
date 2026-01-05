@@ -10,4 +10,10 @@ package io.camunda.zeebe.backup.common;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 
 public record BackupIndexIdentifierImpl(int partitionId, int nodeId)
-    implements BackupIndexIdentifier {}
+    implements BackupIndexIdentifier {
+
+  @Override
+  public String toString() {
+    return "Index{partition=%d, node=%d}".formatted(partitionId, nodeId);
+  }
+}
