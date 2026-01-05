@@ -202,6 +202,14 @@ jobs:
 
       - name: Start Camunda
         run: |
+          export CLIENTID=${{ steps.secrets.outputs.CLIENT_ID }}
+          export CLIENTSECRET=${{ steps.secrets.outputs.CLIENT_SECRET }}
+          export ISSUERURI=${{ steps.secrets.outputs.ISSUER_URI }}
+          export CLAIMVALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE }}
+          export MTCHECKSENABLED=${{ inputs.multi-tenancy }}
+          export ESURL=http://localhost:${{ matrix.hostPort }}
+          export CONNECTURL=http://localhost:${{ matrix.hostPort }}
+          export AUTHORIZATIONS=${{ inputs.authorizations }}
           cd ./dist/target
           dir=$(ls -d camunda-zeebe-*/)
           cd "$dir"
