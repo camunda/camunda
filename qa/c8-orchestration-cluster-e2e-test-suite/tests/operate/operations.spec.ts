@@ -232,7 +232,7 @@ test.describe('Operations', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessesPage.operationAndResultsContainer('cancel', 5),
+            operateProcessesPage.getOperationAndResultsContainer('cancel', 5),
           ).toBeVisible({
             timeout: 30000,
           });

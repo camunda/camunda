@@ -52,15 +52,19 @@ class OperateProcessesPage {
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
-  readonly viewParentInstanceLinkInList: Locator;
+  readonly processInstanceLinkByName: (name: string) => Locator;
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
-  readonly operationAndResultsContainer: (
+  getOperationAndResultsContainer: (
     operation: string,
     resultCount?: number,
   ) => Locator;
   getParentInstanceCell: (parentInstanceKey: string) => Locator;
   getVersionCells: (version: string) => Locator;
   readonly viewParentInstanceLinkInList: Locator;
+  readonly calledInstanceCell: (
+    rowIndex?: number,
+    cellIndex?: number,
+  ) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -164,7 +168,13 @@ class OperateProcessesPage {
       page.getByRole('link', {
         name: processInstanceKey,
       });
-    this.operationAndResultsContainer = (
+    this.processInstanceLinkByName = (name: string) =>
+      page
+        .getByRole('row')
+        .filter({hasText: name})
+        .first()
+        .getByRole('link', {name: /^View instance \d+/});
+    this.getOperationAndResultsContainer = (
       operation: string,
       resultCount?: number,
     ) => {
@@ -173,13 +183,19 @@ class OperateProcessesPage {
         : new RegExp(`${operation}.*\\d+ results`);
       return page.locator('div').filter({hasText: pattern});
     };
-    this.parentInstanceCell = (parentInstanceKey: string) =>
+    this.getParentInstanceCell = (parentInstanceKey: string) =>
       this.dataList.getByRole('cell', {name: parentInstanceKey});
-    this.versionCells = (version: string) =>
+    this.getVersionCells = (version: string) =>
       this.dataList.getByRole('cell', {name: version, exact: true});
     this.viewParentInstanceLinkInList = this.dataList.getByRole('link', {
       name: /view parent instance/i,
     });
+    this.calledInstanceCell = (rowIndex = 0, cellIndex = 2) =>
+      this.dataList
+        .getByRole('row')
+        .nth(rowIndex)
+        .getByRole('cell')
+        .nth(cellIndex);
   }
 
   async filterByProcessName(name: string): Promise<void> {
