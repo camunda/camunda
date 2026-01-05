@@ -28,35 +28,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/npmjs NPM_TOKEN;
-
       - name: Configure npm authentication
         run: |
-          echo "//registry.npmjs.org/:_authToken=${{ steps.secrets.outputs.NPM_TOKEN }}" >> .npmrc
-
+          echo "//registry.npmjs.org/:_authToken=${{ env.NPM_TOKEN }}" >> .npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install dependencies
+        run: npm ci
       - name: Publish to npm (dry-run)
         if: ${{ inputs.dry_run }}
         run: npm run prepublishOnly && npm publish --dry-run -w @camunda/camunda-api-zod-schemas
-
       - name: Publish to npm
         if: ${{ !inputs.dry_run }}
         run: npm run publish:zod-schemas
-
       - name: Observe build status
         if: always()
         continue-on-error: true
