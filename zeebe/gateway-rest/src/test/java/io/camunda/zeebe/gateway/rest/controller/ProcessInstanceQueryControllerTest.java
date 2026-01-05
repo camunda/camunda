@@ -72,6 +72,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
+          null,
           "demoProcess",
           "Demo Process",
           5,

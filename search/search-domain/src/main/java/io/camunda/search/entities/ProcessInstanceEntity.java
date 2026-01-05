@@ -15,6 +15,7 @@ import java.util.Set;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessInstanceEntity(
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     String processDefinitionId,
     String processDefinitionName,
     Integer processDefinitionVersion,
@@ -33,6 +34,7 @@ public record ProcessInstanceEntity(
 
   public ProcessInstanceEntity(
       final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
       final String processDefinitionId,
       final String processDefinitionName,
       final Integer processDefinitionVersion,
@@ -49,6 +51,7 @@ public record ProcessInstanceEntity(
 
     this(
         processInstanceKey,
+        rootProcessInstanceKey,
         processDefinitionId,
         processDefinitionName,
         processDefinitionVersion,

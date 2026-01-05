@@ -312,6 +312,7 @@ abstract class AbstractBatchOperationTest {
         processInstanceKey,
         null,
         null,
+        null,
         -1,
         null,
         -1L,
