@@ -1,0 +1,97 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection.ts';
+import {operationsStore} from 'modules/stores/operations';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
+import {processInstancesStore} from 'modules/stores/processInstances.ts';
+import {tracking} from 'modules/tracking';
+import {handleOperationError} from 'modules/utils/notifications.ts';
+import {type Modifications} from 'modules/api/processInstances/operations.ts';
+import type {OperationEntityType} from 'modules/types/operate.ts';
+
+type ApplyBatchOperationParams = {
+  operationType: OperationEntityType;
+  onSuccess: () => void;
+  modifications?: Modifications;
+};
+
+function useOperationApply() {
+  const {
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+    checkedRunningProcessInstanceIds,
+    reset,
+  } = processInstancesSelectionStore;
+
+  return {
+    applyBatchOperation: ({
+      operationType,
+      onSuccess,
+      modifications,
+    }: ApplyBatchOperationParams) => {
+      const query = getProcessInstancesRequestFilters();
+      const filterIds = query.ids || [];
+
+      const shouldFilterToRunningInstances =
+        operationType === 'CANCEL_PROCESS_INSTANCE' ||
+        operationType === 'RESOLVE_INCIDENT';
+
+      const ids: string[] =
+        selectedProcessInstanceIds.length > 0
+          ? shouldFilterToRunningInstances
+            ? checkedRunningProcessInstanceIds
+            : selectedProcessInstanceIds
+          : filterIds;
+
+      if (selectedProcessInstanceIds.length > 0) {
+        processInstancesStore.markProcessInstancesWithActiveOperations({
+          ids: shouldFilterToRunningInstances
+            ? checkedRunningProcessInstanceIds
+            : selectedProcessInstanceIds,
+          operationType,
+        });
+      } else {
+        processInstancesStore.markProcessInstancesWithActiveOperations({
+          ids: excludedProcessInstanceIds,
+          operationType,
+          shouldPollAllVisibleIds: true,
+        });
+      }
+
+      operationsStore.applyBatchOperation({
+        operationType,
+        query: {
+          ...query,
+          ids,
+          excludeIds: excludedProcessInstanceIds,
+        },
+        modifications,
+        onSuccess() {
+          onSuccess();
+          tracking.track({
+            eventName: 'batch-operation',
+            operationType,
+          });
+        },
+        onError: ({operationType, statusCode}) => {
+          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
+            instanceIds: ids,
+            operationType,
+            shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
+          });
+          handleOperationError(statusCode);
+        },
+      });
+
+      reset();
+    },
+  };
+}
+
+export default useOperationApply;
