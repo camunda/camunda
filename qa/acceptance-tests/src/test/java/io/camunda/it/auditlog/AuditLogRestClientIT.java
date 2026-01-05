@@ -21,6 +21,7 @@ import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
@@ -116,7 +117,7 @@ public class AuditLogRestClientIT {
             .join();
 
     // then
-    final var auditLog = auditLogItems.items().get(0);
+    final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
@@ -237,7 +238,7 @@ public class AuditLogRestClientIT {
     assertThat(auditLogAuthorizationItems.items()).hasSizeGreaterThanOrEqualTo(1);
     final var auditLogEntities =
         auditLogAuthorizationItems.items().stream()
-            .map(alr -> alr.getEntityType())
+            .map(AuditLogResult::getEntityType)
             .collect(Collectors.toSet());
     assertThat(auditLogEntities).contains(AuditLogEntityTypeEnum.AUTHORIZATION);
 
@@ -290,19 +291,19 @@ public class AuditLogRestClientIT {
     assertThat(auditLogGroupItems.items()).hasSize(2);
     final var auditLogEntities =
         auditLogGroupItems.items().stream()
-            .map(alr -> alr.getEntityType())
+            .map(AuditLogResult::getEntityType)
             .collect(Collectors.toSet());
     assertThat(auditLogEntities).containsExactlyInAnyOrder(AuditLogEntityTypeEnum.GROUP);
     final var auditLogOperations =
         auditLogGroupItems.items().stream()
-            .map(alr -> alr.getOperationType())
+            .map(AuditLogResult::getOperationType)
             .collect(Collectors.toSet());
     assertThat(auditLogOperations)
         .containsExactlyInAnyOrder(
             AuditLogOperationTypeEnum.CREATE, AuditLogOperationTypeEnum.ASSIGN);
 
     assertThat(auditLogGroupCreateItems.items()).hasSize(1);
-    final var auditLogCreate = auditLogGroupCreateItems.items().get(0);
+    final var auditLogCreate = auditLogGroupCreateItems.items().getFirst();
     assertThat(auditLogCreate).isNotNull();
     assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.GROUP);
     assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
@@ -311,7 +312,7 @@ public class AuditLogRestClientIT {
     assertThat(auditLogCreate.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
 
     assertThat(auditLogGroupAssignItems.items()).hasSize(1);
-    final var auditLogAssign = auditLogGroupAssignItems.items().get(0);
+    final var auditLogAssign = auditLogGroupAssignItems.items().getFirst();
     assertThat(auditLogAssign).isNotNull();
     assertThat(auditLogAssign.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.GROUP);
     assertThat(auditLogAssign.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
@@ -355,7 +356,9 @@ public class AuditLogRestClientIT {
             .collect(Collectors.toList());
     assertThat(auditLogRoleAItems).hasSize(2);
     final var auditLogOperations =
-        auditLogRoleAItems.stream().map(alr -> alr.getOperationType()).collect(Collectors.toSet());
+        auditLogRoleAItems.stream()
+            .map(AuditLogResult::getOperationType)
+            .collect(Collectors.toSet());
     assertThat(auditLogOperations)
         .containsExactlyInAnyOrder(
             AuditLogOperationTypeEnum.CREATE, AuditLogOperationTypeEnum.ASSIGN);
@@ -365,7 +368,7 @@ public class AuditLogRestClientIT {
             .filter(alr -> ROLE_A_ID.equals(alr.getEntityKey()))
             .collect(Collectors.toList());
     assertThat(auditLogRoleACreateItems).hasSize(1);
-    final var auditLogCreate = auditLogRoleACreateItems.get(0);
+    final var auditLogCreate = auditLogRoleACreateItems.getFirst();
     assertThat(auditLogCreate).isNotNull();
     assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.ROLE);
     assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
@@ -378,7 +381,7 @@ public class AuditLogRestClientIT {
             .filter(alr -> ROLE_A_ID.equals(alr.getEntityKey()))
             .collect(Collectors.toList());
     assertThat(auditLogRoleAAssignItems).hasSize(1);
-    final var auditLogAssign = auditLogRoleAAssignItems.get(0);
+    final var auditLogAssign = auditLogRoleAAssignItems.getFirst();
     assertThat(auditLogAssign).isNotNull();
     assertThat(auditLogAssign.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.ROLE);
     assertThat(auditLogAssign.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
@@ -422,11 +425,13 @@ public class AuditLogRestClientIT {
             .collect(Collectors.toList());
     assertThat(auditLogTenantAItems).hasSize(2);
     final var auditLogEntities =
-        auditLogTenantAItems.stream().map(alr -> alr.getEntityType()).collect(Collectors.toSet());
+        auditLogTenantAItems.stream()
+            .map(AuditLogResult::getEntityType)
+            .collect(Collectors.toSet());
     assertThat(auditLogEntities).containsExactlyInAnyOrder(AuditLogEntityTypeEnum.TENANT);
     final var auditLogOperations =
         auditLogTenantAItems.stream()
-            .map(alr -> alr.getOperationType())
+            .map(AuditLogResult::getOperationType)
             .collect(Collectors.toSet());
     assertThat(auditLogOperations)
         .containsExactlyInAnyOrder(
@@ -438,7 +443,7 @@ public class AuditLogRestClientIT {
             .filter(alr -> TENANT_A.equals(alr.getEntityKey()))
             .collect(Collectors.toList());
     assertThat(auditLogTenantACreateItems).hasSize(1);
-    final var auditLogCreate = auditLogTenantACreateItems.get(0);
+    final var auditLogCreate = auditLogTenantACreateItems.getFirst();
     assertThat(auditLogCreate.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.TENANT);
     assertThat(auditLogCreate.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLogCreate.getEntityKey()).isEqualTo(TENANT_A);
@@ -451,7 +456,7 @@ public class AuditLogRestClientIT {
             .filter(alr -> TENANT_A.equals(alr.getEntityKey()))
             .collect(Collectors.toList());
     assertThat(auditLogTenantAAssignItems).hasSize(1);
-    final var auditLogAssign = auditLogTenantAAssignItems.get(0);
+    final var auditLogAssign = auditLogTenantAAssignItems.getFirst();
     assertThat(auditLogAssign.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.TENANT);
     assertThat(auditLogAssign.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
     assertThat(auditLogAssign.getEntityKey()).isEqualTo(TENANT_A);
