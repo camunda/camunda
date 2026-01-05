@@ -464,7 +464,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
     verify(incidentServices)
         .incidentProcessInstanceStatisticsByError(
             new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
-                .filter(f -> f.states(IncidentState.ACTIVE.name()))
                 .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
                 .build());
   }
@@ -503,7 +502,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
     verify(incidentServices)
         .incidentProcessInstanceStatisticsByError(
             new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
-                .filter(f -> f.states(IncidentState.ACTIVE.name()))
                 .page(p -> p.from(0).size(5))
                 .build());
   }
