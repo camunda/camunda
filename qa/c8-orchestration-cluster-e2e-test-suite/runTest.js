@@ -20,6 +20,7 @@ const browser = await select({
     {name: 'Firefox', value: 'firefox'},
 
     {name: 'Edge', value: 'msedge'},
+    {name: 'API', value: 'api-tests'},
   ],
 });
 
@@ -35,7 +36,17 @@ const runMode = await select({
   ],
 });
 
-let args = ['run', 'test', '--', `--project=${browser}`];
+let args = ['run', 'test', '--'];
+
+if (browser === 'chromium') {
+  args.push('--project=chromium');
+} else if (browser === 'firefox') {
+  args.push('--project=firefox');
+} else if (browser === 'msedge') {
+  args.push('--project=msedge');
+} else if (browser === 'api-tests') {
+  args.push('--project=api-tests');
+}
 
 if (runMode === 'headed') {
   args.push('--headed');
