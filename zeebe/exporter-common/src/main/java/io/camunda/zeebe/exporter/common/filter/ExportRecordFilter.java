@@ -14,13 +14,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-public final class SearchRecordFilter {
+public final class ExportRecordFilter {
 
   private final Predicate<RecordType> typePredicate;
   private final Predicate<ValueType> valueTypePredicate;
   private final List<RecordValueFilter> recordValueFilters;
 
-  public SearchRecordFilter(
+  public ExportRecordFilter(
       final Predicate<RecordType> typePredicate,
       final Predicate<ValueType> valueTypePredicate,
       final List<RecordValueFilter> recordValueFilters) {
