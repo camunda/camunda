@@ -126,6 +126,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTrans
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
@@ -481,6 +482,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           .addHandler(new GroupEntityAuditLogTransformer())
           .addHandler(new IncidentResolutionAuditLogTransformer())
           .addHandler(new MappingRuleAuditLogTransformer())
+          .addHandler(new ProcessAuditLogTransformer())
           .addHandler(new ProcessInstanceCancelAuditLogTransformer())
           .addHandler(new ProcessInstanceCreationAuditLogTransformer())
           .addHandler(new ProcessInstanceMigrationAuditLogTransformer())

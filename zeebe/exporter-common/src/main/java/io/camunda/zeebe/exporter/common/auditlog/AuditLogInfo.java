@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -111,6 +112,7 @@ public record AuditLogInfo(
         return AuditLogEntityType.ROLE;
       case TENANT:
         return AuditLogEntityType.TENANT;
+      case PROCESS:
       case RESOURCE:
         return AuditLogEntityType.RESOURCE;
       case USER_TASK:
@@ -175,6 +177,11 @@ public record AuditLogInfo(
       case MappingRuleIntent.UPDATED:
         return AuditLogOperationType.UPDATE;
       case MappingRuleIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+
+      case ProcessIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case ProcessIntent.DELETED:
         return AuditLogOperationType.DELETE;
 
       case ProcessInstanceCreationIntent.CREATED:
