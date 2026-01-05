@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>camunda-search-client-plugin</artifactId>
-  <version>8.7.22-SNAPSHOT</version>
+  <version>8.7.22</version>
   <packaging>jar</packaging>
 
   <name>Camunda Search Client Plugin</name>
