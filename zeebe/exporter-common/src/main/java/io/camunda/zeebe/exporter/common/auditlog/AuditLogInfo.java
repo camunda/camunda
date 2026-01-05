@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -61,6 +62,7 @@ public record AuditLogInfo(
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
       case DECISION_EVALUATION:
+      case DECISION_REQUIREMENTS:
       case DECISION:
       case FORM:
       case INCIDENT:
@@ -101,6 +103,8 @@ public record AuditLogInfo(
       case DECISION:
       case DECISION_EVALUATION:
         return AuditLogEntityType.DECISION;
+      case DECISION_REQUIREMENTS:
+        return AuditLogEntityType.RESOURCE;
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
         return AuditLogEntityType.BATCH;
@@ -151,14 +155,19 @@ public record AuditLogInfo(
       case BatchOperationIntent.CANCEL:
         return AuditLogOperationType.CANCEL;
 
+      case DecisionEvaluationIntent.EVALUATED:
+      case DecisionEvaluationIntent.FAILED:
+        return AuditLogOperationType.EVALUATE;
+
       case DecisionIntent.CREATED:
         return AuditLogOperationType.CREATE;
       case DecisionIntent.DELETED:
         return AuditLogOperationType.DELETE;
 
-      case DecisionEvaluationIntent.EVALUATED:
-      case DecisionEvaluationIntent.FAILED:
-        return AuditLogOperationType.EVALUATE;
+      case DecisionRequirementsIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case DecisionRequirementsIntent.DELETED:
+        return AuditLogOperationType.DELETE;
 
       case FormIntent.CREATED:
         return AuditLogOperationType.CREATE;

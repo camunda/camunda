@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -200,10 +201,12 @@ class AuditLogInfoTest {
         Arguments.of(BatchOperationIntent.RESUMED, AuditLogOperationType.RESUME),
         Arguments.of(BatchOperationIntent.SUSPEND, AuditLogOperationType.SUSPEND),
         Arguments.of(BatchOperationIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
-        Arguments.of(DecisionIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(DecisionIntent.DELETED, AuditLogOperationType.DELETE),
         Arguments.of(DecisionEvaluationIntent.EVALUATED, AuditLogOperationType.EVALUATE),
         Arguments.of(DecisionEvaluationIntent.FAILED, AuditLogOperationType.EVALUATE),
+        Arguments.of(DecisionIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(DecisionIntent.DELETED, AuditLogOperationType.DELETE),
+        Arguments.of(DecisionRequirementsIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(DecisionRequirementsIntent.DELETED, AuditLogOperationType.DELETE),
         Arguments.of(FormIntent.CREATED, AuditLogOperationType.CREATE),
         Arguments.of(FormIntent.DELETED, AuditLogOperationType.DELETE),
         Arguments.of(GroupIntent.CREATED, AuditLogOperationType.CREATE),

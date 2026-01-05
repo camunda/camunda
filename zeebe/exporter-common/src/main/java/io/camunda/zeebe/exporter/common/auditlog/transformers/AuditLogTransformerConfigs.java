@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATIO
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -70,12 +72,16 @@ public class AuditLogTransformerConfigs {
               BatchOperationIntent.CANCEL)
           .withRejectionTypes(RejectionType.INVALID_STATE);
 
-  public static final TransformerConfig DECISION_CONFIG =
-      TransformerConfig.with(DECISION).withIntents(DecisionIntent.CREATED, DecisionIntent.DELETED);
-
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
           .withIntents(DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED);
+
+  public static final TransformerConfig DECISION_CONFIG =
+      TransformerConfig.with(DECISION).withIntents(DecisionIntent.CREATED, DecisionIntent.DELETED);
+
+  public static final TransformerConfig DECISION_REQUIREMENTS_CONFIG =
+      TransformerConfig.with(DECISION_REQUIREMENTS)
+          .withIntents(DecisionRequirementsIntent.CREATED, DecisionRequirementsIntent.DELETED);
 
   public static final TransformerConfig FORM_CONFIG =
       TransformerConfig.with(ValueType.FORM).withIntents(FormIntent.CREATED, FormIntent.DELETED);
