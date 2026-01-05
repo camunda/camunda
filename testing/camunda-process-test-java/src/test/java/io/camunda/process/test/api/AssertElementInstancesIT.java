@@ -21,7 +21,6 @@ import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.api.dsl.TestScenarioSource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.time.Duration;
 import org.junit.jupiter.params.ParameterizedTest;
 
 @CamundaProcessTest
@@ -88,13 +87,6 @@ public class AssertElementInstancesIT {
               })
           .send()
           .join();
-
-      // Wait a bit for completion
-      try {
-        Thread.sleep(Duration.ofSeconds(2).toMillis());
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
     }
 
     // when
