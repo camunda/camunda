@@ -54,12 +54,6 @@
 
     <!-- Test dependencies -->
     <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
       <scope>test</scope>
@@ -92,18 +86,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -161,6 +143,10 @@
           <ignoredUsedUndeclaredDependencies>
             <dependency>*</dependency>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <!-- Ignore as we use it only to override the base module's starter dependency -->
+            <dependency>io.camunda:camunda-spring-boot-4-starter</dependency>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 
