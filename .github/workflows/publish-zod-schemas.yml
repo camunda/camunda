@@ -1,0 +1,68 @@
+# description: Publishes the @camunda/camunda-api-zod-schemas package to npm. This package provides Zod schemas and TypeScript types for Camunda 8 REST API. Published at: https://www.npmjs.com/package/@camunda/camunda-api-zod-schemas
+# type: CI Helper - Manual
+# owner: @camunda/core-features
+name: Publish Zod Schemas to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (does not publish)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  publish-zod-schemas:
+    name: "Publish @camunda/camunda-api-zod-schemas"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    defaults:
+      run:
+        working-directory: client-components
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/npmjs NPM_TOKEN;
+
+      - name: Configure npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ steps.secrets.outputs.NPM_TOKEN }}" >> .npmrc
+
+      - name: Publish to npm (dry-run)
+        if: ${{ inputs.dry_run }}
+        run: npm run prepublishOnly && npm publish --dry-run -w @camunda/camunda-api-zod-schemas
+
+      - name: Publish to npm
+        if: ${{ !inputs.dry_run }}
+        run: npm run publish:zod-schemas
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
