@@ -38,6 +38,7 @@ jobs:
   build-and-package:
     name: Build and Package Camunda
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: ${{ github.event_name == 'workflow_dispatch' }}
 
     steps:
@@ -69,6 +70,7 @@ jobs:
     name: Run Regression Tests
     needs: build-and-package
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: ${{ github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
@@ -181,12 +183,6 @@ jobs:
 
       - name: Wait for Elasticsearch
         run: |
-          echo "🏃 Runner info:"
-          uname -a
-          lscpu | grep 'Model name'
-          df -h /
-          free -h
-
           echo "Waiting for Elasticsearch on localhost:${{ matrix.hostPort }}..."
           for i in {1..60}; do
             status=$(curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health?wait_for_status=yellow&timeout=5s" | jq -r '.status // empty')
@@ -204,163 +200,43 @@ jobs:
             exit 1
           fi
 
-      - name: Start Camunda (default config)
-        if: matrix.case != 'mapping-rules.http'
+      - name: Start Camunda
         run: |
           cd ./dist/target
           dir=$(ls -d camunda-zeebe-*/)
           cd "$dir"
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
-          export CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://localhost:${{ matrix.hostPort }} && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:${{ matrix.hostPort }} && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
-          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=${{ inputs.authorizations }} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
-          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=${{ inputs.multi-tenancy }} && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME=Test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL=test@example.com && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_0_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_0_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_0_RESOURCE_TYPE=AUTHORIZATION && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_0_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_0_PERMISSIONS='CREATE,READ,UPDATE,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_1_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_1_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_1_RESOURCE_TYPE=BATCH && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_1_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_1_PERMISSIONS='CREATE,CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE,CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE,CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE,CREATE_BATCH_OPERATION_RESOLVE_INCIDENT,CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,READ,UPDATE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_2_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_2_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_2_RESOURCE_TYPE=COMPONENT && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_2_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_2_PERMISSIONS='ACCESS' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_3_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_3_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_3_RESOURCE_TYPE=DECISION_DEFINITION && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_3_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_3_PERMISSIONS='CREATE_DECISION_INSTANCE,READ_DECISION_DEFINITION,READ_DECISION_INSTANCE,DELETE_DECISION_INSTANCE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_4_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_4_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_4_RESOURCE_TYPE=DECISION_REQUIREMENTS_DEFINITION && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_4_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_4_PERMISSIONS='READ' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_5_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_5_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_5_RESOURCE_TYPE=DOCUMENT && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_5_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_5_PERMISSIONS='CREATE,READ,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_6_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_6_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_6_RESOURCE_TYPE=GROUP && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_6_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_6_PERMISSIONS='CREATE,READ,UPDATE,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_7_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_7_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_7_RESOURCE_TYPE=MAPPING_RULE && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_7_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_7_PERMISSIONS='CREATE,READ,UPDATE,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_8_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_8_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_8_RESOURCE_TYPE=MESSAGE && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_8_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_8_PERMISSIONS='CREATE,READ' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_9_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_9_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_9_RESOURCE_TYPE=PROCESS_DEFINITION && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_9_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_9_PERMISSIONS='CREATE_PROCESS_INSTANCE,READ_PROCESS_DEFINITION,READ_PROCESS_INSTANCE,READ_USER_TASK,UPDATE_PROCESS_INSTANCE,UPDATE_USER_TASK,MODIFY_PROCESS_INSTANCE,CANCEL_PROCESS_INSTANCE,DELETE_PROCESS_INSTANCE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_10_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_10_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_10_RESOURCE_TYPE=RESOURCE && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_10_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_10_PERMISSIONS='CREATE,READ,DELETE_DRD,DELETE_FORM,DELETE_PROCESS,DELETE_RESOURCE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_11_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_11_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_11_RESOURCE_TYPE=ROLE && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_11_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_11_PERMISSIONS='CREATE,READ,UPDATE,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_12_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_12_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_12_RESOURCE_TYPE=SYSTEM && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_12_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_12_PERMISSIONS='READ,READ_USAGE_METRIC,UPDATE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_13_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_13_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_13_RESOURCE_TYPE=TENANT && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_13_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_13_PERMISSIONS='CREATE,READ,UPDATE,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_RESOURCE_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_14_PERMISSIONS='CREATE,READ,UPDATE,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_OWNER_TYPE=USER && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_OWNER_ID=test && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_RESOURCE_TYPE=CLUSTER_VARIABLE && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_RESOURCE_ID='*' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_AUTHORIZATIONS_15_PERMISSIONS='CREATE,READ,DELETE' && \
-          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo && \
-          export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth,dev-data && \
+
+          CONFIG_PATH="../../qa/http/configs"
+          if [ "${{ matrix.case }}" = "mapping-rules.http" ]; then
+            CONFIG_FILE="$CONFIG_PATH/identity-oidc.env"
+          else
+            CONFIG_FILE="$CONFIG_PATH/identity-default.env"
+          fi
+
+          echo "Using config file: $CONFIG_FILE"
+
+          # Expand GitHub variables before sourcing
+          envsubst < "$CONFIG_FILE" > "$CONFIG_PATH/identity-runtime.env"
+          set -a
+          source "$CONFIG_PATH/identity-runtime.env"
+          set +a
+          rm "$CONFIG_PATH/identity-runtime.env"
+
           ./bin/camunda &
 
           echo "Waiting for Camunda to start on port 8080..."
           for i in {1..60}; do
             if nc -z localhost 8080; then
-            echo "✅ Camunda is up!"
-          break
-          fi
-          echo "⏳ Still waiting ($i/60)..."
-          sleep 5
+              echo "✅ Camunda is up!"
+              break
+            fi
+            echo "⏳ Still waiting ($i/60)..."
+            sleep 5
           done
 
           if ! nc -z localhost 8080; then
-          echo "❌ Camunda did not start within expected time" >&2
-          exit 1
-          fi
-
-      - name: Start Camunda (OIDC config for mapping-rules)
-        if: matrix.case == 'mapping-rules.http'
-        run: |
-          cd ./dist/target
-          dir=$(ls -d camunda-zeebe-*/)
-          cd "$dir"
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
-          export CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://localhost:${{ matrix.hostPort }} && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:${{ matrix.hostPort }} && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_METHOD=OIDC && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTID=${{ steps.secrets.outputs.CLIENT_ID}} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTSECRET=${{ steps.secrets.outputs.CLIENT_SECRET}} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUERURI=${{ steps.secrets.outputs.ISSUER_URI}} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECTURI=http://localhost:8080/sso-callback && \
-          export INITIAL_CLAIM_VALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE}}  && \
-          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
-          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=${{ inputs.multi-tenancy }} && \
-          export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth,dev-data && \
-          ./bin/camunda &
-
-          echo "Waiting for Camunda to start on port 8080..."
-          for i in {1..60}; do
-          if nc -z localhost 8080; then
-            echo "✅ Camunda is up!"
-            break
-          fi
-          echo "⏳ Still waiting ($i/60)..."
-          sleep 5
-          done
-
-          if ! nc -z localhost 8080; then
-          echo "❌ Camunda did not start within expected time" >&2
-          exit 1
+            echo "❌ Camunda did not start within expected time" >&2
+            exit 1
           fi
 
       - name: Install IntelliJ HTTP Client
@@ -382,3 +258,13 @@ jobs:
         if: always()
         run: |
           rm qa/http/http-client.private.env.json
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
