@@ -188,6 +188,7 @@
             <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>true</createDependencyReducedPom>
+              <createSourcesJar>true</createSourcesJar>
               <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
               <artifactSet>
                 <includes>
@@ -265,5 +266,67 @@
 
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>central-sonatype-publish</id>
+      <!--
+        This profile is typically activated during release builds refer to
+        org.camunda:camunda-release-parent
+      -->
+      <build>
+        <plugins>
+          <!--
+            Unpack javadoc from base module and repackage them, this is required to ensure we have
+            javadoc available, given this module is a shade of camunda-process-test-spring,
+            we lack them otherwise.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack-javadoc</id>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>io.camunda</groupId>
+                      <artifactId>camunda-process-test-spring</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>javadoc</classifier>
+                      <type>jar</type>
+                      <outputDirectory>${project.build.directory}/apidocs</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>javadoc-jar</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <classifier>javadoc</classifier>
+                  <classesDirectory>${project.build.directory}/apidocs</classesDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
