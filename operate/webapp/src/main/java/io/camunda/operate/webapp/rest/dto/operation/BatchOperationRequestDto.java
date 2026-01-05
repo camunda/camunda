@@ -27,7 +27,9 @@ public class BatchOperationRequestDto {
   public BatchOperationRequestDto() {}
 
   public BatchOperationRequestDto(
-      Integer pageSize, SortValuesWrapper[] searchAfter, SortValuesWrapper[] searchBefore) {
+      final Integer pageSize,
+      final SortValuesWrapper[] searchAfter,
+      final SortValuesWrapper[] searchBefore) {
     this.pageSize = pageSize;
     this.searchAfter = searchAfter;
     this.searchBefore = searchBefore;
@@ -41,12 +43,12 @@ public class BatchOperationRequestDto {
     return searchBefore;
   }
 
-  public BatchOperationRequestDto setSearchBefore(SortValuesWrapper[] searchBefore) {
+  public BatchOperationRequestDto setSearchBefore(final SortValuesWrapper[] searchBefore) {
     this.searchBefore = searchBefore;
     return this;
   }
 
-  public Object[] getSearchBefore(ObjectMapper objectMapper) {
+  public Object[] getSearchBefore(final ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
   }
 
@@ -58,12 +60,12 @@ public class BatchOperationRequestDto {
     return searchAfter;
   }
 
-  public BatchOperationRequestDto setSearchAfter(SortValuesWrapper[] searchAfter) {
+  public BatchOperationRequestDto setSearchAfter(final SortValuesWrapper[] searchAfter) {
     this.searchAfter = searchAfter;
     return this;
   }
 
-  public Object[] getSearchAfter(ObjectMapper objectMapper) {
+  public Object[] getSearchAfter(final ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
   }
 
@@ -71,7 +73,7 @@ public class BatchOperationRequestDto {
     return pageSize;
   }
 
-  public BatchOperationRequestDto setPageSize(Integer pageSize) {
+  public BatchOperationRequestDto setPageSize(final Integer pageSize) {
     this.pageSize = pageSize;
     return this;
   }
@@ -85,7 +87,7 @@ public class BatchOperationRequestDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
