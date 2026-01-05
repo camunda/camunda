@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-library-parent</artifactId>
+    <version>8.8.9-SNAPSHOT</version>
+    <relativePath>../../library-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-spring-boot-4-starter</artifactId>
+
+  <name>Camunda Spring Boot 4 Starter</name>
+  <description>Camunda Spring Boot Starter for Spring Boot 4.x</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <version.java>17</version.java>
+    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
+    <!-- Override Spring Boot version for 4.x compatibility -->
+    <version.spring-boot>4.0.1</version.spring-boot>
+    <!-- Spring Framework 7.x is required for Spring Boot 4.0 -->
+    <version.spring>7.0.1</version.spring>
+    <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
+    <version.junit>6.0.1</version.junit>
+    <version.roaster>2.30.3.Final</version.roaster>
+    <version.aspectjweaver>1.9.24</version.aspectjweaver>
+    <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
+    <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>
+  </properties>
+
+  <dependencies>
+    <!-- Base Spring Boot starter - will be shaded -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-boot-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.forge.roaster</groupId>
+      <artifactId>roaster-api</artifactId>
+      <version>${version.roaster}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <!-- New in Spring Boot 4: Jackson module is separate -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson</artifactId>
+    </dependency>
+    <!-- New in Spring Boot 4: Health module is separate -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjweaver</artifactId>
+      <version>${version.aspectjweaver}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-parameters</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <!-- Shade plugin to include and relocate classes from camunda-spring-boot-starter -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+              <artifactSet>
+                <includes>
+                  <!-- Only include the base starter module in the shaded jar -->
+                  <include>io.camunda:camunda-spring-boot-starter</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>io.camunda:camunda-spring-boot-starter</artifact>
+                  <excludes>
+                    <!-- Exclude classes that we override with Spring Boot 4 versions -->
+                    <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicator.class</exclude>
+                    <exclude>io/camunda/client/spring/configuration/CamundaActuatorConfiguration.class</exclude>
+                    <exclude>io/camunda/client/spring/configuration/CamundaAutoConfiguration.class</exclude>
+                    <!-- Exclude META-INF services that we override -->
+                    <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <!-- Merge service files -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
+                <!-- Keep manifest entries -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"></transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!--
+            Ignore all "used but undeclared" dependencies in this module.
+            This starter shades and reuses classes and tests from the base
+            camunda-spring-boot-starter module, which is where the actual
+            dependency declarations live. From the perspective of this POM,
+            many classes therefore appear as used but undeclared, even though
+            they are intentionally provided by the base module and by the
+            shaded artifact.
+            Using a wildcard here avoids having to duplicate and constantly
+            maintain the full dependency list of the base module. The trade-off
+            is that accidental missing dependencies in *this* module will not
+            be reported by maven-dependency-plugin. To mitigate this, dependency
+            analysis should be run primarily on the base module, where the
+            dependencies are actually declared, and changes here should be kept
+            minimal and aligned with that module.
+          -->
+          <ignoredUsedUndeclaredDependencies>*</ignoredUsedUndeclaredDependencies>
+        </configuration>
+      </plugin>
+
+      <!-- Add test re-/sources from the base module -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-generator-source</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <!-- Include test generator utility classes (compiled as main sources in base module) -->
+                <source>${camunda-spring-boot-starter.sourcedir}/test/test-source-generator</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-source</id>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <sources>
+                <source>${camunda-spring-boot-starter.sourcedir}/test/java</source>
+                <source>${generated.test.sources.path}</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resources</id>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>${camunda-spring-boot-starter.sourcedir}/test/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <dependencies>
+          <!-- Needed for the roaster generator used -->
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <!-- This executed the test generator classes -->
+          <execution>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <mainClass>io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator</mainClass>
+              <arguments>
+                <argument>${generated.test.sources.path}</argument>
+              </arguments>
+              <classpathScope>provided</classpathScope>
+              <includePluginDependencies>true</includePluginDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <!-- As the test generator classes end up among main classes, they have to be excluded again -->
+          <excludes>
+            <exclude>**/test/**</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- Run tests compiled from base module sources -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Exclude tests that require file system access to configuration metadata in JAR -->
+          <!-- Low risk on those, given they are not tightly coupled to spring classes -->
+          <excludes>
+            <exclude>**/configurationMetadata/AlignmentTest.java</exclude>
+            <exclude>**/configurationMetadata/FormattingTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
