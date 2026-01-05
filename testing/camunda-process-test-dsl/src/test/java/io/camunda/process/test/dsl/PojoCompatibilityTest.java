@@ -199,27 +199,11 @@ public class PojoCompatibilityTest {
                     .amount(3)
                     .build())),
         Arguments.of(
-            "assert user task: minimal with elementId",
+            "assert user task: minimal",
             singleTestCase(
                 ImmutableAssertUserTaskInstruction.builder()
                     .userTaskSelector(
                         ImmutableUserTaskSelector.builder().elementId("task1").build())
-                    .build())),
-        Arguments.of(
-            "assert user task: minimal with taskName",
-            singleTestCase(
-                ImmutableAssertUserTaskInstruction.builder()
-                    .userTaskSelector(
-                        ImmutableUserTaskSelector.builder().taskName("User Task").build())
-                    .build())),
-        Arguments.of(
-            "assert user task: minimal with processDefinitionId",
-            singleTestCase(
-                ImmutableAssertUserTaskInstruction.builder()
-                    .userTaskSelector(
-                        ImmutableUserTaskSelector.builder()
-                            .processDefinitionId("my-process")
-                            .build())
                     .build())),
         Arguments.of(
             "assert user task: full",

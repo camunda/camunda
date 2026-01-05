@@ -43,9 +43,9 @@ public class AssertUserTaskInstructionHandler
 
     instruction.getAssignee().ifPresent(userTaskAssert::hasAssignee);
 
-    instruction
-        .getCandidateGroups()
-        .ifPresent(candidateGroups -> userTaskAssert.hasCandidateGroups(candidateGroups));
+    if (!instruction.getCandidateGroups().isEmpty()) {
+      userTaskAssert.hasCandidateGroups(instruction.getCandidateGroups());
+    }
 
     instruction.getPriority().ifPresent(userTaskAssert::hasPriority);
 

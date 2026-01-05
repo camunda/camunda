@@ -59,9 +59,9 @@ public interface AssertUserTaskInstruction extends TestCaseInstruction {
   /**
    * The expected candidate groups of the user task. Optional.
    *
-   * @return the expected candidate groups or empty if not asserted
+   * @return the expected candidate groups or empty list if not asserted
    */
-  Optional<List<String>> getCandidateGroups();
+  List<String> getCandidateGroups();
 
   /**
    * The expected priority of the user task. Optional.
