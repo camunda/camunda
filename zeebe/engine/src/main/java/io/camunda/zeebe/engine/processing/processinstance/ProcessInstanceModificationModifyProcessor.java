@@ -462,10 +462,7 @@ public final class ProcessInstanceModificationModifyProcessor
         if (moveInstructions.containsKey(elementId)) {
           final var moveInstruction = moveInstructions.get(elementId);
           final var ancestorScopeKey =
-              moveInstruction.isInferAncestorScopeFromSourceHierarchy()
-                  ? findProperAncestorScopeKeyForTarget(
-                      elementInstance.getParentKey(), moveInstruction.getTargetElementId(), process)
-                  : moveInstruction.getAncestorScopeKey();
+              determineAncestorScopeKey(moveInstruction, elementInstance.getParentKey(), process);
           final var activateInstruction =
               new ProcessInstanceModificationActivateInstruction()
                   .setElementId(moveInstruction.getTargetElementId())
@@ -512,10 +509,7 @@ public final class ProcessInstanceModificationModifyProcessor
           elementInstanceState.getInstance(moveInstruction.getSourceElementInstanceKey());
 
       final var ancestorScopeKey =
-          moveInstruction.isInferAncestorScopeFromSourceHierarchy()
-              ? findProperAncestorScopeKeyForTarget(
-                  elementInstance.getParentKey(), moveInstruction.getTargetElementId(), process)
-              : moveInstruction.getAncestorScopeKey();
+          determineAncestorScopeKey(moveInstruction, elementInstance.getParentKey(), process);
 
       final var activateInstruction =
           new ProcessInstanceModificationActivateInstruction()
@@ -533,6 +527,28 @@ public final class ProcessInstanceModificationModifyProcessor
           new ProcessInstanceModificationTerminateInstruction()
               .setElementId(elementInstance.getValue().getElementId())
               .setElementInstanceKey(moveInstruction.getSourceElementInstanceKey()));
+    }
+  }
+
+  /**
+   * Determines the ancestor scope key for a move instruction based on its configuration.
+   *
+   * @param moveInstruction the move instruction with ancestor scope configuration
+   * @param sourceParentKey the parent key of the source element instance
+   * @param process the deployed process containing the elements
+   * @return the determined ancestor scope key
+   */
+  private long determineAncestorScopeKey(
+      final ProcessInstanceModificationMoveInstructionValue moveInstruction,
+      final long sourceParentKey,
+      final DeployedProcess process) {
+    if (moveInstruction.isUseSourceParentKeyAsAncestorScopeKey()) {
+      return sourceParentKey;
+    } else if (moveInstruction.isInferAncestorScopeFromSourceHierarchy()) {
+      return findProperAncestorScopeKeyForTarget(
+          sourceParentKey, moveInstruction.getTargetElementId(), process);
+    } else {
+      return moveInstruction.getAncestorScopeKey();
     }
   }
 
