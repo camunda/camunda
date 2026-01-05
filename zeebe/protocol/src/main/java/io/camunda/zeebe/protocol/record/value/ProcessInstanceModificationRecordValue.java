@@ -138,5 +138,13 @@ public interface ProcessInstanceModificationRecordValue
      * hierarchy.
      */
     boolean isInferAncestorScopeFromSourceHierarchy();
+
+    /**
+     * Indicates whether the source's direct parent key should be used as the ancestor scope key for
+     * the target element. This is a simpler alternative to {@link
+     * #isInferAncestorScopeFromSourceHierarchy()} that skips hierarchy traversal and directly uses
+     * the source's parent key.
+     */
+    boolean isUseSourceParentKeyAsAncestorScopeKey();
   }
 }
