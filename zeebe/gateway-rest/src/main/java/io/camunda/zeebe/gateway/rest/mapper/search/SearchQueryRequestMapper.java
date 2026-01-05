@@ -15,7 +15,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 
-import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
@@ -700,8 +699,7 @@ public final class SearchQueryRequestMapper {
                 .fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(request.getSort()),
             SortOptionBuilders::incidentProcessInstanceStatisticsByError,
             SearchQuerySortRequestMapper::applyIncidentProcessInstanceStatisticsByErrorSortField);
-    // Only ACTIVE incidents are considered for error statistics. This is hardcoded here.
-    final var filter = FilterBuilders.incident().states(IncidentState.ACTIVE.name()).build();
+    final var filter = FilterBuilders.incident().build();
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::incidentProcessInstanceStatisticsByErrorQuery);
   }
