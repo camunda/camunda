@@ -1,0 +1,58 @@
+{
+  "testCases": [
+    {
+      "name": "Assert active elements",
+      "description": "Assert that multiple elements are active",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "test-process"
+          }
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "test-process"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "task_A"
+            },
+            {
+              "elementId": "task_B"
+            }
+          ],
+          "state": "IS_ACTIVE"
+        }
+      ]
+    },
+    {
+      "name": "Assert completed elements in order",
+      "description": "Assert that multiple elements completed in specific order",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "sequential-process"
+          }
+        },
+        {
+          "type": "ASSERT_ELEMENT_INSTANCES",
+          "processInstanceSelector": {
+            "processDefinitionId": "sequential-process"
+          },
+          "elementSelectors": [
+            {
+              "elementId": "task_A"
+            },
+            {
+              "elementId": "task_B"
+            }
+          ],
+          "state": "IS_COMPLETED_IN_ORDER"
+        }
+      ]
+    }
+  ]
+}
