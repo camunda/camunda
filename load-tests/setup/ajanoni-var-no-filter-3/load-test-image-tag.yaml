@@ -1,0 +1,20 @@
+global:
+  image:
+    # Repository that contains the starter/worker images
+    repository: gcr.io/zeebe-io
+    # Tag to use for both starter and worker images
+    tag: SNAPSHOT-2025-12-30-ajanoni3
+    # Optional, but usually fine to keep as Always
+    pullPolicy: Always
+
+workers:
+  worker:
+    replicas: 3         # number of worker pods
+    capacity: 100        # ≈ maxJobsActive per pod
+    threads: 10          # worker threads per pod
+    # replaces bpmn/typical_payload.json
+    payloadPath: "bpmn/variable_500.json"
+
+starter:
+  # replaces bpmn/typical_payload.json
+  payloadPath: "bpmn/variable_500.json"

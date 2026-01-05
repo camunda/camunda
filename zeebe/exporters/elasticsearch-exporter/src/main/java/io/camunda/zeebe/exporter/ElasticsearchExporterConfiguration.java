@@ -332,6 +332,8 @@ public class ElasticsearchExporterConfiguration {
           + variable
           + ", variableDocument="
           + variableDocument
+          + ", variableNameInclusion="
+          + variableNameInclusion
           + ", checkpoint="
           + checkpoint
           + ", timer="
