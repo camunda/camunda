@@ -1,5 +1,5 @@
 # description: Workflow for Front-End end to end tests for Operate only. Tests will use a running instance of Operate for the API
-# test location: operate/client/e2e-playwright/tests
+# test location: qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/core-features
 name: "[Legacy] Operate / E2E Tests"
@@ -20,6 +20,7 @@ on:
       - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
   pull_request:
     paths:
       - ".ci/**"
@@ -32,6 +33,7 @@ on:
       - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
@@ -41,8 +43,6 @@ concurrency:
 
 jobs:
   test:
-    # Temporarily disabled E2E tests while we fix them
-    if: false
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
@@ -70,14 +70,30 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Build frontend
-        uses: ./.github/actions/build-frontend
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          directory: ./operate/client
-          package-manager: "npm"
-      - name: Install Playwright
-        run: npx playwright install -- --with-deps chromium
+          node-version: "22"
+
+      - name: Install node dependencies
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: npm ci
+
+      - name: Install frontend dependencies
         working-directory: ./operate/client
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Build frontend
+        working-directory: ./operate/client
+        run: npm run build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -118,17 +134,29 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
+
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
       - name: Run tests
-        working-directory: ./operate/client
-        run: npm run test:e2e:ci
+        shell: bash
         env:
-          ZEEBE_GATEWAY_ADDRESS: localhost:26500
-          ZEEBE_REST_GATEWAY_ADDRESS: http://localhost:8080
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: http://localhost:8080
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+        run: npm run test -- --project=operate-e2e
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Playwright report
-          path: operate/client/playwright-report/
+          name: C8 Orchestration Cluster E2E Test Result (operate)
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 30
 
       - name: Collect docker logs on failure
