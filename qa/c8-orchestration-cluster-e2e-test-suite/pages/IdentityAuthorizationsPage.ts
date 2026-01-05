@@ -128,6 +128,9 @@ export class IdentityAuthorizationsPage {
   async fillResourceId(resourceId: string) {
     await expect(this.createAuthorizationResourceIdField).toBeVisible();
     await this.createAuthorizationResourceIdField.fill(resourceId);
+    await expect(this.createAuthorizationResourceIdField).toHaveValue(
+      resourceId,
+    );
   }
 
   async checkAccessPermissions(permission: string[]) {
