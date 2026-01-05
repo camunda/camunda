@@ -64,6 +64,9 @@ class OperateProcessInstancePage {
   readonly incidentsViewHeader: Locator;
   readonly variableCellByName: (name: string | RegExp) => Locator;
   readonly viewAllChildProcessesLink: Locator;
+  readonly instanceHeaderSkeleton: Locator;
+  readonly viewAllCalledInstancesLink: Locator;
+  readonly viewParentInstanceLink: Locator;
   readonly processInstanceKeyCell: Locator;
 
   constructor(page: Page) {
@@ -160,6 +163,13 @@ class OperateProcessInstancePage {
       this.variablesList.getByRole('cell', {name});
     this.viewAllChildProcessesLink = this.instanceHeader.getByRole('link', {
       name: 'View all',
+    });
+    this.instanceHeaderSkeleton = page.getByTestId('instance-header-skeleton');
+    this.viewAllCalledInstancesLink = page.getByRole('link', {
+      name: /view all called instances/i,
+    });
+    this.viewParentInstanceLink = page.getByRole('link', {
+      name: /view parent instance/i,
     });
     this.processInstanceKeyCell = this.instanceHeader
       .locator('table tbody tr td')
@@ -597,6 +607,14 @@ class OperateProcessInstancePage {
 
   async clickViewAllChildProcesses(): Promise<void> {
     await this.viewAllChildProcessesLink.click();
+  }
+
+  async clickViewAllCalledInstances(): Promise<void> {
+    await this.viewAllCalledInstancesLink.click();
+  }
+
+  async clickViewParentInstance(): Promise<void> {
+    await this.viewParentInstanceLink.click();
   }
 }
 

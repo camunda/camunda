@@ -511,7 +511,9 @@ test.describe.serial('Process Instance Migration', () => {
 
       await expect(
         operateProcessesPage.getVersionCells(targetVersion),
-      ).toHaveCount(3, {timeout: 60000});
+      ).toHaveCount(3, {
+        timeout: 30000,
+      });
     });
 
     await test.step('Verify remaining instances still at source version', async () => {

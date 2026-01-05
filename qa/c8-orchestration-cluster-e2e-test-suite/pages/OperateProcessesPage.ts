@@ -61,6 +61,10 @@ class OperateProcessesPage {
   getParentInstanceCell: (parentInstanceKey: string) => Locator;
   getVersionCells: (version: string) => Locator;
   readonly viewParentInstanceLinkInList: Locator;
+  readonly calledInstanceCell: (
+    rowIndex?: number,
+    cellIndex?: number,
+  ) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -186,6 +190,12 @@ class OperateProcessesPage {
     this.viewParentInstanceLinkInList = this.dataList.getByRole('link', {
       name: /view parent instance/i,
     });
+    this.calledInstanceCell = (rowIndex = 0, cellIndex = 2) =>
+      this.dataList
+        .getByRole('row')
+        .nth(rowIndex)
+        .getByRole('cell')
+        .nth(cellIndex);
   }
 
   async filterByProcessName(name: string): Promise<void> {
