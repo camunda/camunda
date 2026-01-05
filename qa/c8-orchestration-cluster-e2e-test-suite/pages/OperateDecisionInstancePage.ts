@@ -35,7 +35,15 @@ class OperateDecisionInstancePage {
   }
 
   async getDecisionInstanceId(): Promise<string> {
-    return this.instanceHeader.getByRole('cell').nth(1).innerText();
+    const url = this.page.url();
+
+    const match = url.match(/\/decisions\/([^/?]+)/);
+    if (match && match[1]) {
+      const decisionInstanceId = match[1];
+      return decisionInstanceId;
+    }
+
+    throw new Error(`Could not extract decision instance ID from URL: ${url}`);
   }
 
   async gotoDecisionInstancePage(options: {id: string}): Promise<void> {
