@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceDeletionBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceIncidentResolutionBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
@@ -79,6 +80,30 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     final ProcessInstanceCancellationBatchOperationRequest lastRequest =
         gatewayService.getLastRequest(ProcessInstanceCancellationBatchOperationRequest.class);
+    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+  }
+
+  @Test
+  public void shouldSendProcessInstanceDeleteCommandWithFilter() {
+    // given
+    gatewayService.onDeleteProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
+    // when
+    client
+        .newCreateBatchOperationCommand()
+        .processInstanceDelete()
+        .filter(filter -> filter.processDefinitionId("test-01"))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/deletion");
+
+    final ProcessInstanceDeletionBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceDeletionBatchOperationRequest.class);
     assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
   }
 

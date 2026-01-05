@@ -37,6 +37,7 @@ import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceDeletionBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceIncidentResolutionBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
@@ -131,6 +132,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     switch (type) {
       case CANCEL_PROCESS_INSTANCE:
         return "/process-instances/cancellation";
+      case DELETE_PROCESS_INSTANCE:
+        return "/process-instances/deletion";
       case RESOLVE_INCIDENT:
         return "/process-instances/incident-resolution";
       case MIGRATE_PROCESS_INSTANCE:
@@ -154,6 +157,9 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
             .moveInstructions(moveInstructions);
       case CANCEL_PROCESS_INSTANCE:
         return new ProcessInstanceCancellationBatchOperationRequest()
+            .filter(provideSearchRequestProperty(filter));
+      case DELETE_PROCESS_INSTANCE:
+        return new ProcessInstanceDeletionBatchOperationRequest()
             .filter(provideSearchRequestProperty(filter));
       case RESOLVE_INCIDENT:
         return new ProcessInstanceIncidentResolutionBatchOperationRequest()
@@ -212,6 +218,15 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
           httpClient,
           jsonMapper,
           BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE,
+          SearchRequestBuilders::processInstanceFilter);
+    }
+
+    @Override
+    public CreateBatchOperationCommandStep2<ProcessInstanceFilter> processInstanceDelete() {
+      return new CreateBatchOperationCommandImpl<>(
+          httpClient,
+          jsonMapper,
+          BatchOperationTypeEnum.DELETE_PROCESS_INSTANCE,
           SearchRequestBuilders::processInstanceFilter);
     }
 
