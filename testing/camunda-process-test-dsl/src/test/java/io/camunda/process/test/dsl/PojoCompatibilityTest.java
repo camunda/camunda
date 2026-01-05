@@ -34,6 +34,7 @@ import io.camunda.process.test.api.dsl.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
@@ -222,6 +223,72 @@ public class PojoCompatibilityTest {
                     .name("Review")
                     .dueDate("2025-10-31T10:00:00Z")
                     .followUpDate("2025-10-20T10:00:00Z")
+                    .build())),
+        Arguments.of(
+            "assert element instances: minimal with IS_ACTIVE",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task2").build())
+                    .state(ElementInstanceState.IS_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_COMPLETED_IN_ORDER",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task2").build())
+                    .state(ElementInstanceState.IS_COMPLETED_IN_ORDER)
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_ACTIVE_EXACTLY",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task2").build())
+                    .state(ElementInstanceState.IS_ACTIVE_EXACTLY)
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_NOT_ACTIVE",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_NOT_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_NOT_ACTIVATED",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_NOT_ACTIVATED)
                     .build())));
   }
 
