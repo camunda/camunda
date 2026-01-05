@@ -142,6 +142,9 @@
       },
       "tags": {
         "type": "keyword"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
       }
 		}
 	}

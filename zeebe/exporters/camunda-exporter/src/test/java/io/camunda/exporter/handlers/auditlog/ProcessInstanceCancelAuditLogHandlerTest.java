@@ -64,6 +64,9 @@ class ProcessInstanceCancelAuditLogHandlerTest {
     assertThat(entity.getProcessInstanceKey()).isEqualTo(234L);
     assertThat(entity.getTenantId()).isEqualTo("tenant-1");
     assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(record.getValue().getRootProcessInstanceKey());
 
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
     assertThat(auditLogInfo.operationType()).isEqualTo(operationType);

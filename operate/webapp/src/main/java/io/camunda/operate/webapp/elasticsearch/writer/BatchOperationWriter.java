@@ -543,14 +543,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final OperationType operationType,
       final String batchOperationId) {
     final ProcessInstanceSource processInstanceSource =
-        new ProcessInstanceSource().setProcessInstanceKey(processInstanceKey);
-    final Optional<ProcessInstanceForListViewEntity> optionalProcessInstance =
-        tryGetProcessInstance(processInstanceKey);
-    optionalProcessInstance.ifPresent(
-        processInstance ->
-            processInstanceSource
-                .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
-                .setBpmnProcessId(processInstance.getBpmnProcessId()));
+        tryGetProcessInstance(processInstanceKey)
+            .map(ProcessInstanceSource::formProcessInstanceForListViewEntity)
+            .orElseGet(() -> new ProcessInstanceSource(processInstanceKey, null, null, null));
 
     return createOperationEntity(processInstanceSource, operationType, batchOperationId);
   }
@@ -569,7 +564,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
         .setState(OperationState.SCHEDULED)
         .setBatchOperationId(batchOperationId)
         .setUsername(
-            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
+            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .setRootProcessInstanceKey(processInstanceSource.getRootProcessInstanceKey());
   }
 
   private void validateTotalHits(final SearchHits hits) {

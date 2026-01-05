@@ -33,5 +33,9 @@ public class ProcessInstanceCancelAuditLogTransformer
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setTenantId(value.getTenantId())
         .setTenantScope(AuditLogTenantScope.TENANT);
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 }
