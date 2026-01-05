@@ -13,7 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.StatusResponse;
+import io.camunda.client.api.response.StatusResponse.Status;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Permissions;
@@ -39,7 +42,10 @@ public class GlobalErrorControllerWithAuthIT {
 
   @MultiDbTestApplication
   private static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+      new TestStandaloneBroker()
+          .withBasicAuth()
+          .withAuthorizationsEnabled()
+          .withAuthenticatedAccess();
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -70,6 +76,16 @@ public class GlobalErrorControllerWithAuthIT {
               .join();
 
       assertThat(usageMetrics).isNotNull();
+    }
+  }
+
+  @Test
+  void shouldPassForUnauthenticatedEndpoint() throws URISyntaxException {
+    try (final CamundaClient client = createClient(null, "")) {
+
+      final StatusResponse statusResponse = client.newStatusRequest().send().join();
+      assertThat(statusResponse).isNotNull();
+      assertThat(statusResponse.getStatus()).isEqualTo(Status.UP);
     }
   }
 
@@ -121,16 +137,22 @@ public class GlobalErrorControllerWithAuthIT {
 
   private static CamundaClient createClient(final TestUser user, final String path)
       throws URISyntaxException {
-    return BROKER
-        .newClientBuilder()
-        .restAddress(new URI("http://localhost:" + BROKER.mappedPort(TestZeebePort.REST) + path))
-        .defaultRequestTimeout(Duration.ofMinutes(10))
-        .preferRestOverGrpc(true)
-        .credentialsProvider(
-            new BasicAuthCredentialsProviderBuilder()
-                .username(user.username())
-                .password(user.password())
-                .build())
-        .build();
+    final CamundaClientBuilder camundaClientBuilder =
+        BROKER
+            .newClientBuilder()
+            .restAddress(
+                new URI("http://localhost:" + BROKER.mappedPort(TestZeebePort.REST) + path))
+            .defaultRequestTimeout(Duration.ofMinutes(10))
+            .preferRestOverGrpc(true);
+    if (user != null) {
+      camundaClientBuilder.credentialsProvider(
+          new BasicAuthCredentialsProviderBuilder()
+              .username(user.username())
+              .password(user.password())
+              .build());
+    } else {
+      camundaClientBuilder.credentialsProvider(null);
+    }
+    return camundaClientBuilder.build();
   }
 }
