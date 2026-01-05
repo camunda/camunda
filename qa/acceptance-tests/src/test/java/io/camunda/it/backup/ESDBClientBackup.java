@@ -79,8 +79,10 @@ public class ESDBClientBackup implements BackupDBClient {
   }
 
   @Override
-  public List<String> cat() throws IOException {
-    return esClient.cat().indices().valueBody().stream().map(IndicesRecord::index).toList();
+  public List<String> cat(final String indexPrefix) throws IOException {
+    return esClient.cat().indices(r -> r.index(indexPrefix + "*")).valueBody().stream()
+        .map(IndicesRecord::index)
+        .toList();
   }
 
   @Override

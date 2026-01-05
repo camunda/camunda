@@ -218,7 +218,7 @@ public class BackupRestoreIT {
 
     webappsDBClient.deleteAllIndices(INDEX_PREFIX);
 
-    Awaitility.await().untilAsserted(() -> assertThat(webappsDBClient.cat()).isEmpty());
+    Awaitility.await().untilAsserted(() -> assertThat(webappsDBClient.cat(INDEX_PREFIX)).isEmpty());
 
     // RESTORE PROCEDURE
     webappsDBClient.restore(REPOSITORY_NAME, snapshots);
@@ -304,10 +304,7 @@ public class BackupRestoreIT {
     final var metadata = new Metadata(BACKUP_ID, "current", 1, 1);
     final List<String> indices;
     try {
-      indices =
-          webappsDBClient.cat().stream()
-              .filter(name -> name.startsWith(configurator.zeebeIndexPrefix()))
-              .toList();
+      indices = webappsDBClient.cat(configurator.zeebeIndexPrefix());
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

@@ -86,8 +86,10 @@ public class OSDBClientBackup implements BackupDBClient {
   }
 
   @Override
-  public List<String> cat() throws IOException {
-    return opensearchClient.cat().indices().valueBody().stream().map(IndicesRecord::index).toList();
+  public List<String> cat(final String indexPrefix) throws IOException {
+    return opensearchClient.cat().indices(r -> r.index(indexPrefix + "*")).valueBody().stream()
+        .map(IndicesRecord::index)
+        .toList();
   }
 
   @Override
