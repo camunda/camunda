@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -22,22 +22,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class StatusController {
 
   private final TopologyServices topologyServices;
-  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public StatusController(
-      final TopologyServices topologyServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+  public StatusController(final TopologyServices topologyServices) {
     this.topologyServices = topologyServices;
-    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaGetMapping(path = "/status")
   public CompletableFuture<ResponseEntity<Object>> getStatus() {
     return RequestMapper.executeServiceMethod(
-        () ->
-            topologyServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .getStatus(),
+        () -> topologyServices.withAuthentication(CamundaAuthentication.none()).getStatus(),
         StatusController::getStatusResponse);
   }
 
