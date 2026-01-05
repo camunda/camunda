@@ -1833,7 +1833,8 @@ final class JsonSerializableToJsonTest {
                       }
                     }],
                     "ancestorScopeKey": 3,
-                    "inferAncestorScopeFromSourceHierarchy": true
+                    "inferAncestorScopeFromSourceHierarchy": true,
+                    "useSourceParentKeyAsAncestorScopeKey": false
                   }],
                   "activateInstructions": [{
                     "ancestorScopeKey": 3,
@@ -3779,11 +3780,12 @@ final class JsonSerializableToJsonTest {
                            }
                          }],
                          "ancestorScopeKey": 55555,
-                         "inferAncestorScopeFromSourceHierarchy": true
+                         "inferAncestorScopeFromSourceHierarchy": true,
+                         "useSourceParentKeyAsAncestorScopeKey": false
                        }
                      ],
                      "empty": false,
-                     "encodedLength": 226
+                     "encodedLength": 265
                    },
                    "authenticationBuffer": {
                      "expandable": false
