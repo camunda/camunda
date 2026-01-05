@@ -18,11 +18,10 @@ package io.camunda.process.test.impl.dsl.instructions;
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
-import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.instructions.AssertElementInstancesInstruction;
-import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
 import java.util.List;
@@ -47,7 +46,7 @@ public class AssertElementInstancesInstructionHandler
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(processInstanceSelector);
 
-    final ElementInstanceState state = instruction.getState();
+    final ElementInstancesState state = instruction.getState();
 
     assertElementsState(processInstanceAssert, elementSelectors, state);
   }
@@ -60,28 +59,15 @@ public class AssertElementInstancesInstructionHandler
   private List<ElementSelector> buildElementSelectors(
       final AssertElementInstancesInstruction instruction) {
     return instruction.getElementSelectors().stream()
-        .map(this::buildElementSelector)
+        .map(InstructionSelectorFactory::buildElementSelector)
         .collect(Collectors.toList());
-  }
-
-  private ElementSelector buildElementSelector(
-      final io.camunda.process.test.api.dsl.ElementSelector dslSelector) {
-    if (dslSelector.getElementId().isPresent()) {
-      return ElementSelectors.byId(dslSelector.getElementId().get());
-    } else if (dslSelector.getElementName().isPresent()) {
-      return ElementSelectors.byName(dslSelector.getElementName().get());
-    } else {
-      throw new IllegalArgumentException(
-          "Element selector must have either elementId or elementName");
-    }
   }
 
   private static void assertElementsState(
       final ProcessInstanceAssert processInstanceAssert,
       final List<ElementSelector> elementSelectors,
-      final ElementInstanceState state) {
-    final ElementSelector[] selectorsArray =
-        elementSelectors.toArray(new ElementSelector[0]);
+      final ElementInstancesState state) {
+    final ElementSelector[] selectorsArray = elementSelectors.toArray(new ElementSelector[0]);
 
     switch (state) {
       case IS_ACTIVE:

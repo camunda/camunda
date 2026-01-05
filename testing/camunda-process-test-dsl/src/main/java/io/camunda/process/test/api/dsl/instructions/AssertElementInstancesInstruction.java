@@ -20,7 +20,7 @@ import io.camunda.process.test.api.dsl.ElementSelector;
 import io.camunda.process.test.api.dsl.ProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
-import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -54,5 +54,5 @@ public interface AssertElementInstancesInstruction extends TestCaseInstruction {
    *
    * @return the expected state
    */
-  ElementInstanceState getState();
+  ElementInstancesState getState();
 }

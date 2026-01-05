@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.dsl.instructions.assertElementInstance;
+package io.camunda.process.test.api.dsl.instructions.assertElementInstances;
 
-/** The possible states of an element instance to assert. */
-public enum ElementInstanceState {
+/** The possible states of element instances to assert. */
+public enum ElementInstancesState {
   IS_ACTIVE,
   IS_COMPLETED,
-  IS_TERMINATED
+  IS_TERMINATED,
+  IS_NOT_ACTIVE,
+  IS_NOT_ACTIVATED,
+  IS_ACTIVE_EXACTLY,
+  IS_COMPLETED_IN_ORDER
 }
