@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIndexIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -37,7 +38,7 @@ public final class BackupService extends Actor implements BackupManager {
   private final int partitionId;
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
-  private final Path segmentsDirectory;
+  private final Path partitionDirectory;
   private final BackupManagerMetrics metrics;
 
   public BackupService(
@@ -45,16 +46,22 @@ public final class BackupService extends Actor implements BackupManager {
       final int partitionId,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
-      final Path segmentsDirectory,
+      final Path partitionDirectory,
       final JournalInfoProvider raftMetadataProvider,
       final MeterRegistry partitionRegistry,
       final LogStreamWriter logStreamWriter) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.snapshotStore = snapshotStore;
-    this.segmentsDirectory = segmentsDirectory;
+    this.partitionDirectory = partitionDirectory;
     metrics = new BackupManagerMetrics(partitionRegistry);
-    internalBackupManager = new BackupServiceImpl(actor, backupStore, logStreamWriter);
+    internalBackupManager =
+        new BackupServiceImpl(
+            actor,
+            backupStore,
+            logStreamWriter,
+            partitionDirectory,
+            new BackupIndexIdentifierImpl(nodeId, partitionId));
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
   }
@@ -89,7 +96,7 @@ public final class BackupService extends Actor implements BackupManager {
                   getBackupId(checkpointId),
                   backupDescriptor,
                   actor,
-                  segmentsDirectory,
+                  partitionDirectory,
                   journalInfoProvider);
 
           final var opMetrics = metrics.startTakingBackup();

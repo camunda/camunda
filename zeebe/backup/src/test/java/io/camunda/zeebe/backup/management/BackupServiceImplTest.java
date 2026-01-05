@@ -23,12 +23,15 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.backup.common.BackupIndexIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -42,6 +45,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -51,6 +55,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
@@ -69,8 +74,14 @@ class BackupServiceImplTest {
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
   @BeforeEach
-  void setup() {
-    backupService = new BackupServiceImpl(concurrencyControl, backupStore, logStreamWriter);
+  void setup(@TempDir final Path tempDir) {
+    backupService =
+        new BackupServiceImpl(
+            concurrencyControl,
+            backupStore,
+            logStreamWriter,
+            tempDir,
+            new BackupIndexIdentifierImpl(1, 1));
 
     lenient()
         .when(notExistingBackupStatus.statusCode())
@@ -88,6 +99,29 @@ class BackupServiceImplTest {
     lenient()
         .when(logStreamWriter.tryWrite(any(), any(LogAppendEntry.class)))
         .thenReturn(Either.right(-1L));
+
+    // Mock restoreIndex to return a CompletableFuture that completes with a faked handle
+    lenient()
+        .when(backupStore.restoreIndex(any(), any()))
+        .thenAnswer(
+            args ->
+                CompletableFuture.completedFuture(
+                    new BackupIndexHandle() {
+                      @Override
+                      public BackupIndexIdentifier id() {
+                        return args.getArgument(0);
+                      }
+
+                      @Override
+                      public Path path() {
+                        return args.getArgument(1);
+                      }
+                    }));
+
+    // Mock storeIndex to return a CompletableFuture that returns the same handle
+    lenient()
+        .when(backupStore.storeIndex(any()))
+        .thenAnswer(args -> CompletableFuture.completedFuture(args.getArgument(0)));
   }
 
   @Test
@@ -365,8 +399,8 @@ class BackupServiceImplTest {
     when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
 
     final BackupStatus backupNode2 = mock(BackupStatus.class);
-    when(backupNode1.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
-    when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
+    when(backupNode2.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backupNode2.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
 
     when(backupStore.list(
             new BackupIdentifierWildcardImpl(
@@ -438,7 +472,7 @@ class BackupServiceImplTest {
     backupService.takeBackup(inProgressBackup, concurrencyControl).join();
 
     // then
-    verify(logStreamWriter)
+    verify(logStreamWriter, timeout(1000).only())
         .tryWrite(
             eq(WriteContext.internal()),
             assertArg(
@@ -488,7 +522,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
-    verify(logStreamWriter).tryWrite(any(), any(LogAppendEntry.class));
+    verify(logStreamWriter, timeout(1000).only()).tryWrite(any(), any(LogAppendEntry.class));
   }
 
   private ActorFuture<Void> failedFuture() {

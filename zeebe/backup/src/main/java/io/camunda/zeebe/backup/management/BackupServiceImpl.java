@@ -9,10 +9,12 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.backup.common.BackupIndexIdentifierImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,15 +45,22 @@ final class BackupServiceImpl {
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private final LogStreamWriter logStreamWriter;
+  private final Path partitionDirectory;
   private final ConcurrencyControl concurrencyControl;
+  private final BackupIndexManager indexManager;
 
   BackupServiceImpl(
       final ConcurrencyControl concurrencyControl,
       final BackupStore backupStore,
-      final LogStreamWriter logStreamWriter) {
+      final LogStreamWriter logStreamWriter,
+      final Path partitionDirectory,
+      final BackupIndexIdentifier indexId) {
     this.concurrencyControl = concurrencyControl;
     this.backupStore = backupStore;
     this.logStreamWriter = logStreamWriter;
+    this.partitionDirectory = partitionDirectory;
+
+    indexManager = new BackupIndexManager(backupStore, indexPath(indexId), indexId);
   }
 
   void close() {
@@ -59,6 +69,7 @@ final class BackupServiceImpl {
         .setMessage("Closing backup service")
         .log();
     backupsInProgress.forEach(InProgressBackup::close);
+    indexManager.close();
   }
 
   ActorFuture<Void> takeBackup(
@@ -163,6 +174,7 @@ final class BackupServiceImpl {
     LOG.atDebug().addKeyValue("backup", inProgressBackup.id()).setMessage("Saving backup").log();
     backupStore
         .save(backup)
+        .thenCompose((ignored) -> indexManager.add(inProgressBackup))
         .whenComplete(
             (ignore, error) -> {
               if (error == null) {
@@ -341,14 +353,32 @@ final class BackupServiceImpl {
 
   private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {
     LOG.atInfo().addKeyValue("backup", backupStatus.id()).setMessage("Deleting backup").log();
+    final CompletableFuture<Void> deletionFuture;
     if (backupStatus.statusCode() == BackupStatusCode.IN_PROGRESS) {
       // In progress backups cannot be deleted. So first mark it as failed
-      return backupStore
-          .markFailed(backupStatus.id(), "The backup is going to be deleted.")
-          .thenCompose(ignore -> backupStore.delete(backupStatus.id()));
+      deletionFuture =
+          backupStore
+              .markFailed(backupStatus.id(), "The backup is going to be deleted.")
+              .thenCompose(ignore -> backupStore.delete(backupStatus.id()));
     } else {
-      return backupStore.delete(backupStatus.id());
+      deletionFuture = backupStore.delete(backupStatus.id());
     }
+
+    // Remove from index after successful deletion
+    return deletionFuture.thenCompose(
+        (ignore) -> {
+          final var indexId =
+              new BackupIndexIdentifierImpl(
+                  backupStatus.id().partitionId(), backupStatus.id().partitionId());
+          if (indexManager.indexId().equals(indexId)) {
+            return indexManager.remove(backupStatus.id());
+          } else {
+            try (final var foreignIndexManager =
+                new BackupIndexManager(backupStore, indexPath(indexId), indexId)) {
+              return foreignIndexManager.remove(backupStatus.id());
+            }
+          }
+        });
   }
 
   ActorFuture<Collection<BackupStatus>> listBackups(
@@ -393,5 +423,10 @@ final class BackupServiceImpl {
                     return null;
                   });
         });
+  }
+
+  private Path indexPath(final BackupIndexIdentifier indexId) {
+    return partitionDirectory.resolve(
+        String.format("backup-index-%d-%d.bin", indexId.nodeId(), indexId.partitionId()));
   }
 }
