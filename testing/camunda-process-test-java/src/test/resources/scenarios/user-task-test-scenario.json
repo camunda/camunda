@@ -1,0 +1,38 @@
+{
+  "testCases": [
+    {
+      "name": "User task assertion test",
+      "description": "Test the ASSERT_USER_TASK instruction with various assertions",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "user-task-process"
+          }
+        },
+        {
+          "type": "ASSERT_USER_TASK",
+          "userTaskSelector": {
+            "elementId": "userTask"
+          },
+          "state": "IS_CREATED"
+        },
+        {
+          "type": "ASSERT_USER_TASK",
+          "userTaskSelector": {
+            "taskName": "Review Task"
+          },
+          "state": "IS_CREATED",
+          "elementId": "userTask"
+        },
+        {
+          "type": "ASSERT_USER_TASK",
+          "userTaskSelector": {
+            "processDefinitionId": "user-task-process"
+          },
+          "state": "IS_CREATED"
+        }
+      ]
+    }
+  ]
+}
