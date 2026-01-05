@@ -43,6 +43,7 @@ import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -231,7 +232,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .state(UserTaskState.IS_CREATED)
                     .assignee("me")
-                    .addCandidateGroups("manager")
+                    .candidateGroups(Arrays.asList("manager"))
                     .priority(100)
                     .elementId("task1")
                     .name("Review")
