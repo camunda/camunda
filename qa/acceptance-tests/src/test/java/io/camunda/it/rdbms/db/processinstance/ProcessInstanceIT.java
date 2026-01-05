@@ -50,11 +50,13 @@ public class ProcessInstanceIT {
     final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final Long processInstanceKey = nextKey();
+    final long rootProcessInstanceKey = nextKey();
     createAndSaveProcessInstance(
         rdbmsWriters,
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(processInstanceKey)
+                    .rootProcessInstanceKey(rootProcessInstanceKey)
                     .processDefinitionId("test-process")
                     .processDefinitionKey(1337L)
                     .state(ProcessInstanceState.ACTIVE)
@@ -67,6 +69,7 @@ public class ProcessInstanceIT {
 
     assertThat(instance).isNotNull();
     assertThat(instance.processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(instance.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
     assertThat(instance.processDefinitionId()).isEqualTo("test-process");
     assertThat(instance.processDefinitionKey()).isEqualTo(1337L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);

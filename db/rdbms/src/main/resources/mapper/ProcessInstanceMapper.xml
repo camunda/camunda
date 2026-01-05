@@ -12,6 +12,7 @@
   <select id="findOne" parameterType="java.lang.Long"
     resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT pi.PROCESS_INSTANCE_KEY,
+           pi.ROOT_PROCESS_INSTANCE_KEY,
            pi.PROCESS_DEFINITION_ID,
            pi.PROCESS_DEFINITION_KEY,
            pi.STATE,
@@ -49,6 +50,7 @@
     SELECT * FROM (
     SELECT
     pif.PROCESS_INSTANCE_KEY,
+    pif.ROOT_PROCESS_INSTANCE_KEY,
     pif.PROCESS_DEFINITION_ID,
     pif.PROCESS_DEFINITION_KEY,
     pif.STATE,
@@ -67,6 +69,7 @@
     SELECT *  FROM (
     SELECT
     pi.PROCESS_INSTANCE_KEY,
+    pi.ROOT_PROCESS_INSTANCE_KEY,
     pi.PROCESS_DEFINITION_ID,
     pi.PROCESS_DEFINITION_KEY,
     pi.STATE,
@@ -345,6 +348,7 @@
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
     <constructor>
       <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
