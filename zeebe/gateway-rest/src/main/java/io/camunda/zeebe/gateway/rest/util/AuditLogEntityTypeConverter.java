@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
+import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogEntityTypeEnum;
 
 public final class AuditLogEntityTypeConverter implements CustomConverter<String> {
 

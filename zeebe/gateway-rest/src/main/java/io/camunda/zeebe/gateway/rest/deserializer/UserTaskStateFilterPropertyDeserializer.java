@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedUserTaskStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskStateFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedUserTaskStateFilter;
+import io.camunda.gateway.protocol.model.UserTaskStateEnum;
+import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
 
 public class UserTaskStateFilterPropertyDeserializer
     extends FilterDeserializer<UserTaskStateFilterProperty, UserTaskStateEnum> {

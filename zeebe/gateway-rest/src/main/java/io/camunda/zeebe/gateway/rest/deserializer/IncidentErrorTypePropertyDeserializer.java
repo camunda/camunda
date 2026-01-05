@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedIncidentErrorTypeFilter;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedIncidentErrorTypeFilter;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeFilterProperty;
 
 public class IncidentErrorTypePropertyDeserializer
     extends FilterDeserializer<IncidentErrorTypeFilterProperty, IncidentErrorTypeEnum> {

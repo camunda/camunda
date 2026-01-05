@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.protocol.model.ExpressionEvaluationRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
-import io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;

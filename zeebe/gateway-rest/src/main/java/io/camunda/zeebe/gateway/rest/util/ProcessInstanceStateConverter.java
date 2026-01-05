@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 
 public class ProcessInstanceStateConverter implements CustomConverter<String> {
 

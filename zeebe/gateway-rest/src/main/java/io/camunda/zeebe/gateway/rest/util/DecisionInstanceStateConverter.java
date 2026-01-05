@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
+import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
 
 public class DecisionInstanceStateConverter implements CustomConverter<String> {
 

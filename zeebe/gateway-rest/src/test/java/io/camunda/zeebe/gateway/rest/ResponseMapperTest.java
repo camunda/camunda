@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.ActivatedJobResult;
+import io.camunda.gateway.protocol.model.UserTaskProperties;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
-import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskProperties;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;

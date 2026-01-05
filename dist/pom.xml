@@ -116,6 +116,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-models</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-rest</artifactId>
     </dependency>
 

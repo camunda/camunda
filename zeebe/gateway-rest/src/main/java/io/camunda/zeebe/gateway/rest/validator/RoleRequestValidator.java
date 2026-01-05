@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
+import io.camunda.gateway.protocol.model.RoleCreateRequest;
+import io.camunda.gateway.protocol.model.RoleUpdateRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;

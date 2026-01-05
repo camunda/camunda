@@ -9,15 +9,15 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
+import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;

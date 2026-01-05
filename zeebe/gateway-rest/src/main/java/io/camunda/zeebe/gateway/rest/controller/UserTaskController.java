@@ -9,19 +9,19 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.protocol.model.FormResult;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskResult;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
+import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
+import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
+import io.camunda.gateway.protocol.model.UserTaskVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.zeebe.gateway.protocol.rest.FormResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;

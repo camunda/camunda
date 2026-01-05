@@ -9,13 +9,13 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CreateClusterVariableRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;

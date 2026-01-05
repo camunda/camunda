@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
+import io.camunda.gateway.protocol.model.DecisionEvaluationById;
+import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

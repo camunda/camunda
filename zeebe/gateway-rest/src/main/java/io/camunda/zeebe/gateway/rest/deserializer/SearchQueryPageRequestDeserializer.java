@@ -10,11 +10,11 @@ package io.camunda.zeebe.gateway.rest.deserializer;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 
-import io.camunda.zeebe.gateway.protocol.rest.CursorBackwardPagination;
-import io.camunda.zeebe.gateway.protocol.rest.CursorForwardPagination;
-import io.camunda.zeebe.gateway.protocol.rest.LimitPagination;
-import io.camunda.zeebe.gateway.protocol.rest.OffsetPagination;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.CursorBackwardPagination;
+import io.camunda.gateway.protocol.model.CursorForwardPagination;
+import io.camunda.gateway.protocol.model.LimitPagination;
+import io.camunda.gateway.protocol.model.OffsetPagination;
+import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import java.util.List;
 import java.util.Set;

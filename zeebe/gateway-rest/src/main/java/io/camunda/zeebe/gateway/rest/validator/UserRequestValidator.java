@@ -11,8 +11,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

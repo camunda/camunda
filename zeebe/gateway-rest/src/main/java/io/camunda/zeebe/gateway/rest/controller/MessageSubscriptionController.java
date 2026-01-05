@@ -9,14 +9,14 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuery;
+import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQueryResult;
+import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQuery;
+import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MessageSubscriptionServices;
-import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;

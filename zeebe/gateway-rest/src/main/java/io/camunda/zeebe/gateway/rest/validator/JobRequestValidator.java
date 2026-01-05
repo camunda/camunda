@@ -12,10 +12,10 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobChangeset;
-import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobChangeset;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
