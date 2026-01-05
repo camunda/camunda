@@ -206,7 +206,7 @@ jobs:
           dir=$(ls -d camunda-zeebe-*/)
           cd "$dir"
 
-          CONFIG_PATH="../../qa/http/configs"
+          CONFIG_PATH="../../../qa/http/configs"
           if [ "${{ matrix.case }}" = "mapping-rules.http" ]; then
             CONFIG_FILE="$CONFIG_PATH/identity-oidc.env"
           else
