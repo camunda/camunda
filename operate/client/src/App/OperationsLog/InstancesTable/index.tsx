@@ -54,7 +54,9 @@ const InstancesTable: React.FC = () => {
           order: sortParams.sortOrder,
         },
       ],
-      filter: {},
+      filter: {
+        category: {$neq: 'ADMIN'},
+      },
     }),
     [sortBy, sortParams.sortOrder],
   );
