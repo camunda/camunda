@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -154,8 +154,9 @@ public final class DecisionEvaluationRootProcessInstanceKeyTest {
 
     // Verify all three process instances are different
     assertThat(
-            Set.of(rootProcessInstanceKey, childProcessInstanceKey, grandchildProcessInstanceKey))
-        .hasSize(3);
+            Stream.of(
+                rootProcessInstanceKey, childProcessInstanceKey, grandchildProcessInstanceKey))
+        .doesNotHaveDuplicates();
 
     // get the decision evaluation in the grandchild process
     final Record<DecisionEvaluationRecordValue> decisionEvaluated =
