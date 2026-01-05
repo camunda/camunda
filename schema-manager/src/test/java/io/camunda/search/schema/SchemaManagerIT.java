@@ -1189,7 +1189,7 @@ public class SchemaManagerIT {
     assertThatThrownBy(schemaManager::startup)
         .isInstanceOf(IndexSchemaValidationException.class)
         .hasMessageContaining(
-            "Index name: custom-prefix-test-template_name-1.0.0_. Not supported index changes are introduced. Data migration is required.");
+            "Index name: custom-prefix-test-template_name-1.0.0_. Unsupported index changes have been introduced. Data migration is required.");
   }
 
   @TestTemplate
