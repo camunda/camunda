@@ -187,7 +187,7 @@ public abstract class ElasticsearchUtil {
   public static String getFieldFromResponseObject(
       final co.elastic.clients.elasticsearch.core.SearchResponse<Map<String, Object>> response,
       final String fieldName) {
-    if (response.hits().total().value() != 1) {
+    if (response.hits().hits().size() != 1) {
       throw new IllegalArgumentException(
           "Expected exactly one document in response object " + response);
     }

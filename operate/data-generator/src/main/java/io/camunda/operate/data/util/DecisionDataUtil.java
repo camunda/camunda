@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.data.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -22,11 +20,9 @@ import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEnt
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -47,13 +43,7 @@ public class DecisionDataUtil {
 
   public static final String TENANT1 = "tenant1";
   public static final String TENANT2 = "tenant2";
-  @Autowired protected DecisionStore decisionStore;
-  private Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
   private final Random random = new Random();
-
-  @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
 
   @Autowired private PayloadUtil payloadUtil;
 

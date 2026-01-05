@@ -343,7 +343,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringDeleteProcessInstancesAndDependants() throws IOException {
-    when(es8Client.deleteByQuery((Function) any())).thenThrow(new IOException());
+    when(es8Client.deleteByQuery(any((Function.class)))).thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.deleteProcessInstancesAndDependants(Set.of(123L)));
