@@ -25,6 +25,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
@@ -638,6 +640,58 @@ final class BulkIndexRequestTest {
           .describedAs(
               "Expect that the records are serialized with elementId in terminateInstructions")
           .containsExactly(tuple("foo", 5));
+    }
+
+    @Test
+    void shouldIndexAuthorizationRecordWithoutResourcePropertyNameOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.AUTHORIZATION, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      final var resourcePropertyName =
+          ((AuthorizationRecordValue) (record.getValue())).getResourcePropertyName();
+      assertThat(resourcePropertyName).isNotEmpty();
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      final List<BulkOperation> actual = request.bulkOperations();
+      assertThat(actual)
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("resourcePropertyName"))
+          .describedAs("Expect that the records are serialized without resourcePropertyName")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexAuthorizationRecordResourcePropertyName() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.AUTHORIZATION, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+      final var resourcePropertyName =
+          ((AuthorizationRecordValue) (record.getValue())).getResourcePropertyName();
+      assertThat(resourcePropertyName).isNotEmpty();
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("resourcePropertyName"))
+          .describedAs("Expect that the records are serialized with resourcePropertyName")
+          .containsExactly(resourcePropertyName);
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

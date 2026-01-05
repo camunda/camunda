@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -46,6 +47,7 @@ final class BulkIndexRequest implements ContentProducer {
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
+          .addMixIn(AuthorizationRecordValue.class, AuthorizationMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
@@ -71,6 +73,7 @@ final class BulkIndexRequest implements ContentProducer {
       "processDefinitionKey";
   private static final String PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY =
       "moveInstructions";
+  private static final String RESOURCE_PROPERTY_NAME_PROPERTY = "resourcePropertyName";
   private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
   private final List<BulkOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
@@ -211,6 +214,9 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonIgnoreProperties({PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY})
   private static final class ProcessInstanceModificationMixin {}
+
+  @JsonIgnoreProperties({RESOURCE_PROPERTY_NAME_PROPERTY})
+  private static final class AuthorizationMixin {}
 
   public interface TerminateInstructionsMixin {
     @JsonIgnore
