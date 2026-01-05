@@ -11,7 +11,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.Arrays;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
 
 public final class VariableNameRecordValueFilter implements RecordValueFilter {
 
@@ -20,7 +19,7 @@ public final class VariableNameRecordValueFilter implements RecordValueFilter {
   private final Pattern[] variableNameInclusionList;
 
   public VariableNameRecordValueFilter(final String variableNameInclusion) {
-    if (StringUtils.isBlank(variableNameInclusion)) {
+    if (variableNameInclusion == null || variableNameInclusion.trim().isEmpty()) {
       variableNameInclusionList = new Pattern[0];
     } else {
       variableNameInclusionList =

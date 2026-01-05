@@ -8,7 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.exporter.common.filter.SearchRecordFilter;
+import io.camunda.zeebe.exporter.common.filter.ExportRecordFilter;
 import io.camunda.zeebe.exporter.common.filter.VariableNameRecordValueFilter;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -17,11 +17,11 @@ import java.util.List;
 
 public class ElasticsearchRecordFilter implements Context.RecordFilter {
 
-  private final SearchRecordFilter delegate;
+  private final ExportRecordFilter delegate;
 
   ElasticsearchRecordFilter(final ElasticsearchExporterConfiguration configuration) {
     delegate =
-        new SearchRecordFilter(
+        new ExportRecordFilter(
             configuration::shouldIndexRecordType,
             configuration::shouldIndexValueType,
             List.of(new VariableNameRecordValueFilter(configuration.index.variableNameInclusion)));

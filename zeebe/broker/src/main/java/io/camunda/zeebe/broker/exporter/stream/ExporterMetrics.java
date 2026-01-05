@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 public final class ExporterMetrics {
   private static final String LABEL_NAME_EXPORTER = "exporter";
@@ -37,10 +38,51 @@ public final class ExporterMetrics {
   private final Table<ExporterActionKeyNames, ValueType, Counter> exporterEvents =
       Table.ofEnum(ExporterActionKeyNames.class, ValueType.class, Counter[]::new);
 
+  private final Counter exportRetryCounter;
+  private final Counter exportErrorCounter;
+  private final Timer readNextEventTimer;
+  private final Counter skippedRecordsCounter;
+
   private final MeterRegistry meterRegistry;
 
   public ExporterMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = Objects.requireNonNull(meterRegistry, "must specify a meter registry");
+    exportRetryCounter =
+        Counter.builder("zeebe_exporter_retries_total")
+            .description("Number of exporter retry attempts")
+            .register(meterRegistry);
+
+    exportErrorCounter =
+        Counter.builder("zeebe_exporter_errors_total")
+            .description("Number of exporter export failures")
+            .register(meterRegistry);
+
+    readNextEventTimer =
+        Timer.builder("zeebe_exporter_read_next_event_duration_seconds")
+            .description("Time spent in ExporterDirector.readNextEvent()")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+
+    skippedRecordsCounter =
+        Counter.builder("zeebe_exporter_records_skipped_total")
+            .description("Number of records skipped by the exporter filter")
+            .register(meterRegistry);
+  }
+
+  public void incrementRetry() {
+    exportRetryCounter.increment();
+  }
+
+  public void incrementError() {
+    exportErrorCounter.increment();
+  }
+
+  public <T> void recordReadNextEventDuration(final Supplier<T> supplier) {
+    readNextEventTimer.record(supplier);
+  }
+
+  public void incrementSkippedRecords() {
+    skippedRecordsCounter.increment();
   }
 
   public void setExporterActive() {
