@@ -59,6 +59,7 @@ const OperationsLog: React.FC<Props> = observer(
           },
         ],
         filter: {
+          category: {$neq: 'ADMIN'},
           processInstanceKey: isRootNodeSelected
             ? flowNodeInstanceId
             : undefined,
