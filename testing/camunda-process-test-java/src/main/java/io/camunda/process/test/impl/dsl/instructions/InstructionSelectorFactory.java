@@ -17,6 +17,8 @@ package io.camunda.process.test.impl.dsl.instructions;
 
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.assertions.UserTaskSelectors;
 
 /** Factory for creating selector instances from DSL selectors. */
 final class InstructionSelectorFactory {
@@ -39,5 +41,40 @@ final class InstructionSelectorFactory {
         .map(ProcessInstanceSelectors::byProcessId)
         .orElseThrow(
             () -> new IllegalArgumentException("Missing required property: processDefinitionId"));
+  }
+
+  /**
+   * Builds a user task selector from a DSL user task selector.
+   *
+   * @param dslSelector the DSL user task selector
+   * @return the user task selector
+   * @throws IllegalArgumentException if no selector property is set
+   */
+  static UserTaskSelector buildUserTaskSelector(
+      final io.camunda.process.test.api.dsl.UserTaskSelector dslSelector) {
+    UserTaskSelector selector = null;
+
+    if (dslSelector.getElementId().isPresent()) {
+      selector = UserTaskSelectors.byElementId(dslSelector.getElementId().get());
+    }
+
+    if (dslSelector.getTaskName().isPresent()) {
+      final UserTaskSelector taskNameSelector =
+          UserTaskSelectors.byTaskName(dslSelector.getTaskName().get());
+      selector = selector != null ? selector.and(taskNameSelector) : taskNameSelector;
+    }
+
+    if (dslSelector.getProcessDefinitionId().isPresent()) {
+      final UserTaskSelector processDefSelector =
+          UserTaskSelectors.byProcessDefinitionId(dslSelector.getProcessDefinitionId().get());
+      selector = selector != null ? selector.and(processDefSelector) : processDefSelector;
+    }
+
+    if (selector == null) {
+      throw new IllegalArgumentException(
+          "Missing required property: at least one of elementId, taskName, or processDefinitionId must be set");
+    }
+
+    return selector;
   }
 }

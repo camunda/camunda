@@ -54,6 +54,9 @@
           "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
+          "$ref": "#/definitions/AssertUserTaskInstruction"
+        },
+        {
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
         }
       ]
@@ -260,6 +263,103 @@
         {
           "required": [
             "elementName"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "AssertUserTaskInstruction": {
+      "description": "An instruction to assert the state of a user task.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_USER_TASK"
+        },
+        "userTaskSelector": {
+          "description": "The selector to identify the user task.",
+          "$ref": "#/definitions/UserTaskSelector"
+        },
+        "state": {
+          "description": "The expected state of the user task.",
+          "type": "string",
+          "enum": [
+            "IS_CREATED",
+            "IS_COMPLETED",
+            "IS_CANCELED",
+            "IS_FAILED"
+          ]
+        },
+        "assignee": {
+          "description": "The expected assignee of the user task.",
+          "type": "string"
+        },
+        "candidateGroups": {
+          "description": "The expected candidate groups of the user task.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "description": "The expected priority of the user task.",
+          "type": "integer"
+        },
+        "elementId": {
+          "description": "The expected element ID of the user task.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The expected name of the user task.",
+          "type": "string"
+        },
+        "dueDate": {
+          "description": "The expected due date of the user task in ISO-8601 format.",
+          "type": "string"
+        },
+        "followUpDate": {
+          "description": "The expected follow-up date of the user task in ISO-8601 format.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "userTaskSelector"
+      ],
+      "additionalProperties": false
+    },
+    "UserTaskSelector": {
+      "description": "A selector to identify a user task.",
+      "type": "object",
+      "properties": {
+        "elementId": {
+          "description": "The ID of the BPMN element.",
+          "type": "string"
+        },
+        "taskName": {
+          "description": "The name of the user task.",
+          "type": "string"
+        },
+        "processDefinitionId": {
+          "description": "The process definition ID of the user task.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "elementId"
+          ]
+        },
+        {
+          "required": [
+            "taskName"
+          ]
+        },
+        {
+          "required": [
+            "processDefinitionId"
           ]
         }
       ],

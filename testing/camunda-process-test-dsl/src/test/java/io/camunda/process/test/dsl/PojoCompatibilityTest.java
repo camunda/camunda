@@ -30,13 +30,16 @@ import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.ImmutableTestScenario;
+import io.camunda.process.test.api.dsl.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
@@ -193,6 +196,47 @@ public class PojoCompatibilityTest {
                     .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
                     .state(ElementInstanceState.IS_TERMINATED)
                     .amount(3)
+                    .build())),
+        Arguments.of(
+            "assert user task: minimal with elementId",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "assert user task: minimal with taskName",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().taskName("User Task").build())
+                    .build())),
+        Arguments.of(
+            "assert user task: minimal with processDefinitionId",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert user task: full",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .state(UserTaskState.IS_CREATED)
+                    .assignee("me")
+                    .addCandidateGroups("manager")
+                    .priority(100)
+                    .elementId("task1")
+                    .name("Review")
+                    .dueDate("2025-10-31T10:00:00Z")
+                    .followUpDate("2025-10-20T10:00:00Z")
                     .build())));
   }
 
