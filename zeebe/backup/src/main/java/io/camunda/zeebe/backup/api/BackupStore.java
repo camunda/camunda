@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.api;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.concurrent.CompletableFuture;
 
 /** A store where the backup is stored * */
@@ -50,7 +51,8 @@ public interface BackupStore {
    *     java.util.ConcurrentModificationException} if they detect that the file has unexpectedly
    *     changed in the meantime.
    */
-  CompletableFuture<BackupIndexFile> storeIndex(BackupIndexFile indexFile);
+  CompletableFuture<BackupIndexFile> storeIndex(BackupIndexFile indexFile)
+      throws ConcurrentModificationException;
 
   /**
    * Makes the stored {@link BackupIndexFile} available locally, allowing callers to construct the
