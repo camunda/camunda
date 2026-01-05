@@ -55,6 +55,8 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
     super.before();
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(any(), any())).thenReturn(true);
+    when(permissionsService.getDecisionsWithPermission(any()))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
   }
 
   @Test
