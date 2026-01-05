@@ -95,7 +95,7 @@
     "eslint-plugin-prettier": "5.5.4",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.24",
-    "eslint-plugin-testing-library": "7.13.3",
+    "eslint-plugin-testing-library": "7.15.4",
     "jsdom": "26.1.0",
     "monaco-editor": "0.52.2",
     "msw": "2.10.2",

@@ -98,7 +98,7 @@
     "eslint-plugin-prettier": "5.5.4",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.24",
-    "eslint-plugin-testing-library": "7.13.3",
+    "eslint-plugin-testing-library": "7.15.4",
     "globals": "16.5.0",
     "jsdom": "26.1.0",
     "knip": "5.78.0",
