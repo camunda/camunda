@@ -32,8 +32,13 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED;
 import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.FAILED;
 import static java.util.stream.Collectors.groupingBy;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.google.common.collect.ImmutableList;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -61,13 +66,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,7 +96,7 @@ public class DecisionInstanceReader extends AbstractReader
     final var constantScoreQuery = ElasticsearchUtil.constantScoreQuery(tenantAwareQuery);
 
     final var request =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(decisionInstanceTemplate, ALL))
             .query(constantScoreQuery)
             .build();
@@ -138,15 +136,17 @@ public class DecisionInstanceReader extends AbstractReader
       final String decisionInstanceId) {
     // we need to find all decision instances with he same key, which we extract from
     // decisionInstanceId
-    final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
+    final var decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
+    final var query = ElasticsearchUtil.termsQuery(KEY, decisionInstanceKey);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(decisionInstanceTemplate, ALL))
-            .query(ElasticsearchUtil.termsQuery(KEY, decisionInstanceKey))
+            .query(tenantAwareQuery)
             .source(s -> s.filter(f -> f.includes(DECISION_ID, STATE)))
             .sort(
                 ElasticsearchUtil.sortOrder(
-                    EVALUATION_DATE, co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+                    EVALUATION_DATE, SortOrder.Asc));
 
     try {
       final var entries =
@@ -171,33 +171,61 @@ public class DecisionInstanceReader extends AbstractReader
   @Override
   public Tuple<String, String> getCalledDecisionInstanceAndDefinitionByFlowNodeInstanceId(
       final String flowNodeInstanceId) {
-    final String[] calledDecisionInstanceId = {null};
-    final String[] calledDecisionDefinitionName = {null};
-    findCalledDecisionInstance(
-        flowNodeInstanceId,
-        sh -> {
-          final Map<String, Object> source = sh.getSourceAsMap();
-          final String rootDecisionDefId = (String) source.get(ROOT_DECISION_DEFINITION_ID);
-          final String decisionDefId = (String) source.get(DECISION_DEFINITION_ID);
+    final var query = ElasticsearchUtil.termsQuery(ELEMENT_INSTANCE_KEY, flowNodeInstanceId);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(whereToSearch(decisionInstanceTemplate, ALL))
+            .query(tenantAwareQuery)
+            .source(
+                s ->
+                    s.filter(
+                        f ->
+                            f.includes(
+                                ROOT_DECISION_DEFINITION_ID,
+                                ROOT_DECISION_NAME,
+                                ROOT_DECISION_ID,
+                                DECISION_DEFINITION_ID,
+                                DECISION_NAME,
+                                DecisionIndex.DECISION_ID)))
+            .sort(
+                ElasticsearchUtil.sortOrder(
+                    EVALUATION_DATE, SortOrder.Desc))
+            .sort(
+                ElasticsearchUtil.sortOrder(
+                    EXECUTION_INDEX, SortOrder.Desc))
+            .size(1)
+            .build();
 
-          if (rootDecisionDefId.equals(decisionDefId)) {
-            // this is our instance, we will show the link
-            calledDecisionInstanceId[0] = sh.getId();
-            String decisionName = (String) source.get(DECISION_NAME);
-            if (decisionName == null) {
-              decisionName = (String) source.get(DecisionIndex.DECISION_ID);
-            }
-            calledDecisionDefinitionName[0] = decisionName;
-          } else {
-            // we will show only name of the root decision without the link
-            String decisionName = (String) source.get(ROOT_DECISION_NAME);
-            if (decisionName == null) {
-              decisionName = (String) source.get(ROOT_DECISION_ID);
-            }
-            calledDecisionDefinitionName[0] = decisionName;
-          }
-        });
-    return Tuple.of(calledDecisionInstanceId[0], calledDecisionDefinitionName[0]);
+    try {
+      final var response = es8client.search(searchRequest, MAP_CLASS);
+      if (response.hits().total().value() >= 1) {
+        final var hit = response.hits().hits().get(0);
+        return buildCalledDecisionTuple(hit.id(), hit.source());
+      }
+      return Tuple.of(null, null);
+    } catch (final IOException e) {
+      final var message =
+          String.format(
+              "Exception occurred, while obtaining calls decision instance id for flow node instance: %s",
+              e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private Tuple<String, String> buildCalledDecisionTuple(
+      final String hitId, final Map<String, Object> source) {
+    final var rootDecisionDefId = (String) source.get(ROOT_DECISION_DEFINITION_ID);
+    final var decisionDefId = (String) source.get(DECISION_DEFINITION_ID);
+    final var isRootDecision = rootDecisionDefId.equals(decisionDefId);
+
+    final var instanceId = isRootDecision ? hitId : null;
+    final var nameField = isRootDecision ? DECISION_NAME : ROOT_DECISION_NAME;
+    final var fallbackField = isRootDecision ? DecisionIndex.DECISION_ID : ROOT_DECISION_ID;
+    final var definitionName =
+        (String) source.getOrDefault(nameField, source.get(fallbackField));
+
+    return Tuple.of(instanceId, definitionName);
   }
 
   private List<DecisionInstanceEntity> queryDecisionInstancesEntities(
@@ -221,7 +249,7 @@ public class DecisionInstanceReader extends AbstractReader
                     final var entity = hit.source();
                     entity.setSortValues(
                         hit.sort().stream()
-                            .map(co.elastic.clients.elasticsearch._types.FieldValue::_get)
+                            .map(FieldValue::_get)
                             .toArray());
                     return entity;
                   })
@@ -238,14 +266,14 @@ public class DecisionInstanceReader extends AbstractReader
     }
   }
 
-  private co.elastic.clients.elasticsearch.core.SearchRequest createSearchRequest(
+  private SearchRequest createSearchRequest(
       final DecisionInstanceListRequestDto request,
-      final co.elastic.clients.elasticsearch._types.query_dsl.Query query) {
+      final Query query) {
 
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(decisionInstanceTemplate, ALL))
             .query(tenantAwareQuery)
             .source(
@@ -259,7 +287,7 @@ public class DecisionInstanceReader extends AbstractReader
   }
 
   private void applySorting(
-      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final SearchRequest.Builder searchRequestBuilder,
       final DecisionInstanceListRequestDto request) {
 
     final var sortBy = getSortBy(request);
@@ -278,8 +306,8 @@ public class DecisionInstanceReader extends AbstractReader
 
     final var sort2And3DirectOrder =
         directSorting
-            ? co.elastic.clients.elasticsearch._types.SortOrder.Asc
-            : co.elastic.clients.elasticsearch._types.SortOrder.Desc;
+            ? SortOrder.Asc
+            : SortOrder.Desc;
     final var sort2 = ElasticsearchUtil.sortOrder(KEY, sort2And3DirectOrder);
     final var sort3 = ElasticsearchUtil.sortOrder(EXECUTION_INDEX, sort2And3DirectOrder);
     final var querySearchAfter =
@@ -291,7 +319,7 @@ public class DecisionInstanceReader extends AbstractReader
     if (querySearchAfter != null) {
       searchRequestBuilder.searchAfter(
           Arrays.stream(querySearchAfter)
-              .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
+              .map(FieldValue::of)
               .toList());
     }
   }
@@ -312,7 +340,7 @@ public class DecisionInstanceReader extends AbstractReader
     return null;
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createRequestQuery(
+  private Query createRequestQuery(
       final DecisionInstanceListQueryDto query) {
     var queryBuilder =
         ElasticsearchUtil.joinWithAnd(
@@ -329,7 +357,7 @@ public class DecisionInstanceReader extends AbstractReader
     return queryBuilder;
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createTenantIdQuery(
+  private Query createTenantIdQuery(
       final DecisionInstanceListQueryDto query) {
     if (query.getTenantId() != null) {
       return ElasticsearchUtil.termsQuery(DecisionInstanceTemplate.TENANT_ID, query.getTenantId());
@@ -337,7 +365,7 @@ public class DecisionInstanceReader extends AbstractReader
     return null;
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createReadPermissionQuery() {
+  private Query createReadPermissionQuery() {
     final var allowed =
         permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE);
     return allowed.isAll()
@@ -345,11 +373,11 @@ public class DecisionInstanceReader extends AbstractReader
         : ElasticsearchUtil.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createEvaluationDateQuery(
+  private Query createEvaluationDateQuery(
       final DecisionInstanceListQueryDto query) {
     if (query.getEvaluationDateAfter() != null || query.getEvaluationDateBefore() != null) {
       final var dateRangeBuilder =
-          new co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery.Builder()
+          new DateRangeQuery.Builder()
               .field(EVALUATION_DATE)
               .format(operateProperties.getElasticsearch().getElsDateFormat());
 
@@ -360,7 +388,7 @@ public class DecisionInstanceReader extends AbstractReader
         dateRangeBuilder.lt(dateTimeFormatter.format(query.getEvaluationDateBefore()));
       }
 
-      return new co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery.Builder()
+      return new RangeQuery.Builder()
           .date(dateRangeBuilder.build())
           .build()
           ._toQuery();
@@ -368,7 +396,7 @@ public class DecisionInstanceReader extends AbstractReader
     return null;
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createProcessInstanceIdQuery(
+  private Query createProcessInstanceIdQuery(
       final DecisionInstanceListQueryDto query) {
     if (query.getProcessInstanceId() != null) {
       return ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, query.getProcessInstanceId());
@@ -376,7 +404,7 @@ public class DecisionInstanceReader extends AbstractReader
     return null;
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createIdsQuery(
+  private Query createIdsQuery(
       final DecisionInstanceListQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getIds())) {
       return ElasticsearchUtil.termsQuery(ID, query.getIds());
@@ -384,7 +412,7 @@ public class DecisionInstanceReader extends AbstractReader
     return null;
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createDecisionDefinitionIdsQuery(
+  private Query createDecisionDefinitionIdsQuery(
       final DecisionInstanceListQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getDecisionDefinitionIds())) {
       return ElasticsearchUtil.termsQuery(DECISION_DEFINITION_ID, query.getDecisionDefinitionIds());
@@ -392,7 +420,7 @@ public class DecisionInstanceReader extends AbstractReader
     return null;
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query createEvaluatedFailedQuery(
+  private Query createEvaluatedFailedQuery(
       final DecisionInstanceListQueryDto query) {
     if (query.isEvaluated() && query.isFailed()) {
       // cover all instances
@@ -403,40 +431,6 @@ public class DecisionInstanceReader extends AbstractReader
       return ElasticsearchUtil.termsQuery(STATE, EVALUATED);
     } else {
       return ElasticsearchUtil.createMatchNoneQueryEs8().build()._toQuery();
-    }
-  }
-
-  private void findCalledDecisionInstance(
-      final String flowNodeInstanceId, final Consumer<SearchHit> decisionInstanceConsumer) {
-    final TermQueryBuilder flowNodeInstanceQ = termQuery(ELEMENT_INSTANCE_KEY, flowNodeInstanceId);
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(flowNodeInstanceQ)
-                    .fetchSource(
-                        new String[] {
-                          ROOT_DECISION_DEFINITION_ID,
-                          ROOT_DECISION_NAME,
-                          ROOT_DECISION_ID,
-                          DECISION_DEFINITION_ID,
-                          DECISION_NAME,
-                          DecisionIndex.DECISION_ID
-                        },
-                        null)
-                    .sort(EVALUATION_DATE, SortOrder.DESC)
-                    .sort(EXECUTION_INDEX, SortOrder.DESC));
-    try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value >= 1) {
-        decisionInstanceConsumer.accept(response.getHits().getAt(0));
-      }
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining calls decision instance id for flow node instance: %s",
-              e.getMessage());
-      throw new OperateRuntimeException(message, e);
     }
   }
 }
