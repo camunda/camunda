@@ -23,6 +23,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +60,13 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
+  }
+
+  @Override
   public String getName() {
     return actorName;
   }
@@ -91,17 +99,22 @@ public final class BackupService extends Actor implements BackupManager {
           backupResult.onComplete(
               (ignore, error) -> {
                 if (error != null) {
-                  LOG.warn(
-                      "Failed to take backup {} at position {}",
-                      inProgressBackup.id().checkpointId(),
-                      inProgressBackup.backupDescriptor().checkpointPosition(),
-                      error);
+                  LOG.atWarn()
+                      .addKeyValue("backup", inProgressBackup.id())
+                      .addKeyValue(
+                          "position", inProgressBackup.backupDescriptor().checkpointPosition())
+                      .setCause(error)
+                      .setMessage("Failed to take backup")
+                      .log();
                 } else {
-                  LOG.info(
-                      "Backup {} at position {} completed with {} partitions",
-                      inProgressBackup.id().checkpointId(),
-                      inProgressBackup.backupDescriptor().checkpointPosition(),
-                      inProgressBackup.backupDescriptor().numberOfPartitions());
+                  LOG.atInfo()
+                      .addKeyValue("backup", inProgressBackup.id())
+                      .addKeyValue(
+                          "position", inProgressBackup.backupDescriptor().checkpointPosition())
+                      .addKeyValue(
+                          "partitions", inProgressBackup.backupDescriptor().numberOfPartitions())
+                      .setMessage("Completed backup")
+                      .log();
                 }
               });
           backupResult.onComplete(result);
