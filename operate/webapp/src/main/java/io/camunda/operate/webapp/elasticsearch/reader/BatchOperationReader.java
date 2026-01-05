@@ -25,6 +25,7 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,13 +95,10 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
     if (searchAfter != null
         || searchBefore == null) { // this sorting is also the default one for 1st page
       sort1 =
-          SortOptions.of(
-              s ->
-                  s.field(
-                      f ->
-                          f.field(BatchOperationTemplate.END_DATE)
-                              .order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)
-                              .missing("_first")));
+          ElasticsearchUtil.sortOrder(
+              BatchOperationTemplate.END_DATE,
+              co.elastic.clients.elasticsearch._types.SortOrder.Desc,
+              "_first");
       sort2 =
           ElasticsearchUtil.sortOrder(
               BatchOperationTemplate.START_DATE,
@@ -109,13 +107,10 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
     } else { // searchBefore != null
       // reverse sorting
       sort1 =
-          SortOptions.of(
-              s ->
-                  s.field(
-                      f ->
-                          f.field(BatchOperationTemplate.END_DATE)
-                              .order(co.elastic.clients.elasticsearch._types.SortOrder.Asc)
-                              .missing("_last")));
+          ElasticsearchUtil.sortOrder(
+              BatchOperationTemplate.END_DATE,
+              co.elastic.clients.elasticsearch._types.SortOrder.Asc,
+              "_last");
       sort2 =
           ElasticsearchUtil.sortOrder(
               BatchOperationTemplate.START_DATE,
@@ -132,7 +127,8 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
             .index(batchOperationTemplate.getAlias());
 
     if (querySearchAfter != null) {
-      searchReq.searchAfter(FieldValue.of(querySearchAfter));
+      searchReq.searchAfter(
+          Arrays.stream(querySearchAfter).map(FieldValue::of).toList());
     }
 
     return searchReq.build();

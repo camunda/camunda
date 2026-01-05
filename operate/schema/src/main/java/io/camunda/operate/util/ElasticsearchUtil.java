@@ -214,6 +214,10 @@ public abstract class ElasticsearchUtil {
     return Query.of(q -> q.ids(i -> i.values(Arrays.asList(ids))));
   }
 
+  public static Query matchAllQuery() {
+    return Query.of(q -> q.matchAll(m -> m));
+  }
+
   /**
    * A query that wraps another query and simply returns a constant score equal to the query boost
    * for every document in the query.
@@ -488,6 +492,22 @@ public abstract class ElasticsearchUtil {
     }
   }
 
+  public static co.elastic.clients.elasticsearch._types.SortOrder reverseOrder(
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    if (sortOrder.equals(co.elastic.clients.elasticsearch._types.SortOrder.Asc)) {
+      return co.elastic.clients.elasticsearch._types.SortOrder.Desc;
+    } else {
+      return co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+    }
+  }
+
+  public static co.elastic.clients.elasticsearch._types.SortOrder toSortOrder(
+      final String sortOrder) {
+    return sortOrder != null && sortOrder.equalsIgnoreCase("desc")
+        ? co.elastic.clients.elasticsearch._types.SortOrder.Desc
+        : co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+  }
+
   public static Query termsQuery(final String name, final Collection<?> values) {
     if (values.stream().anyMatch(Objects::isNull)) {
       throw new IllegalArgumentException(
@@ -518,6 +538,13 @@ public abstract class ElasticsearchUtil {
   public static SortOptions sortOrder(
       final String field, final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
     return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder)));
+  }
+
+  public static SortOptions sortOrder(
+      final String field,
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder,
+      final String missing) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder).missing(missing)));
   }
 
   public enum QueryType {
