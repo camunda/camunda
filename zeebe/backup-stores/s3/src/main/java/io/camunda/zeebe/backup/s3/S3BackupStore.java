@@ -14,7 +14,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -251,20 +251,20 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final S3BackupIndexFile s3IndexFile)) {
+  public CompletableFuture<BackupIndexHandle> storeIndex(final BackupIndexHandle indexHandle) {
+    if (!(indexHandle instanceof final S3BackupIndexHandle s3IndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"
               .formatted(
-                  S3BackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
+                  S3BackupIndexHandle.class.getSimpleName(),
+                  indexHandle.getClass().getSimpleName(),
+                  indexHandle));
     }
     return indexManager.upload(s3IndexFile);
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
+  public CompletableFuture<BackupIndexHandle> restoreIndex(
       final BackupIndexIdentifier id, final Path targetPath) {
     return indexManager.download(id, targetPath);
   }

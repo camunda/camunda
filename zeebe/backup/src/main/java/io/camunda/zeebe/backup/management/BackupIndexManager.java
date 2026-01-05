@@ -11,7 +11,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupIndex;
 import io.camunda.zeebe.backup.api.BackupIndex.IndexedBackup;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -51,7 +51,7 @@ final class BackupIndexManager implements AutoCloseable {
   private final ReentrantLock writeLock = new ReentrantLock();
   private final BackupIndexIdentifier indexId;
   private CompactBackupIndex index;
-  private BackupIndexFile indexHandle;
+  private BackupIndexHandle indexHandle;
 
   BackupIndexManager(
       final BackupStore store, final Path path, final BackupIndexIdentifier indexId) {

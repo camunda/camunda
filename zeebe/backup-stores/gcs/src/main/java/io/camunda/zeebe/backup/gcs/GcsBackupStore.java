@@ -14,7 +14,7 @@ import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -155,20 +155,20 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final GcsBackupIndexFile gcsBackupIndexFile)) {
+  public CompletableFuture<BackupIndexHandle> storeIndex(final BackupIndexHandle indexHandle) {
+    if (!(indexHandle instanceof final GcsBackupIndexHandle gcsBackupIndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"
               .formatted(
-                  GcsBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
+                  GcsBackupIndexHandle.class.getSimpleName(),
+                  indexHandle.getClass().getSimpleName(),
+                  indexHandle));
     }
     return CompletableFuture.supplyAsync(() -> indexManager.upload(gcsBackupIndexFile), executor);
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
+  public CompletableFuture<BackupIndexHandle> restoreIndex(
       final BackupIndexIdentifier id, final Path targetPath) {
     return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
   }

@@ -41,29 +41,30 @@ public interface BackupStore {
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
 
   /**
-   * Stores a given {@link BackupIndexFile}.
+   * Stores a given {@link BackupIndexHandle}.
    *
-   * @param indexFile an opaque holder of the actual {@link BackupIndex}, as retrieved via {@link
+   * @param indexHandle an opaque holder of the actual {@link BackupIndex}, as retrieved via {@link
    *     #restoreIndex(BackupIndexIdentifier, Path)}.
-   * @return a new {@link BackupIndexFile} representing the stored index; may contain metadata used
-   *     to detect concurrent modifications.
+   * @return a new {@link BackupIndexHandle} representing the stored index; may contain metadata
+   *     used to detect concurrent modifications.
    * @implNote Some implementations may fail the future with {@link
    *     java.util.ConcurrentModificationException} if they detect that the file has unexpectedly
    *     changed in the meantime.
    */
-  CompletableFuture<BackupIndexFile> storeIndex(BackupIndexFile indexFile)
+  CompletableFuture<BackupIndexHandle> storeIndex(BackupIndexHandle indexHandle)
       throws ConcurrentModificationException;
 
   /**
-   * Makes the stored {@link BackupIndexFile} available locally, allowing callers to construct the
+   * Makes the stored {@link BackupIndexHandle} available locally, allowing callers to construct the
    * actual {@link BackupIndex} from it.
    *
    * @param id the identifier of the index to restore
    * @param targetPath the local path where the index file should be downloaded
-   * @implNote Some implementations may store metadata in the returned {@link BackupIndexFile} that
-   *     allows them to detect concurrent modifications during {@link #storeIndex(BackupIndexFile)}.
+   * @implNote Some implementations may store metadata in the returned {@link BackupIndexHandle}
+   *     that allows them to detect concurrent modifications during {@link
+   *     #storeIndex(BackupIndexHandle)}.
    */
-  CompletableFuture<BackupIndexFile> restoreIndex(BackupIndexIdentifier id, Path targetPath);
+  CompletableFuture<BackupIndexHandle> restoreIndex(BackupIndexIdentifier id, Path targetPath);
 
   CompletableFuture<Void> closeAsync();
 }

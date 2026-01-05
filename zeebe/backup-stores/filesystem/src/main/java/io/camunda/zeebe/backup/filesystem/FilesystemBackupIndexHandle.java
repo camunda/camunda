@@ -5,15 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.azure;
+package io.camunda.zeebe.backup.filesystem;
 
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import java.nio.file.Path;
 
-public record AzureBackupIndexFile(BackupIndexIdentifier id, Path path, String eTag)
-    implements BackupIndexFile {
-  AzureBackupIndexFile(final Path path, final BackupIndexIdentifier id) {
-    this(id, path, null);
-  }
-}
+public record FilesystemBackupIndexHandle(Path path, BackupIndexIdentifier id)
+    implements BackupIndexHandle {}

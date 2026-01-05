@@ -32,7 +32,7 @@ public final class GcsIndexManager {
     this.basePath = basePath;
   }
 
-  GcsBackupIndexFile upload(final GcsBackupIndexFile indexFile) {
+  GcsBackupIndexHandle upload(final GcsBackupIndexHandle indexFile) {
     try {
       final BlobWriteOption mode;
       if (indexFile.generation() != null) {
@@ -42,13 +42,13 @@ public final class GcsIndexManager {
       }
       final var newBlob = client.createFrom(indexBlobInfo(indexFile.id()), indexFile.path(), mode);
       LOG.debug("Uploaded index {}", indexFile.id());
-      return new GcsBackupIndexFile(indexFile.id(), indexFile.path(), newBlob.getGeneration());
+      return new GcsBackupIndexHandle(indexFile.id(), indexFile.path(), newBlob.getGeneration());
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  GcsBackupIndexFile download(final BackupIndexIdentifier id, final Path targetPath) {
+  GcsBackupIndexHandle download(final BackupIndexIdentifier id, final Path targetPath) {
     if (Files.exists(targetPath)) {
       throw new IllegalArgumentException("Index file already exists at " + targetPath);
     }
@@ -60,11 +60,11 @@ public final class GcsIndexManager {
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
-      return new GcsBackupIndexFile(targetPath, id);
+      return new GcsBackupIndexHandle(targetPath, id);
     }
     blob.downloadTo(targetPath);
     LOG.debug("Downloaded index {} to {}", id, targetPath);
-    return new GcsBackupIndexFile(id, targetPath, blob.getGeneration());
+    return new GcsBackupIndexHandle(id, targetPath, blob.getGeneration());
   }
 
   private BlobInfo indexBlobInfo(final BackupIndexIdentifier id) {

@@ -15,7 +15,7 @@ import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.common.BackupIndexIdentifierImpl;
 import java.io.IOException;
@@ -36,7 +36,7 @@ final class AzureIndexManager {
     containerCreated = !createContainer;
   }
 
-  AzureBackupIndexFile upload(final AzureBackupIndexFile indexFile) {
+  AzureBackupIndexHandle upload(final AzureBackupIndexHandle indexFile) {
     assureContainerCreated();
     final BlobClient blobClient = containerClient.getBlobClient(objectKey(indexFile.id()));
 
@@ -56,7 +56,7 @@ final class AzureIndexManager {
               Context.NONE);
       LOG.debug("Uploaded index {}", indexFile.id());
 
-      return new AzureBackupIndexFile(
+      return new AzureBackupIndexHandle(
           indexFile.id(), indexFile.path(), response.getValue().getETag());
     } catch (final BlobStorageException e) {
       if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
@@ -68,7 +68,7 @@ final class AzureIndexManager {
     }
   }
 
-  BackupIndexFile download(final BackupIndexIdentifier id, final Path targetPath) {
+  BackupIndexHandle download(final BackupIndexIdentifier id, final Path targetPath) {
     if (Files.exists(targetPath)) {
       throw new IllegalArgumentException("Index file already exists at " + targetPath);
     }
@@ -82,7 +82,7 @@ final class AzureIndexManager {
         } catch (final IOException e) {
           throw new UncheckedIOException(e);
         }
-        return new AzureBackupIndexFile(
+        return new AzureBackupIndexHandle(
             targetPath, new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()));
       }
 
@@ -90,7 +90,7 @@ final class AzureIndexManager {
       final var properties = blobClient.getProperties();
       LOG.debug("Downloaded index {} to {}", id, targetPath);
 
-      return new AzureBackupIndexFile(
+      return new AzureBackupIndexHandle(
           new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()),
           targetPath,
           properties.getETag());

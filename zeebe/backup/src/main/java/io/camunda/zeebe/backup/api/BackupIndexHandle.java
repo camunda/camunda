@@ -5,16 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.gcs;
+package io.camunda.zeebe.backup.api;
 
-import io.camunda.zeebe.backup.api.BackupIndexFile;
-import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import java.nio.file.Path;
 
-public record GcsBackupIndexFile(BackupIndexIdentifier id, Path path, Long generation)
-    implements BackupIndexFile {
+/** An opaque holder for a {@link BackupIndex}. */
+public interface BackupIndexHandle {
+  BackupIndexIdentifier id();
 
-  public GcsBackupIndexFile(final Path path, final BackupIndexIdentifier id) {
-    this(id, path, null);
-  }
+  Path path();
 }

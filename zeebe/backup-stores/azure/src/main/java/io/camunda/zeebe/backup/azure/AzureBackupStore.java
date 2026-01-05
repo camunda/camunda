@@ -15,7 +15,7 @@ import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -213,20 +213,20 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final AzureBackupIndexFile azureIndexFile)) {
+  public CompletableFuture<BackupIndexHandle> storeIndex(final BackupIndexHandle indexHandle) {
+    if (!(indexHandle instanceof final AzureBackupIndexHandle azureIndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"
               .formatted(
-                  AzureBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
+                  AzureBackupIndexHandle.class.getSimpleName(),
+                  indexHandle.getClass().getSimpleName(),
+                  indexHandle));
     }
     return CompletableFuture.supplyAsync(() -> indexManager.upload(azureIndexFile), executor);
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
+  public CompletableFuture<BackupIndexHandle> restoreIndex(
       final BackupIndexIdentifier id, final Path targetPath) {
     return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
   }

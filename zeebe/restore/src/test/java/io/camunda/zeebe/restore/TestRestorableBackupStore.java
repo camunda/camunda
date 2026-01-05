@@ -10,7 +10,7 @@ package io.camunda.zeebe.restore;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -123,12 +123,12 @@ final class TestRestorableBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
+  public CompletableFuture<BackupIndexHandle> storeIndex(final BackupIndexHandle indexHandle) {
     throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
+  public CompletableFuture<BackupIndexHandle> restoreIndex(
       final BackupIndexIdentifier id, final Path targetPath) {
     throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }

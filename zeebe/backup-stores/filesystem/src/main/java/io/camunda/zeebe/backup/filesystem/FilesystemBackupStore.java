@@ -10,7 +10,7 @@ package io.camunda.zeebe.backup.filesystem;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -169,20 +169,20 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final FilesystemBackupIndexFile filesystemIndexFile)) {
+  public CompletableFuture<BackupIndexHandle> storeIndex(final BackupIndexHandle indexHandle) {
+    if (!(indexHandle instanceof final FilesystemBackupIndexHandle filesystemIndexFile)) {
       throw new IllegalArgumentException(
           "Expected index file of type %s but got %s: %s"
               .formatted(
-                  FilesystemBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
+                  FilesystemBackupIndexHandle.class.getSimpleName(),
+                  indexHandle.getClass().getSimpleName(),
+                  indexHandle));
     }
     return CompletableFuture.supplyAsync(() -> indexManager.upload(filesystemIndexFile), executor);
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
+  public CompletableFuture<BackupIndexHandle> restoreIndex(
       final BackupIndexIdentifier id, final Path targetPath) {
     return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
   }

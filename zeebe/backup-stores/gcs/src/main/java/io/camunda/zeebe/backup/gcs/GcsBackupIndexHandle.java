@@ -5,26 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.s3;
+package io.camunda.zeebe.backup.gcs;
 
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import java.nio.file.Path;
 
-public record S3BackupIndexFile(BackupIndexIdentifier id, Path path, String eTag)
-    implements BackupIndexFile {
+public record GcsBackupIndexHandle(BackupIndexIdentifier id, Path path, Long generation)
+    implements BackupIndexHandle {
 
-  S3BackupIndexFile(final Path path, final BackupIndexIdentifier id) {
+  public GcsBackupIndexHandle(final Path path, final BackupIndexIdentifier id) {
     this(id, path, null);
-  }
-
-  @Override
-  public BackupIndexIdentifier id() {
-    return id;
-  }
-
-  @Override
-  public Path path() {
-    return path;
   }
 }

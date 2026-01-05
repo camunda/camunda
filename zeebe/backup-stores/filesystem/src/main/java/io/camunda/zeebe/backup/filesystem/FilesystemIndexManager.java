@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.filesystem;
 
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -27,7 +27,7 @@ final class FilesystemIndexManager {
     this.indexBaseDir = indexBaseDir;
   }
 
-  FilesystemBackupIndexFile upload(final FilesystemBackupIndexFile indexFile) {
+  FilesystemBackupIndexHandle upload(final FilesystemBackupIndexHandle indexFile) {
     final Path targetPath = indexPath(indexFile.id());
     try {
       FileUtil.ensureDirectoryExists(targetPath.getParent());
@@ -41,7 +41,7 @@ final class FilesystemIndexManager {
     }
   }
 
-  BackupIndexFile download(final BackupIndexIdentifier id, final Path targetPath) {
+  BackupIndexHandle download(final BackupIndexIdentifier id, final Path targetPath) {
     if (Files.exists(targetPath)) {
       throw new IllegalArgumentException("Index file already exists at " + targetPath);
     }
@@ -55,13 +55,13 @@ final class FilesystemIndexManager {
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
-      return new FilesystemBackupIndexFile(targetPath, id);
+      return new FilesystemBackupIndexHandle(targetPath, id);
     }
 
     try {
       Files.copy(sourcePath, targetPath, StandardCopyOption.COPY_ATTRIBUTES);
       LOG.debug("Downloaded index {} to {}", id, targetPath);
-      return new FilesystemBackupIndexFile(targetPath, id);
+      return new FilesystemBackupIndexHandle(targetPath, id);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

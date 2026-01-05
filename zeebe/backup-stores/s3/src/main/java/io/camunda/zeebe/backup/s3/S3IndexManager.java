@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.s3;
 
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.common.BackupIndexIdentifierImpl;
 import java.io.IOException;
@@ -38,7 +38,7 @@ final class S3IndexManager {
     this.config = config;
   }
 
-  CompletableFuture<BackupIndexFile> upload(final S3BackupIndexFile indexFile) {
+  CompletableFuture<BackupIndexHandle> upload(final S3BackupIndexHandle indexFile) {
     final var requestBuilder =
         PutObjectRequest.builder()
             .bucket(config.bucketName())
@@ -56,11 +56,11 @@ final class S3IndexManager {
         .thenApply(
             response -> {
               LOG.debug("Uploaded index {}", indexFile.id());
-              return new S3BackupIndexFile(indexFile.id(), indexFile.path(), response.eTag());
+              return new S3BackupIndexHandle(indexFile.id(), indexFile.path(), response.eTag());
             });
   }
 
-  CompletableFuture<BackupIndexFile> download(
+  CompletableFuture<BackupIndexHandle> download(
       final BackupIndexIdentifier id, final Path targetPath) {
     if (Files.exists(targetPath)) {
       return CompletableFuture.failedFuture(
@@ -79,10 +79,10 @@ final class S3IndexManager {
                     .failureBehavior(FailureBehavior.LEAVE)
                     .fileWriteOption(FileWriteOption.CREATE_NEW)
                     .build()))
-        .<BackupIndexFile>thenApply(
+        .<BackupIndexHandle>thenApply(
             response -> {
               LOG.debug("Downloaded index {} to {}", id, targetPath);
-              return new S3BackupIndexFile(
+              return new S3BackupIndexHandle(
                   new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()),
                   targetPath,
                   response.eTag());
@@ -96,7 +96,7 @@ final class S3IndexManager {
                 } catch (final IOException e) {
                   throw new UncheckedIOException(e);
                 }
-                return new S3BackupIndexFile(
+                return new S3BackupIndexHandle(
                     targetPath, new BackupIndexIdentifierImpl(id.partitionId(), id.nodeId()));
               }
               throw new S3BackupStoreException.IndexReadException(

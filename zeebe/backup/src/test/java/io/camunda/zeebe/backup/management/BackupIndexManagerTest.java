@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIndex.IndexedBackup;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexHandle;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -65,7 +65,7 @@ class BackupIndexManagerTest {
         .thenAnswer(
             invocation ->
                 CompletableFuture.completedFuture(
-                    new TestBackupIndexFile(indexId, invocation.getArgument(1))));
+                    new TestBackupIndexHandle(indexId, invocation.getArgument(1))));
 
     indexManager = new BackupIndexManager(backupStore, indexPath, indexId);
   }
@@ -137,7 +137,7 @@ class BackupIndexManagerTest {
               final var path = (Path) invocation.getArgument(1);
               // Create a corrupted file
               Files.writeString(path, "corrupted data");
-              return CompletableFuture.completedFuture(new TestBackupIndexFile(indexId, path));
+              return CompletableFuture.completedFuture(new TestBackupIndexHandle(indexId, path));
             });
 
     final var existingBackup1 = createBackupStatus(1L, 100L);
@@ -230,7 +230,7 @@ class BackupIndexManagerTest {
             invocation -> {
               final Path path = invocation.getArgument(1);
               Files.writeString(path, "corrupted");
-              return CompletableFuture.completedFuture(new TestBackupIndexFile(indexId, path));
+              return CompletableFuture.completedFuture(new TestBackupIndexHandle(indexId, path));
             });
 
     when(backupStore.list(any(BackupIdentifierWildcard.class)))
@@ -298,6 +298,6 @@ class BackupIndexManagerTest {
         Optional.empty());
   }
 
-  private record TestBackupIndexFile(BackupIndexIdentifier id, Path path)
-      implements BackupIndexFile {}
+  private record TestBackupIndexHandle(BackupIndexIdentifier id, Path path)
+      implements BackupIndexHandle {}
 }
