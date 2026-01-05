@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -91,6 +93,9 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(MAPPING_RULE)
           .withIntents(
               MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED);
+
+  public static final TransformerConfig PROCESS_CONFIG =
+      TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DELETED);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)

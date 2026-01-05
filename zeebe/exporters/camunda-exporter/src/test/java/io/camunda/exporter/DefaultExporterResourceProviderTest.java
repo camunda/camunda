@@ -28,6 +28,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTrans
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
@@ -193,6 +194,7 @@ public class DefaultExporterResourceProviderTest {
             Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),
             Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
             Map.entry(MappingRuleAuditLogTransformer.class, ValueType.MAPPING_RULE),
+            Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
             Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
             Map.entry(
                 ProcessInstanceCreationAuditLogTransformer.class,

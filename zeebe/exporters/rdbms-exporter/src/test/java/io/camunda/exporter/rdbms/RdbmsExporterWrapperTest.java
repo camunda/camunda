@@ -27,6 +27,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTrans
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
@@ -119,6 +120,7 @@ class RdbmsExporterWrapperTest {
             Map.entry(
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
+            Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
             Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
             Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
             Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
