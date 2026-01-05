@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
 import java.util.List;
 import java.util.Set;
 

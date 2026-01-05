@@ -9,19 +9,19 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobSearchQuery;
+import io.camunda.gateway.protocol.model.JobSearchQueryResult;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.search.query.JobQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
-import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;

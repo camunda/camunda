@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
-import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedStringFilter;
+import io.camunda.gateway.protocol.model.StringFilterProperty;
 
 public class StringFilterPropertyDeserializer
     extends FilterDeserializer<StringFilterProperty, String> {

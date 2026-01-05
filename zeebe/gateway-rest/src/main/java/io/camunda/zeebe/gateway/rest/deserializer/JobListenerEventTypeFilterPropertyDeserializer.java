@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedJobListenerEventTypeFilter;
-import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedJobListenerEventTypeFilter;
+import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.JobListenerEventTypeFilterProperty;
 
 public class JobListenerEventTypeFilterPropertyDeserializer
     extends FilterDeserializer<JobListenerEventTypeFilterProperty, JobListenerEventTypeEnum> {

@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
 
-import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
+import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 

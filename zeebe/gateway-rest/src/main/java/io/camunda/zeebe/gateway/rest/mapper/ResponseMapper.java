@@ -17,6 +17,54 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.gateway.protocol.model.ActivatedJobResult;
+import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
+import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
+import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.ClusterVariableResult;
+import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
+import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
+import io.camunda.gateway.protocol.model.DeploymentDecisionRequirementsResult;
+import io.camunda.gateway.protocol.model.DeploymentDecisionResult;
+import io.camunda.gateway.protocol.model.DeploymentFormResult;
+import io.camunda.gateway.protocol.model.DeploymentMetadataResult;
+import io.camunda.gateway.protocol.model.DeploymentProcessResult;
+import io.camunda.gateway.protocol.model.DeploymentResourceResult;
+import io.camunda.gateway.protocol.model.DeploymentResult;
+import io.camunda.gateway.protocol.model.DocumentCreationBatchResponse;
+import io.camunda.gateway.protocol.model.DocumentCreationFailureDetail;
+import io.camunda.gateway.protocol.model.DocumentMetadata;
+import io.camunda.gateway.protocol.model.DocumentReference;
+import io.camunda.gateway.protocol.model.DocumentReference.CamundaDocumentTypeEnum;
+import io.camunda.gateway.protocol.model.EvaluateConditionalResult;
+import io.camunda.gateway.protocol.model.EvaluateDecisionResult;
+import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
+import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
+import io.camunda.gateway.protocol.model.EvaluatedDecisionResult;
+import io.camunda.gateway.protocol.model.ExpressionEvaluationResult;
+import io.camunda.gateway.protocol.model.GroupCreateResult;
+import io.camunda.gateway.protocol.model.GroupUpdateResult;
+import io.camunda.gateway.protocol.model.JobKindEnum;
+import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.MappingRuleCreateResult;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateResult;
+import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
+import io.camunda.gateway.protocol.model.MessageCorrelationResult;
+import io.camunda.gateway.protocol.model.MessagePublicationResult;
+import io.camunda.gateway.protocol.model.Partition.HealthEnum;
+import io.camunda.gateway.protocol.model.Partition.RoleEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceReference;
+import io.camunda.gateway.protocol.model.ResourceResult;
+import io.camunda.gateway.protocol.model.RoleCreateResult;
+import io.camunda.gateway.protocol.model.RoleUpdateResult;
+import io.camunda.gateway.protocol.model.SignalBroadcastResult;
+import io.camunda.gateway.protocol.model.TenantCreateResult;
+import io.camunda.gateway.protocol.model.TenantUpdateResult;
+import io.camunda.gateway.protocol.model.TopologyResponse;
+import io.camunda.gateway.protocol.model.UserCreateResult;
+import io.camunda.gateway.protocol.model.UserTaskProperties;
+import io.camunda.gateway.protocol.model.UserUpdateResult;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -27,54 +75,6 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
-import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.BrokerInfo;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
-import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirementsResult;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionResult;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentFormResult;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadataResult;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcessResult;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentResourceResult;
-import io.camunda.zeebe.gateway.protocol.rest.DeploymentResult;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationBatchResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluateConditionalResult;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
-import io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
-import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
-import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
-import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
-import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
-import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResult;
-import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
-import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReference;
-import io.camunda.zeebe.gateway.protocol.rest.ResourceResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateResult;
-import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResult;
-import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserCreateResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskProperties;
-import io.camunda.zeebe.gateway.protocol.rest.UserUpdateResult;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
@@ -165,15 +165,15 @@ public final class ResponseMapper {
     return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
   }
 
-  public static JobActivationResult<io.camunda.zeebe.gateway.protocol.rest.JobActivationResult>
+  public static JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult>
       toActivateJobsResponse(
           final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
     long currentResponseSize = 0L;
-    final io.camunda.zeebe.gateway.protocol.rest.JobActivationResult response =
-        new io.camunda.zeebe.gateway.protocol.rest.JobActivationResult();
+    final io.camunda.gateway.protocol.model.JobActivationResult response =
+        new io.camunda.gateway.protocol.model.JobActivationResult();
 
     final List<ActivatedJobResult> sizeExceedingJobs = new ArrayList<>();
     final List<ActivatedJobResult> responseJobs = new ArrayList<>();
@@ -377,7 +377,7 @@ public final class ResponseMapper {
   }
 
   public static ResponseEntity<Object> toDocumentLinkResponse(final DocumentLink documentLink) {
-    final var externalDocumentLink = new io.camunda.zeebe.gateway.protocol.rest.DocumentLink();
+    final var externalDocumentLink = new io.camunda.gateway.protocol.model.DocumentLink();
     externalDocumentLink.setExpiresAt(documentLink.expiresAt().toString());
     externalDocumentLink.setUrl(documentLink.link());
     return new ResponseEntity<>(externalDocumentLink, HttpStatus.OK);
@@ -840,7 +840,7 @@ public final class ResponseMapper {
       final BrokerInfo brokerInfo, final List<Partition> partitions) {
     partitions.forEach(
         partition -> {
-          final var partitionDto = new io.camunda.zeebe.gateway.protocol.rest.Partition();
+          final var partitionDto = new io.camunda.gateway.protocol.model.Partition();
 
           partitionDto.setPartitionId(partition.partitionId());
           partitionDto.setRole(EnumUtil.convert(partition.role(), RoleEnum.class));
@@ -850,13 +850,13 @@ public final class ResponseMapper {
   }
 
   static class RestJobActivationResult
-      implements JobActivationResult<io.camunda.zeebe.gateway.protocol.rest.JobActivationResult> {
+      implements JobActivationResult<io.camunda.gateway.protocol.model.JobActivationResult> {
 
-    private final io.camunda.zeebe.gateway.protocol.rest.JobActivationResult response;
+    private final io.camunda.gateway.protocol.model.JobActivationResult response;
     private final List<ActivatedJobResult> sizeExceedingJobs;
 
     RestJobActivationResult(
-        final io.camunda.zeebe.gateway.protocol.rest.JobActivationResult response,
+        final io.camunda.gateway.protocol.model.JobActivationResult response,
         final List<ActivatedJobResult> sizeExceedingJobs) {
       this.response = response;
       this.sizeExceedingJobs = sizeExceedingJobs;
@@ -875,7 +875,7 @@ public final class ResponseMapper {
     }
 
     @Override
-    public io.camunda.zeebe.gateway.protocol.rest.JobActivationResult getActivateJobsResponse() {
+    public io.camunda.gateway.protocol.model.JobActivationResult getActivateJobsResponse() {
       return response;
     }
 

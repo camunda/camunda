@@ -10,8 +10,8 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

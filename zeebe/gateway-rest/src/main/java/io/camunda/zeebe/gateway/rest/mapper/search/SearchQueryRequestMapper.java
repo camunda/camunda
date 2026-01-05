@@ -15,6 +15,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 
+import io.camunda.gateway.protocol.model.*;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
@@ -53,7 +54,6 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
-import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -67,14 +67,13 @@ public final class SearchQueryRequestMapper {
   public static final AdvancedStringFilter EMPTY_ADVANCED_STRING_FILTER =
       new AdvancedStringFilter();
   public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
-  public static final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter
-      EMPTY_PROCESS_INSTANCE_FILTER =
-          new io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter();
+  public static final io.camunda.gateway.protocol.model.ProcessInstanceFilter
+      EMPTY_PROCESS_INSTANCE_FILTER = new io.camunda.gateway.protocol.model.ProcessInstanceFilter();
 
-  public static final io.camunda.zeebe.gateway.protocol.rest
+  public static final io.camunda.gateway.protocol.model
           .IncidentProcessInstanceStatisticsByDefinitionFilter
       EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER =
-          new io.camunda.zeebe.gateway.protocol.rest
+          new io.camunda.gateway.protocol.model
               .IncidentProcessInstanceStatisticsByDefinitionFilter();
 
   private SearchQueryRequestMapper() {}

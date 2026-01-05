@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
+import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogCategoryEnum;
 
 public final class AuditLogCategoryConverter implements CustomConverter<String> {
 

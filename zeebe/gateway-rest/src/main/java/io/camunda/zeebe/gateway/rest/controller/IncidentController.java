@@ -9,17 +9,17 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQuery;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQuery;
+import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.gateway.protocol.model.IncidentResolutionRequest;
+import io.camunda.gateway.protocol.model.IncidentResult;
+import io.camunda.gateway.protocol.model.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;

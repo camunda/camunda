@@ -7,6 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
-import io.camunda.zeebe.gateway.protocol.rest.SortOrderEnum;
+import io.camunda.gateway.protocol.model.SortOrderEnum;
 
 public record SearchQuerySortRequest<T>(T field, SortOrderEnum order) {}

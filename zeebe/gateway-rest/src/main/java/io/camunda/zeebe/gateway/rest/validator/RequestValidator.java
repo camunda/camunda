@@ -12,7 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
-import io.camunda.zeebe.gateway.protocol.rest.Changeset;
+import io.camunda.gateway.protocol.model.Changeset;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import java.time.OffsetDateTime;

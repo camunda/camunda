@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.gateway.protocol.model.ClockPinRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 

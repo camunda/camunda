@@ -9,12 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.protocol.model.BatchOperationResponse;
+import io.camunda.gateway.protocol.model.BatchOperationSearchQuery;
+import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
