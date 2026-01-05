@@ -20,7 +20,7 @@ on:
       - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
-      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
+
   pull_request:
     paths:
       - ".ci/**"
@@ -33,7 +33,6 @@ on:
       - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
-      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
