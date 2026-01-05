@@ -21,17 +21,19 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
-import io.camunda.process.test.api.dsl.instructions.AssertElementInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.AssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public class AssertElementInstanceInstructionHandler
-    implements TestCaseInstructionHandler<AssertElementInstanceInstruction> {
+public class AssertElementInstancesInstructionHandler
+    implements TestCaseInstructionHandler<AssertElementInstancesInstruction> {
 
   @Override
   public void execute(
-      final AssertElementInstanceInstruction instruction,
+      final AssertElementInstancesInstruction instruction,
       final CamundaProcessTestContext context,
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
@@ -40,26 +42,30 @@ public class AssertElementInstanceInstructionHandler
         InstructionSelectorFactory.buildProcessInstanceSelector(
             instruction.getProcessInstanceSelector());
 
-    final ElementSelector elementSelector = buildElementSelector(instruction);
+    final List<ElementSelector> elementSelectors = buildElementSelectors(instruction);
 
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(processInstanceSelector);
 
-    final int amount = instruction.getAmount();
     final ElementInstanceState state = instruction.getState();
 
-    assertElementState(processInstanceAssert, elementSelector, state, amount);
+    assertElementsState(processInstanceAssert, elementSelectors, state);
   }
 
   @Override
-  public Class<AssertElementInstanceInstruction> getInstructionType() {
-    return AssertElementInstanceInstruction.class;
+  public Class<AssertElementInstancesInstruction> getInstructionType() {
+    return AssertElementInstancesInstruction.class;
   }
 
-  private ElementSelector buildElementSelector(final AssertElementInstanceInstruction instruction) {
-    final io.camunda.process.test.api.dsl.ElementSelector dslSelector =
-        instruction.getElementSelector();
+  private List<ElementSelector> buildElementSelectors(
+      final AssertElementInstancesInstruction instruction) {
+    return instruction.getElementSelectors().stream()
+        .map(this::buildElementSelector)
+        .collect(Collectors.toList());
+  }
 
+  private ElementSelector buildElementSelector(
+      final io.camunda.process.test.api.dsl.ElementSelector dslSelector) {
     if (dslSelector.getElementId().isPresent()) {
       return ElementSelectors.byId(dslSelector.getElementId().get());
     } else if (dslSelector.getElementName().isPresent()) {
@@ -70,52 +76,34 @@ public class AssertElementInstanceInstructionHandler
     }
   }
 
-  private static void assertElementState(
+  private static void assertElementsState(
       final ProcessInstanceAssert processInstanceAssert,
-      final ElementSelector elementSelector,
-      final ElementInstanceState state,
-      final int amount) {
+      final List<ElementSelector> elementSelectors,
+      final ElementInstanceState state) {
+    final ElementSelector[] selectorsArray =
+        elementSelectors.toArray(new ElementSelector[0]);
+
     switch (state) {
       case IS_ACTIVE:
-        processInstanceAssert.hasActiveElement(elementSelector, amount);
+        processInstanceAssert.hasActiveElements(selectorsArray);
         break;
       case IS_COMPLETED:
-        processInstanceAssert.hasCompletedElement(elementSelector, amount);
+        processInstanceAssert.hasCompletedElements(selectorsArray);
         break;
       case IS_TERMINATED:
-        processInstanceAssert.hasTerminatedElement(elementSelector, amount);
+        processInstanceAssert.hasTerminatedElements(selectorsArray);
         break;
       case IS_NOT_ACTIVE:
-        if (amount == 1) {
-          processInstanceAssert.hasNoActiveElements(elementSelector);
-        } else {
-          throw new IllegalArgumentException(
-              "IS_NOT_ACTIVE state does not support amount parameter. Use IS_ACTIVE with amount=0 instead.");
-        }
+        processInstanceAssert.hasNoActiveElements(selectorsArray);
         break;
       case IS_NOT_ACTIVATED:
-        if (amount == 1) {
-          processInstanceAssert.hasNotActivatedElements(elementSelector);
-        } else {
-          throw new IllegalArgumentException(
-              "IS_NOT_ACTIVATED state does not support amount parameter.");
-        }
+        processInstanceAssert.hasNotActivatedElements(selectorsArray);
         break;
       case IS_ACTIVE_EXACTLY:
-        if (amount == 1) {
-          processInstanceAssert.hasActiveElementsExactly(elementSelector);
-        } else {
-          throw new IllegalArgumentException(
-              "IS_ACTIVE_EXACTLY state does not support amount parameter. Use ASSERT_ELEMENT_INSTANCES instruction instead.");
-        }
+        processInstanceAssert.hasActiveElementsExactly(selectorsArray);
         break;
       case IS_COMPLETED_IN_ORDER:
-        if (amount == 1) {
-          processInstanceAssert.hasCompletedElementsInOrder(elementSelector);
-        } else {
-          throw new IllegalArgumentException(
-              "IS_COMPLETED_IN_ORDER state does not support amount parameter. Use ASSERT_ELEMENT_INSTANCES instruction instead.");
-        }
+        processInstanceAssert.hasCompletedElementsInOrder(selectorsArray);
         break;
       default:
         throw new IllegalArgumentException("Unsupported element instance state: " + state);
