@@ -99,6 +99,7 @@ import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
+import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
@@ -1288,6 +1289,8 @@ public class RequestMapper {
                 case final DirectAncestorKeyInstruction direct ->
                     mappedInstruction.setAncestorScopeKey(
                         getAncestorKey(direct.getAncestorElementInstanceKey()));
+                case final UseSourceParentKeyInstruction sourceParent ->
+                    mappedInstruction.setUseSourceParentKeyAsAncestorScopeKey(true);
                 default -> mappedInstruction.setInferAncestorScopeFromSourceHierarchy(true);
               }
               instruction.getVariableInstructions().stream()

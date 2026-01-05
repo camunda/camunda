@@ -976,6 +976,11 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                     .setAncestorScopeKey(-1L)
                     .setInferAncestorScopeFromSourceHierarchy(true),
                 new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("sourceElementId4b")
+                    .setTargetElementId("targetElementId4b")
+                    .setAncestorScopeKey(-1L)
+                    .setUseSourceParentKeyAsAncestorScopeKey(true),
+                new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("sourceElementId5")
                     .setTargetElementId("targetElementId5")
                     .setAncestorScopeKey(-1L)
@@ -1097,6 +1102,16 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   "targetElementId": "targetElementId4",
                   "ancestorScopeInstruction": {
                     "ancestorScopeType": "inferred"
+                  }
+                },
+                {
+                  "sourceElementInstruction": {
+                    "sourceType": "byId",
+                    "sourceElementId": "sourceElementId4b"
+                  },
+                  "targetElementId": "targetElementId4b",
+                  "ancestorScopeInstruction": {
+                    "ancestorScopeType": "sourceParent"
                   }
                 },
                 {
@@ -1517,7 +1532,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "title":"Bad Request",
                 "status":400,
                 "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
-            Use any of the following values: [direct, inferred]",
+            Use any of the following values: [direct, inferred, sourceParent]",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 
