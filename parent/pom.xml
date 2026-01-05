@@ -64,7 +64,7 @@
     <version.httpclient5>5.5.1</version.httpclient5>
     <version.httpcore5>5.3.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.9.0-alpha2</version.identity>
+    <version.identity>8.9.0-alpha3</version.identity>
     <version.instancio>5.5.1</version.instancio>
     <version.jackson>2.19.2</version.jackson>
     <version.json-base>3.0.0</version.json-base>
