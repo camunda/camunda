@@ -12,38 +12,37 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
-import io.camunda.zeebe.protocol.record.value.deployment.ImmutableResource;
-import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 
-class ResourceAuditLogHandlerTest {
+class RoleEntityAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final ResourceAuditLogTransformer transformer = new ResourceAuditLogTransformer();
+  private final RoleEntityAuditLogTransformer transformer = new RoleEntityAuditLogTransformer();
 
   @Test
-  void shouldTransformResourceRecord() {
+  void shouldTransformRoleEntityRecord() {
     // given
-    final Resource recordValue =
-        ImmutableResource.builder()
-            .from(factory.generateObject(Resource.class))
-            .withDeploymentKey(123L)
-            .withResourceKey(456L)
-            .withTenantId("tenant-1")
+    final RoleRecordValue recordValue =
+        ImmutableRoleRecordValue.builder()
+            .from(factory.generateObject(RoleRecordValue.class))
+            .withRoleId("role-123")
+            .withEntityType(EntityType.USER)
             .build();
 
-    final Record<Resource> record =
+    final Record<RoleRecordValue> record =
         factory.generateRecord(
-            ValueType.RESOURCE, r -> r.withIntent(ResourceIntent.CREATED).withValue(recordValue));
+            ValueType.ROLE, r -> r.withIntent(RoleIntent.ENTITY_ADDED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then
-    assertThat(entity.getDeploymentKey()).isEqualTo(123L);
-    assertThat(entity.getResourceKey()).isEqualTo(456L);
+    assertThat(entity.getEntityKey()).isEqualTo("role-123");
   }
 }

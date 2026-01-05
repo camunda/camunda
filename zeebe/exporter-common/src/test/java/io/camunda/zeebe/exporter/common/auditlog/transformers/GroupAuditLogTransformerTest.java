@@ -11,51 +11,50 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class TenantEntityAuditLogHandlerTest {
+class GroupAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final TenantEntityAuditLogTransformer transformer = new TenantEntityAuditLogTransformer();
+  private final GroupAuditLogTransformer transformer = new GroupAuditLogTransformer();
 
   public static Stream<Arguments> getIntentMappings() {
     return Stream.of(
-        Arguments.of(TenantIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
-        Arguments.of(TenantIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN));
+        Arguments.of(GroupIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(GroupIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(GroupIntent.DELETED, AuditLogOperationType.DELETE));
   }
 
   @MethodSource("getIntentMappings")
   @ParameterizedTest
-  void shouldTransformTenantEntityRecord(
-      final TenantIntent intent, final AuditLogOperationType operationType) {
+  void shouldTransformGroupRecord(
+      final GroupIntent intent, final AuditLogOperationType operationType) {
     // given
-    final TenantRecordValue recordValue =
-        ImmutableTenantRecordValue.builder()
-            .from(factory.generateObject(TenantRecordValue.class))
-            .withTenantId("test-tenant")
-            .withTenantKey(456L)
+    final GroupRecordValue recordValue =
+        ImmutableGroupRecordValue.builder()
+            .from(factory.generateObject(GroupRecordValue.class))
+            .withGroupId("test-group")
+            .withGroupKey(789L)
             .build();
 
-    final Record<TenantRecordValue> record =
-        factory.generateRecord(ValueType.TENANT, r -> r.withIntent(intent).withValue(recordValue));
+    final Record<GroupRecordValue> record =
+        factory.generateRecord(ValueType.GROUP, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then
-    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
-    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
-    assertThat(entity.getEntityKey()).isEqualTo("test-tenant");
+    assertThat(entity.getEntityKey()).isEqualTo("test-group");
+    assertThat(entity.getOperationType()).isEqualTo(operationType);
   }
 }

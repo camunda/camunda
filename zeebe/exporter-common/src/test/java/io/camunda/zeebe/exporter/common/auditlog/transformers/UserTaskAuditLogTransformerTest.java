@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 
-class UserTaskAuditLogHandlerTest {
+class UserTaskAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final UserTaskAuditLogTransformer transformer = new UserTaskAuditLogTransformer();

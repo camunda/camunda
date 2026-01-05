@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class DecisionEvaluationAuditLogHandlerTest {
+class DecisionEvaluationAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final DecisionEvaluationAuditLogTransformer transformer =

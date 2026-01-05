@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -23,7 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class BatchOperationLifecycleManagementAuditLogHandlerTest {
+class BatchOperationLifecycleManagementAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final BatchOperationLifecycleManagementAuditLogTransformer transformer =
@@ -60,7 +59,6 @@ class BatchOperationLifecycleManagementAuditLogHandlerTest {
     transformer.transform(record, entity);
 
     // then
-    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
-    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(operationType);
   }
 }

@@ -11,53 +11,50 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
-import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class UserAuditLogHandlerTest {
+class TenantAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final UserAuditLogTransformer transformer = new UserAuditLogTransformer();
+  private final TenantAuditLogTransformer transformer = new TenantAuditLogTransformer();
 
   public static Stream<Arguments> getIntentMappings() {
     return Stream.of(
-        Arguments.of(UserIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(UserIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(UserIntent.DELETED, AuditLogOperationType.DELETE));
+        Arguments.of(TenantIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(TenantIntent.UPDATED, AuditLogOperationType.UPDATE),
+        Arguments.of(TenantIntent.DELETED, AuditLogOperationType.DELETE));
   }
 
   @MethodSource("getIntentMappings")
   @ParameterizedTest
-  void shouldTransformUserRecord(
-      final UserIntent intent, final AuditLogOperationType operationType) {
+  void shouldTransformTenantRecord(
+      final TenantIntent intent, final AuditLogOperationType operationType) {
     // given
-    final UserRecordValue recordValue =
-        ImmutableUserRecordValue.builder()
-            .from(factory.generateObject(UserRecordValue.class))
-            .withUsername("testuser")
-            .withUserKey(123L)
+    final TenantRecordValue recordValue =
+        ImmutableTenantRecordValue.builder()
+            .from(factory.generateObject(TenantRecordValue.class))
+            .withTenantId("test-tenant")
+            .withTenantKey(456L)
             .build();
 
-    final Record<UserRecordValue> record =
-        factory.generateRecord(ValueType.USER, r -> r.withIntent(intent).withValue(recordValue));
+    final Record<TenantRecordValue> record =
+        factory.generateRecord(ValueType.TENANT, r -> r.withIntent(intent).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then
-    assertThat(entity.getEntityKey()).isEqualTo("testuser");
-
-    final AuditLogInfo auditLogInfo = AuditLogInfo.of(record);
-    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
+    assertThat(entity.getEntityKey()).isEqualTo("test-tenant");
+    assertThat(entity.getOperationType()).isEqualTo(operationType);
   }
 }

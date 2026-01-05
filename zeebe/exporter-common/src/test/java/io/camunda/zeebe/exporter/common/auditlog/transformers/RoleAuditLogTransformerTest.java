@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 
-class RoleAuditLogHandlerTest {
+class RoleAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final RoleAuditLogTransformer transformer = new RoleAuditLogTransformer();
