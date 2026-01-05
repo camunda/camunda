@@ -1,0 +1,59 @@
+{
+  "testCases": [
+    {
+      "name": "Assert variables test",
+      "description": "Test scenario demonstrating the ASSERT_VARIABLES instruction",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "test-process"
+          },
+          "variables": {
+            "orderId": 12345,
+            "customerName": "John Doe"
+          }
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "test-process"
+          },
+          "variableNames": ["orderId", "customerName"]
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "test-process"
+          },
+          "variables": {
+            "orderId": 12345,
+            "customerName": "John Doe"
+          }
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "test-process"
+          },
+          "elementSelector": {
+            "elementId": "task_A"
+          },
+          "variableNames": ["localVar1"]
+        },
+        {
+          "type": "ASSERT_VARIABLES",
+          "processInstanceSelector": {
+            "processDefinitionId": "test-process"
+          },
+          "elementSelector": {
+            "elementName": "Task A"
+          },
+          "variables": {
+            "localVar1": "value1"
+          }
+        }
+      ]
+    }
+  ]
+}
