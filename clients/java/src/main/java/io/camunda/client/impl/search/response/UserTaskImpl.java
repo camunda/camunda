@@ -35,6 +35,7 @@ public class UserTaskImpl implements UserTask {
   private final List<String> candidateGroup;
   private final List<String> candidateUser;
   private final String bpmnProcessId;
+  private final String processName;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long formKey;
@@ -58,6 +59,7 @@ public class UserTaskImpl implements UserTask {
     candidateGroup = item.getCandidateGroups();
     candidateUser = item.getCandidateUsers();
     bpmnProcessId = item.getProcessDefinitionId();
+    processName = item.getProcessName();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     formKey = ParseUtil.parseLongOrNull(item.getFormKey());
@@ -115,6 +117,11 @@ public class UserTaskImpl implements UserTask {
   @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
+  }
+
+  @Override
+  public String getProcessName() {
+    return processName;
   }
 
   @Override
