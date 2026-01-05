@@ -113,8 +113,12 @@ public class ListViewFlowNodeFromProcessInstanceHandler
                 : recordValue.getBpmnElementType().name()));
 
     // set parent
-    final Long processInstanceKey = recordValue.getProcessInstanceKey();
+    final long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

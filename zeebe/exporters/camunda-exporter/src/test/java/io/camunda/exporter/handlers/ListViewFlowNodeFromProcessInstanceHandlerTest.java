@@ -254,6 +254,9 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
         .isEqualTo(
             new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION)
                 .setParent(processInstanceRecordValue.getProcessInstanceKey()));
+    assertThat(flowNodeInstanceForListViewEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(processInstanceRecordValue.getRootProcessInstanceKey());
   }
 
   @Test
