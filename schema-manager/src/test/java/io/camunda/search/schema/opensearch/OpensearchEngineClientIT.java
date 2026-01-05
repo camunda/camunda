@@ -176,7 +176,7 @@ public class OpensearchEngineClientIT {
             "index_name_" + ENGINE_CLIENT_TEST_MARKERS, "/mappings-complex-property.json");
     final var index2 =
         createTestIndexDescriptor(
-            "index_dynamic_" + ENGINE_CLIENT_TEST_MARKERS, "/mappings-dynamic.json");
+            "index_dynamic_" + ENGINE_CLIENT_TEST_MARKERS, "/mappings-default-dynamic.json");
 
     opensearchEngineClient.createIndex(index1, new IndexConfiguration());
     opensearchEngineClient.createIndex(index2, new IndexConfiguration());
