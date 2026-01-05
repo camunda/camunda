@@ -266,6 +266,10 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getProcessInstancesCancelUrl(), response);
   }
 
+  public void onDeleteProcessInstancesRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getProcessInstancesDeletionUrl(), response);
+  }
+
   public void onResolveIncidentsRequest(final BatchOperationCreatedResult response) {
     registerPost(RestGatewayPaths.getProcessInstancesIncidentResolutionUrl(), response);
   }

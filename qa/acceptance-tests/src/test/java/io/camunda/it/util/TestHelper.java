@@ -608,6 +608,24 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForProcessInstancesToBeCompleted(
+      final CamundaClient camundaClient, final int expectedCount) {
+    Awaitility.await("should wait until process instances are completed")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.state(ProcessInstanceState.COMPLETED))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(result).hasSize(expectedCount);
+            });
+  }
+
   public static void waitForProcessInstance(
       final CamundaClient client,
       final Consumer<ProcessInstanceFilter> filter,
