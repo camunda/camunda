@@ -37,6 +37,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
@@ -49,6 +50,8 @@ import io.camunda.process.test.api.dsl.instructions.createProcessInstance.Immuta
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -323,6 +326,62 @@ public class PojoCompatibilityTest {
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("fetch-weather-data")
                     .useExampleData(true)
+                    .build())),
+        // ===== ASSERT_VARIABLES =====
+        Arguments.of(
+            "assert variables: minimal with variable names",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .variableNames(Arrays.asList("x", "y"))
+                    .build())),
+        Arguments.of(
+            "assert variables: with variables",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .variables(
+                        new HashMap<String, Object>() {
+                          {
+                            put("x", 3);
+                            put("y", "okay");
+                          }
+                        })
+                    .build())),
+        Arguments.of(
+            "assert variables: local with elementId",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task_A").build())
+                    .variableNames(Arrays.asList("var1", "var2"))
+                    .build())),
+        Arguments.of(
+            "assert variables: local with elementName",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementName("Task A").build())
+                    .variables(
+                        new HashMap<String, Object>() {
+                          {
+                            put("x", 3);
+                            put("y", "okay");
+                          }
+                        })
                     .build()))
         // add new instructions here
         );

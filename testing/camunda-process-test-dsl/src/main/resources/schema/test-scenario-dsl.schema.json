@@ -60,6 +60,9 @@
           "$ref": "#/definitions/AssertUserTaskInstruction"
         },
         {
+          "$ref": "#/definitions/AssertVariablesInstruction"
+        },
+        {
           "$ref": "#/definitions/CompleteUserTaskInstruction"
         },
         {
@@ -510,6 +513,41 @@
       "required": [
         "type",
         "jobType"
+      ],
+      "additionalProperties": false
+    },
+    "AssertVariablesInstruction": {
+      "description": "An instruction to assert the variables of a process instance or element.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_VARIABLES"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element for local variables.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "variableNames": {
+          "description": "The expected variable names.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "variables": {
+          "description": "The expected variables with their values.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector"
       ],
       "additionalProperties": false
     }
