@@ -11,6 +11,7 @@ import {Paths} from 'modules/Routes';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {
+    await page.clock.setFixedTime('2026-02-26');
     await page.goto(Paths.login(), {
       waitUntil: 'networkidle',
     });
