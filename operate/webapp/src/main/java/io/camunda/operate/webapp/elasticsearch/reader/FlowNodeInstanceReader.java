@@ -90,7 +90,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -900,25 +899,32 @@ public class FlowNodeInstanceReader extends AbstractReader
     final String prefixTreePath =
         lastSeparatorIndex > -1 ? treePath.substring(0, lastSeparatorIndex) : treePath;
 
-    final QueryBuilder query =
-        joinWithAnd(
-            termQuery(FLOW_NODE_ID, flowNodeId),
-            prefixQuery(TREE_PATH, prefixTreePath),
-            rangeQuery(LEVEL).lte(level));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            joinWithAnd(
+                ElasticsearchUtil.termsQuery(FLOW_NODE_ID, flowNodeId),
+                ElasticsearchUtil.prefixQuery(TREE_PATH, prefixTreePath),
+                co.elastic.clients.elasticsearch._types.query_dsl.Query.of(
+                    q -> q.range(r -> r.number(n -> n.field(LEVEL).lte((double) level))))));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final org.elasticsearch.action.search.SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(query))
-                    .fetchSource(false)
-                    .size(0)
-                    .aggregation(getLevelsAggs()));
+    final var request =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+            .query(tenantAwareQuery)
+            .source(s -> s.fetch(false))
+            .size(0)
+            .aggregations(LEVELS_AGG_NAME, getLevelsAggsEs8())
+            .build();
+
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
+      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
 
-      final Terms levelsAgg = response.getAggregations().get(LEVELS_AGG_NAME);
-      result.addAll(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), level));
+      final var levelsAggResult = response.aggregations().get(LEVELS_AGG_NAME);
+      if (levelsAggResult != null && levelsAggResult.isLterms()) {
+        result.addAll(
+            buildBreadcrumbForFlowNodeIdEs8(levelsAggResult.lterms().buckets().array(), level));
+      }
 
       return result;
     } catch (final IOException e) {
@@ -939,19 +945,6 @@ public class FlowNodeInstanceReader extends AbstractReader
                 ElasticsearchUtil.termsQuery(FLOW_NODE_ID, flowNodeId)));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final var levelsAgg =
-        co.elastic.clients.elasticsearch._types.aggregations.Aggregation.of(
-            a ->
-                a.terms(
-                        t ->
-                            t.field(LEVEL)
-                                .size(TERMS_AGG_SIZE)
-                                .order(
-                                    co.elastic.clients.util.NamedValue.of(
-                                        "_key",
-                                        co.elastic.clients.elasticsearch._types.SortOrder.Asc)))
-                    .aggregations(LEVELS_TOP_HITS_AGG_NAME, sub -> sub.topHits(th -> th.size(1))));
-
     final var requestBuilder =
         new SearchRequest.Builder()
             .index(whereToSearch(flowNodeInstanceTemplate, ALL))
@@ -959,7 +952,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .sort(
                 ElasticsearchUtil.sortOrder(
                     LEVEL, co.elastic.clients.elasticsearch._types.SortOrder.Asc))
-            .aggregations(LEVELS_AGG_NAME, levelsAgg)
+            .aggregations(LEVELS_AGG_NAME, getLevelsAggsEs8())
             .size(1);
 
     if (flowNodeType != null) {
@@ -1033,6 +1026,19 @@ public class FlowNodeInstanceReader extends AbstractReader
         .subAggregation(
             topHits(LEVELS_TOP_HITS_AGG_NAME) // select one instance per each level
                 .size(1));
+  }
+
+  private co.elastic.clients.elasticsearch._types.aggregations.Aggregation getLevelsAggsEs8() {
+    return co.elastic.clients.elasticsearch._types.aggregations.Aggregation.of(
+        a ->
+            a.terms(
+                    t ->
+                        t.field(LEVEL)
+                            .size(TERMS_AGG_SIZE)
+                            .order(
+                                co.elastic.clients.util.NamedValue.of(
+                                    "_key", co.elastic.clients.elasticsearch._types.SortOrder.Asc)))
+                .aggregations(LEVELS_TOP_HITS_AGG_NAME, sub -> sub.topHits(th -> th.size(1))));
   }
 
   private FlowNodeInstanceEntity getFlowNodeInstance(final SearchResponse response) {
