@@ -17,7 +17,7 @@ on:
         default: false
 
 jobs:
-  deploy-smoke-test:
+  deploy:
     name: Deploy Smoke Test Preview Environment
     uses: ./.github/workflows/preview-env-build-and-deploy.yml
     secrets: inherit
@@ -26,14 +26,135 @@ jobs:
       labels: |
         preview=smoke-test
         repo=camunda_camunda
+      helm-extra-args: |
+        --helm-set global.preview.ingress.internalAuthBypass.enabled=true
+  
+  test:
+    name: Run Smoke Tests
+    needs:
+    - deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # Required for Teleport authentication
+      id-token: write
+    steps:
+      - name: Install Teleport
+        uses: teleport-actions/setup@v1
+        with:
+          proxy: camunda.teleport.sh:443
+          version: auto
+
+      - name: Authenticate to Teleport
+        uses: teleport-actions/auth@v2
+        with:
+          # Required for tsh proxy app: allows the bot to reissue app-specific TLS certificates.
+          # Without this, the bot cert has "disallow-reissue" extension and tsh proxy app fails with:
+          # "access denied: identity is not allowed to reissue certificates"
+          # The bot's Teleport role also needs: rules: [{resources: [role], verbs: [read]}]
+          allow-reissue: true
+          certificate-ttl: 1h
+          proxy: camunda.teleport.sh:443
+          token: infra-ci-prod-github-action-preview-env-infra
+
+      - name: Start Teleport TCP Tunnel
+        shell: bash
+        env:
+          TELEPORT_APP: camunda-ci-ingress-gateway-443
+          PREVIEW_HOST: ${{ needs.deploy.outputs.host-name }}
+        run: |
+          # Start TCP proxy on port 443 (requires sudo for privileged port)
+          # Use full path since sudo doesn't inherit PATH
+          sudo -E "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
+          sleep 5
+          
+          # Verify tunnel is running
+          if ! nc -z 127.0.0.1 443; then
+            echo "::error::Failed to start tsh proxy on port 443"
+            exit 1
+          fi
+          echo "✅ Teleport TCP tunnel running on port 443"
+
+          # Map preview hostname to localhost
+          echo "127.0.0.1 ${PREVIEW_HOST}" | sudo tee -a /etc/hosts
+          echo "✅ Added ${PREVIEW_HOST} to /etc/hosts"
+
+      - name: Generate GitHub Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: c8-cross-component-e2e-tests
+
+      - name: Checkout Smoke Tests
+        uses: actions/checkout@v6
+        with:
+          repository: camunda/c8-cross-component-e2e-tests
+          token: ${{ steps.github-token.outputs.token }}
+          path: e2e-tests
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e-tests/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: e2e-tests
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: e2e-tests
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Smoke Tests
+        working-directory: e2e-tests
+        env:
+          LOCAL_TEST: true
+          MINOR_VERSION: SM-8.9
+          PLAYWRIGHT_BASE_URL: https://${{ needs.deploy.outputs.host-name }}
+          PROJECT: chromium
+          CI: true
+          DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
+          DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
+          DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
+          TASKLIST_VERSION: v2
+        run: |
+          npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
+            --project=chromium \
+            --reporter=list,html \
+            --retries=2 \
+            --trace=on
+
+      - name: Upload Test Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: |
+            e2e-tests/html-report/
+            e2e-tests/test-results/
+          retention-days: 7
 
   teardown-smoke-test:
     name: Teardown Smoke Test Preview Environment
-    # Only run if deploy didn't fail and teardown is not skipped (via workflow_dispatch)
+    # Only run if deploy and test didn't fail and teardown is not skipped (via workflow_dispatch)
     if: >
       !failure() && !cancelled() && !inputs.skip-teardown
     needs:
-    - deploy-smoke-test
+    - deploy
+    - test
     uses: ./.github/workflows/preview-env-teardown.yml
     secrets: inherit
     with:
@@ -44,10 +165,11 @@ jobs:
     # Notify on failure for scheduled runs only
     if: >
       always() &&
-        needs.deploy-smoke-test.result == 'failure' &&
-        github.event_name == 'schedule'
+      (needs.deploy.result == 'failure' || needs.test.result == 'failure') &&
+      github.event_name == 'schedule'
     needs:
-    - deploy-smoke-test
+    - deploy
+    - test
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
