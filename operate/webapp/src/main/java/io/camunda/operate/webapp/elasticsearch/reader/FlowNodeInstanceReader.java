@@ -91,7 +91,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -933,56 +932,83 @@ public class FlowNodeInstanceReader extends AbstractReader
   private FlowNodeMetadataDto getMetadataByFlowNodeId(
       final String processInstanceId, final String flowNodeId, final FlowNodeType flowNodeType) {
 
-    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder flowNodeIdQ = termQuery(FLOW_NODE_ID, flowNodeId);
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            joinWithAnd(
+                ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId),
+                ElasticsearchUtil.termsQuery(FLOW_NODE_ID, flowNodeId)));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final SearchSourceBuilder sourceBuilder =
-        new SearchSourceBuilder()
-            .query(constantScoreQuery(joinWithAnd(processInstanceIdQ, flowNodeIdQ)))
-            .sort(LEVEL, SortOrder.ASC)
-            .aggregation(getLevelsAggs())
+    final var levelsAgg =
+        co.elastic.clients.elasticsearch._types.aggregations.Aggregation.of(
+            a ->
+                a.terms(
+                        t ->
+                            t.field(LEVEL)
+                                .size(TERMS_AGG_SIZE)
+                                .order(
+                                    co.elastic.clients.util.NamedValue.of(
+                                        "_key",
+                                        co.elastic.clients.elasticsearch._types.SortOrder.Asc)))
+                    .aggregations(LEVELS_TOP_HITS_AGG_NAME, sub -> sub.topHits(th -> th.size(1))));
+
+    final var requestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+            .query(tenantAwareQuery)
+            .sort(
+                ElasticsearchUtil.sortOrder(
+                    LEVEL, co.elastic.clients.elasticsearch._types.SortOrder.Asc))
+            .aggregations(LEVELS_AGG_NAME, levelsAgg)
             .size(1);
+
     if (flowNodeType != null) {
-      sourceBuilder.postFilter(termQuery(TYPE, flowNodeType));
+      requestBuilder.postFilter(ElasticsearchUtil.termsQuery(TYPE, flowNodeType));
     }
-    final org.elasticsearch.action.search.SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate).source(sourceBuilder);
+
+    final var request = requestBuilder.build();
 
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
+      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
 
       final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
-      final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstance(response);
 
-      final Terms levelsAgg = response.getAggregations().get(LEVELS_AGG_NAME);
-      if (levelsAgg != null
-          && levelsAgg.getBuckets() != null
-          && levelsAgg.getBuckets().size() > 0) {
-        final Bucket bucketCurrentLevel =
-            getBucketFromLevel(levelsAgg.getBuckets(), flowNodeInstance.getLevel());
-        if (bucketCurrentLevel.getDocCount() == 1) {
-          result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
-          result.setFlowNodeInstanceId(flowNodeInstance.getId());
-          // scenario 1-2
-          result.setBreadcrumb(
-              buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), flowNodeInstance.getLevel()));
-          // find incidents information
-          searchForIncidents(
-              result,
-              String.valueOf(flowNodeInstance.getProcessInstanceKey()),
-              flowNodeInstance.getFlowNodeId(),
-              flowNodeInstance.getId(),
-              flowNodeInstance.getType());
-        } else {
-          result.setInstanceCount(bucketCurrentLevel.getDocCount());
-          result.setFlowNodeId(flowNodeInstance.getFlowNodeId());
-          result.setFlowNodeType(flowNodeInstance.getType());
-          // find incidents information
-          searchForIncidentsByFlowNodeIdAndType(
-              result,
-              String.valueOf(flowNodeInstance.getProcessInstanceKey()),
-              flowNodeInstance.getFlowNodeId(),
-              flowNodeInstance.getType());
+      if (response.hits().total().value() == 0) {
+        throw new OperateRuntimeException("No data found for flow node instance.");
+      }
+
+      final var flowNodeInstance = response.hits().hits().get(0).source();
+
+      final var levelsAggResult = response.aggregations().get(LEVELS_AGG_NAME);
+      if (levelsAggResult != null && levelsAggResult.isLterms()) {
+        final var buckets = levelsAggResult.lterms().buckets().array();
+        if (!buckets.isEmpty()) {
+          final var bucketCurrentLevel =
+              getBucketFromLevelEs8(buckets, flowNodeInstance.getLevel());
+          if (bucketCurrentLevel.docCount() == 1) {
+            result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
+            result.setFlowNodeInstanceId(flowNodeInstance.getId());
+            // scenario 1-2
+            result.setBreadcrumb(
+                buildBreadcrumbForFlowNodeIdEs8(buckets, flowNodeInstance.getLevel()));
+            // find incidents information
+            searchForIncidents(
+                result,
+                String.valueOf(flowNodeInstance.getProcessInstanceKey()),
+                flowNodeInstance.getFlowNodeId(),
+                flowNodeInstance.getId(),
+                flowNodeInstance.getType());
+          } else {
+            result.setInstanceCount(bucketCurrentLevel.docCount());
+            result.setFlowNodeId(flowNodeInstance.getFlowNodeId());
+            result.setFlowNodeType(flowNodeInstance.getType());
+            // find incidents information
+            searchForIncidentsByFlowNodeIdAndType(
+                result,
+                String.valueOf(flowNodeInstance.getProcessInstanceKey()),
+                flowNodeInstance.getFlowNodeId(),
+                flowNodeInstance.getType());
+          }
         }
       }
 
@@ -1120,9 +1146,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     // Deserialize JsonData to Map
     final Map<String, Object> lastFlowNodeFields =
-        objectMapper.convertValue(
-            hit.source(),
-            new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+        objectMapper.convertValue(hit.source(), ElasticsearchUtil.MAP_CLASS);
 
     final var stateValue = lastFlowNodeFields.get(STATE);
     final var treePathValue = lastFlowNodeFields.get(TREE_PATH);
@@ -1134,5 +1158,63 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
 
     result.put(flowNode.key().stringValue(), flowNodeState);
+  }
+
+  private co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket
+      getBucketFromLevelEs8(
+          final List<co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket> buckets,
+          final int level) {
+    return buckets.stream().filter(b -> b.key() == level).findFirst().get();
+  }
+
+  private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumbForFlowNodeIdEs8(
+      final List<co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket> buckets,
+      final int currentInstanceLevel) {
+    if (buckets.isEmpty()) {
+      return new ArrayList<>();
+    }
+    final List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb = new ArrayList<>();
+    final FlowNodeType firstBucketFlowNodeType = getFirstBucketFlowNodeTypeEs8(buckets);
+    if ((firstBucketFlowNodeType != null
+            && firstBucketFlowNodeType.equals(FlowNodeType.MULTI_INSTANCE_BODY))
+        || getBucketFromLevelEs8(buckets, currentInstanceLevel).docCount() > 1) {
+      for (final var levelBucket : buckets) {
+        final var levelTopHits = levelBucket.aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
+        final var hit = levelTopHits.hits().hits().get(0);
+        final Map<String, Object> instanceFields =
+            objectMapper.convertValue(hit.source(), ElasticsearchUtil.MAP_CLASS);
+        if ((int) instanceFields.get(LEVEL) <= currentInstanceLevel) {
+          final var flowNodeType = (FlowNodeType) instanceFields.get(TYPE);
+          final var breadcrumbEntry =
+              new FlowNodeInstanceBreadcrumbEntryDto(
+                  String.valueOf(instanceFields.get(FLOW_NODE_ID)), flowNodeType);
+          breadcrumb.add(breadcrumbEntry);
+        }
+      }
+    }
+    return breadcrumb;
+  }
+
+  private FlowNodeType getFirstBucketFlowNodeTypeEs8(
+      final List<co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket> buckets) {
+    if (buckets.isEmpty()) {
+      return null;
+    }
+
+    final var topHitsAgg = buckets.get(0).aggregations().get(LEVELS_TOP_HITS_AGG_NAME);
+    if (topHitsAgg == null || !topHitsAgg.isTopHits()) {
+      return null;
+    }
+
+    final var hits = topHitsAgg.topHits().hits().hits();
+    if (hits.isEmpty() || hits.get(0).source() == null) {
+      return null;
+    }
+
+    final Map<String, Object> instanceFields =
+        objectMapper.convertValue(hits.get(0).source(), ElasticsearchUtil.MAP_CLASS);
+    final Object typeValue = instanceFields.get(TYPE);
+
+    return typeValue == null ? null : (FlowNodeType) typeValue;
   }
 }
