@@ -73,7 +73,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
     verify(processTestContext).mockJobWorker(JOB_TYPE);
     verify(jobWorkerMockBuilder).thenComplete(Collections.emptyMap());
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
+    verifyNoMoreInteractions(
+        processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
   }
 
   @Test
@@ -98,7 +99,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
     verify(processTestContext).mockJobWorker(JOB_TYPE);
     verify(jobWorkerMockBuilder).thenComplete(variables);
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
+    verifyNoMoreInteractions(
+        processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
   }
 
   @Test
@@ -119,7 +121,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
     verify(processTestContext).mockJobWorker(JOB_TYPE);
     verify(jobWorkerMockBuilder).thenCompleteWithExampleData();
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
+    verifyNoMoreInteractions(
+        processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
   }
 
   @Test
@@ -144,6 +147,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     verify(processTestContext).mockJobWorker(JOB_TYPE);
     verify(jobWorkerMockBuilder).thenCompleteWithExampleData();
 
-    verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
+    verifyNoMoreInteractions(
+        processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
   }
 }
