@@ -54,6 +54,9 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetrics;
+import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.StatusMetric;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -113,6 +116,7 @@ import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -4168,6 +4172,69 @@ final class JsonSerializableToJsonTest {
                   "variables": {}
                 }
                 """
+      },
+      //////////////////////////////////// JobMetricsBatchRecord /////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "JobMetricsBatchRecord",
+        (Supplier<JobMetricsBatchRecord>)
+            () ->
+                new JobMetricsBatchRecord()
+                    .setBatchStartTime(1000L)
+                    .setBatchEndTime(2000L)
+                    .setRecordSizeLimitExceeded(false)
+                    .setEncodedStrings(new LinkedHashSet(List.of("jobType1", "tenant1", "worker1")))
+                    .setJobMetrics(
+                        List.of(
+                            new JobMetrics()
+                                .setJobTypeIndex(0)
+                                .setTenantIdIndex(1)
+                                .setWorkerNameIndex(2)
+                                .setStatusMetrics(
+                                    List.of(
+                                        new StatusMetric().setCount(1).setLastUpdatedAt(1000))))),
+        """
+      {
+        "jobMetrics": [
+          {
+            "jobTypeIndex": 0,
+            "tenantIdIndex": 1,
+            "workerNameIndex": -1,
+            "statusMetrics": [
+              {
+                "count": 1,
+                "lastUpdatedAt": 1000,
+                "empty": false,
+                "encodedLength": 25
+              }
+            ],
+            "empty": false,
+            "encodedLength": 87
+          }
+        ],
+        "recordSizeLimitExceeded": false,
+        "batchStartTime": 1000,
+        "batchEndTime": 2000,
+        "encodedStrings": [
+          "jobType1",
+          "tenant1",
+          "worker1"
+        ]
+      }
+      """
+      },
+      {
+        "Empty JobMetricsBatchRecord",
+        (Supplier<JobMetricsBatchRecord>) JobMetricsBatchRecord::new,
+        """
+      {
+        "batchStartTime": -1,
+        "batchEndTime": -1,
+        "recordSizeLimitExceeded": false,
+        "encodedStrings": [],
+        "jobMetrics": []
+      }
+      """
       },
       //////////////////////////////////// GlobalListenerBatchRecord /////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////

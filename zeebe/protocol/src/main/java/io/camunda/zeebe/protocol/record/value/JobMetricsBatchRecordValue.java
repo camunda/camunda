@@ -18,7 +18,6 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -54,32 +53,20 @@ public interface JobMetricsBatchRecordValue extends RecordValue {
    * @return a map from encoded key (jobTypeIndex_tenantIdIndex) to the job metrics value for that
    *     combination
    */
-  Map<String, JobMetricsValue> getJobMetrics();
+  List<JobMetricsValue> getJobMetrics();
 
-  /**
-   * Represents the metrics value for a specific job type and tenant combination. The key in the
-   * parent map is "{jobTypeIndex}_{tenantIdIndex}".
-   */
+  /** Represents a single status metric with count and timestamp. */
   @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableJobMetricsValue.Builder.class)
+  @ImmutableProtocol(builder = ImmutableStatusMetricValue.Builder.class)
   interface JobMetricsValue {
 
-    /**
-     * @return a map from worker name index (as string) to the worker metrics for this job type and
-     *     tenant combination
-     */
-    Map<String, WorkerMetricsValue> getWorkerMetrics();
-  }
+    int getJobTypeIndex();
 
-  /** Represents the metrics for a specific worker. The key in the parent map is workerNameIndex. */
-  @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableWorkerMetricsValue.Builder.class)
-  interface WorkerMetricsValue {
+    int getTenantIdIndex();
 
-    /**
-     * @return the list of status metrics (counters) for this worker
-     */
-    List<StatusMetricValue> getCounters();
+    int getWorkerNameIndex();
+
+    List<StatusMetricValue> getStatusMetrics();
   }
 
   /** Represents a single status metric with count and timestamp. */
