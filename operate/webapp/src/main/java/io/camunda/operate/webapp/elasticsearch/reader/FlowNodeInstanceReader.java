@@ -11,7 +11,6 @@ import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
-import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.searchAfterToFieldValues;
 import static io.camunda.operate.util.ElasticsearchUtil.termsQuery;
@@ -34,16 +33,19 @@ import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTem
 import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.ACTIVE;
 import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.COMPLETED;
 import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.TERMINATED;
-import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.util.NamedValue;
 import com.google.common.collect.ImmutableList;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -76,20 +78,7 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.*;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,26 +137,21 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     // Build not completed flow nodes aggregation (ACTIVE or TERMINATED)
     final var notCompletedFlowNodesAggs =
-        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+        new Aggregation.Builder()
             .filter(
                 f ->
                     f.bool(
                         b -> b.must(termsQuery(STATE, List.of(ACTIVE.name(), TERMINATED.name())))))
             .aggregations(
                 ACTIVE_FLOW_NODES_BUCKETS_AGG_NAME,
-                new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+                new Aggregation.Builder()
                     .terms(t -> t.field(FLOW_NODE_ID).size(TERMS_AGG_SIZE))
                     .aggregations(
                         LATEST_FLOW_NODE_AGG_NAME,
-                        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation
-                                .Builder()
+                        new Aggregation.Builder()
                             .topHits(
                                 th ->
-                                    th.sort(
-                                            ElasticsearchUtil.sortOrder(
-                                                START_DATE,
-                                                co.elastic.clients.elasticsearch._types.SortOrder
-                                                    .Desc))
+                                    th.sort(ElasticsearchUtil.sortOrder(START_DATE, SortOrder.Desc))
                                         .size(1)
                                         .source(s -> s.filter(sf -> sf.includes(STATE, TREE_PATH))))
                             .build())
@@ -176,22 +160,22 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     // Build finished flow nodes aggregation
     final var finishedFlowNodesAggs =
-        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+        new Aggregation.Builder()
             .filter(f -> f.bool(b -> b.must(termsQuery(STATE, COMPLETED.name()))))
             .aggregations(
                 FINISHED_FLOW_NODES_BUCKETS_AGG_NAME,
-                new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+                new Aggregation.Builder()
                     .terms(t -> t.field(FLOW_NODE_ID).size(TERMS_AGG_SIZE))
                     .build())
             .build();
 
     // Build incidents aggregation
     final var incidentsAggs =
-        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+        new Aggregation.Builder()
             .filter(f -> f.bool(b -> b.must(termsQuery(INCIDENT, true))))
             .aggregations(
                 AGG_INCIDENT_PATHS,
-                new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+                new Aggregation.Builder()
                     .terms(t -> t.field(TREE_PATH).size(TERMS_AGG_SIZE))
                     .build())
             .build();
@@ -213,10 +197,10 @@ public class FlowNodeInstanceReader extends AbstractReader
       processAggregation(response.aggregations(), incidentPaths, new Boolean[] {false});
 
       final Set<String> finishedFlowNodes =
-          collectFinishedFlowNodesEs8(response.aggregations().get(FINISHED_FLOW_NODES_AGG_NAME));
+          collectFinishedFlowNodes(response.aggregations().get(FINISHED_FLOW_NODES_AGG_NAME));
 
       final Map<String, FlowNodeStateDto> result = new HashMap<>();
-      collectActiveFlowNodeStatesEs8(
+      collectActiveFlowNodeStates(
           response.aggregations().get(ACTIVE_FLOW_NODES_AGG_NAME), incidentPaths, result);
 
       // add finished when needed
@@ -277,13 +261,10 @@ public class FlowNodeInstanceReader extends AbstractReader
                 FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(ElasticsearchUtil.whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
             .query(query)
-            .sort(
-                ElasticsearchUtil.sortOrder(
-                    FlowNodeInstanceTemplate.POSITION,
-                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(ElasticsearchUtil.sortOrder(FlowNodeInstanceTemplate.POSITION, SortOrder.Asc));
 
     try {
       return ElasticsearchUtil.scrollAllStream(
@@ -377,9 +358,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             ._toQuery();
 
     final var runningParentsAgg =
-        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
-            .filter(f -> f.bool(runningParentFilter.bool()))
-            .build();
+        new Aggregation.Builder().filter(f -> f.bool(runningParentFilter.bool())).build();
 
     // Build post filter
     final var postFilterQueries = new java.util.ArrayList<Query>();
@@ -431,31 +410,12 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
   }
 
-  private AggregationBuilder getIncidentsAgg() {
-    return filter(AGG_INCIDENTS, termQuery(INCIDENT, true))
-        .subAggregation(terms(AGG_INCIDENT_PATHS).field(TREE_PATH).size(TERMS_AGG_SIZE));
-  }
-
-  private Function<SearchHit, FlowNodeInstanceEntity> getSearchHitFunction(
-      final Set<String> incidentPaths) {
-    return (sh) -> {
-      final FlowNodeInstanceEntity entity =
-          fromSearchHit(sh.getSourceAsString(), objectMapper, FlowNodeInstanceEntity.class);
-      entity.setSortValues(sh.getSortValues());
-      if (incidentPaths != null && incidentPaths.contains(entity.getTreePath())) {
-        entity.setIncident(true);
-      }
-      return entity;
-    };
-  }
-
   private boolean flowNodeInstanceIsRunningOrIsNotMarked(
       final FlowNodeInstanceEntity flowNodeInstance) {
     return flowNodeInstance.getEndDate() == null || !flowNodeInstance.isIncident();
   }
 
-  private co.elastic.clients.elasticsearch._types.query_dsl.Query
-      hasProcessInstanceAsTreePathPrefixAndIsIncident(final String treePath) {
+  private Query hasProcessInstanceAsTreePathPrefixAndIsIncident(final String treePath) {
     return joinWithAnd(
         ElasticsearchUtil.prefixQuery(TREE_PATH, treePath),
         ElasticsearchUtil.termsQuery(INCIDENT, true));
@@ -490,12 +450,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .size(0)
             .aggregations(
                 NUMBER_OF_INCIDENTS_FOR_TREE_PATH,
-                a ->
-                    a.filters(
-                        f ->
-                            f.filters(
-                                co.elastic.clients.elasticsearch._types.aggregations.Buckets.of(
-                                    b -> b.keyed(filters)))))
+                a -> a.filters(f -> f.filters(Buckets.of(b -> b.keyed(filters)))))
             .build();
 
     try {
@@ -520,28 +475,6 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
   }
 
-  private Consumer<Aggregations> getAggsProcessor(
-      final Set<String> incidentPaths, final Boolean[] runningParent) {
-    return (aggs) -> {
-      if (incidentPaths != null) {
-        final Filter filterAggs = aggs.get(AGG_INCIDENTS);
-        if (filterAggs != null) {
-          final Terms termsAggs = filterAggs.getAggregations().get(AGG_INCIDENT_PATHS);
-          if (termsAggs != null) {
-            incidentPaths.addAll(
-                termsAggs.getBuckets().stream()
-                    .map((b) -> b.getKeyAsString())
-                    .collect(Collectors.toSet()));
-          }
-        }
-      }
-      final Filter filterAggs = aggs.get(AGG_RUNNING_PARENT);
-      if (filterAggs != null && filterAggs.getDocCount() > 0) {
-        runningParent[0] = true;
-      }
-    };
-  }
-
   private void applySorting(
       final SearchRequest.Builder searchRequestBuilder, final FlowNodeInstanceQueryDto request) {
 
@@ -552,12 +485,8 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     if (directSorting) { // this sorting is also the default one for 1st page
       searchRequestBuilder
-          .sort(
-              ElasticsearchUtil.sortOrder(
-                  START_DATE, co.elastic.clients.elasticsearch._types.SortOrder.Asc))
-          .sort(
-              ElasticsearchUtil.sortOrder(
-                  ID, co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+          .sort(ElasticsearchUtil.sortOrder(START_DATE, SortOrder.Asc))
+          .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
       if (request.getSearchAfter() != null) {
         searchRequestBuilder.searchAfter(
             searchAfterToFieldValues(request.getSearchAfter(objectMapper)));
@@ -568,12 +497,8 @@ public class FlowNodeInstanceReader extends AbstractReader
     } else { // searchBefore != null
       // reverse sorting
       searchRequestBuilder
-          .sort(
-              ElasticsearchUtil.sortOrder(
-                  START_DATE, co.elastic.clients.elasticsearch._types.SortOrder.Desc))
-          .sort(
-              ElasticsearchUtil.sortOrder(
-                  ID, co.elastic.clients.elasticsearch._types.SortOrder.Desc));
+          .sort(ElasticsearchUtil.sortOrder(START_DATE, SortOrder.Desc))
+          .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Desc));
       if (request.getSearchBefore() != null) {
         searchRequestBuilder.searchAfter(
             searchAfterToFieldValues(request.getSearchBefore(objectMapper)));
@@ -600,10 +525,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .map(
                 hit -> {
                   final var entity = hit.source();
-                  entity.setSortValues(
-                      hit.sort().stream()
-                          .map(co.elastic.clients.elasticsearch._types.FieldValue::_get)
-                          .toArray());
+                  entity.setSortValues(hit.sort().stream().map(FieldValue::_get).toArray());
                   return entity;
                 })
             .toList();
@@ -625,10 +547,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .map(
                 hit -> {
                   final var entity = hit.source();
-                  entity.setSortValues(
-                      hit.sort().stream()
-                          .map(co.elastic.clients.elasticsearch._types.FieldValue::_get)
-                          .toArray());
+                  entity.setSortValues(hit.sort().stream().map(FieldValue::_get).toArray());
                   return entity;
                 })
             .toList();
@@ -639,8 +558,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private void processAggregation(
-      final Map<String, co.elastic.clients.elasticsearch._types.aggregations.Aggregate>
-          aggregations,
+      final Map<String, Aggregate> aggregations,
       final Set<String> incidentPaths,
       final Boolean[] runningParent) {
     if (aggregations == null) {
@@ -829,9 +747,7 @@ public class FlowNodeInstanceReader extends AbstractReader
           new SearchRequest.Builder()
               .index(whereToSearch(decisionInstanceTemplate, ALL))
               .query(tenantAwareQuery)
-              .sort(
-                  ElasticsearchUtil.sortOrder(
-                      EVALUATION_DATE, co.elastic.clients.elasticsearch._types.SortOrder.Desc))
+              .sort(ElasticsearchUtil.sortOrder(EVALUATION_DATE, SortOrder.Desc))
               .size(1)
               .source(s -> s.filter(f -> f.includes(DECISION_NAME, DECISION_ID)))
               .build();
@@ -904,8 +820,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             joinWithAnd(
                 ElasticsearchUtil.termsQuery(FLOW_NODE_ID, flowNodeId),
                 ElasticsearchUtil.prefixQuery(TREE_PATH, prefixTreePath),
-                co.elastic.clients.elasticsearch._types.query_dsl.Query.of(
-                    q -> q.range(r -> r.number(n -> n.field(LEVEL).lte((double) level))))));
+                Query.of(q -> q.range(r -> r.number(n -> n.field(LEVEL).lte((double) level))))));
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var request =
@@ -914,7 +829,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .query(tenantAwareQuery)
             .source(s -> s.fetch(false))
             .size(0)
-            .aggregations(LEVELS_AGG_NAME, getLevelsAggsEs8())
+            .aggregations(LEVELS_AGG_NAME, getLevelsAggs())
             .build();
 
     try {
@@ -923,7 +838,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       final var levelsAggResult = response.aggregations().get(LEVELS_AGG_NAME);
       if (levelsAggResult != null && levelsAggResult.isLterms()) {
         result.addAll(
-            buildBreadcrumbForFlowNodeIdEs8(levelsAggResult.lterms().buckets().array(), level));
+            buildBreadcrumbForFlowNodeId(levelsAggResult.lterms().buckets().array(), level));
       }
 
       return result;
@@ -949,10 +864,8 @@ public class FlowNodeInstanceReader extends AbstractReader
         new SearchRequest.Builder()
             .index(whereToSearch(flowNodeInstanceTemplate, ALL))
             .query(tenantAwareQuery)
-            .sort(
-                ElasticsearchUtil.sortOrder(
-                    LEVEL, co.elastic.clients.elasticsearch._types.SortOrder.Asc))
-            .aggregations(LEVELS_AGG_NAME, getLevelsAggsEs8())
+            .sort(ElasticsearchUtil.sortOrder(LEVEL, SortOrder.Asc))
+            .aggregations(LEVELS_AGG_NAME, getLevelsAggs())
             .size(1);
 
     if (flowNodeType != null) {
@@ -976,14 +889,13 @@ public class FlowNodeInstanceReader extends AbstractReader
       if (levelsAggResult != null && levelsAggResult.isLterms()) {
         final var buckets = levelsAggResult.lterms().buckets().array();
         if (!buckets.isEmpty()) {
-          final var bucketCurrentLevel =
-              getBucketFromLevelEs8(buckets, flowNodeInstance.getLevel());
+          final var bucketCurrentLevel = getBucketFromLevel(buckets, flowNodeInstance.getLevel());
           if (bucketCurrentLevel.docCount() == 1) {
             result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
             result.setFlowNodeInstanceId(flowNodeInstance.getId());
             // scenario 1-2
             result.setBreadcrumb(
-                buildBreadcrumbForFlowNodeIdEs8(buckets, flowNodeInstance.getLevel()));
+                buildBreadcrumbForFlowNodeId(buckets, flowNodeInstance.getLevel()));
             // find incidents information
             searchForIncidents(
                 result,
@@ -1014,76 +926,15 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
   }
 
-  private Bucket getBucketFromLevel(final List<? extends Bucket> buckets, final int level) {
-    return buckets.stream().filter(b -> b.getKeyAsNumber().intValue() == level).findFirst().get();
-  }
-
-  private TermsAggregationBuilder getLevelsAggs() {
-    return terms(LEVELS_AGG_NAME)
-        .field(LEVEL)
-        .size(TERMS_AGG_SIZE)
-        .order(BucketOrder.key(true)) // upper level first
-        .subAggregation(
-            topHits(LEVELS_TOP_HITS_AGG_NAME) // select one instance per each level
-                .size(1));
-  }
-
-  private co.elastic.clients.elasticsearch._types.aggregations.Aggregation getLevelsAggsEs8() {
-    return co.elastic.clients.elasticsearch._types.aggregations.Aggregation.of(
+  private Aggregation getLevelsAggs() {
+    return Aggregation.of(
         a ->
             a.terms(
                     t ->
                         t.field(LEVEL)
                             .size(TERMS_AGG_SIZE)
-                            .order(
-                                co.elastic.clients.util.NamedValue.of(
-                                    "_key", co.elastic.clients.elasticsearch._types.SortOrder.Asc)))
+                            .order(NamedValue.of("_key", SortOrder.Asc)))
                 .aggregations(LEVELS_TOP_HITS_AGG_NAME, sub -> sub.topHits(th -> th.size(1))));
-  }
-
-  private FlowNodeInstanceEntity getFlowNodeInstance(final SearchResponse response) {
-    if (response.getHits().getTotalHits().value == 0) {
-      throw new OperateRuntimeException("No data found for flow node instance.");
-    }
-    return fromSearchHit(
-        response.getHits().getAt(0).getSourceAsString(),
-        objectMapper,
-        FlowNodeInstanceEntity.class);
-  }
-
-  private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumbForFlowNodeId(
-      final List<? extends Bucket> buckets, final int currentInstanceLevel) {
-    if (buckets.size() == 0) {
-      return new ArrayList<>();
-    }
-    final List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb = new ArrayList<>();
-    final FlowNodeType firstBucketFlowNodeType = getFirstBucketFlowNodeType(buckets);
-    if ((firstBucketFlowNodeType != null
-            && firstBucketFlowNodeType.equals(FlowNodeType.MULTI_INSTANCE_BODY))
-        || getBucketFromLevel(buckets, currentInstanceLevel).getDocCount() > 1) {
-      for (final Bucket levelBucket : buckets) {
-        final TopHits levelTopHits = levelBucket.getAggregations().get(LEVELS_TOP_HITS_AGG_NAME);
-        final Map<String, Object> instanceFields = levelTopHits.getHits().getAt(0).getSourceAsMap();
-        if ((int) instanceFields.get(LEVEL) <= currentInstanceLevel) {
-          breadcrumb.add(
-              new FlowNodeInstanceBreadcrumbEntryDto(
-                  (String) instanceFields.get(FLOW_NODE_ID),
-                  FlowNodeType.valueOf((String) instanceFields.get(TYPE))));
-        }
-      }
-    }
-    return breadcrumb;
-  }
-
-  private FlowNodeType getFirstBucketFlowNodeType(final List<? extends Bucket> buckets) {
-    final TopHits topHits = buckets.get(0).getAggregations().get(LEVELS_TOP_HITS_AGG_NAME);
-    if (topHits != null && topHits.getHits().getTotalHits().value > 0) {
-      final String type = (String) topHits.getHits().getAt(0).getSourceAsMap().get(TYPE);
-      if (type != null) {
-        return FlowNodeType.valueOf(type);
-      }
-    }
-    return null;
   }
 
   private FlowNodeInstanceMetadata buildInstanceMetadata(
@@ -1091,8 +942,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     return flowNodeInstanceMetadataBuilder.buildFrom(flowNodeInstance);
   }
 
-  private Set<String> collectFinishedFlowNodesEs8(
-      final co.elastic.clients.elasticsearch._types.aggregations.Aggregate finishedFlowNodes) {
+  private Set<String> collectFinishedFlowNodes(final Aggregate finishedFlowNodes) {
     final Set<String> result = new HashSet<>();
     if (finishedFlowNodes != null && finishedFlowNodes.isFilter()) {
       final var subAggs = finishedFlowNodes.filter().aggregations();
@@ -1108,7 +958,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     return result;
   }
 
-  private void collectActiveFlowNodeStatesEs8(
+  private void collectActiveFlowNodeStates(
       final Aggregate activeFlowNodesAgg,
       final Set<String> incidentPaths,
       final Map<String, FlowNodeStateDto> result) {
@@ -1127,12 +977,12 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
 
     for (final var flowNode : flowNodesAgg.sterms().buckets().array()) {
-      processFlowNodeBucketEs8(flowNode, incidentPaths, result);
+      processFlowNodeBucket(flowNode, incidentPaths, result);
     }
   }
 
-  private void processFlowNodeBucketEs8(
-      final co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket flowNode,
+  private void processFlowNodeBucket(
+      final StringTermsBucket flowNode,
       final Set<String> incidentPaths,
       final Map<String, FlowNodeStateDto> result) {
     final var latestFlowNodeAgg = flowNode.aggregations().get(LATEST_FLOW_NODE_AGG_NAME);
@@ -1166,24 +1016,20 @@ public class FlowNodeInstanceReader extends AbstractReader
     result.put(flowNode.key().stringValue(), flowNodeState);
   }
 
-  private co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket
-      getBucketFromLevelEs8(
-          final List<co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket> buckets,
-          final int level) {
+  private LongTermsBucket getBucketFromLevel(final List<LongTermsBucket> buckets, final int level) {
     return buckets.stream().filter(b -> b.key() == level).findFirst().get();
   }
 
-  private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumbForFlowNodeIdEs8(
-      final List<co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket> buckets,
-      final int currentInstanceLevel) {
+  private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumbForFlowNodeId(
+      final List<LongTermsBucket> buckets, final int currentInstanceLevel) {
     if (buckets.isEmpty()) {
       return new ArrayList<>();
     }
     final List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb = new ArrayList<>();
-    final FlowNodeType firstBucketFlowNodeType = getFirstBucketFlowNodeTypeEs8(buckets);
+    final FlowNodeType firstBucketFlowNodeType = getFirstBucketFlowNodeType(buckets);
     if ((firstBucketFlowNodeType != null
             && firstBucketFlowNodeType.equals(FlowNodeType.MULTI_INSTANCE_BODY))
-        || getBucketFromLevelEs8(buckets, currentInstanceLevel).docCount() > 1) {
+        || getBucketFromLevel(buckets, currentInstanceLevel).docCount() > 1) {
       for (final var levelBucket : buckets) {
         final var levelTopHits = levelBucket.aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
         final var hit = levelTopHits.hits().hits().get(0);
@@ -1201,8 +1047,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     return breadcrumb;
   }
 
-  private FlowNodeType getFirstBucketFlowNodeTypeEs8(
-      final List<co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket> buckets) {
+  private FlowNodeType getFirstBucketFlowNodeType(final List<LongTermsBucket> buckets) {
     if (buckets.isEmpty()) {
       return null;
     }
