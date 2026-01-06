@@ -108,6 +108,8 @@ public class HistoryCleanupService {
     messageSubscriptionWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     correlatedMessageSubscriptionWriter.scheduleForHistoryCleanup(
         processInstanceKey, historyCleanupDate);
+    auditLogWriter.scheduleProcessInstanceLogsForHistoryCleanup(
+        processInstanceKey, historyCleanupDate);
   }
 
   public void scheduleBatchOperationForHistoryCleanup(
