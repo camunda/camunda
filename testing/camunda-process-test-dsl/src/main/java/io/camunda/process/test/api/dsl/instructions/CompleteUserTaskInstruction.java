@@ -41,14 +41,11 @@ public interface CompleteUserTaskInstruction extends TestCaseInstruction {
   UserTaskSelector getUserTaskSelector();
 
   /**
-   * The variables to set when completing the user task. Ignored if withExampleData is true.
+   * The variables to set when completing the user task. Ignored if useExampleData is true.
    *
    * @return the variables or an empty map if not set
    */
-  @Value.Default
-  default Map<String, Object> getVariables() {
-    return Map.of();
-  }
+  Map<String, Object> getVariables();
 
   /**
    * Whether to complete the user task with example data from the BPMN element. If true, the
@@ -57,7 +54,7 @@ public interface CompleteUserTaskInstruction extends TestCaseInstruction {
    * @return true if example data should be used, false otherwise
    */
   @Value.Default
-  default boolean isWithExampleData() {
+  default boolean isUseExampleData() {
     return false;
   }
 }
