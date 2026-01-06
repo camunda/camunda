@@ -7,29 +7,33 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.jobmetrics;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
-import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.WorkerMetricsValue;
-import java.util.HashMap;
-import java.util.Map;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricValue;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public final class JobMetrics extends UnpackedObject implements JobMetricsValue {
+public final class JobMetrics extends ObjectValue implements JobMetricsValue {
 
   private final IntegerProperty jobTypeIndexProperty = new IntegerProperty("jobTypeIndex", -1);
   private final IntegerProperty tenantIdIndexProperty = new IntegerProperty("tenantIdIndex", -1);
+  private final IntegerProperty workerNameIndexProperty =
+      new IntegerProperty("workerNameIndex", -1);
 
-  private final ArrayProperty<WorkerMetrics> workerMetricsProperty =
-      new ArrayProperty<>("workerMetrics", WorkerMetrics::new);
+  private final ArrayProperty<StatusMetric> statusMetricsProperty =
+      new ArrayProperty<>("statusMetrics", StatusMetric::new);
 
   public JobMetrics() {
-    super(3);
+    super(4);
     declareProperty(jobTypeIndexProperty);
     declareProperty(tenantIdIndexProperty);
-    declareProperty(workerMetricsProperty);
+    declareProperty(workerNameIndexProperty);
+    declareProperty(statusMetricsProperty);
   }
 
+  @Override
   public int getJobTypeIndex() {
     return jobTypeIndexProperty.getValue();
   }
@@ -39,6 +43,7 @@ public final class JobMetrics extends UnpackedObject implements JobMetricsValue 
     return this;
   }
 
+  @Override
   public int getTenantIdIndex() {
     return tenantIdIndexProperty.getValue();
   }
@@ -49,12 +54,36 @@ public final class JobMetrics extends UnpackedObject implements JobMetricsValue 
   }
 
   @Override
-  public Map<String, WorkerMetricsValue> getWorkerMetrics() {
-    final Map<String, WorkerMetricsValue> result = new HashMap<>();
-    for (final WorkerMetrics record : workerMetricsProperty) {
-      final String key = String.valueOf(record.getWorkerNameIndex());
-      result.put(key, record);
-    }
-    return result;
+  public int getWorkerNameIndex() {
+    return workerNameIndexProperty.getValue();
+  }
+
+  @Override
+  public List<StatusMetricValue> getStatusMetrics() {
+    return statusMetricsProperty.stream().collect(Collectors.toList());
+  }
+
+  public JobMetrics setWorkerNameIndex(final int workerNameIndex) {
+    workerNameIndexProperty.setValue(workerNameIndex);
+    return this;
+  }
+
+  public JobMetrics wrap(final JobMetricsValue value) {
+    setJobTypeIndex(value.getJobTypeIndex());
+    setTenantIdIndex(value.getTenantIdIndex());
+    setTenantIdIndex(value.getTenantIdIndex());
+    setStatusMetrics(value.getStatusMetrics());
+    return this;
+  }
+
+  public JobMetricsValue setStatusMetrics(final List<StatusMetricValue> statusMetrics) {
+    statusMetricsProperty.reset();
+    statusMetrics.forEach(
+        statusMetricValue ->
+            statusMetricsProperty
+                .add()
+                .setCount(statusMetricValue.getCount())
+                .setLastUpdatedAt(statusMetricValue.getLastUpdatedAt()));
+    return this;
   }
 }

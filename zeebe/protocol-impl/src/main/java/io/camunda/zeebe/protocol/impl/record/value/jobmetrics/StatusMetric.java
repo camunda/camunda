@@ -7,15 +7,15 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.jobmetrics;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricValue;
 
-public final class StatusMetric extends UnpackedObject implements StatusMetricValue {
+public final class StatusMetric extends ObjectValue implements StatusMetricValue {
 
-  private final IntegerProperty countProperty = new IntegerProperty("count", 0);
-  private final LongProperty lastUpdatedAtProperty = new LongProperty("lastUpdatedAt", 0L);
+  private final IntegerProperty countProperty = new IntegerProperty("count", -1);
+  private final LongProperty lastUpdatedAtProperty = new LongProperty("lastUpdatedAt", -1L);
 
   public StatusMetric() {
     super(2);
@@ -41,10 +41,5 @@ public final class StatusMetric extends UnpackedObject implements StatusMetricVa
   public StatusMetric setCount(final int count) {
     countProperty.setValue(count);
     return this;
-  }
-
-  public void copyFrom(final StatusMetricValue other) {
-    countProperty.setValue(other.getCount());
-    lastUpdatedAtProperty.setValue(other.getLastUpdatedAt());
   }
 }

@@ -66,6 +66,7 @@ public interface Intent {
     map.put(ValueType.INCIDENT, IncidentIntent.class);
     map.put(ValueType.JOB, JobIntent.class);
     map.put(ValueType.JOB_BATCH, JobBatchIntent.class);
+    map.put(ValueType.JOB_METRICS_BATCH, JobMetricsBatchIntent.class);
     map.put(ValueType.MAPPING_RULE, MappingRuleIntent.class);
     map.put(ValueType.MESSAGE, MessageIntent.class);
     map.put(ValueType.MESSAGE_BATCH, MessageBatchIntent.class);
