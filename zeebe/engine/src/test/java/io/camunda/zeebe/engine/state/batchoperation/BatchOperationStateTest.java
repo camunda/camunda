@@ -95,6 +95,7 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.isInitialized()).isFalse();
     assertThat(batchOperation.getNumTotalItems()).isEqualTo(0);
     assertThat(batchOperation.getNumExecutedItems()).isEqualTo(0);
+    assertThat(batchOperation.hasFollowupCommand()).isFalse();
     assertThat(batchOperation.getFollowUpCommand())
         .extracting(NestedRecord::getValueType, NestedRecord::getIntent)
         .containsOnly(ValueType.NULL_VAL, Intent.UNKNOWN);
@@ -228,6 +229,7 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.isInitialized()).isFalse();
     assertThat(batchOperation.getNumTotalItems()).isEqualTo(0);
     assertThat(batchOperation.getNumExecutedItems()).isEqualTo(0);
+    assertThat(batchOperation.hasFollowupCommand()).isTrue();
     assertThat(batchOperation.getFollowUpCommand())
         .extracting(NestedRecord::getValueType, NestedRecord::getIntent)
         .containsOnly(ValueType.HISTORY_DELETION, HistoryDeletionIntent.DELETE);
