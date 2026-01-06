@@ -55,14 +55,81 @@ env:
   HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
 
 jobs:
-  build-and-push:
-    name: Build and Push Docker Image
-    # Only run on PRs from eamonnmoloney or remcowesterhoud (unless labelled skip-always-green), or on manual dispatch
+  # Gate job - checks conditions once, all other jobs depend on this
+  should-run:
+    name: Check Run Conditions
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
        (github.actor == 'eamonnmoloney' || github.actor == 'remcowesterhoud') &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
+    steps:
+      - run: echo "Workflow conditions met, proceeding with build"
+
+  # Parallel frontend builds
+  build-operate-frontend:
+    name: Build Operate Frontend
+    needs: should-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - name: Upload Operate frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: operate-frontend
+          path: operate/client/build
+          retention-days: 1
+
+  build-tasklist-frontend:
+    name: Build Tasklist Frontend
+    needs: should-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - name: Upload Tasklist frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tasklist-frontend
+          path: tasklist/client/build
+          retention-days: 1
+
+  build-identity-frontend:
+    name: Build Identity Frontend
+    needs: should-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - name: Upload Identity frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: identity-frontend
+          path: identity/client/build
+          retention-days: 1
+
+  # Main build job - waits for all frontends to complete
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: [build-operate-frontend, build-tasklist-frontend, build-identity-frontend]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     outputs:
@@ -93,23 +160,23 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
 
-      - name: Build Operate frontend
-        uses: ./.github/actions/build-frontend
+      - name: Download Operate frontend artifact
+        uses: actions/download-artifact@v4
         with:
-          directory: ./operate/client
-          package-manager: "npm"
+          name: operate-frontend
+          path: operate/client/build
 
-      - name: Build Tasklist frontend
-        uses: ./.github/actions/build-frontend
+      - name: Download Tasklist frontend artifact
+        uses: actions/download-artifact@v4
         with:
-          directory: ./tasklist/client
-          package-manager: "npm"
+          name: tasklist-frontend
+          path: tasklist/client/build
 
-      - name: Build Identity frontend
-        uses: ./.github/actions/build-frontend
+      - name: Download Identity frontend artifact
+        uses: actions/download-artifact@v4
         with:
-          directory: ./identity/client
-          package-manager: "npm"
+          name: identity-frontend
+          path: identity/client/build
 
       - name: Build Camunda
         id: build-camunda
@@ -149,7 +216,8 @@ jobs:
 
   format-identifier:
     name: Format Identifier
-    needs: build-and-push
+    # Runs in parallel with frontend builds (no dependency on their outputs)
+    needs: should-run
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -178,8 +246,8 @@ jobs:
       namespace-prefix: camunda
       test-enabled: true
       e2e-enabled: true
-      scenario: ${{ inputs.scenario || 'keycloak-original' }}
-      shortname: ${{ inputs.shortname || 'kcor' }}
+      scenario: ${{ inputs.scenario || 'qa-elasticsearch' }}
+      shortname: ${{ inputs.shortname || 'qael' }}
       always-delete-namespace: true
       flows: install
       values-config: |
@@ -205,61 +273,4 @@ jobs:
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
 
-  notify:
-    name: Send Slack notification on failure
-    runs-on: ubuntu-latest
-    needs: [build-and-push, helm-deploy]
-    if: false
-    #if: failure() && github.event_name != 'pull_request'
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
-
-      - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@v2
-        with:
-          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: *Docker Build + Helm Integration Test* failed!\n"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
-                  }
-                }
-              ]
-            }
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
