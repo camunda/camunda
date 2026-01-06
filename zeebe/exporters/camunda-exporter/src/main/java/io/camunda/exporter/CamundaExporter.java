@@ -21,6 +21,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.HISTORY_DELETION;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
+import static io.camunda.zeebe.protocol.record.ValueType.JOB_METRICS_BATCH;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
@@ -374,7 +375,8 @@ public class CamundaExporter implements Exporter {
             BATCH_OPERATION_CHUNK,
             USAGE_METRIC,
             CLUSTER_VARIABLE,
-            HISTORY_DELETION);
+            HISTORY_DELETION,
+            JOB_METRICS_BATCH);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

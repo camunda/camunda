@@ -57,7 +57,7 @@ public interface JobMetricsBatchRecordValue extends RecordValue {
 
   /** Represents a single status metric with count and timestamp. */
   @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableStatusMetricValue.Builder.class)
+  @ImmutableProtocol(builder = ImmutableJobMetricsValue.Builder.class)
   interface JobMetricsValue {
 
     int getJobTypeIndex();
