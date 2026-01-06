@@ -75,4 +75,9 @@ public @interface CompatibilityTest {
    * @return if true, then authorizations will be enabled in the Camunda cluster.
    */
   boolean enableAuthorization() default false;
+
+  /**
+   * @return if true, then multi-tenancy will be enabled in the Camunda cluster.
+   */
+  boolean enableMultiTenancy() default false;
 }

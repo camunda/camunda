@@ -24,6 +24,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.time.OffsetDateTime;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 @MultiDbTest
+@CompatibilityTest
 class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();

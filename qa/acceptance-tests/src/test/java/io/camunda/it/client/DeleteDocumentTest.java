@@ -13,11 +13,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class DeleteDocumentTest {
 
   private static final String DOCUMENT_CONTENT = "test";

@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class RolesByGroupSearchTest {
 
   private static CamundaClient camundaClient;

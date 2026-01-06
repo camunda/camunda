@@ -24,6 +24,7 @@ import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationResolveIncidentTest {
 

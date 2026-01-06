@@ -18,6 +18,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,6 +36,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
+@CompatibilityTest
 public class ProcessDefinitionSearchTest {
   private static final String PROCESS_ID_WITH_START_FORM = "Process_11hxie4";
   private static final String FORM_ID = "test";

@@ -22,6 +22,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,6 +36,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
+@CompatibilityTest
 class ProcessInstanceIncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();

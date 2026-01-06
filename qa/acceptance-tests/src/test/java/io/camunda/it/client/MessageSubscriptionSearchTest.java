@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.MessageSubscription;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.Comparator;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class MessageSubscriptionSearchTest {
 
   private static final int NUMBER_OF_MESSAGE_SUBSCRIPTIONS = 3;
