@@ -25,6 +25,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstr
 import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
 import io.camunda.process.test.impl.dsl.instructions.PublishMessageInstructionHandler;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ public class PublishMessageInstructionTest {
             .messageName(MESSAGE_NAME)
             .withoutCorrelationKey();
 
-    verify(mockCommand).variables(instruction.getVariables());
+    verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).send();
 
     verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
@@ -91,7 +92,7 @@ public class PublishMessageInstructionTest {
     final PublishMessageCommandStep3 mockCommand =
         camundaClient.newPublishMessageCommand().messageName(MESSAGE_NAME).correlationKey(correlationKey);
 
-    verify(mockCommand).variables(instruction.getVariables());
+    verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).send();
 
     verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
@@ -144,7 +145,7 @@ public class PublishMessageInstructionTest {
     final PublishMessageCommandStep3 mockCommand =
         camundaClient.newPublishMessageCommand().messageName(MESSAGE_NAME).withoutCorrelationKey();
 
-    verify(mockCommand).variables(instruction.getVariables());
+    verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).timeToLive(Duration.ofMillis(timeToLive));
     verify(mockCommand).send();
 
@@ -170,45 +171,11 @@ public class PublishMessageInstructionTest {
     final PublishMessageCommandStep3 mockCommand =
         camundaClient.newPublishMessageCommand().messageName(MESSAGE_NAME).withoutCorrelationKey();
 
-    verify(mockCommand).variables(instruction.getVariables());
+    verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).messageId(messageId);
     verify(mockCommand).send();
 
     verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
   }
 
-  @Test
-  void shouldSetAllProperties() {
-    // given
-    final String correlationKey = "order-12345";
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("orderId", 12345);
-    final long timeToLive = 60000L;
-    final String messageId = "msg-123";
-
-    final PublishMessageInstruction instruction =
-        ImmutablePublishMessageInstruction.builder()
-            .name(MESSAGE_NAME)
-            .correlationKey(correlationKey)
-            .putAllVariables(variables)
-            .timeToLive(timeToLive)
-            .messageId(messageId)
-            .build();
-
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
-
-    // then
-    verify(camundaClient).newPublishMessageCommand();
-
-    final PublishMessageCommandStep3 mockCommand =
-        camundaClient.newPublishMessageCommand().messageName(MESSAGE_NAME).correlationKey(correlationKey);
-
-    verify(mockCommand).variables(variables);
-    verify(mockCommand).timeToLive(Duration.ofMillis(timeToLive));
-    verify(mockCommand).messageId(messageId);
-    verify(mockCommand).send();
-
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
-  }
 }

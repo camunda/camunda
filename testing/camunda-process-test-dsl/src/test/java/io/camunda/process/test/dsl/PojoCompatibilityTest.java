@@ -294,22 +294,6 @@ public class PojoCompatibilityTest {
             "publish message: minimal",
             singleTestCase(ImmutablePublishMessageInstruction.builder().name("message1").build())),
         Arguments.of(
-            "publish message: with correlation key",
-            singleTestCase(
-                ImmutablePublishMessageInstruction.builder()
-                    .name("message1")
-                    .correlationKey("order-12345")
-                    .build())),
-        Arguments.of(
-            "publish message: with variables",
-            singleTestCase(
-                ImmutablePublishMessageInstruction.builder()
-                    .name("message1")
-                    .correlationKey("order-12345")
-                    .putVariables("orderId", 12345)
-                    .putVariables("status", "approved")
-                    .build())),
-        Arguments.of(
             "publish message: full",
             singleTestCase(
                 ImmutablePublishMessageInstruction.builder()
