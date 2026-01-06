@@ -27,7 +27,6 @@ import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,8 +142,7 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
     }
 
     if (querySearchAfter != null) {
-      searchRequestBuilder.searchAfter(
-          Arrays.stream(querySearchAfter).map(FieldValue::of).toList());
+      searchRequestBuilder.searchAfter(searchAfterToFieldValues(querySearchAfter));
     }
 
     searchRequestBuilder

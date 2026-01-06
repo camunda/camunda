@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
+import static io.camunda.operate.util.ElasticsearchUtil.searchAfterToFieldValues;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.TENANT_ID;
@@ -63,7 +64,6 @@ import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -303,8 +303,7 @@ public class DecisionInstanceReader extends AbstractReader
 
     searchRequestBuilder.sort(sort2).sort(sort3).size(request.getPageSize());
     if (querySearchAfter != null) {
-      searchRequestBuilder.searchAfter(
-          Arrays.stream(querySearchAfter).map(FieldValue::of).toList());
+      searchRequestBuilder.searchAfter(searchAfterToFieldValues(querySearchAfter));
     }
   }
 

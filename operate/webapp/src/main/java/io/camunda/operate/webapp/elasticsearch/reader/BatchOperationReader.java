@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import static io.camunda.operate.util.ElasticsearchUtil.searchAfterToFieldValues;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ID;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -25,7 +26,6 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,7 +127,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
             .index(batchOperationTemplate.getAlias());
 
     if (querySearchAfter != null) {
-      searchReq.searchAfter(Arrays.stream(querySearchAfter).map(FieldValue::of).toList());
+      searchReq.searchAfter(searchAfterToFieldValues(querySearchAfter));
     }
 
     return searchReq.build();
