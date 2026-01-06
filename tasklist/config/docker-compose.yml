@@ -425,7 +425,7 @@ services:
 
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.8.8
+    image: camunda/camunda:8.8.9
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
       - ZEEBE_BROKER_NETWORK_HOST=camunda
