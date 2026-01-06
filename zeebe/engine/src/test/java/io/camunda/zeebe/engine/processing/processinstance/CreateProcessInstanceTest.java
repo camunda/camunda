@@ -119,7 +119,7 @@ public final class CreateProcessInstanceTest {
     final ProcessInstanceRecordValue value = process.getValue();
     assertThat(value.getCallingElementPath()).isEmpty();
     assertThat(value.getElementInstancePath()).hasSize(1);
-    final List<Long> elementInstances = value.getElementInstancePath().get(0);
+    final List<Long> elementInstances = value.getElementInstancePath().getFirst();
     assertThat(elementInstances).containsExactly(processInstanceKey);
     assertThat(value.getProcessDefinitionPath()).containsExactly(value.getProcessDefinitionKey());
   }

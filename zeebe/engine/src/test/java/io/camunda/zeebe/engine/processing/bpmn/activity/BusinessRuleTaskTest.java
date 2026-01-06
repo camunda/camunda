@@ -339,7 +339,8 @@ public final class BusinessRuleTaskTest {
         .hasBpmnProcessId(businessRuleTaskActivated.getValue().getBpmnProcessId())
         .hasProcessInstanceKey(businessRuleTaskActivated.getValue().getProcessInstanceKey())
         .hasElementInstanceKey(businessRuleTaskActivated.getKey())
-        .hasElementId(businessRuleTaskActivated.getValue().getElementId());
+        .hasElementId(businessRuleTaskActivated.getValue().getElementId())
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     final var evaluatedDecisions = decisionEvaluationValue.getEvaluatedDecisions();
     assertThat(evaluatedDecisions).hasSize(2);
