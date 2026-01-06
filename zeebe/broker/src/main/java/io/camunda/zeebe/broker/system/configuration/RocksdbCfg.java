@@ -29,7 +29,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private int ioRateBytesPerSecond = RocksDbConfiguration.DEFAULT_IO_RATE_BYTES_PER_SECOND;
   private boolean disableWal = RocksDbConfiguration.DEFAULT_WAL_DISABLED;
   private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
-  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.AUTO;
+  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
