@@ -42,6 +42,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.google.common.collect.ImmutableList;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -411,7 +412,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       }
       if (flowNodeInstanceRequest.getSearchBefore() != null
           || flowNodeInstanceRequest.getSearchBeforeOrEqual() != null) {
-        Collections.reverse(response.getChildren());
+        response.setChildren(ImmutableList.copyOf(response.getChildren()).reverse());
       }
 
       return response;
