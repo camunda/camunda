@@ -11,7 +11,9 @@ import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByD
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.bucketSort;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.TENANT_ID;
 
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
@@ -29,23 +31,24 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformer
           value) {
 
     final var aggregation = value.getLeft();
-
-    // Phase 1: group incidents (already filtered by the query's IncidentFilter, including
-    // state=ACTIVE + required errorHashCode; optional errorMessage/tenantId could be added later)
-    // by processDefinitionKey + tenantId and count distinct affected process instances.
+    // Group incidents by processDefinitionKey, then by tenantId; count distinct affected process
+    // instances per tenant.
     final var byDefinitionAgg =
         terms()
             .name(AGGREGATION_NAME_BY_DEFINITION)
-            .script(PROCESS_DEFINITION_AND_TENANT_KEY)
-            .lang(AGGREGATION_SCRIPT_LANG)
+            .field(PROCESS_DEFINITION_KEY)
             .size(AGGREGATION_TERMS_SIZE)
             .aggregations(
-                // distinct affected process instances
-                cardinality()
-                    .name(AGGREGATION_NAME_AFFECTED_INSTANCES)
-                    .field(PROCESS_INSTANCE_KEY)
+                terms()
+                    .name(AGGREGATION_NAME_BY_TENANT)
+                    .field(TENANT_ID)
+                    .size(AGGREGATION_TERMS_SIZE)
+                    .aggregations(
+                        cardinality()
+                            .name(AGGREGATION_NAME_AFFECTED_INSTANCES)
+                            .field(PROCESS_INSTANCE_KEY)
+                            .build())
                     .build(),
-                // sorting + pagination (handled via bucket_sort)
                 bucketSort()
                     .name(AGGREGATION_NAME_SORT_AND_PAGE)
                     .sorting(toBucketSortSortings(aggregation))
@@ -54,15 +57,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformer
                     .build())
             .build();
 
-    // Estimate total unique (processDefinitionKey + tenantId) combinations for paging UX.
-    final var totalEstimateAgg =
-        cardinality()
-            .name(AGGREGATION_NAME_TOTAL_ESTIMATE)
-            .script(PROCESS_DEFINITION_AND_TENANT_KEY)
-            .lang(AGGREGATION_SCRIPT_LANG)
-            .build();
-
-    return List.of(byDefinitionAgg, totalEstimateAgg);
+    return List.of(byDefinitionAgg);
   }
 
   private static List<FieldSorting> toBucketSortSortings(

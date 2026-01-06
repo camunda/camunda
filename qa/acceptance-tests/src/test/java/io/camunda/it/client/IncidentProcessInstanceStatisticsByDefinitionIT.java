@@ -63,6 +63,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   private static final String TENANT_MULTI_TENANT_1 = "tenant-multi-tenant-1";
   private static final String TENANT_MULTI_TENANT_2 = "tenant-multi-tenant-2";
   private static final String TENANT_MULTI_VERSION = "tenant-multi-version";
+  private static final String TENANT_SINGLE_DEFINITION_CACHE = "tenant-single-definition-cache";
 
   // Java hash collision pair (same as used in the ByError IT)
   private static final String ERROR_HASH_COLLISION_1 = "error-hash-collision-Ea";
@@ -116,6 +117,77 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   private static void ensureTenantExistsForUser(
       final CamundaClient adminClient, final String tenantId, final String userId) {
     createTenant(adminClient, tenantId, tenantId, userId);
+  }
+
+  private static BpmnModelInstance singleServiceTaskProcess(
+      final String bpmnProcessId, final String name, final String jobType) {
+    return Bpmn.createExecutableProcess(bpmnProcessId)
+        .name(name)
+        .startEvent()
+        .serviceTask("serviceTask", t -> t.zeebeJobType(jobType))
+        .endEvent()
+        .done();
+  }
+
+  private static String resourceName(final String processId) {
+    return processId + ".bpmn";
+  }
+
+  private static long deployAndWait(
+      final CamundaClient client,
+      final BpmnModelInstance model,
+      final String resourceName,
+      final String tenantId) {
+    final long processDefinitionKey =
+        deployResourceForTenant(client, model, resourceName, tenantId)
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    waitForProcessesToBeDeployed(client, f -> f.processDefinitionKey(processDefinitionKey), 1);
+    return processDefinitionKey;
+  }
+
+  private static List<Long> createInstances(
+      final CamundaClient client,
+      final long processDefinitionKey,
+      final String tenantId,
+      final int count) {
+    final List<Long> keys = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      keys.add(
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .tenantId(tenantId)
+              .send()
+              .join()
+              .getProcessInstanceKey());
+    }
+    return keys;
+  }
+
+  private static List<Long> findJobKeysForInstances(
+      final CamundaClient client, final List<Long> processInstanceKeys, final String jobType) {
+    final List<Long> keys =
+        client
+            .newJobSearchRequest()
+            .filter(f -> f.processInstanceKey(ops -> ops.in(processInstanceKeys)).type(jobType))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(Job::getJobKey)
+            .sorted(Comparator.naturalOrder())
+            .toList();
+    assertThat(keys).hasSize(processInstanceKeys.size());
+    return keys;
+  }
+
+  private static void failJobs(
+      final CamundaClient client, final List<Long> jobKeys, final String errorMessage) {
+    for (final Long jobKey : jobKeys) {
+      client.newFailCommand(jobKey).retries(0).errorMessage(errorMessage).send().join();
+    }
   }
 
   @Test
@@ -565,17 +637,17 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   @Test
   void shouldUseCachedProcessDefinitionDataForRepeatedRequests(
       @Authenticated(USER_SINGLE_DEFINITION) final CamundaClient userClient) {
-
-    ensureTenantExistsForUser(adminClient, TENANT_SINGLE_DEFINITION, USER_SINGLE_DEFINITION);
+    ensureTenantExistsForUser(adminClient, TENANT_SINGLE_DEFINITION_CACHE, USER_SINGLE_DEFINITION);
 
     final BpmnModelInstance model =
         singleServiceTaskProcess(SIMPLE_PROCESS_1, PROCESS_NAME_1, JOB_TYPE_1);
 
     final long processDefinitionKey =
-        deployAndWait(userClient, model, resourceName(SIMPLE_PROCESS_1), TENANT_SINGLE_DEFINITION);
+        deployAndWait(
+            userClient, model, resourceName(SIMPLE_PROCESS_1), TENANT_SINGLE_DEFINITION_CACHE);
 
     final List<Long> processInstanceKeys =
-        createInstances(userClient, processDefinitionKey, TENANT_SINGLE_DEFINITION, 1);
+        createInstances(userClient, processDefinitionKey, TENANT_SINGLE_DEFINITION_CACHE, 1);
 
     waitForProcessInstancesToStart(userClient, 1);
     waitForJobs(userClient, processInstanceKeys);
@@ -607,76 +679,5 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
     assertThat(secondResult.items().getFirst())
         .usingRecursiveComparison()
         .isEqualTo(firstResult.items().getFirst());
-  }
-
-  private static BpmnModelInstance singleServiceTaskProcess(
-      final String bpmnProcessId, final String name, final String jobType) {
-    return Bpmn.createExecutableProcess(bpmnProcessId)
-        .name(name)
-        .startEvent()
-        .serviceTask("serviceTask", t -> t.zeebeJobType(jobType))
-        .endEvent()
-        .done();
-  }
-
-  private static String resourceName(final String processId) {
-    return processId + ".bpmn";
-  }
-
-  private static long deployAndWait(
-      final CamundaClient client,
-      final BpmnModelInstance model,
-      final String resourceName,
-      final String tenantId) {
-    final long processDefinitionKey =
-        deployResourceForTenant(client, model, resourceName, tenantId)
-            .getProcesses()
-            .getFirst()
-            .getProcessDefinitionKey();
-    waitForProcessesToBeDeployed(client, f -> f.processDefinitionKey(processDefinitionKey), 1);
-    return processDefinitionKey;
-  }
-
-  private static List<Long> createInstances(
-      final CamundaClient client,
-      final long processDefinitionKey,
-      final String tenantId,
-      final int count) {
-    final List<Long> keys = new ArrayList<>(count);
-    for (int i = 0; i < count; i++) {
-      keys.add(
-          client
-              .newCreateInstanceCommand()
-              .processDefinitionKey(processDefinitionKey)
-              .tenantId(tenantId)
-              .send()
-              .join()
-              .getProcessInstanceKey());
-    }
-    return keys;
-  }
-
-  private static List<Long> findJobKeysForInstances(
-      final CamundaClient client, final List<Long> processInstanceKeys, final String jobType) {
-    final List<Long> keys =
-        client
-            .newJobSearchRequest()
-            .filter(f -> f.processInstanceKey(ops -> ops.in(processInstanceKeys)).type(jobType))
-            .send()
-            .join()
-            .items()
-            .stream()
-            .map(Job::getJobKey)
-            .sorted(Comparator.naturalOrder())
-            .toList();
-    assertThat(keys).hasSize(processInstanceKeys.size());
-    return keys;
-  }
-
-  private static void failJobs(
-      final CamundaClient client, final List<Long> jobKeys, final String errorMessage) {
-    for (final Long jobKey : jobKeys) {
-      client.newFailCommand(jobKey).retries(0).errorMessage(errorMessage).send().join();
-    }
   }
 }
