@@ -78,6 +78,9 @@
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
         },
         {
+          "$ref": "#/definitions/EvaluateDecisionInstruction"
+        },
+        {
           "$ref": "#/definitions/MockChildProcessInstruction"
         },
         {
@@ -812,6 +815,48 @@
         "type",
         "jobType",
         "errorCode"
+      ],
+      "additionalProperties": false
+    },
+    "DecisionDefinitionSelector": {
+      "description": "A selector to identify a decision definition.",
+      "type": "object",
+      "properties": {
+        "decisionDefinitionId": {
+          "description": "The ID of the decision definition.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "decisionDefinitionId"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "EvaluateDecisionInstruction": {
+      "description": "An instruction to evaluate a DMN decision.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "EVALUATE_DECISION"
+        },
+        "decisionDefinitionSelector": {
+          "description": "The selector to identify the decision definition to evaluate.",
+          "$ref": "#/definitions/DecisionDefinitionSelector"
+        },
+        "variables": {
+          "description": "The variables to evaluate the decision with.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "decisionDefinitionSelector"
       ],
       "additionalProperties": false
     }
