@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
@@ -23,6 +24,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -55,7 +57,8 @@ public class HistoryCleanupIT {
           "PROCESS_INSTANCE",
           "USER_TASK",
           "INCIDENT",
-          "DECISION_INSTANCE");
+          "DECISION_INSTANCE",
+          "AUDIT_LOG");
 
   @Autowired JdbcTemplate jdbcTemplate;
 
@@ -147,6 +150,9 @@ public class HistoryCleanupIT {
         rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
 
     DecisionInstanceFixtures.createAndSaveRandomDecisionInstances(
+        rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
+
+    AuditLogFixtures.createAndSaveRandomAuditLogs(
         rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
 
     return processInstanceKey;
