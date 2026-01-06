@@ -239,6 +239,28 @@ describe('useProcessInstanceElementSelection', () => {
       expect(result.current.isFetchingElement).toBe(false);
     });
 
+    it('should not fetch element instance when isPlaceholder is true', async () => {
+      mockSearchElementInstances().withSuccess({
+        items: [mockElementInstance],
+        page: {totalItems: 1},
+      });
+
+      const {result} = renderHook(() => useProcessInstanceElementSelection(), {
+        wrapper: getWrapper({
+          elementId: 'service-task-1',
+          elementInstanceKey: '3467895623457962',
+          isPlaceholder: 'true',
+        }),
+      });
+
+      expect(result.current.selectedElementId).toBe('service-task-1');
+      expect(result.current.selectedElementInstanceKey).toBe(
+        '3467895623457962',
+      );
+      expect(result.current.isFetchingElement).toBe(false);
+      expect(result.current.resolvedElementInstance).toBeNull();
+    });
+
     it('should return null when search returns multiple element instances', async () => {
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance, mockElementInstance2],
@@ -307,15 +329,20 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       expect(result.current.selectedElementId).toBe('service-task-1');
+      expect(result.current.selectedElementInstanceKey).toBe(
+        '2251799813699889',
+      );
       expect(result.current.location.search).toContain(
         'elementId=service-task-1',
       );
       expect(result.current.location.search).toContain(
         'elementInstanceKey=2251799813699889',
       );
+      expect(result.current.isSelectedInstancePlaceholder).toBe(false);
+      expect(result.current.selectedAnchorElementId).toBeNull();
     });
 
-    it('should update URL with isMultiInstanceBody when provided', () => {
+    it('should update URL with all optional parameters when provided', () => {
       mockFetchElementInstance('2251799813699889').withSuccess(
         mockElementInstance,
       );
@@ -336,10 +363,18 @@ describe('useProcessInstanceElementSelection', () => {
           elementId: 'service-task-1',
           elementInstanceKey: '2251799813699889',
           isMultiInstanceBody: true,
+          isPlaceholder: true,
+          anchorElementId: 'anchor-task-1',
         });
       });
 
       expect(result.current.selectedElementId).toBe('service-task-1');
+      expect(result.current.selectedElementInstanceKey).toBe(
+        '2251799813699889',
+      );
+      expect(result.current.isSelectedInstanceMultiInstanceBody).toBe(true);
+      expect(result.current.isSelectedInstancePlaceholder).toBe(true);
+      expect(result.current.selectedAnchorElementId).toBe('anchor-task-1');
       expect(result.current.location.search).toContain(
         'elementId=service-task-1',
       );
@@ -348,6 +383,10 @@ describe('useProcessInstanceElementSelection', () => {
       );
       expect(result.current.location.search).toContain(
         'isMultiInstanceBody=true',
+      );
+      expect(result.current.location.search).toContain('isPlaceholder=true');
+      expect(result.current.location.search).toContain(
+        'anchorElementId=anchor-task-1',
       );
     });
 
@@ -408,11 +447,7 @@ describe('useProcessInstanceElementSelection', () => {
   });
 
   describe('clearSelection', () => {
-    it('should remove elementId and elementInstanceKey from URL', () => {
-      mockFetchElementInstance('2251799813699889').withSuccess(
-        mockElementInstance,
-      );
-
+    it('should remove all selection parameters from URL', () => {
       const {result} = renderHook(
         () => {
           const location = useLocation();
@@ -423,6 +458,9 @@ describe('useProcessInstanceElementSelection', () => {
           wrapper: getWrapper({
             elementId: 'service-task-1',
             elementInstanceKey: '2251799813699889',
+            isMultiInstanceBody: 'true',
+            isPlaceholder: 'true',
+            anchorElementId: 'anchor-task-1',
           }),
         },
       );
@@ -432,10 +470,19 @@ describe('useProcessInstanceElementSelection', () => {
       });
 
       expect(result.current.selectedElementId).toBeNull();
+      expect(result.current.selectedElementInstanceKey).toBeNull();
+      expect(result.current.isSelectedInstanceMultiInstanceBody).toBe(false);
+      expect(result.current.isSelectedInstancePlaceholder).toBe(false);
+      expect(result.current.selectedAnchorElementId).toBeNull();
       expect(result.current.location.search).not.toContain('elementId');
       expect(result.current.location.search).not.toContain(
         'elementInstanceKey',
       );
+      expect(result.current.location.search).not.toContain(
+        'isMultiInstanceBody',
+      );
+      expect(result.current.location.search).not.toContain('isPlaceholder');
+      expect(result.current.location.search).not.toContain('anchorElementId');
     });
 
     it('should clear resolvedElementInstance when clearing selection', async () => {
@@ -463,6 +510,90 @@ describe('useProcessInstanceElementSelection', () => {
       await waitFor(() =>
         expect(result.current.resolvedElementInstance).toBeNull(),
       );
+    });
+  });
+
+  describe('URL parameter reading', () => {
+    it('should read all parameters from URL', () => {
+      const {result} = renderHook(() => useProcessInstanceElementSelection(), {
+        wrapper: getWrapper({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+          isMultiInstanceBody: 'true',
+          isPlaceholder: 'true',
+          anchorElementId: 'anchor-task-1',
+        }),
+      });
+
+      expect(result.current.selectedElementId).toBe('service-task-1');
+      expect(result.current.selectedElementInstanceKey).toBe(
+        '2251799813699889',
+      );
+      expect(result.current.isSelectedInstanceMultiInstanceBody).toBe(true);
+      expect(result.current.isSelectedInstancePlaceholder).toBe(true);
+      expect(result.current.selectedAnchorElementId).toBe('anchor-task-1');
+    });
+
+    it('should default optional boolean parameters to false when not in URL', () => {
+      mockFetchElementInstance('2251799813699889').withSuccess(
+        mockElementInstance,
+      );
+
+      const {result} = renderHook(() => useProcessInstanceElementSelection(), {
+        wrapper: getWrapper({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+        }),
+      });
+
+      expect(result.current.isSelectedInstanceMultiInstanceBody).toBe(false);
+      expect(result.current.isSelectedInstancePlaceholder).toBe(false);
+      expect(result.current.selectedAnchorElementId).toBeNull();
+    });
+
+    it('should remove optional parameters when selecting a different element', () => {
+      const {result} = renderHook(
+        () => {
+          const location = useLocation();
+          const hook = useProcessInstanceElementSelection();
+          return {...hook, location};
+        },
+        {
+          wrapper: getWrapper({
+            elementId: 'service-task-1',
+            elementInstanceKey: '2251799813699889',
+            isMultiInstanceBody: 'true',
+            isPlaceholder: 'true',
+            anchorElementId: 'anchor-task-1',
+          }),
+        },
+      );
+
+      expect(result.current.location.search).toContain(
+        'isMultiInstanceBody=true',
+      );
+      expect(result.current.location.search).toContain('isPlaceholder=true');
+      expect(result.current.location.search).toContain(
+        'anchorElementId=anchor-task-1',
+      );
+
+      mockSearchElementInstances().withSuccess({
+        items: [mockElementInstance2],
+        page: {totalItems: 1},
+      });
+
+      act(() => {
+        result.current.selectElement({elementId: 'service-task-2'});
+      });
+
+      expect(result.current.location.search).not.toContain(
+        'isMultiInstanceBody',
+      );
+      expect(result.current.location.search).not.toContain('isPlaceholder');
+      expect(result.current.location.search).not.toContain('anchorElementId');
+      expect(result.current.isSelectedInstanceMultiInstanceBody).toBe(false);
+      expect(result.current.isSelectedInstancePlaceholder).toBe(false);
+      expect(result.current.selectedAnchorElementId).toBeNull();
     });
   });
 });
