@@ -63,7 +63,7 @@ public class MessagingException extends IOException {
 
   public static class NoSuchMemberException extends MessagingException {
     public NoSuchMemberException(final Address address) {
-      super("Failed to handle message, host %s is not a known cluster member".formatted(address));
+      super("Failed to handle message, sender %s is not a known cluster member".formatted(address));
     }
 
     public NoSuchMemberException(final String message) {
