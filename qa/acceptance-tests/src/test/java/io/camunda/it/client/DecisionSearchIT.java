@@ -16,6 +16,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.search.response.DecisionDefinition;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,7 +33,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-class DecisionSearchTest {
+@CompatibilityTest
+class DecisionSearchIT {
   private static final Map<Long, Decision> DEPLOYED_DECISIONS = new HashMap<>();
   private static final Map<Long, DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
       new HashMap<>();

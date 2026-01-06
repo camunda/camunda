@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
 import org.camunda.feel.FeelEngineClock;
+import org.camunda.feel.api.FeelEngineApi;
 import org.camunda.feel.syntaxtree.ParsedExpression;
 import org.camunda.feel.syntaxtree.Val;
 import scala.util.Either;
