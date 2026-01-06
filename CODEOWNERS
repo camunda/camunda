@@ -117,10 +117,17 @@
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 /zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 
-# Performance  + Load testing
-/zeebe/benchmarks @camunda/zeebe-distributed-platform
-
 # Identity
 /identity/        @camunda/identity
 /authentication/  @camunda/identity
 /security/        @camunda/identity
+
+
+##########################
+## Reliability Testing  ##
+##########################
+
+# Performance + Load testing
+/load-tests/ @camunda/reliability-testing
+/zeebe/benchmarks/ @camunda/reliability-testing
+/.github/workflows/*load-test*.yml @camunda/reliability-testing
