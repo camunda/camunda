@@ -15,14 +15,13 @@ import {tracking} from 'modules/tracking';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
+  PROCESS_ID,
   PROCESS_DEFINITION_ID,
   mockProcessInstancesV2,
   setupSelectionStoreWithInstances,
   getProcessInstance,
   createWrapper,
 } from '../tests/mocks';
-
-const PROCESS_ID = 'eventBasedGatewayProcess';
 
 const mockCalledProcessInstancesV2: ProcessInstance[] = [
   {
@@ -38,23 +37,6 @@ const mockCalledProcessInstancesV2: ProcessInstance[] = [
     parentProcessInstanceKey: '999',
   },
 ];
-
-vi.mock('modules/stores/processes/processes.list', () => {
-  const PROCESS_ID = 'eventBasedGatewayProcess';
-  const PROCESS_DEFINITION_ID = '2251799813685249';
-  return {
-    processesStore: {
-      getPermissions: vi.fn(),
-      getProcessId: () => PROCESS_ID,
-      state: {processes: []},
-      versionsByProcessAndTenant: {
-        [`{${PROCESS_ID}}-{<default>}`]: [
-          {id: PROCESS_DEFINITION_ID, version: 1},
-        ],
-      },
-    },
-  };
-});
 
 describe('<MigrateAction />', () => {
   beforeEach(() => {

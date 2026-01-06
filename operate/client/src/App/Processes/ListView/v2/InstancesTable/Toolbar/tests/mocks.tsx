@@ -14,8 +14,17 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {createProcessDefinition} from 'modules/testUtils';
+import {SelectedProcessDefinitionContext} from 'App/Processes/ListView/selectedProcessDefinitionContext';
 
+const PROCESS_ID = 'eventBasedGatewayProcess';
 const PROCESS_DEFINITION_ID = '2251799813685249';
+
+const selectedProcessDefinition = createProcessDefinition({
+  processDefinitionId: PROCESS_ID,
+  version: 1,
+  processDefinitionKey: PROCESS_DEFINITION_ID,
+});
 
 const mockProcessInstancesV2: ProcessInstance[] = [
   {
@@ -114,28 +123,32 @@ function createWrapper(
 
     return (
       <ProcessDefinitionKeyContext.Provider value={PROCESS_DEFINITION_ID}>
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={[initialPath]}>
-            {children}
-            {withTestButtons && (
-              <>
-                <button
-                  onClick={
-                    processInstancesSelectionStore.selectAllProcessInstances
-                  }
-                >
-                  Select all instances
-                </button>
-                <button onClick={batchModificationStore.enable}>
-                  Enter batch modification mode
-                </button>
-                <button onClick={batchModificationStore.reset}>
-                  Exit batch modification mode
-                </button>
-              </>
-            )}
-          </MemoryRouter>
-        </QueryClientProvider>
+        <SelectedProcessDefinitionContext.Provider
+          value={selectedProcessDefinition}
+        >
+          <QueryClientProvider client={getMockQueryClient()}>
+            <MemoryRouter initialEntries={[initialPath]}>
+              {children}
+              {withTestButtons && (
+                <>
+                  <button
+                    onClick={
+                      processInstancesSelectionStore.selectAllProcessInstances
+                    }
+                  >
+                    Select all instances
+                  </button>
+                  <button onClick={batchModificationStore.enable}>
+                    Enter batch modification mode
+                  </button>
+                  <button onClick={batchModificationStore.reset}>
+                    Exit batch modification mode
+                  </button>
+                </>
+              )}
+            </MemoryRouter>
+          </QueryClientProvider>
+        </SelectedProcessDefinitionContext.Provider>
       </ProcessDefinitionKeyContext.Provider>
     );
   };
@@ -144,6 +157,7 @@ function createWrapper(
 }
 
 export {
+  PROCESS_ID,
   PROCESS_DEFINITION_ID,
   mockProcessInstancesV2,
   setupSelectionStoreWithInstances,
