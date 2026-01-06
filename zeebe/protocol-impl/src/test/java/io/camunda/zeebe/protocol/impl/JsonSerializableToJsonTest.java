@@ -373,7 +373,8 @@ final class JsonSerializableToJsonTest {
                   .setNamespace("namespace")
                   .setResourceName("resource-name")
                   .setChecksum(checksum)
-                  .setDuplicate(true);
+                  .setDuplicate(true)
+                  .setDeploymentKey(deploymentKey);
               record
                   .decisionsMetadata()
                   .add()
@@ -445,7 +446,8 @@ final class JsonSerializableToJsonTest {
                       "resourceName": "resource-name",
                       "checksum": "Y2hlY2tzdW0=",
                       "duplicate": true,
-                      "tenantId": "<default>"
+                      "tenantId": "<default>",
+                      "deploymentKey": 1234
                     }
                   ],
                   "formMetadata": [
@@ -2030,7 +2032,8 @@ final class JsonSerializableToJsonTest {
                   "resource": "cmVzb3VyY2U=",
                   "checksum": "Y2hlY2tzdW0=",
                   "duplicate": false,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "deploymentKey": -1
                 }
                 """
       },
