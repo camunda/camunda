@@ -8,7 +8,9 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
+import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -714,22 +716,26 @@ public class FlowNodeInstanceReader extends AbstractReader
             .appendFlowNode(flowNodeId)
             .appendFlowNodeInstance(flowNodeInstanceId)
             .toString();
-    final QueryBuilder query =
-        constantScoreQuery(
+
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
             joinWithAnd(
-                termQuery(IncidentTemplate.TREE_PATH, incidentTreePath), ACTIVE_INCIDENT_QUERY));
-    final org.elasticsearch.action.search.SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
-            .source(new SearchSourceBuilder().query(query));
+                ElasticsearchUtil.termsQuery(IncidentTemplate.TREE_PATH, incidentTreePath),
+                ACTIVE_INCIDENT_QUERY_ES8));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var request =
+        new SearchRequest.Builder()
+            .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
+            .query(tenantAwareQuery)
+            .build();
+
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      flowNodeMetadata.setIncidentCount(response.getHits().getTotalHits().value);
-      if (response.getHits().getTotalHits().value == 1) {
-        final IncidentEntity incidentEntity =
-            fromSearchHit(
-                response.getHits().getAt(0).getSourceAsString(),
-                objectMapper,
-                IncidentEntity.class);
+      final var response = es8client.search(request, IncidentEntity.class);
+      flowNodeMetadata.setIncidentCount(response.hits().total().value());
+
+      if (response.hits().total().value() == 1) {
+        final var incidentEntity = response.hits().hits().get(0).source();
         final Map<String, IncidentDataHolder> incData =
             incidentReader.collectFlowNodeDataForPropagatedIncidents(
                 List.of(incidentEntity), processInstanceId, treePath);
