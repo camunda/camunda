@@ -533,14 +533,6 @@ public class FlowNodeInstanceReader extends AbstractReader
     };
   }
 
-  private Set<String> processAggregation(
-      final Aggregations aggregations,
-      final Set<String> incidentPaths,
-      final Boolean[] runningParent) {
-    getAggsProcessor(incidentPaths, runningParent).accept(aggregations);
-    return incidentPaths;
-  }
-
   private void applySorting(
       final SearchRequest.Builder searchRequestBuilder, final FlowNodeInstanceQueryDto request) {
 
@@ -845,15 +837,26 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
-    final FlowNodeInstanceEntity flowNodeInstance;
-    final TermQueryBuilder flowNodeInstanceIdQ = termQuery(ID, flowNodeInstanceId);
-    final org.elasticsearch.action.search.SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(flowNodeInstanceIdQ)));
-    final SearchResponse response;
     try {
-      response = tenantAwareClient.search(request);
-      flowNodeInstance = getFlowNodeInstance(response);
+      final var query =
+          ElasticsearchUtil.constantScoreQuery(
+              ElasticsearchUtil.termsQuery(ID, flowNodeInstanceId));
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+      final var request =
+          new SearchRequest.Builder()
+              .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+              .query(tenantAwareQuery)
+              .size(1)
+              .build();
+
+      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
+
+      if (response.hits().total().value() == 0) {
+        throw new OperateRuntimeException("No data found for flow node instance.");
+      }
+
+      return response.hits().hits().get(0).source();
     } catch (final IOException e) {
       final String message =
           String.format(
@@ -861,7 +864,6 @@ public class FlowNodeInstanceReader extends AbstractReader
               e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-    return flowNodeInstance;
   }
 
   private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumb(
@@ -1030,19 +1032,6 @@ public class FlowNodeInstanceReader extends AbstractReader
   private FlowNodeInstanceMetadata buildInstanceMetadata(
       final FlowNodeInstanceEntity flowNodeInstance) {
     return flowNodeInstanceMetadataBuilder.buildFrom(flowNodeInstance);
-  }
-
-  private Set<String> collectFinishedFlowNodes(final Filter finishedFlowNodes) {
-    final Set<String> result = new HashSet<>();
-    final List<? extends Bucket> buckets =
-        ((Terms) finishedFlowNodes.getAggregations().get(FINISHED_FLOW_NODES_BUCKETS_AGG_NAME))
-            .getBuckets();
-    if (buckets != null) {
-      for (final Bucket bucket : buckets) {
-        result.add(bucket.getKeyAsString());
-      }
-    }
-    return result;
   }
 
   private Set<String> collectFinishedFlowNodesEs8(
