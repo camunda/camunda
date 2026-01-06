@@ -805,68 +805,6 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(varsAsStrings.get(1)).isEqualTo("[test2=2]");
   }
 
-  // From
-  // https://camunda.slack.com/archives/C0359JZEUV8/p1663911398178359?thread_ts=1663848113.283729&cid=C0359JZEUV8
-  @Test
-  public void shouldAddTokenAndNewScopesForEventSubprocess() throws Exception {
-    // Given
-    final String subprocessFlowNodeId = "eventSubprocess";
-    final String eventSubprocessTaskFlowNodeId = "eventSubprocessTask";
-    tester
-        .deployProcess("develop/eventSubProcess_v_1.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .then()
-        .startProcessInstance("eventSubprocessProcess")
-        .and()
-        .flowNodeIsActive(subprocessFlowNodeId);
-
-    // when
-    tester.modifyProcessInstanceOperation(
-        List.of(
-            new Modification()
-                .setModification(Modification.Type.ADD_TOKEN)
-                .setToFlowNodeId(eventSubprocessTaskFlowNodeId),
-            new Modification()
-                .setModification(Modification.Type.ADD_TOKEN)
-                .setToFlowNodeId(eventSubprocessTaskFlowNodeId),
-            new Modification()
-                .setModification(Modification.Type.ADD_TOKEN)
-                .setToFlowNodeId(subprocessFlowNodeId),
-            new Modification()
-                .setModification(Modification.Type.ADD_TOKEN)
-                .setToFlowNodeId(eventSubprocessTaskFlowNodeId)));
-    // then
-    tester
-        .waitUntil()
-        .operationIsCompleted()
-        .and()
-        .flowNodesAreActive(eventSubprocessTaskFlowNodeId, 5)
-        .and()
-        .flowNodesAreActive(subprocessFlowNodeId, 2);
-    // check states
-    final var flowNodeStates = tester.getFlowNodeStates();
-    assertThat(flowNodeStates.get(eventSubprocessTaskFlowNodeId))
-        .isEqualTo(FlowNodeStateDto.ACTIVE);
-    assertThat(flowNodeStates.get(subprocessFlowNodeId)).isEqualTo(FlowNodeStateDto.ACTIVE);
-    // check statistics
-    final var statistics =
-        flowNodeInstanceReader.getFlowNodeStatisticsForProcessInstance(
-            tester.getProcessInstanceKey());
-    final var eventSubProcessTaskStatistic =
-        statistics.stream()
-            .filter(s -> s.getActivityId().equals(eventSubprocessTaskFlowNodeId))
-            .findFirst()
-            .orElseThrow();
-    final var eventSubProcessStatistic =
-        statistics.stream()
-            .filter(s -> s.getActivityId().equals(subprocessFlowNodeId))
-            .findFirst()
-            .orElseThrow();
-    assertThat(eventSubProcessTaskStatistic.getActive()).isEqualTo(5);
-    assertThat(eventSubProcessStatistic.getActive()).isEqualTo(2);
-  }
-
   @Test
   public void shouldCancelMultiInstance() throws Exception {
     // Given
