@@ -28,6 +28,32 @@ class LiquibaseScriptGeneratorTest {
   }
 
   @Test
+  public void testGenerateSqlMariaDbScript() throws Exception {
+    // given
+
+    // when
+    final String sqlScript =
+        LiquibaseScriptGenerator.generateSqlScript("mariadb", "test.xml", "", 4000);
+
+    // then
+    final var expected = Files.readString(Paths.get("src/test/resources/test.mariadb.sql"));
+    assertThat(sqlScript).isEqualToIgnoringWhitespace(expected);
+  }
+
+  @Test
+  public void testGenerateSqlMssqlScript() throws Exception {
+    // given
+
+    // when
+    final String sqlScript =
+        LiquibaseScriptGenerator.generateSqlScript("mssql", "test.xml", "", 4000);
+
+    // then
+    final var expected = Files.readString(Paths.get("src/test/resources/test.mssql.sql"));
+    assertThat(sqlScript).isEqualToIgnoringWhitespace(expected);
+  }
+
+  @Test
   public void testGenerateSqlScriptWithPrefix() throws Exception {
     // given
 
