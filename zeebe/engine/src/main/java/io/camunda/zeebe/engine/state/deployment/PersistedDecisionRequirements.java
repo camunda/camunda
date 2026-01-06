@@ -36,9 +36,10 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
 
   public PersistedDecisionRequirements() {
-    super(8);
+    super(9);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)
@@ -46,7 +47,8 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(resourceProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   public void wrap(final DecisionRequirementsRecord record) {
@@ -58,6 +60,7 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
     checksumProp.setValue(record.getChecksumBuffer());
     resourceProp.setValue(record.getResourceBuffer());
     tenantIdProp.setValue(record.getTenantId());
+    deploymentKeyProp.setValue(record.getDeploymentKey());
   }
 
   public PersistedDecisionRequirements copy() {
@@ -71,6 +74,7 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
     copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
     copy.resourceProp.setValue(BufferUtil.cloneBuffer(getResource()));
     copy.tenantIdProp.setValue(getTenantId());
+    copy.deploymentKeyProp.setValue(getDeploymentKey());
     return copy;
   }
 
@@ -108,5 +112,13 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
 
   public void setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+  }
+
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public void setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
   }
 }

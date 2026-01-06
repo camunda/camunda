@@ -65,4 +65,8 @@ public final class DeployedDrg {
   public PersistedDecisionRequirements getPersistedDecisionRequirements() {
     return persistedDecisionRequirements;
   }
+
+  public long getDeploymentKey() {
+    return persistedDecisionRequirements.getDeploymentKey();
+  }
 }
