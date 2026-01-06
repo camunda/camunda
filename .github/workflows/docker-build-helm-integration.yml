@@ -37,6 +37,11 @@ on:
       - "tasklist/**"
       - "identity/**"
 
+# Cancel in-progress runs when a new commit is pushed to the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
@@ -248,6 +253,9 @@ jobs:
             registry: registry.camunda.cloud
             repository: team-camunda/camunda
             tag: ${{ needs.build-and-push.outputs.image-tag }}
+            pullSecrets:
+              - name: index-docker-io
+              - name: registry-camunda-cloud
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
