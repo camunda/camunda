@@ -81,12 +81,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.Filters;
-import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -457,15 +454,11 @@ public class FlowNodeInstanceReader extends AbstractReader
     return flowNodeInstance.getEndDate() == null || !flowNodeInstance.isIncident();
   }
 
-  private QueryBuilder hasProcessInstanceAsTreePathPrefixAndIsIncident(final String treePath) {
-    return joinWithAnd(prefixQuery(TREE_PATH, treePath), termQuery(INCIDENT, true));
-  }
-
-  private FiltersAggregator.KeyedFilter newFilterForFlowNodeInstance(
-      final FlowNodeInstanceEntity flowNodeInstance) {
-    return new FiltersAggregator.KeyedFilter(
-        flowNodeInstance.getId(),
-        hasProcessInstanceAsTreePathPrefixAndIsIncident(flowNodeInstance.getTreePath()));
+  private co.elastic.clients.elasticsearch._types.query_dsl.Query
+      hasProcessInstanceAsTreePathPrefixAndIsIncident(final String treePath) {
+    return joinWithAnd(
+        ElasticsearchUtil.prefixQuery(TREE_PATH, treePath),
+        ElasticsearchUtil.termsQuery(INCIDENT, true));
   }
 
   // Max size: page size of request - default: 50
@@ -474,32 +467,48 @@ public class FlowNodeInstanceReader extends AbstractReader
     if (flowNodeInstances == null || flowNodeInstances.isEmpty()) {
       return;
     }
-    final List<FiltersAggregator.KeyedFilter> filters =
+
+    final var filters =
         flowNodeInstances.stream()
             .filter(this::flowNodeInstanceIsRunningOrIsNotMarked)
-            .map(this::newFilterForFlowNodeInstance)
-            .toList();
+            .collect(
+                Collectors.toMap(
+                    FlowNodeInstanceEntity::getId,
+                    fni -> hasProcessInstanceAsTreePathPrefixAndIsIncident(fni.getTreePath())));
 
-    final org.elasticsearch.action.search.SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(PROCESS_INSTANCE_KEY, processInstanceId))
-                    .size(0)
-                    .aggregation(
-                        AggregationBuilders.filters(
-                            NUMBER_OF_INCIDENTS_FOR_TREE_PATH,
-                            filters.toArray(new FiltersAggregator.KeyedFilter[0]))));
+    if (filters.isEmpty()) {
+      return;
+    }
+
+    final var query = ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var request =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+            .query(tenantAwareQuery)
+            .size(0)
+            .aggregations(
+                NUMBER_OF_INCIDENTS_FOR_TREE_PATH,
+                a ->
+                    a.filters(
+                        f ->
+                            f.filters(
+                                co.elastic.clients.elasticsearch._types.aggregations.Buckets.of(
+                                    b -> b.keyed(filters)))))
+            .build();
+
     try {
-      final Map<String, Long> flowNodeIdIncidents = new HashMap<>();
-      final SearchResponse response = tenantAwareClient.search(request);
-      final Filters filterBuckets =
-          response.getAggregations().get(NUMBER_OF_INCIDENTS_FOR_TREE_PATH);
+      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
+      final var filterBuckets =
+          response.aggregations().get(NUMBER_OF_INCIDENTS_FOR_TREE_PATH).filters();
 
+      final Map<String, Long> flowNodeIdIncidents = new HashMap<>();
       filterBuckets
-          .getBuckets()
-          .forEach(b -> flowNodeIdIncidents.put(b.getKeyAsString(), b.getDocCount()));
-      // logger.info("FlowNodeInstance -> incidents: {}", flowNodeIdIncidents);
+          .buckets()
+          .keyed()
+          .forEach((key, bucket) -> flowNodeIdIncidents.put(key, bucket.docCount()));
+
       for (final var flowNodeInstance : flowNodeInstances) {
         final Long count = flowNodeIdIncidents.getOrDefault(flowNodeInstance.getId(), 0L);
         if (count > 0) {
