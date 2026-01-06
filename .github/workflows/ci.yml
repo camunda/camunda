@@ -141,7 +141,7 @@ jobs:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
     name: "Lint / Maven Spotless"
     needs: [ detect-changes ]
-    runs-on: gcp-core-4-default
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
@@ -817,10 +817,10 @@ jobs:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: "Docker / Tool / Checks"
     needs: [ detect-changes ]
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubuntu-latest
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions:
       security-events: write
     services:

@@ -42,15 +42,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: [ windows, linux ]
-        os: [ linux ]
+        os: [ windows, linux ]
         arch: [ amd64 ]
         include:
           - os: macos
             runner: macos-latest
             arch: arm64
-          # - os: windows
-          #   runner: windows-latest
+          - os: windows
+            runner: windows-latest
           - os: linux
             runner: gcp-perf-core-8-default
           - os: linux
@@ -255,7 +254,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
-    if: false
     env:
       TEST_OWNER: Core Features
       TEST_TYPE: Unit
@@ -315,7 +313,7 @@ jobs:
 
   docker-checks:
     name: "Build / Docker Checks"
-    runs-on: gcp-core-4-default
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       security-events: write
@@ -400,7 +398,7 @@ jobs:
       - property-tests
       - performance-tests
       - docker-checks
-      # - strace-tests
+      - strace-tests
     steps:
       - uses: actions/checkout@v4
       - run: |

@@ -62,7 +62,7 @@ jobs:
   build-operate-backend:
     if: inputs.runBeTests
     name: "Build Back End"
-    runs-on: gcp-core-4-default
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
@@ -360,7 +360,7 @@ jobs:
     if: inputs.runBeTests
     name: "Integration / Backup Restore ITs"
     timeout-minutes: 15
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubuntu-latest
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       DOCKER_IMAGE_TAG: current-test
