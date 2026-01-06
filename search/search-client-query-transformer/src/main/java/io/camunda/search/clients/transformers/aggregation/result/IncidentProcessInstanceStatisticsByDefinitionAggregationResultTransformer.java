@@ -20,8 +20,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTrans
     implements AggregationResultTransformer<
         IncidentProcessInstanceStatisticsByDefinitionAggregationResult> {
 
-  private static final String BUCKET_KEY_DELIMITER = "::";
-
   @Override
   public IncidentProcessInstanceStatisticsByDefinitionAggregationResult apply(
       final Map<String, AggregationResult> value) {
@@ -32,60 +30,69 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTrans
 
     final List<IncidentProcessInstanceStatisticsByDefinitionEntity> items = new ArrayList<>();
 
-    for (Map.Entry<String, AggregationResult> entry : perDefinitionAggs.entrySet()) {
-      final String bucketKey = entry.getKey();
-      final AggregationResult bucketAgg = entry.getValue();
-      final Map<String, AggregationResult> subAggs =
-          bucketAgg != null ? bucketAgg.aggregations() : Map.of();
+    for (final Map.Entry<String, AggregationResult> definitionEntry :
+        perDefinitionAggs.entrySet()) {
+      final long processDefinitionKey = parseProcessDefinitionKey(definitionEntry.getKey());
+      final AggregationResult definitionBucket = definitionEntry.getValue();
+      final Map<String, AggregationResult> tenantBuckets =
+          definitionBucket != null && definitionBucket.aggregations() != null
+              ? definitionBucket.aggregations()
+              : Map.of();
 
-      final BucketKey parsedKey = BucketKey.parse(bucketKey);
+      final AggregationResult tenantsAgg = tenantBuckets.get(AGGREGATION_NAME_BY_TENANT);
+      final Map<String, AggregationResult> perTenantAggs =
+          tenantsAgg != null && tenantsAgg.aggregations() != null
+              ? tenantsAgg.aggregations()
+              : Map.of();
 
-      final long activeInstancesWithErrorCount =
-          subAggs
-              .getOrDefault(AGGREGATION_NAME_AFFECTED_INSTANCES, AggregationResult.EMPTY)
-              .docCount();
+      if (perTenantAggs.isEmpty()) {
+        // No tenant sub-buckets: treat tenant as null
+        final long activeInstancesWithErrorCount =
+            tenantBuckets
+                .getOrDefault(AGGREGATION_NAME_AFFECTED_INSTANCES, AggregationResult.EMPTY)
+                .docCount();
+        items.add(
+            new IncidentProcessInstanceStatisticsByDefinitionEntity(
+                null, processDefinitionKey, null, null, null, activeInstancesWithErrorCount));
+      } else {
+        for (final Map.Entry<String, AggregationResult> tenantEntry : perTenantAggs.entrySet()) {
+          final String tenantId = tenantEntry.getKey();
+          final AggregationResult tenantAgg = tenantEntry.getValue();
+          final Map<String, AggregationResult> subAggs =
+              tenantAgg != null && tenantAgg.aggregations() != null
+                  ? tenantAgg.aggregations()
+                  : Map.of();
 
-      items.add(
-          new IncidentProcessInstanceStatisticsByDefinitionEntity(
-              null,
-              parsedKey.processDefinitionKey(),
-              null,
-              null,
-              parsedKey.tenantId(),
-              activeInstancesWithErrorCount));
+          final long activeInstancesWithErrorCount =
+              subAggs
+                  .getOrDefault(AGGREGATION_NAME_AFFECTED_INSTANCES, AggregationResult.EMPTY)
+                  .docCount();
+
+          items.add(
+              new IncidentProcessInstanceStatisticsByDefinitionEntity(
+                  null, processDefinitionKey, null, null, tenantId, activeInstancesWithErrorCount));
+        }
+      }
     }
 
-    final AggregationResult cardinalityAgg = value.get(AGGREGATION_NAME_TOTAL_ESTIMATE);
-    final int totalItems =
-        cardinalityAgg != null
-            ? Math.toIntExact(cardinalityAgg.docCount())
-            : perDefinitionAggs.size();
+    final int totalItems = perDefinitionAggs.size();
 
     return new IncidentProcessInstanceStatisticsByDefinitionAggregationResult(items, totalItems);
   }
 
-  private record BucketKey(long processDefinitionKey, String tenantId) {
-    private static BucketKey parse(final String bucketKey) {
-      if (bucketKey == null || bucketKey.isBlank()) {
-        throw new IllegalStateException(
-            "Missing required bucket key for by-definition aggregation");
-      }
+  private static long parseProcessDefinitionKey(final String bucketKey) {
+    if (bucketKey == null || bucketKey.isBlank()) {
+      throw new IllegalStateException("Missing required bucket key for by-definition aggregation");
+    }
 
-      final String[] parts = bucketKey.split(BUCKET_KEY_DELIMITER, -1);
-      if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
-        throw new IllegalStateException(
-            "Invalid bucket key for by-definition aggregation: '" + bucketKey + "'");
-      }
-
-      try {
-        return new BucketKey(Long.parseLong(parts[0]), parts[1]);
-      } catch (final NumberFormatException e) {
-        throw new IllegalStateException(
-            "Invalid processDefinitionKey in bucket key for by-definition aggregation: '"
-                + bucketKey
-                + "'",
-            e);
-      }
+    try {
+      return Long.parseLong(bucketKey);
+    } catch (final NumberFormatException e) {
+      throw new IllegalStateException(
+          "Invalid processDefinitionKey in bucket key for by-definition aggregation: '"
+              + bucketKey
+              + "'",
+          e);
     }
   }
 }

@@ -20,12 +20,10 @@ public record IncidentProcessInstanceStatisticsByDefinitionAggregation(
 
   public static final int AGGREGATION_TERMS_SIZE = 10_000;
   public static final String AGGREGATION_NAME_BY_DEFINITION = "by_definition";
+  public static final String AGGREGATION_NAME_BY_TENANT = "by_tenant";
   public static final String AGGREGATION_NAME_AFFECTED_INSTANCES = "affected_instances";
   public static final String AGGREGATION_NAME_SORT_AND_PAGE = "sort_and_page";
   public static final String AGGREGATION_NAME_TOTAL_ESTIMATE = "total_estimate";
-  public static final String AGGREGATION_SCRIPT_LANG = "painless";
-  public static final String PROCESS_DEFINITION_AND_TENANT_KEY =
-      "doc['processDefinitionKey'].value + '::' + doc['tenantId'].value";
   public static final String SORT_FIELD_ACTIVE_INSTANCES_WITH_ERROR_COUNT =
       "activeInstancesWithErrorCount";
 
