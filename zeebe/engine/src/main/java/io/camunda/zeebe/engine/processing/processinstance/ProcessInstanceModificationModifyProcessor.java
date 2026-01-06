@@ -66,6 +66,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.Strings;
 
@@ -104,6 +105,10 @@ public final class ProcessInstanceModificationModifyProcessor
   private static final String ERROR_MESSAGE_MOVE_SOURCE_ELEMENT_INSTANCE_WRONG_PROCESS =
       "Expected to modify instance of process '%s' but it contains one or more move instructions"
           + " with a source element instance that does not belong to the modified process instance: '%s'";
+  private static final String ERROR_MESSAGE_MOVE_AMBIGUOUS_ANCESTOR_SCOPE =
+      "Expected to modify instance of process '%s' but it contains one or more move instructions"
+          + " with multiple ancestor scope options set. Only one of the following can be specified: "
+          + "ancestorScopeKey, inferAncestorScopeFromSourceHierarchy, or useSourceParentKeyAsAncestorScopeKey: '%s'";
   private static final String ERROR_COMMAND_TOO_LARGE =
       "Unable to modify process instance with key '%d' as the size exceeds the maximum batch size."
           + " Please reduce the size by splitting the modification into multiple commands.";
@@ -710,6 +715,7 @@ public final class ProcessInstanceModificationModifyProcessor
     return validateHasMoveInstructions(moveInstructions, process)
         .flatMap(valid -> validateNoDuplicatedMoveInstructions(moveInstructions, process))
         .flatMap(valid -> validateNoMoveSourceWithBothIdAndInstanceKey(moveInstructions, process))
+        .flatMap(valid -> validateNoAmbiguousAncestorScopeOptions(moveInstructions, process))
         .map(valid -> VALID);
   }
 
@@ -800,6 +806,46 @@ public final class ProcessInstanceModificationModifyProcessor
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", duplicateDefinitions));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, Object> validateNoAmbiguousAncestorScopeOptions(
+      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions,
+      final DeployedProcess process) {
+    final var ambiguousInstructions =
+        moveInstructions.stream()
+            .filter(this::hasMultipleAncestorScopeOptionsSet)
+            .map(
+                moveInstruction ->
+                    "(%s, %s)"
+                        .formatted(
+                            moveInstruction.getSourceElementId().isBlank()
+                                ? moveInstruction.getSourceElementInstanceKey()
+                                : moveInstruction.getSourceElementId(),
+                            moveInstruction.getTargetElementId()))
+            .toList();
+
+    if (ambiguousInstructions.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_MOVE_AMBIGUOUS_ANCESTOR_SCOPE,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", ambiguousInstructions));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private boolean hasMultipleAncestorScopeOptionsSet(
+      final ProcessInstanceModificationMoveInstructionValue moveInstruction) {
+    final long ancestorScopeOptionsCount =
+        Stream.of(
+                moveInstruction.getAncestorScopeKey() > 0,
+                moveInstruction.isInferAncestorScopeFromSourceHierarchy(),
+                moveInstruction.isUseSourceParentKeyAsAncestorScopeKey())
+            .filter(b -> b)
+            .count();
+    return ancestorScopeOptionsCount > 1;
   }
 
   private Either<Rejection, ?> validateInstructions(

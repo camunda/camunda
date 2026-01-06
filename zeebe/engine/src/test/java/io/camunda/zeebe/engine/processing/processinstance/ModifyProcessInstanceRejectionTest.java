@@ -1641,4 +1641,137 @@ public class ModifyProcessInstanceRejectionTest {
                     + "modified process instance: '%s'")
                 .formatted(PROCESS_ID, taskAFromProcess1));
   }
+
+  @Test
+  public void shouldRejectMoveWithAmbiguousAncestorScopeOptions() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: both inferAncestorScopeFromSourceHierarchy and useSourceParentKeyAsAncestorScopeKey are
+    // set
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElements(
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("A")
+                    .setTargetElementId("B")
+                    .setInferAncestorScopeFromSourceHierarchy(true)
+                    .setUseSourceParentKeyAsAncestorScopeKey(true))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that move is rejected when multiple ancestor scope options are specified")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move instructions "
+                    + "with multiple ancestor scope options set. Only one of the following can be specified: "
+                    + "ancestorScopeKey, inferAncestorScopeFromSourceHierarchy, or useSourceParentKeyAsAncestorScopeKey: '(A, B)'")
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectMoveWithAncestorKeyAndInferFromHierarchy() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: both ancestorScopeKey and inferAncestorScopeFromSourceHierarchy are set
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElements(
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("A")
+                    .setTargetElementId("B")
+                    .setAncestorScopeKey(12345L)
+                    .setInferAncestorScopeFromSourceHierarchy(true))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that move is rejected when ancestorScopeKey and inferAncestorScopeFromSourceHierarchy are both set")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move instructions "
+                    + "with multiple ancestor scope options set. Only one of the following can be specified: "
+                    + "ancestorScopeKey, inferAncestorScopeFromSourceHierarchy, or useSourceParentKeyAsAncestorScopeKey: '(A, B)'")
+                .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectMoveWithAncestorKeyAndUseSourceParentKey() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when: both ancestorScopeKey and useSourceParentKeyAsAncestorScopeKey are set
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .moveElements(
+                new ProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("A")
+                    .setTargetElementId("B")
+                    .setAncestorScopeKey(12345L)
+                    .setUseSourceParentKeyAsAncestorScopeKey(true))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that move is rejected when ancestorScopeKey and useSourceParentKeyAsAncestorScopeKey are both set")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more move instructions "
+                    + "with multiple ancestor scope options set. Only one of the following can be specified: "
+                    + "ancestorScopeKey, inferAncestorScopeFromSourceHierarchy, or useSourceParentKeyAsAncestorScopeKey: '(A, B)'")
+                .formatted(PROCESS_ID));
+  }
 }
