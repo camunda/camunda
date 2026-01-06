@@ -16,9 +16,9 @@ echo "Cutoff date: $CUTOFF_DATE"
 # Get all open (non-archived) projects for the repository
 echo "Fetching projects for ${ORG_NAME}/${REPO_NAME}..."
 
-PROJECTS_RESPONSE=$(gh api graphql -f query="
+GRAPHQL_QUERY='
   query {
-    repository(owner: \"$ORG_NAME\", name: \"$REPO_NAME\") {
+    repository(owner: "'"$ORG_NAME"'", name: "'"$REPO_NAME"'") {
       projectsV2(first: 100) {
         nodes {
           id
@@ -45,7 +45,20 @@ PROJECTS_RESPONSE=$(gh api graphql -f query="
         }
       }
     }
-  }")
+  }'
+
+echo "DEBUG: Executing GraphQL query:"
+echo "$GRAPHQL_QUERY"
+
+# Execute query and capture both stdout and stderr
+if ! PROJECTS_RESPONSE=$(gh api graphql -f query="$GRAPHQL_QUERY" 2>&1); then
+  echo "ERROR: GraphQL query failed!"
+  echo "Response: $PROJECTS_RESPONSE"
+  exit 1
+fi
+
+echo "DEBUG: GraphQL query successful"
+echo "DEBUG: Response length: ${#PROJECTS_RESPONSE} characters"
 
 # Use a temp file to collect results (needed because while loop runs in a subshell)
 TEMP_FILE=$(mktemp)

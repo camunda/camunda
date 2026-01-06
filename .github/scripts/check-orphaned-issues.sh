@@ -12,9 +12,9 @@ echo "Checking for open issues not assigned to any active project in ${ORG_NAME}
 # Step 1: Fetch all projects in the repository (both active and archived)
 echo "Fetching projects for ${ORG_NAME}/${REPO_NAME}..."
 
-PROJECTS_RESPONSE=$(gh api graphql -f query="
+GRAPHQL_QUERY='
   query {
-    repository(owner: \"$ORG_NAME\", name: \"$REPO_NAME\") {
+    repository(owner: "'"$ORG_NAME"'", name: "'"$REPO_NAME"'") {
       projectsV2(first: 100) {
         nodes {
           number
@@ -22,7 +22,20 @@ PROJECTS_RESPONSE=$(gh api graphql -f query="
         }
       }
     }
-  }")
+  }'
+
+echo "DEBUG: Executing GraphQL query:"
+echo "$GRAPHQL_QUERY"
+
+# Execute query and capture both stdout and stderr
+if ! PROJECTS_RESPONSE=$(gh api graphql -f query="$GRAPHQL_QUERY" 2>&1); then
+  echo "ERROR: GraphQL query failed!"
+  echo "Response: $PROJECTS_RESPONSE"
+  exit 1
+fi
+
+echo "DEBUG: GraphQL query successful"
+echo "DEBUG: Response length: ${#PROJECTS_RESPONSE} characters"
 
 # Extract active (open) and archived (closed) project numbers
 ACTIVE_PROJECTS=$(echo "$PROJECTS_RESPONSE" | jq -r '.data.repository.projectsV2.nodes[] | select(.closed == false) | .number' | paste -sd "," -)
@@ -82,12 +95,18 @@ fi
 echo "Counting orphaned issues..."
 
 # Count and get URL for issues with no project
-RESULT=$(gh api graphql -f query="
-  query(\$searchQuery: String!) {
-    search(query: \$searchQuery, type: ISSUE, first: 1) {
+echo "DEBUG: Searching for issues with query: $SEARCH_QUERY_NO_PROJECT"
+
+if ! RESULT=$(gh api graphql -f query='
+  query($searchQuery: String!) {
+    search(query: $searchQuery, type: ISSUE, first: 1) {
       issueCount
     }
-  }" -F searchQuery="$SEARCH_QUERY_NO_PROJECT")
+  }' -F searchQuery="$SEARCH_QUERY_NO_PROJECT" 2>&1); then
+  echo "ERROR: Search query failed for no-project issues!"
+  echo "Response: $RESULT"
+  exit 1
+fi
 
 COUNT_NO_PROJECT=$(echo "$RESULT" | jq -r '.data.search.issueCount')
 echo "  Issues with no project: $COUNT_NO_PROJECT"
@@ -105,11 +124,12 @@ ARCHIVED_ISSUES_LIST=""
 COUNT_ARCHIVED=0
 if [[ -n "$SEARCH_QUERY_ARCHIVED" ]]; then
   echo "  Fetching issues in archived projects..."
+  echo "DEBUG: Searching for issues with query: $SEARCH_QUERY_ARCHIVED"
   
   # Fetch up to 50 issues from archived projects
-  ARCHIVED_RESULT=$(gh api graphql -f query="
-    query(\$searchQuery: String!) {
-      search(query: \$searchQuery, type: ISSUE, first: 50) {
+  if ! ARCHIVED_RESULT=$(gh api graphql -f query='
+    query($searchQuery: String!) {
+      search(query: $searchQuery, type: ISSUE, first: 50) {
         issueCount
         nodes {
           ... on Issue {
@@ -119,7 +139,11 @@ if [[ -n "$SEARCH_QUERY_ARCHIVED" ]]; then
           }
         }
       }
-    }" -F searchQuery="$SEARCH_QUERY_ARCHIVED")
+    }' -F searchQuery="$SEARCH_QUERY_ARCHIVED" 2>&1); then
+    echo "ERROR: Search query failed for archived-project issues!"
+    echo "Response: $ARCHIVED_RESULT"
+    exit 1
+  fi
   
   COUNT_ARCHIVED=$(echo "$ARCHIVED_RESULT" | jq -r '.data.search.issueCount')
   echo "  Issues only in archived projects: $COUNT_ARCHIVED"
