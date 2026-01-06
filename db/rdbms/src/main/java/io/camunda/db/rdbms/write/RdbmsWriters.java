@@ -102,7 +102,7 @@ public class RdbmsWriters {
 
     writers.put(
         AuditLogWriter.class,
-        new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties));
+        new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties, config));
     writers.put(AuthorizationWriter.class, new AuthorizationWriter(executionQueue));
     writers.put(DecisionDefinitionWriter.class, new DecisionDefinitionWriter(executionQueue));
     writers.put(
