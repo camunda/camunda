@@ -24,4 +24,5 @@ public class TestCaseInstructionType {
   public static final String ASSERT_USER_TASK = "ASSERT_USER_TASK";
   public static final String COMPLETE_USER_TASK = "COMPLETE_USER_TASK";
   public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
+  public static final String PUBLISH_MESSAGE = "PUBLISH_MESSAGE";
 }
