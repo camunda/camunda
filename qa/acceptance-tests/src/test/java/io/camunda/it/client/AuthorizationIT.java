@@ -42,8 +42,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@CompatibilityTest
 @MultiDbTest
+@CompatibilityTest
 public class AuthorizationIT {
 
   private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();

@@ -28,7 +28,6 @@ import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
-import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
 import java.util.List;
@@ -37,7 +36,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-//@MultiDbTest
+// @MultiDbTest
 @CompatibilityTest(enableMultiTenancy = true, enableAuthorization = true)
 public class ProcessDefinitionInstanceStatisticsIT {
 
