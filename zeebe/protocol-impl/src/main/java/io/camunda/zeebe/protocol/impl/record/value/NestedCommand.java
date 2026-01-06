@@ -121,4 +121,11 @@ public final class NestedCommand extends ObjectValue implements NestedCommandVal
     valueTypeProperty.setValue(valueType);
     return this;
   }
+
+  public NestedCommand wrap(final NestedCommand nestedCommand) {
+    setValueType(nestedCommand.getValueType());
+    setIntent(nestedCommand.getIntent());
+    setCommandValue(nestedCommand.getCommandValue());
+    return this;
+  }
 }

@@ -60,6 +60,11 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
    */
   List<Integer> getPartitionIds();
 
+  /**
+   * @return the follow-up command to be written right before the batch operation is completed.
+   */
+  NestedCommandValue getFollowUpCommand();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableBatchOperationProcessInstanceMigrationPlanValue.Builder.class)
