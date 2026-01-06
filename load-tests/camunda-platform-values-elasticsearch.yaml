@@ -48,6 +48,7 @@ orchestration:
 ################################################### Elasticsearch cluster configuration
 ########################################################################################
 elasticsearch:
+  enabled: true
   master:
     fullnameOverride: elastic
     nameOverride: elastic
