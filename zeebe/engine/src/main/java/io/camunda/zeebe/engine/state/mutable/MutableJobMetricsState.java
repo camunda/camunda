@@ -21,8 +21,11 @@ public interface MutableJobMetricsState extends JobMetricsState {
       final String workerName,
       final JobMetricState state,
       final long timestamp) {
-    incrementJobTypeCounter(jobType, tenantId, state, timestamp);
-    incrementWorkerCounter(jobType, tenantId, workerName, state, timestamp);
+    if (workerName == null || workerName.isEmpty()) {
+      incrementJobTypeCounter(jobType, tenantId, state, timestamp);
+    } else {
+      incrementWorkerCounter(jobType, tenantId, workerName, state, timestamp);
+    }
   }
 
   /**

@@ -35,6 +35,7 @@ import io.camunda.exporter.handlers.GroupEntityAddedHandler;
 import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
 import io.camunda.exporter.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
+import io.camunda.exporter.handlers.JobBatchMetricsExportedHandler;
 import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -116,6 +117,7 @@ import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscript
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -348,6 +350,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UsageMetricExportedHandler(
                 indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName(),
                 indexDescriptors.get(UsageMetricTUTemplate.class).getFullQualifiedName()),
+            new JobBatchMetricsExportedHandler(
+                indexDescriptors.get(JobMetricsBatchTemplate.class).getFullQualifiedName()),
             new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)

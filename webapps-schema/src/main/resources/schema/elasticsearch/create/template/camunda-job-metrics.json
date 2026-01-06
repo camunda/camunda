@@ -1,0 +1,49 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "startTime": {
+        "type": "date",
+        "format": "date_time"
+      },
+      "endTime": {
+        "type": "date",
+        "format": "date_time"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "failedCount": {
+        "type": "integer"
+      },
+      "lastFailedAt": {
+        "type": "date",
+        "format": "date_time"
+      },
+      "completedCount": {
+        "type": "integer"
+      },
+      "lastCompletedAt": {
+        "type": "date",
+        "format": "date_time"
+      },
+      "createdCount": {
+        "type": "integer"
+      },
+      "lastCreatedAt": {
+        "type": "date",
+        "format": "date_time"
+      },
+      "jobType": {
+        "type": "keyword"
+      },
+      "worker": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+

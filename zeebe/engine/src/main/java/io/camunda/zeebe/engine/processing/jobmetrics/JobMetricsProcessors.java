@@ -19,9 +19,7 @@ import java.time.InstantSource;
 /** Registers processors for job metrics batch records. */
 public final class JobMetricsProcessors {
 
-  private JobMetricsProcessors() {
-    // utility class
-  }
+  private JobMetricsProcessors() {}
 
   public static void addJobMetricsProcessors(
       final TypedRecordProcessors typedRecordProcessors,
