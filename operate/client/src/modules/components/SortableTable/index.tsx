@@ -51,13 +51,14 @@ type Props = {
   onSelectAll?: () => void;
   onSelect?: (rowId: string) => void;
   checkIsRowSelected?: (rowId: string) => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
-  rowOperationError?: (rowId: string) => string | null; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
+  rowOperationError?: (rowId: string) => React.ReactNode | null; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
   batchOperationId?: string;
   size?: React.ComponentProps<typeof Table>['size'];
+  stickyHeader?: boolean;
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -80,6 +81,7 @@ const SortableTable: React.FC<Props> = ({
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
   batchOperationId,
+  stickyHeader = false,
 }) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -128,7 +130,7 @@ const SortableTable: React.FC<Props> = ({
           <TableContainer $hasError={!!batchOperationId}>
             {state === 'loading' && <Loading data-testid="data-table-loader" />}
             <Table {...getTableProps()} isSortable>
-              <TableHead>
+              <TableHead $stickyHeader={stickyHeader}>
                 <TableHeadRow>
                   {batchOperationId && (
                     <TableExpandHeader aria-label="expand row" />

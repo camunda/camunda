@@ -92,7 +92,11 @@ const BatchOperations: React.FC = () => {
     }) => {
       return {
         id: batchOperationKey,
-        operationType: formatOperationType(batchOperationType),
+        operationType: (
+          <Link to={batchOperationKey}>
+            {formatOperationType(batchOperationType)}
+          </Link>
+        ),
         state: <BatchStateIndicator status={state} />,
         items: (
           <BatchItemsCount
@@ -143,6 +147,7 @@ const BatchOperations: React.FC = () => {
                 additionalInfo:
                   'Try adjusting your filters or check back later.',
               }}
+              stickyHeader
             />
           </TableContainer>
           {totalItems > pageSize && (

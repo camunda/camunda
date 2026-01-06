@@ -850,16 +850,16 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
   (props) => {
     const {processInstance, businessObjects, errorMessage, ...rest} = props;
     const scrollableContainerRef = useRef<HTMLDivElement>(null);
-    const {data: {items: migrationItems} = {items: []}} =
-      useBatchOperationItems({
-        filter: {
-          processInstanceKey: processInstance.processInstanceKey,
-          operationType: 'MIGRATE_PROCESS_INSTANCE',
-          state: 'COMPLETED',
-        },
-        sort: [{field: 'processedDate', order: 'desc'}],
-        page: {limit: 1, from: 0},
-      });
+    const {data} = useBatchOperationItems({
+      filter: {
+        processInstanceKey: processInstance.processInstanceKey,
+        operationType: 'MIGRATE_PROCESS_INSTANCE',
+        state: 'COMPLETED',
+      },
+      sort: [{field: 'processedDate', order: 'desc'}],
+      page: {limit: 1, from: 0},
+    });
+    const migrationItems = data?.pages[0].items ?? [];
     const latestMigrationDate =
       migrationItems.length > 0 ? migrationItems[0].processedDate : undefined;
     const rootElementInstance = useMemo<ElementInstance>(() => {

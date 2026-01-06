@@ -40,6 +40,7 @@ const PAGE_TITLE = {
   DECISION_INSTANCE: (id: string, name: string) =>
     `Operate: Decision Instance ${id} of ${name}`,
   BATCH_OPERATIONS: 'Operate: Batch Operations',
+  BATCH_OPERATION: (name: string) => `Operate: Batch Operation ${name}`,
   AUDIT_LOG: 'Operate: Operations Log',
 };
 
