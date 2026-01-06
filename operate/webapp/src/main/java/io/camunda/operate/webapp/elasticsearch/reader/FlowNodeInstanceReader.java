@@ -68,6 +68,7 @@ import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -818,29 +819,37 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private DecisionInstanceReferenceDto findRootCauseDecision(final Long flowNodeInstanceKey) {
-    final org.elasticsearch.action.search.SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        joinWithAnd(
-                            termQuery(ELEMENT_INSTANCE_KEY, flowNodeInstanceKey),
-                            termQuery(
-                                DecisionInstanceTemplate.STATE, DecisionInstanceState.FAILED)))
-                    .sort(EVALUATION_DATE, SortOrder.DESC)
-                    .size(1)
-                    .fetchSource(new String[] {DECISION_NAME, DECISION_ID}, null));
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value > 0) {
-        final Map<String, Object> source = response.getHits().getHits()[0].getSourceAsMap();
-        String decisionName = (String) source.get(DECISION_NAME);
+      final var query =
+          joinWithAnd(
+              ElasticsearchUtil.termsQuery(ELEMENT_INSTANCE_KEY, flowNodeInstanceKey),
+              ElasticsearchUtil.termsQuery(
+                  DecisionInstanceTemplate.STATE, DecisionInstanceState.FAILED));
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+      final var request =
+          new SearchRequest.Builder()
+              .index(whereToSearch(decisionInstanceTemplate, ALL))
+              .query(tenantAwareQuery)
+              .sort(
+                  ElasticsearchUtil.sortOrder(
+                      EVALUATION_DATE, co.elastic.clients.elasticsearch._types.SortOrder.Desc))
+              .size(1)
+              .source(s -> s.filter(f -> f.includes(DECISION_NAME, DECISION_ID)))
+              .build();
+
+      final var response = es8client.search(request, DecisionInstanceEntity.class);
+
+      if (response.hits().total().value() > 0) {
+        final var hit = response.hits().hits().get(0);
+        final var source = hit.source();
+        String decisionName = source.getDecisionName();
         if (decisionName == null) {
-          decisionName = (String) source.get(DECISION_ID);
+          decisionName = source.getDecisionId();
         }
         return new DecisionInstanceReferenceDto()
             .setDecisionName(decisionName)
-            .setInstanceId(response.getHits().getHits()[0].getId());
+            .setInstanceId(hit.id());
       }
     } catch (final IOException e) {
       final String message =
