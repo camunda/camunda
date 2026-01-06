@@ -1,3 +1,7 @@
+# description: This workflow builds the Camunda Docker image, pushes it to Harbor, and runs Helm integration tests
+# type: CI
+# owner: @camunda/distribution
+---
 name: Docker Build and Helm Integration Test
 
 on:
@@ -15,18 +19,6 @@ on:
         description: 'Helm chart directory name'
         type: string
         default: 'camunda-platform-8.9'
-      platform:
-        description: 'Platform to deploy on'
-        type: string
-        default: 'gke'
-      deployment_ttl:
-        description: 'Deployment TTL'
-        type: string
-        default: '30m'
-      it_tests_enabled:
-        description: 'Enable integration tests'
-        type: boolean
-        default: true
       scenario:
         description: 'Test scenario'
         type: string
@@ -35,10 +27,6 @@ on:
         description: 'Short name for the deployment'
         type: string
         default: 'kcor'
-      flows:
-        description: 'Flow'
-        type: string
-        default: 'install'
   pull_request:
     paths:
       - ".github/workflows/docker-build-helm-integration.yml"
@@ -53,6 +41,10 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
   HARBOR_REGISTRY: registry.camunda.cloud
   HARBOR_REPOSITORY: registry.camunda.cloud/team-camunda/camunda
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   # Gate job - checks conditions once, all other jobs depend on this
@@ -240,7 +232,7 @@ jobs:
     secrets: inherit
     with:
       identifier: ${{ needs.format-identifier.outputs.identifier }}
-      platforms: ${{ 'gke' }}
+      platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
       namespace-prefix: camunda
