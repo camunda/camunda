@@ -30,3 +30,89 @@
 /.github/workflows/retry-workflow.yml                    @camunda/monorepo-devops-team
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
+<<<<<<< HEAD
+=======
+
+###################
+## Core Features ##
+###################
+
+# CI Files
+/.github/workflows/operate-ci-build-observe-reusable.yml  @camunda/core-features
+/.github/workflows/operate-ci-build-reusable.yml          @camunda/core-features
+/.github/workflows/operate-ci.yml                         @camunda/core-features
+/.github/workflows/operate-ci-test-reusable.yml           @camunda/core-features
+/.github/workflows/operate-e2e-tests.yml                  @camunda/core-features
+/.github/workflows/operate-playwright.yml                 @camunda/core-features
+/.github/workflows/ci-operate.yml                         @camunda/core-features
+/.github/workflows/ci-tasklist.yml                        @camunda/core-features
+/.github/workflows/tasklist-ci-test-reusable.yml          @camunda/core-features
+/.github/workflows/tasklist-ci.yml                        @camunda/core-features
+/.github/workflows/tasklist-e2e-tests.yml                 @camunda/core-features
+/.github/workflows/ci-optimize.yml                        @camunda/core-features
+/.github/workflows/optimize-check-c4.yml                  @camunda/core-features
+/.github/workflows/optimize-e2e-test-cloud.yml            @camunda/core-features
+/.github/workflows/optimize-e2e-tests-sm.yml              @camunda/core-features
+
+# Unit Test Suites
+/operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
+/operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
+
+################
+## Data Layer ##
+################
+
+# CI Files
+/.github/workflows/operate-test-backup-restore.yml                @camunda/data-layer
+/.github/workflows/operate-test-importer.yml                      @camunda/data-layer
+/.github/workflows/ci-operate.yml
+
+# Unit Test Suites
+/operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
+/operate/webapp/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
+
+##########################
+## Distributed Platform ##
+##########################
+
+/zeebe/atomix @camunda/zeebe-distributed-platform
+/zeebe/backup @camunda/zeebe-distributed-platform
+/zeebe/backup-stores @camunda/zeebe-distributed-platform
+/zeebe/broker-client @camunda/zeebe-distributed-platform
+/zeebe/docker @camunda/zeebe-distributed-platform
+/zeebe/dynamic-config @camunda/zeebe-distributed-platform
+/zeebe/journal @camunda/zeebe-distributed-platform
+/zeebe/logstreams @camunda/zeebe-distributed-platform
+/zeebe/restore @camunda/zeebe-distributed-platform
+/zeebe/scheduler @camunda/zeebe-distributed-platform
+/zeebe/snapshot @camunda/zeebe-distributed-platform
+/zeebe/stream-platform @camunda/zeebe-distributed-platform
+/zeebe/transport @camunda/zeebe-distributed-platform
+
+# Broker packages
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/backup @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/clustering @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/logstreams @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/logstreams @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/partitioning @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/raft @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/raft @camunda/zeebe-distributed-platform
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
+
+# Identity
+/identity/        @camunda/identity
+/authentication/  @camunda/identity
+/security/        @camunda/identity
+
+
+##########################
+## Reliability Testing  ##
+##########################
+
+# Performance + Load testing
+/load-tests/ @camunda/reliability-testing
+/zeebe/benchmarks/ @camunda/reliability-testing
+/.github/workflows/*load-test*.yml @camunda/reliability-testing
+>>>>>>> 76c6aa29 (ci: update codeowner file)
