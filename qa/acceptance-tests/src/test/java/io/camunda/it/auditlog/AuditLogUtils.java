@@ -130,18 +130,17 @@ public class AuditLogUtils {
         startProcessInstance(adminClient, PROCESS_ID_DEPLOYED_RESOURCES, TENANT_A, useRest);
     startProcessInstance(adminClient, PROCESS_ID_A, TENANT_A, useRest);
     startProcessInstance(adminClient, PROCESS_ID_B, TENANT_B, useRest);
-    startProcessInstance(adminClient, USER_TASKS_PROCESS_ID, TENANT_B, useRest);
+    final var userTaskProcessInstance =
+        startProcessInstance(adminClient, USER_TASKS_PROCESS_ID, TENANT_B, useRest);
 
-    // TODO: investigate flakiness with UserTask#ASSIGNED events:
-    // https://github.com/camunda/camunda/issues/43319
-    //    assignUserToUserTask(adminClient, USER_TASKS_PROCESS_ID, DEFAULT_USERNAME);
-
-    // wait until all process instance creation records are exported and audit log entries are
-    // created
+    // wait until all process instances are created
     RecordingExporter.processInstanceCreationRecords()
         .withIntent(ProcessInstanceCreationIntent.CREATED)
-        .limit(3L);
+        .limit(4L)
+        .await();
+
     final String[] auditLogKey = new String[1];
+    // wait until all audit logs for the created process instances are exported
     Awaitility.await("Audit log entries are created for the created process instances")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
@@ -168,32 +167,32 @@ public class AuditLogUtils {
               auditLogKey[0] = auditLogItems.items().get(0).getAuditLogKey();
             });
 
+    assignUserToUserTask(
+        adminClient, DEFAULT_USERNAME, userTaskProcessInstance.getProcessInstanceKey());
+
     return Tuple.of(auditLogKey[0], processInstanceEvent);
   }
 
   public static void assignUserToUserTask(
-      final CamundaClient adminClient, final String processId, final String username) {
-    RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).limit(1L);
+      final CamundaClient adminClient, final String username, final Long processInstanceKey) {
+    final var task =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(1L)
+            .findFirst()
+            .get()
+            .getValue();
+
+    adminClient.newAssignUserTaskCommand(task.getUserTaskKey()).assignee(username).send().join();
+
     Awaitility.await("Audit log entry is created for the assigned user task")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .atMost(Duration.ofSeconds(20))
         .untilAsserted(
             () -> {
-              final var userTasks =
-                  adminClient
-                      .newUserTaskSearchRequest()
-                      .filter(f -> f.bpmnProcessId(processId))
-                      .send()
-                      .join();
-              assertThat(userTasks.items()).hasSize(1);
-              final var userTask = userTasks.items().get(0);
-              adminClient
-                  .newAssignUserTaskCommand(userTask.getUserTaskKey())
-                  .assignee(username)
-                  .send()
-                  .join();
-
               // wait until user task is assigned and audit log entry is created
+              // currently it's not possible to search by entityKey, thus we are using the
+              // processInstance as a workaround
               final var auditLogItems =
                   adminClient
                       .newAuditLogSearchRequest()
@@ -201,8 +200,7 @@ public class AuditLogUtils {
                           fn ->
                               fn.entityType(AuditLogEntityTypeEnum.USER_TASK)
                                   .operationType(AuditLogOperationTypeEnum.ASSIGN)
-                                  .processInstanceKey(
-                                      String.valueOf(userTask.getProcessInstanceKey())))
+                                  .processInstanceKey(String.valueOf(task.getProcessInstanceKey())))
                       .send()
                       .join();
               assertThat(auditLogItems.items()).hasSize(1);
