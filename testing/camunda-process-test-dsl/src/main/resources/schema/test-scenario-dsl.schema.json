@@ -168,10 +168,10 @@
           "$ref": "#/definitions/UserTaskSelector"
         },
         "variables": {
-          "description": "The variables to set when completing the user task. Ignored if withExampleData is true.",
+          "description": "The variables to set when completing the user task. Ignored if useExampleData is true.",
           "type": "object"
         },
-        "withExampleData": {
+        "useExampleData": {
           "description": "Whether to complete the user task with example data from the BPMN element. If true, the variables property is ignored.",
           "type": "boolean",
           "default": false

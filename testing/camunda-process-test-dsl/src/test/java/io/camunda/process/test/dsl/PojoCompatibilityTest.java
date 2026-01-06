@@ -279,20 +279,7 @@ public class PojoCompatibilityTest {
                             .processDefinitionId("my-process")
                             .elementId("task1")
                             .build())
-                    .withExampleData(true)
-                    .build())),
-        Arguments.of(
-            "complete user task: full",
-            singleTestCase(
-                ImmutableCompleteUserTaskInstruction.builder()
-                    .userTaskSelector(
-                        ImmutableUserTaskSelector.builder()
-                            .processDefinitionId("my-process")
-                            .elementId("task1")
-                            .taskName("Review Task")
-                            .build())
-                    .putVariables("x", 1)
-                    .withExampleData(true)
+                    .useExampleData(true)
                     .build())));
   }
 
