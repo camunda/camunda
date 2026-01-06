@@ -24,6 +24,7 @@
     i.FLOW_NODE_INSTANCE_KEY,
     i.FLOW_NODE_ID,
     i.PROCESS_INSTANCE_KEY,
+    i.ROOT_PROCESS_INSTANCE_KEY,
     i.PROCESS_DEFINITION_ID,
     i.PROCESS_DEFINITION_KEY,
     i.ERROR_MESSAGE,
@@ -158,6 +159,7 @@
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ERROR_TYPE" javaType="io.camunda.search.entities.IncidentEntity$ErrorType"/>
       <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
