@@ -1,4 +1,4 @@
-# description: This workflow builds the Camunda Docker image, pushes it to Harbor, and runs Helm integration tests
+# description: This workflow builds the Camunda Docker image, pushes it to Harbor, and runs Helm integration tests. This is part of the AlwaysGreen project where every PR is deployed via helm to confirm no breaking changes.
 # type: CI
 # owner: @camunda/distribution
 ---
