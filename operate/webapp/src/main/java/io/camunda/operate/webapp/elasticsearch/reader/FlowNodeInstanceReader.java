@@ -8,9 +8,12 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.termsQuery;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
@@ -34,6 +37,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -68,12 +73,9 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -148,7 +150,10 @@ public class FlowNodeInstanceReader extends AbstractReader
         constantScoreQuery(termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
     final AggregationBuilder notCompletedFlowNodesAggs =
-        filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE.name(), TERMINATED.name()))
+        filter(
+                activeFlowNodesAggName,
+                org.elasticsearch.index.query.QueryBuilders.termsQuery(
+                    STATE, ACTIVE.name(), TERMINATED.name()))
             .subAggregation(
                 terms(activeFlowNodesBucketsAggName)
                     .field(FLOW_NODE_ID)
@@ -166,7 +171,7 @@ public class FlowNodeInstanceReader extends AbstractReader
                     .field(FLOW_NODE_ID)
                     .size(TERMS_AGG_SIZE));
 
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
             .source(
                 new SearchSourceBuilder()
@@ -223,35 +228,35 @@ public class FlowNodeInstanceReader extends AbstractReader
   @Override
   public List<Long> getFlowNodeInstanceKeysByIdAndStates(
       final Long processInstanceId, final String flowNodeId, final List<FlowNodeState> states) {
-    final List<Long> flowNodeInstanceKeys = new ArrayList<>();
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest(flowNodeInstanceTemplate.getAlias())
-              .source(
-                  new SearchSourceBuilder()
-                      .query(
-                          boolQuery()
-                              .must(termQuery(FLOW_NODE_ID, flowNodeId))
-                              .must(termQuery(PROCESS_INSTANCE_KEY, processInstanceId))
-                              .must(
-                                  termsQuery(
-                                      STATE,
-                                      states.stream()
-                                          .map(Enum::name)
-                                          .collect(Collectors.toList()))))
-                      .fetchField(ID));
-      final SearchHits searchHits = tenantAwareClient.search(searchRequest).getHits();
+      final var stateNames = states.stream().map(Enum::name).toList();
+      final var query =
+          new BoolQuery.Builder()
+              .must(termsQuery(FLOW_NODE_ID, flowNodeId))
+              .must(termsQuery(PROCESS_INSTANCE_KEY, processInstanceId))
+              .must(termsQuery(STATE, stateNames))
+              .build()
+              ._toQuery();
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-      for (final SearchHit searchHit : searchHits) {
-        final Map<String, DocumentField> documentFields = searchHit.getDocumentFields();
-        flowNodeInstanceKeys.add(Long.parseLong(documentFields.get(ID).getValue()));
-      }
+      final var searchRequest =
+          new SearchRequest.Builder()
+              .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+              .query(tenantAwareQuery)
+              .fields(f -> f.field(ID))
+              .source(s -> s.fetch(false))
+              .build();
+
+      final var response = es8client.search(searchRequest, FlowNodeInstanceEntity.class);
+
+      return response.hits().hits().stream()
+          .map(hit -> Long.parseLong(hit.fields().get(ID).to(String.class)))
+          .toList();
     } catch (final IOException e) {
       throw new OperateRuntimeException(
           String.format("Could not retrieve flowNodeInstanceKey for flowNodeId %s ", flowNodeId),
           e);
     }
-    return flowNodeInstanceKeys;
   }
 
   @Override
@@ -377,7 +382,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     applySorting(searchSourceBuilder, flowNodeInstanceRequest);
 
-    final SearchRequest searchRequest =
+    final org.elasticsearch.action.search.SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate).source(searchSourceBuilder);
     try {
       final FlowNodeInstanceResponseDto response;
@@ -410,7 +415,9 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private FlowNodeInstanceResponseDto scrollAllSearchHits(
-      final SearchRequest searchRequest, final String processInstanceId) throws IOException {
+      final org.elasticsearch.action.search.SearchRequest searchRequest,
+      final String processInstanceId)
+      throws IOException {
     final Boolean[] runningParent = new Boolean[] {false};
     final List<FlowNodeInstanceEntity> children =
         tenantAwareClient.search(
@@ -444,7 +451,9 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private FlowNodeInstanceResponseDto getOnePage(
-      final SearchRequest searchRequest, final String processInstanceId) throws IOException {
+      final org.elasticsearch.action.search.SearchRequest searchRequest,
+      final String processInstanceId)
+      throws IOException {
     final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
     final Boolean[] runningParent = new Boolean[1];
@@ -485,7 +494,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .map(this::newFilterForFlowNodeInstance)
             .toList();
 
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
             .source(
                 new SearchSourceBuilder()
@@ -622,7 +631,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         constantScoreQuery(
             joinWithAnd(
                 termQuery(IncidentTemplate.TREE_PATH, incidentTreePath), ACTIVE_INCIDENT_QUERY));
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
             .source(new SearchSourceBuilder().query(query));
     try {
@@ -676,7 +685,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             joinWithAnd(
                 termQuery(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath),
                 ACTIVE_INCIDENT_QUERY));
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
             .source(new SearchSourceBuilder().query(query));
     try {
@@ -715,7 +724,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private DecisionInstanceReferenceDto findRootCauseDecision(final Long flowNodeInstanceKey) {
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
             .source(
                 new SearchSourceBuilder()
@@ -752,7 +761,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
     final FlowNodeInstanceEntity flowNodeInstance;
     final TermQueryBuilder flowNodeInstanceIdQ = termQuery(ID, flowNodeInstanceId);
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
             .source(new SearchSourceBuilder().query(constantScoreQuery(flowNodeInstanceIdQ)));
     final SearchResponse response;
@@ -785,7 +794,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             prefixQuery(TREE_PATH, prefixTreePath),
             rangeQuery(LEVEL).lte(level));
 
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
             .source(
                 new SearchSourceBuilder()
@@ -823,7 +832,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     if (flowNodeType != null) {
       sourceBuilder.postFilter(termQuery(TYPE, flowNodeType));
     }
-    final SearchRequest request =
+    final org.elasticsearch.action.search.SearchRequest request =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate).source(sourceBuilder);
 
     try {
