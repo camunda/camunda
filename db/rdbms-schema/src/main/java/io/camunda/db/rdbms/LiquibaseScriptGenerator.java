@@ -153,7 +153,9 @@ public class LiquibaseScriptGenerator {
 
         // Apply SQL visitors (which handle modifySql directives)
         for (final var visitor : changeSet.getSqlVisitors()) {
-          sqlString = visitor.modifySql(sqlString, database);
+          if (visitor.getApplicableDbms().contains(database.getShortName())) {
+            sqlString = visitor.modifySql(sqlString, database);
+          }
         }
 
         sqlScript.append(formatSql(sqlString));

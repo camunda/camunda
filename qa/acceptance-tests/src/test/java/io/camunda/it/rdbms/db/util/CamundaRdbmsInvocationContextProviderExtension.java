@@ -30,35 +30,87 @@ public class CamundaRdbmsInvocationContextProviderExtension
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaRdbmsInvocationContextProviderExtension.class);
 
-  private static final Map<String, CamundaRdbmsTestApplication> SUPPORTED_TEST_APPLICATIONS =
-      Map.of(
-          "camundaWithH2",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
-          "camundaWithPostgresSQL",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultPostgresContainer()),
-          "camundaWithMariaDB",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultMariaDBContainer()),
-          "camundaWithMySQL",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultMySQLContainer()),
-          "camundaWithOracleDB",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultOracleContainer()),
-          "camundaWithMssqlDB",
-          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-              .withRdbms()
-              .withDatabaseContainer(createDefaultMSSQLServerContainer()));
+  private static final Map<String, CamundaRdbmsTestApplication> SUPPORTED_TEST_APPLICATIONS;
+
+  static {
+    final Map<String, CamundaRdbmsTestApplication> applications = new java.util.HashMap<>();
+    applications.put(
+        "camundaWithH2",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2());
+    applications.put(
+        "camundaWithPostgresSQL",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withDatabaseContainer(createDefaultPostgresContainer()));
+    applications.put(
+        "camundaWithManualPostgresSQL",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+            .withDatabaseContainer(createManualPostgresContainer()));
+    applications.put(
+        "camundaWithMariaDB",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withDatabaseContainer(createDefaultMariaDBContainer()));
+    applications.put(
+        "camundaWithManualMariaDB",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+            .withDatabaseContainer(createManualMariaDBContainer()));
+    applications.put(
+        "camundaWithMySQL",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withDatabaseContainer(createDefaultMySQLContainer()));
+    applications.put(
+        "camundaWithManualMySQL",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+            .withDatabaseContainer(createManualMySQLContainer()));
+    applications.put(
+        "camundaWithOracleDB",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withDatabaseContainer(createDefaultOracleContainer()));
+    applications.put(
+        "camundaWithManualOracleDB",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+            .withDatabaseContainer(createManualOracleContainer()));
+    applications.put(
+        "camundaWithMssqlDB",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(
+                c -> {
+                  c.getData().getSecondaryStorage().getRdbms().setUsername("sa");
+                })
+            .withDatabaseContainer(createDefaultMSSQLServerContainer()));
+    applications.put(
+        "camundaWithManualMssqlDB",
+        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+            .withRdbms()
+            .withUnifiedConfig(c -> c.getData().getSecondaryStorage().getRdbms().setAutoDdl(false))
+            .withDatabaseContainer(createManualMSSQLServerContainer()));
+    SUPPORTED_TEST_APPLICATIONS = Map.copyOf(applications);
+  }
 
   private final Set<String> useTestApplications;
 
+  /** By default, only all default test applications will be used */
   public CamundaRdbmsInvocationContextProviderExtension() {
-    useTestApplications = SUPPORTED_TEST_APPLICATIONS.keySet();
+    useTestApplications =
+        Set.of(
+            "camundaWithH2",
+            "camundaWithPostgresSQL",
+            "camundaWithMariaDB",
+            "camundaWithMySQL",
+            "camundaWithOracleDB",
+            "camundaWithMssqlDB");
   }
 
   /**
