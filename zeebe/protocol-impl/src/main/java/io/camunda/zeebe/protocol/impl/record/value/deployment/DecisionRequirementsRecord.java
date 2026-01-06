@@ -39,9 +39,10 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
 
   public DecisionRequirementsRecord() {
-    super(9);
+    super(10);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)
@@ -50,7 +51,8 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(resourceProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   @Override
@@ -91,6 +93,16 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   @Override
   public boolean isDuplicate() {
     return false;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public DecisionRequirementsRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
   }
 
   public DecisionRequirementsRecord setChecksum(final DirectBuffer checksum) {

@@ -62,6 +62,10 @@ public final class DeployedDrg {
     return persistedDecisionRequirements.getTenantId();
   }
 
+  public long getDeploymentKey() {
+    return persistedDecisionRequirements.getDeploymentKey();
+  }
+
   public PersistedDecisionRequirements getPersistedDecisionRequirements() {
     return persistedDecisionRequirements;
   }
