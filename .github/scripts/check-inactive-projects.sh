@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Script to find open projects in the camunda repository where no issues have had status changes in the last 30 days
+# Script to find open projects in the camunda repository where no open items have been updated in the last 30 days
 # This helps identify projects that may be complete and should be archived
 
 ORG_NAME="camunda"
@@ -10,7 +10,7 @@ DAYS_THRESHOLD=30
 # Note: Using GNU date syntax (requires ubuntu-latest runner)
 CUTOFF_DATE=$(date -u -d "30 days ago" +%Y-%m-%dT%H:%M:%SZ)
 
-echo "Checking for open projects with no status changes in the last $DAYS_THRESHOLD days..."
+echo "Checking for open projects with no item updates in the last $DAYS_THRESHOLD days..."
 echo "Cutoff date: $CUTOFF_DATE"
 
 # Get all open (non-archived) projects for the repository
@@ -19,14 +19,14 @@ echo "Fetching projects for ${ORG_NAME}/${REPO_NAME}..."
 GRAPHQL_QUERY='
   query {
     repository(owner: "'"$ORG_NAME"'", name: "'"$REPO_NAME"'") {
-      projectsV2(first: 100) {
+      projectsV2(first: 100, query: "is:open") {
         nodes {
           id
           number
           title
           url
           closed
-          items(first: 100) {
+          items(first: 1, query: "is:open updated:>@today-30d", orderBy: {field: POSITION, direction: ASC}) {
             nodes {
               updatedAt
               isArchived
@@ -65,60 +65,24 @@ TEMP_FILE=$(mktemp)
 trap 'rm -f "$TEMP_FILE"' EXIT
 
 # Process each project
-echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[] | select(.closed == false)' | while read -r project; do
+# Note: Since we use query: "is:open" on projectsV2, we only get open projects
+echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[]' | while read -r project; do
   PROJECT_NUMBER=$(echo "$project" | jq -r '.number')
   PROJECT_TITLE=$(echo "$project" | jq -r '.title')
   PROJECT_URL=$(echo "$project" | jq -r '.url')
   
   echo "  Checking project #$PROJECT_NUMBER: $PROJECT_TITLE"
   
-  # Get the most recently updated open item (filtering out archived items)
-  # We fetch both issues and PRs
-  MOST_RECENT_UPDATE=$(echo "$project" | jq -r '
-    [.items.nodes[] | 
-     select(.isArchived == false) | 
-     select(.content.state == "OPEN") | 
-     .updatedAt
-    ] | 
-    sort | 
-    last // empty
-  ')
+  # Count items returned (these are items updated in the last 30 days)
+  RECENT_ITEMS_COUNT=$(echo "$project" | jq -r '.items.nodes | length')
   
-  # Count open non-archived items
-  OPEN_ITEMS_COUNT=$(echo "$project" | jq -r '
-    [.items.nodes[] | 
-     select(.isArchived == false) | 
-     select(.content.state == "OPEN")
-    ] | length
-  ')
-  
-  # If there are no open items, the project has no open items
-  if [[ "$OPEN_ITEMS_COUNT" == "0" ]]; then
-    echo "    → No open items found"
-    UPDATE_INFO="No open items"
-    echo "• <${PROJECT_URL}|Project #${PROJECT_NUMBER}: ${PROJECT_TITLE}> - ${UPDATE_INFO}" >> "$TEMP_FILE"
-    continue
-  fi
-  
-  # If no update found or the most recent is older than threshold
-  if [[ -z "$MOST_RECENT_UPDATE" ]] || [[ "$MOST_RECENT_UPDATE" < "$CUTOFF_DATE" ]]; then
-    if [[ -z "$MOST_RECENT_UPDATE" ]]; then
-      echo "    → No updates found"
-      UPDATE_INFO="No updates"
-    else
-      echo "    → Last update: $MOST_RECENT_UPDATE (older than threshold)"
-      # Try to format the date (GNU date syntax, works on ubuntu-latest)
-      # Fall back to generic message if parsing fails
-      if UPDATE_DATE=$(date -d "$MOST_RECENT_UPDATE" "+%Y-%m-%d" 2>/dev/null); then
-        UPDATE_INFO="Last updated: $UPDATE_DATE"
-      else
-        UPDATE_INFO="Last updated: over 30 days ago"
-      fi
-    fi
-    
+  # If no items were returned, the project has no recent activity
+  if [[ "$RECENT_ITEMS_COUNT" == "0" ]]; then
+    echo "    → No items updated in the last $DAYS_THRESHOLD days"
+    UPDATE_INFO="No updates in the last 30 days"
     echo "• <${PROJECT_URL}|Project #${PROJECT_NUMBER}: ${PROJECT_TITLE}> - ${UPDATE_INFO}" >> "$TEMP_FILE"
   else
-    echo "    → Last update: $MOST_RECENT_UPDATE (within threshold)"
+    echo "    → Has items updated in the last $DAYS_THRESHOLD days"
   fi
 done
 
