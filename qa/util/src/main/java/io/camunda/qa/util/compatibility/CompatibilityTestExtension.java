@@ -211,6 +211,10 @@ public class CompatibilityTestExtension
       camundaContainer.withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
     }
 
+    if (annotation.enableMultiTenancy()) {
+      camundaContainer.withEnv("CAMUNDA_SECURITY_MULTI_TENANCY_CHECK_ENABLED", "true");
+    }
+
     // Configure initial user (required for basic auth)
     camundaContainer.withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo");
     camundaContainer.withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo");
