@@ -134,4 +134,4 @@
 
 # Performance + Load testing
 /load-tests/ @camunda/reliability-testing
-/.github/workflows/*load-test*.yml 
+/.github/workflows/*load-test*.yml @camunda/reliability-testing
