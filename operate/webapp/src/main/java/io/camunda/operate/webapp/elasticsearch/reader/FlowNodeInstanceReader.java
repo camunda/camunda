@@ -12,6 +12,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.searchAfterToFieldValues;
 import static io.camunda.operate.util.ElasticsearchUtil.termsQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
@@ -38,6 +39,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.cache.ProcessCache;
@@ -348,48 +350,60 @@ public class FlowNodeInstanceReader extends AbstractReader
   private FlowNodeInstanceResponseDto queryFlowNodeInstances(
       final FlowNodeInstanceQueryDto flowNodeInstanceRequest, final String flowNodeInstanceId) {
 
-    final String processInstanceId = flowNodeInstanceRequest.getProcessInstanceId();
-    final String parentTreePath = flowNodeInstanceRequest.getTreePath();
-    final int level = parentTreePath.split("/").length;
+    final var processInstanceId = flowNodeInstanceRequest.getProcessInstanceId();
+    final var parentTreePath = flowNodeInstanceRequest.getTreePath();
+    final var level = parentTreePath.split("/").length;
 
-    IdsQueryBuilder idsQuery = null;
+    // Build base query
+    final var baseQuery =
+        ElasticsearchUtil.constantScoreQuery(termsQuery(PROCESS_INSTANCE_KEY, processInstanceId));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(baseQuery);
+
+    // Build running parents aggregation
+    final var runningParentFilter =
+        new BoolQuery.Builder()
+            .must(termsQuery(LEVEL, level - 1))
+            .must(ElasticsearchUtil.prefixQuery(TREE_PATH, parentTreePath))
+            .mustNot(ElasticsearchUtil.existsQuery(END_DATE))
+            .build()
+            ._toQuery();
+
+    final var runningParentsAgg =
+        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+            .filter(f -> f.bool(runningParentFilter.bool()))
+            .build();
+
+    // Build post filter
+    final var postFilterQueries = new java.util.ArrayList<Query>();
+    postFilterQueries.add(termsQuery(LEVEL, level));
+    postFilterQueries.add(ElasticsearchUtil.prefixQuery(TREE_PATH, parentTreePath));
+
     if (flowNodeInstanceId != null) {
-      idsQuery = idsQuery().addIds(flowNodeInstanceId);
+      postFilterQueries.add(ElasticsearchUtil.idsQuery(flowNodeInstanceId));
     }
 
-    final QueryBuilder query =
-        constantScoreQuery(termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
+    final var postFilter = ElasticsearchUtil.joinWithAnd(postFilterQueries.toArray(new Query[0]));
 
-    final AggregationBuilder runningParentsAgg =
-        filter(
-            AGG_RUNNING_PARENT,
-            joinWithAnd(
-                boolQuery().mustNot(existsQuery(END_DATE)),
-                prefixQuery(TREE_PATH, parentTreePath),
-                termQuery(LEVEL, level - 1)));
-
-    final QueryBuilder postFilter =
-        joinWithAnd(termQuery(LEVEL, level), prefixQuery(TREE_PATH, parentTreePath), idsQuery);
-
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(query)
-            .aggregation(runningParentsAgg)
+    // Build search request
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+            .query(tenantAwareQuery)
+            .aggregations(AGG_RUNNING_PARENT, runningParentsAgg)
             .postFilter(postFilter);
+
     if (flowNodeInstanceRequest.getPageSize() != null) {
-      searchSourceBuilder.size(flowNodeInstanceRequest.getPageSize());
+      searchRequestBuilder.size(flowNodeInstanceRequest.getPageSize());
     }
 
-    applySorting(searchSourceBuilder, flowNodeInstanceRequest);
+    applySorting(searchRequestBuilder, flowNodeInstanceRequest);
 
-    final org.elasticsearch.action.search.SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate).source(searchSourceBuilder);
     try {
       final FlowNodeInstanceResponseDto response;
       if (flowNodeInstanceRequest.getPageSize() != null) {
-        response = getOnePage(searchRequest, processInstanceId);
+        response = getOnePage(searchRequestBuilder.build(), processInstanceId);
       } else {
-        response = scrollAllSearchHits(searchRequest, processInstanceId);
+        response = scrollAllSearchHits(searchRequestBuilder, processInstanceId);
       }
       // for process instance level, we don't return running flag
       if (level == 1) {
@@ -402,7 +416,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
       return response;
     } catch (final IOException e) {
-      final String message =
+      final var message =
           String.format(
               "Exception occurred, while obtaining all flow node instances: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
@@ -412,29 +426,6 @@ public class FlowNodeInstanceReader extends AbstractReader
   private AggregationBuilder getIncidentsAgg() {
     return filter(AGG_INCIDENTS, termQuery(INCIDENT, true))
         .subAggregation(terms(AGG_INCIDENT_PATHS).field(TREE_PATH).size(TERMS_AGG_SIZE));
-  }
-
-  private FlowNodeInstanceResponseDto scrollAllSearchHits(
-      final org.elasticsearch.action.search.SearchRequest searchRequest,
-      final String processInstanceId)
-      throws IOException {
-    final Boolean[] runningParent = new Boolean[] {false};
-    final List<FlowNodeInstanceEntity> children =
-        tenantAwareClient.search(
-            searchRequest,
-            () -> {
-              return ElasticsearchUtil.scroll(
-                  searchRequest,
-                  FlowNodeInstanceEntity.class,
-                  objectMapper,
-                  esClient,
-                  getSearchHitFunction(null),
-                  null,
-                  getAggsProcessor(null, runningParent));
-            });
-    markHasIncident(processInstanceId, children);
-    return new FlowNodeInstanceResponseDto(
-        runningParent[0], FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
   private Function<SearchHit, FlowNodeInstanceEntity> getSearchHitFunction(
@@ -448,22 +439,6 @@ public class FlowNodeInstanceReader extends AbstractReader
       }
       return entity;
     };
-  }
-
-  private FlowNodeInstanceResponseDto getOnePage(
-      final org.elasticsearch.action.search.SearchRequest searchRequest,
-      final String processInstanceId)
-      throws IOException {
-    final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-
-    final Boolean[] runningParent = new Boolean[1];
-    processAggregation(searchResponse.getAggregations(), null, runningParent);
-    final List<FlowNodeInstanceEntity> children =
-        ElasticsearchUtil.mapSearchHits(
-            searchResponse.getHits().getHits(), getSearchHitFunction(null));
-    markHasIncident(processInstanceId, children);
-    return new FlowNodeInstanceResponseDto(
-        runningParent[0], FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
   private boolean flowNodeInstanceIsRunningOrIsNotMarked(
@@ -555,34 +530,134 @@ public class FlowNodeInstanceReader extends AbstractReader
     return incidentPaths;
   }
 
-  /**
-   * In case of searchAfterOrEqual and searchBeforeOrEqual, this method will ignore "orEqual" part.
-   *
-   * @param searchSourceBuilder
-   * @param request
-   */
   private void applySorting(
-      final SearchSourceBuilder searchSourceBuilder, final FlowNodeInstanceQueryDto request) {
+      final SearchRequest.Builder searchRequestBuilder, final FlowNodeInstanceQueryDto request) {
 
-    final boolean directSorting =
+    final var directSorting =
         request.getSearchAfter() != null
             || request.getSearchAfterOrEqual() != null
             || (request.getSearchBefore() == null && request.getSearchBeforeOrEqual() == null);
 
     if (directSorting) { // this sorting is also the default one for 1st page
-      searchSourceBuilder.sort(START_DATE, SortOrder.ASC).sort(ID, SortOrder.ASC);
+      searchRequestBuilder
+          .sort(
+              ElasticsearchUtil.sortOrder(
+                  START_DATE, co.elastic.clients.elasticsearch._types.SortOrder.Asc))
+          .sort(
+              ElasticsearchUtil.sortOrder(
+                  ID, co.elastic.clients.elasticsearch._types.SortOrder.Asc));
       if (request.getSearchAfter() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfter(objectMapper));
+        searchRequestBuilder.searchAfter(
+            searchAfterToFieldValues(request.getSearchAfter(objectMapper)));
       } else if (request.getSearchAfterOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfterOrEqual(objectMapper));
+        searchRequestBuilder.searchAfter(
+            searchAfterToFieldValues(request.getSearchAfterOrEqual(objectMapper)));
       }
     } else { // searchBefore != null
       // reverse sorting
-      searchSourceBuilder.sort(START_DATE, SortOrder.DESC).sort(ID, SortOrder.DESC);
+      searchRequestBuilder
+          .sort(
+              ElasticsearchUtil.sortOrder(
+                  START_DATE, co.elastic.clients.elasticsearch._types.SortOrder.Desc))
+          .sort(
+              ElasticsearchUtil.sortOrder(
+                  ID, co.elastic.clients.elasticsearch._types.SortOrder.Desc));
       if (request.getSearchBefore() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBefore(objectMapper));
+        searchRequestBuilder.searchAfter(
+            searchAfterToFieldValues(request.getSearchBefore(objectMapper)));
       } else if (request.getSearchBeforeOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBeforeOrEqual(objectMapper));
+        searchRequestBuilder.searchAfter(
+            searchAfterToFieldValues(request.getSearchBeforeOrEqual(objectMapper)));
+      }
+    }
+  }
+
+  private FlowNodeInstanceResponseDto scrollAllSearchHits(
+      final SearchRequest.Builder searchRequestBuilder, final String processInstanceId)
+      throws IOException {
+    final Boolean[] runningParent = new Boolean[] {false};
+    final List<FlowNodeInstanceEntity> children =
+        ElasticsearchUtil.scrollAllStream(
+                es8client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+            .flatMap(
+                response -> {
+                  // Process aggregation from each scroll response
+                  processAggregation(response.aggregations(), null, runningParent);
+                  return response.hits().hits().stream();
+                })
+            .map(
+                hit -> {
+                  final var entity = hit.source();
+                  entity.setSortValues(
+                      hit.sort().stream()
+                          .map(co.elastic.clients.elasticsearch._types.FieldValue::_get)
+                          .toArray());
+                  return entity;
+                })
+            .toList();
+    markHasIncident(processInstanceId, children);
+    return new FlowNodeInstanceResponseDto(
+        runningParent[0], FlowNodeInstanceDto.createFrom(children, objectMapper));
+  }
+
+  private FlowNodeInstanceResponseDto getOnePage(
+      final SearchRequest searchRequest, final String processInstanceId) throws IOException {
+    final var searchResponse = es8client.search(searchRequest, FlowNodeInstanceEntity.class);
+
+    final Boolean[] runningParent = new Boolean[1];
+    final Set<String> incidentPaths = new HashSet<>();
+    processAggregation(searchResponse.aggregations(), incidentPaths, runningParent);
+
+    final List<FlowNodeInstanceEntity> children =
+        searchResponse.hits().hits().stream()
+            .map(
+                hit -> {
+                  final var entity = hit.source();
+                  entity.setSortValues(
+                      hit.sort().stream()
+                          .map(co.elastic.clients.elasticsearch._types.FieldValue::_get)
+                          .toArray());
+                  return entity;
+                })
+            .toList();
+    // Additional incident marking via separate query
+    markHasIncident(processInstanceId, children);
+    return new FlowNodeInstanceResponseDto(
+        runningParent[0], FlowNodeInstanceDto.createFrom(children, objectMapper));
+  }
+
+  private void processAggregation(
+      final Map<String, co.elastic.clients.elasticsearch._types.aggregations.Aggregate>
+          aggregations,
+      final Set<String> incidentPaths,
+      final Boolean[] runningParent) {
+    if (aggregations == null) {
+      return;
+    }
+
+    // Process incident paths aggregation
+    if (incidentPaths != null) {
+      final var incidentsAgg = aggregations.get(AGG_INCIDENTS);
+      if (incidentsAgg != null && incidentsAgg.isFilter()) {
+        final var filterAgg = incidentsAgg.filter();
+        final var subAggs = filterAgg.aggregations();
+        if (subAggs != null) {
+          final var termsAgg = subAggs.get(AGG_INCIDENT_PATHS);
+          if (termsAgg != null && termsAgg.isSterms()) {
+            incidentPaths.addAll(
+                termsAgg.sterms().buckets().array().stream()
+                    .map(b -> b.key().stringValue())
+                    .collect(Collectors.toSet()));
+          }
+        }
+      }
+    }
+
+    // Process running parent aggregation
+    final var runningParentAgg = aggregations.get(AGG_RUNNING_PARENT);
+    if (runningParentAgg != null && runningParentAgg.isFilter()) {
+      if (runningParentAgg.filter().docCount() > 0) {
+        runningParent[0] = true;
       }
     }
   }

@@ -219,6 +219,26 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
+   * A query that matches documents where the specified field contains a term with a specified
+   * prefix.
+   *
+   * @param field The field name
+   * @param prefix The prefix to match
+   */
+  public static Query prefixQuery(final String field, final String prefix) {
+    return Query.of(q -> q.prefix(p -> p.field(field).value(prefix)));
+  }
+
+  /**
+   * A query that matches documents that have at least one non-null value in the specified field.
+   *
+   * @param field The field name
+   */
+  public static Query existsQuery(final String field) {
+    return Query.of(q -> q.exists(e -> e.field(field)));
+  }
+
+  /**
    * A query that wraps another query and simply returns a constant score equal to the query boost
    * for every document in the query.
    *
@@ -545,6 +565,19 @@ public abstract class ElasticsearchUtil {
       final co.elastic.clients.elasticsearch._types.SortOrder sortOrder,
       final String missing) {
     return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder).missing(missing)));
+  }
+
+  /**
+   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   *
+   * @param searchAfter Array of sort values from previous search result
+   * @return List of FieldValue objects for ES8 searchAfter parameter
+   */
+  public static List<co.elastic.clients.elasticsearch._types.FieldValue> searchAfterToFieldValues(
+      final Object[] searchAfter) {
+    return Arrays.stream(searchAfter)
+        .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
+        .toList();
   }
 
   public enum QueryType {
