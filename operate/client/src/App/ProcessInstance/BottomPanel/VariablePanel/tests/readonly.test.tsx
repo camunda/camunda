@@ -450,7 +450,7 @@ describe('VariablePanel', () => {
         },
         {
           elementId: 'Activity_0qtp1k6',
-          active: 2,
+          active: 1,
           canceled: 0,
           incidents: 0,
           completed: 0,
@@ -544,7 +544,7 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 2, 2, {});
+      cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
     });
 
     await waitFor(() => {

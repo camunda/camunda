@@ -6,17 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   useHasRunningOrFinishedTokens,
   useNewTokenCountForSelectedNode,
 } from './flowNodeSelection';
+import {useElementInstancesCount} from './useElementInstancesCount';
 
 const useHasMultipleInstances = () => {
   const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
-  const {metaData} = flowNodeMetaDataStore.state;
+  const elementInstancesCount = useElementInstancesCount(
+    flowNodeSelectionStore.state.selection?.flowNodeId,
+  );
+
+  if (flowNodeSelectionStore.state.selection?.isMultiInstance) {
+    return false;
+  }
 
   if (
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId !== undefined
@@ -28,7 +34,7 @@ const useHasMultipleInstances = () => {
     return newTokenCountForSelectedNode > 1;
   }
 
-  return (metaData?.instanceCount ?? 0) > 1 || newTokenCountForSelectedNode > 0;
+  return (elementInstancesCount ?? 0) > 1 || newTokenCountForSelectedNode > 0;
 };
 
 export {useHasMultipleInstances};
