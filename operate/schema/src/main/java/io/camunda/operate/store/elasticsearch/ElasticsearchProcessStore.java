@@ -34,7 +34,17 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinal
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+<<<<<<< HEAD
 import com.fasterxml.jackson.databind.ObjectMapper;
+=======
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.CountRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.SourceConfig;
+>>>>>>> 6ee1ece6 (fix: improve grouped process aggregations for ES and OS)
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -55,6 +65,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -238,10 +249,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, @Nullable final Set<String> allowedBPMNProcessIds) {
-    final String tenantsGroupsAggName = "group_by_tenantId";
     final String groupsAggName = "group_by_bpmnProcessId";
-    final String processesAggName = "processes";
 
+<<<<<<< HEAD
     final AggregationBuilder agg =
         terms(tenantsGroupsAggName)
             .field(ProcessIndex.TENANT_ID)
@@ -296,10 +306,71 @@ public class ElasticsearchProcessStore implements ProcessStore {
                             result.get(groupKey).add(processEntity);
                           }
                         });
+=======
+    final List<String> sourceFields =
+        Arrays.asList(
+            ProcessIndex.ID,
+            ProcessIndex.NAME,
+            ProcessIndex.VERSION,
+            ProcessIndex.VERSION_TAG,
+            ProcessIndex.BPMN_PROCESS_ID,
+            ProcessIndex.TENANT_ID);
+
+    final Aggregation groupsAgg =
+        Aggregation.of(
+            a ->
+                a.terms(
+                    t ->
+                        t.field(ProcessIndex.BPMN_PROCESS_ID)
+                            .size(ElasticsearchUtil.TERMS_AGG_SIZE)));
+
+    final var query = buildQueryEs8(tenantId, allowedBPMNProcessIds);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    try {
+      final var aggResponse =
+          es8Client.search(
+              s ->
+                  s.index(processIndex.getAlias())
+                      .query(tenantAwareQuery)
+                      .aggregations(groupsAggName, groupsAgg)
+                      .size(0),
+              Void.class);
+
+      final List<String> bpmnProcessIds =
+          aggResponse.aggregations().get(groupsAggName).sterms().buckets().array().stream()
+              .map(b -> b.key().stringValue())
+              .toList();
+
+      if (bpmnProcessIds.isEmpty()) {
+        return new HashMap<>();
+      }
+
+      final var docsQuery =
+          tenantHelper.makeQueryTenantAware(buildQueryEs8(tenantId, new HashSet<>(bpmnProcessIds)));
+
+      final var searchRequestBuilder =
+          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+              .index(processIndex.getAlias())
+              .query(docsQuery)
+              .source(src -> src.filter(f -> f.includes(sourceFields)))
+              .sort(so -> so.field(fs -> fs.field(ProcessIndex.VERSION).order(SortOrder.Desc)));
+
+      final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
+
+      ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, ProcessEntity.class)
+          .flatMap(searchRes -> searchRes.hits().hits().stream())
+          .map(Hit::source)
+          .forEach(
+              processEntity -> {
+                final ProcessKey groupKey =
+                    new ProcessKey(processEntity.getBpmnProcessId(), processEntity.getTenantId());
+                result.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(processEntity);
+>>>>>>> 6ee1ece6 (fix: improve grouped process aggregations for ES and OS)
               });
 
       return result;
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
