@@ -15,6 +15,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
@@ -72,8 +73,6 @@ public final class CamundaRdbmsTestApplication
       if (databaseContainer instanceof final JdbcDatabaseContainer<?> jdbcDatabaseContainer) {
         final var rdbms = unifiedConfig.getData().getSecondaryStorage().getRdbms();
         rdbms.setUrl(jdbcDatabaseContainer.getJdbcUrl());
-        rdbms.setUsername(jdbcDatabaseContainer.getUsername());
-        rdbms.setPassword(jdbcDatabaseContainer.getPassword());
         // In order to ensure that a test runs against the intended database, we also need to set
         // Spring’s datasource properties. Otherwise, Spring might default to an embedded database
         // (H2). See also property substitution in dist/application.properties for further details.
@@ -81,7 +80,8 @@ public final class CamundaRdbmsTestApplication
             Map.of(
                 "spring.datasource.url", rdbms.getUrl(),
                 "spring.datasource.username", rdbms.getUsername(),
-                "spring.datasource.password", rdbms.getPassword()));
+                "spring.datasource.password", rdbms.getPassword(),
+                "camunda.data.secondary-storage.rdbms.auto-ddl", rdbms.getAutoDdl()));
       }
     }
 
@@ -155,5 +155,15 @@ public final class CamundaRdbmsTestApplication
     // ConditionalOnSecondaryStorageType behaves as expected
     super.withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms");
     unifiedConfig.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
+    unifiedConfig
+        .getData()
+        .getSecondaryStorage()
+        .getRdbms()
+        .setUsername(TestSearchContainers.CAMUNDA_USER);
+    unifiedConfig
+        .getData()
+        .getSecondaryStorage()
+        .getRdbms()
+        .setPassword(TestSearchContainers.CAMUNDA_PASSWORD);
   }
 }
