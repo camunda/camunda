@@ -15,11 +15,9 @@ package io.camunda.webapps.schema.descriptors;
  * overridden to specify a different field name if the default {@code DECISION_INSTANCE_KEY} does
  * not apply.
  */
-public interface DecisionInstanceDependant {
+public interface DecisionInstanceDependant extends IndexTemplateDescriptor {
 
   String DECISION_INSTANCE_KEY = "decisionDefinitionKey";
-
-  String getFullQualifiedName();
 
   default String getDecisionDependantField() {
     return DECISION_INSTANCE_KEY;

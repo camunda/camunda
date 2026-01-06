@@ -8,15 +8,18 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class StandaloneDecisionArchiverJob extends ArchiverJob {
+public class StandaloneDecisionArchiverJob extends ArchiverJob<BasicArchiveBatch> {
 
   private final DecisionInstanceTemplate decisionInstanceTemplate;
   private final List<DecisionInstanceDependant> decisionInstanceDependants;
@@ -50,50 +53,45 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob {
   }
 
   @Override
-  CompletableFuture<ArchiveBatch> getNextBatch() {
+  CompletableFuture<BasicArchiveBatch> getNextBatch() {
     return getArchiverRepository().getStandaloneDecisionNextBatch();
   }
 
   @Override
-  String getSourceIndexName() {
-    return decisionInstanceTemplate.getFullQualifiedName();
-  }
-
-  @Override
-  String getIdFieldName() {
-    return DecisionInstanceTemplate.ID;
+  DecisionInstanceTemplate getTemplateDescriptor() {
+    return decisionInstanceTemplate;
   }
 
   /**
    * Overridden to archive dependants first and then move the decision instances themselves.
    *
-   * @param sourceIdx decision instance index
-   * @param finishDate move to the dated index
-   * @param idFieldName decision instance key field
-   * @param ids list of decision instance keys to archive
-   * @return number of archived decision instances
+   * @param templateDescriptor template descriptor of the decision instance index
+   * @param batch the batch of records to archive
+   * @return future
    */
   @Override
   protected CompletableFuture<Integer> archive(
-      final String sourceIdx,
-      final String finishDate,
-      final String idFieldName,
-      final List<String> ids) {
-    return archiveDecisionDependants(finishDate, ids)
-        .thenComposeAsync(v -> super.archive(sourceIdx, finishDate, idFieldName, ids), executor);
+      final IndexTemplateDescriptor templateDescriptor, final BasicArchiveBatch batch) {
+    return archiveDecisionDependants(batch)
+        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), executor);
   }
 
-  private CompletableFuture<Void> archiveDecisionDependants(
-      final String finishDate, final List<String> decisionInstanceKeys) {
+  @Override
+  protected Map<String, List<String>> createIdsByFieldMap(
+      final IndexTemplateDescriptor templateDescriptor, final BasicArchiveBatch batch) {
+    if (templateDescriptor instanceof DecisionInstanceTemplate) {
+      return Map.of(DecisionInstanceTemplate.ID, batch.ids());
+    } else if (templateDescriptor instanceof final DecisionInstanceDependant did) {
+      return Map.of(did.getDecisionDependantField(), batch.ids());
+    }
+    throw new IllegalArgumentException(
+        "Unsupported template descriptor: " + templateDescriptor.getClass().getName());
+  }
+
+  private CompletableFuture<Void> archiveDecisionDependants(final BasicArchiveBatch batch) {
     final var moveDependentDocuments =
         decisionInstanceDependants.stream()
-            .map(
-                dependant -> {
-                  final var dependentSourceIdx = dependant.getFullQualifiedName();
-                  final var dependentIdFieldName = dependant.getDecisionDependantField();
-                  return super.archive(
-                      dependentSourceIdx, finishDate, dependentIdFieldName, decisionInstanceKeys);
-                })
+            .map(dependant -> super.archive(dependant, batch))
             .toArray(CompletableFuture[]::new);
     return CompletableFuture.allOf(moveDependentDocuments);
   }

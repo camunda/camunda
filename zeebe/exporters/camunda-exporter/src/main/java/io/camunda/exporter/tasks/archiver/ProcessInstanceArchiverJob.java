@@ -8,19 +8,29 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class ProcessInstanceArchiverJob extends ArchiverJob {
+/**
+ * Archiver job for process instance data. This job handles the archiving of the process instance
+ * records itself and also delegates to the repository to move dependent records (decisions, flow
+ * node instances, variable updates, etc).
+ */
+public class ProcessInstanceArchiverJob
+    extends ArchiverJob<ArchiveBatch.ProcessInstanceArchiveBatch> {
 
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
-  private final Executor executor;
 
   public ProcessInstanceArchiverJob(
       final ArchiverRepository repository,
@@ -41,7 +51,6 @@ public class ProcessInstanceArchiverJob extends ArchiverJob {
         processInstanceDependants.stream()
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
-    this.executor = executor;
   }
 
   @Override
@@ -50,51 +59,62 @@ public class ProcessInstanceArchiverJob extends ArchiverJob {
   }
 
   @Override
-  CompletableFuture<ArchiveBatch> getNextBatch() {
+  CompletableFuture<ArchiveBatch.ProcessInstanceArchiveBatch> getNextBatch() {
     return getArchiverRepository().getProcessInstancesNextBatch();
   }
 
   @Override
-  String getSourceIndexName() {
-    return processInstanceTemplate.getFullQualifiedName();
+  ListViewTemplate getTemplateDescriptor() {
+    return processInstanceTemplate;
   }
 
-  @Override
-  String getIdFieldName() {
-    return ListViewTemplate.PROCESS_INSTANCE_KEY;
-  }
-
-  /**
-   * Overridden to archive dependants first and then move the process instances themselves.
-   *
-   * @param sourceIdx process instance index
-   * @param finishDate move to the dated index
-   * @param idFieldName process instance key field
-   * @param ids list of process instance keys to archive
-   * @return number of archived process instances
-   */
   @Override
   protected CompletableFuture<Integer> archive(
-      final String sourceIdx,
-      final String finishDate,
-      final String idFieldName,
-      final List<String> ids) {
-    return archiveProcessDependants(finishDate, ids)
-        .thenComposeAsync(v -> super.archive(sourceIdx, finishDate, idFieldName, ids), executor);
+      final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
+    return archiveProcessDependants(batch)
+        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor());
+  }
+
+  @Override
+  protected Map<String, List<String>> createIdsByFieldMap(
+      final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
+    final Map<String, List<String>> idsMap = new HashMap<>();
+    final String processInstanceKeyField;
+    final String rootProcessInstanceKeyField;
+    switch (templateDescriptor) {
+      case final ListViewTemplate ignored -> {
+        processInstanceKeyField = ListViewTemplate.PROCESS_INSTANCE_KEY;
+        rootProcessInstanceKeyField = ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY;
+      }
+      case final ProcessInstanceDependant pid -> {
+        processInstanceKeyField = pid.getProcessInstanceDependantField();
+        rootProcessInstanceKeyField = pid.getRootProcessInstanceKeyField();
+      }
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported template descriptor: " + templateDescriptor.getClass().getName());
+    }
+    if (!batch.processInstanceKeys().isEmpty()) {
+      idsMap.put(
+          processInstanceKeyField,
+          batch.processInstanceKeys().stream().map(String::valueOf).toList());
+    }
+    if (!batch.rootProcessInstanceKeys().isEmpty()) {
+      idsMap.put(
+          rootProcessInstanceKeyField,
+          batch.rootProcessInstanceKeys().stream().map(String::valueOf).toList());
+    }
+    return idsMap;
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
-      final String finishDate, final List<String> processInstanceKeys) {
-    final var moveDependentDocuments =
-        processInstanceDependants.stream()
-            .map(
-                dependant -> {
-                  final var dependentSourceIdx = dependant.getFullQualifiedName();
-                  final var dependentIdFieldName = dependant.getProcessInstanceDependantField();
-                  return super.archive(
-                      dependentSourceIdx, finishDate, dependentIdFieldName, processInstanceKeys);
-                })
-            .toArray(CompletableFuture[]::new);
-    return CompletableFuture.allOf(moveDependentDocuments);
+      final ProcessInstanceArchiveBatch batch) {
+    final var futures = new ArrayList<CompletableFuture<?>>();
+
+    for (final var dependant : processInstanceDependants) {
+      futures.add(super.archive(dependant, batch));
+    }
+
+    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
   }
 }

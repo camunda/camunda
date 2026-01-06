@@ -7,17 +7,41 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import jakarta.json.Json;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.opensearch.client.RestClient;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.opensearch.indices.OpenSearchIndicesAsyncClient;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,5 +82,141 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   private RestClientTransport createRestClient() {
     final var restClient = RestClient.builder(HttpHost.create("http://127.0.0.1:1")).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  }
+
+  @Test
+  public void shouldConstructCorrectQueryForPIMode() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setRetentionMode(RetentionMode.PI);
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config);
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(mock(SearchResponse.class)));
+
+    // when
+    repository.getProcessInstancesNextBatch();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(client).search(captor.capture(), eq(ProcessInstanceForListViewEntity.class));
+    final var query = captor.getValue().query();
+    assertThat(query.isBool()).isTrue();
+  }
+
+  @Test
+  public void shouldMapBatchForPIMode() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setRetentionMode(RetentionMode.PI);
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config);
+    final var hit1 = createHit("1", "2024-01-01", null);
+    final var hit2 = createHit("2", "2024-01-01", 100L);
+
+    final var response = createResponse(List.of(hit1, hit2));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch().join();
+
+    // then
+    assertThat(batch.processInstanceKeys()).containsExactly(1L, 2L);
+    assertThat(batch.rootProcessInstanceKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldMapBatchForPIHierarchyMode() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setRetentionMode(RetentionMode.PI_HIERARCHY);
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config);
+    final var hit1 = createHit("1", "2024-01-01", null); // Legacy
+    final var hit2 = createHit("2", "2024-01-01", 100L); // Root
+
+    final var response = createResponse(List.of(hit1, hit2));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch().join();
+
+    // then
+    assertThat(batch.processInstanceKeys()).containsExactly(1L);
+    assertThat(batch.rootProcessInstanceKeys()).containsExactly(100L);
+  }
+
+  @Test
+  public void shouldMapBatchForPIHierarchyIgnoreLegacyMode() throws IOException {
+    // given
+    final var config = new HistoryConfiguration();
+    config.setRetentionMode(RetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
+    final var client = mock(OpenSearchAsyncClient.class);
+    final var repository = createRepository(client, config);
+
+    final var hit1 = createHit("1", "2024-01-01", null);
+    final var hit2 = createHit("2", "2024-01-01", 100L);
+
+    final var response = createResponse(List.of(hit1, hit2));
+    when(client.search(any(SearchRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch().join();
+
+    // then - purely based on mapping logic which splits by root key presence
+    assertThat(batch.processInstanceKeys()).containsExactly(1L);
+    assertThat(batch.rootProcessInstanceKeys()).containsExactly(100L);
+  }
+
+  private OpenSearchArchiverRepository createRepository(
+      final OpenSearchAsyncClient client, final HistoryConfiguration config) throws IOException {
+    if (Mockito.mockingDetails(client).isMock()) {
+      final var indicesClient = mock(OpenSearchIndicesAsyncClient.class);
+      when(client.indices()).thenReturn(indicesClient);
+      final var getIndexResponse = mock(GetIndexResponse.class);
+      when(indicesClient.get(any(Function.class)))
+          .thenReturn(CompletableFuture.completedFuture(getIndexResponse));
+      when(getIndexResponse.result()).thenReturn(Map.of());
+    }
+
+    config.setRetention(retention);
+    return new OpenSearchArchiverRepository(
+        1,
+        config,
+        new TestExporterResourceProvider("testPrefix", false),
+        client,
+        mock(OpenSearchGenericClient.class),
+        Runnable::run,
+        new CamundaExporterMetrics(new SimpleMeterRegistry()),
+        LOGGER);
+  }
+
+  private Hit<ProcessInstanceForListViewEntity> createHit(
+      final String id, final String endDate, final Long rootPIKey) {
+    final var entity = new ProcessInstanceForListViewEntity();
+    entity.setRootProcessInstanceKey(rootPIKey);
+
+    return Hit.of(
+        h ->
+            h.index("index")
+                .id(id)
+                .source(entity)
+                .fields(
+                    Map.of(
+                        ListViewTemplate.END_DATE,
+                        JsonData.of(Json.createArrayBuilder().add(endDate).build()))));
+  }
+
+  private SearchResponse<ProcessInstanceForListViewEntity> createResponse(
+      final List<Hit<ProcessInstanceForListViewEntity>> hits) {
+    return new SearchResponse.Builder<ProcessInstanceForListViewEntity>()
+        .took(1)
+        .timedOut(false)
+        .shards(s -> s.total(1).successful(1).failed(0))
+        .hits(h -> h.total(t -> t.value(hits.size()).relation(TotalHitsRelation.Eq)).hits(hits))
+        .build();
   }
 }

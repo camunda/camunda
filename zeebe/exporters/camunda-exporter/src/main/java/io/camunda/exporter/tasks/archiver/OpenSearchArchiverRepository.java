@@ -15,7 +15,10 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -25,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
@@ -128,20 +132,21 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
     final var request = createFinishedProcessInstancesSearchRequest();
 
     final var timer = Timer.start();
-    return sendRequestAsync(() -> client.search(request, Object.class))
+    return sendRequestAsync(() -> client.search(request, ProcessInstanceForListViewEntity.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             (response) ->
-                createArchiveBatch(response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+                createProcessInstanceBatch(
+                    response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
             executor);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch() {
     final var searchRequest = createFinishedBatchOperationsSearchRequest();
 
     final var timer = Timer.start();
@@ -149,13 +154,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             (response) ->
-                createArchiveBatch(
+                createBasicBatch(
                     response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
             executor);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
             usageMetricTUTemplateDescriptor.getFullQualifiedName(),
@@ -167,7 +172,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
-                createArchiveBatch(
+                createBasicBatch(
                     response,
                     UsageMetricTUTemplate.END_TIME,
                     usageMetricTUTemplateDescriptor,
@@ -176,7 +181,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
             usageMetricTemplateDescriptor.getFullQualifiedName(),
@@ -188,7 +193,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
-                createArchiveBatch(
+                createBasicBatch(
                     response,
                     UsageMetricTemplate.END_TIME,
                     usageMetricTemplateDescriptor,
@@ -197,7 +202,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
+  public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
     final var searchRequest = createStandaloneDecisionSearchRequest();
 
     final var timer = Timer.start();
@@ -205,7 +210,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
-                createArchiveBatch(
+                createBasicBatch(
                     response,
                     DecisionInstanceTemplate.EVALUATION_DATE,
                     decisionInstanceTemplateDescriptor),
@@ -262,16 +267,19 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   @Override
   public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys) {
-    final TermsQuery termsQuery = buildIdTermsQuery(idFieldName, processInstanceKeys);
+      final String sourceIndexName, final Map<String, List<String>> keysByField) {
+    final var builder = new Builder();
+    for (final var entry : keysByField.entrySet()) {
+      builder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+    }
+    final var combinedQ = builder.build().toQuery();
+
     final var request =
         new DeleteByQueryRequest.Builder()
             .index(sourceIndexName)
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
-            .query(q -> q.terms(termsQuery))
+            .query(combinedQ)
             .build();
 
     final var timer = Timer.start();
@@ -285,13 +293,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   public CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys) {
-    final var source =
-        new Source.Builder()
-            .index(sourceIndexName)
-            .query(q -> q.terms(buildIdTermsQuery(idFieldName, processInstanceKeys)))
-            .build();
+      final Map<String, List<String>> keysByField) {
+    final var builder = new Builder();
+    for (final var entry : keysByField.entrySet()) {
+      builder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+    }
+    final var combinedQ = builder.build().toQuery();
+
+    final var source = new Source.Builder().index(sourceIndexName).query(combinedQ).build();
     final var request =
         new ReindexRequest.Builder()
             .source(source)
@@ -376,12 +385,54 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .field(ListViewTemplate.PARTITION_ID)
             .value(FieldValue.of(partitionId))
             .build();
-    return QueryBuilders.bool()
-        .filter(endDateQ.toQuery())
-        .filter(isProcessInstanceQ.toQuery())
-        .filter(partitionQ.toQuery())
-        .build()
-        .toQuery();
+
+    final var retentionMode = config.getRetentionMode();
+    final Query hierarchyQ;
+
+    if (retentionMode == RetentionMode.PI_HIERARCHY
+        || retentionMode == RetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
+      final var rootExists =
+          QueryBuilders.exists()
+              .field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)
+              .build()
+              .toQuery();
+      final var parentExists =
+          QueryBuilders.exists()
+              .field(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY)
+              .build()
+              .toQuery();
+
+      // (parentPI IS NULL AND rootPI IS NOT NULL) (New hierarchy filter)
+      final var newHierarchy =
+          QueryBuilders.bool().mustNot(parentExists).must(rootExists).build().toQuery();
+
+      if (retentionMode == RetentionMode.PI_HIERARCHY) {
+        // (rootPI IS NULL) (Legacy)
+        final var legacy = QueryBuilders.bool().mustNot(rootExists).build().toQuery();
+        hierarchyQ =
+            QueryBuilders.bool()
+                .should(newHierarchy)
+                .should(legacy)
+                .minimumShouldMatch("1")
+                .build()
+                .toQuery();
+      } else {
+        // when IGNORE_LEGACY, only consider new hierarchy filter
+        hierarchyQ = newHierarchy;
+      }
+    } else {
+      hierarchyQ = null;
+    }
+
+    final var builder =
+        QueryBuilders.bool()
+            .filter(endDateQ.toQuery(), isProcessInstanceQ.toQuery(), partitionQ.toQuery());
+
+    if (hierarchyQ != null) {
+      builder.filter(hierarchyQ);
+    }
+
+    return builder.build().toQuery();
   }
 
   private CompletableFuture<List<String>> fetchIndexMatchingIndexes(final String indexPattern)
@@ -426,7 +477,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
-        ListViewTemplate.END_DATE);
+        ListViewTemplate.END_DATE,
+        ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest() {
@@ -475,26 +527,110 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .toQuery();
   }
 
-  private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response,
+  private CompletableFuture<ProcessInstanceArchiveBatch> createProcessInstanceBatch(
+      final SearchResponse<ProcessInstanceForListViewEntity> response,
       final String field,
       final IndexTemplateDescriptor templateDescriptor) {
-    return createArchiveBatch(response, field, templateDescriptor, config.getRolloverInterval());
+    return createProcessInstanceBatch(
+        response, field, templateDescriptor, config.getRolloverInterval());
   }
 
-  private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response,
-      final String field,
+  private CompletableFuture<ProcessInstanceArchiveBatch> createProcessInstanceBatch(
+      final SearchResponse<ProcessInstanceForListViewEntity> response,
+      final String endDateField,
       final IndexTemplateDescriptor templateDescriptor,
       final String rolloverInterval) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
+      return CompletableFuture.completedFuture(
+          new ProcessInstanceArchiveBatch(null, List.of(), List.of()));
     }
-    final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
+
+    final String endDate =
+        hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
+
+    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
+        .thenApply(
+            date -> {
+              final var batchHits =
+                  hits.stream()
+                      .takeWhile(
+                          hit ->
+                              hit.fields()
+                                  .get(endDateField)
+                                  .toJson()
+                                  .asJsonArray()
+                                  .getString(0)
+                                  .equals(endDate))
+                      .toList();
+
+              final List<Long> processInstanceKeys = new ArrayList<>();
+              final List<Long> rootProcessInstanceKeys = new ArrayList<>();
+
+              if (config.getRetentionMode() == RetentionMode.PI) {
+                batchHits.forEach(h -> processInstanceKeys.add(Long.valueOf(h.id())));
+              } else {
+                for (final var hit : batchHits) {
+                  final var rootKey = hit.source().getRootProcessInstanceKey();
+                  if (rootKey != null) {
+                    rootProcessInstanceKeys.add(rootKey);
+                  } else {
+                    processInstanceKeys.add(Long.valueOf(hit.id()));
+                  }
+                }
+              }
+
+              return new ProcessInstanceArchiveBatch(
+                  date, processInstanceKeys, rootProcessInstanceKeys);
+            });
+  }
+
+  private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
+      final SearchResponse<T> response,
+      final String field,
+      final IndexTemplateDescriptor templateDescriptor) {
+    return createBasicBatch(response, field, templateDescriptor, config.getRolloverInterval());
+  }
+
+  private <T> CompletableFuture<BasicArchiveBatch> createBasicBatch(
+      final SearchResponse<T> response,
+      final String endDateField,
+      final IndexTemplateDescriptor templateDescriptor,
+      final String rolloverInterval) {
+    final var hits = response.hits().hits();
+    if (hits.isEmpty()) {
+      return CompletableFuture.completedFuture(new BasicArchiveBatch(null, List.of()));
+    }
+
+    final String endDate =
+        hits.getFirst().fields().get(endDateField).toJson().asJsonArray().getString(0);
+
+    return getDateOfArchiveIndex(endDate, templateDescriptor, rolloverInterval)
+        .thenApply(
+            date -> {
+              final var batchHits =
+                  hits.stream()
+                      .takeWhile(
+                          hit ->
+                              hit.fields()
+                                  .get(endDateField)
+                                  .toJson()
+                                  .asJsonArray()
+                                  .getString(0)
+                                  .equals(endDate))
+                      .toList();
+
+              final List<String> ids = batchHits.stream().map(Hit::id).toList();
+              return new BasicArchiveBatch(date, ids);
+            });
+  }
+
+  private CompletableFuture<String> getDateOfArchiveIndex(
+      final String endDate,
+      final IndexTemplateDescriptor templateDescriptor,
+      final String rolloverInterval) {
     final String templateIndexName = templateDescriptor.getIndexName();
     final String lastHistoricalArchiverDate = lastHistoricalArchiverDates.get(templateIndexName);
-
     final CompletableFuture<String> dateFuture;
     try {
       dateFuture =
@@ -505,29 +641,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
     }
-
     return dateFuture.thenApply(
         date -> {
           final String nextArchiverDate =
               DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
                   endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
-
           lastHistoricalArchiverDates.put(templateIndexName, nextArchiverDate);
-
-          final var ids =
-              hits.stream()
-                  .takeWhile(
-                      hit ->
-                          hit.fields()
-                              .get(field)
-                              .toJson()
-                              .asJsonArray()
-                              .getString(0)
-                              .equals(endDate))
-                  .map(Hit::id)
-                  .toList();
-
-          return new ArchiveBatch(nextArchiverDate, ids);
+          return nextArchiverDate;
         });
   }
 
@@ -549,7 +669,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   private SearchRequest createSearchRequest(
-      final String indexName, final Query filterQuery, final String sortField) {
+      final String indexName,
+      final Query filterQuery,
+      final String sortField,
+      final String... extraFields) {
     logger.trace(
         "Create search request against index '{}', with filter '{}' and sortField '{}'",
         indexName,
@@ -561,7 +684,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .requestCache(false)
         .allowNoIndices(true)
         .ignoreUnavailable(true)
-        .source(source -> source.fetch(false))
+        .source(
+            source ->
+                extraFields.length > 0
+                    ? source.filter(f -> f.includes(List.of(extraFields)))
+                    : source.fetch(false))
         .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))

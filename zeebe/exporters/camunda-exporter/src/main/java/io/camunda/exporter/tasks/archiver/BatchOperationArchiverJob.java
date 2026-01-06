@@ -8,12 +8,16 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class BatchOperationArchiverJob extends ArchiverJob {
+public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArchiveBatch> {
 
   private final BatchOperationTemplate batchOperationTemplate;
 
@@ -39,17 +43,18 @@ public class BatchOperationArchiverJob extends ArchiverJob {
   }
 
   @Override
-  CompletableFuture<ArchiveBatch> getNextBatch() {
+  CompletableFuture<ArchiveBatch.BasicArchiveBatch> getNextBatch() {
     return getArchiverRepository().getBatchOperationsNextBatch();
   }
 
   @Override
-  String getSourceIndexName() {
-    return batchOperationTemplate.getFullQualifiedName();
+  BatchOperationTemplate getTemplateDescriptor() {
+    return batchOperationTemplate;
   }
 
   @Override
-  String getIdFieldName() {
-    return BatchOperationTemplate.ID;
+  protected Map<String, List<String>> createIdsByFieldMap(
+      final IndexTemplateDescriptor templateDescriptor, final BasicArchiveBatch batch) {
+    return Map.of(BatchOperationTemplate.ID, batch.ids());
   }
 }
