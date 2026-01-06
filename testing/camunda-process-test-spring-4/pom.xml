@@ -54,77 +54,14 @@
 
     <!-- Test dependencies -->
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-client-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-process-test-java</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -165,8 +102,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -188,6 +125,7 @@
             <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>true</createDependencyReducedPom>
+              <createSourcesJar>true</createSourcesJar>
               <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
               <artifactSet>
                 <includes>
@@ -215,11 +153,14 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <!-- Base module compile dependencies -->
+          <!-- Ignore any non-test scoped deps, we only have test source here -->
           <ignoredNonTestScopedDependencies>
-            <dependency>io.camunda:camunda-process-test-spring</dependency>
-            <dependency>io.camunda:camunda-spring-boot-4-starter</dependency>
+            <dependency>*</dependency>
           </ignoredNonTestScopedDependencies>
+          <!-- Ignore all unused, we inherit all from base -->
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>*</dependency>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
 
@@ -265,5 +206,67 @@
 
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>central-sonatype-publish</id>
+      <!--
+        This profile is typically activated during release builds refer to
+        org.camunda:camunda-release-parent
+      -->
+      <build>
+        <plugins>
+          <!--
+            Unpack javadoc from base module and repackage them, this is required to ensure we have
+            javadoc available, given this module is a shade of camunda-process-test-spring,
+            we lack them otherwise.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack-javadoc</id>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>io.camunda</groupId>
+                      <artifactId>camunda-process-test-spring</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>javadoc</classifier>
+                      <type>jar</type>
+                      <outputDirectory>${project.build.directory}/apidocs</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>javadoc-jar</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <classifier>javadoc</classifier>
+                  <classesDirectory>${project.build.directory}/apidocs</classesDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
