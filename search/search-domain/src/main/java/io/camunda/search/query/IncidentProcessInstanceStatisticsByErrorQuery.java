@@ -7,6 +7,7 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -18,11 +19,19 @@ import java.util.function.Function;
 
 public record IncidentProcessInstanceStatisticsByErrorQuery(
     IncidentFilter filter, IncidentProcessInstanceStatisticsByErrorSort sort, SearchQueryPage page)
-    implements TypedSearchQuery<IncidentFilter, IncidentProcessInstanceStatisticsByErrorSort> {
+    implements TypedSearchAggregationQuery<
+        IncidentFilter,
+        IncidentProcessInstanceStatisticsByErrorSort,
+        IncidentProcessInstanceStatisticsByErrorAggregation> {
 
   public static IncidentProcessInstanceStatisticsByErrorQuery of(
       final Function<Builder, ObjectBuilder<IncidentProcessInstanceStatisticsByErrorQuery>> fn) {
     return fn.apply(new Builder()).build();
+  }
+
+  @Override
+  public IncidentProcessInstanceStatisticsByErrorAggregation aggregation() {
+    return new IncidentProcessInstanceStatisticsByErrorAggregation(filter, sort, page);
   }
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>

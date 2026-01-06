@@ -13,8 +13,10 @@ import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTH
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
@@ -102,13 +104,19 @@ public class IncidentServices
   public SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
       incidentProcessInstanceStatisticsByError(
           final IncidentProcessInstanceStatisticsByErrorQuery query) {
+    final var sanitizedQuery =
+        IncidentProcessInstanceStatisticsByErrorQuery.of(
+            b ->
+                b.page(query.page())
+                    .sort(query.sort())
+                    .filter(FilterBuilders.incident(f -> f.states(IncidentState.ACTIVE.name()))));
     return executeSearchRequest(
         () ->
             incidentSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, INCIDENT_READ_AUTHORIZATION))
-                .incidentProcessInstanceStatisticsByError(query));
+                .incidentProcessInstanceStatisticsByError(sanitizedQuery));
   }
 
   public SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>

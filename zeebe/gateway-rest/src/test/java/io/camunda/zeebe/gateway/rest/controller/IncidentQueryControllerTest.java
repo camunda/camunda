@@ -422,6 +422,91 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSortIncidentProcessInstanceStatisticsByError() {
+    // given
+    when(incidentServices.incidentProcessInstanceStatisticsByError(
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
+        .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
+
+    final var request =
+        """
+        {
+          "sort": [
+            {
+              "field": "errorMessage",
+              "order": "asc"
+            },
+            {
+              "field": "activeInstancesWithErrorCount",
+              "order": "desc"
+            }
+          ]
+        }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            EXPECTED_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_RESPONSE,
+            JsonCompareMode.STRICT);
+
+    verify(incidentServices)
+        .incidentProcessInstanceStatisticsByError(
+            new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
+                .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
+                .build());
+  }
+
+  @Test
+  void shouldPaginateIncidentProcessInstanceStatisticsByError() {
+    // given
+    when(incidentServices.incidentProcessInstanceStatisticsByError(
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
+        .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
+
+    final var request =
+        """
+            {
+              "page": { "from": 0, "limit": 5 }
+            }
+            """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            EXPECTED_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_RESPONSE,
+            JsonCompareMode.STRICT);
+
+    verify(incidentServices)
+        .incidentProcessInstanceStatisticsByError(
+            new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
+                .page(p -> p.from(0).size(5))
+                .build());
+  }
+
+  @Test
   void shouldReturnIncidentProcessInstanceStatisticsByDefinition() {
     // given
     when(incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
@@ -682,5 +767,43 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                     f -> f.errorMessageHashes(ERROR_HASH_CODE).states(IncidentState.ACTIVE.name()))
                 .page(p -> p.from(0).size(5))
                 .build());
+  }
+
+  @Test
+  void shouldRejectIncidentProcessInstanceStatisticsByErrorRequestWithFilter() {
+    final var request =
+        """
+            {
+              "filter": {
+                "errorHashCode": 123456
+              }
+            }
+            """;
+
+    webClient
+        .post()
+        .uri(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        // We only assert the stable bits here: 400 + instance path. The detail message for unknown
+        // properties is produced by Jackson and may change between versions.
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400,
+                  "instance": "%s"
+                }
+                """
+                .formatted(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL),
+            JsonCompareMode.LENIENT);
   }
 }
