@@ -49,6 +49,9 @@ postgresql:
 ################################################### Orchestration cluster configuration
 ########################################################################################
 orchestration:
+  data:
+      secondaryStorage:
+        type: elasticsearch
   security:
     authentication:
       unprotectedApi: true
