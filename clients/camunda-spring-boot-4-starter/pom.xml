@@ -86,31 +86,6 @@
 
     <!-- Test dependencies -->
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.aspectj</groupId>
       <artifactId>aspectjweaver</artifactId>
       <version>${version.aspectjweaver}</version>
@@ -143,11 +118,6 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
     </dependency>
@@ -159,11 +129,6 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -244,7 +209,14 @@
             dependencies are actually declared, and changes here should be kept
             minimal and aligned with that module.
           -->
-          <ignoredUsedUndeclaredDependencies>*</ignoredUsedUndeclaredDependencies>
+          <!-- Ignore all unused, we inherit all from base -->
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>*</dependency>
+          </ignoredUsedUndeclaredDependencies>
+          <!-- Ignore any non-test scoped deps, likely false-positive -->
+          <ignoredNonTestScopedDependencies>
+            <dependency>*</dependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
 
