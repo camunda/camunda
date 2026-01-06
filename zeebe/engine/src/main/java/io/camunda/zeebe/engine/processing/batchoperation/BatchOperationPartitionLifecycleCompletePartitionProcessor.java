@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -36,6 +37,7 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
       LoggerFactory.getLogger(BatchOperationPartitionLifecycleCompletePartitionProcessor.class);
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final BatchOperationState batchOperationState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final BatchOperationMetrics metrics;
@@ -46,6 +48,7 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.metrics = metrics;
@@ -129,6 +132,12 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
           bo.getErrors().size(),
           batchOperationKey);
       batchCompleted.setErrors(bo.getErrors());
+    }
+
+    if (bo.hasFollowupCommand()) {
+      final var followUpCommand = bo.getFollowUpCommand();
+      commandWriter.appendFollowUpCommand(
+          batchOperationKey, followUpCommand.getIntent(), followUpCommand.getRecordValue());
     }
 
     LOGGER.debug(
