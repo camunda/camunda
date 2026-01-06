@@ -196,7 +196,7 @@ public final class MsgPackConverter {
     return convertToMap(PERMISSION_MAP_TYPE_REFERENCE, buffer);
   }
 
-  public static <T extends Object, U extends Object> Map<U, T> convertToMap(
+  private static <T extends Object, U extends Object> Map<U, T> convertToMap(
       final TypeReference<HashMap<U, T>> typeRef, final DirectBuffer buffer) {
     final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
 

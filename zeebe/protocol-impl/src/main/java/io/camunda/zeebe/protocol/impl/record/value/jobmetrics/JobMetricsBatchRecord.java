@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.jobmetrics;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -16,7 +15,6 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,9 +22,6 @@ import java.util.stream.StreamSupport;
 
 public final class JobMetricsBatchRecord extends UnifiedRecordValue
     implements JobMetricsBatchRecordValue {
-
-  private static final TypeReference<HashMap<JobMetricsValue, StatusMetricValue>>
-      JOB_METRICS_TYPE_REFERENCE = new TypeReference<>() {};
 
   private final LongProperty batchStartTimeProperty = new LongProperty("batchStartTime", -1L);
   private final LongProperty batchEndTimeProperty = new LongProperty("batchEndTime", -1L);
