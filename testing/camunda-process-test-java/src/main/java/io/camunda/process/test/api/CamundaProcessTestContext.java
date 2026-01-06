@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -156,6 +157,30 @@ public interface CamundaProcessTestContext {
    * @param variables a map of variables to set when completing the job
    */
   void completeJob(final String jobType, final Map<String, Object> variables);
+
+  /**
+   * Completes a job matching the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   */
+  void completeJob(final JobSelector jobSelector);
+
+  /**
+   * Completes a job matching the specified selector and sets the provided variables.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param variables a map of variables to set when completing the job
+   */
+  void completeJob(final JobSelector jobSelector, final Map<String, Object> variables);
+
+  /**
+   * Completes a job matching the specified selector with the variables from the example data
+   * property of the related BPMN element. If no property is defined, it completes the job without
+   * variables.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   */
+  void completeJobWithExampleData(final JobSelector jobSelector);
 
   /**
    * Throws a BPMN error from a job of the specified type.
