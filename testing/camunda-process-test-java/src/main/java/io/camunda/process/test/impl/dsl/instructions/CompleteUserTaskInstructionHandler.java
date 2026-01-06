@@ -35,7 +35,7 @@ public class CompleteUserTaskInstructionHandler
     final UserTaskSelector userTaskSelector =
         InstructionSelectorFactory.buildUserTaskSelector(instruction.getUserTaskSelector());
 
-    if (instruction.isUseExampleData()) {
+    if (instruction.getUseExampleData()) {
       context.completeUserTaskWithExampleData(userTaskSelector);
     } else {
       context.completeUserTask(userTaskSelector, instruction.getVariables());
