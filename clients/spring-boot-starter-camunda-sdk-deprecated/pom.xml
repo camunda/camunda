@@ -5,11 +5,11 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.10-SNAPSHOT</version>
+    <version>8.8.9</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
   <artifactId>spring-boot-starter-camunda-sdk</artifactId>
-  <version>8.8.10-SNAPSHOT</version>
+  <version>8.8.9</version>
   <name>Camunda Spring SDK (Deprecated)</name>
   <distributionManagement>
     <relocation>
@@ -26,7 +26,7 @@
         <artifactId>flatten-maven-plugin</artifactId>
         <configuration>
           <pomElements>
-            <distributionManagement></distributionManagement>
+            <distributionManagement />
           </pomElements>
         </configuration>
       </plugin>
