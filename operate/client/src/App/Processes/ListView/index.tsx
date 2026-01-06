@@ -27,6 +27,8 @@ import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
+import {useSelectedProcessDefinition} from 'modules/hooks/processDefinitions';
+import {SelectedProcessDefinitionContext} from './selectedProcessDefinitionContext';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -124,21 +126,26 @@ const ListView: React.FC = observer(() => {
     tenant,
     version,
   });
+  const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 
   return (
     <ProcessDefinitionKeyContext.Provider value={processDefinitionKey}>
-      <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
-      <InstancesList
-        type="process"
-        leftPanel={<Filters />}
-        topPanel={<DiagramPanel />}
-        bottomPanel={<InstancesTable />}
-        rightPanel={<OperationsPanel />}
-        frame={{
-          isVisible: batchModificationStore.state.isEnabled,
-          headerTitle: 'Batch Modification Mode',
-        }}
-      />
+      <SelectedProcessDefinitionContext.Provider
+        value={selectedProcessDefinition}
+      >
+        <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
+        <InstancesList
+          type="process"
+          leftPanel={<Filters />}
+          topPanel={<DiagramPanel />}
+          bottomPanel={<InstancesTable />}
+          rightPanel={<OperationsPanel />}
+          frame={{
+            isVisible: batchModificationStore.state.isEnabled,
+            headerTitle: 'Batch Modification Mode',
+          }}
+        />
+      </SelectedProcessDefinitionContext.Provider>
     </ProcessDefinitionKeyContext.Provider>
   );
 });
