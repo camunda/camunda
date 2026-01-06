@@ -26,6 +26,7 @@ import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.impl.dsl.instructions.AssertElementInstanceInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.AssertElementInstancesInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.AssertProcessInstanceInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.AssertUserTaskInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
@@ -48,6 +49,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
   static {
     // register instruction handlers here
     registerHandler(new AssertElementInstanceInstructionHandler());
+    registerHandler(new AssertElementInstancesInstructionHandler());
     registerHandler(new AssertProcessInstanceInstructionHandler());
     registerHandler(new AssertUserTaskInstructionHandler());
     registerHandler(new CreateProcessInstanceInstructionHandler());

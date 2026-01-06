@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.dsl;
+package io.camunda.process.test.api.dsl.instructions.assertElementInstances;
 
-/** A collection of supported test case instruction types. */
-public class TestCaseInstructionType {
-
-  public static final String ASSERT_ELEMENT_INSTANCE = "ASSERT_ELEMENT_INSTANCE";
-  public static final String ASSERT_ELEMENT_INSTANCES = "ASSERT_ELEMENT_INSTANCES";
-  public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
-  public static final String ASSERT_USER_TASK = "ASSERT_USER_TASK";
-  public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
+/** The possible states of element instances to assert. */
+public enum ElementInstancesState {
+  IS_ACTIVE,
+  IS_COMPLETED,
+  IS_TERMINATED,
+  IS_NOT_ACTIVE,
+  IS_NOT_ACTIVATED,
+  IS_ACTIVE_EXACTLY,
+  IS_COMPLETED_IN_ORDER
 }

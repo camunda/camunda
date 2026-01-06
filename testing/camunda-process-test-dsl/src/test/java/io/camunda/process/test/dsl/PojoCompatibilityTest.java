@@ -34,10 +34,12 @@ import io.camunda.process.test.api.dsl.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
@@ -222,6 +224,34 @@ public class PojoCompatibilityTest {
                     .name("Review")
                     .dueDate("2025-10-31T10:00:00Z")
                     .followUpDate("2025-10-20T10:00:00Z")
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_ACTIVE",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementName("Task B").build())
+                    .state(ElementInstancesState.IS_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_COMPLETED_IN_ORDER",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task2").build())
+                    .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
                     .build())));
   }
 
