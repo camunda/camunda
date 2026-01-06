@@ -322,7 +322,7 @@ public class PojoCompatibilityTest {
             singleTestCase(
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("fetch-weather-data")
-                    .withExampleData(true)
+                    .useExampleData(true)
                     .build()))
         // add new instructions here
         );

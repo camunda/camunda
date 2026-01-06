@@ -21,13 +21,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerCompleteJobInstructionHandler;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -51,21 +52,25 @@ public class MockJobWorkerCompleteJobInstructionTest {
   private final MockJobWorkerCompleteJobInstructionHandler instructionHandler =
       new MockJobWorkerCompleteJobInstructionHandler();
 
+  @BeforeEach
+  void setUp() {
+    when(processTestContext.mockJobWorker(JOB_TYPE)).thenReturn(jobWorkerMockBuilder);
+  }
+
   @Test
   void shouldCompleteJobWithoutVariables() {
     // given
     final MockJobWorkerCompleteJobInstruction instruction =
-        new TestMockJobWorkerCompleteJobInstruction(JOB_TYPE, Collections.emptyMap(), false);
+        ImmutableMockJobWorkerCompleteJobInstruction.builder().jobType(JOB_TYPE).build();
 
-    when(processTestContext.mockJobWorker(JOB_TYPE)).thenReturn(jobWorkerMockBuilder);
-    when(jobWorkerMockBuilder.thenComplete()).thenReturn(jobWorkerMock);
+    when(jobWorkerMockBuilder.thenComplete(Map.of())).thenReturn(jobWorkerMock);
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
     verify(processTestContext).mockJobWorker(JOB_TYPE);
-    verify(jobWorkerMockBuilder).thenComplete();
+    verify(jobWorkerMockBuilder).thenComplete(Map.of());
 
     verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
   }
@@ -78,9 +83,11 @@ public class MockJobWorkerCompleteJobInstructionTest {
     variables.put("timestamp", 123456789L);
 
     final MockJobWorkerCompleteJobInstruction instruction =
-        new TestMockJobWorkerCompleteJobInstruction(JOB_TYPE, variables, false);
+        ImmutableMockJobWorkerCompleteJobInstruction.builder()
+            .jobType(JOB_TYPE)
+            .putAllVariables(variables)
+            .build();
 
-    when(processTestContext.mockJobWorker(JOB_TYPE)).thenReturn(jobWorkerMockBuilder);
     when(jobWorkerMockBuilder.thenComplete(variables)).thenReturn(jobWorkerMock);
 
     // when
@@ -97,9 +104,11 @@ public class MockJobWorkerCompleteJobInstructionTest {
   void shouldCompleteJobWithExampleData() {
     // given
     final MockJobWorkerCompleteJobInstruction instruction =
-        new TestMockJobWorkerCompleteJobInstruction(JOB_TYPE, Collections.emptyMap(), true);
+        ImmutableMockJobWorkerCompleteJobInstruction.builder()
+            .jobType(JOB_TYPE)
+            .useExampleData(true)
+            .build();
 
-    when(processTestContext.mockJobWorker(JOB_TYPE)).thenReturn(jobWorkerMockBuilder);
     when(jobWorkerMockBuilder.thenCompleteWithExampleData()).thenReturn(jobWorkerMock);
 
     // when
@@ -113,15 +122,18 @@ public class MockJobWorkerCompleteJobInstructionTest {
   }
 
   @Test
-  void shouldIgnoreVariablesWhenWithExampleDataIsTrue() {
+  void shouldIgnoreVariablesWhenUseExampleDataIsTrue() {
     // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("status", "sent");
 
     final MockJobWorkerCompleteJobInstruction instruction =
-        new TestMockJobWorkerCompleteJobInstruction(JOB_TYPE, variables, true);
+        ImmutableMockJobWorkerCompleteJobInstruction.builder()
+            .jobType(JOB_TYPE)
+            .putAllVariables(variables)
+            .useExampleData(true)
+            .build();
 
-    when(processTestContext.mockJobWorker(JOB_TYPE)).thenReturn(jobWorkerMockBuilder);
     when(jobWorkerMockBuilder.thenCompleteWithExampleData()).thenReturn(jobWorkerMock);
 
     // when
@@ -132,40 +144,5 @@ public class MockJobWorkerCompleteJobInstructionTest {
     verify(jobWorkerMockBuilder).thenCompleteWithExampleData();
 
     verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
-  }
-
-  // Test implementation for MockJobWorkerCompleteJobInstruction
-  private static class TestMockJobWorkerCompleteJobInstruction
-      implements MockJobWorkerCompleteJobInstruction {
-    private final String jobType;
-    private final Map<String, Object> variables;
-    private final boolean withExampleData;
-
-    TestMockJobWorkerCompleteJobInstruction(
-        final String jobType, final Map<String, Object> variables, final boolean withExampleData) {
-      this.jobType = jobType;
-      this.variables = variables;
-      this.withExampleData = withExampleData;
-    }
-
-    @Override
-    public String getType() {
-      return "MOCK_JOB_WORKER_COMPLETE_JOB";
-    }
-
-    @Override
-    public String getJobType() {
-      return jobType;
-    }
-
-    @Override
-    public Map<String, Object> getVariables() {
-      return variables;
-    }
-
-    @Override
-    public boolean getWithExampleData() {
-      return withExampleData;
-    }
   }
 }

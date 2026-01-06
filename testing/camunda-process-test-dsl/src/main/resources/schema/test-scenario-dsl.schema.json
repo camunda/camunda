@@ -501,7 +501,7 @@
           "description": "The variables to complete the job with.",
           "type": "object"
         },
-        "withExampleData": {
+        "useExampleData": {
           "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored.",
           "type": "boolean",
           "default": false
