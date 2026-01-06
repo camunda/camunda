@@ -114,7 +114,6 @@ import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -138,7 +137,6 @@ final class JsonSerializableToJsonTest {
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
-  private static final Instant TIMESTAMP = Instant.now();
   private static final String STACK_TRACE;
 
   static {
@@ -378,7 +376,8 @@ final class JsonSerializableToJsonTest {
                   .setNamespace("namespace")
                   .setResourceName("resource-name")
                   .setChecksum(checksum)
-                  .setDuplicate(true);
+                  .setDuplicate(true)
+                  .setDeploymentKey(deploymentKey);
               record
                   .decisionsMetadata()
                   .add()
@@ -450,7 +449,8 @@ final class JsonSerializableToJsonTest {
                       "resourceName": "resource-name",
                       "checksum": "Y2hlY2tzdW0=",
                       "duplicate": true,
-                      "tenantId": "<default>"
+                      "tenantId": "<default>",
+                      "deploymentKey": 1234
                     }
                   ],
                   "formMetadata": [
@@ -2056,7 +2056,8 @@ final class JsonSerializableToJsonTest {
                     .setNamespace("namespace")
                     .setResourceName("resource-name")
                     .setResource(wrapString("resource"))
-                    .setChecksum(wrapString("checksum")),
+                    .setChecksum(wrapString("checksum"))
+                    .setDeploymentKey(1234L),
         """
                 {
                   "decisionRequirementsId": "decision-requirements-id",
@@ -2068,7 +2069,8 @@ final class JsonSerializableToJsonTest {
                   "resource": "cmVzb3VyY2U=",
                   "checksum": "Y2hlY2tzdW0=",
                   "duplicate": false,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "deploymentKey": 1234
                 }
                 """
       },
