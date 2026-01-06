@@ -47,7 +47,7 @@ public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
       Awaitility.await()
           .timeout(assertionTimeout)
           .pollInterval(assertionInterval)
-          .ignoreException(ClientException.class)
+          .ignoreExceptionsInstanceOf(ClientException.class)
           .untilAsserted(
               () -> {
                 try {
