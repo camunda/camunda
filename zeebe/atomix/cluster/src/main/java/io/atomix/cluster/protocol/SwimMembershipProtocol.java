@@ -117,10 +117,10 @@ public class SwimMembershipProtocol
   private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics;
   private final BiFunction<Address, byte[], byte[]> syncHandler =
       (address, payload) -> SERIALIZER.encode(handleSync(SERIALIZER.decode(payload)));
-  private final BiFunction<Address, byte[], byte[]> probeHandler =
-      (address, payload) -> SERIALIZER.encode(handleProbe(SERIALIZER.decode(payload)));
   private final BiConsumer<Address, byte[]> gossipListener =
       (address, payload) -> handleGossipUpdates(SERIALIZER.decode(payload));
+  private final BiFunction<Address, byte[], byte[]> probeHandler =
+      (address, payload) -> SERIALIZER.encode(handleProbe(SERIALIZER.decode(payload)));
 
   SwimMembershipProtocol(
       final SwimMembershipProtocolConfig config,
@@ -223,6 +223,10 @@ public class SwimMembershipProtocol
     eventExecutor.execute(() -> super.post(event));
   }
 
+  public boolean isStarted() {
+    return started.get();
+  }
+
   /** Checks the local member metadata for changes. */
   private void checkMetadata() {
     if (!localMember.properties().equals(localProperties)) {
@@ -244,6 +248,14 @@ public class SwimMembershipProtocol
   private boolean updateState(final ImmutableMember member) {
     // If the member matches the local member, ignore the update.
     if (member.id().equals(localMember.id())) {
+      if (member.nodeVersion() > localMember.nodeVersion()) {
+        LOGGER.debug(
+            "Detected higher version of the local member {} (local: {}, remote: {}). Leaving the cluster.",
+            localMember.id(),
+            localMember.nodeVersion(),
+            member.nodeVersion());
+        leave(localMember);
+      }
       return false;
     }
 
@@ -268,9 +280,20 @@ public class SwimMembershipProtocol
             member);
       }
       return false;
+    } else if (member.nodeVersion() < swimMember.nodeVersion()) {
+      LOGGER.debug(
+          "{} - Detected lower version for member {} (local: {}, remote: {}). Ignoring the update.",
+          localMember.id(),
+          swimMember.id(),
+          swimMember.nodeVersion(),
+          member.nodeVersion());
+      return false;
     }
     // If the term has been increased, update the member and record a gossip event.
-    else if (member.incarnationNumber() > swimMember.getIncarnationNumber()) {
+    else if (member.incarnationNumber() > swimMember.getIncarnationNumber()
+        // Although this would not happen, we handle the case where the higher node version has a
+        // lower incarnation number.
+        || member.nodeVersion() > swimMember.nodeVersion()) {
       // If the member's version has changed, remove the old member and add the new member.
       if (!Objects.equals(member.version(), swimMember.version())) {
         members.remove(member.id());
@@ -571,6 +594,23 @@ public class SwimMembershipProtocol
 
     PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
+
+    if (localMember.nodeVersion() < this.localMember.nodeVersion()) {
+      LOGGER.debug(
+          "Detected lower version for member {} (local: {}, remote: {}). Ignoring the probe.",
+          this.localMember.id(),
+          this.localMember.nodeVersion(),
+          localMember.nodeVersion());
+      return this.localMember.copy();
+    } else if (localMember.nodeVersion() > this.localMember.nodeVersion()) {
+      LOGGER.debug(
+          "Detected higher version for member {} (local: {}, remote: {}). Leaving the cluster.",
+          this.localMember.id(),
+          this.localMember.nodeVersion(),
+          localMember.nodeVersion());
+      leave(this.localMember);
+      return this.localMember.copy();
+    }
 
     // If the probe indicates a term greater than the local term, update the local term, increment
     // and respond.

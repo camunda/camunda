@@ -44,7 +44,6 @@ import io.atomix.utils.net.Address;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -57,6 +56,7 @@ import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -290,39 +290,65 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     clearEvents(member1, member2);
 
     // when - starting a member with new version
-    stopProtocol(member2);
     final var currentVersion = versions.get(member2.id().id());
     // version can be null
     final var nextVersion = currentVersion != null ? currentVersion + 1 : 0;
-    final var member =
-        member(
-            member2.id().id(),
-            nextVersion,
-            member2.address().host(),
-            member2.address().port(),
-            version2);
-    startProtocol(member, "member2-" + member2.id().id());
+    final int nextVersionPort = member2.address().port() + 10;
+    final var member2NewVersion =
+        member(member2.id().id(), nextVersion, member2.address().host(), nextVersionPort, version2);
+    startProtocol(member2NewVersion, "member2-" + member2.id().id());
 
     // then - verify that version 1 is removed and version 2 is added.
-    Awaitility.await()
+    Awaitility.await("Member 2 old version removed")
         .atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
-    checkEvent(member1, MEMBER_ADDED, member);
+    checkEvent(member1, MEMBER_ADDED, member2NewVersion);
 
-    final var versionsFromOthers = new ArrayList<Long>(3);
+    // verify that all members have only the new version of member2
     for (final var entry : protocols.entrySet()) {
       final var id = entry.getKey();
-      if (!id.equals(member.id())) {
-        final var memberView = ((SwimMember) entry.getValue().getMember(member.id()));
-        versionsFromOthers.add(memberView.nodeVersion());
+      if (!id.equals(member2NewVersion.id())) {
+        final var memberView = ((SwimMember) entry.getValue().getMember(member2NewVersion.id()));
+        assertThat(memberView.nodeVersion())
+            .describedAs("Member %s has new version of member 2", id)
+            .isEqualTo(nextVersion);
+        assertThat(memberView.address().port())
+            .describedAs("Member %s has new address of member 2", id)
+            .isEqualTo(nextVersionPort);
       }
     }
-    Awaitility.await("Until only the new node is present")
-        .untilAsserted(
-            () ->
-                assertThat(versionsFromOthers)
-                    .hasSize(protocols.size() - 1)
-                    .allSatisfy(v -> assertThat(v).isEqualTo(nextVersion)));
+  }
+
+  @Test
+  public void oldVersionShouldLeaveWhenNewVersionIsDetected() throws InterruptedException {
+    // given
+    reset(true);
+    startProtocol(member1, member1.id().toString() + "-v" + member1.nodeVersion());
+    startProtocol(member2, member2.id().toString() + "-v" + member2.nodeVersion());
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - starting a member with new version
+    final var oldVersionProtocol = protocols.get(member2.id());
+
+    final var currentVersion = versions.get(member2.id().id());
+    final var nextVersion = currentVersion != null ? currentVersion + 1 : 0;
+    final int nextVersionPort = member2.address().port() + 10;
+    final var member2NewVersion =
+        member(member2.id().id(), nextVersion, member2.address().host(), nextVersionPort, version2);
+    startSwimMembershipProtocol(
+        member2NewVersion, UnaryOperator.identity(), member2.id().toString() + "-v" + nextVersion);
+    Awaitility.await("Member 2 old version removed")
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
+    checkEvent(member1, MEMBER_ADDED, member2NewVersion);
+
+    // then - verify that old version leaves itself
+    Awaitility.await("Member 2 old version is stopped")
+        .until(() -> !oldVersionProtocol.isStarted());
   }
 
   @ParameterizedTest
@@ -409,6 +435,21 @@ public class SwimProtocolTest extends ConcurrentTestCase {
       final UnaryOperator<SwimMembershipProtocolConfig> configurator,
       final String actorSchedulerName) {
     final SwimMembershipProtocol protocol =
+        startSwimMembershipProtocol(member, configurator, actorSchedulerName);
+    final var previous = protocols.put(member.id(), protocol);
+    // stops previous one
+    if (previous != null) {
+      previous.leave(member);
+    }
+    return protocol;
+  }
+
+  // starts new version of the protocol for the same member id without stopping the previous one
+  private SwimMembershipProtocol startSwimMembershipProtocol(
+      final SwimMember member,
+      final UnaryOperator<SwimMembershipProtocolConfig> configurator,
+      final String actorSchedulerName) {
+    final SwimMembershipProtocol protocol =
         new SwimMembershipProtocol(
             configurator.apply(
                 new SwimMembershipProtocolConfig()
@@ -417,7 +458,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                     .setProbeTimeout(PROBE_TIMEOUT)
                     .setFailureTimeout(FAILURE_INTERVAL)
                     .setSyncInterval(SYNC_INTERVAL)),
-            "testingActorSchedulerName",
+            actorSchedulerName,
             meterRegistry);
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
@@ -431,10 +472,6 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     final NodeDiscoveryService discovery =
         new DefaultNodeDiscoveryService(bootstrap, member, provider).start().join();
     protocol.join(bootstrap, discovery, member).join();
-    final var previous = protocols.put(member.id(), protocol);
-    if (previous != null) {
-      previous.leave(member);
-    }
     return protocol;
   }
 
