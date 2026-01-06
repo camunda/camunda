@@ -50,37 +50,59 @@ public interface JobMetricsBatchRecordValue extends RecordValue {
   List<String> getEncodedStrings();
 
   /**
-   * @return a map from encoded key (jobTypeIndex_tenantIdIndex) to the job metrics value for that
-   *     combination
+   * @return a list of job metrics values, each containing metrics for a specific combination of job
+   *     type, tenant ID, and worker name. The indices reference strings stored in {@link
+   *     #getEncodedStrings()}.
    */
   List<JobMetricsValue> getJobMetrics();
 
-  /** Represents a single status metric with count and timestamp. */
+  /**
+   * Represents job metrics for a specific combination of job type, tenant ID, and worker name. Uses
+   * indices to reference encoded strings for space-efficient storage.
+   */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobMetricsValue.Builder.class)
   interface JobMetricsValue {
 
+    /**
+     * @return the index into {@link #getEncodedStrings()} for the job type name
+     */
     int getJobTypeIndex();
 
+    /**
+     * @return the index into {@link #getEncodedStrings()} for the tenant ID
+     */
     int getTenantIdIndex();
 
+    /**
+     * @return the index into {@link #getEncodedStrings()} for the worker name
+     */
     int getWorkerNameIndex();
 
+    /**
+     * @return the list of status metrics (e.g., ACTIVATED, COMPLETED, FAILED) and their counts for
+     *     this job type, tenant, and worker combination
+     */
     List<StatusMetricValue> getStatusMetrics();
   }
 
-  /** Represents a single status metric with count and timestamp. */
+  /**
+   * Represents an aggregated job status metric within the batch time window. Contains the count of
+   * events for a specific job status and the timestamp when this metric was last updated.
+   */
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableStatusMetricValue.Builder.class)
   interface StatusMetricValue {
 
     /**
-     * @return the count of events for this status
+     * @return the count of job events for this status (e.g., ACTIVATED, COMPLETED, FAILED,
+     *     TIMED_OUT) within the batch window
      */
     int getCount();
 
     /**
-     * @return the timestamp when this status was last updated (epoch milliseconds)
+     * @return the timestamp when this status metric was last updated (epoch milliseconds),
+     *     reflecting the latest event time for this status within the batch window
      */
     long getLastUpdatedAt();
   }
