@@ -26,8 +26,6 @@ global:
   identity:
     auth:
       enabled: false
-  elasticsearch:
-    enabled: true
 
 identity:
   enabled: false
