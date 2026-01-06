@@ -74,7 +74,7 @@ public class AssertUserTaskInstructionTest {
     verify(assertionFacade).assertThatUserTask(userTaskSelectorCaptor.capture());
 
     userTaskSelectorCaptor.getValue().applyFilter(userTaskFilter);
-    verify(userTaskFilter).taskName("Approve Request");
+    verify(userTaskFilter).name("Approve Request");
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
@@ -115,7 +115,7 @@ public class AssertUserTaskInstructionTest {
     verify(assertionFacade).assertThatUserTask(userTaskSelectorCaptor.capture());
 
     userTaskSelectorCaptor.getValue().applyFilter(userTaskFilter);
-    verify(userTaskFilter).processDefinitionId("my-process");
+    verify(userTaskFilter).bpmnProcessId("my-process");
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
