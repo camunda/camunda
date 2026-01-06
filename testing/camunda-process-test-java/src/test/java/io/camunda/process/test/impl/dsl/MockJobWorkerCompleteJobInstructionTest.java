@@ -26,6 +26,7 @@ import io.camunda.process.test.api.dsl.instructions.MockJobWorkerCompleteJobInst
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerCompleteJobInstructionHandler;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,14 +64,14 @@ public class MockJobWorkerCompleteJobInstructionTest {
     final MockJobWorkerCompleteJobInstruction instruction =
         ImmutableMockJobWorkerCompleteJobInstruction.builder().jobType(JOB_TYPE).build();
 
-    when(jobWorkerMockBuilder.thenComplete(Map.of())).thenReturn(jobWorkerMock);
+    when(jobWorkerMockBuilder.thenComplete(Collections.emptyMap())).thenReturn(jobWorkerMock);
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
     verify(processTestContext).mockJobWorker(JOB_TYPE);
-    verify(jobWorkerMockBuilder).thenComplete(Map.of());
+    verify(jobWorkerMockBuilder).thenComplete(Collections.emptyMap());
 
     verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
   }
