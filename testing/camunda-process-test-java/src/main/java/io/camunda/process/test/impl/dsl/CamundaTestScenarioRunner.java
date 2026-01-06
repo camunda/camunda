@@ -31,6 +31,7 @@ import io.camunda.process.test.impl.dsl.instructions.AssertProcessInstanceInstru
 import io.camunda.process.test.impl.dsl.instructions.AssertUserTaskInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CompleteUserTaskInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerCompleteJobInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.PublishMessageInstructionHandler;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,6 +57,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new AssertUserTaskInstructionHandler());
     registerHandler(new CompleteUserTaskInstructionHandler());
     registerHandler(new CreateProcessInstanceInstructionHandler());
+    registerHandler(new MockJobWorkerCompleteJobInstructionHandler());
     registerHandler(new PublishMessageInstructionHandler());
   }
 

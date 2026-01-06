@@ -39,6 +39,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
@@ -301,6 +302,27 @@ public class PojoCompatibilityTest {
                     .putVariables("orderId", 12345)
                     .timeToLive(60000L)
                     .messageId("msg-123")
+                    .build())),
+        // ===== MOCK_JOB_WORKER_COMPLETE_JOB =====
+        Arguments.of(
+            "mock job worker complete job: minimal",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("send-email")
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with variables",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("send-email")
+                    .putVariables("status", "sent")
+                    .build())),
+        Arguments.of(
+            "mock job worker complete job: with example data",
+            singleTestCase(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("fetch-weather-data")
+                    .withExampleData(true)
                     .build()))
         // add new instructions here
         );
