@@ -20,11 +20,9 @@ import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_B;
 import static io.camunda.it.auditlog.AuditLogUtils.USER_TASKS_PROCESS_ID;
 import static io.camunda.it.auditlog.AuditLogUtils.assignUserToTenant;
-import static io.camunda.it.auditlog.AuditLogUtils.generateData;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
@@ -37,7 +35,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -155,12 +152,10 @@ public class AuditLogAuthorizationsIT {
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(USER_TASKS_PROCESS_ID))));
 
   private static CamundaClient adminClient;
-  private static ProcessInstanceEvent processInstanceEvent;
-  private static String auditLogKey;
 
   @BeforeAll
   static void setUp() {
-    generateData(adminClient, USE_REST_API);
+    AuditLogUtils.generateData(adminClient, USE_REST_API);
 
     assignUserToTenant(adminClient, USER_A_USERNAME, TENANT_A);
     assignUserToTenant(adminClient, USER_B_USERNAME, TENANT_B);
@@ -259,15 +254,14 @@ public class AuditLogAuthorizationsIT {
                             && AuditLogCategoryEnum.DEPLOYED_RESOURCES.equals(log.getCategory())))
         .isTrue();
 
-    // TODO: uncomment when https://github.com/camunda/camunda/issues/43319 is fixed
     // Verify User F can see USER_TASKS audit logs from USER_TASKS_PROCESS_ID
-    //    assertThat(
-    //            userFAuditLogs.items().stream()
-    //                .anyMatch(
-    //                    log ->
-    //                        USER_TASKS_PROCESS_ID.equals(log.getProcessDefinitionId())
-    //                            && AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
-    //        .isTrue();
+    assertThat(
+            userFAuditLogs.items().stream()
+                .anyMatch(
+                    log ->
+                        USER_TASKS_PROCESS_ID.equals(log.getProcessDefinitionId())
+                            && AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
 
     // Verify User F cannot see audit logs from PROCESS_ID_A
     assertThat(
@@ -347,7 +341,6 @@ public class AuditLogAuthorizationsIT {
             PROCESS_ID_DEPLOYED_RESOURCES, PROCESS_ID_A, PROCESS_ID_B, USER_TASKS_PROCESS_ID);
   }
 
-  @Disabled("https://github.com/camunda/camunda/issues/43319")
   @Test
   void shouldOnlySeeAuditLogsForAuthorizedUserTaskProcessDefinition(
       @Authenticated(USER_E_USERNAME) final CamundaClient userTaskPDOnlyClient) {
