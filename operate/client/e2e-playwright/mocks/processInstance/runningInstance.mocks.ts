@@ -24,7 +24,6 @@ const runningInstance: InstanceMock = {
     rootInstanceId: null,
     callHierarchy: [],
     sortValues: ['', ''],
-    permissions: [],
     tenantId: '',
   },
   detailV2: {
@@ -81,32 +80,37 @@ const runningInstance: InstanceMock = {
       </bpmndi:BPMNDiagram>
     </bpmn:definitions>
     `,
-  flowNodeInstances: {
-    '2251799813687144': {
-      children: [
-        {
-          id: '2251799813687146',
-          type: 'START_EVENT',
-          state: 'COMPLETED',
-          flowNodeId: 'StartEvent_1',
-          startDate: '2023-08-14T05:45:17.331+0000',
-          endDate: '2023-08-14T05:45:17.331+0000',
-          treePath: '2251799813687144/2251799813687146',
-          sortValues: ['', ''],
-        },
-        {
-          id: '2251799813687150',
-          type: 'USER_TASK',
-          state: 'ACTIVE',
-          flowNodeId: 'Activity_0dex012',
-          startDate: '2023-08-14T05:45:17.331+0000',
-          endDate: null,
-          treePath: '2251799813687144/2251799813687150',
-          sortValues: ['', ''],
-        },
-      ],
-      running: null,
-    },
+  elementInstances: {
+    items: [
+      {
+        elementInstanceKey: '2251799813687146',
+        processInstanceKey: '2251799813687144',
+        processDefinitionKey: '2251799813686165',
+        processDefinitionId: 'signalEventProcess',
+        elementId: 'StartEvent_1',
+        elementName: 'StartEvent_1',
+        type: 'START_EVENT',
+        state: 'COMPLETED',
+        hasIncident: false,
+        startDate: '2023-08-14T05:45:17.331+0000',
+        endDate: '2023-08-14T05:45:17.331+0000',
+        tenantId: '',
+      },
+      {
+        elementInstanceKey: '2251799813687150',
+        processInstanceKey: '2251799813687144',
+        processDefinitionKey: '2251799813686165',
+        processDefinitionId: 'signalEventProcess',
+        elementId: 'Activity_0dex012',
+        elementName: 'Signal user task',
+        type: 'USER_TASK',
+        state: 'ACTIVE',
+        hasIncident: false,
+        startDate: '2023-08-14T05:45:17.331+0000',
+        tenantId: '',
+      },
+    ],
+    page: {totalItems: 2},
   },
   variables: [
     {

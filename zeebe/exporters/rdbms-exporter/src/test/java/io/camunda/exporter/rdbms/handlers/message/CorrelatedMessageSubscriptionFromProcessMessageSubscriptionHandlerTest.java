@@ -89,6 +89,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final int position = 9999;
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
+    final int processDefinitionKey = 555;
     final long timestamp = Instant.now().toEpochMilli();
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
@@ -102,6 +103,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
             .withCorrelationKey(correlationKey)
             .withElementId(elementId)
             .withElementInstanceKey(elementInstanceKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .withMessageKey(messageKey)
             .withMessageName(messageName)
             .withProcessInstanceKey(processInstanceKey)
@@ -136,7 +138,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     assertThat(entity.messageName()).isEqualTo(messageName);
     assertThat(entity.partitionId()).isEqualTo(partitionId);
     assertThat(entity.processDefinitionId()).isEqualTo(bpmnProcessId);
-    assertThat(entity.processDefinitionKey()).isNull();
+    assertThat(entity.processDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.processInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.subscriptionKey()).isEqualTo(recordKey);
     assertThat(entity.subscriptionType()).isEqualTo(MessageSubscriptionType.PROCESS_EVENT);

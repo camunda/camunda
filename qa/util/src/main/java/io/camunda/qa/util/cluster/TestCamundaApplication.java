@@ -18,14 +18,18 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
-import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredMappingRule;
@@ -36,7 +40,6 @@ import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -66,8 +69,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         TestStandaloneApplication<TestCamundaApplication> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestCamundaApplication.class);
-  private final BrokerBasedProperties brokerProperties;
+  private final Camunda unifiedConfig;
   private final CamundaSecurityProperties securityConfig;
+  private final boolean isGatewayEnabled = true;
 
   public TestCamundaApplication() {
     super(
@@ -78,7 +82,10 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         OperatePropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class,
+        SearchEngineRetentionPropertiesOverride.class,
         GatewayRestPropertiesOverride.class,
+        BrokerBasedPropertiesOverride.class,
+        PrimaryStorageBackupPropertiesOverride.class,
         // ---
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
@@ -88,20 +95,41 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         BrokerModuleConfiguration.class,
         IndexTemplateDescriptorsConfigurator.class);
 
-    brokerProperties = new BrokerBasedProperties();
+    unifiedConfig = new Camunda();
 
-    brokerProperties.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
-    brokerProperties.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
-    brokerProperties.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig
+        .getCluster()
+        .getNetwork()
+        .getCommandApi()
+        .setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig
+        .getCluster()
+        .getNetwork()
+        .getInternalApi()
+        .setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
 
     // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
     // for local development; also lower the watermarks for local testing
-    brokerProperties.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
-    brokerProperties.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
-    brokerProperties.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
-
-    brokerProperties.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
-    brokerProperties.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getLogStream()
+        .setLogSegmentSize(DataSize.ofMegabytes(16));
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getDisk()
+        .getFreeSpace()
+        .setProcessing(DataSize.ofMegabytes(128));
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getDisk()
+        .getFreeSpace()
+        .setReplication(DataSize.ofMegabytes(64));
+    unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
+    unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
@@ -135,7 +163,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
                 List.of(DEFAULT_MAPPING_RULE_ID)));
 
     //noinspection resource
-    withBean("config", brokerProperties, BrokerBasedProperties.class)
+    withBean("camunda", unifiedConfig, Camunda.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
         .withProperty(
             AuthenticationProperties.API_UNPROTECTED,
@@ -160,9 +188,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public int mappedPort(final TestZeebePort port) {
     return switch (port) {
-      case COMMAND -> brokerProperties.getNetwork().getCommandApi().getPort();
-      case GATEWAY -> brokerProperties.getGateway().getNetwork().getPort();
-      case CLUSTER -> brokerProperties.getNetwork().getInternalApi().getPort();
+      case COMMAND -> unifiedConfig.getCluster().getNetwork().getCommandApi().getPort();
+      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
+      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
   }
@@ -180,7 +208,10 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
     // we need to hook in at the last minute and set the property as it won't resolve from the
     // config bean
-    withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
+    // Gateway enable flag is set via property since gateway config isn't fully in unified config
+    withProperty(
+        "zeebe.broker.gateway.enable",
+        property("zeebe.broker.gateway.enable", Boolean.class, isGatewayEnabled));
     return super.createSpringBuilder();
   }
 
@@ -215,12 +246,14 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(brokerProperties.getCluster().getNodeId()));
+    return MemberId.from(String.valueOf(unifiedConfig.getCluster().getNodeId()));
   }
 
   @Override
   public String host() {
-    return brokerProperties.getNetwork().getHost();
+    return unifiedConfig.getCluster().getNetwork().getHost() != null
+        ? unifiedConfig.getCluster().getNetwork().getHost()
+        : "0.0.0.0";
   }
 
   @Override
@@ -230,7 +263,13 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   @Override
   public boolean isGateway() {
-    return brokerProperties.getGateway().isEnable();
+    return isGatewayEnabled;
+  }
+
+  @Override
+  public TestCamundaApplication withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
+    return this;
   }
 
   @Override
@@ -248,41 +287,50 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     throw new UnsupportedOperationException("Brokers do not support the gateway health indicators");
   }
 
+  /**
+   * Returns the unified configuration object. This provides access to the camunda.* configuration
+   * structure and is the primary way to read/configure the test broker.
+   *
+   * @return the Camunda unified configuration object
+   */
   @Override
-  public TestCamundaApplication withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    modifier.accept(brokerProperties.getGateway());
-    return this;
-  }
-
-  @Override
-  public GatewayCfg gatewayConfig() {
-    return brokerProperties.getGateway();
+  public Camunda unifiedConfig() {
+    return unifiedConfig;
   }
 
   /**
-   * Registers or replaces a new exporter with the given ID. If it was already registered, the
-   * existing configuration is passed to the modifier.
+   * Adds or replaces a new exporter with the given ID using unified configuration.
+   *
+   * <p>Note: This method accepts ExporterCfg for backward compatibility but configures the unified
+   * config exporter. ExporterCfg will be converted to the unified Exporter format.
    *
    * @param id the ID of the exporter
-   * @param modifier a configuration function
+   * @param modifier a configuration function that accepts ExporterCfg
    * @return itself for chaining
    */
   @Override
   public TestCamundaApplication withExporter(
       final String id, final Consumer<ExporterCfg> modifier) {
-    final var cfg = new ExporterCfg();
-    modifier.accept(cfg);
-    brokerProperties.getExporters().put(id, cfg);
-    return this;
+    // Create a temporary ExporterCfg to accept the configuration
+    final var tempExporterCfg = new ExporterCfg();
+    modifier.accept(tempExporterCfg);
+
+    // Transfer to unified config exporter
+    return withDataConfig(
+        data -> {
+          final var unifiedExporter =
+              data.getExporters()
+                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
+          unifiedExporter.setClassName(tempExporterCfg.getClassName());
+          unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
+          unifiedExporter.setArgs(tempExporterCfg.getArgs());
+        });
   }
 
-  /**
-   * Modifies the broker configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
-   */
   @Override
-  public TestCamundaApplication withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(brokerProperties);
+  public TestCamundaApplication withSecondaryStorageType(final SecondaryStorageType type) {
+    unifiedConfig.getData().getSecondaryStorage().setType(type);
+    withProperty("camunda.data.secondary-storage.type", type.name());
     return this;
   }
 
@@ -298,21 +346,16 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   }
 
   @Override
-  public BrokerBasedProperties brokerConfig() {
-    return brokerProperties;
-  }
-
-  @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
   }
 
   public TestCamundaApplication updateExporterArgs(
       final String id, final Consumer<Map<String, Object>> modifier) {
-    final var exporterCfg = brokerProperties.getExporters().get(id);
-    final var argsCopy = deepCopy(exporterCfg.getArgs());
+    final var exporter = unifiedConfig.getData().getExporters().get(id);
+    final var argsCopy = deepCopy(exporter.getArgs());
     modifier.accept(argsCopy);
-    exporterCfg.setArgs(argsCopy);
+    exporter.setArgs(argsCopy);
     return this;
   }
 
@@ -336,7 +379,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     return new TestRestOperateClient(restAddress(), username, password);
   }
 
-  public TestRestOperateClient newOperateClient(CredentialsProvider credentialsProvider) {
+  public TestRestOperateClient newOperateClient(final CredentialsProvider credentialsProvider) {
     return new TestRestOperateClient(restAddress(), credentialsProvider);
   }
 
@@ -344,7 +387,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     return new TestRestTasklistClient(restAddress());
   }
 
-  public TestRestTasklistClient newTasklistClient(CredentialsProvider credentialsProvider) {
+  public TestRestTasklistClient newTasklistClient(final CredentialsProvider credentialsProvider) {
     return new TestRestTasklistClient(restAddress(), credentialsProvider);
   }
 

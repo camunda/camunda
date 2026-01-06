@@ -18,12 +18,14 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.FORM;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
+import static io.camunda.zeebe.protocol.record.ValueType.HISTORY_DELETION;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
@@ -352,6 +354,7 @@ public class CamundaExporter implements Exporter {
             DECISION,
             DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
+            PROCESS_INSTANCE_CREATION,
             PROCESS_INSTANCE_MIGRATION,
             PROCESS_INSTANCE_MODIFICATION,
             ROLE,
@@ -370,7 +373,8 @@ public class CamundaExporter implements Exporter {
             BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BATCH_OPERATION_CHUNK,
             USAGE_METRIC,
-            CLUSTER_VARIABLE);
+            CLUSTER_VARIABLE,
+            HISTORY_DELETION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

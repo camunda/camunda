@@ -100,6 +100,7 @@ public final class DeleteClusterVariableTest {
         .clusterVariables()
         .withName("KEY_TO_DELETE_2")
         .setTenantScope()
+        .withTenantId("tenant_1")
         .withValue("\"VALUE\"")
         .create();
 
@@ -131,6 +132,24 @@ public final class DeleteClusterVariableTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Invalid cluster variable name: 'KEY_3'. The variable does not exist in the scope 'GLOBAL'");
+  }
+
+  @Test
+  public void deleteTenantScopedClusterVariableWithoutTenantId() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_3")
+            .setTenantScope()
+            .expectRejection()
+            .delete();
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.DELETE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Invalid cluster variable scope. Tenant-scoped variables must have a non-blank tenant ID.");
   }
 
   @Test

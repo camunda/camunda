@@ -10,7 +10,6 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -23,9 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opensearch.client.opensearch.core.SearchRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class OpensearchVariableDaoTest {
@@ -89,17 +86,14 @@ public class OpensearchVariableDaoTest {
 
   @Test
   public void testBuildFilteringWithNullFilter() {
-    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    underTest.buildFiltering(new Query<>(), mockSearchRequest);
+    final var filtering = underTest.buildFiltering(new Query<>());
 
-    // Verify that the query was not modified in any way
-    verifyNoInteractions(mockSearchRequest);
-    verifyNoInteractions(mockQueryWrapper);
+    verify(mockQueryWrapper, times(1)).matchAll();
+    assertThat(filtering).isEqualTo(mockQueryWrapper.matchAll());
   }
 
   @Test
   public void testBuildFilteringWithValidFields() {
-    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     final Variable filter =
         new Variable()
             .setKey(1L)
@@ -112,7 +106,7 @@ public class OpensearchVariableDaoTest {
 
     final Query<Variable> inputQuery = new Query<Variable>().setFilter(filter);
 
-    underTest.buildFiltering(inputQuery, mockSearchRequest);
+    underTest.buildFiltering(inputQuery);
 
     // Verify that each field from the variable was added as a query term to the query
     verify(mockQueryWrapper, times(1)).term(Variable.KEY, filter.getKey());

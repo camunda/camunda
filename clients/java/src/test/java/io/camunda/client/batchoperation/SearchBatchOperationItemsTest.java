@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.BatchOperationItemSearchQuerySortRequest.FieldEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -68,7 +69,8 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
                 f.batchOperationKey("123")
                     .state(BatchOperationItemState.ACTIVE)
                     .processInstanceKey(123L)
-                    .itemKey(456L))
+                    .itemKey(456L)
+                    .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE))
         .send()
         .join();
 
@@ -80,6 +82,8 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
         .isEqualTo(BatchOperationItemStateEnum.ACTIVE);
     assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("123");
     assertThat(request.getFilter().getItemKey().get$Eq()).isEqualTo("456");
+    assertThat(request.getFilter().getOperationType().get$Eq())
+        .isEqualTo(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE);
   }
 
   @Test
@@ -96,14 +100,16 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
                     .processInstanceKey()
                     .desc()
                     .itemKey()
-                    .asc())
+                    .asc()
+                    .processedDate()
+                    .desc())
         .send()
         .join();
 
     // then
     final BatchOperationItemSearchQuery request =
         gatewayService.getLastRequest(BatchOperationItemSearchQuery.class);
-    assertThat(request.getSort().size()).isEqualTo(4);
+    assertThat(request.getSort().size()).isEqualTo(5);
     assertThat(request.getSort().get(0).getField()).isEqualTo(FieldEnum.BATCH_OPERATION_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
     assertThat(request.getSort().get(1).getField()).isEqualTo(FieldEnum.STATE);
@@ -112,5 +118,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     assertThat(request.getSort().get(2).getOrder()).isEqualTo(SortOrderEnum.DESC);
     assertThat(request.getSort().get(3).getField()).isEqualTo(FieldEnum.ITEM_KEY);
     assertThat(request.getSort().get(3).getOrder()).isEqualTo(SortOrderEnum.ASC);
+    assertThat(request.getSort().get(4).getField()).isEqualTo(FieldEnum.PROCESSED_DATE);
+    assertThat(request.getSort().get(4).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }

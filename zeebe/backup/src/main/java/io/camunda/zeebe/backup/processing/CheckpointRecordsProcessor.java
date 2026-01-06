@@ -101,8 +101,10 @@ public final class CheckpointRecordsProcessor
     checkpointBackupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
+    final var checkpointType = checkpointState.getLatestCheckpointType();
     if (checkpointId != CheckpointState.NO_CHECKPOINT) {
-      checkpointListeners.forEach(listener -> listener.onNewCheckpointCreated(checkpointId));
+      checkpointListeners.forEach(
+          listener -> listener.onNewCheckpointCreated(checkpointId, checkpointType));
       metrics.setCheckpointId(checkpointId, checkpointState.getLatestCheckpointPosition());
     }
 
@@ -122,9 +124,12 @@ public final class CheckpointRecordsProcessor
     }
     final CheckpointIntent intent = (CheckpointIntent) record.getIntent();
     switch (intent) {
-      case CREATED -> checkpointCreatedEventApplier.apply((CheckpointRecord) record.getValue());
+      case CREATED ->
+          checkpointCreatedEventApplier.apply(
+              (CheckpointRecord) record.getValue(), record.getTimestamp());
       case CONFIRMED_BACKUP ->
-          checkpointBackupConfirmedApplier.apply((CheckpointRecord) record.getValue());
+          checkpointBackupConfirmedApplier.apply(
+              (CheckpointRecord) record.getValue(), record.getTimestamp());
       default -> {
         // Don't apply intents CREATE and IGNORED
       }
@@ -175,8 +180,9 @@ public final class CheckpointRecordsProcessor
           Duration.ZERO,
           () -> {
             final var checkpointId = checkpointState.getLatestCheckpointId();
+            final var checkpointType = checkpointState.getLatestCheckpointType();
             if (checkpointId != CheckpointState.NO_CHECKPOINT) {
-              checkpointListener.onNewCheckpointCreated(checkpointState.getLatestCheckpointId());
+              checkpointListener.onNewCheckpointCreated(checkpointId, checkpointType);
             }
           });
     }

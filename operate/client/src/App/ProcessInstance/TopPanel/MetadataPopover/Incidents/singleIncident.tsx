@@ -12,9 +12,9 @@ import {Paths} from 'modules/Routes';
 import {Header} from '../Header';
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
-import {resolveIncidentErrorType} from './resolveIncidentErrorType';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {getIncidentErrorName} from 'modules/utils/incidents';
 
 type Props = {
   incident: Incident;
@@ -30,7 +30,7 @@ const SingleIncident: React.FC<Props> = ({incident, onButtonClick}) => {
   );
 
   const rootCauseDecisionInstance = data?.items[0];
-  const errorType = resolveIncidentErrorType(incident.errorType);
+  const errorTypeName = getIncidentErrorName(incident.errorType);
 
   return (
     <>
@@ -46,7 +46,7 @@ const SingleIncident: React.FC<Props> = ({incident, onButtonClick}) => {
       <Stack gap={5}>
         <Stack gap={3} as="dl">
           <SummaryDataKey>Type</SummaryDataKey>
-          <SummaryDataValue>{errorType.name}</SummaryDataValue>
+          <SummaryDataValue>{errorTypeName}</SummaryDataValue>
         </Stack>
         {incident.errorMessage !== null && (
           <Stack gap={3} as="dl">

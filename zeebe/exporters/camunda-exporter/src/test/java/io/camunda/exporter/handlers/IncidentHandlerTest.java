@@ -35,6 +35,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class IncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -52,24 +54,30 @@ public class IncidentHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(IncidentEntity.class);
   }
 
-  @Test
-  void shouldHandleRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = IncidentIntent.class,
+      names = {"RESOLVE", "RESOLVED"})
+  void shouldNotHandleRecordWithUnsupportedIntent(final IncidentIntent intent) {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
-
-    // when - then
-    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
-  }
-
-  @Test
-  void shouldNotHandleRecord() {
-    // given
-    final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVED));
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = IncidentIntent.class,
+      names = {"CREATED", "MIGRATED"})
+  void shouldHandleRecordWithSupportedIntent(final IncidentIntent intent) {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
+
+    // when - then
+    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
   }
 
   @Test
@@ -289,11 +297,12 @@ public class IncidentHandlerTest {
     processCache.put(
         processDefinitionKey1,
         new CachedProcessEntity(
-            null, null, List.of("0", "1", "2", callActivityId1), Map.of("FI1", "FN1")));
+            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of("FI1", "FN1")));
 
     processCache.put(
         processDefinitionKey2,
-        new CachedProcessEntity(null, null, List.of("0", callActivityId2), Map.of("FI1", "FN1")));
+        new CachedProcessEntity(
+            null, 1, null, List.of("0", callActivityId2), Map.of("FI1", "FN1")));
 
     // when
     final IncidentEntity incidentEntity = new IncidentEntity();

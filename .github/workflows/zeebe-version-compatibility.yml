@@ -25,6 +25,16 @@ jobs:
         shards: [ 1, 2, 3] # Values are not used, we just need an array of the right length
     steps:
       - uses: actions/checkout@v4
+      - name: Generate cache key with current hour
+        id: cache-key
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
+      - name: Cache Zeebe versions (hourly refresh)
+        uses: actions/cache@v4
+        with:
+          path: .cache/camunda
+          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
+          restore-keys: |
+            zeebe-versions-
       - name: Find previous report
         id: get-last-run-id
         run: |
@@ -77,12 +87,23 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@v4
+      - name: Generate cache key with current hour
+        id: cache-key
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
+      - name: Cache Zeebe versions (hourly refresh)
+        uses: actions/cache@v4
+        with:
+          path: .cache/camunda
+          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
+          restore-keys: |
+            zeebe-versions-
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild

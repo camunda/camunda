@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +16,11 @@ import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -42,6 +48,15 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
+          .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
+          .addMixIn(
+              ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionMixin.class)
+          .addMixIn(
+              ProcessInstanceModificationRecordValue.class, ProcessInstanceModificationMixin.class)
+          .addMixIn(
+              ProcessInstanceModificationTerminateInstructionValue.class,
+              TerminateInstructionsMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -50,6 +65,13 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
+  private static final String CHECKPOINT_TIMESTAMP_PROPERTY = "checkpointTimestamp";
+  private static final String CHECKPOINT_TYPE_PROPERTY = "checkpointType";
+  private static final String MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY =
+      "processDefinitionKey";
+  private static final String PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY =
+      "moveInstructions";
+  private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
   private final List<BulkOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -177,4 +199,21 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
+
+  @JsonIgnoreProperties({CHECKPOINT_TYPE_PROPERTY, CHECKPOINT_TIMESTAMP_PROPERTY})
+  private static final class CheckpointRecordMixin {}
+
+  @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  private static final class MessageSubscriptionMixin {}
+
+  @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})
+  private static final class ProcessMessageSubscriptionMixin {}
+
+  @JsonIgnoreProperties({PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY})
+  private static final class ProcessInstanceModificationMixin {}
+
+  public interface TerminateInstructionsMixin {
+    @JsonIgnore
+    String getElementId();
+  }
 }

@@ -3,6 +3,7 @@
 paths:
   /clock:
     put:
+      x-eventually-consistent: false
       tags:
         - Clock
       operationId: pinClock
@@ -29,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /clock/reset:
     post:
+      x-eventually-consistent: false
       tags:
         - Clock
       operationId: resetClock
@@ -51,7 +52,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
 ## Schema definitions
 

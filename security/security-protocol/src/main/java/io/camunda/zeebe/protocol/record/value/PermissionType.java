@@ -33,6 +33,8 @@ public enum PermissionType {
   DELETE_PROCESS_INSTANCE,
   DELETE_RESOURCE,
 
+  EVALUATE,
+
   MODIFY_PROCESS_INSTANCE,
 
   READ(true),

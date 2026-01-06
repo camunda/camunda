@@ -14,7 +14,7 @@ The last points are especially interesting, as they allow for identifying issues
 
 Reliability testing consists of several sub-testing practices (depending on the context/area, company, this might vary).
 
-While several resources ([1], [2]) cover feature or regression testing as one part of reliability testing, we see this as part of our automated acceptance testing done by Engineers and/or QA. See also related documentation about this here.
+While several resources ([1], [2]) cover feature or regression testing as one part of reliability testing, we see this as part of our automated acceptance testing done by Engineers and/or QA. See also related documentation about this [here](https://github.com/camunda/camunda/blob/main/docs/testing/acceptance.md).
 
 We focus as part of the reliability testing on topics like load testing (stress and endurance testing), and recovery testing (done by chaos experiments)
 
@@ -38,53 +38,85 @@ With our load test, we pursue the following goals
   * Distributed system failures
 * Discover configuration/set up issues in different environments, SM/SaaS
 
+### Variations
+
+There exist various variations of load tests in the wild to answer different questions. The approaches to achieve them are pretty similar and can be covered under the category of load tests, which is to answer the question “What is the load we can handle? And how does the system behave?”.
+
+* Normal [Load test](https://en.wikipedia.org/wiki/Load_testing)
+  * _Question: How does the system behave under normal workload?_
+  * This is to understand, in general, how the system behaves, providing a base for comparison.
+  * Resources:
+    * [Wiki: Load testing](https://en.wikipedia.org/wiki/Load_testing)
+    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+* [Stress test](https://en.wikipedia.org/wiki/Stress_testing)
+  * _Question: How does the system perform under stress? Can it handle high load, and what is the maximum?_
+  * Here we put the system under high load up to maximum load. We want to find out what the limit is and where it starts to break.
+  * These tests are commonly not long-running.
+  * Resources:
+    * [Wiki: Stress testing](https://en.wikipedia.org/wiki/Stress_testing)
+    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+* Spike test
+  * _Question: How does the system handle spikes? Can it recover? What is max etc._
+  * Here we put the system also under high load up to maximum load, but only for a short period of time. We want to understand how the system behaves and recovers afterwards.
+  * These tests are commonly not long-running.
+  * Resources:
+    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+* [Endurance or soak test](https://en.wikipedia.org/wiki/Soak_testing)
+  * _Question: Can it handle high load (not maximum) over a long time? Reliable?_
+  * Discovery of memory or thread leaks and performance and stability issues over time
+  * Resources:
+    * [Geeks4Geeks: Load testing](https://www.geeksforgeeks.org/software-testing/software-testing-load-testing/)
+    * [Geeks4Geeks:  Endurance testing](https://www.geeksforgeeks.org/software-testing/software-testing-endurance-testing/)
+
+Our load tests can also be viewed as **endurance or soak tests**, as they typically share the same goals.
+
 ### Setup
 
-![setup](assets/setup.png)
+![setup-load-test](assets/setup-load-test.jpg)
 
-The setup for all of our load tests is equal for better comparability. We use a custom helm chart ([zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm)) based on our official [Camunda Platform Helm chart](https://github.com/camunda/camunda-platform-helm).
+The setup for all of our load tests is equal for better comparability, and consist of two main ingredients.
 
-We always ran load tests with a three-node cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe (pre 8.8), we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) or the single Camunda application (with an embedded gateway). To validate that our data flow pipeline is working, we are running an Elasticsearch cluster with three nodes for any Camunda test cluster.
+1. The official [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), taking care of the general set up of our Camunda 8 Platform.
+2. A custom Helm chart ([camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm)) to set up our load test applications.
 
-On top of the [Camunda Platform Helm Chart](https://github.com/camunda/camunda-platform-helm), the benchmark Helm Chart deploys different applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
+We always ran load tests with a three-node cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8) or (with 8.8+) the single Camunda application (with an embedded gateway).
 
-Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm chart, and their [values files](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/values.yaml).
+An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster.
+
+Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) deploys different load test applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
+
+Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [camunda-load-test](https://github.com/camunda/camunda-load-tests-helm) Helm chart, and their [values files](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml).
 
 All of this is deployed in a Zeebe-maintained (as of now; 16 Jun 2025) Google Kubernetes Engine (GKE) cluster (zeebe-cluster), in its own zeebe-io Google Cloud Project (GCP). Details of the general infrastructure, which is deployed related to observability (Prometheus), can be found in the [Zeebe infrastructure repository](https://github.com/camunda/zeebe-infra).
 
-### Variants
+For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Broker and Zeebe Gateways were deployed standalone.
 
-We run our load tests in different variants to cover different goals.
+![setup](assets/setup.png)
 
-#### Normal (artificial) load
+### Endurance test variants
 
-A load test where we run some artificial load, ensuring that the system behaves reliably.
+We conduct our endurance tests in various variants and with different workloads to cover a broader scope, with the primary goal of identifying instabilities such as memory or thread leaks, as well as performance and stability issues over time.
 
-![normal](assets/normal.png)
-It contains only a start event, one service task, and an end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/big_payload.json).
+#### Typical load
 
-Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. This test load is historical, as it was one of the first we designed. Likely might be replaced by the more realistic load tests.
+After discussing with different stakeholders, we defined a so-called "typical" load. Using a typical or commonly used process model, which is often also called the straight-through process model, and [data set](../../load-tests/load-tester/src/main/resources/bpmn/typical_payload.json) that is typical as well (~0.5KB). We defined a load that we want to be able to sustain reliably.
 
-The idea here is not to overload or stress the system, but to run a more stable and continuous load, to validate the reliability of the system.
+![typical](assets/typical_process.png)
+
+The straight-trough process contains ten tasks, two timers, and one exclusive gateway. Covering a typical use case, where a process instance is started, undergoes several automated tasks, waits for a specified period (using timers), and then concludes.
 
 **The expected load is:**
 
-* 150 process instances per second (PI/s) completed.
-* 150 task instances per second (TI/s) completed
+* 50 process instances per second (PI/s) completed.
+* 500 task instances per second (TI/s) completed
 
 _Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
 
-#### Latency load
-
-Similar to the normal load test, we ran the artificial (normal) process model to run some latency-related tests. To validate the latency, we reduce the load to one PI/s, to reduce the blast radius, and make sure we have clear values for the latency of process instance completion.
-
-*As of now, there is no clear SLO/SLA defined for such.*
-
 #### Realistic load
 
-In the past year, we designed a new load test, where we ran a [more complex and more realistic process](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn) and [data set](https://github.com/camunda/camunda/blob/main/zeebe/load-tests/project/src/main/resources/bpmn/realistic/realisticPayload.json).
+In the past year (2024), we designed a new load test, where we ran a [more complex and more realistic process](https://github.com/camunda/camunda/blob/main/load-tests/load-tester/src/main/resources/bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn) and [data set](https://github.com/camunda/camunda/blob/main/zeebe/load-tests/project/src/main/resources/bpmn/realistic/realisticPayload.json).
 
-As part of this test, we cover a wide variety of BPMN elements, like CallActivities, Multi-Instance, Sub-Processes, DMN, etc.
+As part of this test, we cover a wide variety of BPMN elements, including Call Activities, Multi-Instance, Sub-Processes, and DMN.
 
 ![realisticCase](assets/realisticCase.png)
 ![realisticCase-DMN](assets/realisticCase-DMN.png)
@@ -100,6 +132,32 @@ The test is based on [a blueprint we provide in our Marketplace](https://marketp
 
 *Intrinsic SLO to always be able to satisfy such a load, and perform reliably.*
 
+### Max / Stress load test
+
+A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
+
+![normal](assets/normal.png)
+
+It contains only a start event, one service task, and an end event. Covering a straight-through processing use case and using the same payload as for our typical load test (~0.5KB).
+
+This type of process is helpful for stress tests, as it gives us a good sense of the maximum load.
+This is one of the smallest processes (including a service task) that we can model.
+
+Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. Still, this is not very realistic and useful for our long-running tests.
+
+**The expected load is:**
+
+* 300 process instances per second (PI/s) completed.
+* 300 task instances per second (TI/s) completed
+
+_Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
+
+### Latency load test
+
+Similar to the stress test from above, we ran the artificial (normal) process model to run some latency-related tests. To validate the latency, we reduce the load to **one** PI/s, to reduce the blast radius, and make sure we have clear values for the latency of process instance completion.
+
+*As of now, there is no clear SLO/SLA defined for such.*
+
 ### Observability
 
 Observability plays a vital role in running such kind of tests. Since the beginning of our load testing practices, the Zeebe team, spent significant efforts in adding metrics into the system and building Grafana dashboards to support them.
@@ -112,13 +170,13 @@ With the help of such dashboards, we can observe the running load tests and vali
 
 More details about observability can also be read [here](../observability.md).
 
-### Scenarios
+### Test Scenarios
 
 We have different scenarios targeting different use cases and versions.
 
 #### Release load tests
 
-For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with artificial load. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn). Triggering our ad-hoc [Zeebe Benchmark GitHub workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-benchmark.yml).
+For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.action?pageId=245400921&spaceKey=HAN&title=Standard%2Band%2BExtended%2BSupport%2BPeriods) version, we run a continuous load test with artificial load. They are created or updated [as part of the release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn). Triggering our ad-hoc [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
 
 **Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
@@ -136,32 +194,86 @@ As of today (16 Jun 2025), we have load tests running:
 * One rolling release test, which is always updated
   * Release-rolling
 
+##### Setup and integration
+
+The release load tests are created as part of the [release process](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/setup_benchmark.bpmn#L7-L18).
+
+There exists a separate process (called a sub-process) to set up the load test, called "Setup benchmark".
+
+![setup-benchmark](assets/setup_benchmark.png)
+
+The used REST-Connector initiates a call against the GitHub API (`https://api.github.com/repos/camunda/camunda/actions/workflows/camunda-load-test.yml/dispatches`) to trigger the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml) on a specific git reference (_The reference can be a branch or tag name._).
+
+> [!Important]
+>
+> This event will only trigger a workflow run if the workflow file exists on the default branch.
+> https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch
+
+An example payload looks like this:
+
+```json
+{
+    "ref": workflow_ref_name,
+    "inputs": {
+      "name": benchmark_name,
+      "ref": zeebe_ref_name,
+      "cluster": "zeebe-cluster",
+      "stable-vms": stable_vms
+    }
+}
+```
+
+When we look at an example release process instance from the past, we can find the following example values:
+
+|      Variable       |  Example Value  |              Description               |
+|---------------------|-----------------|----------------------------------------|
+| `workflow_ref_name` | `8.7.17`        | The tag to trigger the workflow on     |
+| `zeebe_ref_name`    | `8.7.17`        | The tag to build the Docker image from |
+| `benchmark_name`    | `release-8-7-x` | The name of the load test              |
+| `stable_vms`        | `true`          | Whether to use stable VM types or not  |
+
+In our post-release process, we map our `release_version` variable to the `workflow_ref_name` as input to update our existing load test.
+
 #### Weekly load tests
 
-In addition to our release tests, we ran weekly load tests in all variants based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Zeebe Medic GitHub Workflow.](https://github.com/camunda/camunda/actions/workflows/zeebe-medic-benchmarks.yml) The load tests are automatically created every Monday and run for 4 weeks. This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
+In addition to our release tests, we ran weekly load tests for all [endurance test variants](#endurance-test-variants) based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). The load tests are automatically created every Monday and run for 4 weeks. They are automatically cleaned up by our [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-clean-up.yml). This means we have three variants per week times four weeks running at the same time (makes 12 weekly load tests running concurrently).
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
 **Validation:** The tailored [Zeebe Medic Dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
-As of today (16 Jun 2025) we have the following tests running:
+As an example, we have the following tests running:
 
-* medic-y-2025-cw-22-a60d64da-benchmark
-* medic-y-2025-cw-22-a60d64da-benchmark-latency
-* medic-y-2025-cw-22-a60d64da-benchmark-mixed
-* medic-y-2025-cw-23-a799b041-benchmark
-* medic-y-2025-cw-23-a799b041-benchmark-latency
-* medic-y-2025-cw-23-a799b041-benchmark-mixed
-* medic-y-2025-cw-24-0c3f2664-benchmark
-* medic-y-2025-cw-24-0c3f2664-benchmark-latency
-* medic-y-2025-cw-24-0c3f2664-benchmark-mixed
-* medic-y-2025-cw-25-59a095c4-benchmark
-* medic-y-2025-cw-25-59a095c4-benchmark-latency
-* medic-y-2025-cw-25-59a095c4-benchmark-mixed
+* medic-y-2025-cw-22-a60d64da-test-latency
+* medic-y-2025-cw-22-a60d64da-test-mixed
+* medic-y-2025-cw-22-a60d64da-test-typical
+* medic-y-2025-cw-23-a799b041-test-typical
+* medic-y-2025-cw-23-a799b041-test-latency
+* medic-y-2025-cw-23-a799b041-test-mixed
+* medic-y-2025-cw-24-0c3f2664-test-typical
+* medic-y-2025-cw-24-0c3f2664-test-latency
+* medic-y-2025-cw-24-0c3f2664-test-mixed
+* medic-y-2025-cw-25-59a095c4-test-typical
+* medic-y-2025-cw-25-59a095c4-test-latency
+* medic-y-2025-cw-25-59a095c4-test-mixed
+
+#### Daily load tests
+
+In addition to our weekly load tests, we ran daily stress tests based on the state of the **main** branch (from the [Camunda mono repository](https://github.com/camunda/camunda)) with our [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml).
+
+**Goal:** Validating the reliability of our current main (putting it under stress), and detecting earlier issues, allowing us to detect newly introduced instabilities.
+
+**Benefits:**
+
+* We have a better overview of how the system performs over time - detect trends in performance
+* Detect regressions earlier - shorter feedback loop when we break something in our application or configuration
+* Faster integration with our Helm charts - sanity check every day that load tests work with charts and the application
+
+**Validation:** TBD - explicit dashboard with KPI's and showing last week's tests needs to be created. Part of [#42274](https://github.com/camunda/camunda/issues/42274).
 
 #### Ad-Hoc load tests
 
-On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Zeebe Benchmark Workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-benchmark.yml), or deploying the [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/load-tests/setup).
+On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/load-tests/setup).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
@@ -173,17 +285,45 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 
 It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-pr-benchmark.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
-This method allows no specific configuration or adjustment. If this is needed, triggering the [Zeebe Benchmark GitHub Workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-benchmark.yml) is recommended.
+This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 
-##### Trigger Zeebe Benchmark GitHub Workflow
+##### Trigger Camunda load test GitHub Workflow
 
-The [Zeebe Benchmark GitHub Workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-benchmark.yml) is the easiest way to run a load test for a specific branch or main (default) with more customization.
+The [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is the **easiest** way to run a load test for a specific branch or main (default) with more customization. We support to set up load tests for different Camunda/Zeebe versions, by selecting the specific workflow revision as part of the workflow dispatch form (UI).
 
-Existing Docker images can be reused if needed, which is especially useful if we want to recreate tests (like for weekly load tests).
+It allows high customization:
 
-Arbitrary Helm arguments can be passed, making it easier to customize the load tests.
+* Specification of the Camunda/Zeebe version to test against (by selecting the workflow revision) - will make sure to use the right Camunda Platform Helm Chart version and values file.
+* Specification of the branch to test against (default: main) - will build a Docker image based on the specified branch and be used for the cluster under test and load test applications.
+* Specification of the time to live (TTL) for the load test - making sure that the load test is automatically cleaned up after the specified time.
+* Specification of an existing Docker image to use - making it possible to reuse existing images.
+* Specification of arbitrary Helm arguments - making it possible to customize the load test set up.
 
-![benchmark-gha](assets/benchmark-gha.png)
+![load-test-gha](assets/load-test-gha.png)
+
+###### Creating load test for old versions
+
+With the Camunda load test GitHub workflow, it is also possible to create load tests for older versions (until 8.6).
+
+![1-main](assets/1-main.png)
+
+As part of the workflow dispatch form (UI), select the respective workflow revision for the desired version.
+
+![2-choosing](assets/2-choosing.png)
+
+This will make sure that the right Camunda Platform Helm Chart version and values file are used for the load test set up. Respective values files can be found in the stable branches and will be picked up by the GitHub Workflow on the different stable branches.
+
+We can reference tags, branches or commit SHAs, as ref. It must not necessarily correspond to the stable branch, but should be compatible with the version. This will be used to build the Docker image for the respective cluster under test and load test applications.
+
+![3-branch](assets/3-branch.png)
+
+One not optional parameter is the name of the load test. Please make sure to use an identifiable prefix (for example your initials), to make sure we can identify who created the load test, in case we need to reach out.
+
+![4-name](assets/4-name.png)
+
+After submitting the form you can observe the progress of the load test creation in the Actions tab of the mono repository.
+
+![5-build](assets/5-build.png)
 
 ##### Creating manually
 
@@ -250,16 +390,16 @@ When following the instructions above, execute all commands that deal with Docke
 
 ###### Installing manually
 
-The [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm chart repository contains a [detailed](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/README.md) guide regarding this.
+The [camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm) Helm chart repository contains a [detailed](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/README.md) guide regarding this.
 
 ```shell
-# Add the Zeebe benchmark chart to the local repository
-helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm/
+# Add the load test chart to the local repository
+helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
 # Install a new Helm Chart release to the current namespace
-helm install RELEASE-NAME zeebe-benchmark/zeebe-benchmark
+helm install this-is-a-load-test camunda-load-tests/camunda-load-tests
 ```
 
-To apply configuration changes, either edit the existing [values](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/values.yaml) file in the repository (and apply them via **\-f**) or set configurations via the **\--se**t flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
+To apply configuration changes, either edit the existing [values](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml) file in the repository (and apply them via `-f`) or set configurations via the `--set` flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
 
 ##### SaaS Test
 
@@ -267,10 +407,11 @@ One use case to create load tests manually is to run load tests against an SaaS 
 
 As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn’t matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
 
+Replace `PREFIX` with your initials or any other identifiable prefix, to make sure we can identify who created the load test, in case we need to reach out.
+
 ```shell
 # Source the downloaded credentials first, before run the following install command
-helm install ck-saas-load-test zeebe-benchmark/zeebe-benchmark \
-  --set camunda-platform.enabled=false \
+helm install PREFIX-saas-load-test camunda-load-tests/camunda-load-tests \
   --set saas.enabled=true \
   --set saas.credentials.clientId="$ZEEBE_CLIENT_ID" \
   --set saas.credentials.clientSecret="$ZEEBE_CLIENT_SECRET" \
@@ -304,7 +445,7 @@ With our chaos experiments, we pursue the following goals
 
 At the beginning of 2020, a practice called Chaos Days was formed, and the [first blog post](https://camunda.github.io/zeebe-chaos/2020/06/04/first-chaos-day) was posted.
 
-Chaos days are an event where we run manual chaos experiments, by defining a hypothesis and executing experiments to validate such. For such experiments, we use available tools like the [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm Chart to set up a general load test, and the [zbchaos](https://github.com/camunda/zeebe-chaos/tree/main/go-chaos) CLI to inject failures. At the end, we normally write a blog post about the experiment and results on our [zeebe chaos blog](https://camunda.github.io/zeebe-chaos/).
+Chaos days are an event where we run manual chaos experiments, by defining a hypothesis and executing experiments to validate such. For such experiments, we use available tools like the [camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm) Helm Chart to set up a general load test, and the [zbchaos](https://github.com/camunda/zeebe-chaos/tree/main/go-chaos) CLI to inject failures. At the end, we normally write a blog post about the experiment and results on our [zeebe chaos blog](https://camunda.github.io/zeebe-chaos/).
 
 The zbchaos CLI and blog resources are hosted in the [Zeebe chaos](https://github.com/camunda/zeebe-chaos) repository.
 

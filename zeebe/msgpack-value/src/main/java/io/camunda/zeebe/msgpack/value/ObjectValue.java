@@ -103,7 +103,12 @@ public class ObjectValue extends BaseValue {
       BaseProperty<? extends BaseValue> prop = null;
 
       for (int k = 0; k < declaredProperties.size(); ++k) {
-        final BaseProperty<?> declaredProperty = declaredProperties.get(k);
+        // Cycle on all declared properties, but start iterating through them
+        // by starting on i:
+        // keys are serialized in the same order, so in most cases we can find the right
+        // key without having to iterate on declaredProperties at all.
+        final var index = (i + k) % declaredProperties.size();
+        final BaseProperty<?> declaredProperty = declaredProperties.get(index);
         final StringValue declaredKey = declaredProperty.getKey();
 
         if (declaredKey.equals(decodedKey)) {
@@ -123,14 +128,7 @@ public class ObjectValue extends BaseValue {
       }
     }
 
-    // verify that all required properties are set
-    for (int p = 0; p < declaredProperties.size(); p++) {
-      final BaseProperty<?> prop = declaredProperties.get(p);
-      if (!prop.hasValue()) {
-        throw new RuntimeException(
-            String.format("Property '%s' has no valid value", prop.getKey()));
-      }
-    }
+    verifyAllDeclaredPropertiesAreSet();
   }
 
   @Override
@@ -142,6 +140,27 @@ public class ObjectValue extends BaseValue {
     length += getEncodedLength(undeclaredProperties);
 
     return length;
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("{");
+
+    writeJson(builder, declaredProperties, true);
+    writeJson(builder, undeclaredProperties, true);
+
+    builder.append("}");
+    return builder.toString();
+  }
+
+  private void verifyAllDeclaredPropertiesAreSet() {
+    for (final BaseProperty<?> prop : declaredProperties) {
+      if (!prop.hasValue()) {
+        throw new RuntimeException(
+            String.format("Property '%s' has no valid value", prop.getKey()));
+      }
+    }
   }
 
   private <T extends BaseProperty<?>> void writeJson(
@@ -207,17 +226,5 @@ public class ObjectValue extends BaseValue {
 
   public boolean isEmpty() {
     return declaredProperties.isEmpty() && undeclaredProperties.isEmpty();
-  }
-
-  @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("{");
-
-    writeJson(builder, declaredProperties, true);
-    writeJson(builder, undeclaredProperties, true);
-
-    builder.append("}");
-    return builder.toString();
   }
 }

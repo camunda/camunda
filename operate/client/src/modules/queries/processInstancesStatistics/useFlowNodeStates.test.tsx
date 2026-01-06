@@ -11,10 +11,10 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {useProcessInstancesFlowNodeStates} from './useFlowNodeStates';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 
 vi.mock('modules/hooks/useFilters');
-vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
 
 describe('useProcessInstancesFlowNodeStates', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
@@ -24,7 +24,10 @@ describe('useProcessInstancesFlowNodeStates', () => {
   );
 
   beforeEach(() => {
-    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(
+      filterModule,
+      'useProcessInstanceStatisticsFilters',
+    ).mockReturnValue({filter: {}});
   });
 
   it('should fetch flow node states successfully', async () => {

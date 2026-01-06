@@ -19,5 +19,22 @@
         ]
       }
     }
+  },
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "differences": [
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": {
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.process\\.test\\.api\\.coverage(\\..*)?/"
+          },
+          "justification": "These classes were in the API package accidentally. They are for internal use only. We moved them into the impl package."
+        }
+      ]
+    }
   }
 ]

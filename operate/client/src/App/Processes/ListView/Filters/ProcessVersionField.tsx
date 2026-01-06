@@ -10,19 +10,23 @@ import React from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {Dropdown} from '@carbon/react';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {
+  splitDefinitionIdentifier,
+  useProcessDefinitionVersions,
+} from 'modules/hooks/processDefinitions';
 
 const ProcessVersionField: React.FC = observer(() => {
-  const {versionsByProcessAndTenant} = processesStore;
-  const selectedProcessKey = useField('process').input.value;
-  const versions = versionsByProcessAndTenant[selectedProcessKey] ?? [];
-  const initialItems = versions.length > 1 ? ['all'] : [];
-  const items = [
-    ...initialItems,
-    ...versions.map(({version}) => version).sort((a, b) => b - a),
-  ];
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
   const form = useForm();
+  const processValue = useField('process').input.value;
+  const {definitionId, tenantId} = splitDefinitionIdentifier(processValue);
+
+  const {data: versions = []} = useProcessDefinitionVersions(
+    definitionId,
+    isMultiTenancyEnabled ? tenantId : undefined,
+  );
+
   const isDisabled =
     batchModificationStore.state.isEnabled || versions.length === 0;
 
@@ -40,7 +44,7 @@ const ProcessVersionField: React.FC = observer(() => {
               form.change('flowNodeId', undefined);
             }}
             disabled={isDisabled}
-            items={items}
+            items={versions}
             itemToString={(item) =>
               item === 'all' ? 'All versions' : item.toString()
             }

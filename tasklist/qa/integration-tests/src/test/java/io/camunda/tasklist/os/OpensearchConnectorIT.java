@@ -31,11 +31,12 @@ import net.bytebuddy.ByteBuddy;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
@@ -49,11 +50,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
     },
     properties = {
       "camunda.data.secondary-storage.type=opensearch",
+      "camunda.database.type=opensearch",
+      "camunda.tasklist.database=opensearch",
+      "camunda.operate.database=opensearch",
+      "zeebe.broker.exporters.camundaexporter.args.connect.type=opensearch",
     })
 public class OpensearchConnectorIT {
 
-  private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =
-      new OpensearchContainer<>("opensearchproject/opensearch")
+  @Container
+  private static final OpenSearchContainer<?> OPENSEARCH_CONTAINER =
+      new OpenSearchContainer<>("opensearchproject/opensearch:2.17.0")
           .withEnv(Map.of())
           .withExposedPorts(9200, 9205);
 
@@ -69,7 +75,6 @@ public class OpensearchConnectorIT {
   @BeforeAll
   static void beforeAll() {
     assumeTrue(TestUtil.isOpenSearch());
-    OPENSEARCH_CONTAINER.start();
     WIRE_MOCK_SERVER.start();
   }
 
@@ -117,10 +122,12 @@ public class OpensearchConnectorIT {
 
     setPluginConfig(registry, TasklistProperties.PREFIX + ".openSearch", plugin);
     // Unified configuration: db url + compatibility
-    registry.add("camunda.data.secondary-storage.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add("camunda.database.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add("camunda.data.secondary-storage.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add("camunda.operate.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add("camunda.tasklist.opensearch.url", WIRE_MOCK_SERVER::baseUrl);
+    registry.add(
+        "zeebe.broker.exporters.camundaexporter.args.connect.url", WIRE_MOCK_SERVER::baseUrl);
   }
 
   private static void setPluginConfig(

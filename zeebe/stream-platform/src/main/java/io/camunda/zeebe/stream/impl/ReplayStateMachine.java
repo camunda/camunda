@@ -86,6 +86,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private final ReplayMetrics replayMetrics;
   private final List<RecordProcessor> recordProcessors;
   private final int partitionId;
+  private String currentStateDescription = "idle";
 
   public ReplayStateMachine(
       final List<RecordProcessor> recordProcessors,
@@ -184,6 +185,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
         onRecordsReplayed();
 
       } else {
+        currentStateDescription = "awaiting record to replay";
         currentState = State.AWAIT_RECORD;
       }
 
@@ -227,6 +229,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
                 < 0)) { // some events might not have a source pointer
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
+      LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
+      currentStateDescription = "replaying event %s".formatted(typedEvent);
 
       final var processor =
           recordProcessors.stream()
@@ -320,6 +324,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   public long getLastReplayedEventPosition() {
     return lastReplayedEventPosition;
+  }
+
+  String describeCurrentState() {
+    return currentStateDescription;
   }
 
   public void close() {

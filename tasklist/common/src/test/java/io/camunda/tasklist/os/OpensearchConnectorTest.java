@@ -48,7 +48,7 @@ class OpensearchConnectorTest {
         List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
 
     final var connector = Mockito.spy(new OpenSearchConnector());
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(OpenSearchClient.class));
+    Mockito.doReturn(true).when(connector).isHealthy(Mockito.any(OpenSearchClient.class));
     connector.setOsClientRepository(pluginRepository);
     connector.setTasklistProperties(taskListProperties);
     connector.setTasklistObjectMapper(new ObjectMapper());

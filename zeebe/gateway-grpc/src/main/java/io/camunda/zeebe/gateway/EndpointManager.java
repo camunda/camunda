@@ -42,6 +42,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -419,6 +421,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toBroadcastSignalRequest,
         ResponseMapper::toBroadcastSignalResponse,
+        responseObserver);
+  }
+
+  public void evaluateConditional(
+      final EvaluateConditionalRequest request,
+      final ServerStreamObserver<EvaluateConditionalResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toEvaluateConditionalRequest,
+        ResponseMapper::toEvaluateConditionalResponse,
         responseObserver);
   }
 

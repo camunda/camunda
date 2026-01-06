@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -83,15 +83,49 @@ public class AuthorizationSortIT {
         Comparator.comparing(AuthorizationEntity::resourceType).reversed());
   }
 
+  @TestTemplate
+  public void shouldSortByResourceIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.resourceId().asc(),
+        Comparator.comparing(AuthorizationEntity::resourceId));
+  }
+
+  @TestTemplate
+  public void shouldSortByResourceIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.resourceId().desc(),
+        Comparator.comparing(AuthorizationEntity::resourceId).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByResourcePropertyNameAsc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.resourcePropertyName().asc(),
+        Comparator.comparing(AuthorizationEntity::resourcePropertyName));
+  }
+
+  @TestTemplate
+  public void shouldSortByResourcePropertyNameDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.resourcePropertyName().desc(),
+        Comparator.comparing(AuthorizationEntity::resourcePropertyName).reversed());
+  }
+
   private void testSorting(
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<AuthorizationSort>> sortBuilder,
       final Comparator<AuthorizationEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuthorizationDbReader reader = rdbmsService.getAuthorizationReader();
 
     final var requirementsKey = nextKey();
-    createAndSaveRandomAuthorizations(rdbmsWriter, b -> b);
+    createAndSaveRandomAuthorizations(rdbmsWriters, b -> b);
 
     final var searchResult =
         reader

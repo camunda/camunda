@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
@@ -362,6 +364,7 @@ public final class RequestMapper extends RequestUtil {
         new BrokerModifyProcessInstanceRequest()
             .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
             .addActivateInstructions(grpcRequest.getActivateInstructionsList())
+            .addMoveInstructions(grpcRequest.getMoveInstructionsList())
             .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
 
     if (grpcRequest.hasOperationReference()) {
@@ -401,6 +404,19 @@ public final class RequestMapper extends RequestUtil {
     return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
+  }
+
+  public static BrokerEvaluateConditionalRequest toEvaluateConditionalRequest(
+      final EvaluateConditionalRequest grpcRequest) {
+    final BrokerEvaluateConditionalRequest brokerRequest = new BrokerEvaluateConditionalRequest();
+
+    if (grpcRequest.hasProcessDefinitionKey()) {
+      brokerRequest.setProcessDefinitionKey(grpcRequest.getProcessDefinitionKey());
+    }
+
+    return brokerRequest
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setTenantId(ensureTenantIdSet("EvaluateConditional", grpcRequest.getTenantId()));
   }
 
   public static JobActivationProperties toJobActivationProperties(

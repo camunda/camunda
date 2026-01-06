@@ -12,13 +12,12 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {ProcessInstanceHeader} from '../index';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {operationsStore} from 'modules/stores/operations';
-import {mockInstanceDeprecated, mockInstance} from './index.setup';
+import {mockInstance} from './index.setup';
 import {MemoryRouter} from 'react-router-dom';
 import {createUser, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
@@ -35,7 +34,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
       operationsStore.reset();
-      processInstanceDetailsStore.reset();
       authenticationStore.reset();
     };
   }, []);
@@ -57,7 +55,10 @@ describe('InstanceHeader', () => {
       multiTenancyEnabled: true,
     });
 
-    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
@@ -72,9 +73,6 @@ describe('InstanceHeader', () => {
       wrapper: Wrapper,
     });
 
-    processInstanceDetailsStore.init({
-      id: mockInstanceDeprecated.id,
-    });
     await waitForElementToBeRemoved(
       screen.queryByTestId('instance-header-skeleton'),
     );
@@ -98,7 +96,10 @@ describe('InstanceHeader', () => {
   });
 
   it('should hide multi tenancy column and exclude tenant from version link', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
@@ -113,9 +114,6 @@ describe('InstanceHeader', () => {
       wrapper: Wrapper,
     });
 
-    processInstanceDetailsStore.init({
-      id: mockInstanceDeprecated.id,
-    });
     await waitForElementToBeRemoved(
       screen.queryByTestId('instance-header-skeleton'),
     );

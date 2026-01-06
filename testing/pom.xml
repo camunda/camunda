@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>camunda-library-parent</artifactId>
     <version>8.9.0-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
+    <relativePath>../library-parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>camunda-testing</artifactId>
@@ -24,6 +24,7 @@
     <module>camunda-process-test-java</module>
     <module>camunda-process-test-spring</module>
     <module>camunda-process-test-example</module>
+    <module>camunda-process-test-dsl</module>
   </modules>
 
   <properties>

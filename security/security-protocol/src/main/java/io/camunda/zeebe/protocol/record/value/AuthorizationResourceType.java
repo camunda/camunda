@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public enum AuthorizationResourceType {
+  AUDIT_LOG(PermissionType.READ),
   AUTHORIZATION(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   BATCH(
@@ -28,6 +29,7 @@ public enum AuthorizationResourceType {
       PermissionType.READ,
       PermissionType.UPDATE),
   COMPONENT(PermissionType.ACCESS),
+  CLUSTER_VARIABLE(PermissionType.CREATE, PermissionType.DELETE, PermissionType.READ),
   DECISION_DEFINITION(
       PermissionType.CREATE_DECISION_INSTANCE,
       PermissionType.READ_DECISION_DEFINITION,
@@ -35,6 +37,7 @@ public enum AuthorizationResourceType {
       PermissionType.DELETE_DECISION_INSTANCE),
   DECISION_REQUIREMENTS_DEFINITION(PermissionType.READ),
   DOCUMENT(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
+  EXPRESSION(PermissionType.EVALUATE),
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MAPPING_RULE(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),

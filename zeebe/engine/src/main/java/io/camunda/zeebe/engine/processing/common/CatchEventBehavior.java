@@ -13,13 +13,17 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -32,9 +36,11 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -46,26 +52,34 @@ import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class CatchEventBehavior {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CatchEventBehavior.class);
 
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final RoutingInfo routingInfo;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final TypedCommandWriter commandWriter;
 
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
   private final ProcessState processState;
   private final SignalSubscriptionState signalSubscriptionState;
+  private final ConditionalSubscriptionState conditionalSubscriptionState;
 
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
+  private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
+  private final ConditionalSubscriptionRecord conditionalSubscription =
+      new ConditionalSubscriptionRecord();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
-  private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
   private final InstantSource clock;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
 
@@ -74,22 +88,23 @@ public final class CatchEventBehavior {
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final StateWriter stateWriter,
-      final SideEffectWriter sideEffectWriter,
+      final Writers writers,
       final DueDateTimerChecker timerChecker,
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.stateWriter = stateWriter;
-    this.sideEffectWriter = sideEffectWriter;
+    stateWriter = writers.state();
+    sideEffectWriter = writers.sideEffect();
+    commandWriter = writers.command();
     this.routingInfo = routingInfo;
 
     timerInstanceState = processingState.getTimerState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     processState = processingState.getProcessState();
     signalSubscriptionState = processingState.getSignalSubscriptionState();
+    conditionalSubscriptionState = processingState.getConditionalSubscriptionState();
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
@@ -145,6 +160,22 @@ public final class CatchEventBehavior {
     unsubscribeFromMessageEvents(
         elementInstanceKey, sub -> elementIdFilter.test(sub.getRecord().getElementIdBuffer()));
     unsubscribeFromSignalEvents(elementInstanceKey, elementIdFilter);
+    unsubscribeFromConditionalEvents(elementInstanceKey, elementIdFilter);
+  }
+
+  private void unsubscribeFromConditionalEvents(
+      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    conditionalSubscriptionState.visitByScopeKey(
+        elementInstanceKey,
+        subscription -> {
+          if (elementIdFilter.test(subscription.getRecord().getCatchEventIdBuffer())) {
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(),
+                ConditionalSubscriptionIntent.DELETED,
+                subscription.getRecord());
+          }
+          return true;
+        });
   }
 
   /**
@@ -201,6 +232,10 @@ public final class CatchEventBehavior {
           subscribeToSignalEvents(context, results);
         });
 
+    // conditional events don't require expression evaluation for subscription
+    // condition expressions are stored as-is and evaluated when a variable changes
+    subscribeToConditionalEvents(context, supplier);
+
     return evaluationResults.map(r -> null);
   }
 
@@ -224,11 +259,12 @@ public final class CatchEventBehavior {
       return Either.right(evaluation);
     }
     final var scopeKey = evaluation.context().getElementInstanceKey();
+    final var tenantId = evaluation.context().getTenantId();
     final ExecutableMessage message = event.getMessage();
     final Expression messageNameExpression = message.getMessageNameExpression();
     return evaluation
         .expressionProcessor()
-        .evaluateStringExpression(messageNameExpression, scopeKey)
+        .evaluateStringExpression(messageNameExpression, scopeKey, tenantId)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordMessageName);
   }
@@ -246,9 +282,10 @@ public final class CatchEventBehavior {
         event.getElementType() == BpmnElementType.BOUNDARY_EVENT
             ? context.getFlowScopeKey()
             : context.getElementInstanceKey();
+    final String tenantId = context.getTenantId();
     return evaluation
         .expressionProcessor()
-        .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
+        .evaluateMessageCorrelationKeyExpression(expression, scopeKey, tenantId)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordCorrelationKey)
         .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
@@ -260,10 +297,12 @@ public final class CatchEventBehavior {
     if (!event.isTimer()) {
       return Either.right(evaluation);
     }
-    final var scopeKey = context.getElementInstanceKey();
     return event
         .getTimerFactory()
-        .apply(evaluation.expressionProcessor(), scopeKey)
+        .apply(
+            evaluation.expressionProcessor(),
+            context.getElementInstanceKey(),
+            context.getTenantId())
         .map(evaluation::recordTimer);
   }
 
@@ -275,11 +314,12 @@ public final class CatchEventBehavior {
       return Either.right(evaluation);
     }
     final var scopeKey = evaluation.context().getElementInstanceKey();
+    final var tenantId = evaluation.context().getTenantId();
     final ExecutableSignal signal = event.getSignal();
     final Expression signalNameExpression = signal.getSignalNameExpression();
     return evaluation
         .expressionProcessor()
-        .evaluateStringExpression(signalNameExpression, scopeKey)
+        .evaluateStringExpression(signalNameExpression, scopeKey, tenantId)
         .map(BufferUtil::wrapString)
         .map(evaluation::recordSignalName);
   }
@@ -299,6 +339,7 @@ public final class CatchEventBehavior {
     final long processInstanceKey = context.getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
+    final long processDefinitionKey = context.getProcessDefinitionKey();
 
     final int subscriptionPartitionId = routingInfo.partitionForCorrelationKey(correlationKey);
 
@@ -306,6 +347,7 @@ public final class CatchEventBehavior {
     subscription.setMessageName(messageName);
     subscription.setElementInstanceKey(elementInstanceKey);
     subscription.setProcessInstanceKey(processInstanceKey);
+    subscription.setProcessDefinitionKey(processDefinitionKey);
     subscription.setBpmnProcessId(bpmnProcessId);
     subscription.setCorrelationKey(correlationKey);
     subscription.setElementId(event.getId());
@@ -320,6 +362,7 @@ public final class CatchEventBehavior {
         subscriptionPartitionId,
         processInstanceKey,
         elementInstanceKey,
+        processDefinitionKey,
         bpmnProcessId,
         messageName,
         correlationKey,
@@ -413,6 +456,77 @@ public final class CatchEventBehavior {
         subscriptionKey, SignalSubscriptionIntent.CREATED, signalSubscription);
   }
 
+  private void subscribeToConditionalEvents(
+      final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
+    supplier.getEvents().stream()
+        .filter(ExecutableCatchEvent::isConditional)
+        .forEach(event -> subscribeToConditionalEvent(context, event));
+  }
+
+  /**
+   * Closest scope key for different elements \(equals to context.getElementInstanceKey\):
+   *
+   * <ul>
+   *   <li>Boundary event &rarr; attached activity
+   *   <li>Intermediate catch event &rarr; element itself
+   *   <li>Event subprocess start event &rarr; flow scope that is enclosing the event subprocess
+   *   <li>Root level start event &rarr; not handled here, will be evaluated through endpoint call
+   * </ul>
+   */
+  private void subscribeToConditionalEvent(
+      final BpmnElementContext context, final ExecutableCatchEvent event) {
+    final var conditional = event.getConditional();
+
+    conditionalSubscription.reset();
+    conditionalSubscription
+        .setScopeKey(context.getElementInstanceKey())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setCatchEventId(event.getId())
+        .setInterrupting(event.isInterrupting())
+        .setCondition(BufferUtil.wrapString(conditional.getCondition()))
+        .setVariableNames(conditional.getVariableNames())
+        .setVariableEvents(conditional.getVariableEvents())
+        .setTenantId(context.getTenantId());
+
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, ConditionalSubscriptionIntent.CREATED, conditionalSubscription);
+
+    // Evaluate the condition immediately after creating the subscription.
+    // If it evaluates to true, the conditional event is triggered right away.
+    tryEvaluateSubscription(conditional, subscriptionKey, conditionalSubscription);
+  }
+
+  private void tryEvaluateSubscription(
+      final ExecutableConditional conditional,
+      final long subscriptionKey,
+      final ConditionalSubscriptionRecord subscriptionRecord) {
+    final var scopeKey = subscriptionRecord.getScopeKey();
+    final String tenantId = subscriptionRecord.getTenantId();
+    final Expression conditionExpression = conditional.getConditionExpression();
+
+    final Either<Failure, Boolean> evaluation =
+        expressionProcessor.evaluateBooleanExpression(conditionExpression, scopeKey, tenantId);
+    if (evaluation.isRight()) {
+      if (Boolean.TRUE.equals(evaluation.get())) {
+        commandWriter.appendFollowUpCommand(
+            subscriptionKey, ConditionalSubscriptionIntent.TRIGGER, subscriptionRecord);
+      }
+    } else {
+      // log and ignore evaluation failures
+      // conditional events are re-evaluated on variable changes
+      LOG.debug(
+          "Failed to evaluate condition on conditional event subscription creation for "
+              + "catch event with id '{}' in element instance with key '{}' and scope key '{}': {}",
+          subscriptionRecord.getCatchEventId(),
+          subscriptionRecord.getElementInstanceKey(),
+          scopeKey,
+          evaluation.getLeft().getMessage());
+    }
+  }
+
   public void unsubscribeFromSignalEventsBySubscriptionFilter(
       final long elementInstanceKey, final Predicate<SignalSubscription> signalSubscriptionFilter) {
     signalSubscriptionState.visitByElementInstanceKey(
@@ -482,6 +596,7 @@ public final class CatchEventBehavior {
     final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
+    final long processDefinitionKey = subscription.getRecord().getProcessDefinitionKey();
     final String tenantId = subscription.getRecord().getTenantId();
 
     stateWriter.appendFollowUpEvent(
@@ -491,6 +606,7 @@ public final class CatchEventBehavior {
         subscriptionPartitionId,
         processInstanceKey,
         elementInstanceKey,
+        processDefinitionKey,
         messageName,
         subscription.getRecord().getTenantId());
     final var lastSentTime = clock.millis();
@@ -510,16 +626,23 @@ public final class CatchEventBehavior {
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
+      final long processDefinitionKey,
       final DirectBuffer messageName,
       final String tenantId) {
     return subscriptionCommandSender.closeMessageSubscription(
-        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName, tenantId);
+        subscriptionPartitionId,
+        processInstanceKey,
+        elementInstanceKey,
+        processDefinitionKey,
+        messageName,
+        tenantId);
   }
 
   private boolean sendOpenMessageSubscription(
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
+      final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
@@ -529,6 +652,7 @@ public final class CatchEventBehavior {
         subscriptionPartitionId,
         processInstanceKey,
         elementInstanceKey,
+        processDefinitionKey,
         bpmnProcessId,
         messageName,
         correlationKey,

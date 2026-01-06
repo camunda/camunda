@@ -33,6 +33,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
 import io.grpc.ClientInterceptor;
@@ -43,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -188,6 +190,20 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder jobWorkerSchedulingExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership) {
+    innerBuilder.jobWorkerSchedulingExecutor(executor, takeOwnership);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder jobHandlingExecutor(
+      final ExecutorService executor, final boolean takeOwnership) {
+    innerBuilder.jobHandlingExecutor(executor, takeOwnership);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder defaultJobWorkerName(final String workerName) {
     innerBuilder.defaultJobWorkerName(workerName);
     return this;
@@ -292,6 +308,13 @@ public class CamundaClientCloudBuilderImpl
   @Override
   public CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
     innerBuilder.preferRestOverGrpc(preferRestOverGrpc);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder defaultJobWorkerExceptionHandler(
+      final JobExceptionHandler jobExceptionHandler) {
+    innerBuilder.defaultJobWorkerExceptionHandler(jobExceptionHandler);
     return this;
   }
 

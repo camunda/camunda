@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.util;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.configuration.Camunda;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
 import org.mockito.Mockito;
@@ -31,5 +32,10 @@ public class RdbmsTestConfiguration {
   @Bean
   public MeterRegistry meterRegistry() {
     return Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS);
+  }
+
+  @Bean
+  public Camunda camunda() {
+    return Mockito.mock(Camunda.class, Mockito.RETURNS_DEEP_STUBS);
   }
 }

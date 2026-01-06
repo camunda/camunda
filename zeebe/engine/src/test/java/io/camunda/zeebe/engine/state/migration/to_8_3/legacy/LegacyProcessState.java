@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -83,7 +84,7 @@ public final class LegacyProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock, null);
+    transformer = BpmnFactory.createTransformer(clock, ExpressionLanguageMetrics.noop());
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     processColumnFamily =

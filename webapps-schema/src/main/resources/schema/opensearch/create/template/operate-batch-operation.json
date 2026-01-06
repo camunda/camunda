@@ -30,9 +30,15 @@
 			},
 			"username": {
 				"type": "keyword"
-      },
-      "state": {
-        "type": "keyword"
+			},
+			"actorType": {
+				"type": "keyword"
+			},
+			"actorId": {
+				"type": "keyword"
+			},
+			"state": {
+				"type": "keyword"
       },
       "operationsFailedCount": {
         "type": "long"

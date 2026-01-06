@@ -6,12 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {incidentsStore} from 'modules/stores/incidents';
 import {IncidentsBanner} from './IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -33,6 +32,7 @@ import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
+import {ModificationDropdown as ModificationDropdownV1} from './ModificationDropdown/indexV1';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
@@ -42,11 +42,12 @@ import {useExecutedFlowNodes} from 'modules/queries/flownodeInstancesStatistics/
 import {useModificationsByFlowNode} from 'modules/hooks/modifications';
 import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagram';
 import {
-  clearSelection,
+  clearSelection as clearSelectionV1,
   getSelectedRunningInstanceCount,
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
 import {
+  useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
@@ -70,9 +71,12 @@ import {
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
+import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
+import {isInstanceRunning} from 'modules/utils/instance';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -104,9 +108,11 @@ const TopPanel: React.FC = observer(() => {
   const {data: statistics} = useFlownodeStatistics();
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
   const {data: executedFlowNodes} = useExecutedFlowNodes();
-  const {data: totalRunningInstances} = useTotalRunningInstancesForFlowNode(
+  const {data: totalRunningInstancesV1} = useTotalRunningInstancesForFlowNode(
     currentSelection?.flowNodeId,
   );
+  const {data: totalRunningInstancesByFlowNode} =
+    useTotalRunningInstancesByFlowNode();
   const {data: businessObjects} = useBusinessObjects();
   const {data: totalMoveOperationRunningInstances} =
     useTotalRunningInstancesForFlowNode(
@@ -129,16 +135,28 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
+  const {isExecutionCountVisible} = executionCountToggleStore.state;
+  const {clearSelection, selectedElementId, selectElement} =
+    useProcessInstanceElementSelection();
+
+  const {data: selectedElementRunningInstancesCount} =
+    useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
+  const hasSelectedElementMultipleRunningInstances =
+    selectedElementRunningInstancesCount !== undefined &&
+    selectedElementRunningInstancesCount > 1;
+
   const isRootNodeSelected = useIsRootNodeSelected();
+  const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+    totalRunningInstancesForFlowNode: totalRunningInstancesV1 ?? 0,
+    isRootNodeSelected,
+  });
 
   const {
     data: processDefinitionData,
     isPending: isXmlFetching,
     isError: isXmlError,
     error: xmlError,
-  } = useProcessInstanceXml({
-    processDefinitionKey,
-  });
+  } = useProcessInstanceXml({processDefinitionKey});
 
   useEffect(() => {
     if (flowNodeInstancesStatistics?.items && processInstance) {
@@ -155,48 +173,72 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeIdsWithIncidents = statistics
-    ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
-    ?.map((flowNode) => flowNode.id);
+  const flowNodeStateOverlays = useMemo(() => {
+    const flowNodeIdsWithIncidents = statistics
+      ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
+      ?.map((flowNode) => flowNode.id);
 
-  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
-    (flowNodeId) => businessObjects?.[flowNodeId],
-  );
+    const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
+      (flowNodeId) => businessObjects?.[flowNodeId],
+    );
 
-  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
-    selectableFlowNodesWithIncidents,
-  );
+    const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+      selectableFlowNodesWithIncidents,
+    );
 
-  const allFlowNodeStateOverlays = [
-    ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
-      payload: {flowNodeState, count},
-      type: OVERLAY_TYPE_STATE,
-      flowNodeId,
-      position: overlayPositions[flowNodeState],
-    })) || []),
-    ...subprocessOverlays,
-  ];
+    const allFlowNodeStateOverlays = [
+      ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
+        payload: {flowNodeState, count},
+        type: OVERLAY_TYPE_STATE,
+        flowNodeId,
+        position: overlayPositions[flowNodeState],
+      })) || []),
+      ...subprocessOverlays,
+    ];
 
-  const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
-    (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
-  );
+    const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
+      (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
+    );
 
-  const flowNodeStateOverlays = executionCountToggleStore.state
-    .isExecutionCountVisible
-    ? allFlowNodeStateOverlays
-    : notCompletedFlowNodeStateOverlays;
+    return isExecutionCountVisible
+      ? allFlowNodeStateOverlays
+      : notCompletedFlowNodeStateOverlays;
+  }, [statistics, businessObjects, isExecutionCountVisible]);
 
-  const compensationAssociationIds = Object.values(
-    processDefinitionData?.diagramModel.elementsById ?? {},
-  )
-    .filter(isCompensationAssociation)
-    .filter(({targetRef}) => {
-      // check if the target element for the association was executed
-      return executedFlowNodes?.find(({elementId, completed}) => {
-        return targetRef?.id === elementId && completed > 0;
-      });
-    })
-    .map(({id}) => id);
+  const selectedFlowNode = useMemo(() => {
+    return flowNodeSelection?.anchorFlowNodeId
+      ? [flowNodeSelection.anchorFlowNodeId]
+      : flowNodeSelection?.flowNodeId
+        ? [flowNodeSelection.flowNodeId]
+        : undefined;
+  }, [flowNodeSelection?.anchorFlowNodeId, flowNodeSelection?.flowNodeId]);
+
+  const highlightedSequenceFlows = useMemo(() => {
+    const compensationAssociationIds = Object.values(
+      processDefinitionData?.diagramModel.elementsById ?? {},
+    )
+      .filter(isCompensationAssociation)
+      .filter(({targetRef}) => {
+        // check if the target element for the association was executed
+        return executedFlowNodes?.find(({elementId, completed}) => {
+          return targetRef?.id === elementId && completed > 0;
+        });
+      })
+      .map(({id}) => id);
+
+    return [
+      ...(processedSequenceFlowsFromHook || []),
+      ...compensationAssociationIds,
+    ];
+  }, [
+    processedSequenceFlowsFromHook,
+    processDefinitionData,
+    executedFlowNodes,
+  ]);
+
+  const highlightedSequenceFlowIds = useMemo(() => {
+    return executedFlowNodes?.map(({elementId}) => elementId);
+  }, [executedFlowNodes]);
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsByFlowNode).reduce<
@@ -231,26 +273,22 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableFlowNodes = useModifiableFlowNodes();
 
-  // Conditional hook call, but the condition is static during runtime.
-  const incidentsCount = IS_INCIDENTS_PANEL_V2
-    ? useProcessInstanceIncidentsCount(processInstanceId)
-    : incidentsStore.incidentsCount;
-  const isIncidentBarOpen = IS_INCIDENTS_PANEL_V2
-    ? incidentsPanelStore.state.isPanelVisible
-    : incidentsStore.state.isIncidentBarOpen;
+  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceId, {
+    enabled:
+      processInstance &&
+      isInstanceRunning(processInstance) &&
+      !!processInstance.hasIncident,
+  });
+  const isIncidentBarOpen = incidentsPanelStore.state.isPanelVisible;
 
   const {isModificationModeEnabled} = modificationsStore;
 
   useEffect(() => {
     if (!isModificationModeEnabled) {
       if (flowNodeSelection?.flowNodeId) {
-        tracking.track({
-          eventName: 'metadata-popover-opened',
-        });
+        tracking.track({eventName: 'metadata-popover-opened'});
       } else {
-        tracking.track({
-          eventName: 'metadata-popover-closed',
-        });
+        tracking.track({eventName: 'metadata-popover-closed'});
       }
     }
   }, [flowNodeSelection?.flowNodeId, isModificationModeEnabled]);
@@ -287,15 +325,14 @@ const TopPanel: React.FC = observer(() => {
                 ? 'incidents-panel-closed'
                 : 'incidents-panel-opened',
             });
-
-            if (IS_INCIDENTS_PANEL_V2) {
-              incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
-            } else {
-              incidentsStore.setIncidentBarOpen(!isIncidentBarOpen);
-            }
+            incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
           }}
           isOpen={isIncidentBarOpen}
         />
+      )}
+
+      {modificationsStore.state.status === 'requires-ancestor-selection' && (
+        <ModificationInfoBanner text="Target flow node has multiple parent scopes. Please select parent node from Instance History to move." />
       )}
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
@@ -314,12 +351,13 @@ const TopPanel: React.FC = observer(() => {
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount({
-          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
-          isRootNodeSelected,
-        }) > 1 && (
-          <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
-        )}
+        (IS_ELEMENT_SELECTION_V2
+          ? hasSelectedElementMultipleRunningInstances && (
+              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+            )
+          : selectedRunningInstanceCount > 1 && (
+              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+            ))}
       {modificationsStore.state.status === 'adding-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -344,29 +382,38 @@ const TopPanel: React.FC = observer(() => {
                     ? modifiableFlowNodes
                     : selectableFlowNodes
                 }
-                selectedFlowNodeIds={
-                  flowNodeSelection?.anchorFlowNodeId
-                    ? [flowNodeSelection.anchorFlowNodeId]
-                    : flowNodeSelection?.flowNodeId
-                      ? [flowNodeSelection.flowNodeId]
-                      : undefined
-                }
+                selectedFlowNodeIds={selectedFlowNode}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
-                    clearSelection(rootNode);
+                    const ancestorSelectionRequired = hasMultipleScopes(
+                      businessObjects[flowNodeId ?? ''],
+                      totalRunningInstancesByFlowNode,
+                    );
+
+                    if (IS_ELEMENT_SELECTION_V2) {
+                      clearSelection();
+                    } else {
+                      clearSelectionV1(rootNode);
+                    }
                     finishMovingToken(
                       affectedTokenCount,
                       visibleAffectedTokenCount,
                       businessObjects,
                       processInstance?.processDefinitionId,
                       flowNodeId,
+                      ancestorSelectionRequired,
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {
-                      selectFlowNode(rootNode, {
-                        flowNodeId,
-                        isMultiInstance,
-                      });
+                      if (IS_ELEMENT_SELECTION_V2) {
+                        if (flowNodeId !== undefined) {
+                          selectElement(flowNodeId, isMultiInstance);
+                        } else {
+                          clearSelection();
+                        }
+                      } else {
+                        selectFlowNode(rootNode, {flowNodeId, isMultiInstance});
+                      }
                     }
                   }
                 }}
@@ -380,18 +427,29 @@ const TopPanel: React.FC = observer(() => {
                 }
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (
-                    <ModificationDropdown />
+                    IS_ELEMENT_SELECTION_V2 ? (
+                      <ModificationDropdown />
+                    ) : (
+                      <ModificationDropdownV1 />
+                    )
                   ) : (
                     !isIncidentBarOpen && <MetadataPopover />
                   )
                 }
-                highlightedSequenceFlows={[
-                  ...(processedSequenceFlowsFromHook || []),
-                  ...compensationAssociationIds,
-                ]}
-                highlightedFlowNodeIds={executedFlowNodes?.map(
-                  ({elementId}) => elementId,
-                )}
+                highlightedSequenceFlows={highlightedSequenceFlows}
+                highlightedFlowNodeIds={highlightedSequenceFlowIds}
+                nonSelectableNodeTooltipText={
+                  isModificationModeEnabled
+                    ? 'Modification is not supported for this flow node.'
+                    : undefined
+                }
+                hasOuterBorderOnSelection={
+                  IS_ELEMENT_SELECTION_V2
+                    ? !isModificationModeEnabled ||
+                      hasSelectedElementMultipleRunningInstances
+                    : !isModificationModeEnabled ||
+                      selectedRunningInstanceCount > 1
+                }
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {

@@ -29,19 +29,18 @@ import org.junit.jupiter.params.provider.ValueSource;
 @ZeebeIntegration
 public class LongPollingActivateJobsTest {
 
-  @AutoClose CamundaClient client;
-
   @TestZeebe
-  final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withGatewayConfig(c -> c.getLongPolling().setEnabled(true));
+          .withUnifiedConfig(c -> c.getApi().getLongPolling().setEnabled(true));
 
+  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -70,7 +69,8 @@ public class LongPollingActivateJobsTest {
     // given
     final int availableJobs = 10;
 
-    final int maxMessageSize = (int) zeebe.brokerConfig().getNetwork().getMaxMessageSizeInBytes();
+    final int maxMessageSize =
+        (int) ZEEBE.unifiedConfig().getCluster().getNetwork().getMaxMessageSize().toBytes();
     final var largeVariableValue = "x".repeat(maxMessageSize / 4);
     final String variablesJson = String.format("{\"variablesJson\":\"%s\"}", largeVariableValue);
 
@@ -157,7 +157,7 @@ public class LongPollingActivateJobsTest {
   private void sendActivateRequestsAndClose(final boolean useRest, final String jobType)
       throws InterruptedException {
     for (int i = 0; i < 3; i++) {
-      final CamundaClient tempClient = zeebe.newClientBuilder().build();
+      final CamundaClient tempClient = ZEEBE.newClientBuilder().build();
 
       getCommand(tempClient, useRest)
           .jobType(jobType)

@@ -15,6 +15,8 @@ import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIndexFile;
+import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -32,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 /**
  * {@link BackupStore} for Azure. Stores all backups in a given bucket.
@@ -51,6 +52,7 @@ public final class AzureBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
+  private final AzureIndexManager indexManager;
 
   AzureBackupStore(final AzureBackupConfig config) {
     this(config, buildClient(config));
@@ -62,6 +64,7 @@ public final class AzureBackupStore implements BackupStore {
 
     fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
     manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
+    indexManager = new AzureIndexManager(blobContainerClient, isCreateContainer(config));
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -210,6 +213,25 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
+    if (!(indexFile instanceof final AzureBackupIndexFile azureIndexFile)) {
+      throw new IllegalArgumentException(
+          "Expected index file of type %s but got %s: %s"
+              .formatted(
+                  AzureBackupIndexFile.class.getSimpleName(),
+                  indexFile.getClass().getSimpleName(),
+                  indexFile));
+    }
+    return CompletableFuture.runAsync(() -> indexManager.upload(azureIndexFile), executor);
+  }
+
+  @Override
+  public CompletableFuture<BackupIndexFile> restoreIndex(
+      final BackupIndexIdentifier id, final Path targetPath) {
+    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -278,6 +300,6 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static BackupStore of(final AzureBackupConfig storeConfig) {
-    return new AzureBackupStore(storeConfig).logging(LOG, Level.INFO);
+    return new AzureBackupStore(storeConfig);
   }
 }

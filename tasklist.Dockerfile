@@ -1,10 +1,14 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="alpine:3.22.1"
-ARG BASE_DIGEST="sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1"
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:02c2cf18eccbdc6db778c4e3f1cad080e52e6aa31282cb7e98628c4051c80f64"
 
-# Prepare tasklist Distribution
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="alpine:3.23.0"
+#ARG BASE_DIGEST="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+
+# Prepare Tasklist Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
-
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/tasklist
 
@@ -12,18 +16,13 @@ WORKDIR /tmp/tasklist
 COPY ${DISTBALL} tasklist.tar.gz
 RUN tar xzvf tasklist.tar.gz --strip 1 && \
     rm tasklist.tar.gz
-
-### Base image ###
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
-
-# Install Tini
-RUN apk update && apk add --no-cache tini
+COPY docker-notice.txt notice.txt
+RUN sed -i '/^exec /i cat /usr/local/tasklist/notice.txt' bin/tasklist
 
 ### Application Image ###
 # hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
 
-FROM base AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -32,7 +31,7 @@ ARG DATE=""
 ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="hto@camunda.com"
@@ -56,15 +55,14 @@ LABEL io.k8s.description="Tasklist is a ready-to-use application to rapidly impl
 
 EXPOSE 8080
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash openjdk21-jre tzdata gcompat libgcc libc6-compat
-
 ENV TASKLIST_HOME=/usr/local/tasklist
 
 WORKDIR ${TASKLIST_HOME}
 VOLUME /tmp
 VOLUME ${TASKLIST_HOME}/logs
 
+# Switch to root to allow setting up our own user
+USER root
 RUN addgroup --gid 1001 camunda && \
     adduser -D -h ${TASKLIST_HOME} -G camunda -u 1001 camunda && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
@@ -80,4 +78,4 @@ RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
 
 USER 1001:1001
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/tasklist/bin/tasklist"]
+ENTRYPOINT ["/usr/local/tasklist/bin/tasklist"]

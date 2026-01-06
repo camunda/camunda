@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_AUTH_CHECK_MISSING;
 import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_TENANT_CHECK_MISSING;
@@ -21,6 +22,8 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
+import io.camunda.security.auth.condition.SingleAuthorizationCondition;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -82,14 +85,39 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     if (!authorizationCheck.enabled()) {
       return matchAll();
     }
-    final var authorization = authorizationCheck.authorization();
-    final var resourceIds = authorization.resourceIds();
 
-    if (resourceIds == null || resourceIds.isEmpty()) {
+    final var condition = authorizationCheck.authorizationCondition();
+    return switch (condition) {
+      case final SingleAuthorizationCondition single ->
+          applyAuthorizationCheck(single.authorization());
+      case final AnyOfAuthorizationCondition anyOf -> applyAnyOfAuthorizationCheck(anyOf);
+      default ->
+          throw new IllegalStateException(
+              "Unsupported AuthorizationCondition type: " + condition.getClass().getSimpleName());
+    };
+  }
+
+  private SearchQuery applyAuthorizationCheck(final Authorization<?> authorization) {
+    if (!authorization.hasAnyResourceIds()) {
       return matchNone();
     }
 
     return toAuthorizationCheckSearchQuery(authorization);
+  }
+
+  private SearchQuery applyAnyOfAuthorizationCheck(final AnyOfAuthorizationCondition anyOf) {
+    final var queries =
+        anyOf.authorizations().stream()
+            .map(this::applyAuthorizationCheck)
+            .filter(Objects::nonNull)
+            .filter(q -> !(q.queryOption() instanceof SearchMatchNoneQuery))
+            .toList();
+
+    if (queries.isEmpty()) {
+      return matchNone();
+    }
+
+    return or(queries);
   }
 
   private SearchQuery applyTenantChecks(final TenantCheck tenantCheck) {
@@ -99,10 +127,15 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
       return matchAll();
     }
 
+    return toTenantCheckSearchQuery(tenantCheck, field.get());
+  }
+
+  protected SearchQuery toTenantCheckSearchQuery(
+      final TenantCheck tenantCheck, final String field) {
     return Optional.of(tenantCheck)
+        .filter(TenantCheck::hasAnyTenantAccess)
         .map(TenantCheck::tenantIds)
-        .filter(t -> !t.isEmpty())
-        .map(t -> stringTerms(field.get(), t))
+        .map(t -> stringTerms(field, t))
         .orElse(matchNone());
   }
 

@@ -12,22 +12,40 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {ViewFullVariableButton} from './index';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
+import {createvariable} from 'modules/testUtils';
+
+const createWrapper = () => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+    <QueryClientProvider client={getMockQueryClient()}>
+      {children}
+    </QueryClientProvider>
+  );
+  return Wrapper;
+};
 
 describe('<ViewFullVariableButton />', () => {
   it('should load full value', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-    const mockOnClick = vi.fn(function mock(): Promise<null | string> {
-      return new Promise((resolve) => {
-        setTimeout(() => resolve('foo'), 0);
-      });
-    });
     const mockVariableName = 'foo-variable';
+    const mockVariableKey = 'variable-key-123';
+    const mockVariableValue = '{"foo": "bar", "test": 123}';
+
+    mockGetVariable().withSuccess(
+      createvariable({
+        variableKey: mockVariableKey,
+        name: mockVariableName,
+        value: mockVariableValue,
+      }),
+    );
 
     const {user} = render(
       <ViewFullVariableButton
-        onClick={mockOnClick}
         variableName={mockVariableName}
+        variableKey={mockVariableKey}
       />,
+      {wrapper: createWrapper()},
     );
 
     await user.click(
@@ -40,17 +58,14 @@ describe('<ViewFullVariableButton />', () => {
       screen.getByTestId('variable-operation-spinner'),
     ).toBeInTheDocument();
 
-    vi.runOnlyPendingTimers();
-
     await waitForElementToBeRemoved(() =>
       screen.queryByTestId('variable-operation-spinner'),
     );
 
-    expect(mockOnClick).toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {name: `Full value of ${mockVariableName}`}),
     ).toBeInTheDocument();
-    vi.useRealTimers();
+    expect(await screen.findByText(/"foo": "bar"/)).toBeInTheDocument();
   });
 });

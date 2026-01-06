@@ -3,6 +3,7 @@
 paths:
   /decision-definitions/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Decision definition
       operationId: searchDecisionDefinitions
@@ -29,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /decision-definitions/{decisionDefinitionKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Decision definition
       operationId: getDecisionDefinition
@@ -68,10 +69,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /decision-definitions/{decisionDefinitionKey}/xml:
     get:
+      x-eventually-consistent: true
       tags:
         - Decision definition
       operationId: getDecisionDefinitionXML
@@ -107,10 +108,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /decision-definitions/evaluation:
     post:
+      x-eventually-consistent: false
       tags:
         - Decision definition
       operationId: evaluateDecision
@@ -152,7 +153,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
 ## Schema definitions
 
@@ -171,9 +171,11 @@ components:
             - version
             - decisionRequirementsId
             - decisionRequirementsKey
+            - decisionRequirementsName
+            - decisionRequirementsVersion
             - tenantId
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -222,6 +224,12 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key of the decision requirements graph that the decision definition is part of.
+        decisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements that the decision definition is part of.
+        decisionRequirementsVersion:
+          type: integer
+          description: The assigned version of the decision requirements that the decision definition is part of.
 
     DecisionDefinitionSearchQueryResult:
       type: object
@@ -262,6 +270,12 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key of the decision requirements graph that the decision definition is part of.
+        decisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements that the decision definition is part of.
+        decisionRequirementsVersion:
+          type: integer
+          description: The assigned version of the decision requirements that the decision definition is part of.
 
     DecisionEvaluationInstruction:
       x-polymorphic-schema: true
@@ -276,12 +290,20 @@ components:
       title: Decision evaluation by ID
       properties:
         decisionDefinitionId:
-          $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: |
+            The ID of the decision to be evaluated.
+            When using the decision ID, the latest
+            deployed version of the decision is used.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
         variables:
+          description: The message variables as JSON document.
           type: object
           additionalProperties: true
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
       required:
         - decisionDefinitionId
 
@@ -297,7 +319,9 @@ components:
           additionalProperties: true
           description: The message variables as JSON document.
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
       required:
         - decisionDefinitionKey
 

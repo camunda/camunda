@@ -82,5 +82,10 @@ public class ElementSelectors {
     public String describe() {
       return elementName;
     }
+
+    @Override
+    public void applyFilter(final ElementInstanceFilter filter) {
+      filter.elementName(elementName);
+    }
   }
 }

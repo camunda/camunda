@@ -7,18 +7,21 @@
  */
 
 import {observer} from 'mobx-react';
+import {Button} from '@carbon/react';
+import {ClassicBatch} from '@carbon/react/icons';
+import {useNavigate} from 'react-router-dom';
 import isNil from 'lodash/isNil';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
-import {Restricted} from 'modules/components/Restricted';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {
   PanelHeader,
   Description,
   DescriptionTitle,
   DescriptionData,
+  HeaderActions,
 } from './styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {Paths} from 'modules/Routes';
 
 type ProcessDetails = {
   bpmnProcessId?: string;
@@ -30,22 +33,16 @@ type ProcessDetails = {
 type DiagramHeaderProps = {
   processDetails: ProcessDetails;
   processDefinitionId?: string;
-  tenant?: string;
-  isVersionSelected: boolean;
   panelHeaderRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
-  ({
-    processDetails,
-    processDefinitionId,
-    tenant,
-    isVersionSelected,
-    panelHeaderRef,
-  }) => {
+  ({processDetails, processDefinitionId, panelHeaderRef}) => {
     const {processName, bpmnProcessId, version, versionTag} = processDetails;
     const hasVersionTag = !isNil(versionTag);
     const hasSelectedProcess = bpmnProcessId !== undefined;
+    const hasSelectedVersion = version !== undefined && version !== 'all';
+    const navigate = useNavigate();
 
     return (
       <PanelHeader
@@ -83,23 +80,26 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
             )}
           </>
         )}
-
-        {isVersionSelected && processDefinitionId !== undefined && (
-          <Restricted
-            resourceBasedRestrictions={{
-              scopes: ['DELETE'],
-              permissions: processesStore.getPermissions(bpmnProcessId, tenant),
-            }}
+        <HeaderActions>
+          {hasSelectedVersion && processDefinitionId !== undefined && (
+            <ProcessOperations
+              processDefinitionId={processDefinitionId}
+              processName={processName}
+              processVersion={version}
+            />
+          )}
+          <Button
+            kind="tertiary"
+            onClick={() => navigate(Paths.batchOperations())}
+            iconDescription="View batch operations"
+            renderIcon={ClassicBatch}
+            title="View batch operations"
+            aria-label="View batch operations"
+            size="sm"
           >
-            {version !== undefined && (
-              <ProcessOperations
-                processDefinitionId={processDefinitionId}
-                processName={processName}
-                processVersion={version}
-              />
-            )}
-          </Restricted>
-        )}
+            View batch operations
+          </Button>
+        </HeaderActions>
       </PanelHeader>
     );
   },

@@ -42,12 +42,12 @@ jobs:
   operate-backend-unit-tests:
     name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     secrets: inherit
     strategy:
       fail-fast: false
       matrix:
-        suite: [ DataLayer, CoreFeatures ]
+        suite: [DataLayer, CoreFeatures]
         include:
           - suite: DataLayer
             suiteName: Data Layer
@@ -58,21 +58,20 @@ jobs:
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
 
-
   # Checks to see if Operate can properly build itself and a docker image
   build-operate-backend:
     if: inputs.runBeTests
     name: "Build Back End"
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       TEST_OWNER: Core Features
       TEST_TYPE: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -84,6 +83,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
@@ -93,7 +93,7 @@ jobs:
         uses: ./.github/actions/build-platform-docker
         with:
           dockerfile: operate.Dockerfile
-          repository: 'registry.camunda.cloud/team-operate/camunda-operate'
+          repository: "registry.camunda.cloud/team-operate/camunda-operate"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -108,9 +108,9 @@ jobs:
   fe-unit-tests:
     if: inputs.runFeTests
     name: "Unit - Front End"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: { } # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 15
+    permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
       TEST_OWNER: Core Features
@@ -126,7 +126,7 @@ jobs:
           node-version: "22"
       - run: npm ci
         name: Install dependencies
-      - run: npm run test
+      - run: npm run test -- --no-file-parallelism --maxWorkers 1
         name: Unit & Integration tests
       - name: Observe build status
         if: always()
@@ -361,7 +361,7 @@ jobs:
     name: "Integration / Backup Restore ITs"
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     env:
       DOCKER_IMAGE_TAG: current-test
       TEST_OWNER: Data Layer
@@ -382,6 +382,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:

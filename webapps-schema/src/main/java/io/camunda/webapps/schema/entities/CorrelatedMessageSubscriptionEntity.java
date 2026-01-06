@@ -16,22 +16,26 @@ public class CorrelatedMessageSubscriptionEntity
         PartitionedEntity<CorrelatedMessageSubscriptionEntity>,
         TenantOwned {
 
-  private String id;
+  @BeforeVersion880 private String id;
 
-  private String bpmnProcessId;
-  private String correlationKey;
-  private OffsetDateTime correlationTime;
-  private String flowNodeId;
-  private Long flowNodeInstanceKey;
-  private long messageKey;
-  private String messageName;
-  private int partitionId;
-  private Long position;
-  private Long processDefinitionKey;
-  private Long processInstanceKey;
-  private long subscriptionKey;
-  private String subscriptionType;
-  private String tenantId;
+  @BeforeVersion880 private String bpmnProcessId;
+  @BeforeVersion880 private String correlationKey;
+  @BeforeVersion880 private OffsetDateTime correlationTime;
+  @BeforeVersion880 private String flowNodeId;
+  @BeforeVersion880 private Long flowNodeInstanceKey;
+  @BeforeVersion880 private long messageKey;
+  @BeforeVersion880 private String messageName;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long position;
+  @BeforeVersion880 private Long processDefinitionKey;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private long subscriptionKey;
+  @BeforeVersion880 private String subscriptionType;
+  @BeforeVersion880 private String tenantId;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   @Override
   public String getId() {
@@ -176,6 +180,16 @@ public class CorrelatedMessageSubscriptionEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public CorrelatedMessageSubscriptionEntity setRootProcessInstanceKey(
+      final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -219,7 +233,8 @@ public class CorrelatedMessageSubscriptionEntity
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(subscriptionType, that.subscriptionType)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 
   @Override
@@ -261,6 +276,8 @@ public class CorrelatedMessageSubscriptionEntity
         + ", tenantId='"
         + tenantId
         + '\''
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + '}';
   }
 }

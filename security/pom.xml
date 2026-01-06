@@ -24,6 +24,7 @@
     <module>security-core</module>
     <module>security-services</module>
     <module>security-protocol</module>
+    <module>security-validation</module>
   </modules>
 
 </project>

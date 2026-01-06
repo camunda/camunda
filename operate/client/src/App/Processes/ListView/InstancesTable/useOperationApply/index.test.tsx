@@ -14,16 +14,16 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockData} from './index.setup';
 import {
-  groupedProcessesMock,
   mockProcessInstances,
   createBatchOperation,
+  mockProcessDefinitions,
 } from 'modules/testUtils';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 import * as operationsApi from 'modules/api/processInstances/operations';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
@@ -37,7 +37,7 @@ function renderUseOperationApply() {
 describe('useOperationApply', () => {
   beforeEach(async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockApplyBatchOperation().withSuccess(createBatchOperation());
   });
 

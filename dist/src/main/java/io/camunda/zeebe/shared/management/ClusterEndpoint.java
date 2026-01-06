@@ -411,9 +411,6 @@ public class ClusterEndpoint {
         final MessageCorrelation messageCorrelation =
             switch (routingState.getMessageCorrelation()) {
               case final MessageCorrelationHashMod req -> new HashMod(req.getPartitionCount());
-              default ->
-                  throw new IllegalStateException(
-                      "Unexpected value: " + routingState.getMessageCorrelation());
             };
         internalRoutingState =
             Optional.of(

@@ -6,7 +6,7 @@ networks:
 services:
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:${IMAGE_VERSION:-18-alpine}
     restart: always
     # set shared memory limit when using docker-compose
     shm_size: 128mb
@@ -18,12 +18,12 @@ services:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
     environment:
       POSTGRES_USER: camunda
-      POSTGRES_PASSWORD: demo
+      POSTGRES_PASSWORD: camunda
     ports:
       - "5432:5432"
 
   mssql:
-    image: mcr.microsoft.com/mssql/server:2019-latest
+    image: mcr.microsoft.com/mssql/server:${IMAGE_VERSION:-2019-latest}
     restart: always
     environment:
       ACCEPT_EULA: y
@@ -32,31 +32,31 @@ services:
       - "1433:1433"
 
   mariadb:
-    image: mariadb:11.8
+    image: mariadb:${IMAGE_VERSION:-12.0}
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: example
       MARIADB_DATABASE: camunda
       MARIADB_USER: camunda
-      MARIADB_PASSWORD: demo
+      MARIADB_PASSWORD: camunda
     ports:
       - "3306:3306"
 
   mysql:
-    image: mysql:8.4
+    image: mysql:${IMAGE_VERSION:-9.4}
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: example
       MYSQL_DATABASE: camunda
       MYSQL_USER: camunda
-      MYSQL_PASSWORD: demo
+      MYSQL_PASSWORD: camunda
     ports:
       - "3306:3306"
 
       # Name of the Docker Compose service
   oracle:
     # Docker Hub image (feel free to change the tag "latest" to any other available one)
-    image: gvenzl/oracle-free:latest
+    image: gvenzl/oracle-free:${IMAGE_VERSION:-23-slim-faststart}
     # Forward Oracle port to localhost
     ports:
       - "1521:1521"
@@ -64,7 +64,7 @@ services:
     environment:
       ORACLE_PASSWORD: sys_user_password
       APP_USER: camunda
-      APP_USER_PASSWORD: demo
+      APP_USER_PASSWORD: camunda
     # Customize healthcheck script options for startup
     healthcheck:
       test: [ "CMD", "healthcheck.sh" ]
@@ -74,16 +74,21 @@ services:
       start_period: 5s
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+    image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.18.4}
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx2048m"
       - path.repo=/usr/local/els-snapshots
       - action.destructive_requires_name=false
+        # We need to configure ILM to run more often, to make sure data is cleaned up earlier
+        # Useful for tests where we verify history clean up
+        # Default is 10m
+        # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-settings.html
+      - indices.lifecycle.poll_interval=1s
     ulimits:
       memlock:
         soft: -1
@@ -98,16 +103,26 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.19.3
+    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.17.0}
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
       - discovery.type=single-node
       - plugins.security.disabled=true
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
-      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx2048m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
       - action.destructive_requires_name=false
+        # Disabling the security to make sure we can access without tls in our tests
+        # https://opensearch.org/docs/latest/security/configuration/disable-enable-security/
+        # We need to configure ISM to run more often, to make sure data is cleaned up earlier
+        # Useful for tests where we verify history clean up
+        # Default is 5 - unit is minutes
+        # https://opensearch.org/docs/latest/im-plugin/ism/settings/
+      - plugins.index_state_management.job_interval=1
+        # A randomized delay that is added to a job’s base run time to prevent a surge of activity from all indexes at the same time.
+      - plugins.index_state_management.jitter=0
+      - knn.algo_param.index_thread_qty=4
     ulimits:
       memlock:
         soft: -1

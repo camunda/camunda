@@ -45,7 +45,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
       final Intent intent,
       final UnifiedRecordValue value,
       final FollowUpCommandMetadata metadata) {
-    final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
+    final ValueType valueType = value.valueType();
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());

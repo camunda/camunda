@@ -12,9 +12,9 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -84,9 +84,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final long eventKey = keyGenerator.nextKey();
     final var signalRecord = command.getValue();
 
-    final var isAuthNeeded =
-        !authCheckBehavior.isInternalCommand(
-            command.hasRequestMetadata(), command.getBatchOperationReference());
+    final var isAuthNeeded = !command.isInternalCommand();
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
@@ -133,13 +131,13 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             ? PermissionType.CREATE_PROCESS_INSTANCE
             : PermissionType.UPDATE_PROCESS_INSTANCE;
     final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                permissionType,
-                command.getValue().getTenantId())
-            .addResourceId(subscriptionRecord.getBpmnProcessId());
-
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(permissionType)
+            .tenantId(command.getValue().getTenantId())
+            .addResourceId(subscriptionRecord.getBpmnProcessId())
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
       throw new ForbiddenException(authRequest);
@@ -210,7 +208,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
-          if (isStartEvent) {
+          if (isStartEvent && !command.isCommandDistributed()) {
             eventHandle.activateProcessInstanceForStartEvent(
                 subscriptionRecord.getProcessDefinitionKey(),
                 keyGenerator.nextKey(),

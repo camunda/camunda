@@ -16,6 +16,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
@@ -56,6 +57,13 @@ public interface ExporterResourceProvider {
   <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(Class<T> descriptorClass);
 
   /**
+   * @param descriptorClass the expected descriptor type
+   * @return the index descriptor instance for the given class.
+   * @param <T> the expected descriptor type
+   */
+  <T extends IndexDescriptor> T getIndexDescriptor(Class<T> descriptorClass);
+
+  /**
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
   Set<ExportHandler<?, ?>> getExportHandlers();
@@ -75,6 +83,13 @@ public interface ExporterResourceProvider {
    * @return {@link ExporterEntityCacheImpl} of {@link CachedProcessEntity}
    */
   ExporterEntityCacheImpl<Long, CachedProcessEntity> getProcessCache();
+
+  /**
+   * Returns the reference to the Decision Cache
+   *
+   * @return {@link ExporterEntityCacheImpl} of {@link CachedDecisionRequirementsEntity}
+   */
+  ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCache();
 
   /**
    * Returns the reference to the Form Cache

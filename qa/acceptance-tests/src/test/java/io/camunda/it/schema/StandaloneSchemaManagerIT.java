@@ -7,314 +7,155 @@
  */
 package io.camunda.it.schema;
 
-import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
-import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.application.Profile;
-import io.camunda.exporter.CamundaExporter;
-import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
+import io.camunda.it.schema.strategy.ElasticsearchBackendStrategy;
+import io.camunda.it.schema.strategy.OpenSearchBackendStrategy;
+import io.camunda.it.schema.strategy.SearchBackendStrategy;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.BindMode;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.images.builder.Transferable;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @ZeebeIntegration
-@Testcontainers
 final class StandaloneSchemaManagerIT {
 
-  public static final String ADMIN_USER = "camunda-admin";
-  public static final String ADMIN_PASSWORD = "admin123";
-  public static final String ADMIN_ROLE = "superuser";
-
-  public static final String APP_USER = "camunda-app";
-  public static final String APP_PASSWORD = "app123";
-  public static final String APP_ROLE = "camunda_app_role";
-  public static final String APP_ROLE_DEFINITION =
-      // language=yaml
-      """
-          camunda_app_role:
-            indices:
-              - names: ['zeebe-*', 'operate-*', 'tasklist-*', 'camunda-*']
-                privileges: ['manage', 'read', 'write']
-          """;
+  @TestZeebe(autoStart = false)
+  final TestStandaloneSchemaManager schemaManager = new TestStandaloneSchemaManager();
 
   @TestZeebe(autoStart = false)
-  final TestStandaloneSchemaManager schemaManager =
-      new TestStandaloneSchemaManager()
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.class-name",
-              ElasticsearchExporter.class.getName())
-          .withProperty("zeebe.broker.exporters.elasticsearch.args.index.create-template", "true")
-          .withProperty("zeebe.broker.exporters.elasticsearch.args.retention.enabled", "true")
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD)
-          .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
-          .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.database.retention.enabled", "true");
+  final TestCamundaApplication camunda = new TestCamundaApplication();
 
-  @TestZeebe(autoStart = false)
-  final TestCamundaApplication camunda =
-      new TestCamundaApplication()
-          .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
-          .withUnauthenticatedAccess()
-          .withProperty(CREATE_SCHEMA_PROPERTY, "false")
-          .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
-          .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.class-name",
-              ElasticsearchExporter.class.getName())
-          .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
-          .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
-          .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
-          .withExporter(
-              CamundaExporter.class.getSimpleName(),
-              cfg -> {
-                cfg.setClassName(CamundaExporter.class.getName());
-                cfg.setArgs(
-                    Map.of(
-                        "connect",
-                        Map.of("username", APP_USER, "password", APP_PASSWORD),
-                        "createSchema",
-                        false,
-                        "history",
-                        Map.of("retention", Map.of("enabled", true))));
-              })
-          .withExporter(
-              ElasticsearchExporter.class.getSimpleName(),
-              cfg -> {
-                cfg.setClassName(ElasticsearchExporter.class.getName());
-                cfg.setArgs(
-                    Map.of(
-                        "index",
-                        Map.of("createTemplate", false),
-                        "retention",
-                        Map.of("enabled", false, "managePolicy", false),
-                        "authentication",
-                        Map.of("username", APP_USER, "password", APP_PASSWORD)));
-              });
-
-  @Container
-  private final ElasticsearchContainer es =
-      new ElasticsearchContainer(
-              DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                  .withTag(SUPPORTED_ELASTICSEARCH_VERSION))
-          // Enable security features
-          .withEnv("xpack.security.enabled", "true")
-          // Ensure a fast and reliable startup
-          .withStartupTimeout(Duration.ofMinutes(5))
-          .withStartupAttempts(3)
-          .withEnv("xpack.security.enabled", "true")
-          .withEnv("xpack.watcher.enabled", "false")
-          .withEnv("xpack.ml.enabled", "false")
-          .withCopyToContainer(
-              Transferable.of(APP_ROLE_DEFINITION), "/usr/share/elasticsearch/config/roles.yml")
-          .withClasspathResourceMapping(
-              "elasticsearch-fast-startup.options",
-              "/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-fast-startup.options",
-              BindMode.READ_ONLY);
-
-  @AutoClose private ElasticsearchClient esAdminClient;
-
-  @BeforeEach
-  void setup() throws IOException, InterruptedException {
-    // setup ES admin user
-    es.execInContainer("elasticsearch-users", "useradd", ADMIN_USER, "-p", ADMIN_PASSWORD);
-    es.execInContainer("elasticsearch-users", "roles", ADMIN_USER, "-a", ADMIN_ROLE);
-
-    // Create ES client for admin user
-    final var config = new ConnectConfiguration();
-    config.setUrl("http://" + es.getHttpHostAddress());
-    config.setUsername(ADMIN_USER);
-    config.setPassword(ADMIN_PASSWORD);
-    esAdminClient = new ElasticsearchConnector(config).createClient();
-
-    // create app user with APP_ROLE role
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
-        .pollInterval(Duration.ofSeconds(1))
-        .ignoreExceptions()
-        .until(
-            () ->
-                esAdminClient
-                    .security()
-                    .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
-                    .created());
-
-    final String esUrl = "http://" + es.getHttpHostAddress();
-
-    // Connect to ES in Standalone Schema Manager
-    schemaManager
-        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
-        .withProperty("zeebe.broker.exporters.elasticsearch.args.url", esUrl);
-
-    // Connect to ES in Camunda
-    camunda
-        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
-        .updateExporterArgs(
-            CamundaExporter.class.getSimpleName(),
-            args -> ((Map) args.get("connect")).put("url", esUrl))
-        .updateExporterArgs(
-            ElasticsearchExporter.class.getSimpleName(), args -> args.put("url", esUrl));
+  static Stream<SearchBackendStrategy> strategies() {
+    return Stream.of(new ElasticsearchBackendStrategy(), new OpenSearchBackendStrategy());
   }
 
-  @Test
-  void canUseCamunda() {
-    // given
-    schemaManager.start();
-    camunda.start();
+  @ParameterizedTest
+  @MethodSource("strategies")
+  void canUseCamunda(final SearchBackendStrategy strategy) throws Exception {
+    try (strategy) {
+      initialize(strategy);
 
-    // when -- creating a process instance with user task
-    final long processInstanceKey;
-    try (final var camundaClient = camunda.newClientBuilder().build()) {
-      // Deploy process with user task
-      camundaClient
-          .newDeployResourceCommand()
-          .addProcessModel(
-              Bpmn.createExecutableProcess("process-with-user-task")
-                  .startEvent()
-                  .userTask("user-task")
-                  .zeebeUserTask()
-                  .endEvent()
-                  .done(),
-              "process-with-user-task.bpmn")
-          .send()
-          .join();
-      processInstanceKey =
-          camundaClient
-              .newCreateInstanceCommand()
-              .bpmnProcessId("process-with-user-task")
-              .latestVersion()
-              .send()
-              .join()
-              .getProcessInstanceKey();
+      final long processInstanceKey;
+      try (final var client = camunda.newClientBuilder().build()) {
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess("process-with-user-task")
+                    .startEvent()
+                    .userTask("user-task")
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done(),
+                "process-with-user-task.bpmn")
+            .send()
+            .join();
 
-      // then -- user task exists and can be completed
-      final var userTaskKey =
-          Awaitility.await("should create a user task")
-              .atMost(Duration.ofSeconds(60))
-              .ignoreExceptions()
-              .until(
-                  () ->
-                      camundaClient
-                          .newUserTaskSearchRequest()
-                          .send()
-                          .join()
-                          .items()
-                          .getFirst()
-                          .getUserTaskKey(),
-                  Objects::nonNull);
-      camundaClient.newAssignUserTaskCommand(userTaskKey).assignee("demo").send().join();
-      camundaClient.newCompleteUserTaskCommand(userTaskKey).send().join();
+        processInstanceKey =
+            client
+                .newCreateInstanceCommand()
+                .bpmnProcessId("process-with-user-task")
+                .latestVersion()
+                .send()
+                .join()
+                .getProcessInstanceKey();
 
-      // then -- process instance is completed
-      Awaitility.await("process instance should be completed")
-          .atMost(Duration.ofSeconds(60))
+        final var userTaskKey =
+            Awaitility.await("user task created")
+                .atMost(Duration.ofSeconds(60))
+                .ignoreExceptions()
+                .until(
+                    () ->
+                        client
+                            .newUserTaskSearchRequest()
+                            .send()
+                            .join()
+                            .items()
+                            .getFirst()
+                            .getUserTaskKey(),
+                    Objects::nonNull);
+
+        client.newAssignUserTaskCommand(userTaskKey).assignee("demo").send().join();
+        client.newCompleteUserTaskCommand(userTaskKey).send().join();
+
+        Awaitility.await("process instance completed")
+            .atMost(Duration.ofSeconds(60))
+            .ignoreExceptions()
+            .untilAsserted(
+                () -> {
+                  final var result =
+                      client.newProcessInstanceGetRequest(processInstanceKey).send().join();
+                  assertThat(result.getEndDate()).isNotNull();
+                });
+      }
+      Awaitility.await("Zeebe records templates exist and records are exported to Elasticsearch")
+          .atMost(Duration.ofSeconds(5))
           .ignoreExceptions()
           .untilAsserted(
               () -> {
-                final var result =
-                    camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
-                assertThat(result.getEndDate()).isNotNull();
+                assertThat(strategy.countTemplates("zeebe-record*")).isGreaterThan(0);
+                assertThat(strategy.countDocuments("zeebe-record*")).isGreaterThan(0);
               });
     }
-
-    Awaitility.await("Zeebe records templates exist and records are exported to Elasticsearch")
-        .atMost(Duration.ofSeconds(5))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      esAdminClient
-                          .indices()
-                          .getIndexTemplate(r -> r.name("zeebe-record*"))
-                          .indexTemplates())
-                  .hasSizeGreaterThan(0);
-              assertThat(esAdminClient.count(r -> r.index("zeebe-record*")).count())
-                  .isGreaterThan(0);
-            });
   }
 
-  @Test
-  void canArchiveProcessInstances() {
-    // given
-    schemaManager.start();
-    // Configure archiver to run frequently
-    camunda.updateExporterArgs(
-        CamundaExporter.class.getSimpleName(),
-        args ->
-            ((Map) args.computeIfAbsent("history", k -> new HashMap<>()))
-                .put("waitPeriodBeforeArchiving", "1s"));
-    camunda.start();
+  @ParameterizedTest
+  @MethodSource("strategies")
+  void canArchiveProcessInstances(final SearchBackendStrategy strategy) throws Exception {
+    try (strategy) {
+      initialize(strategy);
+      final long processInstanceKey;
+      try (final var client = camunda.newClientBuilder().build()) {
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess("simple-process").startEvent().endEvent().done(),
+                "simple-process.bpmn")
+            .send()
+            .join();
 
-    // when - a self-completing process instance is created
-    final long processInstanceKey;
-    try (final var camundaClient = camunda.newClientBuilder().build()) {
-      camundaClient
-          .newDeployResourceCommand()
-          .addProcessModel(
-              Bpmn.createExecutableProcess("simple-process").startEvent().endEvent().done(),
-              "simple-process.bpmn")
-          .send()
-          .join();
+        processInstanceKey =
+            client
+                .newCreateInstanceCommand()
+                .bpmnProcessId("simple-process")
+                .latestVersion()
+                .send()
+                .join()
+                .getProcessInstanceKey();
+      }
+      // then - process instance is archived
+      Awaitility.await("process instance should be archived")
+          .atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofSeconds(1))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                // Verify that instance is in archived index
+                assertThat(
+                        strategy.searchByKey("operate-list-view-8.3.0_*-*-*", processInstanceKey))
+                    .isEqualTo(1);
 
-      processInstanceKey =
-          camundaClient
-              .newCreateInstanceCommand()
-              .bpmnProcessId("simple-process")
-              .latestVersion()
-              .send()
-              .join()
-              .getProcessInstanceKey();
+                // Verify it's not in the live index
+                assertThat(strategy.searchByKey("operate-list-view-*_", processInstanceKey))
+                    .isEqualTo(0);
+              });
     }
+  }
 
-    // then - process instance is archived
-    Awaitility.await("process instance should be archived")
-        .atMost(Duration.ofSeconds(60))
-        .pollInterval(Duration.ofSeconds(1))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              // Verify that instance is in archived index
-              final var searchResponseFromArchive =
-                  esAdminClient.search(
-                      s ->
-                          s.index("operate-list-view-8.3.0_*-*-*")
-                              .query(q -> q.term(t -> t.field("key").value(processInstanceKey))),
-                      ProcessInstance.class);
-              assertThat(searchResponseFromArchive.hits().total().value()).isEqualTo(1);
-
-              // Verify it's not in the live index
-              final var searchResponseFromLive =
-                  esAdminClient.search(
-                      s ->
-                          s.index("operate-list-view-8.3.0_")
-                              .query(q -> q.term(t -> t.field("key").value(processInstanceKey))),
-                      ProcessInstance.class);
-              assertThat(searchResponseFromLive.hits().total().value()).isEqualTo(0);
-            });
+  private void initialize(final SearchBackendStrategy strategy) throws Exception {
+    strategy.startContainer();
+    strategy.createAdminClient();
+    strategy.createSchema();
+    strategy.configureStandaloneSchemaManager(schemaManager);
+    strategy.configureCamundaApplication(camunda);
+    schemaManager.start();
+    camunda.start();
   }
 }

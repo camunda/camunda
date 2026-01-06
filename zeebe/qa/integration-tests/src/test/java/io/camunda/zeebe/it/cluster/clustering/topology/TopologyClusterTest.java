@@ -34,12 +34,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ZeebeIntegration
 public final class TopologyClusterTest {
 
-  @TestZeebe(autoStart = false)
+  @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestCluster CLUSTER =
       TestCluster.builder()
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
-          .withGatewayConfig(gateway -> gateway.withCreateSchema(false))
+          .withGatewayConfig(gateway -> gateway.withCreateSchema(false).withUnauthenticatedAccess())
           .withBrokersCount(3)
           .withBrokerConfig(node -> node.withCreateSchema(false))
           .withPartitionsCount(3)

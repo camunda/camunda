@@ -48,6 +48,8 @@ public class JobImpl implements Job {
   private final String elementId;
   private final Long elementInstanceKey;
   private final String tenantId;
+  private final OffsetDateTime creationTime;
+  private final OffsetDateTime lastUpdatedTime;
 
   public JobImpl(final JobSearchResult item) {
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
@@ -71,6 +73,8 @@ public class JobImpl implements Job {
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     tenantId = item.getTenantId();
+    creationTime = ParseUtil.parseOffsetDateTimeOrNull(item.getCreationTime());
+    lastUpdatedTime = ParseUtil.parseOffsetDateTimeOrNull(item.getLastUpdateTime());
   }
 
   @Override
@@ -176,5 +180,15 @@ public class JobImpl implements Job {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
+  }
+
+  @Override
+  public OffsetDateTime getLastUpdateTime() {
+    return lastUpdatedTime;
   }
 }

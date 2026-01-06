@@ -17,12 +17,6 @@ outputs:
         github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
-  check-copilot-commits:
-    description: Output whether `check-copilot-commits` should be run based on GitHub events
-    value: >-
-      ${{
-        github.event_name == 'pull_request'
-      }}
   commitlint:
     description: Output whether commit messages should be linted based on GitHub event and files changed
     value: >-
@@ -267,7 +261,7 @@ runs:
           - 'buf.yaml'
 
         openapi-change:
-          - 'zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml'
+          - 'zeebe/gateway-protocol/src/main/proto/v2/**'
           - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
           - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
 

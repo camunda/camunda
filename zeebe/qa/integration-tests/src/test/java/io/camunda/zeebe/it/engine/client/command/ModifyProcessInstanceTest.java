@@ -36,12 +36,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 @ZeebeIntegration
 public class ModifyProcessInstanceTest {
 
-  @AutoClose CamundaClient client;
-
   @TestZeebe
-  final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
+  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
   private String processId;
   private String processId2;
@@ -49,7 +48,7 @@ public class ModifyProcessInstanceTest {
 
   @BeforeEach
   public void init() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -188,6 +187,126 @@ public class ModifyProcessInstanceTest {
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(activatedTaskB.get().getKey())
+                .withName("foo")
+                .getFirst())
+        .describedAs("Expect that variable 'foo' is created in task B's scope")
+        .isNotNull()
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getValue)
+        .describedAs("Expect that variable is created with value '\"bar\"'")
+        .isEqualTo("\"bar\"");
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldModifyExistingProcessInstanceWithMoveAndSingleVariable(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    deploy(testInfo);
+    final var processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId(processId2).latestVersion().send().join();
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .getFirst();
+
+    // when
+    final var command =
+        getCommand(client, useRest, processInstanceKey)
+            .moveElements("A", "B")
+            .withVariable("foo", "bar", "B")
+            .send();
+
+    // then
+    assertThatNoException()
+        .describedAs("Expect that modification command is not rejected")
+        .isThrownBy(command::join);
+
+    final var terminatedTasksA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .toList();
+    final var activatedTasksB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .toList();
+
+    Assertions.assertThat(terminatedTasksA)
+        .describedAs("Expect that tasks A are terminated")
+        .hasSize(1);
+    Assertions.assertThat(activatedTasksB)
+        .describedAs("Expect that task B is activated")
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(activatedTasksB.getFirst().getKey())
+                .withName("foo")
+                .getFirst())
+        .describedAs("Expect that variable 'foo' is created in task B's scope")
+        .isNotNull()
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getValue)
+        .describedAs("Expect that variable is created with value '\"bar\"'")
+        .isEqualTo("\"bar\"");
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldModifyExistingProcessInstanceWithMoveWithKey(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    deploy(testInfo);
+    final var processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId(processId2).latestVersion().send().join();
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    final long elementAKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst()
+            .getKey();
+
+    // when
+    final var command =
+        getCommand(client, useRest, processInstanceKey)
+            .moveElement(elementAKey, "B")
+            .withVariable("foo", "bar", "B")
+            .send();
+
+    // then
+    assertThatNoException()
+        .describedAs("Expect that modification command is not rejected")
+        .isThrownBy(command::join);
+
+    final var terminatedTasksA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .toList();
+    final var activatedTasksB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .toList();
+
+    Assertions.assertThat(terminatedTasksA)
+        .describedAs("Expect that tasks A are terminated")
+        .hasSize(1);
+    Assertions.assertThat(activatedTasksB)
+        .describedAs("Expect that task B is activated")
+        .hasSize(1);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(activatedTasksB.getFirst().getKey())
                 .withName("foo")
                 .getFirst())
         .describedAs("Expect that variable 'foo' is created in task B's scope")

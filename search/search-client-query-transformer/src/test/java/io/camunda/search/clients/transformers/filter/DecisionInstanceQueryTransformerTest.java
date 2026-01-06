@@ -15,6 +15,7 @@ import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
@@ -242,6 +243,26 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
               assertThat(t.field()).isEqualTo("evaluationDate");
               assertThat(t.gte()).isEqualTo("2024-01-02T03:04:05.000+0000");
               assertThat(t.lt()).isEqualTo("2024-02-03T04:05:06.000+0000");
+            });
+  }
+
+  @Test
+  void shouldQueryByState() {
+    // given
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.states(DecisionInstanceState.EVALUATED));
+
+    // when
+    final var searchRequest = transformQuery(decisionInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("state");
+              assertThat(t.value().stringValue()).isEqualTo("EVALUATED");
             });
   }
 

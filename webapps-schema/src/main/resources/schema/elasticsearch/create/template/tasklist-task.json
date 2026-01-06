@@ -101,6 +101,9 @@
       "priority": {
         "type": "integer"
       },
+      "tags": {
+        "type": "keyword"
+      },
       "name": {
         "type": "keyword"
       },
@@ -123,6 +126,9 @@
       },
       "changedAttributes": {
         "type": "keyword"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
       }
     }
   }

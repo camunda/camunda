@@ -173,7 +173,7 @@ const apiRequest: <R, P>(
   }
 };
 
-export type ApiCall<R, P = undefined> = P extends undefined
+export type ApiCall<R, P = undefined> = [P] extends [undefined]
   ? () => ApiPromise<R>
   : (params: P) => ApiPromise<R>;
 

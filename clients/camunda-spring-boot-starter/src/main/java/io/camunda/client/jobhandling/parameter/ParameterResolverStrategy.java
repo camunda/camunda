@@ -15,8 +15,12 @@
  */
 package io.camunda.client.jobhandling.parameter;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.ParameterInfo;
 
 public interface ParameterResolverStrategy {
-  ParameterResolver createResolver(ParameterInfo parameterInfo);
+  ParameterResolver createResolver(ParameterResolverStrategyContext context);
+
+  record ParameterResolverStrategyContext(
+      ParameterInfo parameterInfo, CamundaClient camundaClient) {}
 }

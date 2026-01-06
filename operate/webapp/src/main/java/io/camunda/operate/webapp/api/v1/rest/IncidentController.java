@@ -25,6 +25,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -46,6 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(URI)
 @Tag(name = "Incident", description = "Incident API")
 @Validated
+@ConditionalOnRdbmsDisabled
 public class IncidentController extends ErrorController implements SearchController<Incident> {
 
   public static final String URI = "/v1/incidents";

@@ -14,9 +14,10 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -67,6 +68,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final AsyncRequestState asyncRequestState;
 
   private final BpmnJobBehavior jobBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
 
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -90,6 +92,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     asyncRequestState = state.getAsyncRequestState();
 
     jobBehavior = bpmnBehaviors.jobBehavior();
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
 
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -201,8 +204,14 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var eventType = mapIntentToEventType(intent);
 
-    if (userTaskElement.hasTaskListeners(eventType)) {
-      final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
+    final var firstTaskListener =
+        userTaskBehavior
+            .getTaskListeners(userTaskElement, persistedRecord.getUserTaskKey(), eventType)
+            .stream()
+            .findFirst();
+
+    if (firstTaskListener.isPresent()) {
+      final var listener = firstTaskListener.get();
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
       jobBehavior.createNewTaskListenerJob(
@@ -226,7 +235,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final ZeebeTaskListenerEventType eventType,
       final ExecutableUserTask userTask,
       final ElementInstance userTaskElementInstance) {
-    final var listeners = userTask.getTaskListeners(eventType);
+    final var listeners =
+        userTaskBehavior.getTaskListeners(
+            userTask, userTaskElementInstance.getUserTaskKey(), eventType);
     final int currentListenerIndex = userTaskElementInstance.getTaskListenerIndex(eventType);
     return listeners.stream().skip(currentListenerIndex).findFirst();
   }

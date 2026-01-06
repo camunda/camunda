@@ -21,20 +21,27 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.protocol.rest.AuditLogResult;
+import io.camunda.client.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.AuthorizationResult;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionRequirementsResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
+import io.camunda.client.protocol.rest.EvaluateConditionalResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
+import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.GroupCreateResult;
 import io.camunda.client.protocol.rest.GroupResult;
 import io.camunda.client.protocol.rest.GroupUpdateResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
+import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.IncidentResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.MappingRuleCreateResult;
@@ -43,6 +50,8 @@ import io.camunda.client.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.client.protocol.rest.MessagePublicationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
@@ -111,6 +120,10 @@ public class RestGatewayService {
 
   public void onEvaluateDecisionRequest(final EvaluateDecisionResult response) {
     registerPost(RestGatewayPaths.getEvaluateDecisionUrl(), response);
+  }
+
+  public void onExpressionEvaluationRequest(final ExpressionEvaluationResult response) {
+    registerPost(RestGatewayPaths.getExpressionEvaluationUrl(), response);
   }
 
   public void onDeploymentsRequest(final DeploymentResult response) {
@@ -348,12 +361,84 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getElementInstanceUrl(elementInstanceKey), response);
   }
 
+  public void onCreateClusterVariableRequest(final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesUrl(), response);
+  }
+
+  public void onCreateGlobalClusterVariableRequest(final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesCreateGlobalUrl(), response);
+  }
+
+  public void onCreateTenantClusterVariableRequest(
+      final String tenantId, final ClusterVariableResult response) {
+    registerPost(RestGatewayPaths.getClusterVariablesCreateTenantUrl(tenantId), response);
+  }
+
+  public void onGetClusterVariableRequest(
+      final ClusterVariableResult response, final String variableName) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetGlobalUrl(variableName), response);
+  }
+
+  public void onGetClusterVariableRequest(
+      final ClusterVariableResult response, final String variableName, final String tenantId) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
+  }
+
+  public void onGetGlobalClusterVariableRequest(
+      final String variableName, final ClusterVariableResult response) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetGlobalUrl(variableName), response);
+  }
+
+  public void onGetTenantClusterVariableRequest(
+      final String tenantId, final String variableName, final ClusterVariableResult response) {
+    registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
+  }
+
+  public void onSearchClusterVariableRequest(final SearchQueryResponse response) {
+    registerPost(RestGatewayPaths.getClusterVariablesSearchUrl(), response);
+  }
+
   public void onBroadcastSignalRequest(final SignalBroadcastResult response) {
     registerPost(RestGatewayPaths.getBroadcastSignalUrl(), response);
   }
 
+  public void onEvaluateConditionalRequest(final EvaluateConditionalResult response) {
+    registerPost(RestGatewayPaths.getEvaluateConditionalUrl(), response);
+  }
+
   public void onRoleRequest(final String roleId, final RoleResult response) {
     registerGet(RestGatewayPaths.getRoleUrl(roleId), response);
+  }
+
+  public void onGetAuditLogRequest(final String auditLogKey, final AuditLogResult response) {
+    registerGet(RestGatewayPaths.getAuditLogGetUrl(auditLogKey), response);
+  }
+
+  public void onSearchAuditLogRequest(final AuditLogSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getAuditLogSearchUrl(), response);
+  }
+
+  public void onProcessDefinitionInstanceStatisticsRequest(
+      final ProcessDefinitionInstanceStatisticsQueryResult response) {
+    registerPost(RestGatewayPaths.getProcessDefinitionInstanceStatisticsUrl(), response);
+  }
+
+  public void onProcessDefinitionInstanceVersionStatisticsRequest(
+      final String processDefinitionId,
+      final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
+    registerPost(
+        RestGatewayPaths.getProcessDefinitionInstanceVersionStatisticsUrl(processDefinitionId),
+        response);
+  }
+
+  public void onIncidentProcessInstanceStatisticsByErrorRequest(
+      final IncidentProcessInstanceStatisticsByErrorQueryResult response) {
+    registerPost(RestGatewayPaths.getIncidentProcessInstanceStatisticsByErrorUrl(), response);
+  }
+
+  public void onIncidentProcessInstanceStatisticsByDefinitionRequest(
+      final IncidentProcessInstanceStatisticsByDefinitionQueryResult response) {
+    registerPost(RestGatewayPaths.getIncidentProcessInstanceStatisticsByDefinitionUrl(), response);
   }
 
   public void onStatusRequestHealthy() {

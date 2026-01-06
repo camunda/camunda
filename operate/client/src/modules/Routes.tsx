@@ -7,7 +7,7 @@
  */
 
 import type {To} from 'react-router-dom';
-import type {DecisionInstanceFilters} from 'modules/utils/filter';
+import type {DecisionsFilter} from 'modules/utils/filter/decisionsFilter';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 const Paths = {
@@ -32,6 +32,9 @@ const Paths = {
   forbidden() {
     return '/forbidden';
   },
+  batchOperations() {
+    return '/batch-operations';
+  },
 } as const;
 
 const Locations = {
@@ -40,7 +43,7 @@ const Locations = {
 
     if (filters !== undefined) {
       Object.entries(filters).forEach(([key, value]) => {
-        params.set(key, value as string);
+        params.set(key, value.toString());
       });
     } else {
       params.set('active', 'true');
@@ -52,12 +55,12 @@ const Locations = {
       search: params.toString(),
     };
   },
-  decisions(filters?: DecisionInstanceFilters): To {
+  decisions(filters?: DecisionsFilter): To {
     const params = new URLSearchParams();
 
     if (filters !== undefined) {
       Object.entries(filters).forEach(([key, value]) => {
-        params.set(key, value as string);
+        params.set(key, value.toString());
       });
     } else {
       params.set('evaluated', 'true');

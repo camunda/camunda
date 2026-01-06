@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -87,12 +87,12 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
   }
 
   private void configureBroker(final TestStandaloneBroker broker) {
-    broker.withBrokerConfig(
+    broker.withUnifiedConfig(
         cfg -> {
-          final var backup = cfg.getData().getBackup();
+          final var backup = cfg.getData().getPrimaryStorage().getBackup();
           final var azure = backup.getAzure();
 
-          backup.setStore(BackupStoreType.AZURE);
+          backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE);
           azure.setBasePath(CONTAINER_NAME);
           azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
         });

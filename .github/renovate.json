@@ -6,8 +6,7 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranchPatterns": [
-    "/^stable\\/8\\.([5-9]|[1-9][0-9])/",
-    "stable/operate-8.5",
+    "/^stable\\/8\\.([6-9]|[1-9][0-9])/",
     "main"
   ],
   "dependencyDashboard": true,
@@ -60,27 +59,17 @@
       "description": "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
       "separateMinorPatch": true,
       "matchBaseBranches": [
-        "/^stable\\/8\\..*/",
-        "stable/operate-8.5"
+        "/^stable\\/8\\..*/"
       ]
     },
     {
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
-        "/^stable\\/8\\..*/",
-        "stable/operate-8.5"
+        "/^stable\\/8\\..*/"
       ],
       "matchUpdateTypes": [
         "minor",
         "major"
-      ],
-      "enabled": false
-    },
-    {
-      "description": "Disable all Renovate updates on EOL 8.5 stable branches to prevent unwanted PRs from Renovate.",
-      "matchBaseBranches": [
-        "stable/8.5",
-        "stable/operate-8.5"
       ],
       "enabled": false
     },
@@ -109,6 +98,24 @@
       "addLabels": [
         "area/build",
         "component/build-pipeline"
+      ]
+    },
+    {
+      "description": "Identify updates related to frontend dependencies.",
+      "matchManagers": [
+        "npm"
+      ],
+      "addLabels": [
+        "area/frontend"
+      ]
+    },
+    {
+      "description": "Identify updates related to backend dependencies.",
+      "matchManagers": [
+        "maven"
+      ],
+      "addLabels": [
+        "area/backend"
       ]
     },
     {
@@ -150,6 +157,23 @@
       ],
       "matchUpdateTypes": [
         "major"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Skip lucene minor and patch in stable branches to avoid breaking changes.",
+      "matchBaseBranches": [
+        "/^stable\\/8\\.[6-8]/"
+      ],
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.apache.lucene**"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
       ],
       "enabled": false
     },

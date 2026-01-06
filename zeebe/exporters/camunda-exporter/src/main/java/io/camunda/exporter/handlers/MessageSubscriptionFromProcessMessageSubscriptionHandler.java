@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
@@ -31,8 +32,12 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
           ProcessMessageSubscriptionIntent.DELETED,
           ProcessMessageSubscriptionIntent.MIGRATED);
 
-  public MessageSubscriptionFromProcessMessageSubscriptionHandler(final String indexName) {
+  private final ExporterMetadata exporterMetadata;
+
+  public MessageSubscriptionFromProcessMessageSubscriptionHandler(
+      final String indexName, final ExporterMetadata exporterMetadata) {
     super(indexName);
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -47,11 +52,17 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
 
   @Override
   public List<String> generateIds(final Record<ProcessMessageSubscriptionRecordValue> record) {
-    return List.of(
-        String.format(
-            ID_PATTERN,
-            record.getValue().getProcessInstanceKey(),
-            record.getValue().getElementInstanceKey()));
+    if (record.getIntent().equals(ProcessMessageSubscriptionIntent.CREATED)) {
+      exporterMetadata.setFirstProcessMessageSubscriptionKey(record.getKey());
+    }
+    if (exporterMetadata.keyIsBeforeFirstProcessMessageSubscriptionKey(record.getKey())) {
+      return List.of(
+          String.format(
+              ID_PATTERN,
+              record.getValue().getProcessInstanceKey(),
+              record.getValue().getElementInstanceKey()));
+    }
+    return List.of(String.valueOf(record.getKey()));
   }
 
   @Override
@@ -60,19 +71,19 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
       final MessageSubscriptionEntity entity) {
 
     final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
-    entity
-        .setId(
-            String.format(
-                ID_PATTERN,
-                recordValue.getProcessInstanceKey(),
-                recordValue.getElementInstanceKey()))
-        .setPositionProcessMessageSubscription(record.getPosition());
+
+    entity.setPositionProcessMessageSubscription(record.getPosition());
 
     loadEventGeneralData(record, entity);
 
     final long processInstanceKey = recordValue.getProcessInstanceKey();
     if (processInstanceKey > 0) {
       entity.setProcessInstanceKey(processInstanceKey);
+    }
+
+    final long processDefinitionKey = recordValue.getProcessDefinitionKey();
+    if (processDefinitionKey > 0) {
+      entity.setProcessDefinitionKey(processDefinitionKey);
     }
 
     entity

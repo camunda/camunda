@@ -176,6 +176,7 @@ public final class ProcessMessageSubscriptionStateTest {
     return new ProcessMessageSubscriptionRecord()
         .setProcessInstanceKey(1L)
         .setElementInstanceKey(elementInstanceKey)
+        .setProcessDefinitionKey(2L)
         .setBpmnProcessId(wrapString("process"))
         .setElementId(wrapString(handlerId))
         .setMessageName(wrapString(name))

@@ -2,84 +2,26 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-# Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
-# has trouble with custom versioning schemes
-ARG BASE_IMAGE="ubuntu:noble"
-ARG BASE_DIGEST="sha256:7c06e91f61fa88c08cc74f7e1b7c69ae24910d745357e0dfe1d2c0322aaf20f9"
-ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
-ARG JDK_DIGEST="sha256:b61223d17588c60314b8f4cef03b62bb332ad11f68c3fd898e75a9b5ec8809ee"
+
+ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
+ARG BASE_DIGEST="sha256:02c2cf18eccbdc6db778c4e3f1cad080e52e6aa31282cb7e98628c4051c80f64"
+ARG JATTACH_VERSION="v2.2"
+ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
+ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
+
+# If you don't have access to Minimus hardened base images, you can use public
+# base images like this instead on your own risk:
+#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
+#ARG BASE_DIGEST="sha256:20e7f7288e1c18eebe8f06a442c9f7183342d9b022d3b9a9677cae2b558ddddd"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
 
-### Base image ###
-# All package installation, updates, etc., anything with APT should be done here in a single step
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
-WORKDIR /
-
-# Use custom APT timeout and retry values for more resilient builds
-COPY .github/actions/build-platform-docker/99apt-timeout-and-retries /etc/apt/apt.conf.d/
-
-# Upgrade all outdated packages and install missing ones (e.g. locales, tini)
-# This breaks reproducibility of builds, but is acceptable to gain access to security patches faster
-# than the base image releases
-# FYI, installing packages via APT also updates the dpkg files, which are few MBs, but removing or
-# caching them could break stuff (like not knowing the package is present) or container scanners
-# hadolint ignore=DL3008
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,target=/var/log/apt,sharing=locked \
-    apt-get -qq update && \
-    apt-get install -yqq --no-install-recommends tini ca-certificates systemd perl && \
-    apt-get upgrade -yqq --no-install-recommends systemd perl
-
-### Build custom JRE using the base JDK image
-# hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST} AS jre-build
-
-# Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
-# distribution than the official JRE. This will also include useful debugging tools like
-# jcmd, jmod, jps, etc., which take little to no space. Anecdotally, compressing modules add around
-# 10ms to the start up time, which is negligible considering our application takes ~10s to start up.
-# See https://adoptium.net/blog/2021/10/jlink-to-produce-own-runtime/
-# hadolint ignore=DL3018
-# required to compile a JRE on ARM64
-# see https://github.com/openzipkin/docker-java/issues/34
-ENV JAVA_TOOL_OPTIONS "-Djdk.lang.Process.launchMechanism=vfork"
-RUN jlink \
-     --add-modules ALL-MODULE-PATH \
-     --strip-debug \
-     --no-man-pages \
-     --no-header-files \
-     --compress=2 \
-     --output /jre && \
-   rm -rf /jre/lib/src.zip
-
-### Java base image
-FROM base AS java
-WORKDIR /
-
-# Inherit from previous build stage
-ARG JAVA_HOME=/opt/java/openjdk
-
-# Default to UTF-8 file encoding
-ENV LANG='C.UTF-8' LC_ALL='C.UTF-8'
-
-# Setup JAVA_HOME and binaries in the path
-ENV JAVA_HOME ${JAVA_HOME}
-ENV PATH $JAVA_HOME/bin:$PATH
-
-# Copy JRE from previous build stage
-COPY --from=jre-build /jre ${JAVA_HOME}
-
-# https://github.com/docker-library/openjdk/issues/212#issuecomment-420979840
-# https://openjdk.java.net/jeps/341
-# TL;DR generate some class data sharing for faster load time
-RUN java -Xshare:dump;
-
 ### Build zeebe from scratch ###
-FROM java AS build
+FROM reg.mini.dev/openjdk:21.0.9-dev AS build
+
+# hadolint ignore=DL3002
+USER root
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -87,15 +29,43 @@ RUN --mount=type=cache,target=/root/.m2,rw \
     ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
     mv dist/target/camunda-zeebe .
 
+### jattach download stage ###
+# hadolint ignore=DL3006,DL3007
+FROM alpine AS jattach
+ARG TARGETARCH
+ARG JATTACH_VERSION
+ARG JATTACH_CHECKSUM_AMD64
+ARG JATTACH_CHECKSUM_ARM64
+
+# hadolint ignore=DL4006,DL3018
+RUN --mount=type=cache,target=/root/.jattach,rw \
+    apk add -q --no-cache curl 2>/dev/null && \
+    if [ "${TARGETARCH}" = "amd64" ]; then \
+      BINARY="linux-x64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
+    else  \
+      BINARY="linux-arm64"; \
+      CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
+    fi && \
+    curl -sL "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" -o jattach.tgz && \
+    echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
+    tar -xzf "jattach.tgz" && \
+    chmod +x jattach && \
+    mv jattach /jattach
+
 ### Extract zeebe from distball ###
-# hadolint ignore=DL3006
-FROM base AS distball
+# hadolint ignore=DL3006,DL3007
+FROM ubuntu:noble AS distball
+
+# hadolint ignore=DL3002
+USER root
 WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
 
 RUN mkdir camunda-zeebe && \
     tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
+
 
 ### Image containing the zeebe distribution ###
 # hadolint ignore=DL3006
@@ -104,7 +74,7 @@ FROM ${DIST} AS dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM java AS app
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -114,7 +84,7 @@ ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"
 LABEL org.opencontainers.image.url="https://zeebe.io"
@@ -140,7 +110,7 @@ LABEL io.openshift.min-cpu="1"
 ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_STANDALONE_GATEWAY=false \
     ZEEBE_RESTORE=false
-ENV PATH "${ZB_HOME}/bin:${PATH}"
+ENV PATH="${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
 ENV ROCKSDB_MUSL_LIBC=false
@@ -150,18 +120,23 @@ EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
+VOLUME ${ZB_HOME}/documents
 VOLUME /driver-lib
 
-RUN groupadd --gid 1001 camunda && \
-    useradd --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
+# Switch to root to allow setting up our own user
+USER root
+RUN addgroup --gid 1001 camunda && \
+    adduser -S -G camunda -u 1001 -h ${ZB_HOME} camunda && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${ZB_HOME}/data && \
     mkdir ${ZB_HOME}/logs && \
+    mkdir ${ZB_HOME}/documents && \
     chown -R 1001:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
 
+COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
@@ -169,4 +144,4 @@ RUN ln -s /driver-lib ${ZB_HOME}/driver-lib
 
 USER 1001:1001
 
-ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
+ENTRYPOINT ["/usr/local/bin/startup.sh"]

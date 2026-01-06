@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.backupapi;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -18,6 +19,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
@@ -45,6 +48,7 @@ public final class BackupApiRequestHandler
   private final LogStreamWriter logStreamWriter;
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
+  private final CheckpointState checkpointState;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
 
@@ -52,12 +56,14 @@ public final class BackupApiRequestHandler
       final AtomixServerTransport transport,
       final LogStreamWriter logStreamWriter,
       final BackupManager backupManager,
+      final CheckpointState checkpointState,
       final int partitionId,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.logStreamWriter = logStreamWriter;
     this.transport = transport;
     this.backupManager = backupManager;
+    this.checkpointState = checkpointState;
     this.partitionId = partitionId;
     this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partitionId, RequestType.BACKUP);
@@ -92,6 +98,7 @@ public final class BackupApiRequestHandler
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
+      case QUERY_STATE -> handleQueryStateRequest(responseWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -114,7 +121,10 @@ public final class BackupApiRequestHandler
             .intent(CheckpointIntent.CREATE)
             .requestId(requestId)
             .requestStreamId(requestStreamId);
-    final var checkpointRecord = new CheckpointRecord().setCheckpointId(requestReader.backupId());
+    final var checkpointRecord =
+        new CheckpointRecord()
+            .setCheckpointId(requestReader.backupId())
+            .setCheckpointType(requestReader.checkpointType());
     final var written =
         logStreamWriter.tryWrite(
             WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
@@ -200,6 +210,36 @@ public final class BackupApiRequestHandler
                 result.complete(Either.left(errorWriter));
               }
             });
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleQueryStateRequest(
+      final BackupApiResponseWriter responseWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+    final var response = new CheckpointStateResponse();
+
+    if (checkpointState.getLatestBackupId() != CheckpointState.NO_CHECKPOINT) {
+      final PartitionCheckpointState backupState =
+          new PartitionCheckpointState(
+              partitionId,
+              checkpointState.getLatestBackupId(),
+              checkpointState.getLatestBackupType(),
+              checkpointState.getLatestBackupTimestamp(),
+              checkpointState.getLatestBackupPosition());
+      response.getBackupStates().add(backupState);
+    }
+    if (checkpointState.getLatestCheckpointId() != CheckpointState.NO_CHECKPOINT) {
+      final PartitionCheckpointState cpState =
+          new PartitionCheckpointState(
+              partitionId,
+              checkpointState.getLatestCheckpointId(),
+              checkpointState.getLatestCheckpointType(),
+              checkpointState.getLatestCheckpointTimestamp(),
+              checkpointState.getLatestCheckpointPosition());
+      response.getCheckpointStates().add(cpState);
+    }
+    result.complete(Either.right(responseWriter.withCheckpointState(response)));
     return result;
   }
 

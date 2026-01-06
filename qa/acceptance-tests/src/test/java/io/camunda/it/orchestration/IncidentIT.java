@@ -10,6 +10,8 @@ package io.camunda.it.orchestration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.ResolveIncidentResponse;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.awaitility.Awaitility;
@@ -104,14 +107,42 @@ public class IncidentIT {
     final var incident =
         waitForIncident(
             client, f -> f.processInstanceKey(childInstanceKey).state(IncidentState.ACTIVE));
-    client.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
+    final var incidentKey = incident.getIncidentKey();
+    client.newResolveIncidentCommand(incidentKey).send().join();
 
     // then
-    assertIncidentState(client, incident.getIncidentKey(), IncidentState.RESOLVED);
+    assertIncidentState(client, incidentKey, IncidentState.RESOLVED);
     assertProcessInstanceIncidentState(client, parentInstanceKey, false);
     assertProcessInstanceIncidentState(client, childInstanceKey, false);
     assertElementInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, false);
     assertElementInstanceIncidentState(client, childInstanceKey, TASK_ID, false);
+
+    // when resolve a second time
+    final Future<ResolveIncidentResponse> secondResolveResponse =
+        client.newResolveIncidentCommand(incidentKey).send();
+    assertThat(secondResolveResponse)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(ProblemException.class)
+        .withMessageContaining("404: 'Not Found'");
+
+    // then incident is not updated in the secondary storage
+    Awaitility.await()
+        .pollDelay(Duration.ofSeconds(5)) // wait for a while to ensure incident is not updated
+        .timeout(Duration.ofSeconds(6))
+        .pollInterval(Duration.ofSeconds(1))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final Future<Incident> incidentInSecondaryStorage =
+                  client.newIncidentGetRequest(incidentKey).send();
+              assertThat(incidentInSecondaryStorage)
+                  .succeedsWithin(Duration.ofSeconds(1))
+                  .returns(IncidentState.RESOLVED, Incident::getState)
+                  .returns(TASK_ID, Incident::getElementId)
+                  .returns(childProcessId, Incident::getProcessDefinitionId)
+                  .returns(incident.getProcessDefinitionKey(), Incident::getProcessDefinitionKey);
+            });
   }
 
   private void assertIncidentState(

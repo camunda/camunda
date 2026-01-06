@@ -8,8 +8,10 @@
 package io.camunda.webapps.schema.entities.flownode;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -20,30 +22,34 @@ public class FlowNodeInstanceEntity
         PartitionedEntity<FlowNodeInstanceEntity>,
         TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
-  private String flowNodeId;
-  private String flowNodeName;
-  private OffsetDateTime startDate;
-  private OffsetDateTime endDate;
-  private FlowNodeState state;
-  private FlowNodeType type;
-  @Deprecated private Long incidentKey;
-  private Long processInstanceKey;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private String flowNodeId;
+  @BeforeVersion880 private String flowNodeName;
+  @BeforeVersion880 private OffsetDateTime startDate;
+  @BeforeVersion880 private OffsetDateTime endDate;
+  @BeforeVersion880 private FlowNodeState state;
+  @BeforeVersion880 private FlowNodeType type;
+  @BeforeVersion880 @Deprecated private Long incidentKey;
+  @BeforeVersion880 private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private Long processDefinitionKey;
+  @BeforeVersion880 private Long processDefinitionKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  private String bpmnProcessId;
+  @BeforeVersion880 private String bpmnProcessId;
 
-  private String treePath;
-  private int level;
-  private Long position;
-  private boolean incident;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  private Long scopeKey;
+  @BeforeVersion880 private String treePath;
+  @BeforeVersion880 private int level;
+  @BeforeVersion880 private Long position;
+  @BeforeVersion880 private boolean incident;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private Long scopeKey;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -234,6 +240,15 @@ public class FlowNodeInstanceEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public FlowNodeInstanceEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result =
@@ -256,7 +271,8 @@ public class FlowNodeInstanceEntity
             position,
             incident,
             tenantId,
-            scopeKey);
+            scopeKey,
+            rootProcessInstanceKey);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -289,6 +305,7 @@ public class FlowNodeInstanceEntity
         && Objects.equals(position, that.position)
         && Objects.equals(tenantId, that.tenantId)
         && Arrays.equals(sortValues, that.sortValues)
-        && Objects.equals(scopeKey, that.scopeKey);
+        && Objects.equals(scopeKey, that.scopeKey)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 }

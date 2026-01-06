@@ -10,7 +10,6 @@ package io.camunda.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import org.junit.jupiter.api.AfterEach;
@@ -33,11 +32,6 @@ public class StartupIT {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupIT.class);
 
-  //  values for local test:
-  // private static final String TASKLIST_TEST_DOCKER_IMAGE = "camunda/tasklist:SNAPSHOT";
-  //  public static final String VERSION = "8.1.2";
-  private static final String TASKLIST_TEST_DOCKER_IMAGE = "localhost:5000/camunda/tasklist";
-  private static final String VERSION = "current-test";
   public TestRestTemplate restTemplate = new TestRestTemplate();
   private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private GenericContainer tasklistContainer;
@@ -48,14 +42,13 @@ public class StartupIT {
     testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(
-        ContainerVersionsUtil.readProperty(
-            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME),
-        testContext);
+    testContainerUtil.startStandaloneBroker(testContext);
 
     tasklistContainer =
         testContainerUtil
-            .createTasklistContainer(TASKLIST_TEST_DOCKER_IMAGE, VERSION, testContext)
+            .createTasklistContainer(testContext)
+            .withAccessToHost(true)
+            .withExtraHost("host.testcontainers.internal", "host-gateway")
             .withCreateContainerCmdModifier(
                 cmd -> ((CreateContainerCmd) cmd).withUser("1000620000:0"))
             .withLogConsumer(new Slf4jLogConsumer(LOGGER));
@@ -71,7 +64,7 @@ public class StartupIT {
         .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
-    testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
+    testContainerUtil.startTasklistContainer(tasklistContainer, testContext);
     LOGGER.info("************ Tasklist started  ************");
 
     // when

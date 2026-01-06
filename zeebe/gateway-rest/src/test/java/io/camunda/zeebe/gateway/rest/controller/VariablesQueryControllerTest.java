@@ -97,6 +97,37 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               }
           }""";
 
+  private static final String EXPECTED_UNTRUNCATED_SEARCH_RESPONSE =
+      """
+          {
+              "items": [
+                  {
+                        "variableKey": "0",
+                        "name": "n",
+                        "value": "v",
+                        "scopeKey": "2",
+                        "processInstanceKey": "3",
+                        "tenantId": "<default>",
+                        "isTruncated": false
+                  },
+                  {
+                        "variableKey": "1",
+                        "name": "ne",
+                        "value": "ve",
+                        "scopeKey": "2",
+                        "processInstanceKey": "3",
+                        "tenantId": "<default>",
+                        "isTruncated": false
+                  }
+              ],
+              "page": {
+                  "totalItems": 2,
+                  "startCursor": "0",
+                  "endCursor": "1",
+                  "hasMoreTotalItems": false
+              }
+          }""";
+
   private static final String VARIABLE_TASKS_SEARCH_URL = "/v2/variables/search";
   private static final SearchQueryResult<VariableEntity> SEARCH_QUERY_RESULT =
       new Builder<VariableEntity>()
@@ -147,6 +178,23 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .contentType(APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(variableServices).search(new VariableQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchVariablesWithFullValues() {
+    // when / then
+    webClient
+        .post()
+        .uri(VARIABLE_TASKS_SEARCH_URL + "?truncateValues=false")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_UNTRUNCATED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(variableServices).search(new VariableQuery.Builder().build());
   }
@@ -312,7 +360,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Failed to read request",
+                  "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);
@@ -352,7 +400,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Failed to read request",
+                  "detail": "Only one of [from, after, before] is allowed.",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);

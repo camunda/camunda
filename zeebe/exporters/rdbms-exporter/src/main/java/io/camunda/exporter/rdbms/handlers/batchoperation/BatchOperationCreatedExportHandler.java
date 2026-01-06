@@ -10,8 +10,10 @@ package io.camunda.exporter.rdbms.handlers.batchoperation;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.util.DateUtil;
+import io.camunda.zeebe.util.SemanticVersion;
 
 /**
  * Exports a batch operation creation record to the database. Where the creation in the db just
@@ -29,6 +32,7 @@ public class BatchOperationCreatedExportHandler
 
   private final BatchOperationWriter batchOperationWriter;
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
+  private final ActorInfoExtractor actorInfoExtractor = new ActorInfoExtractor();
 
   public BatchOperationCreatedExportHandler(
       final BatchOperationWriter batchOperationWriter,
@@ -55,12 +59,52 @@ public class BatchOperationCreatedExportHandler
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
     final var value = record.getValue();
+    final var actorInfo = actorInfoExtractor.extract(record);
     final String batchOperationKey = String.valueOf(record.getKey());
     return new BatchOperationDbModel.Builder()
         .batchOperationKey(batchOperationKey)
         .state(BatchOperationState.ACTIVE)
         .operationType(BatchOperationType.valueOf(value.getBatchOperationType().name()))
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+        .actorType(actorInfo.type())
+        .actorId(actorInfo.id())
         .build();
+  }
+
+  private record ActorInfo(BatchOperationActorType type, String id) {
+    static final ActorInfo NULL_VALUES = new ActorInfo(null, null);
+  }
+
+  private static final class ActorInfoExtractor {
+
+    private static final SemanticVersion VERSION_8_9_0 = new SemanticVersion(8, 9, 0, null, null);
+
+    /**
+     * Extracts the actor information from the record's authorizations based on the broker version.
+     * Actor info is only provided for broker versions 8.9.0 and above. If the actor info is not
+     * available, null values are provided.
+     */
+    private ActorInfo extract(final Record<BatchOperationCreationRecordValue> record) {
+      final var semanticVersion = SemanticVersion.parse(record.getBrokerVersion()).orElse(null);
+      if (semanticVersion == null || semanticVersion.compareTo(VERSION_8_9_0) < 0) {
+        // actor info should only be set for versions 8.9.0 and above
+        return ActorInfo.NULL_VALUES;
+      }
+
+      final AuditLogActor auditLogActor = AuditLogActor.of(record);
+      if (auditLogActor == null) {
+        return ActorInfo.NULL_VALUES;
+      }
+
+      final var actorType =
+          switch (auditLogActor.actorType()) {
+            case USER -> BatchOperationActorType.USER;
+            case CLIENT -> BatchOperationActorType.CLIENT;
+            case ANONYMOUS -> null;
+            case UNKNOWN -> null;
+            case null -> null;
+          };
+      return new ActorInfo(actorType, auditLogActor.actorId());
+    }
   }
 }

@@ -15,15 +15,15 @@
  */
 package io.camunda.client.spring.configuration;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
-import io.camunda.client.jobhandling.DefaultJobExceptionHandlingStrategy;
-import io.camunda.client.jobhandling.JobExceptionHandlingStrategy;
+import io.camunda.client.jobhandling.DefaultJobExceptionHandlerSupplier;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
+import io.camunda.client.jobhandling.JobWorkerFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -31,11 +31,13 @@ import io.camunda.client.jobhandling.result.DefaultDocumentResultProcessorFailur
 import io.camunda.client.jobhandling.result.DefaultResultProcessorStrategy;
 import io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.client.metrics.JobWorkerMetricsFactory;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.PropertyBasedJobWorkerValueCustomizer;
 import io.camunda.zeebe.client.ZeebeClient;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -67,18 +69,17 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CommandExceptionHandlingStrategy commandExceptionHandlingStrategy(
+      final BackoffSupplier backoffSupplier,
       final CamundaClientExecutorService scheduledExecutorService) {
     return new DefaultCommandExceptionHandlingStrategy(
-        backoffSupplier(), scheduledExecutorService.get());
+        backoffSupplier, scheduledExecutorService.getScheduledExecutor());
   }
 
   @Bean
   @ConditionalOnMissingBean
   public ParameterResolverStrategy parameterResolverStrategy(
-      final JsonMapper jsonMapper,
-      @Autowired(required = false) final ZeebeClient zeebeClient,
-      final CamundaClient camundaClient) {
-    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient, camundaClient);
+      final JsonMapper jsonMapper, @Autowired(required = false) final ZeebeClient zeebeClient) {
+    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient);
   }
 
   @Bean
@@ -90,38 +91,35 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public ResultProcessorStrategy resultProcessorStrategy(
-      final CamundaClient camundaClient,
-      final DocumentResultProcessorFailureHandlingStrategy
-          documentResultProcessorFailureHandlingStrategy) {
-    return new DefaultResultProcessorStrategy(
-        camundaClient, documentResultProcessorFailureHandlingStrategy);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public JobExceptionHandlingStrategy jobExceptionHandlingStrategy(
+  public JobExceptionHandlerSupplier jobExceptionHandlingSupplier(
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder) {
-    return new DefaultJobExceptionHandlingStrategy(
+    return new DefaultJobExceptionHandlerSupplier(
         commandExceptionHandlingStrategy, metricsRecorder);
   }
 
   @Bean
-  public JobWorkerManager jobWorkerManager(
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder,
-      final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy,
+  @ConditionalOnMissingBean
+  public ResultProcessorStrategy resultProcessorStrategy(
+      final DocumentResultProcessorFailureHandlingStrategy
+          documentResultProcessorFailureHandlingStrategy) {
+    return new DefaultResultProcessorStrategy(documentResultProcessorFailureHandlingStrategy);
+  }
+
+  @Bean
+  public JobWorkerFactory jobWorkerFactory(
       final BackoffSupplier backoffSupplier,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
-    return new JobWorkerManager(
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        parameterResolverStrategy,
-        resultProcessorStrategy,
-        backoffSupplier,
-        jobExceptionHandlingStrategy);
+      final JobWorkerMetricsFactory jobWorkerMetricsFactory,
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
+    return new JobWorkerFactory(
+        backoffSupplier, jobExceptionHandlerSupplier, jobWorkerMetricsFactory);
+  }
+
+  @Bean
+  public JobWorkerManager jobWorkerManager(
+      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers,
+      final JobWorkerFactory jobWorkerFactory) {
+    return new JobWorkerManager(jobWorkerValueCustomizers, jobWorkerFactory);
   }
 
   @Bean

@@ -31,12 +31,10 @@ func (w *UnixC8Run) OpenBrowser(ctx context.Context, url string) error {
 	return nil
 }
 
-func (w *UnixC8Run) ProcessTree(commandPid int) []*os.Process {
+func (w *UnixC8Run) ProcessTree(commandPid int) []int {
 	// For unix systems we can kill all processes within a process group by setting a pgid
-	// therefore, only the main process needs put in here.
-	process := os.Process{Pid: commandPid}
-	processes := []*os.Process{&process}
-	return processes
+	// therefore, only the main process pid is required.
+	return []int{commandPid}
 }
 
 func (w *UnixC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd {
@@ -45,7 +43,14 @@ func (w *UnixC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec
 
 func (w *UnixC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd {
 	elasticsearchCmdString := filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch")
-	elasticsearchCmd := exec.CommandContext(ctx, elasticsearchCmdString, "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false", "-E", "discovery.type=single-node")
+	elasticsearchCmd := exec.CommandContext(
+		ctx,
+		elasticsearchCmdString,
+		"-E", "xpack.ml.enabled=false",
+		"-E", "xpack.security.enabled=false",
+		"-E", "discovery.type=single-node",
+		"-E", "cluster.routing.allocation.disk.threshold_enabled=false",
+	)
 	elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return elasticsearchCmd
 }

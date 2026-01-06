@@ -25,8 +25,8 @@ const useLoadingProgress = ({
   isFinished: boolean;
 }) => {
   const [fakeProgressPercentage, setFakeProgressPercentage] = useState(0);
-  const [isComplete, setIsComplete] = useState(totalCount === processedCount);
-  const initialCompleteRef = useRef(totalCount === processedCount);
+  const [isComplete, setIsComplete] = useState(isFinished);
+  const initialCompleteRef = useRef(isFinished);
   const fakeTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fakeStartPercentage = 10;

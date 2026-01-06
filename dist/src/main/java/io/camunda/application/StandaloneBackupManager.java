@@ -7,14 +7,12 @@
  */
 package io.camunda.application;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.application.commons.search.SearchClientDatabaseConfiguration;
+import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
@@ -31,14 +29,14 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 /**
- * Backup Camunda, Operate and Tasklist indices for ElasticSearch by running this standalone
- * application.
+ * Standalone backup manager to create backups for Camunda, Operate and Tasklist indices in the
+ * configured search engine (e.g. Elasticsearch or OpenSearch).
  *
  * <p>Example properties:
  *
  * <pre>
  * camunda.database.index-prefix=operate
- * camunda.database.cluster-name=elasticsearch
+ * camunda.database.cluster-name=search-cluster
  * camunda.database.url=https://localhost:9200
  * camunda.database.security.self-signed=true
  * camunda.database.security.verify-hostname=false
@@ -46,12 +44,11 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
  * camunda.database.username=camunda-admin
  * camunda.database.password=camunda123
  *
- * camunda.data.backup.repository-name=els-test
- * *
+ * camunda.data.backup.repository-name=search-backup-repo
  * </pre>
  *
  * All of those properties can also be handed over via environment variables, e.g.
- * `CAMUNDA_DATABASE_INDEXPREFIX`
+ * `CAMUNDA_DATABASE_INDEXPREFIX`.
  */
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneBackupManager implements CommandLineRunner {
@@ -76,7 +73,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    LOG.info("Creating a backup for Camunda, Operate and Tasklist elasticsearch indices ...");
+    LOG.info("Creating a backup for Camunda, Operate and Tasklist search engine indices ...");
 
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
@@ -87,15 +84,17 @@ public class StandaloneBackupManager implements CommandLineRunner {
             UnifiedConfiguration.class,
             SearchEngineConnectPropertiesOverride.class,
             SearchEngineIndexPropertiesOverride.class,
+            SearchEngineRetentionPropertiesOverride.class,
             // ---
             BackupManagerConfiguration.class,
             StandaloneBackupManager.class,
-            SearchClientDatabaseConfiguration.class)
+            NativeSearchClientsConfiguration.class)
         .addCommandLineProperties(true)
         .run(args);
 
-    // Explicit exit needed because there are daemon threads (at least from the ES client) that are
-    // blocking shutdown.
+    // Explicit exit needed because there are daemon threads (at least from the search engine
+    // client)
+    // that are blocking shutdown.
     System.exit(0);
   }
 
@@ -118,9 +117,10 @@ public class StandaloneBackupManager implements CommandLineRunner {
       final var takeBackupRequestDto = new TakeBackupRequestDto();
       takeBackupRequestDto.setBackupId(backupId);
       final var backupResponse = backupService.takeBackup(takeBackupRequestDto);
-      LOG.info("Triggered ES snapshots: {}", backupResponse.getScheduledSnapshots());
+      LOG.info("Triggered search engine snapshots: {}", backupResponse.getScheduledSnapshots());
     } catch (final Exception e) {
-      LOG.error("Expected to trigger ES snapshots for backupId {}, but failed", backupId, e);
+      LOG.error(
+          "Expected to trigger search engine snapshots for backupId {}, but failed", backupId, e);
       throw e;
     }
 
@@ -167,12 +167,6 @@ public class StandaloneBackupManager implements CommandLineRunner {
     @Bean
     public ExitCodeExceptionMapper exitCodeExceptionMapper() {
       return ex -> 1;
-    }
-
-    @Bean
-    public ElasticsearchClient elasticsearchClient(
-        final ConnectConfiguration connectConfiguration) {
-      return new ElasticsearchConnector(connectConfiguration).createClient();
     }
   }
 }

@@ -46,8 +46,9 @@ final class ExporterSerializationTest {
   void shouldDeserializeExportedRecords() throws IOException {
     // given
     RecordingExporter.setMaximumWaitTime(2_000);
-    WorkloadGenerator.performSampleWorkload(client);
-    final var exportedRecords = RecordingExporter.records().collect(Collectors.toList());
+    final var finalRecordPosition = WorkloadGenerator.performSampleWorkload(client);
+    final var exportedRecords =
+        RecordingExporter.records().between(0, finalRecordPosition).collect(Collectors.toList());
     final var jsonRecords = exportedRecords.stream().map(Record::toJson).toList();
     final var jsonString = "[" + String.join(",", jsonRecords) + "]";
 

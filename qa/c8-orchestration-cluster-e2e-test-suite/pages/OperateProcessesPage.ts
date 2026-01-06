@@ -9,17 +9,14 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {OperateDiagramPage} from './OperateDiagramPage';
 import {sleep} from '../utils/sleep';
+import {checkUpdateOnVersion} from 'utils/zeebeClient';
 
 class OperateProcessesPage {
   private page: Page;
   readonly processResultCount: Locator;
-  readonly processActiveCheckbox: Locator;
-  readonly processCompletedCheckbox: Locator;
-  readonly processRunningInstancesCheckbox: Locator;
-  readonly processIncidentsCheckbox: Locator;
+  readonly resultsText: Locator;
   readonly processPageHeading: Locator;
   readonly noMatchingInstancesMessage: Locator;
-  readonly processFinishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
   readonly processInstanceLink: Locator;
   readonly startDateSortButton: Locator;
@@ -30,33 +27,54 @@ class OperateProcessesPage {
   readonly parentInstanceIdCell: Locator;
   readonly endDateCell: Locator;
   readonly versionCell: Locator;
+  readonly processInstanceKeyCell: Locator;
+  readonly migrateBatchOperationButton: Locator;
+  readonly cancelBatchOperationButton: Locator;
+  readonly applyCancelBatchOperationDialogButton: Locator;
+  readonly continueMigrationDialogButton: Locator;
+  readonly cancelProcessInstanceButton: Locator;
+  readonly cancelProcessInstanceDialogButton: Locator;
+  readonly singleOperationSpinner: Locator;
   readonly diagram: InstanceType<typeof OperateDiagramPage>;
+  readonly processActiveCheckbox: Locator;
+  readonly processCompletedCheckbox: Locator;
+  readonly processRunningInstancesCheckbox: Locator;
+  readonly processIncidentsCheckbox: Locator;
+  readonly processFinishedInstancesCheckbox: Locator;
+  readonly dataList: Locator;
+  readonly continueButton: Locator;
+  readonly processInstancesPanel: Locator;
+  readonly migrateButton: Locator;
+  readonly selectAllRowsCheckbox: Locator;
+  readonly retryButton: Locator;
+  readonly cancelButton: Locator;
+  readonly applyButton: Locator;
+  readonly resultsCount: Locator;
+  readonly scheduledOperationsIcons: Locator;
+  readonly viewParentInstanceLinkInList: Locator;
+  readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly operationAndResultsContainer: (
+    operation: string,
+    resultCount?: number,
+  ) => Locator;
+  readonly parentInstanceCell: (parentInstanceKey: string) => Locator;
+  readonly versionCells: (version: string) => Locator;
+  readonly calledInstanceCell: (
+    rowIndex?: number,
+    cellIndex?: number,
+  ) => Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.diagram = new OperateDiagramPage(page);
     this.processResultCount = page.getByTestId('result-count');
-    this.processActiveCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Active'});
-    this.processCompletedCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Completed'});
-    this.processRunningInstancesCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Running Instances'});
-    this.processIncidentsCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Incidents'});
+    this.resultsText = page.getByText('results');
     this.processPageHeading = page
       .getByTestId('expanded-panel')
       .getByRole('heading', {name: 'Process'});
     this.noMatchingInstancesMessage = page.getByText(
       'There are no Instances matching this filter set',
     );
-    this.processFinishedInstancesCheckbox = page
-      .getByTestId('filter-finished-instances')
-      .getByRole('checkbox');
     this.processNameFilter = page.getByRole('combobox', {name: 'name'});
     this.processInstanceLink = page
       .getByRole('link', {
@@ -76,35 +94,99 @@ class OperateProcessesPage {
       name: 'sort by name',
     });
     this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
+    this.processInstanceKeyCell = page
+      .getByTestId('data-list')
+      .getByTestId('cell-processInstanceKey')
+      .first();
     this.parentInstanceIdCell = page
       .getByTestId('data-list')
+      .getByRole('row')
+      .first()
       .getByTestId('cell-parentInstanceId')
-      .first();
+      .getByRole('link');
     this.endDateCell = page
       .getByTestId('data-list')
       .getByTestId('cell-endDate')
       .first();
-    this.versionCell = page.getByTestId('process-version-select');
-  }
-
-  async clickProcessActiveCheckbox(): Promise<void> {
-    await this.processActiveCheckbox.click();
-  }
-
-  async clickProcessCompletedCheckbox(): Promise<void> {
-    await this.processCompletedCheckbox.click({timeout: 120000});
-  }
-
-  async clickProcessIncidentsCheckbox(): Promise<void> {
-    await this.processIncidentsCheckbox.click({timeout: 90000});
-  }
-
-  async clickRunningProcessInstancesCheckbox(): Promise<void> {
-    await this.processRunningInstancesCheckbox.click({timeout: 90000});
-  }
-
-  async clickFinishedProcessInstancesCheckbox(): Promise<void> {
-    await this.processFinishedInstancesCheckbox.click({timeout: 90000});
+    this.versionCell = page.getByTestId('cell-processVersion');
+    this.migrateBatchOperationButton = page.getByRole('button', {
+      name: 'Migrate',
+    });
+    this.cancelBatchOperationButton = page.getByTestId(
+      'cancel-batch-operation',
+    );
+    this.applyCancelBatchOperationDialogButton = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Apply'});
+    this.continueMigrationDialogButton = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Continue'});
+    this.cancelProcessInstanceButton = page
+      .getByRole('button', {name: 'Cancel Instance'})
+      .first();
+    this.cancelProcessInstanceDialogButton = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Apply'});
+    this.singleOperationSpinner = page.getByTestId('operation-spinner');
+    this.processActiveCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Active'});
+    this.processCompletedCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Completed'});
+    this.processRunningInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Running Instances'});
+    this.processIncidentsCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Incidents'});
+    this.processFinishedInstancesCheckbox = page
+      .getByTestId('filter-finished-instances')
+      .getByRole('checkbox');
+    this.dataList = page.getByTestId('data-list');
+    this.continueButton = page.getByRole('button', {name: 'continue'});
+    this.processInstancesPanel = page.getByRole('region', {
+      name: 'process instances panel',
+    });
+    this.migrateButton = this.processInstancesPanel.getByRole('button', {
+      name: /^migrate$/i,
+    });
+    this.selectAllRowsCheckbox = page.getByRole('columnheader', {
+      name: 'Select all rows',
+    });
+    this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
+    this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
+    this.applyButton = page.getByRole('button', {name: 'Apply'});
+    this.resultsCount = page.getByText(/\d+ results/);
+    this.scheduledOperationsIcons = page.getByTitle(
+      /has scheduled operations/i,
+    );
+    this.processInstanceLinkByKey = (processInstanceKey: string) =>
+      page.getByRole('link', {
+        name: processInstanceKey,
+      });
+    this.operationAndResultsContainer = (
+      operation: string,
+      resultCount?: number,
+    ) => {
+      const pattern = resultCount
+        ? new RegExp(`${operation}.*${resultCount} results`)
+        : new RegExp(`${operation}.*\\d+ results`);
+      return page.locator('div').filter({hasText: pattern});
+    };
+    this.parentInstanceCell = (parentInstanceKey: string) =>
+      this.dataList.getByRole('cell', {name: parentInstanceKey});
+    this.versionCells = (version: string) =>
+      this.dataList.getByRole('cell', {name: version, exact: true});
+    this.viewParentInstanceLinkInList = this.dataList.getByRole('link', {
+      name: /view parent instance/i,
+    });
+    this.calledInstanceCell = (rowIndex = 0, cellIndex = 2) =>
+      this.dataList
+        .getByRole('row')
+        .nth(rowIndex)
+        .getByRole('cell')
+        .nth(cellIndex);
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -133,6 +215,22 @@ class OperateProcessesPage {
     );
   }
 
+  async checkVersion(processInstanceKey: string): Promise<void> {
+    const maxRetries = 10;
+    let retryCount = 0;
+    while (retryCount < maxRetries) {
+      try {
+        await checkUpdateOnVersion('2', processInstanceKey);
+        return;
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await this.page.reload();
+      }
+    }
+    throw new Error(`Failed to check version after ${maxRetries} attempts.`);
+  }
+
   async assertProcessInstanceLink(processInstanceKey: string): Promise<void> {
     await expect(
       this.page.getByRole('link', {
@@ -149,12 +247,193 @@ class OperateProcessesPage {
     await this.processInstanceKeySortButton.click();
   }
 
+  async visibleKeys(): Promise<string[]> {
+    const texts = await this.page
+      .getByTestId('cell-processInstanceKey')
+      .allInnerTexts();
+    return texts.map((t) => t.trim());
+  }
+
+  static getProcessVersion(row: Locator): Locator {
+    return row.getByTestId('cell-processVersion');
+  }
+
+  getInstanceRow(index: number): Locator {
+    return this.dataList.getByRole('row').nth(index);
+  }
+
+  getCanceledIcon(processInstanceKey: string): Locator {
+    return this.page.getByTestId(`CANCELED-icon-${processInstanceKey}`);
+  }
+
+  getRetryInstanceButton(processInstanceKey: string): Locator {
+    return this.page.getByRole('button', {
+      name: `Retry Instance ${processInstanceKey}`,
+    });
+  }
+
+  getCancelInstanceButton(processInstanceKey: string): Locator {
+    return this.page.getByRole('button', {
+      name: `Cancel Instance ${processInstanceKey}`,
+    });
+  }
+
+  async clickRetryInstanceButton(processInstanceKey: string): Promise<void> {
+    const button = this.getRetryInstanceButton(processInstanceKey);
+    try {
+      await button.click({timeout: 30000});
+    } catch {
+      await button.scrollIntoViewIfNeeded({timeout: 60000});
+      await button.click({timeout: 60000});
+    }
+  }
+
+  async clickCancelInstanceButton(processInstanceKey: string): Promise<void> {
+    const button = this.getCancelInstanceButton(processInstanceKey);
+    await button.scrollIntoViewIfNeeded({timeout: 30000});
+    await button.click({timeout: 30000});
+  }
+
+  static getRowByProcessInstanceKey(page: Page, keyStr: string): Locator {
+    return page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .filter({
+        has: page
+          .getByTestId('cell-processInstanceKey')
+          .filter({hasText: keyStr}),
+      });
+  }
   async clickVersionSortButton(): Promise<void> {
     await this.versionSortButton.click();
   }
 
   async clickProcessNameSortButton(): Promise<void> {
     await this.processNameSortButton.click();
+  }
+
+  async selectProcessCheckboxByPIK(...PIK: string[]): Promise<void> {
+    for (const key of PIK) {
+      await this.page.locator(`label[for$="${key}"]`).click();
+    }
+  }
+
+  async clickCancelBatchOperationButton(): Promise<void> {
+    await this.cancelBatchOperationButton.click();
+  }
+
+  async clickApplyCancelBatchOperationDialogButton(): Promise<void> {
+    await this.applyCancelBatchOperationDialogButton.click();
+  }
+
+  async clickMigrateBatchOperationButton(): Promise<void> {
+    await this.migrateBatchOperationButton.click();
+  }
+
+  async clickContinueMigrationDialogButton(): Promise<void> {
+    await this.continueMigrationDialogButton.click();
+  }
+
+  async clickCancelProcessInstanceButton(): Promise<void> {
+    await this.cancelProcessInstanceButton.click();
+  }
+
+  async clickCancelProcessInstanceDialogButton(): Promise<void> {
+    await this.cancelProcessInstanceDialogButton.click();
+  }
+
+  async tableHasInstanceKey(keyStr: string): Promise<boolean> {
+    const meow = this.processInstancesTable
+      .getByTestId('cell-processInstanceKey')
+      .getByText(keyStr);
+    if (await meow.count()) {
+      return true;
+    }
+    return false;
+  }
+
+  async selectProcessInstances(count: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      const maxRetries = 3;
+      let retryCount = 0;
+
+      while (retryCount < maxRetries) {
+        try {
+          const checkbox = this.processInstancesPanel
+            .getByRole('row', {name: 'select row'})
+            .nth(i)
+            .locator('label');
+
+          // Wait for the element to be attached and stable
+          await checkbox.waitFor({state: 'attached', timeout: 5000});
+          if (!(await checkbox.isChecked())) {
+            await checkbox.click({timeout: 10000});
+          }
+          await sleep(100);
+          break;
+        } catch (error) {
+          retryCount++;
+          if (retryCount === maxRetries) {
+            console.error(
+              `Failed to select process instance ${i} after ${maxRetries} attempts`,
+            );
+            throw error;
+          }
+          console.log(
+            `Attempt ${retryCount} to select process instance ${i} failed. Retrying...`,
+          );
+          await sleep(500);
+        }
+      }
+    }
+    const itemText = count === 1 ? 'item' : 'items';
+    await expect(
+      this.page.getByText(`${count} ${itemText} selected`).first(),
+    ).toBeVisible();
+  }
+
+  async clickProcessActiveCheckbox(): Promise<void> {
+    await this.processActiveCheckbox.click();
+  }
+
+  async clickProcessCompletedCheckbox(): Promise<void> {
+    await this.processCompletedCheckbox.click({timeout: 120000});
+  }
+
+  async clickProcessIncidentsCheckbox(): Promise<void> {
+    await this.processIncidentsCheckbox.click({timeout: 90000});
+  }
+
+  async clickRunningProcessInstancesCheckbox(): Promise<void> {
+    await this.processRunningInstancesCheckbox.click({timeout: 90000});
+  }
+
+  async clickFinishedProcessInstancesCheckbox(): Promise<void> {
+    await this.processFinishedInstancesCheckbox.click({timeout: 90000});
+  }
+
+  async clickMigrateButton(): Promise<void> {
+    await this.migrateButton.click();
+  }
+  async clickContinueButton(): Promise<void> {
+    await this.continueButton.click();
+  }
+
+  async startMigration(): Promise<void> {
+    await this.clickMigrateButton();
+    await this.clickContinueButton();
+  }
+
+  async clickViewParentInstanceFromList(): Promise<void> {
+    await this.viewParentInstanceLinkInList.click();
+  }
+
+  getNthProcessInstanceCheckbox(index: number): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .nth(index + 1) // +1 to skip header row
+      .getByRole('checkbox');
   }
 }
 

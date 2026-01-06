@@ -23,6 +23,9 @@
       "resourceId": {
         "type": "keyword"
       },
+      "resourcePropertyName": {
+        "type": "keyword"
+      },
       "permissionTypes": {
         "type": "keyword"
       }

@@ -19,7 +19,6 @@ import type {
   DecisionInstance,
   Incident,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {incidentsStore} from 'modules/stores/incidents';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -113,7 +112,6 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 
 describe('<Incidents />', () => {
   beforeEach(() => {
-    incidentsStore.reset();
     mockFetchProcessInstance().withSuccess({
       processInstanceKey: PROCESS_INSTANCE_KEY,
       state: 'ACTIVE',
@@ -164,7 +162,7 @@ describe('<Incidents />', () => {
       await screen.findByRole('heading', {name: /^incident$/i}),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/No more retries left./i)).toBeInTheDocument();
+    expect(screen.getByText(/Job: No retries left./i)).toBeInTheDocument();
     expect(screen.getByText(/Failed to execute job/i)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/i)).toBeInTheDocument();
     expect(
@@ -192,7 +190,7 @@ describe('<Incidents />', () => {
       await screen.findByRole('heading', {name: /^incident$/i}),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/No more retries left./i)).toBeInTheDocument();
+    expect(screen.getByText(/Job: No retries left./i)).toBeInTheDocument();
     expect(screen.getByText(/Failed to execute job/i)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/i)).toBeInTheDocument();
     expect(

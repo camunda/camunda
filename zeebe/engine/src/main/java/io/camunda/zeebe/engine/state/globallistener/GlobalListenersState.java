@@ -1,0 +1,46 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+package io.camunda.zeebe.engine.state.globallistener;
+
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import java.util.Optional;
+
+public interface GlobalListenersState {
+
+  /** Gets the current global listeners configuration. */
+  GlobalListenerBatchRecord getCurrentConfig();
+
+  /**
+   * Gets a stored copy of a global listeners configuration, possibly different from the current
+   * one, given a version key.
+   *
+   * @param versionKey the version key of the desired configuration
+   * @return the global listeners configuration for the given version key, or {@link
+   *     Optional#empty()} if not found
+   */
+  GlobalListenerBatchRecord getVersionedConfig(final long versionKey);
+
+  /**
+   * Checks whether a global listeners configuration version is stored.
+   *
+   * @param versionKey the version key to check
+   * @return {@code true} if the configuration version is stored, {@code false} otherwise
+   */
+  boolean isConfigurationVersionStored(final long versionKey);
+
+  /**
+   * Checks whether a global listeners configuration version is pinned by any element. In
+   * particular, the configuration could be pinned by a user task in order to always reference the
+   * same list of global user task listeners.
+   *
+   * @param versionKey the version key to check
+   * @return {@code true} if the configuration version is pinned, {@code false} otherwise
+   */
+  boolean isConfigurationVersionPinned(final long versionKey);
+}

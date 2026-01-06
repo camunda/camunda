@@ -20,7 +20,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {BatchModificationNotification} from './BatchModificationNotification';
-import {DiagramHeader} from '../../DiagramPanel/DiagramHeader';
+import {DiagramHeader} from './DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
 import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
@@ -56,9 +56,7 @@ function setSearchParam(
 const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {version, flowNodeId, tenant} = getProcessInstanceFilters(
-    location.search,
-  );
+  const {version, flowNodeId} = getProcessInstanceFilters(location.search);
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
@@ -141,9 +139,7 @@ const DiagramPanel: React.FC = observer(() => {
     <Section aria-label="Diagram Panel">
       <DiagramHeader
         processDetails={processDetails}
-        processDefinitionId={processId}
-        isVersionSelected={isVersionSelected}
-        tenant={tenant}
+        processDefinitionKey={processDefinitionKey}
       />
       <DiagramShell
         status={getStatus()}

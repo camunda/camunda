@@ -18,9 +18,12 @@ package io.camunda.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.AncestorScopeInstruction;
 import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.client.util.ClientRestTest;
 import java.io.ByteArrayInputStream;
@@ -106,66 +109,6 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
     final ModifyProcessInstanceVariableInstruction variableInstructionB =
         activateInstructionB.getVariableInstructions().get(0);
     assertVariableInstruction(variableInstructionB, EMPTY_ELEMENT_ID);
-  }
-
-  @Test
-  public void shouldTerminateSingleElement() {
-    // when
-    client.newModifyProcessInstanceCommand(PI_KEY).terminateElement(ELEMENT_KEY_A).send().join();
-
-    // then
-    final ProcessInstanceModificationInstruction request =
-        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
-    assertRequest(request, 0, 1);
-    final ProcessInstanceModificationTerminateInstruction terminateInstruction =
-        request.getTerminateInstructions().get(0);
-    assertTerminateInstruction(terminateInstruction, ELEMENT_KEY_A);
-  }
-
-  @Test
-  public void shouldTerminateMultipleElements() {
-    // when
-    client
-        .newModifyProcessInstanceCommand(PI_KEY)
-        .terminateElement(ELEMENT_KEY_A)
-        .and()
-        .terminateElement(ELEMENT_KEY_B)
-        .send()
-        .join();
-
-    // then
-    final ProcessInstanceModificationInstruction request =
-        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
-    assertRequest(request, 0, 2);
-    final ProcessInstanceModificationTerminateInstruction terminateInstructionA =
-        request.getTerminateInstructions().get(0);
-    assertTerminateInstruction(terminateInstructionA, ELEMENT_KEY_A);
-    final ProcessInstanceModificationTerminateInstruction terminateInstructionB =
-        request.getTerminateInstructions().get(1);
-    assertTerminateInstruction(terminateInstructionB, ELEMENT_KEY_B);
-  }
-
-  @Test
-  public void shouldActivateAndTerminateElement() {
-    // when
-    client
-        .newModifyProcessInstanceCommand(PI_KEY)
-        .activateElement(ELEMENT_ID_A)
-        .and()
-        .terminateElement(ELEMENT_KEY_A)
-        .send()
-        .join();
-
-    // then
-    final ProcessInstanceModificationInstruction request =
-        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
-    assertRequest(request, 1, 1);
-    final ProcessInstanceModificationActivateInstruction activateInstruction =
-        request.getActivateInstructions().get(0);
-    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 0);
-    final ProcessInstanceModificationTerminateInstruction terminateInstruction =
-        request.getTerminateInstructions().get(0);
-    assertTerminateInstruction(terminateInstruction, ELEMENT_KEY_A);
   }
 
   @Test
@@ -469,11 +412,235 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  @Test
+  public void shouldTerminateSingleElement() {
+    // when
+    client.newModifyProcessInstanceCommand(PI_KEY).terminateElement(ELEMENT_KEY_A).send().join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 0, 1);
+    final ProcessInstanceModificationTerminateInstruction terminateInstruction =
+        request.getTerminateInstructions().get(0);
+    assertTerminateInstruction(terminateInstruction, ELEMENT_KEY_A);
+  }
+
+  @Test
+  public void shouldTerminateMultipleElementsByKey() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .terminateElement(ELEMENT_KEY_A)
+        .and()
+        .terminateElement(ELEMENT_KEY_B)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 0, 2);
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionA =
+        request.getTerminateInstructions().get(0);
+    assertTerminateInstruction(terminateInstructionA, ELEMENT_KEY_A);
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionB =
+        request.getTerminateInstructions().get(1);
+    assertTerminateInstruction(terminateInstructionB, ELEMENT_KEY_B);
+  }
+
+  @Test
+  public void shouldTerminateMultipleElementsById() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .terminateElements(ELEMENT_ID_A)
+        .and()
+        .terminateElements(ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 0, 2);
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionA =
+        request.getTerminateInstructions().get(0);
+    assertTerminateInstruction(terminateInstructionA, ELEMENT_ID_A);
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionB =
+        request.getTerminateInstructions().get(1);
+    assertTerminateInstruction(terminateInstructionB, ELEMENT_ID_B);
+  }
+
+  @Test
+  public void shouldMoveElements() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .moveElements(ELEMENT_ID_A, ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 0, 1, 0);
+    final ProcessInstanceModificationMoveInstruction moveInstruction =
+        request.getMoveInstructions().get(0);
+    assertMoveInstruction(moveInstruction, ELEMENT_ID_A, ELEMENT_ID_B, EMPTY_KEY, false, 0);
+  }
+
+  @Test
+  public void shouldMoveElementsWithAncestorDirect() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .moveElements(ELEMENT_ID_A, ELEMENT_ID_B, ELEMENT_KEY_A)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 0, 1, 0);
+    final ProcessInstanceModificationMoveInstruction moveInstruction =
+        request.getMoveInstructions().get(0);
+    assertMoveInstruction(moveInstruction, ELEMENT_ID_A, ELEMENT_ID_B, ELEMENT_KEY_A, false, 0);
+  }
+
+  @Test
+  public void shouldMoveElementsWithAncestorSourceParent() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .moveElementsWithInferredAncestor(ELEMENT_ID_A, ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 0, 1, 0);
+    final ProcessInstanceModificationMoveInstruction moveInstruction =
+        request.getMoveInstructions().get(0);
+    assertMoveInstruction(moveInstruction, ELEMENT_ID_A, ELEMENT_ID_B, 0, true, 0);
+  }
+
+  @Test
+  public void shouldMoveElementsWithSingleVariable() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .moveElements(ELEMENT_ID_A, ELEMENT_ID_B)
+        .withVariable("foo", "bar")
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 0, 1, 0);
+    final ProcessInstanceModificationMoveInstruction moveInstruction =
+        request.getMoveInstructions().get(0);
+    assertMoveInstruction(moveInstruction, ELEMENT_ID_A, ELEMENT_ID_B, EMPTY_KEY, false, 1);
+    final ModifyProcessInstanceVariableInstruction variableInstruction =
+        moveInstruction.getVariableInstructions().get(0);
+    assertVariableInstruction(variableInstruction, EMPTY_ELEMENT_ID);
+  }
+
+  @Test
+  public void shouldThrowErrorWhenTryToMoveElementWithNullVariable() {
+    // when
+    Assertions.assertThatThrownBy(
+            () ->
+                client
+                    .newModifyProcessInstanceCommand(PI_KEY)
+                    .moveElements(ELEMENT_ID_A, ELEMENT_ID_B)
+                    .withVariable(null, null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldActivateAndTerminateAndMoveElements() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .activateElement(ELEMENT_ID_A)
+        .and()
+        .terminateElement(ELEMENT_KEY_A)
+        .and()
+        .terminateElements(ELEMENT_ID_A)
+        .and()
+        .moveElements(ELEMENT_ID_A, ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 1, 1, 2);
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
+        request.getActivateInstructions().get(0);
+    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 0);
+    final ProcessInstanceModificationMoveInstruction moveInstruction =
+        request.getMoveInstructions().get(0);
+    assertMoveInstruction(moveInstruction, ELEMENT_ID_A, ELEMENT_ID_B, EMPTY_KEY, false, 0);
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionKey =
+        request.getTerminateInstructions().get(0);
+    assertTerminateInstruction(terminateInstructionKey, ELEMENT_KEY_A);
+    final ProcessInstanceModificationTerminateInstruction terminateInstructionId =
+        request.getTerminateInstructions().get(1);
+    assertTerminateInstruction(terminateInstructionId, ELEMENT_ID_A);
+  }
+
+  @Test
+  public void shouldAssignVariablesToMoveAndActivate() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .moveElements(ELEMENT_ID_A, ELEMENT_ID_B)
+        .withVariable("foo", "bar")
+        .and()
+        .activateElement(ELEMENT_ID_A)
+        .withVariable("foo", "baz")
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceModificationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceModificationInstruction.class);
+    assertRequest(request, 1, 1, 0);
+    final ProcessInstanceModificationActivateInstruction activateInstruction =
+        request.getActivateInstructions().get(0);
+    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 1);
+    final ModifyProcessInstanceVariableInstruction variableInstruction =
+        activateInstruction.getVariableInstructions().get(0);
+    assertVariableInstruction(variableInstruction, EMPTY_ELEMENT_ID, "baz");
+    final ProcessInstanceModificationMoveInstruction moveInstruction =
+        request.getMoveInstructions().get(0);
+    assertMoveInstruction(moveInstruction, ELEMENT_ID_A, ELEMENT_ID_B, EMPTY_KEY, false, 1);
+    final ModifyProcessInstanceVariableInstruction variableInstructionMove =
+        moveInstruction.getVariableInstructions().get(0);
+    assertVariableInstruction(variableInstructionMove, EMPTY_ELEMENT_ID);
+  }
+
   private void assertRequest(
       final ProcessInstanceModificationInstruction request,
       final int expectedStartInstructions,
       final int expectedTerminateInstructions) {
     assertThat(request.getActivateInstructions()).hasSize(expectedStartInstructions);
+    assertThat(request.getTerminateInstructions()).hasSize(expectedTerminateInstructions);
+  }
+
+  private void assertRequest(
+      final ProcessInstanceModificationInstruction request,
+      final int expectedStartInstructions,
+      final int expectedMoveInstructions,
+      final int expectedTerminateInstructions) {
+    assertThat(request.getActivateInstructions()).hasSize(expectedStartInstructions);
+    assertThat(request.getMoveInstructions()).hasSize(expectedMoveInstructions);
     assertThat(request.getTerminateInstructions()).hasSize(expectedTerminateInstructions);
   }
 
@@ -488,6 +655,35 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
     assertThat(activateInstruction.getVariableInstructions()).hasSize(expectedVariableInstructions);
   }
 
+  private void assertMoveInstruction(
+      final ProcessInstanceModificationMoveInstruction moveInstruction,
+      final String expectedSourceElementId,
+      final String expectedTargetElementId,
+      final long expectedAncestorKey,
+      final boolean expectedUseParentScope,
+      final int expectedVariableInstructions) {
+    assertThat(moveInstruction.getSourceElementInstruction().getSourceType()).isEqualTo("byId");
+    assertThat(moveInstruction.getSourceElementInstruction().getSourceElementId())
+        .isEqualTo(expectedSourceElementId);
+    assertThat(moveInstruction.getTargetElementId()).isEqualTo(expectedTargetElementId);
+    if (expectedUseParentScope) {
+      assertThat(moveInstruction.getAncestorScopeInstruction())
+          .isNotNull()
+          .extracting(
+              AncestorScopeInstruction::getAncestorScopeType,
+              AncestorScopeInstruction::getAncestorElementInstanceKey)
+          .containsExactly("inferred", null);
+    } else {
+      assertThat(moveInstruction.getAncestorScopeInstruction())
+          .isNotNull()
+          .extracting(
+              AncestorScopeInstruction::getAncestorScopeType,
+              AncestorScopeInstruction::getAncestorElementInstanceKey)
+          .containsExactly("direct", ParseUtil.keyToString(expectedAncestorKey));
+    }
+    assertThat(moveInstruction.getVariableInstructions()).hasSize(expectedVariableInstructions);
+  }
+
   private void assertTerminateInstruction(
       final ProcessInstanceModificationTerminateInstruction terminateInstruction,
       final long expectedElementKey) {
@@ -495,10 +691,25 @@ public class ModifyProcessInstanceRestTest extends ClientRestTest {
         .isEqualTo(String.valueOf(expectedElementKey));
   }
 
+  private void assertTerminateInstruction(
+      final ProcessInstanceModificationTerminateInstruction terminateInstruction,
+      final String expectedElementId) {
+    assertThat(terminateInstruction.getElementId()).isEqualTo(String.valueOf(expectedElementId));
+  }
+
   private void assertVariableInstruction(
       final ModifyProcessInstanceVariableInstruction variableInstruction,
       final String expectedScopeId) {
     Assertions.assertThat(variableInstruction.getVariables()).containsOnly(entry("foo", "bar"));
+    assertThat(variableInstruction.getScopeId()).isEqualTo(expectedScopeId);
+  }
+
+  private void assertVariableInstruction(
+      final ModifyProcessInstanceVariableInstruction variableInstruction,
+      final String expectedScopeId,
+      final String expectedVariableValue) {
+    Assertions.assertThat(variableInstruction.getVariables())
+        .containsOnly(entry("foo", expectedVariableValue));
     assertThat(variableInstruction.getScopeId()).isEqualTo(expectedScopeId);
   }
 

@@ -7,10 +7,7 @@
  */
 
 import {useNavigate, useLocation} from 'react-router-dom';
-import {
-  updateProcessFiltersSearchString,
-  getDecisionInstanceFilters,
-} from 'modules/utils/filter';
+import {updateProcessFiltersSearchString} from 'modules/utils/filter';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 
@@ -42,12 +39,6 @@ const useFilters = () => {
     );
   };
 
-  const areDecisionInstanceStatesApplied = () => {
-    const filters = getDecisionInstanceFilters(location.search);
-
-    return filters.evaluated || filters.failed;
-  };
-
   const setFilters = (filters: ProcessInstanceFilters) => {
     setFiltersToURL(filters);
     if (
@@ -77,7 +68,6 @@ const useFilters = () => {
     setFilters,
     getFilters,
     areProcessInstanceStatesApplied,
-    areDecisionInstanceStatesApplied,
   };
 };
 

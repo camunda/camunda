@@ -22,7 +22,8 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ListViewFlowNodeFromIncidentHandlerTest {
 
@@ -39,12 +40,6 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   @Test
   public void testGetEntityType() {
     assertThat(underTest.getEntityType()).isEqualTo(FlowNodeInstanceForListViewEntity.class);
-  }
-
-  @Test
-  public void shouldHandlesRecord() {
-    final Record<IncidentRecordValue> mockIncidentRecord = Mockito.mock(Record.class);
-    assertThat(underTest.handlesRecord(mockIncidentRecord)).isTrue();
   }
 
   @Test
@@ -137,5 +132,28 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
     underTest.updateEntity(incidentRecord, flowNodeInstanceForListViewEntity);
     // then
     assertThat(flowNodeInstanceForListViewEntity.getErrorMessage()).isNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = IncidentIntent.class,
+      names = {"CREATED", "MIGRATED", "RESOLVED"})
+  void shouldHandleRecordWithSupportedIntent(final IncidentIntent intent) {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
+
+    // when - then
+    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
+  }
+
+  @Test
+  void shouldNotHandleResolveIntentRecords() {
+    // given
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVE));
+
+    // when - then
+    assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
   }
 }

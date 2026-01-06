@@ -6,7 +6,9 @@ components:
       type: object
       properties:
         page:
-          $ref: '#/components/schemas/SearchQueryPageRequest'
+          description: Pagination criteria.
+          allOf:
+            - $ref: '#/components/schemas/SearchQueryPageRequest'
 
     SearchQueryPageRequest:
       x-polymorphic-schema: true
@@ -37,6 +39,7 @@ components:
           description: The index of items to start searching from.
           type: integer
           format: int32
+          minimum: 0
         limit:
           description: The maximum number of items to return in one request.
           type: integer
@@ -51,7 +54,9 @@ components:
         - after
       properties:
         after:
-          $ref: 'cursors.yaml#/components/schemas/StartCursor'
+          description: Use the `endCursor` value from the previous response to fetch the next page of results.
+          allOf:
+            - $ref: 'cursors.yaml#/components/schemas/EndCursor'
         limit:
           description: The maximum number of items to return in one request.
           type: integer
@@ -67,7 +72,9 @@ components:
         - before
       properties:
         before:
-          $ref: 'cursors.yaml#/components/schemas/EndCursor'
+          description: Use the `startCursor` value from the previous response to fetch the previous page of results.
+          allOf:
+            - $ref: 'cursors.yaml#/components/schemas/StartCursor'
         limit:
           description: The maximum number of items to return in one request.
           type: integer
@@ -83,6 +90,14 @@ components:
       properties:
         page:
           $ref: '#/components/schemas/SearchQueryPageResponse'
+
+    SortOrderEnum:
+      description: The order in which to sort the related field.
+      type: string
+      enum:
+        - ASC
+        - DESC
+      default: ASC
 
     SearchQueryPageResponse:
       description: Pagination information about the search results.
@@ -103,9 +118,13 @@ components:
             This is useful for determining if additional requests are needed to retrieve all results.
           type: boolean
         startCursor:
-          $ref: 'cursors.yaml#/components/schemas/StartCursor'
+          description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.
+          allOf:
+            - $ref: 'cursors.yaml#/components/schemas/StartCursor'
         endCursor:
-          $ref: 'cursors.yaml#/components/schemas/EndCursor'
+          description: The cursor value for getting the next page of results. Use this in the `after` field of an ensuing request.
+          allOf:
+            - $ref: 'cursors.yaml#/components/schemas/EndCursor'
       example:
         totalItems: 1
         hasMoreTotalItems: false

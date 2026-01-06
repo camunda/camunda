@@ -93,6 +93,8 @@ public class JobEntityMapperTest {
             .elementId(null)
             .elementInstanceKey(1L)
             .tenantId(null)
+            .creationTime(OffsetDateTime.now())
+            .lastUpdateTime(OffsetDateTime.now())
             .build();
 
     // When
@@ -117,5 +119,7 @@ public class JobEntityMapperTest {
     assertThat(entity.processDefinitionId()).isNull();
     assertThat(entity.elementId()).isNull();
     assertThat(entity.tenantId()).isNull();
+    assertThat(entity.creationTime()).isNotNull();
+    assertThat(entity.lastUpdateTime()).isNotNull();
   }
 }

@@ -9,10 +9,17 @@ package io.camunda.exporter.tasks.incident;
 
 import static io.camunda.search.test.utils.SearchDBExtension.INCIDENT_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
@@ -56,11 +63,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -120,6 +130,12 @@ abstract class IncidentUpdateRepositoryIT {
             template -> engineClient.createIndexTemplate(template, new IndexConfiguration(), true));
   }
 
+  protected abstract IncidentUpdateRepository createRepository();
+
+  protected abstract <T> Collection<T> search(
+      final String index, final String field, final List<String> terms, final Class<T> documentType)
+      throws IOException;
+
   private IncidentEntity newIncident(final long key) {
     final var incident = new IncidentEntity();
     final var id = String.valueOf(key);
@@ -136,11 +152,11 @@ abstract class IncidentUpdateRepositoryIT {
     return incident;
   }
 
-  protected abstract IncidentUpdateRepository createRepository();
-
-  protected abstract <T> Collection<T> search(
-      final String index, final String field, final List<String> terms, final Class<T> documentType)
-      throws IOException;
+  private void indexIncident(final IncidentEntity incident) throws PersistenceException {
+    final var batchRequest = clientAdapter.createBatchRequest();
+    batchRequest.add(incidentTemplate.getFullQualifiedName(), incident);
+    batchRequest.executeWithRefresh();
+  }
 
   @DisabledIfSystemProperty(
       named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
@@ -211,12 +227,6 @@ abstract class IncidentUpdateRepositoryIT {
 
       indexIncident(incident);
       return incident;
-    }
-
-    private void indexIncident(final IncidentEntity incident) throws PersistenceException {
-      final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(incidentTemplate.getFullQualifiedName(), incident);
-      batchRequest.executeWithRefresh();
     }
   }
 
@@ -382,6 +392,55 @@ abstract class IncidentUpdateRepositoryIT {
       final var batchRequest = clientAdapter.createBatchRequest();
       updates.forEach(e -> batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), e));
       batchRequest.executeWithRefresh();
+    }
+
+    @Test
+    void shouldUpdateLastIncidentUpdatePositionEvenIfBatchMakesNoUpdates() {
+      // given
+      final var metadata = new ExporterMetadata(new ObjectMapper());
+      final var repository = createRepository();
+      final var executor = Executors.newSingleThreadScheduledExecutor();
+
+      final var incidentNotifier = mock(IncidentNotifier.class);
+      when(incidentNotifier.notifyAsync(anyList()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // this is the expected state of the incident after the pending incident update
+      final var sparseTree = "PI_1/FN_1/FNI_1";
+      final var incident = newIncident(1L).setState(IncidentState.ACTIVE).setTreePath(sparseTree);
+      indexIncident(incident);
+
+      final var incidentUpdatePosition = 1L;
+      setupIncidentUpdates(incidentUpdatePosition, incidentUpdatePosition);
+
+      engineClient.createIndex(listViewTemplate, new IndexConfiguration());
+      engineClient.createIndex(flowNodeInstanceTemplate, new IndexConfiguration());
+
+      Awaitility.await()
+          .until(
+              () ->
+                  engineClient.indexExists(listViewTemplate.getFullQualifiedName())
+                      && engineClient.indexExists(flowNodeInstanceTemplate.getFullQualifiedName()));
+
+      // when
+      final var incidentUpdateTask =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              true,
+              100,
+              executor,
+              incidentNotifier,
+              mock(CamundaExporterMetrics.class),
+              LOGGER);
+
+      incidentUpdateTask.execute().toCompletableFuture().join();
+
+      // then
+      Awaitility.await()
+          .until(() -> metadata.getLastIncidentUpdatePosition() == incidentUpdatePosition);
+
+      executor.close();
     }
   }
 

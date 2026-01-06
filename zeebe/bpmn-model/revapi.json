@@ -73,6 +73,12 @@
           "classQualifiedName": "io.camunda.zeebe.model.bpmn.builder.AbstractServiceTaskBuilder",
           "oldType": "io.camunda.zeebe.model.bpmn.builder.AbstractServiceTaskBuilder",
           "newType": "io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder"
+        },
+        {
+          "justification": "ConditionImpl now intentionally extends FormalExpressionImpl; this change is not a breaking change as conditional events are not officially supported in C8 before 8.9.",
+          "code": "java.class.nonFinalClassInheritsFromNewClass",
+          "classQualifiedName": "io.camunda.zeebe.model.bpmn.impl.instance.ConditionImpl",
+          "superClass": "io.camunda.zeebe.model.bpmn.impl.instance.FormalExpressionImpl"
         }
       ]
     }

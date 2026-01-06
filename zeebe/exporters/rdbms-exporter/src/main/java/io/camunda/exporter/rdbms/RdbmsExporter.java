@@ -7,8 +7,12 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
+import io.camunda.db.rdbms.write.service.HistoryDeletionService;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.Protocol;
@@ -34,7 +38,12 @@ public final class RdbmsExporter {
   private Controller controller;
 
   private final int partitionId;
-  private final RdbmsWriter rdbmsWriter;
+  private final RdbmsWriters rdbmsWriters;
+  private final RdbmsSchemaManager rdbmsSchemaManager;
+
+  // services
+  private final HistoryCleanupService historyCleanupService;
+  private final HistoryDeletionService historyDeletionService;
 
   // configuration
   private final Duration flushInterval;
@@ -46,28 +55,44 @@ public final class RdbmsExporter {
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
   private ScheduledTask currentUsageMetricsCleanupTask = null;
+  private ScheduledTask currentHistoryDeletionTask = null;
+
+  // Track the oldest record timestamp in the current batch for exporting latency calculation
+  private long oldestRecordTimestampInBatch = -1;
 
   private RdbmsExporter(
       final int partitionId,
       final Duration flushInterval,
       final int queueSize,
-      final RdbmsWriter rdbmsWriter,
-      final Map<ValueType, List<RdbmsExportHandler>> handlers) {
-    this.rdbmsWriter = rdbmsWriter;
+      final RdbmsWriters rdbmsWriters,
+      final Map<ValueType, List<RdbmsExportHandler>> handlers,
+      final RdbmsSchemaManager rdbmsSchemaManager,
+      final HistoryCleanupService historyCleanupService,
+      final HistoryDeletionService historyDeletionService) {
+    this.historyCleanupService = historyCleanupService;
+    this.rdbmsWriters = rdbmsWriters;
     registeredHandlers = handlers;
 
     this.partitionId = partitionId;
     this.flushInterval = flushInterval;
     this.queueSize = queueSize;
+    this.rdbmsSchemaManager = rdbmsSchemaManager;
+    this.historyDeletionService = historyDeletionService;
 
     LOG.info(
-        "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
+        "[RDBMS Exporter P{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
+        partitionId,
         flushInterval,
         queueSize);
   }
 
   public void open(final Controller controller) {
     this.controller = controller;
+
+    if (!rdbmsSchemaManager.isInitialized()) {
+      LOG.warn("[RDBMS Exporter P{}] Schema is not yet ready for use", partitionId);
+      throw new ExporterException("Schema is not ready for use");
+    }
 
     if (!flushAfterEachRecord()) {
       currentFlushTask =
@@ -76,16 +101,29 @@ public final class RdbmsExporter {
 
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
-    if (exporterRdbmsPosition.lastExportedPosition() > -1
-        && lastPosition <= exporterRdbmsPosition.lastExportedPosition()) {
-      // This is needed since the brokers last exported position is from its last snapshot and can
-      // be different from ours.
-      lastPosition = exporterRdbmsPosition.lastExportedPosition();
-      updatePositionInBroker();
+    if (exporterRdbmsPosition.lastExportedPosition() > -1) {
+      if (lastPosition < exporterRdbmsPosition.lastExportedPosition()) {
+        // This is needed since the brokers last exported position is from its last snapshot and can
+        // be different from ours.
+        LOG.info(
+            "[RDBMS Exporter {}] Updating broker position {} to last exported position in rdbms {}",
+            partitionId,
+            lastPosition,
+            exporterRdbmsPosition.lastExportedPosition());
+        lastPosition = exporterRdbmsPosition.lastExportedPosition();
+        updatePositionInBroker();
+      } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
+        LOG.info(
+            "[RDBMS Exporter {}] Position in Broker {} is more advanced than in rdbms {}",
+            partitionId,
+            exporterRdbmsPosition.lastExportedPosition(),
+            lastPosition);
+      }
     }
 
-    rdbmsWriter.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
-    rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
+    rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::recordExportingLatency);
 
     // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
     // itself
@@ -93,8 +131,13 @@ public final class RdbmsExporter {
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
     currentUsageMetricsCleanupTask =
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupUsageMetricsHistory);
+    currentHistoryDeletionTask =
+        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::deleteHistory);
 
-    LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
+    LOG.info(
+        "[RDBMS Exporter {}] Exporter opened with last exported position {}",
+        partitionId,
+        lastPosition);
   }
 
   public void close() {
@@ -108,18 +151,31 @@ public final class RdbmsExporter {
       if (currentUsageMetricsCleanupTask != null) {
         currentUsageMetricsCleanupTask.cancel();
       }
+      if (currentHistoryDeletionTask != null) {
+        currentHistoryDeletionTask.cancel();
+      }
 
-      rdbmsWriter.flush();
+      try {
+        rdbmsWriters.flush(true);
+      } catch (final Exception e) {
+        LOG.warn(
+            "[RDBMS Exporter P{}] Failed to execute final flush on close for partition {}",
+            partitionId,
+            partitionId);
+        throw e;
+      }
     } catch (final Exception e) {
-      LOG.warn("[RDBMS Exporter] Failed to flush records before closing exporter.", e);
+      LOG.warn(
+          "[RDBMS Exporter P{}] Failed to flush records before closing exporter.", partitionId, e);
     }
 
-    LOG.info("[RDBMS Exporter] Exporter closed");
+    LOG.info("[RDBMS Exporter P{}] Exporter closed at position {}", partitionId, lastPosition);
   }
 
   public void export(final Record<?> record) {
     LOG.trace(
-        "[RDBMS Exporter] Process record {}-{} - {}:{}",
+        "[RDBMS Exporter P{}] Process record {}-{} - {}:{}",
+        partitionId,
         record.getPartitionId(),
         record.getPosition(),
         record.getValueType(),
@@ -130,31 +186,50 @@ public final class RdbmsExporter {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
           LOG.trace(
-              "[RDBMS Exporter] Exporting record {} with handler {}",
+              "[RDBMS Exporter P{}] Exporting record {} with handler {}",
+              partitionId,
               record.getValue(),
               handler.getClass());
           handler.export(record);
           exported = true;
         } else {
           LOG.trace(
-              "[RDBMS Exporter] Handler {} can not export record {}",
+              "[RDBMS Exporter P{}] Handler {} can not export record {}",
+              partitionId,
               handler.getClass(),
               record.getValueType());
         }
-
-        lastPosition = record.getPosition();
-
-        if (flushAfterEachRecord()) {
-          rdbmsWriter.flush();
-        }
       }
+      // Update lastPosition once per record, after all handlers have processed it
+      lastPosition = record.getPosition();
     } else {
-      LOG.trace("[RDBMS Exporter] No registered handler found for {}", record.getValueType());
+      LOG.trace(
+          "[RDBMS Exporter P{}] No registered handler found for {}",
+          partitionId,
+          record.getValueType());
     }
 
-    if (!exported) {
+    if (exported) {
+      // Track the oldest record timestamp in the current batch
+      final long recordTimestamp = record.getTimestamp();
+      if (oldestRecordTimestampInBatch < 0 || recordTimestamp < oldestRecordTimestampInBatch) {
+        oldestRecordTimestampInBatch = recordTimestamp;
+      }
+      // causes a flush check after each processed record. Depending on the queue size and
+      // configuration, the writers ExecutionQueue may or may not flush here.
+      try {
+        rdbmsWriters.flush(flushAfterEachRecord());
+      } catch (final Exception e) {
+        LOG.warn(
+            "[RDBMS Exporter P{}] Failed to flush record for position {} to the database.",
+            partitionId,
+            lastPosition);
+        throw e;
+      }
+    } else {
       LOG.trace(
-          "[RDBMS Exporter] Record with key {} and original partitionId {} could not be exported {}.",
+          "[RDBMS Exporter P{}] Record with key {} and original partitionId {} could not be exported {}.",
+          partitionId,
           record.getKey(),
           Protocol.decodePartitionId(record.getKey()),
           record);
@@ -171,18 +246,21 @@ public final class RdbmsExporter {
     if (currentUsageMetricsCleanupTask != null) {
       currentUsageMetricsCleanupTask.cancel();
     }
+    if (currentHistoryDeletionTask != null) {
+      currentHistoryDeletionTask.cancel();
+    }
 
-    rdbmsWriter.getRdbmsPurger().purgeRdbms();
+    rdbmsWriters.getRdbmsPurger().purgeRdbms();
   }
 
   private void updatePositionInBroker() {
-    LOG.trace("[RDBMS Exporter] Updating position to {} in broker", lastPosition);
+    LOG.trace("[RDBMS Exporter P{}] Updating position to {} in broker", partitionId, lastPosition);
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void updatePositionInRdbms() {
     if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
-      LOG.trace("[RDBMS Exporter] Updating position to {} in rdbms", lastPosition);
+      LOG.trace("[RDBMS Exporter P{}] Updating position to {} in rdbms", partitionId, lastPosition);
       exporterRdbmsPosition =
           new ExporterPositionModel(
               exporterRdbmsPosition.partitionId(),
@@ -190,16 +268,26 @@ public final class RdbmsExporter {
               lastPosition,
               exporterRdbmsPosition.created(),
               LocalDateTime.now());
-      rdbmsWriter.getExporterPositionService().update(exporterRdbmsPosition);
+      rdbmsWriters.getExporterPositionService().update(exporterRdbmsPosition);
+    }
+  }
+
+  private void recordExportingLatency() {
+    if (oldestRecordTimestampInBatch >= 0) {
+      final long latencyMs = System.currentTimeMillis() - oldestRecordTimestampInBatch;
+      rdbmsWriters.getMetrics().recordExportingLatency(latencyMs);
+      // Reset for the next batch
+      oldestRecordTimestampInBatch = -1;
     }
   }
 
   private void initializeRdbmsPosition() {
     try {
-      exporterRdbmsPosition = rdbmsWriter.getExporterPositionService().findOne(partitionId);
+      exporterRdbmsPosition = rdbmsWriters.getExporterPositionService().findOne(partitionId);
     } catch (final Exception e) {
       LOG.warn(
-          "[RDBMS Exporter] Failed to initialize exporter position because Database is not ready, retrying ... {}",
+          "[RDBMS Exporter P{}] Failed to initialize exporter position because Database is not ready, retrying ... {}",
+          partitionId,
           e.getMessage());
       throw e;
     }
@@ -212,11 +300,13 @@ public final class RdbmsExporter {
               lastPosition,
               LocalDateTime.now(),
               LocalDateTime.now());
-      rdbmsWriter.getExporterPositionService().createWithoutQueue(exporterRdbmsPosition);
-      LOG.debug("[RDBMS Exporter] Initialize position in rdbms");
+      rdbmsWriters.getExporterPositionService().createWithoutQueue(exporterRdbmsPosition);
+      LOG.debug("[RDBMS Exporter P{}] Initialize position in rdbms", partitionId);
     } else {
       LOG.debug(
-          "[RDBMS Exporter] Found position in rdbms for this exporter: {}", exporterRdbmsPosition);
+          "[RDBMS Exporter P{}] Found position in rdbms for this exporter: {}",
+          partitionId,
+          exporterRdbmsPosition);
     }
   }
 
@@ -224,24 +314,38 @@ public final class RdbmsExporter {
     return flushInterval.isZero() || queueSize <= 0;
   }
 
-  private void flushAndReschedule() {
-    flushExecutionQueue();
-    currentFlushTask = controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+  @VisibleForTesting
+  void flushAndReschedule() {
+    try {
+      flushExecutionQueue();
+    } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Failed to flush records for position {}",
+          partitionId,
+          lastPosition);
+      throw e;
+    } finally {
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
   }
 
   private void cleanupHistory() {
-    final var newDuration =
-        rdbmsWriter.getHistoryCleanupService().cleanupHistory(partitionId, OffsetDateTime.now());
+    final var newDuration = historyCleanupService.cleanupHistory(partitionId, OffsetDateTime.now());
     currentCleanupTask = controller.scheduleCancellableTask(newDuration, this::cleanupHistory);
   }
 
   private void cleanupUsageMetricsHistory() {
     final var newDuration =
-        rdbmsWriter
-            .getHistoryCleanupService()
-            .cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
+        historyCleanupService.cleanupUsageMetricsHistory(partitionId, OffsetDateTime.now());
     currentUsageMetricsCleanupTask =
         controller.scheduleCancellableTask(newDuration, this::cleanupUsageMetricsHistory);
+  }
+
+  private void deleteHistory() {
+    final var newDuration = historyDeletionService.deleteHistory(partitionId);
+    currentHistoryDeletionTask =
+        controller.scheduleCancellableTask(newDuration, this::deleteHistory);
   }
 
   @VisibleForTesting(
@@ -251,7 +355,12 @@ public final class RdbmsExporter {
       LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush(true);
+  }
+
+  @VisibleForTesting("Allows verification of registered handlers in tests")
+  Map<ValueType, List<RdbmsExportHandler>> getRegisteredHandlers() {
+    return registeredHandlers;
   }
 
   public static final class Builder {
@@ -259,8 +368,11 @@ public final class RdbmsExporter {
     private int partitionId;
     private Duration flushInterval;
     private int queueSize;
-    private RdbmsWriter rdbmsWriter;
+    private RdbmsWriters rdbmsWriters;
+    private RdbmsSchemaManager rdbmsSchemaManager;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
+    private HistoryCleanupService historyCleanupService;
+    private HistoryDeletionService historyDeletionService;
 
     public Builder partitionId(final int value) {
       partitionId = value;
@@ -277,13 +389,18 @@ public final class RdbmsExporter {
       return this;
     }
 
-    public Builder rdbmsWriter(final RdbmsWriter value) {
-      rdbmsWriter = value;
+    public Builder rdbmsWriter(final RdbmsWriters value) {
+      rdbmsWriters = value;
       return this;
     }
 
     public Builder handlers(final Map<ValueType, List<RdbmsExportHandler>> value) {
       handlers = value;
+      return this;
+    }
+
+    public Builder rdbmsSchemaManager(final RdbmsSchemaManager value) {
+      rdbmsSchemaManager = value;
       return this;
     }
 
@@ -296,8 +413,26 @@ public final class RdbmsExporter {
       return this;
     }
 
+    public Builder historyCleanupService(final HistoryCleanupService historyCleanupService) {
+      this.historyCleanupService = historyCleanupService;
+      return this;
+    }
+
+    public Builder historyDeletionService(final HistoryDeletionService historyDeletionService) {
+      this.historyDeletionService = historyDeletionService;
+      return this;
+    }
+
     public RdbmsExporter build() {
-      return new RdbmsExporter(partitionId, flushInterval, queueSize, rdbmsWriter, handlers);
+      return new RdbmsExporter(
+          partitionId,
+          flushInterval,
+          queueSize,
+          rdbmsWriters,
+          handlers,
+          rdbmsSchemaManager,
+          historyCleanupService,
+          historyDeletionService);
     }
   }
 }

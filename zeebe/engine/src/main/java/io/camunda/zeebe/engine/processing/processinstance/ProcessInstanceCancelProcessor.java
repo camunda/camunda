@@ -8,9 +8,10 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -48,6 +49,7 @@ public final class ProcessInstanceCancelProcessor
   private final AsyncRequestState asyncRequestState;
   private final TypedResponseWriter responseWriter;
   private final TypedCommandWriter commandWriter;
+  private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -61,6 +63,7 @@ public final class ProcessInstanceCancelProcessor
     asyncRequestState = processingState.getAsyncRequestState();
     responseWriter = writers.response();
     commandWriter = writers.command();
+    stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
@@ -77,6 +80,7 @@ public final class ProcessInstanceCancelProcessor
     asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
 
     final ProcessInstanceRecord value = elementInstance.getValue();
+    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.CANCELING, value);
     commandWriter.appendFollowUpCommand(
         command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
     responseWriter.writeEventOnCommand(
@@ -101,12 +105,13 @@ public final class ProcessInstanceCancelProcessor
     }
 
     final var request =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.CANCEL_PROCESS_INSTANCE,
-                elementInstance.getValue().getTenantId())
-            .addResourceId(elementInstance.getValue().getBpmnProcessId());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.CANCEL_PROCESS_INSTANCE)
+            .tenantId(elementInstance.getValue().getTenantId())
+            .addResourceId(elementInstance.getValue().getBpmnProcessId())
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

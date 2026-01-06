@@ -1,0 +1,14 @@
+{
+  "testCases": [
+    {
+      "name": "Scenario 4: Test Case 1",
+      "description": "Invalid test case",
+      "instructions": [
+        {
+          "type": "UNKNOWN_INSTRUCTION",
+          "isValid": false
+        }
+      ]
+    }
+  ]
+}

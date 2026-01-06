@@ -10,33 +10,57 @@ import type {
   BusinessObject,
   BusinessObjects,
 } from 'bpmn-js/lib/NavigatedViewer';
+import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
+import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
+
+const checkScope = (
+  parentFlowNode: BusinessObject | undefined,
+  totalRunningInstancesByFlowNode: Record<string, number> | undefined,
+  predicate: (count: number) => boolean,
+): boolean => {
+  if (!parentFlowNode) {
+    return false;
+  }
+
+  const count = totalRunningInstancesByFlowNode?.[parentFlowNode.id] ?? 0;
+
+  if (predicate(count)) {
+    return true;
+  }
+
+  if (
+    !isSubProcess(parentFlowNode.$parent) &&
+    !isAdHocSubProcess(parentFlowNode.$parent)
+  ) {
+    return false;
+  }
+
+  return checkScope(
+    parentFlowNode.$parent,
+    totalRunningInstancesByFlowNode,
+    predicate,
+  );
+};
 
 const hasMultipleScopes = (
   parentFlowNode?: BusinessObject,
   totalRunningInstancesByFlowNode?: Record<string, number>,
-): boolean => {
-  if (parentFlowNode === undefined) {
-    return false;
-  }
-
-  const totalRunningInstancesCount =
-    totalRunningInstancesByFlowNode?.[parentFlowNode.id];
-
-  const scopeCount = totalRunningInstancesCount ?? 0;
-
-  if (scopeCount > 1) {
-    return true;
-  }
-
-  if (parentFlowNode.$parent?.$type !== 'bpmn:SubProcess') {
-    return false;
-  }
-
-  return hasMultipleScopes(
-    parentFlowNode.$parent,
+): boolean =>
+  checkScope(
+    parentFlowNode,
     totalRunningInstancesByFlowNode,
+    (count) => count > 1,
   );
-};
+
+const hasSingleScope = (
+  parentFlowNode?: BusinessObject,
+  totalRunningInstancesByFlowNode?: Record<string, number>,
+): boolean =>
+  checkScope(
+    parentFlowNode,
+    totalRunningInstancesByFlowNode,
+    (count) => count === 1,
+  );
 
 const getFlowNodesInBetween = (
   businessObjects: BusinessObjects,
@@ -74,4 +98,9 @@ const getFlowNodeParents = (
   return getFlowNodesInBetween(businessObjects, flowNodeId, bpmnProcessId);
 };
 
-export {getFlowNodeParents, hasMultipleScopes, getFlowNodesInBetween};
+export {
+  getFlowNodeParents,
+  hasMultipleScopes,
+  hasSingleScope,
+  getFlowNodesInBetween,
+};

@@ -70,8 +70,9 @@ public final class BpmnDecisionBehavior {
   public Either<Failure, DecisionEvaluationResult> evaluateDecision(
       final ExecutableCalledDecision element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
+    final var tenantId = context.getTenantId();
 
-    final var decisionIdOrFailure = evalDecisionIdExpression(element, scopeKey);
+    final var decisionIdOrFailure = evalDecisionIdExpression(element, scopeKey, tenantId);
     if (decisionIdOrFailure.isLeft()) {
       return Either.left(decisionIdOrFailure.getLeft());
     }
@@ -161,8 +162,8 @@ public final class BpmnDecisionBehavior {
   }
 
   private Either<Failure, String> evalDecisionIdExpression(
-      final ExecutableCalledDecision element, final long scopeKey) {
-    return expressionBehavior.evaluateStringExpression(element.getDecisionId(), scopeKey);
+      final ExecutableCalledDecision element, final long scopeKey, final String tenantId) {
+    return expressionBehavior.evaluateStringExpression(element.getDecisionId(), scopeKey, tenantId);
   }
 
   private void writeDecisionEvaluationEvent(

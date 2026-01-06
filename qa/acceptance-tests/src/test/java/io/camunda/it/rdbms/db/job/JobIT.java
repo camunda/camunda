@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.JobDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.it.rdbms.db.fixtures.JobFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -25,6 +25,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.sort.JobSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.assertj.core.data.TemporalUnitWithinOffset;
@@ -42,11 +43,11 @@ public class JobIT {
   @TestTemplate
   public void shouldSaveAndFindJobByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader processInstanceReader = rdbmsService.getJobReader();
 
     final var original = JobFixtures.createRandomized(b -> b);
-    createAndSaveJob(rdbmsWriter, original);
+    createAndSaveJob(rdbmsWriters, original);
 
     final var instance = processInstanceReader.findOne(original.jobKey()).orElse(null);
 
@@ -57,11 +58,11 @@ public class JobIT {
   public void shouldSaveAndFindJobWithLargeErrorMessageByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader jobReader = rdbmsService.getJobReader();
 
     final var original = JobFixtures.createRandomized(b -> b.errorMessage("x".repeat(9000)));
-    createAndSaveJob(rdbmsWriter, original);
+    createAndSaveJob(rdbmsWriters, original);
 
     final var instance = jobReader.findOne(original.jobKey()).orElse(null);
 
@@ -73,11 +74,11 @@ public class JobIT {
   public void shouldFindJobByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader processInstanceReader = rdbmsService.getJobReader();
 
     final var original = JobFixtures.createRandomized(b -> b);
-    createAndSaveJob(rdbmsWriter, original);
+    createAndSaveJob(rdbmsWriters, original);
 
     final var searchResult =
         processInstanceReader.search(
@@ -100,17 +101,18 @@ public class JobIT {
   public void shouldFindJobByAuthorizedResourceId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader processInstanceReader = rdbmsService.getJobReader();
 
     final var original = JobFixtures.createRandomized(b -> b);
-    createAndSaveJob(rdbmsWriter, original);
-    createAndSaveRandomJobs(rdbmsWriter);
+    createAndSaveJob(rdbmsWriters, original);
+    createAndSaveRandomJobs(rdbmsWriters);
 
     final var searchResult =
         processInstanceReader.search(
             JobQuery.of(b -> b),
-            resourceAccessChecksFromResourceIds(original.processDefinitionId()));
+            resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.PROCESS_DEFINITION, original.processDefinitionId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -122,12 +124,12 @@ public class JobIT {
   @TestTemplate
   public void shouldFindJobByAuthorizedTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader processInstanceReader = rdbmsService.getJobReader();
 
     final var original = JobFixtures.createRandomized(b -> b);
-    createAndSaveJob(rdbmsWriter, original);
-    createAndSaveRandomJobs(rdbmsWriter);
+    createAndSaveJob(rdbmsWriters, original);
+    createAndSaveRandomJobs(rdbmsWriters);
 
     final var searchResult =
         processInstanceReader.search(
@@ -143,11 +145,11 @@ public class JobIT {
   @TestTemplate
   public void shouldFindAllJobPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader processInstanceReader = rdbmsService.getJobReader();
 
     final String processDefinitionId = JobFixtures.nextStringId();
-    createAndSaveRandomJobs(rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
+    createAndSaveRandomJobs(rdbmsWriters, b -> b.processDefinitionId(processDefinitionId));
 
     final var searchResult =
         processInstanceReader.search(
@@ -165,12 +167,12 @@ public class JobIT {
   @TestTemplate
   public void shouldFindJobWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader processInstanceReader = rdbmsService.getJobReader();
 
     final var original = JobFixtures.createRandomized(b -> b);
-    createAndSaveJob(rdbmsWriter, original);
-    createAndSaveRandomJobs(rdbmsWriter);
+    createAndSaveJob(rdbmsWriters, original);
+    createAndSaveRandomJobs(rdbmsWriters);
 
     final var searchResult =
         processInstanceReader.search(
@@ -199,11 +201,11 @@ public class JobIT {
   @TestTemplate
   public void shouldFindJobWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader processInstanceReader = rdbmsService.getJobReader();
 
     final var processDefinitionKey = nextKey();
-    createAndSaveRandomJobs(rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey));
+    createAndSaveRandomJobs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey));
     final var sort = JobSort.of(s -> s.state().asc().deadline().asc().elementId().desc());
     final var searchResult =
         processInstanceReader.search(
@@ -238,7 +240,9 @@ public class JobIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("endTime", "deadline")
+        // date fields are ignored because different engines produce different precisions
+        // e.g., date may look like 2025-11-21T16:02:57.376Z or 2025-11-21T16:02:57.376207580Z
+        .ignoringFields("endTime", "deadline", "creationTime", "lastUpdateTime")
         .isEqualTo(original);
     assertThat(instance.jobKey()).isEqualTo(original.jobKey());
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());
@@ -249,32 +253,32 @@ public class JobIT {
   @TestTemplate
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final JobDbReader reader = rdbmsService.getJobReader();
 
     final var cleanupDate = NOW.minusDays(1);
 
     final var definition =
-        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
     final var item1 =
         createAndSaveJob(
-            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
     final var item2 =
         createAndSaveJob(
-            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
     final var item3 =
         createAndSaveJob(
-            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
 
     // set cleanup dates
-    rdbmsWriter.getJobWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
-    rdbmsWriter
+    rdbmsWriters.getJobWriter().scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
+    rdbmsWriters
         .getJobWriter()
         .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
 
     // cleanup
-    rdbmsWriter.getJobWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+    rdbmsWriters.getJobWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
 
     final var searchResult =
         reader.search(

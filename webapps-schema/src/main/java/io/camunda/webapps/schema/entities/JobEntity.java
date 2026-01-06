@@ -15,38 +15,50 @@ import java.util.Objects;
 public class JobEntity
     implements ExporterEntity<JobEntity>, PartitionedEntity<JobEntity>, TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
-  private Long processInstanceKey;
-  private Long flowNodeInstanceId;
-  private String flowNodeId;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private Long flowNodeInstanceId;
+  @BeforeVersion880 private String flowNodeId;
 
   /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
-  private Long processDefinitionKey;
+  @BeforeVersion880 private Long processDefinitionKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
-  private String bpmnProcessId;
+  @BeforeVersion880 private String bpmnProcessId;
 
-  private String tenantId;
-  private String type;
-  private String worker;
-  private Integer retries;
-  private String state;
-  private String errorMessage;
-  private String errorCode;
-  private OffsetDateTime deadline;
-  private OffsetDateTime endTime;
-  private Map<String, String> customHeaders;
-  private boolean jobFailedWithRetriesLeft;
-  private String jobKind;
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private OffsetDateTime creationTime;
 
-  private String listenerEventType;
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private OffsetDateTime lastUpdateTime;
 
-  private Long position;
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
-  private Boolean denied;
-  private String deniedReason;
+  @BeforeVersion880 private String tenantId;
+  @BeforeVersion880 private String type;
+  @BeforeVersion880 private String worker;
+  @BeforeVersion880 private Integer retries;
+  @BeforeVersion880 private String state;
+  @BeforeVersion880 private String errorMessage;
+  @BeforeVersion880 private String errorCode;
+  @BeforeVersion880 private OffsetDateTime deadline;
+  @BeforeVersion880 private OffsetDateTime endTime;
+  @BeforeVersion880 private Map<String, String> customHeaders;
+  @BeforeVersion880 private boolean jobFailedWithRetriesLeft;
+  @BeforeVersion880 private String jobKind;
+
+  @BeforeVersion880 private String listenerEventType;
+
+  @BeforeVersion880 private Long position;
+
+  @BeforeVersion880 private Boolean denied;
+  @BeforeVersion880 private String deniedReason;
 
   @Override
   public String getId() {
@@ -251,6 +263,33 @@ public class JobEntity
     return this;
   }
 
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
+  }
+
+  public JobEntity setCreationTime(final OffsetDateTime creationTime) {
+    this.creationTime = creationTime;
+    return this;
+  }
+
+  public OffsetDateTime getLastUpdateTime() {
+    return lastUpdateTime;
+  }
+
+  public JobEntity setLastUpdateTime(final OffsetDateTime lastUpdateTime) {
+    this.lastUpdateTime = lastUpdateTime;
+    return this;
+  }
+
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public JobEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   public Boolean isDenied() {
     return denied;
   }
@@ -295,7 +334,10 @@ public class JobEntity
         listenerEventType,
         position,
         denied,
-        deniedReason);
+        deniedReason,
+        creationTime,
+        lastUpdateTime,
+        rootProcessInstanceKey);
   }
 
   @Override
@@ -330,7 +372,10 @@ public class JobEntity
         && Objects.equals(listenerEventType, jobEntity.listenerEventType)
         && Objects.equals(position, jobEntity.position)
         && Objects.equals(denied, jobEntity.denied)
-        && Objects.equals(deniedReason, jobEntity.deniedReason);
+        && Objects.equals(deniedReason, jobEntity.deniedReason)
+        && Objects.equals(creationTime, jobEntity.creationTime)
+        && Objects.equals(lastUpdateTime, jobEntity.lastUpdateTime)
+        && Objects.equals(rootProcessInstanceKey, jobEntity.rootProcessInstanceKey);
   }
 
   @Override
@@ -388,6 +433,12 @@ public class JobEntity
         + denied
         + ", jobDeniedReason="
         + deniedReason
+        + ", creationTime="
+        + creationTime
+        + ", lastUpdateTime="
+        + lastUpdateTime
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + "} "
         + super.toString();
   }

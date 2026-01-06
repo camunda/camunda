@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.stream.api.KeyValidator;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import java.util.function.Supplier;
 
@@ -16,7 +17,7 @@ public final class Writers {
 
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final StateWriter stateWriter;
+  private final ResultBuilderBackedEventApplyingStateWriter stateWriter;
 
   private final TypedResponseWriter responseWriter;
   private final SideEffectWriter sideEffectWriter;
@@ -32,6 +33,10 @@ public final class Writers {
 
     responseWriter = new ResultBuilderBackedTypedResponseWriter(resultBuilderSupplier);
     sideEffectWriter = new ResultBuilderBackedSideEffectWriter(resultBuilderSupplier);
+  }
+
+  public void setKeyValidator(final KeyValidator keyGenerator) {
+    stateWriter.setKeyValidator(keyGenerator);
   }
 
   /**

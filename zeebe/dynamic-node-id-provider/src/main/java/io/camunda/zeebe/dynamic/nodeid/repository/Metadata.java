@@ -8,28 +8,48 @@
 package io.camunda.zeebe.dynamic.nodeid.repository;
 
 import io.camunda.zeebe.dynamic.nodeid.Lease;
+import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
-public record Metadata(String task, long expiry) {
-
+public record Metadata(Optional<String> task, Version version) {
   // KEYS MUST BE LOWERCASE
   private static final String TASK_ID_KEY = "taskid";
-  private static final String EXPIRY_KEY = "expiry";
+  private static final String VERSION_KEY = "version";
 
-  //    private static final String NODE_VERSIONKEY = "nodeversion";
+  public Metadata {
+    Objects.requireNonNull(task, "task cannot be null");
+    if (task.isPresent() && task.get().isEmpty()) {
+      throw new IllegalArgumentException("task cannot be empty");
+    }
+    Objects.requireNonNull(version, "version cannot be null");
+  }
+
+  public Metadata forRelease() {
+    return new Metadata(Optional.empty(), version);
+  }
 
   public static Metadata fromLease(final Lease lease) {
-    return new Metadata(lease.taskId(), lease.timestamp());
+    return new Metadata(Optional.of(lease.taskId()), lease.nodeInstance().version());
   }
 
   public Map<String, String> asMap() {
-    return Map.of(TASK_ID_KEY, task, EXPIRY_KEY, String.valueOf(expiry));
+    return Map.of(TASK_ID_KEY, task.orElse(""), VERSION_KEY, Long.toString(version.version()));
   }
 
   public static Metadata fromMap(final Map<String, String> map) {
     if (map.isEmpty()) {
       return null;
     }
-    return new Metadata(map.get(TASK_ID_KEY), Long.parseLong(map.get(EXPIRY_KEY)));
+    try {
+      final var taskIdOpt = map.get(TASK_ID_KEY);
+      final Optional<String> taskId =
+          taskIdOpt != null && !taskIdOpt.isEmpty() ? Optional.of(taskIdOpt) : Optional.empty();
+      final var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
+      return new Metadata(taskId, version);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Failed to deserialize metadata, map is " + map, e);
+    }
   }
 }

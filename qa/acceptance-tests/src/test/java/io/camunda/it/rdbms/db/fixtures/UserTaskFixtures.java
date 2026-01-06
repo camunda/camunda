@@ -8,7 +8,7 @@
 package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.Builder;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -59,12 +59,12 @@ public final class UserTaskFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomUserTasks(
       final RdbmsService rdbmsService, final Function<Builder, Builder> builderFunction) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getUserTaskWriter().create(UserTaskFixtures.createRandomized(builderFunction));
+      rdbmsWriters.getUserTaskWriter().create(UserTaskFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   /**
@@ -75,29 +75,29 @@ public final class UserTaskFixtures extends CommonFixtures {
     createAndSaveRandomUserTasks(rdbmsService, b -> b.processDefinitionId(processDefinitionId));
   }
 
-  public static RdbmsWriter createAndSaveUserTask(
+  public static RdbmsWriters createAndSaveUserTask(
       final RdbmsService rdbmsService, final UserTaskDbModel processInstance) {
     return createAndSaveUserTasks(rdbmsService.createWriter(1L), List.of(processInstance));
   }
 
   public static UserTaskDbModel createAndSaveUserTask(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var randomized = createRandomized(builderFunction);
-    createAndSaveUserTasks(rdbmsWriter, List.of(randomized));
+    createAndSaveUserTasks(rdbmsWriters, List.of(randomized));
     return randomized;
   }
 
-  public static RdbmsWriter createAndSaveUserTask(
-      final RdbmsWriter rdbmsWriter, final UserTaskDbModel processInstance) {
-    return createAndSaveUserTasks(rdbmsWriter, List.of(processInstance));
+  public static RdbmsWriters createAndSaveUserTask(
+      final RdbmsWriters rdbmsWriters, final UserTaskDbModel processInstance) {
+    return createAndSaveUserTasks(rdbmsWriters, List.of(processInstance));
   }
 
-  public static RdbmsWriter createAndSaveUserTasks(
-      final RdbmsWriter rdbmsWriter, final List<UserTaskDbModel> processInstanceList) {
+  public static RdbmsWriters createAndSaveUserTasks(
+      final RdbmsWriters rdbmsWriters, final List<UserTaskDbModel> processInstanceList) {
     for (final UserTaskDbModel processInstance : processInstanceList) {
-      rdbmsWriter.getUserTaskWriter().create(processInstance);
+      rdbmsWriters.getUserTaskWriter().create(processInstance);
     }
-    rdbmsWriter.flush();
-    return rdbmsWriter;
+    rdbmsWriters.flush();
+    return rdbmsWriters;
   }
 }

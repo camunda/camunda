@@ -29,11 +29,11 @@
     <version.java>21</version.java>
 
     <!-- dependency versions -->
-    <version.config>1.4.4</version.config>
+    <version.config>1.4.5</version.config>
 
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>
-    <plugin.version.jib>3.4.6</plugin.version.jib>
+    <plugin.version.jib>3.5.1</plugin.version.jib>
   </properties>
 
   <dependencies>
@@ -42,6 +42,10 @@
       <groupId>com.typesafe</groupId>
       <artifactId>config</artifactId>
       <version>${version.config}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <!-- Shared dependencies with the rest of the project -->
@@ -97,6 +101,11 @@
 
     <dependency>
       <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
 
@@ -125,6 +134,12 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

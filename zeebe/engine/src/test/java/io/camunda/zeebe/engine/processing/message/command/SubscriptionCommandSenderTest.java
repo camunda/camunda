@@ -15,6 +15,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -43,6 +44,7 @@ public class SubscriptionCommandSenderTest {
   private static final long SAME_RECEIVER_PARTITION_KEY =
       Protocol.encodePartitionId(SAME_PARTITION, 1);
   private static final long DEFAULT_ELEMENT_INSTANCE_KEY = 111;
+  private static final long DEFAULT_PROCESS_DEFINITION_KEY = 222;
   private static final DirectBuffer DEFAULT_MESSAGE_NAME = BufferUtil.wrapString("msg");
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private InterPartitionCommandSender mockInterPartitionCommandSender;
@@ -57,6 +59,7 @@ public class SubscriptionCommandSenderTest {
     mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
     final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
+    writers.setKeyValidator(new AtomicKeyGenerator(SAME_PARTITION));
     subscriptionCommandSender.setWriters(writers);
   }
 
@@ -68,6 +71,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.closeProcessMessageSubscription(
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -84,6 +88,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.closeProcessMessageSubscription(
         SAME_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -100,6 +105,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.correlateProcessMessageSubscription(
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_MESSAGE_KEY,
@@ -120,6 +126,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.correlateProcessMessageSubscription(
         SAME_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_MESSAGE_KEY,
@@ -140,6 +147,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.sendDirectCorrelateProcessMessageSubscription(
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_MESSAGE_KEY,
@@ -167,6 +175,7 @@ public class SubscriptionCommandSenderTest {
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -184,6 +193,7 @@ public class SubscriptionCommandSenderTest {
         SAME_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -201,6 +211,7 @@ public class SubscriptionCommandSenderTest {
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -224,6 +235,7 @@ public class SubscriptionCommandSenderTest {
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
@@ -244,6 +256,7 @@ public class SubscriptionCommandSenderTest {
         SAME_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
@@ -264,6 +277,7 @@ public class SubscriptionCommandSenderTest {
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         DEFAULT_CORRELATION_KEY,
@@ -289,6 +303,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.openProcessMessageSubscription(
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -306,6 +321,7 @@ public class SubscriptionCommandSenderTest {
     subscriptionCommandSender.openProcessMessageSubscription(
         SAME_RECEIVER_PARTITION_KEY,
         DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_MESSAGE_NAME,
         true,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -324,6 +340,7 @@ public class SubscriptionCommandSenderTest {
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_KEY,
         DEFAULT_MESSAGE_NAME,
@@ -344,6 +361,7 @@ public class SubscriptionCommandSenderTest {
         (int) SAME_RECEIVER_PARTITION_KEY,
         SAME_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_KEY,
         DEFAULT_MESSAGE_NAME,
@@ -365,6 +383,7 @@ public class SubscriptionCommandSenderTest {
         DIFFERENT_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -384,6 +403,7 @@ public class SubscriptionCommandSenderTest {
         SAME_PARTITION,
         DIFFERENT_RECEIVER_PARTITION_KEY,
         DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_DEFINITION_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);

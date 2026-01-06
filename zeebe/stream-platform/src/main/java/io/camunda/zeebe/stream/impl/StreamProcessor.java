@@ -480,7 +480,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
-      return HealthReport.unhealthy(this).withMessage("actor appears blocked", instant);
+      final StringBuilder message = new StringBuilder("actor appears blocked, ");
+      if (processingStateMachine != null) {
+        message.append(processingStateMachine.describeCurrentState());
+      } else if (replayStateMachine != null) {
+        message.append(replayStateMachine.describeCurrentState());
+      } else {
+        message.append("in phase ").append(streamProcessorContext.getStreamProcessorPhase());
+      }
+      return HealthReport.unhealthy(this).withMessage(message.toString(), instant);
     } else if (streamProcessorContext.getStreamProcessorPhase() == Phase.FAILED) {
       return HealthReport.unhealthy(this).withMessage("in failed phase", instant);
     } else {

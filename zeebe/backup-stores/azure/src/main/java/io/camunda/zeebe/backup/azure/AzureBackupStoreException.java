@@ -28,4 +28,16 @@ public abstract class AzureBackupStoreException extends RuntimeException {
       super(message);
     }
   }
+
+  public static final class IndexWriteException extends AzureBackupStoreException {
+    public IndexWriteException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  public static final class IndexReadException extends AzureBackupStoreException {
+    public IndexReadException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
 }

@@ -27,8 +27,6 @@ type InstanceEntityState =
   | 'INCIDENT'
   | 'TERMINATED';
 
-type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
-
 interface OperationEntity {
   id: string;
   name: null | string;
@@ -52,12 +50,6 @@ interface InstanceOperationEntity {
   completedDate: null | string;
 }
 
-type ResourceBasedPermissionDto =
-  | 'READ'
-  | 'DELETE'
-  | 'UPDATE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_INSTANCE';
-
 interface ProcessInstanceEntity {
   id: string;
   processId: string;
@@ -76,22 +68,23 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
-  permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
-}
-
-interface DecisionInstanceEntity {
-  id: string;
-  decisionName: string;
-  decisionVersion: number;
-  tenantId: string;
-  evaluationDate: string;
-  processInstanceId: string | null;
-  state: DecisionInstanceEntityState;
-  sortValues: [string, string];
 }
 
 type SortOrder = 'asc' | 'desc';
+
+type FlowNodeInstanceDto = {
+  id: string;
+  type: string;
+  state?: InstanceEntityState;
+  flowNodeId: string;
+  startDate: string;
+  endDate: null | string;
+  treePath: string;
+  sortValues: [string, string] | [];
+};
+
+type FlowNodeInstance = FlowNodeInstanceDto & {isPlaceholder?: boolean};
 
 export type {
   OperationEntityType,
@@ -99,8 +92,7 @@ export type {
   InstanceEntityState,
   OperationEntity,
   InstanceOperationEntity,
-  ResourceBasedPermissionDto,
   ProcessInstanceEntity,
-  DecisionInstanceEntity,
   SortOrder,
+  FlowNodeInstance,
 };

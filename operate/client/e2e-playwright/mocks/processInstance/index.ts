@@ -13,11 +13,11 @@ import type {
   GetProcessInstanceCallHierarchyResponseBody,
   GetProcessInstanceSequenceFlowsResponseBody,
   ProcessInstance,
+  QueryProcessInstanceIncidentsResponseBody,
+  QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
-  FlowNodeInstanceDto,
-  FlowNodeInstancesDto,
   MetaDataDto,
   ProcessInstanceIncidentsDto,
   SequenceFlowsDto,
@@ -28,12 +28,13 @@ type InstanceMock = {
   detail: ProcessInstanceEntity;
   detailV2: ProcessInstance;
   callHierarchy: GetProcessInstanceCallHierarchyResponseBody;
-  flowNodeInstances: FlowNodeInstancesDto<FlowNodeInstanceDto>;
+  elementInstances: QueryElementInstancesResponseBody;
   statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
   sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
   variables: Variable[];
   incidents?: ProcessInstanceIncidentsDto;
+  incidentsV2?: QueryProcessInstanceIncidentsResponseBody;
   metaData?: MetaDataDto;
 };
 
@@ -41,25 +42,27 @@ function mockResponses({
   processInstanceDetail,
   processInstanceDetailV2,
   callHierarchy,
-  flowNodeInstances,
+  elementInstances,
   statisticsV2,
   sequenceFlows,
   sequenceFlowsV2,
   variables,
   xml,
   incidents,
+  incidentsV2,
   metaData,
 }: {
   processInstanceDetail?: ProcessInstanceEntity;
   processInstanceDetailV2?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
-  flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
+  elementInstances?: QueryElementInstancesResponseBody;
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
   sequenceFlowsV2?: GetProcessInstanceSequenceFlowsResponseBody;
   variables?: Variable[];
   xml?: string;
   incidents?: ProcessInstanceIncidentsDto;
+  incidentsV2?: QueryProcessInstanceIncidentsResponseBody;
   metaData?: MetaDataDto;
 }) {
   return (route: Route) => {
@@ -80,10 +83,20 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('/api/flow-node-instances')) {
+    if (route.request().url().includes('/v2/element-instances/search')) {
       return route.fulfill({
-        status: flowNodeInstances === undefined ? 400 : 200,
-        body: JSON.stringify(flowNodeInstances),
+        status: elementInstances === undefined ? 400 : 200,
+        body: JSON.stringify(elementInstances),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/batch-operation-items/search')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({items: [], page: {totalItems: 0}}),
         headers: {
           'content-type': 'application/json',
         },
@@ -153,6 +166,21 @@ function mockResponses({
       return route.fulfill({
         status: xml === undefined ? 400 : 200,
         body: JSON.stringify(xml),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route
+        .request()
+        .url()
+        .match(/\/v2\/process-instances\/\d+\/incidents\/search/)
+    ) {
+      return route.fulfill({
+        status: incidentsV2 === undefined ? 400 : 200,
+        body: JSON.stringify(incidentsV2),
         headers: {
           'content-type': 'application/json',
         },

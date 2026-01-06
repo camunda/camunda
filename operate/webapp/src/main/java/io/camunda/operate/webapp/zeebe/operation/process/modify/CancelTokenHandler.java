@@ -11,6 +11,7 @@ import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+@ConditionalOnRdbmsDisabled
 public class CancelTokenHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(CancelTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;

@@ -242,7 +242,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 753
+            "y": 887
           },
           "id": 32,
           "options": {
@@ -359,7 +359,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 760
+            "y": 894
           },
           "id": 33,
           "options": {
@@ -485,7 +485,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 765
+            "y": 899
           },
           "id": 34,
           "options": {
@@ -592,7 +592,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 765
+            "y": 899
           },
           "id": 35,
           "options": {
@@ -699,7 +699,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 765
+            "y": 899
           },
           "id": 36,
           "options": {
@@ -802,7 +802,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 773
+            "y": 907
           },
           "id": 37,
           "options": {
@@ -1081,7 +1081,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 147
           },
           "id": 44,
           "options": {
@@ -1174,7 +1174,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 147
           },
           "id": 45,
           "options": {
@@ -1267,7 +1267,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 155
           },
           "id": 46,
           "options": {
@@ -1360,7 +1360,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 21
+            "y": 155
           },
           "id": 11,
           "options": {
@@ -1463,7 +1463,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 29
+            "y": 163
           },
           "id": 10,
           "options": {
@@ -1561,7 +1561,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 29
+            "y": 163
           },
           "id": 13,
           "options": {
@@ -1659,7 +1659,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 171
           },
           "id": 12,
           "options": {
@@ -1734,7 +1734,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 171
           },
           "id": 14,
           "options": {
@@ -1838,7 +1838,7 @@
             "h": 8,
             "w": 7,
             "x": 0,
-            "y": 45
+            "y": 179
           },
           "id": 18,
           "options": {
@@ -1937,7 +1937,7 @@
             "h": 8,
             "w": 8,
             "x": 7,
-            "y": 45
+            "y": 179
           },
           "id": 19,
           "options": {
@@ -2020,7 +2020,7 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 45
+            "y": 179
           },
           "id": 20,
           "options": {
@@ -2142,7 +2142,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 53
+            "y": 187
           },
           "id": 15,
           "options": {
@@ -2255,7 +2255,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 53
+            "y": 187
           },
           "id": 47,
           "options": {
@@ -2309,7 +2309,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 61
+            "y": 195
           },
           "id": 17,
           "options": {
@@ -2432,7 +2432,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 61
+            "y": 195
           },
           "id": 16,
           "options": {
@@ -2522,7 +2522,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 502
+            "y": 636
           },
           "id": 2,
           "options": {
@@ -2646,7 +2646,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 502
+            "y": 636
           },
           "id": 3,
           "options": {
@@ -2703,7 +2703,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 528
+            "y": 662
           },
           "id": 4,
           "options": {
@@ -2827,7 +2827,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 528
+            "y": 662
           },
           "id": 5,
           "options": {
@@ -2898,7 +2898,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 391
+            "y": 7
           },
           "id": 22,
           "options": {
@@ -2939,7 +2939,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -2984,7 +2984,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 391
+            "y": 7
           },
           "id": 23,
           "options": {
@@ -3034,7 +3034,7 @@
               "unit": "s"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -3069,7 +3069,8 @@
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -3085,7 +3086,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 391
+            "y": 7
           },
           "id": 24,
           "options": {
@@ -3103,7 +3104,7 @@
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -3145,7 +3146,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 463
+            "y": 15
           },
           "id": 25,
           "options": {
@@ -3186,7 +3187,7 @@
               "unit": "short"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -3257,7 +3258,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": 0
                   },
                   {
                     "color": "red",
@@ -3272,7 +3274,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 463
+            "y": 15
           },
           "id": 26,
           "options": {
@@ -3288,7 +3290,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -3349,7 +3351,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 463
+            "y": 15
           },
           "id": 27,
           "options": {
@@ -3372,7 +3374,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.0.2",
+          "pluginVersion": "12.1.0",
           "targets": [
             {
               "datasource": {
@@ -3391,6 +3393,106 @@
           ],
           "title": "RDBMS Exporter Statements",
           "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 14,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "displayName": "Queue size (bytes)",
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 10485760
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 11,
+            "x": 0,
+            "y": 25
+          },
+          "id": 49,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "disableTextWrap": false,
+              "editorMode": "builder",
+              "expr": "rate(zeebe_rdbms_exporter_queue_memory_bytes_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_queue_memory_bytes_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "format": "time_series",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "Execution Queue Memory Size",
+              "useBackend": false
+            }
+          ],
+          "title": "RDBMS Execution Queue Memory Size",
+          "type": "timeseries"
         }
       ],
       "title": "RDBMS Exporter",
@@ -3504,9 +3606,19 @@
     "from": "now-5m",
     "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "refresh_intervals": [
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
   "timezone": "browser",
   "title": "Data Layer",
-  "uid": "eulfd8z",
+  "uid": "data-layer",
   "version": 1
 }

@@ -24,13 +24,18 @@
   <dependencies>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-dsl</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>elasticsearch</artifactId>
+      <artifactId>testcontainers-elasticsearch</artifactId>
     </dependency>
 
     <dependency>
@@ -41,6 +46,11 @@
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
     </dependency>
 
     <dependency>
@@ -124,12 +134,6 @@
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
@@ -166,7 +170,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -179,30 +183,20 @@
       <resource>
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
-        <excludes>
-          <exclude>coverage/static/media/**</exclude>
-        </excludes>
       </resource>
-      <!-- Binary files with filtering disabled -->
+      <!-- Frontend files with filtering disabled -->
       <resource>
         <filtering>false</filtering>
-        <directory>src/main/resources</directory>
-        <includes>
-          <include>coverage/static/media/**</include>
-        </includes>
+        <directory>target/generated-frontend-resources</directory>
       </resource>
     </resources>
 
     <plugins>
 
-      <!-- we are breaking backwards compatibility with 8.8.0 -->
-      <!-- TODO re-enable the plugin after the 8.8.0 minor release -->
-      <!--
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
-      -->
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -243,7 +237,7 @@
               <arguments>install</arguments>
             </configuration>
           </execution>
-          <!-- Build frontend (output: src/main/resources/coverage) -->
+          <!-- Build frontend (output: target/generated-frontend-resources/coverage) -->
           <execution>
             <id>npm-build</id>
             <goals>
@@ -317,4 +311,13 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>skipFrontendBuild</id>
+      <properties>
+        <skip.fe.build>true</skip.fe.build>
+      </properties>
+    </profile>
+  </profiles>
 </project>

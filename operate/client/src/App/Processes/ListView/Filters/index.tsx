@@ -37,6 +37,10 @@ import {
 import {TenantField} from 'modules/components/TenantField';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {
+  getDefinitionIdentifier,
+  splitDefinitionIdentifier,
+} from 'modules/hooks/processDefinitions';
 
 const initialValues: ProcessInstanceFilters = {
   active: true,
@@ -44,36 +48,30 @@ const initialValues: ProcessInstanceFilters = {
 };
 
 const Filters: React.FC = observer(() => {
+  const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
   const filters = useFilters();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filtersFromUrl = filters.getFilters();
-  const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
+  const filterValues = filters.getFilters();
+  if (filterValues.process && filterValues.tenant !== 'all') {
+    filterValues.process = getDefinitionIdentifier(
+      filterValues.process,
+      filterValues.tenant,
+    );
+  }
+  if (filterValues.tenant === 'all') {
+    delete filterValues.process;
+    delete filterValues.version;
+  }
 
   return (
     <Form<ProcessInstanceFilters>
       onSubmit={(values) => {
         filters.setFilters({
           ...values,
-          ...(values.process !== undefined
-            ? {
-                process: processesStore.state.processes.find(
-                  ({key}) => key === values.process,
-                )?.bpmnProcessId,
-              }
-            : {}),
+          process: splitDefinitionIdentifier(values.process).definitionId,
         });
       }}
-      initialValues={{
-        ...filtersFromUrl,
-        ...(filtersFromUrl.process !== undefined
-          ? {
-              process: processesStore.getProcess({
-                bpmnProcessId: filtersFromUrl.process,
-                tenantId: filtersFromUrl.tenant,
-              })?.key,
-            }
-          : {}),
-      }}
+      initialValues={filterValues}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>

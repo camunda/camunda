@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import java.util.List;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -184,9 +186,9 @@ class IncidentItemProviderTest {
   }
 
   private IncidentEntity mockIncidentEntity(final long incidentKey, final long processInstanceKey) {
-    final var entity = mock(IncidentEntity.class);
-    when(entity.incidentKey()).thenReturn(incidentKey);
-    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
-    return entity;
+    return Instancio.of(IncidentEntity.class)
+        .set(field(IncidentEntity::incidentKey), incidentKey)
+        .set(field(IncidentEntity::processInstanceKey), processInstanceKey)
+        .create();
   }
 }

@@ -46,6 +46,10 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+
+  @Autowired private VariableTemplate variableIndex;
+
   @Autowired
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
@@ -124,7 +128,7 @@ public class OpenSearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public boolean checkVariableExists(final String taskId, final String varName) {
+  public boolean checkTaskVariableExists(final String taskId, final String varName) {
     final Query.Builder taskIdQ = new Query.Builder();
     taskIdQ.term(
         term -> term.field(SnapshotTaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
@@ -136,7 +140,9 @@ public class OpenSearchHelper implements NoSqlHelper {
     try {
       final SearchResponse<SnapshotTaskVariableEntity> response =
           osClient.search(
-              s -> s.query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
+              s ->
+                  s.index(taskVariableTemplate.getAlias())
+                      .query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
               SnapshotTaskVariableEntity.class);
       return response.hits().total().value() > 0;
     } catch (final IOException e) {
@@ -147,29 +153,22 @@ public class OpenSearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public boolean checkVariablesExist(final String[] varNames) {
+  public boolean checkVariablesExist(final String processInstanceId, final String[] varNames) {
+    final Query.Builder scopeQ = new Query.Builder();
+    scopeQ.term(
+        term -> term.field(VariableTemplate.SCOPE_KEY).value(FieldValue.of(processInstanceId)));
+
+    final List<FieldValue> values = Arrays.stream(varNames).map(FieldValue::of).toList();
+    final Query.Builder varNamesQ = new Query.Builder();
+    varNamesQ.terms(
+        terms -> terms.field(VariableTemplate.NAME).terms(termValues -> termValues.value(values)));
     try {
       final SearchResponse<VariableEntity> response =
           osClient.search(
               search ->
-                  search.query(
-                      q ->
-                          q.constantScore(
-                              cs ->
-                                  cs.filter(
-                                      filter ->
-                                          filter.terms(
-                                              terms ->
-                                                  terms
-                                                      .field(VariableTemplate.NAME)
-                                                      .terms(
-                                                          tv ->
-                                                              tv.value(
-                                                                  Arrays.stream(varNames)
-                                                                      .map(m -> FieldValue.of(m))
-                                                                      .collect(
-                                                                          Collectors
-                                                                              .toList()))))))),
+                  search
+                      .index(variableIndex.getAlias())
+                      .query(OpenSearchUtil.joinWithAnd(scopeQ, varNamesQ)),
               VariableEntity.class);
       return response.hits().total().value() == varNames.length;
     } catch (final IOException e) {

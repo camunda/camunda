@@ -18,20 +18,25 @@ package io.camunda.zeebe.model.bpmn.impl.instance;
 
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_CONDITION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_ATTRIBUTE_TYPE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_NS;
 
 import io.camunda.zeebe.model.bpmn.instance.Condition;
-import io.camunda.zeebe.model.bpmn.instance.Expression;
+import io.camunda.zeebe.model.bpmn.instance.FormalExpression;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
 /**
  * The BPMN condition element of the BPMN tConditionalEventDefinition type
  *
  * @author Sebastian Menski
  */
-public class ConditionImpl extends ExpressionImpl implements Condition {
+public class ConditionImpl extends FormalExpressionImpl implements Condition {
+
+  protected static Attribute<String> typeAttribute;
 
   public ConditionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -42,15 +47,26 @@ public class ConditionImpl extends ExpressionImpl implements Condition {
         modelBuilder
             .defineType(Condition.class, BPMN_ELEMENT_CONDITION)
             .namespaceUri(BPMN20_NS)
-            .extendsType(Expression.class)
-            .instanceProvider(
-                new ModelTypeInstanceProvider<Condition>() {
-                  @Override
-                  public Condition newInstance(final ModelTypeInstanceContext instanceContext) {
-                    return new ConditionImpl(instanceContext);
-                  }
-                });
+            .extendsType(FormalExpression.class)
+            .instanceProvider((ModelTypeInstanceProvider<Condition>) ConditionImpl::new);
+
+    typeAttribute =
+        typeBuilder
+            .stringAttribute(XSI_ATTRIBUTE_TYPE)
+            .namespace(XSI_NS)
+            .defaultValue("tFormalExpression")
+            .build();
 
     typeBuilder.build();
+  }
+
+  @Override
+  public String getType() {
+    return typeAttribute.getValue(this);
+  }
+
+  @Override
+  public void setType(final String type) {
+    typeAttribute.setValue(this, type);
   }
 }

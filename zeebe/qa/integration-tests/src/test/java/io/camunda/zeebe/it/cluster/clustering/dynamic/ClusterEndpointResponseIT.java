@@ -27,10 +27,7 @@ final class ClusterEndpointResponseIT {
   static void initTestStandaloneBroker() {
     broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> {
-                  cfg.getCluster().setClusterId("cluster-id");
-                });
+            .withUnifiedConfig(cfg -> cfg.getCluster().setClusterId("cluster-id"));
   }
 
   @Test

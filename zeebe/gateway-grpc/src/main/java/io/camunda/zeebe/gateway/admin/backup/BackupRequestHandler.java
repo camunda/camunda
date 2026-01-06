@@ -16,13 +16,18 @@ import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -32,20 +37,127 @@ public final class BackupRequestHandler implements BackupApi {
 
   final BrokerClient brokerClient;
   final BrokerTopologyManager topologyManager;
+  final long backupIdOffset;
 
   public BackupRequestHandler(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
+    backupIdOffset = 0L;
+  }
+
+  public BackupRequestHandler(final BrokerClient brokerClient, final long backupIdOffset) {
+    this.brokerClient = brokerClient;
+    topologyManager = brokerClient.getTopologyManager();
+    this.backupIdOffset = backupIdOffset;
   }
 
   @Override
   public CompletionStage<Long> takeBackup(final long backupId) {
+    return takeBackup(backupId, CheckpointType.MANUAL_BACKUP);
+  }
+
+  @Override
+  public CompletionStage<Long> takeBackup() {
+    final var backupId = generateCheckpointId();
+    return takeBackup(backupId);
+  }
+
+  @Override
+  public CompletionStage<BackupStatus> getStatus(final long backupId) {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var statusesReceived =
+                  topology.getPartitions().stream()
+                      .map(partitionId -> createStatusQueryRequest(backupId, partitionId))
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
+                  .thenApply(
+                      ignore -> {
+                        final var partitionStatuses =
+                            statusesReceived.stream()
+                                .map(response -> response.join().getResponse())
+                                .map(PartitionBackupStatus::from)
+                                .toList();
+
+                        return aggregatePartitionStatus(backupId, partitionStatuses);
+                      });
+            });
+  }
+
+  @Override
+  public CompletionStage<CheckpointStateResponse> getCheckpointState() {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var statusesReceived =
+                  topology.getPartitions().stream()
+                      .map(this::createCheckpointRequest)
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
+                  .thenApply(
+                      ignored ->
+                          statusesReceived.stream()
+                              .map(CompletableFuture::join)
+                              .map(BrokerResponse::getResponse)
+                              .collect(Collectors.toSet()))
+                  .thenApply(this::aggregateCheckpointResponses);
+            });
+  }
+
+  @Override
+  public CompletionStage<List<BackupStatus>> listBackups(final String prefix) {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var backupsReceived =
+                  topology.getPartitions().stream()
+                      .map(partitionId -> createListRequest(partitionId, prefix))
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(backupsReceived.toArray(CompletableFuture[]::new))
+                  .thenApply(ignore -> aggregateBackupList(backupsReceived));
+            });
+  }
+
+  @Override
+  public CompletionStage<Void> deleteBackup(final long backupId) {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology ->
+                CompletableFuture.allOf(
+                    topology.getPartitions().stream()
+                        .map(partitionId -> createDeleteRequest(backupId, partitionId))
+                        .map(brokerClient::sendRequestWithRetry)
+                        .toArray(CompletableFuture[]::new)));
+  }
+
+  /**
+   * Trigger a checkpoint of the given type across all partitions
+   *
+   * @param checkpointType {@link CheckpointType} type of checkpoint to create
+   * @return the checkpoint id created
+   */
+  public CompletionStage<Long> checkpoint(final CheckpointType checkpointType) {
+    final var checkpointId = generateCheckpointId();
+    return takeBackup(checkpointId, checkpointType);
+  }
+
+  @VisibleForTesting
+  public CompletionStage<Long> takeBackup(
+      final long backupId, final CheckpointType checkpointType) {
     return checkTopologyComplete()
         .thenCompose(
             topology -> {
               final var backupsTaken =
                   topology.getPartitions().stream()
-                      .map(partitionId -> createBackupRequest(backupId, partitionId))
+                      .map(
+                          partitionId -> createBackupRequest(backupId, partitionId, checkpointType))
                       .map(brokerClient::sendRequestWithRetry)
                       .toList();
 
@@ -85,59 +197,6 @@ public final class BackupRequestHandler implements BackupApi {
                         }
                       });
             });
-  }
-
-  @Override
-  public CompletionStage<BackupStatus> getStatus(final long backupId) {
-    return checkTopologyComplete()
-        .thenCompose(
-            topology -> {
-              final var statusesReceived =
-                  topology.getPartitions().stream()
-                      .map(partitionId -> createStatusQueryRequest(backupId, partitionId))
-                      .map(brokerClient::sendRequestWithRetry)
-                      .toList();
-
-              return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
-                  .thenApply(
-                      ignore -> {
-                        final var partitionStatuses =
-                            statusesReceived.stream()
-                                .map(response -> response.join().getResponse())
-                                .map(PartitionBackupStatus::from)
-                                .toList();
-
-                        return aggregatePartitionStatus(backupId, partitionStatuses);
-                      });
-            });
-  }
-
-  @Override
-  public CompletionStage<List<BackupStatus>> listBackups(final String prefix) {
-    return checkTopologyComplete()
-        .thenCompose(
-            topology -> {
-              final var backupsReceived =
-                  topology.getPartitions().stream()
-                      .map(partitionId -> createListRequest(partitionId, prefix))
-                      .map(brokerClient::sendRequestWithRetry)
-                      .toList();
-
-              return CompletableFuture.allOf(backupsReceived.toArray(CompletableFuture[]::new))
-                  .thenApply(ignore -> aggregateBackupList(backupsReceived));
-            });
-  }
-
-  @Override
-  public CompletionStage<Void> deleteBackup(final long backupId) {
-    return checkTopologyComplete()
-        .thenCompose(
-            topology ->
-                CompletableFuture.allOf(
-                    topology.getPartitions().stream()
-                        .map(partitionId -> createDeleteRequest(backupId, partitionId))
-                        .map(brokerClient::sendRequestWithRetry)
-                        .toArray(CompletableFuture[]::new)));
   }
 
   private List<BackupStatus> aggregateBackupList(
@@ -298,10 +357,11 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   private static BrokerBackupRequest createBackupRequest(
-      final long backupId, final int partitionId) {
+      final long backupId, final int partitionId, final CheckpointType checkpointType) {
     final var request = new BrokerBackupRequest();
     request.setBackupId(backupId);
     request.setPartitionId(partitionId);
+    request.setCheckpointType(checkpointType);
     return request;
   }
 
@@ -317,5 +377,36 @@ public final class BackupRequestHandler implements BackupApi {
     request.setPartitionId(partitionId);
     request.setBackupId(backupId);
     return request;
+  }
+
+  private CheckpointStateResponse aggregateCheckpointResponses(
+      final Set<CheckpointStateResponse> responses) {
+    final CheckpointStateResponse response = new CheckpointStateResponse();
+
+    final var checkpointStates =
+        responses.stream()
+            .flatMap(r -> r.getCheckpointStates().stream())
+            .collect(Collectors.toSet());
+
+    final var backupStates =
+        responses.stream().flatMap(r -> r.getBackupStates().stream()).collect(Collectors.toSet());
+
+    response.setCheckpointStates(checkpointStates);
+    response.setBackupStates(backupStates);
+    return response;
+  }
+
+  private BrokerCheckpointStateRequest createCheckpointRequest(final int partitionId) {
+    final var request = new BrokerCheckpointStateRequest();
+    request.setPartitionId(partitionId);
+    return request;
+  }
+
+  private long generateCheckpointId() {
+    var backupId = InstantSource.system().instant().toEpochMilli();
+    if (backupIdOffset > 0) {
+      backupId += backupIdOffset;
+    }
+    return backupId;
   }
 }

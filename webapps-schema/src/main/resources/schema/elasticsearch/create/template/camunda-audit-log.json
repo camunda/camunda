@@ -1,0 +1,104 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "entityKey": {
+        "type": "keyword"
+      },
+      "entityType": {
+        "type": "keyword"
+      },
+      "operationType": {
+        "type": "keyword"
+      },
+      "entityVersion": {
+        "type": "integer"
+      },
+      "entityValueType": {
+        "type": "short"
+      },
+      "entityOperationIntent": {
+        "type": "short"
+      },
+      "batchOperationKey": {
+        "type": "long"
+      },
+      "batchOperationType": {
+        "type": "keyword"
+      },
+      "timestamp": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "actorType": {
+        "type": "keyword"
+      },
+      "actorId": {
+        "type": "keyword"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "tenantScope": {
+        "type": "keyword"
+      },
+      "result": {
+        "type": "keyword"
+      },
+      "annotation": {
+        "type": "text"
+      },
+      "category": {
+        "type": "keyword"
+      },
+      "processDefinitionId": {
+        "type": "keyword"
+      },
+      "decisionRequirementsId": {
+        "type": "keyword"
+      },
+      "decisionRequirementsKey": {
+        "type": "long"
+      },
+      "decisionDefinitionKey": {
+        "type": "long"
+      },
+      "decisionDefinitionId": {
+        "type": "keyword"
+      },
+      "decisionEvaluationKey": {
+        "type": "long"
+      },
+      "deploymentKey": {
+        "type": "long"
+      },
+      "formKey": {
+        "type": "long"
+      },
+      "resourceKey": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "elementInstanceKey": {
+        "type": "long"
+      },
+      "jobKey": {
+        "type": "long"
+      },
+      "userTaskKey": {
+        "type": "long"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
+      }
+    }
+  }
+}

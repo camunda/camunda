@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -16,7 +17,6 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AutoClose;
@@ -118,8 +118,7 @@ public class HealthTreeMetricsTest {
 
     @Override
     public HealthReport getHealthReport() {
-      return report.orElse(
-          new HealthReport(name, HealthStatus.HEALTHY, null, Collections.emptyMap()));
+      return report.orElse(new HealthReport(name, HealthStatus.HEALTHY, null, ImmutableMap.of()));
     }
 
     @Override

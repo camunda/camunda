@@ -77,6 +77,11 @@
       <validValue name="RUNTIME_INSTRUCTION">59</validValue>
       <validValue name="BATCH_OPERATION_INITIALIZATION">60</validValue>
       <validValue name="CLUSTER_VARIABLE">61</validValue>
+      <validValue name="HISTORY_DELETION">62</validValue>
+      <validValue name="CONDITIONAL_SUBSCRIPTION">63</validValue>
+      <validValue name="CONDITIONAL_EVALUATION">64</validValue>
+      <validValue name="GLOBAL_LISTENER_BATCH">65</validValue>
+      <validValue name="EXPRESSION">66</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

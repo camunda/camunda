@@ -15,9 +15,20 @@ import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
 import {Listeners, type ListenerTypeFilter} from './Listeners';
+import {OperationsLog} from './OperationsLog';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+
+const tabIds = {
+  variables: 'variables',
+  inputMappings: 'input-mappings',
+  outputMappings: 'output-mappings',
+  listeners: 'listeners',
+  operationsLog: 'operations-log',
+} as const;
+
+type TabId = (typeof tabIds)[keyof typeof tabIds];
 
 type Props = {
   setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;
@@ -35,6 +46,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();
+  const [selectedTab, setSelectedTab] = useState<TabId>('variables');
 
   const shouldFetchListeners = flowNodeInstanceId || flowNodeId;
   const {
@@ -60,9 +72,10 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   return (
     <TabView
+      onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
         {
-          id: 'variables',
+          id: tabIds.variables,
           label: 'Variables',
           content: <VariablesContent />,
           removePadding: true,
@@ -74,7 +87,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
           ? []
           : [
               {
-                id: 'input-mappings',
+                id: tabIds.inputMappings,
                 label: 'Input Mappings',
                 content: <InputOutputMappings type="Input" />,
                 onClick: () => {
@@ -82,7 +95,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
                 },
               },
               {
-                id: 'output-mappings',
+                id: tabIds.outputMappings,
                 label: 'Output Mappings',
                 content: <InputOutputMappings type="Output" />,
                 onClick: () => {
@@ -91,7 +104,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
               },
             ]),
         {
-          id: 'listeners',
+          id: tabIds.listeners,
           testId: 'listeners-tab-button',
           ...(hasFailedListeners && {
             labelIcon: <WarningFilled />,
@@ -110,6 +123,21 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(true);
+          },
+        },
+        {
+          id: tabIds.operationsLog,
+          label: 'Operations log',
+          content: (
+            <OperationsLog
+              isRootNodeSelected={isRootNodeSelected}
+              flowNodeInstanceId={flowNodeInstanceId}
+              isVisible={selectedTab === tabIds.operationsLog}
+            />
+          ),
+          removePadding: true,
+          onClick: () => {
+            setListenerTabVisibility(false);
           },
         },
       ]}

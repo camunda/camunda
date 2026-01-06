@@ -17,6 +17,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {notificationsStore} from 'modules/stores/notifications';
+import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -146,16 +147,7 @@ const ProcessOperations: React.FC<Props> = observer(
               },
               onError: (statusCode: number) => {
                 setIsOperationRunning(false);
-
-                notificationsStore.displayNotification({
-                  kind: 'error',
-                  title: 'Operation could not be created',
-                  subtitle:
-                    statusCode === 403
-                      ? 'You do not have permission'
-                      : undefined,
-                  isDismissable: true,
-                });
+                handleOperationError(statusCode);
               },
             });
           }}

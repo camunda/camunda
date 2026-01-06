@@ -1,0 +1,171 @@
+# description: Runs Integration tests on different versions of AWS Aurora
+# test location: /zeebe/exporters/opensearch-exporter, /search/search-client-connect, /zeebe/exporters/camunda-exporter, /qa/acceptance-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: AWS Aurora Manual/Scheduled Run Integration Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/zeebe-aws-aurora-dispatch-tests.yml"
+  schedule:
+    - cron: "0 4 * * Mon-Fri"
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  integration-tests:
+    name: "[IT] Camunda QA Integration Module. Aurora"
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
+    runs-on: aws-core-8-default
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/common AURORA_POSTGRESQL_PASSWORD;
+            secret/data/products/camunda/ci/common AURORA_POSTGRESQL_USERNAME;
+      - name: Set temp GH envs
+        id: temp-vars
+        run: |
+          {
+            echo "AWS_REGION=$AWS_REGION"
+            echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+            echo "AWS_ROLE_ARN=$AWS_ROLE_ARN"
+            echo "AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE"
+            echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
+            echo "AURORA_DATABASE=db-camunda-it-${{github.sha}}"
+            echo "AURORA_USERNAME=${{steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME}}"
+            echo "AURORA_PASSWORD=${{steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD}}"
+          } >> "$GITHUB_ENV"
+      - name: Install required packages
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Set up database
+        run: ./.github/actions/rdbms/create-aurora-database.sh
+        env:
+          PGDATABASE: ${{env.AURORA_DATABASE}}
+          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
+          PGPORT: 5432
+          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
+          PGUSER_IRSA: zeebe-irsa
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: camunda-qa-acceptance-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -D skip.fe.build -D skip.yarn -D skip.docker
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Test Build
+        shell: bash
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=2
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D flaky.test.reportDir=failsafe-reports
+          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
+          -D test.integration.aurora.aws.username=zeebe-irsa
+          -D test.integration.camunda.database.type=rdbms_aurora
+          -P parallel-tests,extract-flaky-tests,multi-db-test
+          -pl "io.camunda:camunda-qa-acceptance-tests"
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Tear down database
+        if: always()
+        run: ./.github/actions/rdbms/drop-aurora-database.sh
+        env:
+          PGDATABASE: ${{env.AURORA_DATABASE}}
+          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
+          PGPORT: 5432
+          PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] Camunda QA Integration Module"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "integration-tests/camunda-qa-acceptance-tests"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: General
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  send-slack-notification:
+    name: "Send slack notification on fail"
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+    - name: Import secrets from Vault
+      id: secrets
+      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+    - name: Send notification
+      uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+      with:
+        webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+        webhook-type: webhook-trigger
+        # For posting a rich message using Block Kit
+        payload: |
+          text: "AWS Aurora Manual/Scheduled Run Integration Tests failed"
+          blocks:
+            - type: "section"
+              text:
+                type: "mrkdwn"
+                text: "AWS Aurora Manual/Scheduled Run Integration Tests FAILED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # Send metrics about CI health
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

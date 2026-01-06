@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery">
     SELECT COUNT(*) FROM (
-    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER,RESOURCE_ID
+    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, RESOURCE_PROPERTY_NAME
     FROM ${prefix}AUTHORIZATIONS a
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
@@ -27,7 +27,8 @@
     t.RESOURCE_TYPE,
     a.PERMISSION_TYPE,
     a.RESOURCE_MATCHER,
-    a.RESOURCE_ID
+    a.RESOURCE_ID,
+    a.RESOURCE_PROPERTY_NAME
     FROM (
     SELECT * FROM (
     SELECT DISTINCT
@@ -36,7 +37,8 @@
     OWNER_TYPE,
     RESOURCE_TYPE,
     RESOURCE_MATCHER,
-    RESOURCE_ID
+    RESOURCE_ID,
+    RESOURCE_PROPERTY_NAME
     FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
     ) t
@@ -45,8 +47,13 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
     ) t
-    JOIN ${prefix}AUTHORIZATIONS a ON t.AUTHORIZATION_KEY = a.AUTHORIZATION_KEY AND t.OWNER_ID = a.OWNER_ID AND t.OWNER_TYPE = a.OWNER_TYPE AND
-    t.RESOURCE_TYPE = a.RESOURCE_TYPE AND t.RESOURCE_ID = a.RESOURCE_ID
+    JOIN ${prefix}AUTHORIZATIONS a ON t.AUTHORIZATION_KEY = a.AUTHORIZATION_KEY
+            <!-- Oracle treats NULL == NULL as false, so we need to cover that case explicitly -->
+            AND (t.OWNER_ID = a.OWNER_ID OR (t.OWNER_ID IS NULL AND a.OWNER_ID IS NULL))
+            AND (t.OWNER_TYPE = a.OWNER_TYPE OR (t.OWNER_TYPE IS NULL AND a.OWNER_TYPE IS NULL))
+            AND (t.RESOURCE_TYPE = a.RESOURCE_TYPE OR (t.RESOURCE_TYPE IS NULL AND a.RESOURCE_TYPE IS NULL))
+            AND (t.RESOURCE_ID = a.RESOURCE_ID OR (t.RESOURCE_ID IS NULL AND a.RESOURCE_ID IS NULL))
+            AND (t.RESOURCE_PROPERTY_NAME = a.RESOURCE_PROPERTY_NAME OR (t.RESOURCE_PROPERTY_NAME IS NULL AND a.RESOURCE_PROPERTY_NAME IS NULL))
     <!-- outer orderBy for actual sorting -->
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
@@ -96,6 +103,12 @@
           close=")">#{value}
         </foreach>
       </if>
+      <if test="filter.resourcePropertyNames != null and !filter.resourcePropertyNames.isEmpty()">
+        AND RESOURCE_PROPERTY_NAME IN
+        <foreach collection="filter.resourcePropertyNames" item="value" open="(" separator=", "
+          close=")">#{value}
+        </foreach>
+      </if>
     </where>
   </sql>
 
@@ -105,8 +118,9 @@
     <id column="OWNER_ID" property="ownerId"/>
     <id column="OWNER_TYPE" property="ownerType"/>
     <id column="RESOURCE_TYPE" property="resourceType"/>
-    <id column="RESOURCE_MATCHER" property="resourceMatcher" />
-    <id column="RESOURCE_ID" property="resourceId" />
+    <id column="RESOURCE_MATCHER" property="resourceMatcher"/>
+    <id column="RESOURCE_ID" property="resourceId"/>
+    <id column="RESOURCE_PROPERTY_NAME" property="resourcePropertyName"/>
     <collection property="permissionTypes"
       ofType="io.camunda.zeebe.protocol.record.value.PermissionType"
       javaType="java.util.Set">
@@ -115,10 +129,10 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
-    INSERT INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, PERMISSION_TYPE)
+    INSERT INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, RESOURCE_PROPERTY_NAME, PERMISSION_TYPE)
     VALUES
     <foreach collection="permissionTypes" item="permissionType" separator=",">
-      (#{authorizationKey}, #{ownerId}, #{ownerType}, #{resourceType}, #{resourceMatcher}, #{resourceId}, #{permissionType})
+      (#{authorizationKey}, #{ownerId}, #{ownerType}, #{resourceType}, #{resourceMatcher}, #{resourceId}, #{resourcePropertyName}, #{permissionType})
     </foreach>
   </insert>
 

@@ -15,6 +15,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -45,16 +46,26 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.USER.name(), List.of());
+    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         UserDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedResourceIds(authorizedResourceIds)
                     .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
+                    .page(dbPage));
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
     final var totalHits = userMapper.count(dbQuery);
+
+    if (shouldReturnEmptyPage(dbPage, totalHits)) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+
     final var hits = userMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
@@ -71,11 +82,5 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
 
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
     return search(query, ResourceAccessChecks.disabled());
-  }
-
-  @Override
-  protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return (resourceAccessChecks.authorizationCheck().enabled()
-        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

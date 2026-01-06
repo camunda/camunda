@@ -9,95 +9,83 @@
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {SortableTable} from 'modules/components/SortableTable';
 import {StateIcon} from 'modules/components/StateIcon';
-import {decisionInstancesStore} from 'modules/stores/decisionInstances';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {formatDate} from 'modules/utils/date';
-import {useEffect} from 'react';
-import {useLocation} from 'react-router-dom';
 import {Container, DecisionName} from './styled';
 import {observer} from 'mobx-react';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
-import {useFilters} from 'modules/hooks/useFilters';
-import {getDecisionInstanceFilters} from 'modules/utils/filter';
+import {useDecisionInstancesSearchPaginated} from 'modules/queries/decisionInstances/useDecisionInstancesSearchPaginated';
+import {
+  useDecisionInstancesSearchFilter,
+  useDecisionInstancesSearchSort,
+} from 'modules/hooks/decisionInstancesSearch';
 
 const ROW_HEIGHT = 34;
+const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
 const InstancesTable: React.FC = observer(() => {
+  const filter = useDecisionInstancesSearchFilter();
+  const sort = useDecisionInstancesSearchSort();
+
   const {
-    state: {
-      status,
-      filteredDecisionInstancesCount,
-      latestFetch,
-      decisionInstances,
+    data,
+    status,
+    isFetching,
+    isFetchingPreviousPage,
+    hasPreviousPage,
+    fetchPreviousPage,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useDecisionInstancesSearchPaginated({
+    payload: {filter, sort},
+    enabled: filter !== undefined,
+    select: (data) => {
+      tracking.track({
+        eventName: 'decisions-loaded',
+        filters: Object.keys(filter ?? {}),
+        sort,
+      });
+      return {
+        decisionInstances: data.pages.flatMap((page) => page.items),
+        totalCount: data.pages.at(0)?.page.totalItems ?? 0,
+      };
     },
-    areDecisionInstancesEmpty,
-    hasLatestDecisionInstances,
-  } = decisionInstancesStore;
-
-  const location = useLocation();
-  const filters = useFilters();
-
-  const {isInitialLoadComplete} = groupedDecisionsStore;
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const decisionId = params.get('name');
-    const tenantId = params.get('tenant');
-
-    if (isInitialLoadComplete && !location.state?.refreshContent) {
-      if (
-        decisionId !== null &&
-        !groupedDecisionsStore.isSelectedDecisionValid({
-          decisionId,
-          tenantId,
-        })
-      ) {
-        return;
-      }
-
-      decisionInstancesStore.fetchDecisionInstancesFromFilters();
-    }
-  }, [location.search, isInitialLoadComplete, location.state]);
-
-  useEffect(() => {
-    if (isInitialLoadComplete && location.state?.refreshContent) {
-      decisionInstancesStore.fetchDecisionInstancesFromFilters();
-    }
-  }, [isInitialLoadComplete, location.state]);
+  });
+  const decisionInstances = data?.decisionInstances ?? [];
+  const filteredDecisionInstancesCount = data?.totalCount ?? 0;
 
   const getTableState = () => {
-    if (['initial', 'first-fetch'].includes(status)) {
-      return 'skeleton';
+    switch (true) {
+      case filter === undefined:
+        return 'empty';
+      case status === 'pending' && !data:
+        return 'skeleton';
+      case isFetching && !isFetchingPreviousPage && !isFetchingNextPage:
+        return 'loading';
+      case status === 'error':
+        return 'error';
+      case status === 'success' && filteredDecisionInstancesCount === 0:
+        return 'empty';
+      default:
+        return 'content';
     }
-    if (status === 'fetching') {
-      return 'loading';
-    }
-    if (status === 'error') {
-      return 'error';
-    }
-    if (areDecisionInstancesEmpty) {
-      return 'empty';
-    }
-
-    return 'content';
   };
 
   const getEmptyListMessage = () => {
     return {
       message: 'There are no Instances matching this filter set',
-      additionalInfo: filters.areDecisionInstanceStatesApplied()
-        ? undefined
-        : 'To see some results, select at least one Instance state',
+      additionalInfo:
+        filter === undefined
+          ? 'To see some results, select at least one Instance state'
+          : undefined,
     };
   };
 
-  const {tenant} = getDecisionInstanceFilters(location.search);
-
   const isTenantColumnVisible =
     window.clientConfig?.multiTenancyEnabled &&
-    (tenant === undefined || tenant === 'all');
+    (filter?.tenantId === undefined || filter?.tenantId === 'all');
 
   return (
     <Container>
@@ -109,83 +97,72 @@ const InstancesTable: React.FC = observer(() => {
         state={getTableState()}
         emptyMessage={getEmptyListMessage()}
         onVerticalScrollStartReach={async (scrollDown) => {
-          if (decisionInstancesStore.shouldFetchPreviousInstances() === false) {
-            return;
-          }
-
-          await decisionInstancesStore.fetchPreviousInstances();
-
-          if (hasLatestDecisionInstances) {
-            scrollDown(latestFetch?.decisionInstancesCount ?? 0 * ROW_HEIGHT);
+          if (hasPreviousPage && !isFetchingPreviousPage) {
+            await fetchPreviousPage();
+            scrollDown(SMOOTH_SCROLL_STEP_SIZE);
           }
         }}
         onVerticalScrollEndReach={() => {
-          if (decisionInstancesStore.shouldFetchNextInstances() === false) {
-            return;
+          if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
           }
-
-          decisionInstancesStore.fetchNextInstances();
         }}
         rows={decisionInstances.map(
           ({
-            id,
+            decisionEvaluationInstanceKey,
             state,
-            decisionName,
-            decisionVersion,
+            decisionDefinitionName,
+            decisionDefinitionVersion,
             tenantId,
             evaluationDate,
-            processInstanceId,
+            processInstanceKey,
           }) => {
             return {
-              id,
-              decisionName: (
+              id: decisionEvaluationInstanceKey,
+              decisionDefinitionName: (
                 <DecisionName>
                   <StateIcon
                     state={state}
-                    data-testid={`${state}-icon-${id}`}
+                    data-testid={`${state}-icon-${decisionEvaluationInstanceKey}`}
                     size={20}
                   />
-                  {decisionName}
+                  {decisionDefinitionName}
                 </DecisionName>
               ),
-              decisionInstanceKey: (
+              decisionEvaluationInstanceKey: (
                 <Link
-                  to={Paths.decisionInstance(id)}
+                  to={Paths.decisionInstance(decisionEvaluationInstanceKey)}
                   onClick={() => {
                     tracking.track({
                       eventName: 'navigation',
                       link: 'decision-instances-parent-process-details',
                     });
                   }}
-                  title={`View decision instance ${id}`}
-                  aria-label={`View decision instance ${id}`}
+                  title={`View decision instance ${decisionEvaluationInstanceKey}`}
+                  aria-label={`View decision instance ${decisionEvaluationInstanceKey}`}
                 >
-                  {id}
+                  {decisionEvaluationInstanceKey}
                 </Link>
               ),
-              decisionVersion,
-              tenant: isTenantColumnVisible ? tenantId : undefined,
+              decisionDefinitionVersion,
+              tenantId: isTenantColumnVisible ? tenantId : undefined,
               evaluationDate: formatDate(evaluationDate),
-              processInstanceId: (
-                <>
-                  {processInstanceId !== null ? (
-                    <Link
-                      to={Paths.processInstance(processInstanceId)}
-                      title={`View process instance ${processInstanceId}`}
-                      aria-label={`View process instance ${processInstanceId}`}
-                      onClick={() => {
-                        tracking.track({
-                          eventName: 'navigation',
-                          link: 'decision-instances-parent-process-details',
-                        });
-                      }}
-                    >
-                      {processInstanceId}
-                    </Link>
-                  ) : (
-                    'None'
-                  )}
-                </>
+              processInstanceKey: processInstanceKey ? (
+                <Link
+                  to={Paths.processInstance(processInstanceKey)}
+                  title={`View process instance ${processInstanceKey}`}
+                  aria-label={`View process instance ${processInstanceKey}`}
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'decision-instances-parent-process-details',
+                    });
+                  }}
+                >
+                  {processInstanceKey}
+                </Link>
+              ) : (
+                'None'
               ),
             };
           },
@@ -193,22 +170,21 @@ const InstancesTable: React.FC = observer(() => {
         headerColumns={[
           {
             header: 'Name',
-            key: 'decisionName',
+            key: 'decisionDefinitionName',
           },
           {
             header: 'Decision Instance Key',
-            key: 'decisionInstanceKey',
-            sortKey: 'id',
+            key: 'decisionEvaluationInstanceKey',
           },
           {
             header: 'Version',
-            key: 'decisionVersion',
+            key: 'decisionDefinitionVersion',
           },
           ...(isTenantColumnVisible
             ? [
                 {
                   header: 'Tenant',
-                  key: 'tenant',
+                  key: 'tenantId',
                 },
               ]
             : []),
@@ -219,7 +195,7 @@ const InstancesTable: React.FC = observer(() => {
           },
           {
             header: 'Process Instance Key',
-            key: 'processInstanceId',
+            key: 'processInstanceKey',
           },
         ]}
       />

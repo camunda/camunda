@@ -62,9 +62,9 @@ test.describe.parallel('Role Groups API Tests', () => {
   });
 
   test('Assign Role To Group', async ({request}) => {
-    const groupKey = `${state['roleId1']}6`;
+    const groupKey = `${state['roleId1']}`;
     await createGroupAndStoreResponseFields(request, 1, state, groupKey);
-    const groupId = groupIdFromState(groupKey, state, 6) as string;
+    const groupId = groupIdFromState('roleId1', state, 1) as string;
     createdGroupIds.push(groupId);
     const p = {
       groupId: groupId,
@@ -94,7 +94,10 @@ test.describe.parallel('Role Groups API Tests', () => {
         headers: jsonHeaders(),
       },
     );
-    expect(res.status()).toBe(204);
+    await assertNotFoundRequest(
+      res,
+      `Command 'ADD_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
   });
 
   test('Assign Role To Group Non Existent Role Not Found', async ({

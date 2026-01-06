@@ -7,15 +7,8 @@
  */
 
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
-import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
-import {mockIncidents} from 'modules/mocks/incidents';
 import {testData} from './index.setup';
-import {
-  createMultiInstanceFlowNodeInstances,
-  createUser,
-  createvariable,
-} from 'modules/testUtils';
+import {createUser, createvariable} from 'modules/testUtils';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -24,11 +17,6 @@ import {
   flowNodeSelectionStore,
 } from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
-import {waitFor} from '@testing-library/react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
-import {incidentsStore} from 'modules/stores/incidents';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -46,8 +34,8 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
-
-const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -100,8 +88,6 @@ const mockRequests = () => {
   mockFetchCallHierarchy().withSuccess([]);
   mockFetchProcessDefinitionXml().withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
-  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
   mockFetchFlownodeInstancesStatistics().withSuccess({
     items: [
       {
@@ -126,13 +112,9 @@ const mockRequests = () => {
       totalItems: 1,
     },
   });
-  mockFetchProcessInstanceIncidents().withSuccess({
-    ...mockIncidents,
-    count: 2,
-  });
-  mockFetchProcessInstanceIncidents().withSuccess({
-    ...mockIncidents,
-    count: 2,
+  mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
+    items: [],
+    page: {totalItems: 0},
   });
   mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
     items: [],
@@ -140,6 +122,18 @@ const mockRequests = () => {
   });
   mockFetchProcess().withSuccess(mockProcess);
   mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+  mockQueryBatchOperationItems().withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
+  mockQueryBatchOperationItems().withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
+  mockSearchElementInstances().withSuccess({
+    items: [],
+    page: {totalItems: 0},
+  });
 };
 
 type FlowNodeSelectorProps = {
@@ -224,15 +218,6 @@ function getWrapper(options?: {
   return Wrapper;
 }
 
-const waitForPollingsToBeComplete = async () => {
-  await waitFor(() => {
-    expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
-    expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
-    expect(incidentsStore.isPollRequestRunning).toBe(false);
-    expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
-  });
-};
-
-export {getWrapper, waitForPollingsToBeComplete, processInstancesMock};
+export {getWrapper};
 
 export {mockRequests};

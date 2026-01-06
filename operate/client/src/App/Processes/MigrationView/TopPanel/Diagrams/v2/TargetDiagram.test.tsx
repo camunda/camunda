@@ -11,9 +11,8 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {
-  groupedProcessesMock,
+  mockProcessDefinitions,
   mockProcessStatisticsV2,
   mockProcessWithInputOutputMappingsXML,
   mockProcessXML,
@@ -22,17 +21,21 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TargetDiagram} from './TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Wrapper} from '../tests/mocks';
-import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/hooks/useFilters');
-vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
 
 describe('Target Diagram', () => {
   beforeEach(() => {
-    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(
+      filterModule,
+      'useProcessInstanceStatisticsFilters',
+    ).mockReturnValue({filter: {}});
   });
 
   it('should display initial state in the diagram header and diagram panel', async () => {
@@ -59,7 +62,7 @@ describe('Target Diagram', () => {
   });
 
   it('should render process and version components according to the step number', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     await processesStore.fetchProcesses();
@@ -117,7 +120,7 @@ describe('Target Diagram', () => {
   });
 
   it('should render diagram on selection and re-render on version change', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     await processesStore.fetchProcesses();
@@ -154,7 +157,7 @@ describe('Target Diagram', () => {
   });
 
   it('should display error message on selection if diagram could not be fetched', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withServerError();
     await processesStore.fetchProcesses();
 
@@ -170,7 +173,7 @@ describe('Target Diagram', () => {
   });
 
   it('should render flow node overlays', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
     processInstanceMigrationStore.setSourceProcessDefinitionKey('1');

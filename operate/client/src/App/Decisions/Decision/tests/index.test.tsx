@@ -6,18 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
-import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {Decision} from '..';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
-import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {createWrapper} from './mocks';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
+import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 
 describe('<Decision />', () => {
   beforeEach(() => {
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [selectedDecisionDefinition],
+      page: {totalItems: 1},
+    });
   });
 
   it('should render decision table and panel header', async () => {
@@ -65,10 +68,6 @@ describe('<Decision />', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'Decision'})).toBeInTheDocument();
-
-    await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched'),
-    );
   });
 
   it('should render text when no version is selected', async () => {
@@ -97,6 +96,11 @@ describe('<Decision />', () => {
 
   it('should render text on error', async () => {
     mockFetchDecisionDefinitionXML().withServerError(404);
+    const selectedDecisionDefinition = mockDecisionDefinitions.items[6];
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [selectedDecisionDefinition],
+      page: {totalItems: 1},
+    });
 
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=calc-key-figures&version=1'),

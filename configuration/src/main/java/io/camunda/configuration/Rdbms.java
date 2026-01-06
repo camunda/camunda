@@ -23,6 +23,12 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   /** The maximum size of the exporters execution queue before it is flushed to the database. */
   private Integer queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
 
+  /**
+   * The maximum memory (in MB) that the execution queue can consume before it is flushed to the
+   * database. This helps prevent OOM when processing large processes with large variables.
+   */
+  private Integer queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
+
   /** Process definition cache configuration. Defines the size of the process definition cache. */
   private RdbmsCache processCache = new RdbmsCache();
 
@@ -49,6 +55,8 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   @NestedConfigurationProperty private RdbmsHistory history = new RdbmsHistory();
 
+  @NestedConfigurationProperty private RdbmsMetrics metrics = new RdbmsMetrics();
+
   public String getPrefix() {
     return prefix;
   }
@@ -71,6 +79,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setQueueSize(final Integer queueSize) {
     this.queueSize = queueSize;
+  }
+
+  public Integer getQueueMemoryLimit() {
+    return queueMemoryLimit;
+  }
+
+  public void setQueueMemoryLimit(final Integer queueMemoryLimit) {
+    this.queueMemoryLimit = queueMemoryLimit;
   }
 
   public RdbmsCache getProcessCache() {
@@ -114,6 +130,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @Override
   public void setHistory(final RdbmsHistory history) {
     this.history = history;
+  }
+
+  public RdbmsMetrics getMetrics() {
+    return metrics;
+  }
+
+  public void setMetrics(final RdbmsMetrics metrics) {
+    this.metrics = metrics;
   }
 
   @Override

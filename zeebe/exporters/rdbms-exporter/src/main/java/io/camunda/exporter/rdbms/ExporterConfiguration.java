@@ -10,6 +10,8 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,20 +21,38 @@ public class ExporterConfiguration {
   public static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
   public static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
 
+  // AuditLog
+  private AuditLogConfiguration auditLog = new AuditLogConfiguration();
+  private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
   private int queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
-
+  private int queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
   private HistoryConfiguration history = new HistoryConfiguration();
-
   // batch operation configuration
   private boolean exportBatchOperationItemsOnCreation =
       RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
   private int batchOperationItemInsertBlockSize =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
-
   // caches
   private CacheConfiguration processCache = new CacheConfiguration();
+  private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
+
+  public AuditLogConfiguration getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLogConfiguration auditLog) {
+    this.auditLog = auditLog;
+  }
+
+  public HistoryDeletionConfiguration getHistoryDeletion() {
+    return historyDeletion;
+  }
+
+  public void setHistoryDeletion(final HistoryDeletionConfiguration historyDeletion) {
+    this.historyDeletion = historyDeletion;
+  }
 
   public Duration getFlushInterval() {
     return flushInterval;
@@ -48,6 +68,14 @@ public class ExporterConfiguration {
 
   public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
+  }
+
+  public int getQueueMemoryLimit() {
+    return queueMemoryLimit;
+  }
+
+  public void setQueueMemoryLimit(final int queueMemoryLimit) {
+    this.queueMemoryLimit = queueMemoryLimit;
   }
 
   public boolean isExportBatchOperationItemsOnCreation() {
@@ -83,6 +111,14 @@ public class ExporterConfiguration {
     this.processCache = processCache;
   }
 
+  public CacheConfiguration getDecisionRequirementsCache() {
+    return decisionRequirementsCache;
+  }
+
+  public void setDecisionRequirementsCache(final CacheConfiguration decisionRequirementsCache) {
+    this.decisionRequirementsCache = decisionRequirementsCache;
+  }
+
   public CacheConfiguration getBatchOperationCache() {
     return batchOperationCache;
   }
@@ -104,6 +140,12 @@ public class ExporterConfiguration {
       errors.add(String.format("queueSize must be greater or equal 0 but was %d", queueSize));
     }
 
+    if (queueMemoryLimit < 0) {
+      errors.add(
+          String.format(
+              "queueMemoryLimit must be greater or equal 0 but was %d", queueMemoryLimit));
+    }
+
     if (batchOperationItemInsertBlockSize < 1) {
       errors.add(
           String.format(
@@ -115,6 +157,13 @@ public class ExporterConfiguration {
       errors.add(
           String.format(
               "processCache.maxSize must be greater than 0 but was %d", processCache.getMaxSize()));
+    }
+
+    if (decisionRequirementsCache.getMaxSize() < 1) {
+      errors.add(
+          String.format(
+              "decisionRequirementsCache.maxSize must be greater than 0 but was %d",
+              decisionRequirementsCache.getMaxSize()));
     }
 
     if (batchOperationCache.getMaxSize() < 1) {
@@ -134,6 +183,7 @@ public class ExporterConfiguration {
     final var historyConfig =
         new HistoryConfig.Builder()
             .defaultHistoryTTL(history.getDefaultHistoryTTL())
+            .decisionInstanceTTL(history.getDecisionInstanceTTL())
             .batchOperationCancelProcessInstanceHistoryTTL(
                 history.getBatchOperationCancelProcessInstanceHistoryTTL())
             .batchOperationMigrateProcessInstanceHistoryTTL(
@@ -152,6 +202,7 @@ public class ExporterConfiguration {
     return new RdbmsWriterConfig.Builder()
         .partitionId(partitionId)
         .queueSize(queueSize)
+        .queueMemoryLimit(queueMemoryLimit)
         .batchOperationItemInsertBlockSize(batchOperationItemInsertBlockSize)
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
         .history(historyConfig)
@@ -163,6 +214,32 @@ public class ExporterConfiguration {
     if (duration.isNegative() || duration.isZero()) {
       errors.add(String.format("%s must be a positive duration but was %s", name, duration));
     }
+  }
+
+  @Override
+  public String toString() {
+    return "ExporterConfiguration{"
+        + "auditLog="
+        + auditLog
+        + ", flushInterval="
+        + flushInterval
+        + ", queueSize="
+        + queueSize
+        + ", queueMemoryLimit="
+        + queueMemoryLimit
+        + ", history="
+        + history
+        + ", exportBatchOperationItemsOnCreation="
+        + exportBatchOperationItemsOnCreation
+        + ", batchOperationItemInsertBlockSize="
+        + batchOperationItemInsertBlockSize
+        + ", processCache="
+        + processCache
+        + ", decisionRequirementsCache="
+        + decisionRequirementsCache
+        + ", batchOperationCache="
+        + batchOperationCache
+        + '}';
   }
 
   public static class CacheConfiguration {
@@ -180,6 +257,7 @@ public class ExporterConfiguration {
   public static class HistoryConfiguration {
     // history cleanup configuration
     private Duration defaultHistoryTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
+    private Duration decisionInstanceTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
     private Duration defaultBatchOperationHistoryTTL =
         RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
     // specific history TTLs for batch operations
@@ -206,6 +284,14 @@ public class ExporterConfiguration {
 
     public void setDefaultHistoryTTL(final Duration defaultHistoryTTL) {
       this.defaultHistoryTTL = defaultHistoryTTL;
+    }
+
+    public Duration getDecisionInstanceTTL() {
+      return decisionInstanceTTL;
+    }
+
+    public void setDecisionInstanceTTL(final Duration decisionInstanceTTL) {
+      this.decisionInstanceTTL = decisionInstanceTTL;
     }
 
     public Duration getDefaultBatchOperationHistoryTTL() {

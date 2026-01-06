@@ -36,6 +36,7 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor
   public static final String LEVEL = "level";
   public static final String INCIDENT = "incident"; // true/false
   public static final String SCOPE_KEY = "scopeKey";
+  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public FlowNodeInstanceTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

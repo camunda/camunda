@@ -9,8 +9,8 @@
 import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const invoiceClassification: GetDecisionInstanceResponseBody = {
-  decisionEvaluationInstanceKey: '3ß945876576324-1',
-  decisionEvaluationKey: '3ß945876576324',
+  decisionEvaluationInstanceKey: '30945876576324-1',
+  decisionEvaluationKey: '30945876576324',
   tenantId: '<default>',
   decisionDefinitionKey: '111',
   decisionDefinitionId: 'invoiceClassification',

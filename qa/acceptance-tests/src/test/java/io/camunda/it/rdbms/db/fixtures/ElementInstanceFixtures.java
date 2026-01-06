@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -42,49 +42,49 @@ public final class ElementInstanceFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomElementInstances(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomElementInstances(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomElementInstances(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomElementInstances(rdbmsWriters, b -> b);
   }
 
   public static void createAndSaveRandomElementInstances(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter
+      rdbmsWriters
           .getFlowNodeInstanceWriter()
           .create(ElementInstanceFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static FlowNodeInstanceDbModel createAndSaveRandomElementInstance(
-      final RdbmsWriter rdbmsWriter) {
+      final RdbmsWriters rdbmsWriters) {
     final var instance = ElementInstanceFixtures.createRandomized(b -> b);
-    createAndSaveElementInstances(rdbmsWriter, List.of(instance));
+    createAndSaveElementInstances(rdbmsWriters, List.of(instance));
     return instance;
   }
 
   public static FlowNodeInstanceDbModel createAndSaveRandomElementInstance(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
           builderFunction) {
     final var instance = ElementInstanceFixtures.createRandomized(builderFunction);
-    createAndSaveElementInstances(rdbmsWriter, List.of(instance));
+    createAndSaveElementInstances(rdbmsWriters, List.of(instance));
     return instance;
   }
 
   public static void createAndSaveRandomElementInstance(
-      final RdbmsWriter rdbmsWriter, final FlowNodeInstanceDbModel processInstance) {
-    createAndSaveElementInstances(rdbmsWriter, List.of(processInstance));
+      final RdbmsWriters rdbmsWriters, final FlowNodeInstanceDbModel processInstance) {
+    createAndSaveElementInstances(rdbmsWriters, List.of(processInstance));
   }
 
   public static void createAndSaveElementInstances(
-      final RdbmsWriter rdbmsWriter, final List<FlowNodeInstanceDbModel> processInstanceList) {
+      final RdbmsWriters rdbmsWriters, final List<FlowNodeInstanceDbModel> processInstanceList) {
     for (final FlowNodeInstanceDbModel processInstance : processInstanceList) {
-      rdbmsWriter.getFlowNodeInstanceWriter().create(processInstance);
+      rdbmsWriters.getFlowNodeInstanceWriter().create(processInstance);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

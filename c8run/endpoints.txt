@@ -1,20 +1,35 @@
+
+✅ Camunda has started successfully.
 -------------------------------------------
-Access each component at the following urls with these default credentials:
-- username: demo
-- password: demo
 
-Operate:                    http://localhost:{{.OperatePort}}/operate
-Tasklist:                   http://localhost:{{.TasklistPort}}/tasklist
-Identity:                   http://localhost:{{.IdentityPort}}/identity
+Access each component using the following URLs:
+- Operate:                {{.OperateURL}}
+- Tasklist:               {{.TasklistURL}}
+- Identity:               {{.IdentityURL}}
 
-Orchestration Cluster API:  http://localhost:{{.CamundaPort}}/v2/
-Inbound Connectors API:     http://localhost:8086/
-Zeebe API (gRPC):           http://localhost:26500/
+Login with:
+- Username: {{.Username}}
+- Password: {{.Password}}
 
-Camunda metrics endpoint:   http://localhost:9600/actuator/prometheus
+API endpoints:
+- Orchestration Cluster API:  {{.OrchestrationAPI}}
+- Inbound Connectors API:     {{.InboundConnectorsAPI}}
+- Zeebe API (gRPC):           {{.ZeebeAPI}}
+- Camunda metrics:            {{.CamundaMetrics}}
 
-When using the Desktop Modeler, Authentication may be set to None.
+Note: When using the Desktop Modeler, Authentication may be set to None.
 
-Refer to https://docs.camunda.io/docs/guides/getting-started-java-spring/ for help getting started with Camunda
+Next steps:
+1. Model a process with Desktop Modeler -> Zeebe: {{.DesktopModelerTarget}}
+2. View your process in Operate
+3. Run a job worker via Java/Node SDK
+4. Build your first AI agent
+
+Need guidance?
+- Quickstart:       {{.QuickstartURL}}
+- Java developers:  {{.JavaDevelopersURL}}
+- Build an agent:   {{.AgentGuideURL}}
+
+Run `./c8run help` to see available commands and options.
 
 -------------------------------------------

@@ -295,7 +295,7 @@
         <foreach collection="filter.errorMessageOperations" item="operation">
           AND EXISTS (
           SELECT 1
-          FROM INCIDENT i
+          FROM ${prefix}INCIDENT i
           WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
           AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
           )
@@ -305,7 +305,7 @@
         <foreach collection="filter.incidentErrorHashCodeOperations" item="operation">
           AND EXISTS (
           SELECT 1
-          FROM INCIDENT i
+          FROM ${prefix}INCIDENT i
           WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
           AND i.ERROR_MESSAGE_HASH <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition" />
         )
@@ -320,4 +320,137 @@
     VALUES (#{processDefinitionKey}, #{processDefinitionId}, #{resourceName}, #{bpmnXml}, #{name},
             #{tenantId}, #{versionTag}, #{version}, #{formId})
   </insert>
+
+  <sql id="processInstanceStatisticsWhere">
+    <where>
+      pi.STATE = 'ACTIVE'
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND pi.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pi.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+  <sql id="processInstanceStatisticsGroupBy">
+    GROUP BY pi.PROCESS_DEFINITION_ID, pi.TENANT_ID
+  </sql>
+
+  <select id="processInstanceStatisticsCount" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
+    resultType="long">
+    SELECT COUNT(*)
+    FROM (
+      SELECT pi.PROCESS_DEFINITION_ID
+      FROM ${prefix}PROCESS_INSTANCE pi
+    <include refid="processInstanceStatisticsWhere"/>
+    <include refid="processInstanceStatisticsGroupBy"/>
+    ) t
+  </select>
+
+  <select id="processInstanceStatistics" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery"
+    resultType="io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity">
+    SELECT pi.PROCESS_DEFINITION_ID,
+    pi.TENANT_ID,
+    (SELECT pd.NAME
+      FROM ${prefix}PROCESS_INSTANCE pi2
+      JOIN ${prefix}PROCESS_DEFINITION pd ON pd.PROCESS_DEFINITION_KEY = pi2.PROCESS_DEFINITION_KEY
+      <where>
+        pi2.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID AND pi2.TENANT_ID = pi.TENANT_ID
+      </where>
+      ORDER BY pi2.VERSION DESC
+      <choose>
+        <when test="_databaseId == 'mssql'">
+          <!-- MSSQL needs an OFFSET when sorting in subselects -->
+          OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY
+        </when>
+        <!-- Oracle does not support LIMIT; FETCH FIRST is required even in subselects -->
+        <when test="_databaseId == 'oracle'">
+          FETCH FIRST 1 ROWS ONLY
+        </when>
+        <otherwise>
+          LIMIT 1
+        </otherwise>
+      </choose>) AS LATEST_PROCESS_DEFINITION_NAME,
+    CASE WHEN COUNT(DISTINCT pi.VERSION) > 1 THEN 1 ELSE 0 END AS HAS_MULTIPLE_VERSIONS,
+    SUM(CASE WHEN pi.NUM_INCIDENTS = 0 OR pi.NUM_INCIDENTS IS NULL THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT,
+    SUM(CASE WHEN pi.NUM_INCIDENTS > 0 THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITH_INCIDENT_COUNT
+    FROM ${prefix}PROCESS_INSTANCE pi
+    <include refid="processInstanceStatisticsWhere"/>
+    <include refid="processInstanceStatisticsGroupBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="processInstanceVersionStatisticsWhere">
+    <where>
+      pi.PROCESS_DEFINITION_ID = #{filter.processDefinitionId}
+      AND pi.STATE = 'ACTIVE'
+      <if test="filter.tenantId != null">
+        AND pi.TENANT_ID = #{filter.tenantId}
+      </if>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND pd.PROCESS_DEFINITION_ID IN
+        <foreach item="id" collection="authorizedResourceIds" open="(" separator="," close=")">
+          #{id}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND pd.TENANT_ID IN
+        <foreach item="tid" collection="authorizedTenantIds" open="(" separator="," close=")">
+          #{tid}
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+  <sql id="processInstanceVersionStatisticsGroupBy">
+    GROUP BY
+    pi.PROCESS_DEFINITION_ID,
+    pi.PROCESS_DEFINITION_KEY,
+    pi.VERSION,
+    pi.TENANT_ID,
+    pd.NAME
+  </sql>
+
+  <select id="processInstanceVersionStatisticsCount" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery" resultType="long">
+    SELECT COUNT(*)
+    FROM
+    (SELECT
+    pi.PROCESS_DEFINITION_KEY
+    FROM ${prefix}PROCESS_INSTANCE pi
+    JOIN ${prefix}PROCESS_DEFINITION pd
+    ON pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY
+    <include refid="processInstanceVersionStatisticsWhere"/>
+    <include refid="processInstanceVersionStatisticsGroupBy"/>
+    ) t
+  </select>
+
+  <select id="processInstanceVersionStatistics" resultType="io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery">
+    SELECT
+    pi.PROCESS_DEFINITION_ID,
+    pi.PROCESS_DEFINITION_KEY,
+    pi.VERSION AS PROCESS_DEFINITION_VERSION,
+    pd.NAME AS PROCESS_DEFINITION_NAME,
+    pi.TENANT_ID,
+    SUM(CASE WHEN pi.NUM_INCIDENTS = 0 OR pi.NUM_INCIDENTS IS NULL THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT,
+    SUM(CASE WHEN pi.NUM_INCIDENTS > 0 THEN 1 ELSE 0 END) AS ACTIVE_INSTANCES_WITH_INCIDENT_COUNT
+    FROM
+    ${prefix}PROCESS_INSTANCE pi
+    LEFT JOIN
+    ${prefix}PROCESS_DEFINITION pd
+    ON pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY
+    <include refid="processInstanceVersionStatisticsWhere"/>
+    <include refid="processInstanceVersionStatisticsGroupBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
 </mapper>

@@ -5,9 +5,9 @@
 
 set -exo pipefail
 
-if [ -z $1 ]
+if [ -z "$1" ]
 then
-  echo "Please provide an namespace name!"
+  echo "Please provide a namespace name!"
   exit 1
 fi
 
@@ -15,16 +15,82 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-
+helm_chart="camunda-platform-8.9"
 namespace=$1
+secondaryStorage=${2:-elasticsearch}
 
-kubectl create namespace $namespace
+# Validate secondaryStorage value
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "postgresql" ]]; then
+  echo "Error: Invalid secondary storage type '$secondaryStorage'"
+  echo "Allowed values are: elasticsearch, postgresql"
+  exit 1
+fi
+
+# Create namespace if it doesn't exist
+if ! kubectl get namespace $namespace >/dev/null 2>&1; then
+  kubectl create namespace $namespace
+else
+  echo "Namespace '$namespace' already exists"
+fi
+
+# Sanitize a string to be a valid Kubernetes label value
+sanitize_k8s_label() {
+  local value="$1"
+  # Replace invalid characters with hyphens
+  value=$(echo "$value" | sed 's/[^A-Za-z0-9_.-]/-/g')
+  # Remove leading non-alphanumeric characters
+  value=$(echo "$value" | sed 's/^[^A-Za-z0-9]\+//')
+  # Remove trailing non-alphanumeric characters
+  value=$(echo "$value" | sed 's/[^A-Za-z0-9]\+$//')
+  # Truncate to 63 characters as required by Kubernetes label values
+  value=${value:0:63}
+  # Fallback if the result is empty
+  if [ -z "$value" ]; then
+    value="unknown"
+  fi
+  echo "$value"
+}
+
+# Label namespace with author (based on git author)
+raw_git_author=$(git config user.name || echo "unknown")
+git_author=$(sanitize_k8s_label "$raw_git_author")
+kubectl label namespace "$namespace" created-by="$git_author" --overwrite
+
+# Label namespace with TTL deadline (default: 7 days from now)
+ttl_days="${2:-7}"
+# Try GNU date format first (Linux), then BSD/macOS format
+if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
+  : # GNU date succeeded
+elif deadline_date=$(date -v +${ttl_days}d +%Y-%m-%d 2>/dev/null); then
+  : # BSD/macOS date succeeded
+else
+  echo "Warning: Could not calculate deadline date. Supported on Linux and macOS only."
+  deadline_date="unknown"
+fi
+kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
+
+# Copy default folder to new namespace folder
 cp -rv default/ $namespace
+
+# Copy camunda-platform-values*.yaml files to the new folder
+cp -v ../camunda-platform-values*.yaml $namespace/
+
 cd $namespace
 
-# calls OS specific sed inplace function
-sed_inplace "s/default/$namespace/g" Makefile
+# Update Makefile to use the namespace and secondary storage
+sed_inplace "s/default/$namespace/" Makefile
+sed_inplace "s/elasticsearch/$secondaryStorage/" Makefile
 
-# get latest updates from zeebe repo
-helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm # skips if already exists
+# Add/update helm repositories
+helm repo add camunda https://helm.camunda.io/ --force-update
+helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
 helm repo update
+
+# Clone Platform Helm so we can run the latest chart
+
+git clone --depth 1 --branch main --single-branch https://github.com/camunda/camunda-platform-helm.git
+
+# Make deps
+
+helm dependency build "camunda-platform-helm/charts/$helm_chart"
+

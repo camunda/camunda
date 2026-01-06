@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -111,8 +110,8 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<DecisionDefinition> query, final SearchRequest.Builder request) {
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
+      final Query<DecisionDefinition> query) {
     final DecisionDefinition filter = query.getFilter();
 
     if (filter != null) {
@@ -137,9 +136,10 @@ public class OpensearchDecisionDefinitionDao
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
+        return queryDSLWrapper.and(queryTerms);
       }
     }
+    return queryDSLWrapper.matchAll();
   }
 
   @Override

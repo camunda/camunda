@@ -30,6 +30,7 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
+import {getClientConfig} from '../modules/utils/getClientConfig';
 
 const Wrapper: React.FC = () => {
   return (
@@ -70,8 +71,13 @@ const routes = createRoutesFromElements(
       <Route
         index
         lazy={async () => {
-          const {Dashboard} = await import('./Dashboard/index');
-          return {Component: Dashboard};
+          if (getClientConfig()?.databaseType === 'rdbms') {
+            const {Dashboard} = await import('./Dashboard/v2/index');
+            return {Component: Dashboard};
+          } else {
+            const {Dashboard} = await import('./Dashboard/index');
+            return {Component: Dashboard};
+          }
         }}
       />
       <Route
@@ -100,6 +106,13 @@ const routes = createRoutesFromElements(
         lazy={async () => {
           const {DecisionInstance} = await import('./DecisionInstance/index');
           return {Component: DecisionInstance};
+        }}
+      />
+      <Route
+        path={Paths.batchOperations()}
+        lazy={async () => {
+          const {BatchOperations} = await import('./BatchOperations/index');
+          return {Component: BatchOperations};
         }}
       />
     </Route>

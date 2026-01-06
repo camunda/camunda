@@ -14,6 +14,7 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {
   defaultAssertionOptions,
@@ -23,6 +24,7 @@ import {
   assertUserNameInResponse,
   assignUsersToTenant,
   createTenant,
+  createUser,
   userFromState,
 } from '@requestHelpers';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -51,9 +53,13 @@ test.describe.parallel('Tenant Users API Tests', () => {
 
   test('Assign User To Tenant', async ({request}) => {
     const tenant = await createTenant(request);
-    const user = 'test-user' + generateUniqueId();
+    const user = await createUser(
+      request,
+      {},
+      'test-user' + generateUniqueId(),
+    );
     const p = {
-      userName: user,
+      userName: user.username,
       tenantId: tenant.tenantId as string,
     };
 
@@ -62,9 +68,9 @@ test.describe.parallel('Tenant Users API Tests', () => {
         buildUrl('/tenants/{tenantId}/users/{userName}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
-    createdUserIds.push(user);
+    createdUserIds.push(user.username);
   });
 
   test('Assign User To Tenant Non Existent User Success', async ({request}) => {
@@ -76,7 +82,10 @@ test.describe.parallel('Tenant Users API Tests', () => {
       buildUrl('/tenants/{tenantId}/users/{userName}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertNotFoundRequest(
+      res,
+      `Command 'ADD_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
   });
 
   test('Assign User To Tenant Non Existent Tenant Not Found', async ({
@@ -188,7 +197,7 @@ test.describe.parallel('Tenant Users API Tests', () => {
           buildUrl('/tenants/{tenantId}/users/{userName}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 

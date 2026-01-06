@@ -6,8 +6,8 @@
   "io.openshift.wants": "zeebe,elasticsearch,identity,keycloak,opensearch",
   "io.openshift.tags": "bpmn,optimization,camunda",
   "org.opencontainers.image.authors": "optimize@camunda.com",
-  "org.opencontainers.image.base.name": "docker.io/library/alpine:3.22.1",
   "org.opencontainers.image.base.digest": $BASEDIGEST,
+  "org.opencontainers.image.base.name": $BASE_IMAGE,
   "org.opencontainers.image.created": $DATE,
   "org.opencontainers.image.description": "Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/optimize-deployment/install-and-start/",
@@ -17,5 +17,8 @@
   "org.opencontainers.image.title": "Camunda Optimize",
   "org.opencontainers.image.url": "https://docs.camunda.io/docs/components/optimize/what-is-optimize/",
   "org.opencontainers.image.vendor": "Camunda Services GmbH",
-  "org.opencontainers.image.version": $VERSION
+  "org.opencontainers.image.version": $VERSION,
+  "io.minimus.images.galleryURL": "https://images.minimus.io/gallery/images/1212/openjre-base",
+  "io.minimus.images.line": "21",
+  "io.minimus.images.version": "21.0.9-dev"
 }

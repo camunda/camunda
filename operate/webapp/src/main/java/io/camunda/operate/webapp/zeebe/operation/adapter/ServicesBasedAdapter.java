@@ -28,6 +28,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -49,6 +51,7 @@ import org.springframework.util.StringUtils;
 
 @Component
 @ConditionalOnOperateCompatibility(enabled = "false", matchIfMissing = true)
+@ConditionalOnRdbmsDisabled
 public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ServicesBasedAdapter.class);
@@ -282,7 +285,11 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
             });
 
     return new ProcessInstanceModifyRequest(
-        processInstanceKey, activateInstructions, terminateInstructions, operationId);
+        processInstanceKey,
+        activateInstructions,
+        Collections.emptyList(),
+        terminateInstructions,
+        operationId);
   }
 
   private void addActivationInstruction(

@@ -42,11 +42,13 @@ final class IdleStrategyConfigIT {
   void shouldConfigureIdleStrategyWithUnifiedConfig() {
     // given
     try (final var gateway = new TestStandaloneGateway()) {
-      gateway
-          .withProperty("camunda.system.actor.idle.max-spins", 50L)
-          .withProperty("camunda.system.actor.idle.max-yields", 62L)
-          .withProperty("camunda.system.actor.idle.min-park-period", Duration.ofNanos(100))
-          .withProperty("camunda.system.actor.idle.max-park-period", Duration.ofNanos(500));
+      gateway.withUnifiedConfig(
+          cfg -> {
+            cfg.getSystem().getActor().getIdle().setMaxSpins(50L);
+            cfg.getSystem().getActor().getIdle().setMaxYields(62L);
+            cfg.getSystem().getActor().getIdle().setMinParkPeriod(Duration.ofNanos(100));
+            cfg.getSystem().getActor().getIdle().setMaxParkPeriod(Duration.ofNanos(500));
+          });
 
       // when
       gateway.start();

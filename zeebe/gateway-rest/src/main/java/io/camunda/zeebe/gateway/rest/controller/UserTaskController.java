@@ -39,6 +39,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequestMapping(path = {"/v1/user-tasks", "/v2/user-tasks"})
@@ -133,12 +134,13 @@ public class UserTaskController {
   public ResponseEntity<VariableSearchQueryResult> searchVariables(
       @PathVariable("userTaskKey") final long userTaskKey,
       @RequestBody(required = false)
-          final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest) {
-
+          final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest,
+      @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
+          final boolean truncateValues) {
     return SearchQueryRequestMapper.toUserTaskVariableQuery(userTaskVariablesSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            query -> searchUserTaskVariableQuery(userTaskKey, query));
+            query -> searchUserTaskVariableQuery(userTaskKey, query, truncateValues));
   }
 
   private ResponseEntity<UserTaskSearchQueryResult> search(final UserTaskQuery query) {
@@ -155,13 +157,14 @@ public class UserTaskController {
   }
 
   private ResponseEntity<VariableSearchQueryResult> searchUserTaskVariableQuery(
-      final long userTaskKey, final VariableQuery query) {
+      final long userTaskKey, final VariableQuery query, final boolean truncateValues) {
     try {
       final var result =
           userTaskServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchUserTaskVariables(userTaskKey, query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -9,7 +9,6 @@ package io.camunda.tasklist.webapp.service;
 
 import static io.camunda.tasklist.Metrics.*;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
-import static io.camunda.tasklist.webapp.service.OrganizationService.DEFAULT_ORGANIZATION;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
@@ -18,7 +17,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.Auth0Properties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.FormStore.FormIdView;
@@ -222,16 +220,19 @@ public class TaskService {
 
   public TaskDTO completeTask(
       final String taskId,
-      final List<VariableInputDTO> variables,
+      final List<VariableInputDTO> taskCompletionVariables,
       final boolean withDraftVariableValues) {
     final Map<String, Object> variablesMap = new HashMap<>();
-    requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
+    requireNonNullElse(taskCompletionVariables, Collections.<VariableInputDTO>emptyList())
         .forEach(variable -> variablesMap.put(variable.getName(), extractTypedValue(variable)));
 
     try {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
 
       final TaskEntity task = taskStore.getTask(taskId);
+
+      // get runtime variables before completion
+      final var taskRuntimeVariables = variableService.getTaskRuntimeVariables(task);
 
       final TaskEntity completedTaskEntity;
       if (task.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
@@ -251,7 +252,8 @@ public class TaskService {
 
       try {
         LOGGER.info("Start variable persistence: {}", taskId);
-        variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+        variableService.persistTaskVariables(
+            taskId, taskCompletionVariables, taskRuntimeVariables, withDraftVariableValues);
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);
@@ -372,16 +374,10 @@ public class TaskService {
     }
 
     return new String[] {
-      TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
-      TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
-      TAG_KEY_USER_ID, keyUserId,
+      TAG_KEY_BPMN_PROCESS_ID, Optional.ofNullable(task.getBpmnProcessId()).orElse("unknown"),
+      TAG_KEY_FLOW_NODE_ID, Optional.ofNullable(task.getFlowNodeBpmnId()).orElse("unknown"),
+      TAG_KEY_USER_ID, Optional.ofNullable(keyUserId).orElse(DEFAULT_USER),
       TAG_KEY_ORGANIZATION_ID, organizationService.getOrganizationIfPresent()
     };
-  }
-
-  private String getOrganizationIfPresent() {
-    return Optional.ofNullable(tasklistProperties.getAuth0())
-        .map(Auth0Properties::getOrganization)
-        .orElse(DEFAULT_ORGANIZATION);
   }
 }

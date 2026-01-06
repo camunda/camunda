@@ -15,12 +15,19 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterSchemaManager;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporterSchemaManager;
 import java.io.IOException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -75,7 +82,7 @@ public class StandaloneSchemaManager implements CommandLineRunner {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
+    LOG.info("Creating/updating schema for Camunda ...");
 
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
@@ -86,12 +93,15 @@ public class StandaloneSchemaManager implements CommandLineRunner {
             UnifiedConfiguration.class,
             SearchEngineConnectPropertiesOverride.class,
             SearchEngineIndexPropertiesOverride.class,
+            SearchEngineRetentionPropertiesOverride.class,
             // ---
             StandaloneSchemaManagerConfiguration.class)
         .initializers(new StandaloneSchemaManagerInitializer())
         .addCommandLineProperties(true)
         .listeners(new ApplicationErrorListener())
         .run(args);
+
+    LOG.info("... finished creating/updating schema for Camunda");
 
     // Explicit exit needed because there are daemon threads (at least from the ES client) that are
     // blocking shutdown.
@@ -100,15 +110,43 @@ public class StandaloneSchemaManager implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
-    if (brokerProperties.getExporters().containsKey("elasticsearch")) {
-      final var elasticsearchConfig =
-          new ExporterConfiguration(
-                  "elasticsearch", brokerProperties.getExporters().get("elasticsearch").getArgs())
-              .instantiate(ElasticsearchExporterConfiguration.class);
-      new ElasticsearchExporterSchemaManager(elasticsearchConfig)
-          .createSchema(CURRENT_BROKER_VERSION.toString());
+    try {
+      getSchemaCreators()
+          .forEach(
+              schemaCreator -> {
+                schemaCreator.createSchema(CURRENT_BROKER_VERSION.toString());
+              });
+    } catch (final Exception e) {
+      LOG.error("Failed to create/update schema", e);
+      throw e;
     }
-    LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
+  }
+
+  private List<SchemaCreator> getSchemaCreators() {
+    final SchemaManagerFactory schemaManagerFactory = getSchemaManagerFactory();
+    return brokerProperties.getExporters().entrySet().stream()
+        .map(entry -> schemaManagerFactory.create(entry.getKey(), entry.getValue()))
+        .toList();
+  }
+
+  private SchemaManagerFactory getSchemaManagerFactory() {
+    return (id, cfg) -> {
+      if (ElasticsearchExporter.class.getName().equals(cfg.getClassName())) {
+        final var config =
+            new ExporterConfiguration(id, cfg.getArgs())
+                .instantiate(ElasticsearchExporterConfiguration.class);
+        final var schemaManager = new ElasticsearchExporterSchemaManager(config);
+        return schemaManager::createSchema;
+      } else if (OpensearchExporter.class.getName().equals(cfg.getClassName())) {
+        final var config =
+            new ExporterConfiguration(id, cfg.getArgs())
+                .instantiate(OpensearchExporterConfiguration.class);
+        final var schemaManager = new OpensearchExporterSchemaManager(config);
+        return schemaManager::createSchema;
+      } else {
+        return brokerVersion -> {};
+      }
+    };
   }
 
   @EnableAutoConfiguration
@@ -118,4 +156,19 @@ public class StandaloneSchemaManager implements CommandLineRunner {
       basePackages = {"io.camunda.application.commons.search", "io.camunda.configuration"},
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
   public static class StandaloneSchemaManagerConfiguration {}
+
+  /*
+   * Since we don't have a common SchemaManager interface that we can put in a common project for
+   * Elasticsearch and OpenSearch exporters (yet), we use these functional interfaces to give at least
+   * a sense of abstraction.
+   */
+  @FunctionalInterface
+  private interface SchemaCreator {
+    void createSchema(String brokerVersion);
+  }
+
+  @FunctionalInterface
+  private interface SchemaManagerFactory {
+    SchemaCreator create(String exporterId, ExporterCfg exporterConfig);
+  }
 }

@@ -21,6 +21,18 @@ public record BatchOperationEntity(
     BatchOperationType operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
+    /**
+     * The type of the actor who started the batch operation (USER or CLIENT).
+     *
+     * @since 8.9.0
+     */
+    BatchOperationActorType actorType,
+    /**
+     * The id of the actor who started the batch operation.
+     *
+     * @since 8.9.0
+     */
+    String actorId,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
     Integer operationsCompletedCount,
@@ -76,5 +88,10 @@ public record BatchOperationEntity(
     SKIPPED,
     CANCELED,
     FAILED
+  }
+
+  public enum BatchOperationActorType {
+    USER,
+    CLIENT
   }
 }

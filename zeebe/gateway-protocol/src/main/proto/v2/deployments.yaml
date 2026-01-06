@@ -3,6 +3,7 @@
 paths:
   /deployments:
     post:
+      x-eventually-consistent: false
       tags:
         - Resource
       operationId: createDeployment
@@ -40,10 +41,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
   /resources/{resourceKey}:
     get:
+      x-eventually-consistent: false
       tags:
         - Resource
       operationId: getResource
@@ -75,10 +76,10 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: false
 
   /resources/{resourceKey}/content:
     get:
+      x-eventually-consistent: false
       tags:
         - Resource
       operationId: getResourceContent
@@ -111,10 +112,10 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: false
 
   /resources/{resourceKey}/deletion:
     post:
+      x-eventually-consistent: false
       tags:
         - Resource
       operationId: deleteResource
@@ -154,7 +155,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: false
 
 ## Schema definitions
 
@@ -285,9 +285,14 @@ components:
         resourceName:
           type: string
         tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the deployed decision requirements.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         decisionRequirementsKey:
-          $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: |
+            The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
 
     DeploymentFormResult:
       description: A deployed form.
@@ -296,7 +301,11 @@ components:
         - formKey
       properties:
         formId:
-          $ref: 'identifiers.yaml#/components/schemas/FormId'
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/FormId'
+          description: |
+            The form ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific form.
         version:
           type: integer
           format: int32
@@ -305,7 +314,9 @@ components:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         formKey:
-          $ref: 'keys.yaml#/components/schemas/FormKey'
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKey'
+          description: The assigned key, which acts as a unique identifier for this form.
 
     DeploymentResourceResult:
       description: A deployed Resource.
@@ -323,7 +334,9 @@ components:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         resourceKey:
-          $ref: '#/components/schemas/ResourceKey'
+          allOf:
+            - $ref: '#/components/schemas/ResourceKey'
+          description: The assigned key, which acts as a unique identifier for this Resource.
 
     DeleteResourceRequest:
       type: object

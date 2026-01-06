@@ -13,7 +13,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.UUID;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 
 /**
  * {@code ContainerizedSearchDBExtension} is an extension that creates and manages a containerized
@@ -25,7 +25,7 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   private static final String PASSWORD = "P@a$5w0rd";
   private static final String ADMIN_PASSWORD_ENV_VAR = "OPENSEARCH_INITIAL_ADMIN_PASSWORD";
 
-  private static OpensearchContainer<?> opensearchContainer;
+  private static OpenSearchContainer<?> opensearchContainer;
 
   private ProtocolFactory recordFactory;
   private OpensearchExporterConfiguration config;

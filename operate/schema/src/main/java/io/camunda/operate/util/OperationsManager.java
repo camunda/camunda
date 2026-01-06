@@ -10,6 +10,7 @@ package io.camunda.operate.util;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 /** Common methods to deal with operations, that can be used by different modules. */
 @Component
+@ConditionalOnRdbmsDisabled
 public class OperationsManager {
 
   private final Logger logger;

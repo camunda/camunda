@@ -27,7 +27,8 @@ public class BatchOperationItemFieldSortingTransformerTest extends AbstractSortT
         new TestArguments("batchOperationId", SortOrder.ASC, s -> s.batchOperationKey().asc()),
         new TestArguments("state", SortOrder.DESC, s -> s.state().desc()),
         new TestArguments("itemKey", SortOrder.DESC, s -> s.itemKey().desc()),
-        new TestArguments("processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()));
+        new TestArguments("processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()),
+        new TestArguments("completedDate", SortOrder.ASC, s -> s.processedDate().asc()));
   }
 
   @ParameterizedTest

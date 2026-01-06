@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.shared.management.BackupEndpoint;
@@ -86,7 +86,10 @@ class BackupErrorResponseTest {
 
     @BeforeEach
     void setup() {
-      backupEndpoint = new BackupEndpoint(clusteringRule.getGateway().getBrokerClient());
+      backupEndpoint =
+          new BackupEndpoint(
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackup());
       createBucket();
     }
 
@@ -119,14 +122,17 @@ class BackupErrorResponseTest {
 
     @BeforeEach
     void setup() {
-      backupEndpoint = new BackupEndpoint(clusteringRule.getGateway().getBrokerClient());
+      backupEndpoint =
+          new BackupEndpoint(
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackup());
     }
 
     @Timeout(value = 60)
     @Test
     void shouldReturn400() {
       // when - then
-      assertThat(backupEndpoint.query("1").getStatus()).isEqualTo(400);
+      assertThat(backupEndpoint.query(new String[] {"1"}).getStatus()).isEqualTo(400);
     }
   }
 
@@ -144,7 +150,10 @@ class BackupErrorResponseTest {
 
     @BeforeEach
     void setup() {
-      backupEndpoint = new BackupEndpoint(clusteringRule.getGateway().getBrokerClient());
+      backupEndpoint =
+          new BackupEndpoint(
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackup());
     }
 
     @Timeout(value = 60)
@@ -154,7 +163,31 @@ class BackupErrorResponseTest {
       clusteringRule.disconnect(clusteringRule.getBroker(0));
 
       // when - then
-      assertThat(backupEndpoint.query("1").getStatus()).isEqualTo(504);
+      assertThat(backupEndpoint.query(new String[] {"1"}).getStatus()).isEqualTo(504);
+    }
+  }
+
+  @Nested
+  final class ContinuousBackupsEnabled {
+    @RegisterExtension
+    private final ClusteringRuleExtension clusteringRule =
+        new ClusteringRuleExtension(1, 1, 1, cfg -> cfg.getData().getBackup().setContinuous(true));
+
+    private BackupEndpoint backupEndpoint;
+
+    @BeforeEach
+    void setup() {
+      backupEndpoint =
+          new BackupEndpoint(
+              clusteringRule.getGateway().getBrokerClient(),
+              clusteringRule.getBrokerCfg(0).getData().getBackup());
+    }
+
+    @Timeout(value = 60)
+    @Test
+    void shouldReturn400() {
+      // when - then
+      assertThat(backupEndpoint.take(1L).getStatus()).isEqualTo(400);
     }
   }
 }

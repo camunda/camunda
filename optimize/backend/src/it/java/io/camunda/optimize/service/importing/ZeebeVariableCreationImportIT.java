@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
@@ -156,6 +157,99 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
               assertThat(variable.getType()).isEqualTo(DATE.getId());
               assertThat(variable.getValue().getFirst()).isEqualTo(parsedDateValue);
             });
+  }
+
+  @Test
+  public void variableObjectImportDoesNotParseDigitOnlyStringsAsDates() {
+    // given
+    final Map<String, Object> numericStringMap =
+        generateNumericStringsOfLengthXInRange(10, 20).stream()
+            .collect(Collectors.toMap(str -> String.valueOf(str.length()), str -> str));
+
+    final Map<String, Object> variables = Map.of("numericStrings", numericStringMap);
+
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final long processInstanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            deployedProcess.getBpmnProcessId(), variables);
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumVariableDocumentsExportedCount(1);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then
+    assertThat(instance.getVariables())
+        .extracting(
+            SimpleProcessVariableDto::getName,
+            SimpleProcessVariableDto::getType,
+            SimpleProcessVariableDto::getValue)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(
+                "numericStrings",
+                OBJECT.getId(),
+                Collections.singletonList(
+                    variablesClient.createMapJsonObjectVariableDto(numericStringMap).getValue())),
+            Tuple.tuple(
+                "numericStrings.10", STRING.getId(), Collections.singletonList("1234567890")),
+            Tuple.tuple(
+                "numericStrings.11", STRING.getId(), Collections.singletonList("12345678901")),
+            Tuple.tuple(
+                "numericStrings.12", STRING.getId(), Collections.singletonList("123456789012")),
+            Tuple.tuple(
+                "numericStrings.13", STRING.getId(), Collections.singletonList("1234567890123")),
+            Tuple.tuple(
+                "numericStrings.14", STRING.getId(), Collections.singletonList("12345678901234")),
+            Tuple.tuple(
+                "numericStrings.15", STRING.getId(), Collections.singletonList("123456789012345")),
+            Tuple.tuple(
+                "numericStrings.16", STRING.getId(), Collections.singletonList("1234567890123456")),
+            Tuple.tuple(
+                "numericStrings.17",
+                STRING.getId(),
+                Collections.singletonList("12345678901234567")),
+            Tuple.tuple(
+                "numericStrings.18",
+                STRING.getId(),
+                Collections.singletonList("123456789012345678")),
+            Tuple.tuple(
+                "numericStrings.19",
+                STRING.getId(),
+                Collections.singletonList("1234567890123456789")),
+            Tuple.tuple(
+                "numericStrings.20",
+                STRING.getId(),
+                Collections.singletonList("12345678901234567890")));
+  }
+
+  @Test
+  public void variableListImportDoesNotParseDigitOnlyStringsAsDates() {
+    // given
+    final var numericStringList = generateNumericStringsOfLengthXInRange(10, 20);
+
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final long processInstanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            deployedProcess.getBpmnProcessId(), Map.of("numericStrings", numericStringList));
+
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumVariableDocumentsExportedCount(1);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then
+    assertThat(instance.getVariables())
+        .extracting(
+            SimpleProcessVariableDto::getName,
+            SimpleProcessVariableDto::getType,
+            SimpleProcessVariableDto::getValue)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("numericStrings", STRING.getId(), numericStringList),
+            // additional _listSize variable for lists
+            Tuple.tuple("numericStrings._listSize", LONG.getId(), Collections.singletonList("11")));
   }
 
   @Test
@@ -539,5 +633,13 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     return zeebeExtension.startProcessInstanceWithVariables(
         deployedProcess.getBpmnProcessId(), BASIC_VARIABLES);
+  }
+
+  private List<String> generateNumericStringsOfLengthXInRange(
+      final int startingStringLength, final int endInclusiveStringLength) {
+    final var digits = "1234567890";
+    return IntStream.rangeClosed(startingStringLength, endInclusiveStringLength)
+        .mapToObj(len -> digits.repeat((len / 10) + 1).substring(0, len))
+        .toList();
   }
 }

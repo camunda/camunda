@@ -63,6 +63,15 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of standalone-decisions that have been archived. */
   private final Counter standaloneDecisionsArchived;
 
+  /** Count of incident updates that needed retrying. */
+  private final Counter incidentUpdatesRetriesNeeded;
+
+  /** Count of incident updates that were processed. */
+  private final Counter incidentUpdatesProcessed;
+
+  /** Count of document updated when incident updates were processed. */
+  private final Counter incidentUpdatesDocumentsUpdated;
+
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
@@ -174,6 +183,22 @@ public class CamundaExporterMetrics implements AutoCloseable {
                 "Duration of how long it takes from resolving to archiving entities, all in all together.")
             .publishPercentileHistogram()
             .register(meterRegistry);
+    incidentUpdatesRetriesNeeded =
+        Counter.builder(meterName("incident.updates"))
+            .tag("action", "retry")
+            .description(
+                "Count of incidents that have will need retrying due to matching process instances not being found.")
+            .register(meterRegistry);
+    incidentUpdatesProcessed =
+        Counter.builder(meterName("incident.updates"))
+            .tag("action", "processed")
+            .description("Count of incidents that have been processed.")
+            .register(meterRegistry);
+    incidentUpdatesDocumentsUpdated =
+        Counter.builder(meterName("incident.updates.documents"))
+            .tag("action", "updated")
+            .description("Count of documents that were updated when incidents were processed.")
+            .register(meterRegistry);
     bulkSize =
         DistributionSummary.builder(meterName("bulk.size"))
             .description("How many items were exported in one bulk request")
@@ -275,6 +300,18 @@ public class CamundaExporterMetrics implements AutoCloseable {
     standaloneDecisionsArchiving.increment(count);
   }
 
+  public void recordIncidentUpdatesRetriesNeeded(final int count) {
+    incidentUpdatesRetriesNeeded.increment(count);
+  }
+
+  public void recordIncidentUpdatesProcessed(final int count) {
+    incidentUpdatesProcessed.increment(count);
+  }
+
+  public void recordIncidentUpdatesDocumentsUpdated(final int count) {
+    incidentUpdatesDocumentsUpdated.increment(count);
+  }
+
   public void recordFlushFailureType(final String failureType) {
     meterRegistry.counter(meterName("flush.failure.type"), "failure_type", failureType).increment();
   }
@@ -336,6 +373,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
     meterRegistry.remove(recordExportDuration);
+    meterRegistry.remove(incidentUpdatesRetriesNeeded);
+    meterRegistry.remove(incidentUpdatesProcessed);
+    meterRegistry.remove(incidentUpdatesDocumentsUpdated);
 
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(meterName("since.last.flush.seconds"));

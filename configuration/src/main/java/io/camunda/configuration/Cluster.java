@@ -13,6 +13,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,8 @@ public class Cluster implements Cloneable {
 
   // Property names for initial contact points configuration
   public static final String LEGACY_INITIAL_CONTACT_POINTS_PROPERTY;
-  private static final String PREFIX = "camunda.cluster";
+  public static final String LEGACY_NODE_ID_PROPERTY;
+  static final String PREFIX = "camunda.cluster";
   public static final String UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY =
       PREFIX + ".initial-contact-points";
 
@@ -46,11 +48,13 @@ public class Cluster implements Cloneable {
           "clusterSize", "zeebe.broker.cluster.clusterSize",
           "messageCompression", "zeebe.broker.cluster.messageCompression",
           "clusterName", "zeebe.broker.cluster.clusterName",
-          "initialContactPoints", "zeebe.broker.cluster.initialContactPoints");
+          "initialContactPoints", "zeebe.broker.cluster.initialContactPoints",
+          "clusterId", "zeebe.broker.cluster.clusterId");
 
   static {
     LEGACY_INITIAL_CONTACT_POINTS_PROPERTY =
         Objects.requireNonNull(LEGACY_BROKER_PROPERTIES.get("initialContactPoints"));
+    LEGACY_NODE_ID_PROPERTY = Objects.requireNonNull(LEGACY_BROKER_PROPERTIES.get("nodeId"));
   }
 
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
@@ -74,11 +78,8 @@ public class Cluster implements Cloneable {
    */
   private List<String> initialContactPoints = Collections.emptyList();
 
-  /**
-   * Specifies the unique id of this broker node in a cluster. The id should be between 0 and number
-   * of nodes in the cluster (exclusive).
-   */
-  private int nodeId = 0;
+  /** Configuration for node ID management, supporting both static and dynamic node IDs. */
+  @NestedConfigurationProperty private NodeIdProvider nodeIdProvider = new NodeIdProvider();
 
   /** The number of partitions in the cluster. */
   private int partitionCount = 1;
@@ -101,6 +102,12 @@ public class Cluster implements Cloneable {
   /** Set the name of the cluster */
   private String name = DEFAULT_CLUSTER_NAME;
 
+  /**
+   * Set the cluster id of the cluster. This setting is used to identify the cluster and should be
+   * unique across clusters. If not configured, the cluster ID will be set with a new random UUID.
+   */
+  private String clusterId;
+
   /** Configuration for the Raft protocol in the cluster. */
   @NestedConfigurationProperty private Raft raft = new Raft();
 
@@ -121,6 +128,27 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
+
+  /**
+   * The partitioning configuration allow configuring experimental settings related to partitioning.
+   *
+   * <p>At the moment, it lets users configure the scheme - that is, how partitions are distributed
+   * across the brokers. The default scheme is currently {@link Scheme#ROUND_ROBIN}.
+   *
+   * <p>When using {@link Scheme#FIXED}, a map of brokers to a list of partitions should be
+   * specified under {@link Partitioning#fixed}. This map takes keys as the broker node IDs, with
+   * values as a list of partition IDs. The mapping must be exhaustive, meaning all brokers should
+   * appear, and all partitions should be specified with the appropriate replication factor.
+   */
+  @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
+
+  public NodeIdProvider getNodeIdProvider() {
+    return nodeIdProvider;
+  }
+
+  public void setNodeIdProvider(final NodeIdProvider nodeIdProvider) {
+    this.nodeIdProvider = nodeIdProvider;
+  }
 
   public Metadata getMetadata() {
     return metadata;
@@ -151,17 +179,12 @@ public class Cluster implements Cloneable {
     this.initialContactPoints = initialContactPoints;
   }
 
-  public int getNodeId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".node-id",
-        nodeId,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("nodeId")));
+  public Integer getNodeId() {
+    return nodeIdProvider.fixed().getNodeId();
   }
 
   public void setNodeId(final int nodeId) {
-    this.nodeId = nodeId;
+    nodeIdProvider.fixed().setNodeId(nodeId);
   }
 
   public int getPartitionCount() {
@@ -224,6 +247,19 @@ public class Cluster implements Cloneable {
     this.name = name;
   }
 
+  public String getClusterId() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".cluster-id",
+        clusterId,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("clusterId")));
+  }
+
+  public void setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
+  }
+
   public Raft getRaft() {
     return raft;
   }
@@ -253,6 +289,14 @@ public class Cluster implements Cloneable {
     this.globalListeners = globalListeners;
   }
 
+  public Partitioning getPartitioning() {
+    return partitioning;
+  }
+
+  public void setPartitioning(final Partitioning partitioning) {
+    this.partitioning = partitioning;
+  }
+
   @Override
   public Object clone() {
     try {
@@ -260,6 +304,39 @@ public class Cluster implements Cloneable {
     } catch (final CloneNotSupportedException e) {
       throw new AssertionError("Unexpected: Class must implement Cloneable", e);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "Cluster{"
+        + "legacyPropertiesMap="
+        + legacyPropertiesMap
+        + ", metadata="
+        + metadata
+        + ", network="
+        + network
+        + ", initialContactPoints="
+        + initialContactPoints
+        + ", nodeIdProvider="
+        + nodeIdProvider
+        + ", partitionCount="
+        + partitionCount
+        + ", replicationFactor="
+        + replicationFactor
+        + ", size="
+        + size
+        + ", membership="
+        + membership
+        + ", name='"
+        + name
+        + '\''
+        + ", raft="
+        + raft
+        + ", compressionAlgorithm="
+        + compressionAlgorithm
+        + ", globalListeners="
+        + globalListeners
+        + '}';
   }
 
   public Cluster withBrokerProperties() {

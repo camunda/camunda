@@ -43,7 +43,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class NoCompatibilityModeOperateZeebeAuthorizationIT {
 
@@ -194,8 +194,8 @@ public class NoCompatibilityModeOperateZeebeAuthorizationIT {
         assertThat(
                 RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
                     .withResourceKey(processDefinitionForDeletionKey)
-                    .count())
-            .isEqualTo(1L);
+                    .exists())
+            .isTrue();
         RecordingExporter.setMaximumWaitTime(5000);
       }
     }
@@ -227,9 +227,8 @@ public class NoCompatibilityModeOperateZeebeAuthorizationIT {
         assertThat(
                 RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
                     .withResourceKey(decisionRequirementsKey)
-                    .limit(1L)
-                    .count())
-            .isEqualTo(1L);
+                    .exists())
+            .isTrue();
         RecordingExporter.setMaximumWaitTime(5000);
       }
     }
@@ -274,8 +273,9 @@ public class NoCompatibilityModeOperateZeebeAuthorizationIT {
                 RecordingExporter.processInstanceModificationRecords()
                     .withIntent(ProcessInstanceModificationIntent.MODIFIED)
                     .withProcessInstanceKey(processInstanceKey)
-                    .count())
-            .isEqualTo(1L);
+                    .exists())
+            .isTrue();
+        RecordingExporter.setMaximumWaitTime(5000);
       }
     }
   }

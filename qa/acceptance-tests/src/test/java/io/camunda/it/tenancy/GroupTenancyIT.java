@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Group;
+import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -56,7 +57,9 @@ public class GroupTenancyIT {
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
     createGroup(adminClient, GROUP_A);
     createGroup(adminClient, GROUP_B);
+    assignUserToGroup(adminClient, ADMIN, GROUP_A);
     waitForGroupsBeingExported(adminClient);
+    waitForGroupMembershipsBeingExported(adminClient);
   }
 
   @Test
@@ -71,6 +74,17 @@ public class GroupTenancyIT {
   }
 
   @Test
+  public void shouldReturnGroupMembershipsWithTenantAccess(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUsersByGroupSearchRequest(GROUP_A).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().stream().map(GroupUser::getUsername).toList())
+        .containsExactlyInAnyOrder(ADMIN);
+  }
+
+  @Test
   public void shouldReturnAllGroupsWithNoTenantAccess(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
@@ -79,6 +93,17 @@ public class GroupTenancyIT {
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(Group::getGroupId).toList())
         .containsExactlyInAnyOrder(GROUP_A, GROUP_B);
+  }
+
+  @Test
+  public void shouldReturnGroupMembershipsWithNoTenantAccess(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newUsersByGroupSearchRequest(GROUP_A).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().stream().map(GroupUser::getUsername).toList())
+        .containsExactlyInAnyOrder(ADMIN);
   }
 
   private static void createGroup(final CamundaClient camundaClient, final String group) {
@@ -94,6 +119,11 @@ public class GroupTenancyIT {
     camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
   }
 
+  private static void assignUserToGroup(
+      final CamundaClient camundaClient, final String username, final String group) {
+    camundaClient.newAssignUserToGroupCommand().username(username).groupId(group).send().join();
+  }
+
   private static void waitForGroupsBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
@@ -101,6 +131,17 @@ public class GroupTenancyIT {
         .untilAsserted(
             () -> {
               assertThat(camundaClient.newGroupsSearchRequest().send().join().items()).hasSize(2);
+            });
+  }
+
+  private static void waitForGroupMembershipsBeingExported(final CamundaClient camundaClient) {
+    Awaitility.await("should receive data from secondary storage")
+        .atMost(Duration.ofMinutes(1))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(camundaClient.newUsersByGroupSearchRequest(GROUP_A).send().join().items())
+                  .hasSize(1);
             });
   }
 }

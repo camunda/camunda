@@ -33,13 +33,13 @@ public record ProcessDefinitionInstanceStatisticsSort(List<FieldSorting> orderin
       return this;
     }
 
-    public Builder activeInstancesWithIncident() {
-      currentOrdering = new FieldSorting("activeInstancesWithIncident", null);
+    public Builder activeInstancesWithIncidentCount() {
+      currentOrdering = new FieldSorting("activeInstancesWithIncidentCount", null);
       return this;
     }
 
-    public Builder activeInstancesWithoutIncident() {
-      currentOrdering = new FieldSorting("activeInstancesWithoutIncident", null);
+    public Builder activeInstancesWithoutIncidentCount() {
+      currentOrdering = new FieldSorting("activeInstancesWithoutIncidentCount", null);
       return this;
     }
 

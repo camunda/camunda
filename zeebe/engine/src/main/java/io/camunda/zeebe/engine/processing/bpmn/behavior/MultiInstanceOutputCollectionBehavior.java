@@ -114,7 +114,8 @@ public final class MultiInstanceOutputCollectionBehavior {
   private Either<Failure, DirectBuffer> readOutputElementVariable(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     final var expression = element.getLoopCharacteristics().getOutputElement().orElseThrow();
-    return expressionProcessor.evaluateAnyExpression(expression, context.getElementInstanceKey());
+    return expressionProcessor.evaluateAnyExpressionToBuffer(
+        expression, context.getElementInstanceKey(), context.getTenantId());
   }
 
   private Either<Failure, DirectBuffer> replaceAt(

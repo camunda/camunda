@@ -9,20 +9,25 @@ package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toIncidentFilter;
+import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessDefinitionInstanceVersionStatisticsFilter;
 import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessInstanceFilter;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -65,6 +70,12 @@ public final class SearchQueryRequestMapper {
   public static final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter
       EMPTY_PROCESS_INSTANCE_FILTER =
           new io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter();
+
+  public static final io.camunda.zeebe.gateway.protocol.rest
+          .IncidentProcessInstanceStatisticsByDefinitionFilter
+      EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER =
+          new io.camunda.zeebe.gateway.protocol.rest
+              .IncidentProcessInstanceStatisticsByDefinitionFilter();
 
   private SearchQueryRequestMapper() {}
 
@@ -460,6 +471,24 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
+  public static Either<ProblemDetail, ClusterVariableQuery> toClusterVariableQuery(
+      final ClusterVariableSearchQueryRequest request) {
+
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.clusterVariableSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromClusterVariableSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::clusterVariable,
+            SearchQuerySortRequestMapper::applyClusterVariableSortField);
+    final ClusterVariableFilter filter =
+        SearchQueryFilterMapper.toClusterVariableFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::clusterVariableSearchQuery);
+  }
+
   public static Either<ProblemDetail, UserQuery> toUserQuery(final UserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
@@ -540,6 +569,22 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::authorizationSearchQuery);
   }
 
+  public static Either<ProblemDetail, AuditLogQuery> toAuditLogQuery(
+      final AuditLogSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromAuditLogSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::auditLog,
+            SearchQuerySortRequestMapper::applyAuditLogSortField);
+    final var filter = SearchQueryFilterMapper.toAuditLogFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
+  }
+
   public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQuery(
       final MessageSubscriptionSearchQuery request) {
     if (request == null) {
@@ -555,6 +600,27 @@ public final class SearchQueryRequestMapper {
     final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
+  }
+
+  public static Either<
+          ProblemDetail,
+          io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery>
+      toProcessDefinitionMessageSubscriptionStatisticsQuery(
+          final ProcessDefinitionMessageSubscriptionStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(
+          SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
+    }
+    final Either<List<String>, SearchQueryPage> page =
+        request.getPage() == null
+            ? Either.right(null)
+            : Either.right(toSearchQueryPage(request.getPage()));
+    final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
+    return buildSearchQuery(
+        filter,
+        Either.right(null),
+        page,
+        SearchQueryBuilders::processDefinitionMessageSubscriptionStatisticsQuery);
   }
 
   public static Either<ProblemDetail, CorrelatedMessageSubscriptionQuery>
@@ -583,16 +649,83 @@ public final class SearchQueryRequestMapper {
       return Either.right(SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().build());
     }
 
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toOffsetPagination(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromProcessDefinitionInstanceStatisticsQuerySortRequest(
                 request.getSort()),
             SortOptionBuilders::processDefinitionInstanceStatistics,
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceStatisticsSortField);
-    final var filter = toProcessInstanceFilter(request.getFilter());
+    final var filter =
+        FilterBuilders.processInstance().states(ProcessInstanceState.ACTIVE.name()).build();
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceStatisticsQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
+      toProcessDefinitionInstanceVersionStatisticsQuery(
+          final ProcessDefinitionInstanceVersionStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(
+          SearchQueryBuilders.processDefinitionInstanceVersionStatisticsQuery().build());
+    }
+
+    final var page = toOffsetPagination(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper
+                .fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(request.getSort()),
+            SortOptionBuilders::processDefinitionInstanceVersionStatistics,
+            SearchQuerySortRequestMapper::applyProcessDefinitionInstanceVersionStatisticsSortField);
+    final var filter = toProcessDefinitionInstanceVersionStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::processDefinitionInstanceVersionStatisticsQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery>
+      toIncidentProcessInstanceStatisticsByErrorQuery(
+          final IncidentProcessInstanceStatisticsByErrorQuery request) {
+    if (request == null) {
+      return Either.right(
+          SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build());
+    }
+
+    final var page = toOffsetPagination(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper
+                .fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(request.getSort()),
+            SortOptionBuilders::incidentProcessInstanceStatisticsByError,
+            SearchQuerySortRequestMapper::applyIncidentProcessInstanceStatisticsByErrorSortField);
+    final var filter = FilterBuilders.incident().build();
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::incidentProcessInstanceStatisticsByErrorQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery>
+      toIncidentProcessInstanceStatisticsByDefinitionQuery(
+          final IncidentProcessInstanceStatisticsByDefinitionQuery request) {
+    final var page = toOffsetPagination(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper
+                .fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
+                    request.getSort()),
+            SortOptionBuilders::incidentProcessInstanceStatisticsByDefinition,
+            SearchQuerySortRequestMapper
+                ::applyIncidentProcessInstanceStatisticsByDefinitionSortField);
+
+    final var filter =
+        SearchQueryFilterMapper.toIncidentProcessInstanceStatisticsByDefinitionFilter(
+            request.getFilter());
+    return buildSearchQuery(
+        filter,
+        sort,
+        page,
+        SearchQueryBuilders::incidentProcessInstanceStatisticsByDefinitionQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
@@ -629,14 +762,15 @@ public final class SearchQueryRequestMapper {
     return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
-  private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
-      final ProcessDefinitionInstanceStatisticsPageRequest requestedPage) {
+  private static Either<List<String>, SearchQueryPage> toOffsetPagination(
+      final OffsetPagination requestedPage) {
+
     if (requestedPage == null) {
       return Either.right(null);
     }
 
-    return Either.right(
-        SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom())));
+    // Delegate to the existing mapping
+    return Either.right(toSearchQueryPage(requestedPage));
   }
 
   private static <

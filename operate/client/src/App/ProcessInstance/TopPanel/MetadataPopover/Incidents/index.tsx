@@ -7,11 +7,9 @@
  */
 
 import {Loading} from '@carbon/react';
-import {incidentsStore} from 'modules/stores/incidents';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
 import {MultiIncidents} from './multiIncidents';
 import {SingleIncident} from './singleIncident';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Divider} from '../styled';
 
@@ -21,61 +19,58 @@ type Props = {
   elementId: string;
 };
 
-const Incidents: React.FC<Props> = ({
-  elementInstanceKey,
-  elementName,
-  elementId,
-}) => {
+const Incidents: React.FC<Props> = ({elementInstanceKey, elementName}) => {
   const {data, isLoading: isSearchingIncidents} =
-    useGetIncidentsByElementInstance(elementInstanceKey);
+    useGetIncidentsByElementInstance(elementInstanceKey, {
+      select: (data) => ({
+        totalIncidents: data.page.totalItems,
+        singleIncident: data.items.at(0) ?? null,
+      }),
+    });
+  const totalIncidents = data?.totalIncidents ?? 0;
+  const singleIncident = data?.singleIncident;
 
-  const singleIncident = data?.page.totalItems === 1 ? data?.items[0] : null;
-  const multiIncidents = data && data?.page.totalItems > 1 ? data.items : null;
+  if (isSearchingIncidents) {
+    return (
+      <Loading small withOverlay={false} data-testid="incidents-loading" />
+    );
+  }
 
-  return (
-    <>
-      {isSearchingIncidents ? (
-        <Loading small withOverlay={false} data-testid="incidents-loading" />
-      ) : singleIncident ? (
-        <>
-          <Divider />
-          <SingleIncident
-            incident={singleIncident}
-            onButtonClick={() => {
-              if (IS_INCIDENTS_PANEL_V2) {
-                return incidentsPanelStore.showIncidentsForElementInstance(
-                  elementInstanceKey,
-                  elementName,
-                );
-              }
-              incidentsStore.clearSelection();
-              incidentsStore.toggleFlowNodeSelection(elementId);
-              incidentsStore.toggleErrorTypeSelection(singleIncident.errorType);
-              incidentsStore.setIncidentBarOpen(true);
-            }}
-          />
-        </>
-      ) : data && multiIncidents ? (
-        <>
-          <Divider />
-          <MultiIncidents
-            count={data.page.totalItems}
-            onButtonClick={() => {
-              if (IS_INCIDENTS_PANEL_V2) {
-                return incidentsPanelStore.showIncidentsForElementInstance(
-                  elementInstanceKey,
-                  elementName,
-                );
-              }
-              incidentsStore.clearSelection();
-              incidentsStore.toggleFlowNodeSelection(elementId);
-              incidentsStore.setIncidentBarOpen(true);
-            }}
-          />
-        </>
-      ) : null}
-    </>
-  );
+  if (totalIncidents === 1 && singleIncident) {
+    return (
+      <>
+        <Divider />
+        <SingleIncident
+          incident={singleIncident}
+          onButtonClick={() => {
+            incidentsPanelStore.showIncidentsForElementInstance(
+              elementInstanceKey,
+              elementName,
+            );
+          }}
+        />
+      </>
+    );
+  }
+
+  if (totalIncidents > 1) {
+    return (
+      <>
+        <Divider />
+        <MultiIncidents
+          count={totalIncidents}
+          onButtonClick={() => {
+            incidentsPanelStore.showIncidentsForElementInstance(
+              elementInstanceKey,
+              elementName,
+            );
+          }}
+        />
+      </>
+    );
+  }
+
+  return null;
 };
 
 export {Incidents};

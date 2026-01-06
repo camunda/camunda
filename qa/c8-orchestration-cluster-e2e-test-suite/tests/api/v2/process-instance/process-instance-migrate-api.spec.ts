@@ -24,7 +24,7 @@ import {
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
-test.describe.parallel('Test process instance migrate API', () => {
+test.describe.serial('Test process instance migrate API', () => {
   const instanceKeys: string[] = [];
 
   test.beforeAll(async () => {

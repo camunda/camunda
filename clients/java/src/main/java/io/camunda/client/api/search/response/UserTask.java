@@ -19,6 +19,7 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface UserTask {
 
@@ -47,6 +48,9 @@ public interface UserTask {
 
   /** BPMN process id of the process associated with this task */
   String getBpmnProcessId();
+
+  /** Name of the process definition */
+  String getProcessName();
 
   /** Key of the process definition */
   Long getProcessDefinitionKey();
@@ -83,4 +87,7 @@ public interface UserTask {
 
   /** Priority of the task */
   Integer getPriority();
+
+  /** Tags associated with the task */
+  Set<String> getTags();
 }

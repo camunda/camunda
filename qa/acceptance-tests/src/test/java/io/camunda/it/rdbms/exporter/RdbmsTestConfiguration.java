@@ -8,8 +8,11 @@
 package io.camunda.it.rdbms.exporter;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -20,4 +23,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 public class RdbmsTestConfiguration {
 
   @MockitoBean private ActorScheduler actorScheduler;
+
+  @Bean
+  public Camunda camunda() {
+    return Mockito.mock(Camunda.class, Mockito.RETURNS_DEEP_STUBS);
+  }
 }

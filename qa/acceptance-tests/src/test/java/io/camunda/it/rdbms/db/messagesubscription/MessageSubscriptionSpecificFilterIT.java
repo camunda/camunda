@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.MessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -57,19 +57,19 @@ public class MessageSubscriptionSpecificFilterIT {
 
   @Autowired private MessageSubscriptionDbReader messageSubscriptionDbReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final MessageSubscriptionFilter filter) {
-    MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(rdbmsWriter);
+    MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(rdbmsWriters);
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(
-        rdbmsWriter,
+        rdbmsWriters,
         MessageSubscriptionFixtures.createRandomized(
             b ->
                 b.messageSubscriptionKey(MESSAGE_SUBSCRIPTION_KEY)

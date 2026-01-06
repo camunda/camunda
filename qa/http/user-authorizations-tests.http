@@ -217,7 +217,7 @@ Accept: application/json
 %}
 
 ###
-# @name create-authorization-positive
+# @name create-process-definition-authorization-positive
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
@@ -255,6 +255,136 @@ Accept: application/json
 %}
 
 ###
+# @name create-decision-requirements-definition-authorization-positive
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "DECISION_REQUIREMENTS_DEFINITION",
+  "resourceId": "test-decision-requirements-definition"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Authorization key should not be empty", function () {
+    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
+  });
+%}
+
+###
+# @name create-decision-requirements-definition-authorization-negative
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ",
+    "DELETE",
+    "UPDATE"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "DECISION_REQUIREMENTS_DEFINITION",
+  "resourceId": "test-resource"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/problem+json"), "Response is not problem+json");
+  });
+%}
+
+###
+# @name create-resource-authorization-positive
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "CREATE",
+    "DELETE_DRD",
+    "DELETE_PROCESS",
+    "DELETE_FORM",
+    "DELETE_RESOURCE",
+    "READ"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "RESOURCE",
+  "resourceId": "*"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Authorization key should not be empty", function () {
+    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
+  });
+%}
+
+###
+# @name create-resource-authorization-negative
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "CREATE",
+    "DELETE_DRD",
+    "DELETE_PROCESS",
+    "DELETE_FORM",
+    "DELETE_RESOURCE",
+    "READ",
+    "UPDATE",
+    "DELETE"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME}}",
+  "resourceType": "RESOURCE",
+  "resourceId": "*"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 400, "Response status is not 400");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/problem+json"), "Response is not problem+json");
+  });
+%}
+
+###
 # @name create-authorization-missing-fields
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -268,7 +398,7 @@ Accept: application/json
 > {%
   client.test("Authorization creation should fail due to missing fields", function () {
     client.assert(response.status === 400, "Expected 400, got " + response.status);
-    client.assert(response.body.detail === "No ownerType provided. No resourceId provided. No resourceType provided. No permissionTypes provided.");
+    client.assert(response.body.detail === "At least one of [resourceId, resourcePropertyName] is required");
   });
 %}
 
@@ -341,6 +471,96 @@ Accept: application/json
     authorizations.forEach(auth => {
       client.assert(auth.ownerId === expectedUsername, `Authorization ownerId mismatch: expected '${expectedUsername}', got '${auth.ownerId}'`);
     });
+  });
+%}
+
+###
+# @name test-configured-authorizations-search
+< {%
+  client.global.set("TEST_USERNAME", "test");
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "resourceId",
+      "order": "ASC"
+    }
+  ],
+  "filter": {
+    "ownerId": "{{TEST_USERNAME}}"
+  },
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Authorization search should be successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  let expectedUsername = client.global.get("TEST_USERNAME");
+
+  const authorizations = response.body.items;
+  client.test("Response should contain authorizations for the specified ownerId", function () {
+    client.assert(Array.isArray(authorizations), "Response items are not an array");
+    client.assert(authorizations.length > 0, "No authorizations found for the specified ownerId");
+    authorizations.forEach(auth => {
+      client.assert(auth.ownerId === expectedUsername, `Authorization ownerId mismatch: expected '${expectedUsername}', got '${auth.ownerId}'`);
+    });
+  });
+
+  const expectedAuthorizations = [
+    { resourceType: "AUTHORIZATION", permissions: ["CREATE","READ","UPDATE","DELETE"] },
+    { resourceType: "BATCH", permissions: ["CREATE","CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE","CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE","CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE","CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE","CREATE_BATCH_OPERATION_RESOLVE_INCIDENT","CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE","CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION","CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION","READ","UPDATE"] },
+    { resourceType: "CLUSTER_VARIABLE", permissions: ["DELETE","READ","CREATE"]},
+    { resourceType: "COMPONENT", permissions: ["ACCESS"] },
+    { resourceType: "DECISION_DEFINITION", permissions: ["CREATE_DECISION_INSTANCE","READ_DECISION_DEFINITION","READ_DECISION_INSTANCE","DELETE_DECISION_INSTANCE"] },
+    { resourceType: "DECISION_REQUIREMENTS_DEFINITION", permissions: ["READ"] },
+    { resourceType: "DOCUMENT", permissions: ["CREATE","READ","DELETE"] },
+    { resourceType: "GROUP", permissions: ["CREATE","READ","UPDATE","DELETE"] },
+    { resourceType: "MAPPING_RULE", permissions: ["CREATE","READ","UPDATE","DELETE"] },
+    { resourceType: "MESSAGE", permissions: ["CREATE","READ"] },
+    { resourceType: "PROCESS_DEFINITION", permissions: ["CREATE_PROCESS_INSTANCE","READ_PROCESS_DEFINITION","READ_PROCESS_INSTANCE","READ_USER_TASK","UPDATE_PROCESS_INSTANCE","UPDATE_USER_TASK","MODIFY_PROCESS_INSTANCE","CANCEL_PROCESS_INSTANCE","DELETE_PROCESS_INSTANCE"] },
+    { resourceType: "RESOURCE", permissions: ["CREATE","READ","DELETE_DRD","DELETE_FORM","DELETE_PROCESS","DELETE_RESOURCE"] },
+    { resourceType: "ROLE", permissions: ["CREATE","READ","UPDATE","DELETE"] },
+    { resourceType: "SYSTEM", permissions: ["READ","READ_USAGE_METRIC","UPDATE"] },
+    { resourceType: "TENANT", permissions: ["CREATE","READ","UPDATE","DELETE"] },
+    { resourceType: "USER", permissions: ["CREATE","READ","UPDATE","DELETE"] }
+  ];
+
+  client.test("Validate all expected authorizations and permissions are present", function () {
+    expectedAuthorizations.forEach(expected => {
+      const match = authorizations.find(a =>
+          a.resourceType === expected.resourceType &&
+          a.resourceId === "*" &&
+          Array.isArray(a.permissionTypes) &&
+          expected.permissions.every(p => a.permissionTypes.includes(p))
+      );
+
+      client.assert(match, `Missing or invalid authorization for resourceType '${expected.resourceType}'`);
+    });
+  });
+
+  client.test("No unexpected resource authorizations should be present", function () {
+    const expectedResourceTypes = expectedAuthorizations.map(e => e.resourceType).sort();
+    const actualResourceTypes = authorizations
+        .filter(a => !(a.resourceType === "USER" && a.resourceId !== "*"))
+        .map(a => a.resourceType)
+        .sort();
+    client.assert(JSON.stringify(expectedResourceTypes) === JSON.stringify(actualResourceTypes),
+        `Unexpected or missing resource types.\nExpected: ${expectedResourceTypes}\nActual: ${actualResourceTypes}`);
+    client.global.set("lastAuthorizations", authorizations);
   });
 %}
 
@@ -777,7 +997,7 @@ X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
 Content-Type: application/pdf
 
 < ./test.pdf
---boundary123
+--boundary123--
 
 > {%
   client.test("Document upload should be successful", function () {
@@ -813,7 +1033,7 @@ X-Document-Metadata: {"fileName": "test.pdf", "size": 1234567}
 Content-Type: application/pdf
 
 < ./test.pdf
---boundary123
+--boundary123--
 
 > {%
   client.test("Document upload should be unsuccessful", function () {

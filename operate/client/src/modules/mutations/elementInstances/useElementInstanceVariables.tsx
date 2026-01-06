@@ -18,15 +18,25 @@ function useElementInstanceVariables(
 ) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (variable: {name: string; value: string}) => {
-      const {error} = await updateElementInstanceVariables(elementInstanceKey, {
-        variables: {[variable.name]: JSON.parse(variable.value)},
-        local: true,
-      });
+  return useMutation<
+    void,
+    {status: number; statusText: string},
+    {name: string; value: string}
+  >({
+    mutationFn: async (variable) => {
+      const response = await updateElementInstanceVariables(
+        elementInstanceKey,
+        {
+          variables: {[variable.name]: JSON.parse(variable.value)},
+          local: true,
+        },
+      );
 
-      if (error !== null) {
-        throw new Error(error.response?.statusText);
+      if (!response.ok) {
+        throw {
+          status: response.status,
+          statusText: response.statusText,
+        };
       }
 
       await queryClient.fetchQuery({

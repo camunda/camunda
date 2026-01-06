@@ -28,14 +28,18 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ModifyProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.AncestorScopeInstruction;
 import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.client.protocol.rest.SourceElementInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.MoveInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction;
 import io.grpc.stub.StreamObserver;
@@ -59,6 +63,8 @@ public final class ModifyProcessInstanceCommandImpl
   private final Predicate<StatusCode> retryPredicate;
   private ActivateInstruction latestActivateInstruction;
   private ProcessInstanceModificationActivateInstruction latestActivateInstructionRest;
+  private MoveInstruction latestMoveInstruction;
+  private ProcessInstanceModificationMoveInstruction latestMoveInstructionRest;
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -107,6 +113,109 @@ public final class ModifyProcessInstanceCommandImpl
     return this;
   }
 
+  @Override
+  public ModifyProcessInstanceCommandStep2 terminateElements(final String elementId) {
+    requestBuilder.addTerminateInstructions(
+        TerminateInstruction.newBuilder().setElementId(elementId).build());
+    httpRequestObject.addTerminateInstructionsItem(
+        new ProcessInstanceModificationTerminateInstruction().elementId(elementId));
+    return this;
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElements(
+      final String sourceElementId, final String targetElementId) {
+    return moveElements(sourceElementId, targetElementId, EMPTY_ANCESTOR_KEY);
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElements(
+      final String sourceElementId,
+      final String targetElementId,
+      final long ancestorElementInstanceKey) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementId(sourceElementId)
+            .setTargetElementId(targetElementId)
+            .setAncestorElementInstanceKey(ancestorElementInstanceKey)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstruction(
+                new SourceElementInstruction().sourceType("byId").sourceElementId(sourceElementId))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction()
+                    .ancestorScopeType("direct")
+                    .ancestorElementInstanceKey(
+                        ParseUtil.keyToString(ancestorElementInstanceKey))));
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElementsWithInferredAncestor(
+      final String sourceElementId, final String targetElementId) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementId(sourceElementId)
+            .setTargetElementId(targetElementId)
+            .setInferAncestorScopeFromSourceHierarchy(true)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstruction(
+                new SourceElementInstruction().sourceType("byId").sourceElementId(sourceElementId))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction().ancestorScopeType("inferred")));
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey, final String targetElementId) {
+    return moveElement(sourceElementInstanceKey, targetElementId, EMPTY_ANCESTOR_KEY);
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElement(
+      final long sourceElementInstanceKey,
+      final String targetElementId,
+      final long ancestorElementInstanceKey) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementInstanceKey(sourceElementInstanceKey)
+            .setTargetElementId(targetElementId)
+            .setAncestorElementInstanceKey(ancestorElementInstanceKey)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstruction(
+                new SourceElementInstruction()
+                    .sourceType("byKey")
+                    .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey)))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction()
+                    .ancestorScopeType("direct")
+                    .ancestorElementInstanceKey(
+                        ParseUtil.keyToString(ancestorElementInstanceKey))));
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep3 moveElementWithInferredAncestor(
+      final long sourceElementInstanceKey, final String targetElementId) {
+    return addMoveInstruction(
+        MoveInstruction.newBuilder()
+            .setSourceElementInstanceKey(sourceElementInstanceKey)
+            .setTargetElementId(targetElementId)
+            .setInferAncestorScopeFromSourceHierarchy(true)
+            .build(),
+        new ProcessInstanceModificationMoveInstruction()
+            .sourceElementInstruction(
+                new SourceElementInstruction()
+                    .sourceType("byKey")
+                    .sourceElementInstanceKey(ParseUtil.keyToString(sourceElementInstanceKey)))
+            .targetElementId(targetElementId)
+            .ancestorScopeInstruction(
+                new AncestorScopeInstruction().ancestorScopeType("inferred")));
+  }
+
   private ModifyProcessInstanceCommandStep3 addActivateInstruction(
       final String elementId, final long ancestorElementInstanceKey) {
     final ActivateInstruction activateInstruction =
@@ -125,10 +234,22 @@ public final class ModifyProcessInstanceCommandImpl
     return this;
   }
 
+  private ModifyProcessInstanceCommandStep3 addMoveInstruction(
+      final MoveInstruction moveInstruction,
+      final ProcessInstanceModificationMoveInstruction moveInstructionRest) {
+    latestMoveInstruction = moveInstruction;
+    requestBuilder.addMoveInstructions(moveInstruction);
+    latestMoveInstructionRest = moveInstructionRest;
+    httpRequestObject.addMoveInstructionsItem(moveInstructionRest);
+    return this;
+  }
+
   @Override
   public ModifyProcessInstanceCommandStep1 and() {
     latestActivateInstruction = null;
     latestActivateInstructionRest = null;
+    latestMoveInstruction = null;
+    latestMoveInstructionRest = null;
     return this;
   }
 
@@ -146,8 +267,7 @@ public final class ModifyProcessInstanceCommandImpl
       buildRestRequest(variablesString, scopeId);
       return this;
     }
-    final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
+    addVariableInstructionToLatestInstruction(createVariableInstruction(variables, scopeId));
     return this;
   }
 
@@ -164,8 +284,7 @@ public final class ModifyProcessInstanceCommandImpl
       buildRestRequest(variables, scopeId);
       return this;
     }
-    final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
+    addVariableInstructionToLatestInstruction(createVariableInstruction(variables, scopeId));
     return this;
   }
 
@@ -183,8 +302,7 @@ public final class ModifyProcessInstanceCommandImpl
       buildRestRequest(variablesString, scopeId);
       return this;
     }
-    final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
+    addVariableInstructionToLatestInstruction(createVariableInstruction(variables, scopeId));
     return this;
   }
 
@@ -203,7 +321,7 @@ public final class ModifyProcessInstanceCommandImpl
       return this;
     }
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
+    addVariableInstructionToLatestInstruction(variableInstruction);
     return this;
   }
 
@@ -253,33 +371,53 @@ public final class ModifyProcessInstanceCommandImpl
         .variables(jsonMapper.fromJsonAsMap(variables));
   }
 
-  private void addVariableInstructionToLatestActivateInstruction(
+  private void addVariableInstructionToLatestInstruction(
       final VariableInstruction variableInstruction) {
-    // Grpc created immutable objects. Since we have already build the activate instruction before
-    // (in case it has no variables), we will have to remove this instruction. We can then copy it
-    // using toBuilder() and add the variable instructions we need. Then we need to re-add the
-    // activate instruction.
-    requestBuilder.removeActivateInstructions(
-        requestBuilder.getActivateInstructionsList().indexOf(latestActivateInstruction));
-    latestActivateInstruction =
-        latestActivateInstruction.toBuilder().addVariableInstructions(variableInstruction).build();
-    requestBuilder.addActivateInstructions(latestActivateInstruction);
+    // Grpc created immutable objects. Since we have already build the instruction before (in case
+    // it has no variables), we will have to remove this instruction. We can then copy it using
+    // toBuilder() and add the variable instructions we need. Then we need to re-add the
+    // instruction.
+    if (latestActivateInstruction != null) {
+      requestBuilder.removeActivateInstructions(
+          requestBuilder.getActivateInstructionsList().indexOf(latestActivateInstruction));
+      latestActivateInstruction =
+          latestActivateInstruction.toBuilder()
+              .addVariableInstructions(variableInstruction)
+              .build();
+      requestBuilder.addActivateInstructions(latestActivateInstruction);
+    } else {
+      requestBuilder.removeMoveInstructions(
+          requestBuilder.getMoveInstructionsList().indexOf(latestMoveInstruction));
+      latestMoveInstruction =
+          latestMoveInstruction.toBuilder().addVariableInstructions(variableInstruction).build();
+      requestBuilder.addMoveInstructions(latestMoveInstruction);
+    }
   }
 
-  private void addVariableInstructionToLatestActivateInstruction(
+  private void addVariableInstructionToLatestInstruction(
       final ModifyProcessInstanceVariableInstruction variableInstruction) {
-    httpRequestObject
-        .getActivateInstructions()
-        .remove(httpRequestObject.getActivateInstructions().indexOf(latestActivateInstructionRest));
-    latestActivateInstructionRest =
-        latestActivateInstructionRest.addVariableInstructionsItem(variableInstruction);
-    httpRequestObject.addActivateInstructionsItem(latestActivateInstructionRest);
+    if (latestActivateInstructionRest != null) {
+      latestActivateInstructionRest =
+          httpRequestObject
+              .getActivateInstructions()
+              .get(
+                  httpRequestObject
+                      .getActivateInstructions()
+                      .indexOf(latestActivateInstructionRest))
+              .addVariableInstructionsItem(variableInstruction);
+    } else {
+      latestMoveInstructionRest =
+          httpRequestObject
+              .getMoveInstructions()
+              .get(httpRequestObject.getMoveInstructions().indexOf(latestMoveInstructionRest))
+              .addVariableInstructionsItem(variableInstruction);
+    }
   }
 
   private void buildRestRequest(final String variables, final String scopeId) {
     final ModifyProcessInstanceVariableInstruction instruction =
         buildVariableRequest(variables, scopeId);
-    addVariableInstructionToLatestActivateInstruction(instruction);
+    addVariableInstructionToLatestInstruction(instruction);
   }
 
   @Override

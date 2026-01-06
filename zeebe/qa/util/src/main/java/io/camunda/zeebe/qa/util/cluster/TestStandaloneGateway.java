@@ -11,26 +11,28 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
-import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
-  private final GatewayBasedProperties config;
+  private final Camunda unifiedConfig;
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneGateway() {
@@ -38,25 +40,32 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
         // Unified Configuration classes
         UnifiedConfiguration.class,
         UnifiedConfigurationHelper.class,
+        PrimaryStorageBackupPropertiesOverride.class,
         TasklistPropertiesOverride.class,
         OperatePropertiesOverride.class,
         BrokerBasedPropertiesOverride.class,
+        GatewayBasedPropertiesOverride.class,
         ActorClockControlledPropertiesOverride.class,
         GatewayRestPropertiesOverride.class,
         IdleStrategyPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class,
+        SearchEngineRetentionPropertiesOverride.class,
         // ---
         GatewayModuleConfiguration.class,
         CommonsModuleConfiguration.class);
-    config = new GatewayBasedProperties();
 
-    config.getNetwork().setHost("0.0.0.0");
-    config.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
-    config.getCluster().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig = new Camunda();
 
+    unifiedConfig.getApi().getGrpc().setAddress("0.0.0.0");
+    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig
+        .getCluster()
+        .getNetwork()
+        .getInternalApi()
+        .setPort(SocketUtil.getNextAddress().getPort());
     //noinspection resource
-    withBean("config", config, GatewayBasedProperties.class).withAdditionalProfile(Profile.GATEWAY);
+    withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.GATEWAY);
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthentication().setUnprotectedApi(true);
@@ -76,12 +85,13 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(config.getCluster().getMemberId());
+    // Gateway member ID via property
+    return MemberId.from(property("zeebe.gateway.cluster.memberId", String.class, "gateway"));
   }
 
   @Override
   public String host() {
-    return config.getNetwork().getHost();
+    return unifiedConfig.getApi().getGrpc().getAddress();
   }
 
   @Override
@@ -89,23 +99,47 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     return true;
   }
 
+  /**
+   * Modifies the unified configuration (camunda.* properties).
+   *
+   * @param modifier a configuration function that accepts the Camunda configuration object
+   * @return itself for chaining
+   */
+  @Override
+  public TestStandaloneGateway withUnifiedConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(unifiedConfig);
+    return this;
+  }
+
   @Override
   public int mappedPort(final TestZeebePort port) {
     return switch (port) {
-      case GATEWAY -> config.getNetwork().getPort();
-      case CLUSTER -> config.getCluster().getPort();
+      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
+      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
   }
 
+  /**
+   * Returns the unified configuration object. This provides access to the camunda.* configuration
+   * structure.
+   *
+   * @return the Camunda unified configuration object
+   */
   @Override
-  public TestStandaloneGateway withGatewayConfig(final Consumer<GatewayCfg> modifier) {
-    modifier.accept(config);
-    return self();
+  public Camunda unifiedConfig() {
+    return unifiedConfig;
   }
 
-  @Override
-  public GatewayCfg gatewayConfig() {
-    return config;
+  /**
+   * Convenience method to modify cluster configuration using the unified configuration API.
+   *
+   * @param modifier a configuration function for cluster settings
+   * @return itself for chaining
+   */
+  public TestStandaloneGateway withClusterConfig(
+      final Consumer<io.camunda.configuration.Cluster> modifier) {
+    modifier.accept(unifiedConfig.getCluster());
+    return this;
   }
 }

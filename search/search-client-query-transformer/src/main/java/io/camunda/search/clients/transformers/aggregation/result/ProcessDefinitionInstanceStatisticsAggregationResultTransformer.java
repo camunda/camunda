@@ -18,10 +18,10 @@ import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
-import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ProcessDefinitionInstanceStatisticsAggregationResultTransformer
     implements AggregationResultTransformer<ProcessDefinitionInstanceStatisticsAggregationResult> {
@@ -43,12 +43,11 @@ public class ProcessDefinitionInstanceStatisticsAggregationResultTransformer
             ? Math.toIntExact(cardinalityAgg.docCount())
             : perProcessAggregations.size();
 
+    final var transformer = new ProcessInstanceEntityTransformer();
     final List<ProcessDefinitionInstanceStatisticsEntity> items =
-        perProcessAggregations.entrySet().stream()
+        perProcessAggregations.values().stream()
             .map(
-                entry -> {
-                  final String processId = entry.getKey();
-                  final AggregationResult agg = entry.getValue();
+                agg -> {
                   final long withIncidents =
                       agg.aggregations()
                           .getOrDefault(
@@ -60,31 +59,44 @@ public class ProcessDefinitionInstanceStatisticsAggregationResultTransformer
                               AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT, AggregationResult.EMPTY)
                           .docCount();
 
-                  final String latestProcessDefinitionName =
-                      entry
-                          .getValue()
-                          .aggregations()
-                          .get(AGGREGATION_NAME_LATEST_PROCESS_DEFINITION)
-                          .hits()
-                          .stream()
+                  final AggregationResult latestProcessDefinitionAgg =
+                      agg.aggregations()
+                          .getOrDefault(
+                              AGGREGATION_NAME_LATEST_PROCESS_DEFINITION, AggregationResult.EMPTY);
+
+                  final var latestProcessDefinitionHits = latestProcessDefinitionAgg.hits();
+                  if (latestProcessDefinitionHits == null) {
+                    return null;
+                  }
+
+                  final var processInstanceEntity =
+                      latestProcessDefinitionHits.stream()
                           .map(SearchQueryHit::source)
                           .filter(ProcessInstanceForListViewEntity.class::isInstance)
                           .map(ProcessInstanceForListViewEntity.class::cast)
-                          .map(new ProcessInstanceEntityTransformer()::apply)
-                          .map(ProcessInstanceEntity::processDefinitionName)
+                          .map(transformer::apply)
                           .findFirst()
                           .orElse(null);
 
+                  if (processInstanceEntity == null) {
+                    return null;
+                  }
+
                   final boolean hasMultipleVersions =
-                      agg.aggregations().get(AGGREGATION_NAME_VERSION_COUNT).docCount() > 1;
+                      agg.aggregations()
+                              .getOrDefault(AGGREGATION_NAME_VERSION_COUNT, AggregationResult.EMPTY)
+                              .docCount()
+                          > 1;
 
                   return new ProcessDefinitionInstanceStatisticsEntity(
-                      processId,
-                      latestProcessDefinitionName,
+                      processInstanceEntity.processDefinitionId(),
+                      processInstanceEntity.tenantId(),
+                      processInstanceEntity.processDefinitionName(),
                       hasMultipleVersions,
                       withoutIncidents,
                       withIncidents);
                 })
+            .filter(Objects::nonNull)
             .toList();
     return new ProcessDefinitionInstanceStatisticsAggregationResult(items, totalItems);
   }

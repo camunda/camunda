@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
@@ -25,5 +26,29 @@ public final class ProtocolTest {
   @Test
   public void testEndiannessConstant() {
     assertThat(Protocol.ENDIANNESS).isEqualTo(ByteOrder.LITTLE_ENDIAN);
+  }
+
+  @Test
+  public void shouldNotEncodeNegativeKeys() {
+    // given
+    final long value = -1029819L;
+
+    // when/then
+    assertThatThrownBy(() -> Protocol.encodePartitionId(128, value))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected to receive a positive value as key, but got: '-1029819'");
+  }
+
+  @Test
+  public void shouldNotEncodeKeyAlreadyEncoded() {
+    // given
+    final long value = 1029819L;
+    final long encoded = Protocol.encodePartitionId(128, value);
+
+    // when/then
+    assertThatThrownBy(() -> Protocol.encodePartitionId(128, encoded))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected that the provided value is smaller and doesn't contain the partition Id already, but got: '288230376152741563', which contains (partitionId=128)");
   }
 }

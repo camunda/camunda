@@ -17,7 +17,7 @@ import {EMPTY_MESSAGE, OPERATIONS_EXPANDED_PANEL_WIDTH} from './constants';
 import {InlineNotification} from '@carbon/react';
 import {ListSkeleton} from './Skeleton/ListSkeleton';
 import {OperationEntrySkeleton} from './Skeleton/OperationEntrySkeleton';
-import {useBatchOperations} from 'modules/queries/batch-operations/useBatchOperations';
+import {useInfiniteScrollBatchOperations} from 'modules/queries/batch-operations/useInfiniteScrollBatchOperations';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import {OPERATION_ENTRY_HEIGHT} from './OperationsEntry/constants';
 
@@ -51,7 +51,7 @@ const OperationsPanel: React.FC = observer(() => {
     fetchPreviousPage,
     hasPreviousPage,
     isFetchingPreviousPage,
-  } = useBatchOperations({
+  } = useInfiniteScrollBatchOperations({
     sort: [{field: 'endDate', order: 'desc'}],
   });
   const firstPageParam = getPageParam(data?.pageParams[0]);

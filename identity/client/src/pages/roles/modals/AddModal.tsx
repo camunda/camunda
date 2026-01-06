@@ -14,7 +14,7 @@ import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import { createRole } from "src/utility/api/roles";
 import { useNotifications } from "src/components/notifications";
-import { isValidId } from "src/utility/validate";
+import { isValidId, getIdPattern } from "src/utility/validate";
 
 type FormData = {
   roleName: string;
@@ -72,7 +72,11 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         name="roleId"
         control={control}
         rules={{
-          validate: (value) => isValidId(value) || t("pleaseEnterValidRoleId"),
+          validate: (value) =>
+            isValidId(value) ||
+            t("pleaseEnterValidRoleId", {
+              pattern: getIdPattern(),
+            }),
         }}
         render={({ field, fieldState }) => (
           <TextField

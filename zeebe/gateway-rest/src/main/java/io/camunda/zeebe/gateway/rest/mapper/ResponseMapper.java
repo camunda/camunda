@@ -20,6 +20,9 @@ import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.TopologyServices.Broker;
+import io.camunda.service.TopologyServices.Partition;
+import io.camunda.service.TopologyServices.Topology;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -28,6 +31,9 @@ import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.BrokerInfo;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionResult;
@@ -41,10 +47,12 @@ import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateConditionalResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
+import io.camunda.zeebe.gateway.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
@@ -54,12 +62,16 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResult;
+import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
+import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReference;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResult;
+import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskProperties;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateResult;
@@ -71,6 +83,8 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
@@ -78,6 +92,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -565,6 +580,22 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
+  public static ResponseEntity<Object> toConditionalEvaluationResponse(
+      final ConditionalEvaluationRecord brokerResponse) {
+    final var processInstances =
+        brokerResponse.getStartedProcessInstances().stream()
+            .map(
+                instance ->
+                    new ProcessInstanceReference()
+                        .processDefinitionKey(
+                            KeyUtil.keyToString(instance.getProcessDefinitionKey()))
+                        .processInstanceKey(KeyUtil.keyToString(instance.getProcessInstanceKey())))
+            .toList();
+
+    final var response = new EvaluateConditionalResult().processInstances(processInstances);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
   public static ResponseEntity<Object> toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
     final var response =
@@ -743,6 +774,79 @@ public final class ResponseMapper {
                     .inputName(evaluatedInputValue.getInputName())
                     .inputValue(evaluatedInputValue.getInputValue()))
         .toList();
+  }
+
+  public static ResponseEntity<Object> toClusterVariableCreateResponse(
+      final ClusterVariableRecord clusterVariableRecord) {
+    final var response =
+        new ClusterVariableResult()
+            .name(clusterVariableRecord.getName())
+            .value(clusterVariableRecord.getValue());
+    if (clusterVariableRecord.isTenantScoped()) {
+      response.scope(ClusterVariableScopeEnum.TENANT).tenantId(clusterVariableRecord.getTenantId());
+    } else {
+      response.scope(ClusterVariableScopeEnum.GLOBAL);
+    }
+    return ResponseEntity.ok(response);
+  }
+
+  public static ResponseEntity<Object> toClusterVariableDeleteResponse(
+      final ClusterVariableRecord unused) {
+    return ResponseEntity.noContent().build();
+  }
+
+  public static ResponseEntity<Object> toExpressionEvaluationResult(
+      final ExpressionRecord expressionRecord) {
+    final var response =
+        new ExpressionEvaluationResult()
+            .expression(expressionRecord.getExpression())
+            .result(expressionRecord.getResultValue())
+            .warnings(expressionRecord.getWarnings());
+    return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toTopologyResponse(final Topology topology) {
+    final var response = new TopologyResponse();
+    response
+        .clusterId(topology.clusterId())
+        .clusterSize(topology.clusterSize())
+        .gatewayVersion(topology.gatewayVersion())
+        .partitionsCount(topology.partitionsCount())
+        .replicationFactor(topology.replicationFactor())
+        .lastCompletedChangeId(KeyUtil.keyToString(topology.lastCompletedChangeId()));
+
+    topology
+        .brokers()
+        .forEach(
+            broker -> {
+              final var brokerInfo = new BrokerInfo();
+              addBrokerInfo(brokerInfo, broker);
+              addPartitionInfoToBrokerInfo(brokerInfo, broker.partitions());
+
+              response.addBrokersItem(brokerInfo);
+            });
+
+    return ResponseEntity.ok(response);
+  }
+
+  private static void addBrokerInfo(final BrokerInfo brokerInfo, final Broker broker) {
+    brokerInfo.setNodeId(broker.nodeId());
+    brokerInfo.setHost(broker.host());
+    brokerInfo.setPort(broker.port());
+    brokerInfo.setVersion(broker.version());
+  }
+
+  private static void addPartitionInfoToBrokerInfo(
+      final BrokerInfo brokerInfo, final List<Partition> partitions) {
+    partitions.forEach(
+        partition -> {
+          final var partitionDto = new io.camunda.zeebe.gateway.protocol.rest.Partition();
+
+          partitionDto.setPartitionId(partition.partitionId());
+          partitionDto.setRole(EnumUtil.convert(partition.role(), RoleEnum.class));
+          partitionDto.setHealth(EnumUtil.convert(partition.health(), HealthEnum.class));
+          brokerInfo.addPartitionsItem(partitionDto);
+        });
   }
 
   static class RestJobActivationResult

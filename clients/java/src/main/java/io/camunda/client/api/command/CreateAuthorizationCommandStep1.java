@@ -50,6 +50,14 @@ public interface CreateAuthorizationCommandStep1 {
      * @return the builder for this command
      */
     CreateAuthorizationCommandStep4 resourceId(String resourceId);
+
+    /**
+     * Sets the resource property name for the authorization.
+     *
+     * @param resourcePropertyName the property name of the resource
+     * @return the builder for this command
+     */
+    CreateAuthorizationCommandStep4 resourcePropertyName(String resourcePropertyName);
   }
 
   interface CreateAuthorizationCommandStep4 {

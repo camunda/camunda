@@ -20,12 +20,18 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_TIMEOU
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_JOBS_ACTIVE;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
+import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAMING_TIMEOUT;
 
 import java.time.Duration;
 import java.util.List;
 
 public class CamundaClientJobWorkerProperties {
+  public static final boolean DEFAULT_AUTO_COMPLETE = true;
+  public static final boolean DEFAULT_ENABLED = true;
+  public static final boolean DEFAULT_FORCE_FETCH_ALL_VARIABLES = false;
+  public static final int DEFAULT_MAX_RETRIES = 0;
 
   /** The type of jobs to work on. */
   private String type;
@@ -91,6 +97,9 @@ public class CamundaClientJobWorkerProperties {
    */
   private Integer maxRetries;
 
+  /** The backoff before a retry of a failed job is possible. */
+  private Duration retryBackoff;
+
   /**
    * This instantiates the properties without any defaults. Intended to be used by {@link
    * CamundaClientWorkerProperties#getOverride()}.
@@ -113,6 +122,13 @@ public class CamundaClientJobWorkerProperties {
       pollInterval = DEFAULT_JOB_POLL_INTERVAL;
       name = DEFAULT_JOB_WORKER_NAME_VAR;
       streamEnabled = DEFAULT_STREAM_ENABLED;
+      enabled = DEFAULT_ENABLED;
+      autoComplete = DEFAULT_AUTO_COMPLETE;
+      requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+      retryBackoff = Duration.ZERO;
+      forceFetchAllVariables = DEFAULT_FORCE_FETCH_ALL_VARIABLES;
+      maxRetries = DEFAULT_MAX_RETRIES;
+      streamTimeout = DEFAULT_STREAMING_TIMEOUT;
     }
   }
 
@@ -226,5 +242,13 @@ public class CamundaClientJobWorkerProperties {
 
   public void setMaxRetries(final Integer maxRetries) {
     this.maxRetries = maxRetries;
+  }
+
+  public Duration getRetryBackoff() {
+    return retryBackoff;
+  }
+
+  public void setRetryBackoff(final Duration retryBackoff) {
+    this.retryBackoff = retryBackoff;
   }
 }

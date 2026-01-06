@@ -1,0 +1,19 @@
+{
+  "testCases": [
+    {
+      "name": "Scenario 2: Test Case 1",
+      "description": "Test case description",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "variables": {
+            "order_id": "order-1"
+          }
+        }
+      ]
+    }
+  ]
+}

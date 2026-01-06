@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
@@ -140,6 +141,44 @@ public class BroadcastSignalMultiplePartitionsTest {
   }
 
   @Test
+  // Regression for https://github.com/camunda/camunda/issues/41576
+  public void shouldTriggerOnlyOneSignalStartEvent() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var signalName = newRandomSignal();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .signal(signalName)
+                .endEvent()
+                .done())
+        .deploy(DEFAULT_USER.getUsername());
+
+    waitForSignalSubscriptions(signalName, PARTITION_COUNT);
+
+    // when
+    final var broadcastedSignal =
+        ENGINE.signal().withSignalName(signalName).broadcast(DEFAULT_USER.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    r ->
+                        r.getKey() == broadcastedSignal.getKey()
+                            && r.getIntent().equals(CommandDistributionIntent.FINISHED))
+                .processInstanceRecords()
+                .withBpmnProcessId(processId)
+                .withElementType(BpmnElementType.PROCESS)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .hasSize(1)
+        .extracting(r -> r.getValue().getElementId(), Record::getPartitionId)
+        .containsOnly(tuple(processId, 1));
+  }
+
+  @Test
   public void shouldAuthorizeOnAllPartitions() {
     // given
     final String signalName = newRandomSignal();
@@ -160,16 +199,21 @@ public class BroadcastSignalMultiplePartitionsTest {
     ENGINE.signal().withSignalName(signalName).broadcastWithMetadata(user.getUsername());
 
     // then (rejection on partition hosting unauthorized process)
-    assertThat(
-            RecordingExporter.signalRecords(SignalIntent.BROADCAST)
-                .withSignalName(signalName)
-                .withPartitionId(2)
-                .withRecordType(RecordType.COMMAND_REJECTION)
-                .withRejectionReason(
-                    "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
-                        .formatted(otherProcessId))
-                .exists())
-        .isTrue();
+    await("signal broadcast rejection for unauthorized process")
+        .pollInterval(Duration.ofMillis(10))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        RecordingExporter.signalRecords(SignalIntent.BROADCAST)
+                            .withSignalName(signalName)
+                            .withPartitionId(2)
+                            .withRecordType(RecordType.COMMAND_REJECTION)
+                            .withRejectionReason(
+                                "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                                    .formatted(otherProcessId))
+                            .exists())
+                    .isTrue());
 
     // then - the signal distribution is still finished because a redistribution is not necessary
     assertThat(
@@ -201,16 +245,21 @@ public class BroadcastSignalMultiplePartitionsTest {
     ENGINE.signal().withSignalName(signalName).broadcastWithMetadata(user.getUsername());
 
     // then - the command is rejected on the partition that hosts the unauthorized process instance
-    assertThat(
-            RecordingExporter.signalRecords(SignalIntent.BROADCAST)
-                .withSignalName(signalName)
-                .withPartitionId(2)
-                .withRecordType(RecordType.COMMAND_REJECTION)
-                .withRejectionReason(
-                    "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
-                        .formatted(otherProcessId))
-                .exists())
-        .isTrue();
+    await("signal broadcast rejection for unauthorized process")
+        .pollInterval(Duration.ofMillis(10))
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        RecordingExporter.signalRecords(SignalIntent.BROADCAST)
+                            .withSignalName(signalName)
+                            .withPartitionId(2)
+                            .withRecordType(RecordType.COMMAND_REJECTION)
+                            .withRejectionReason(
+                                "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                                    .formatted(otherProcessId))
+                            .exists())
+                    .isTrue());
 
     // then - the signal distribution is still finished because a redistribution is not necessary
     assertThat(

@@ -16,7 +16,9 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.DecisionInstanceStateProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
@@ -31,8 +33,14 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by decisionInstanceId */
   DecisionInstanceFilter decisionInstanceId(String decisionInstanceId);
 
+  /** Filter by decisionInstanceId using {@link BasicStringProperty} consumer */
+  DecisionInstanceFilter decisionInstanceId(Consumer<BasicStringProperty> fn);
+
   /** Filter by state */
   DecisionInstanceFilter state(DecisionInstanceState state);
+
+  /** Filter by state using {@link DecisionInstanceStateProperty} consumer */
+  DecisionInstanceFilter state(Consumer<DecisionInstanceStateProperty> fn);
 
   /** Filter by evaluationFailure */
   DecisionInstanceFilter evaluationFailure(String evaluationFailure);

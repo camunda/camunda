@@ -114,6 +114,18 @@ public final class Protocol {
   public static final String LINKED_RESOURCES_HEADER_NAME = "linkedResources";
 
   public static long encodePartitionId(final int partitionId, final long key) {
+    if (key < 0) {
+      throw new IllegalArgumentException(
+          "Expected to receive a positive value as key, but got: '" + key + "'");
+    }
+    if (decodePartitionId(key) != 0) {
+      throw new IllegalArgumentException(
+          "Expected that the provided value is smaller and doesn't contain the partition Id already, but got: '"
+              + key
+              + "', which contains (partitionId="
+              + Protocol.decodePartitionId(key)
+              + ")");
+    }
     return ((long) partitionId << KEY_BITS) + key;
   }
 

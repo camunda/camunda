@@ -12,7 +12,7 @@ import {useProcessInstancesOverlayData} from './useOverlayData';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {useFilters} from 'modules/hooks/useFilters';
-import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 vi.mock('modules/hooks/useFilters');
@@ -31,12 +31,14 @@ describe('useProcessInstancesOverlayStatistics', () => {
   };
 
   beforeEach(() => {
-    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(
+      filterModule,
+      'useProcessInstanceStatisticsFilters',
+    ).mockReturnValue({filter: {}});
     mockedUseFilters.mockReturnValue({
       getFilters: () => mockFilters,
       setFilters: vi.fn(),
       areProcessInstanceStatesApplied: vi.fn(),
-      areDecisionInstanceStatesApplied: vi.fn(),
     });
   });
 

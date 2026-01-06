@@ -29,7 +29,7 @@ jobs:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
-    runs-on: gcp-core-8-default
+    runs-on: gcp-core-16-default
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     timeout-minutes: 31
     strategy:
@@ -84,11 +84,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@631423f4de7c6886352df8e4796bb5df19f4346f
+      uses: camunda/infra-global-github-actions/fossa/setup@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@631423f4de7c6886352df8e4796bb5df19f4346f
+      uses: camunda/infra-global-github-actions/fossa/info@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -111,7 +111,7 @@ jobs:
           optimize/pom.xml
 
     - name: Analyze project
-      uses: camunda/infra-global-github-actions/fossa/analyze@631423f4de7c6886352df8e4796bb5df19f4346f
+      uses: camunda/infra-global-github-actions/fossa/analyze@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -123,7 +123,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@631423f4de7c6886352df8e4796bb5df19f4346f
+      uses: camunda/infra-global-github-actions/fossa/pr-check@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}

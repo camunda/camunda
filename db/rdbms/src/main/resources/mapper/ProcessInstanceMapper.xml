@@ -298,7 +298,7 @@
       <foreach collection="filter.errorMessageOperations" item="operation">
         AND EXISTS (
         SELECT 1
-        FROM INCIDENT i
+        FROM ${prefix}INCIDENT i
         WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
         AND i.ERROR_MESSAGE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
@@ -310,7 +310,7 @@
       <foreach collection="filter.incidentErrorHashCodeOperations" item="operation">
         AND EXISTS (
         SELECT 1
-        FROM INCIDENT i
+        FROM ${prefix}INCIDENT i
         WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
         AND i.ERROR_MESSAGE_HASH
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
@@ -403,7 +403,7 @@
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
-    UPDATE PROCESS_INSTANCE
+    UPDATE ${prefix}PROCESS_INSTANCE
     SET PROCESS_DEFINITION_ID       = #{processDefinitionId},
         PROCESS_DEFINITION_KEY      = #{processDefinitionKey},
         STATE                       = #{state},
@@ -421,7 +421,7 @@
 
   <update id="updateStateAndEndDate"
     parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$EndProcessInstanceDto">
-    UPDATE ${prefix}PROCESS_INSTANCE p
+    UPDATE ${prefix}PROCESS_INSTANCE
     SET STATE    = #{state},
         END_DATE = #{endDate}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
@@ -439,11 +439,11 @@
     WHERE PROCESS_INSTANCE_KEY = #{id}
   </update>
 
-  <insert id="insertTags" parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$ProcessInstanceTagsDto">
+  <insert id="insertTags" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
     INSERT INTO ${prefix}PROCESS_INSTANCE_TAG (PROCESS_INSTANCE_KEY, TAG_VALUE)
     VALUES
-      <foreach collection="tags" item="item" separator=",">
-        (#{processInstanceKey}, #{item.tagValue})
+      <foreach collection="tags" item="tag" separator=",">
+        (#{processInstanceKey}, #{tag})
       </foreach>
   </insert>
 
@@ -460,4 +460,13 @@
     <bind name="tableName" value="'PROCESS_INSTANCE'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}PROCESS_INSTANCE
+    WHERE PROCESS_INSTANCE_KEY IN
+    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+
 </mapper>

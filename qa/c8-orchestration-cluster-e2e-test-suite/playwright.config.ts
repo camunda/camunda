@@ -10,10 +10,23 @@ const testRailOptions = {
 };
 
 const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
+const isApiTestsOnly = process.env.API_TESTS_ONLY === 'true';
 
 // Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
 const isV2ModeEnabled =
   process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
+
+// Determine the test type for Slack reporting
+function getTestTypeLabel(): string {
+  if (isV2StatelessTestsOnly) {
+    return `Nightly V2 Stateless Test Results for Mono Repo - ${process.env.VERSION}`;
+  }
+  if (isApiTestsOnly) {
+    return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}`;
+  }
+  const tasklistMode = isV2ModeEnabled ? 'V2' : 'V1';
+  return `Nightly Test Results for Mono Repo - ${process.env.VERSION} (Tasklist ${tasklistMode})`;
+}
 
 // Reporters
 const useReportersWithoutSlack: any[] = [
@@ -32,9 +45,7 @@ const useReportersWithSlack: any[] = [
       showInThread: true,
       meta: [
         {
-          key: isV2StatelessTestsOnly
-            ? `Nightly V2 Stateless Test Results for Mono Repo - ${process.env.VERSION}`
-            : `Nightly Test Results for Mono Repo - ${process.env.VERSION}`,
+          key: getTestTypeLabel(),
           value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}|📊>`,
         },
       ],
@@ -54,6 +65,20 @@ const changedFolders =
 // Projects
 const normalProjects = [
   {
+    name: 'api-tests',
+    testMatch: ['tests/api/**/*.spec.ts'],
+    testIgnore: ['tests/api/v2/clock/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    teardown: 'clock-api-tests',
+  },
+  {
+    name: 'clock-api-tests',
+    testMatch: ['tests/api/v2/clock/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
+  },
+  {
     name: 'chromium',
     use: devices['Desktop Chrome'],
     testMatch: changedFolders.includes('chromium')
@@ -70,8 +95,13 @@ const normalProjects = [
           'v2-stateless-tests/**',
           'tests/tasklist/v1/**',
           'tests/common-flows/v1/**',
+          'tests/api/**/*.spec.ts',
         ]
-      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+      : [
+          'tests/tasklist/v1/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/api/**/*.spec.ts',
+        ],
     teardown: 'chromium-subset',
   },
   {
@@ -80,7 +110,7 @@ const normalProjects = [
       ? 'tests/tasklist/task-panel.spec.ts'
       : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Chrome'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'firefox',
@@ -99,8 +129,13 @@ const normalProjects = [
           'v2-stateless-tests/**',
           'tests/tasklist/v1/**',
           'tests/common-flows/v1/**',
+          'tests/api/**/*.spec.ts',
         ]
-      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+      : [
+          'tests/tasklist/v1/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/api/**/*.spec.ts',
+        ],
     teardown: 'firefox-subset',
   },
   {
@@ -109,7 +144,7 @@ const normalProjects = [
       ? 'tests/tasklist/task-panel.spec.ts'
       : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Firefox'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'msedge',
@@ -128,8 +163,13 @@ const normalProjects = [
           'v2-stateless-tests/**',
           'tests/tasklist/v1/**',
           'tests/common-flows/v1/**',
+          'tests/api/**/*.spec.ts',
         ]
-      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
+      : [
+          'tests/tasklist/v1/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/api/**/*.spec.ts',
+        ],
     teardown: 'msedge-subset',
   },
   {
@@ -138,7 +178,7 @@ const normalProjects = [
       ? 'tests/tasklist/task-panel.spec.ts'
       : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Edge'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'tasklist-v1-e2e',
@@ -147,6 +187,7 @@ const normalProjects = [
     testIgnore: [
       'tests/tasklist/v1/task-panel.spec.ts',
       'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
     ],
     teardown: 'chromium-subset',
   },
@@ -154,14 +195,24 @@ const normalProjects = [
     name: 'tasklist-v2-e2e',
     testMatch: ['tests/tasklist/*.spec.ts'],
     use: devices['Desktop Edge'],
-    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    testIgnore: [
+      'tests/tasklist/task-panel.spec.ts',
+      'v2-stateless-tests/**',
+      'tests/api/**/*.spec.ts',
+    ],
     teardown: 'chromium-subset',
   },
   {
     name: 'identity-e2e',
     testMatch: ['tests/identity/*.spec.ts'],
     use: devices['Desktop Chrome'],
-    testIgnore: 'v2-stateless-tests/**',
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
+  {
+    name: 'operate-e2e',
+    testMatch: ['tests/operate/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
 ];
 

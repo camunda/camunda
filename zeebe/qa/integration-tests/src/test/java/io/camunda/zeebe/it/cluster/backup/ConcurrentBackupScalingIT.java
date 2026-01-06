@@ -12,7 +12,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import feign.FeignException;
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -48,14 +48,16 @@ final class ConcurrentBackupScalingIT {
           .withPartitionsCount(1)
           .withEmbeddedGateway(false)
           .withBrokerConfig(
-              b ->
-                  b.withBrokerConfig(
-                      bb -> {
-                        bb.getCluster()
-                            .getMembership()
-                            .setSyncInterval(Duration.ofSeconds(1))
-                            .setGossipInterval(Duration.ofMillis(500));
-                      }))
+              b -> {
+                b.unifiedConfig()
+                    .getCluster()
+                    .getMembership()
+                    .setSyncInterval(Duration.ofSeconds(1));
+                b.unifiedConfig()
+                    .getCluster()
+                    .getMembership()
+                    .setGossipInterval(Duration.ofMillis(500));
+              })
           .withNodeConfig(this::configureNode)
           .build();
 
@@ -113,12 +115,17 @@ final class ConcurrentBackupScalingIT {
   }
 
   private void configureBackup(final TestStandaloneBroker broker) {
-    broker.withBrokerConfig(
+    broker.withUnifiedConfig(
         cfg -> {
-          final var backup = cfg.getData().getBackup();
-          backup.setStore(BackupStoreType.FILESYSTEM);
-          final var fileSystem = backup.getFilesystem();
-          fileSystem.setBasePath(backupBasePath.toAbsolutePath().toString());
+          cfg.getData()
+              .getPrimaryStorage()
+              .getBackup()
+              .setStore(PrimaryStorageBackup.BackupStoreType.FILESYSTEM);
+          cfg.getData()
+              .getPrimaryStorage()
+              .getBackup()
+              .getFilesystem()
+              .setBasePath(backupBasePath.toAbsolutePath().toString());
         });
   }
 

@@ -36,6 +36,7 @@ public class UserTaskEntityMapper {
         dbModel.externalFormReference(),
         dbModel.processDefinitionVersion(),
         dbModel.customHeaders(),
-        dbModel.priority());
+        dbModel.priority(),
+        dbModel.tags());
   }
 }

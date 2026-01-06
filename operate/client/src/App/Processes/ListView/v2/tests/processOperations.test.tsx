@@ -10,28 +10,23 @@ import {render, screen} from 'modules/testing-library';
 import {ListView} from '..';
 import {createWrapper} from './mocks';
 import {
-  groupedProcessesMock,
+  mockProcessDefinitions,
   mockProcessXML,
   createUser,
+  mockProcessInstancesV2,
 } from 'modules/testUtils';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
-    });
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
       items: [],
@@ -46,7 +41,18 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should show delete button when version is selected', async () => {
-    const queryString = '?process=demoProcess&version=1';
+    mockSearchProcessInstances().withSuccess(mockProcessInstancesV2);
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    const queryString =
+      '?active=true&incidents=true&process=demoProcess&version=1';
 
     vi.stubGlobal('location', {
       ...window.location,
@@ -74,6 +80,15 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when no process is selected', async () => {
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     render(<ListView />, {
       wrapper: createWrapper('/processes'),
     });
@@ -94,7 +109,16 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when no version is selected', async () => {
-    const queryString = '?process=demoProcess';
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    const queryString = '?active=true&incidents=true&process=demoProcess';
 
     vi.stubGlobal('location', {
       ...window.location,
@@ -121,6 +145,11 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should show delete button when user has resource based permissions', async () => {
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     const queryString = '?process=demoProcess&version=1';
 
     vi.stubGlobal('location', {
@@ -143,6 +172,11 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     const queryString = '?process=demoProcess&version=1';
 
     vi.stubGlobal('location', {

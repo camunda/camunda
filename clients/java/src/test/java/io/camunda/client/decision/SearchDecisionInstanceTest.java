@@ -64,7 +64,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     final DecisionInstanceSearchQuery request =
         gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
     assertThat(request.getFilter().getDecisionEvaluationKey()).isEqualTo("1");
-    assertThat(request.getFilter().getState()).isEqualTo(DecisionInstanceStateEnum.FAILED);
+    assertThat(request.getFilter().getState().get$Eq()).isEqualTo(DecisionInstanceStateEnum.FAILED);
     assertThat(request.getFilter().getEvaluationFailure()).isEqualTo("ef");
     assertThat(request.getFilter().getDecisionDefinitionType())
         .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
@@ -134,6 +134,48 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     final DateTimeFilterProperty evaluationDate = filter.getEvaluationDate();
     assertThat(evaluationDate).isNotNull();
     assertThat(evaluationDate.get$Neq()).isEqualTo(now.toString());
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByDecisionInstanceIdStringProperty() {
+    // when
+    client
+        .newDecisionInstanceSearchRequest()
+        .filter(f -> f.decisionInstanceId(b -> b.in("id1", "id2")))
+        .send()
+        .join();
+
+    // then
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
+    final DecisionInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final BasicStringFilterProperty decisionEvaluationInstanceKey =
+        filter.getDecisionEvaluationInstanceKey();
+    assertThat(decisionEvaluationInstanceKey).isNotNull();
+    assertThat(decisionEvaluationInstanceKey.get$In()).isEqualTo(Arrays.asList("id1", "id2"));
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByStateProperty() {
+    // when
+    client
+        .newDecisionInstanceSearchRequest()
+        .filter(
+            f -> f.state(b -> b.in(DecisionInstanceState.EVALUATED, DecisionInstanceState.FAILED)))
+        .send()
+        .join();
+
+    // then
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
+    final DecisionInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final DecisionInstanceStateFilterProperty state = filter.getState();
+    assertThat(state).isNotNull();
+    assertThat(state.get$In())
+        .isEqualTo(
+            Arrays.asList(DecisionInstanceStateEnum.EVALUATED, DecisionInstanceStateEnum.FAILED));
   }
 
   @Test

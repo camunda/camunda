@@ -8,15 +8,17 @@
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.ResponseMapper.formatDate;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -30,11 +32,15 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -51,8 +57,16 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.entity.ClusterMetadata.AppName;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogActorTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogCategoryEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogEntityTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogOperationTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogResult;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogResultEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationActorTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
@@ -62,6 +76,10 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionResult;
 import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -86,6 +104,10 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
@@ -103,9 +125,12 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
@@ -243,7 +268,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessDefinitionInstanceStatisticsQueryResult
       toProcessInstanceStatisticsQueryResult(
           final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
-    final var page = toProcessDefinitionInstanceStatisticsPageResponse(result);
+    final var page = toSearchQueryPageResponse(result);
     return new ProcessDefinitionInstanceStatisticsQueryResult()
         .page(page)
         .items(
@@ -252,14 +277,87 @@ public final class SearchQueryResponseMapper {
                 .toList());
   }
 
+  public static ProcessDefinitionInstanceVersionStatisticsQueryResult
+      toProcessInstanceVersionStatisticsQueryResult(
+          final SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ProcessDefinitionInstanceVersionStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceVersionStatisticsResult)
+                .toList());
+  }
+
   private static ProcessDefinitionInstanceStatisticsResult toProcessInstanceStatisticsResult(
       final ProcessDefinitionInstanceStatisticsEntity result) {
     return new ProcessDefinitionInstanceStatisticsResult()
         .processDefinitionId(result.processDefinitionId())
+        .tenantId(result.tenantId())
         .latestProcessDefinitionName(result.latestProcessDefinitionName())
         .hasMultipleVersions(result.hasMultipleVersions())
         .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
         .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
+  }
+
+  private static ProcessDefinitionInstanceVersionStatisticsResult
+      toProcessInstanceVersionStatisticsResult(
+          final ProcessDefinitionInstanceVersionStatisticsEntity result) {
+    return new ProcessDefinitionInstanceVersionStatisticsResult()
+        .processDefinitionId(result.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionName(result.processDefinitionName())
+        .tenantId(result.tenantId())
+        .processDefinitionVersion(result.processDefinitionVersion())
+        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
+        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
+  }
+
+  public static IncidentProcessInstanceStatisticsByErrorQueryResult
+      toIncidentProcessInstanceStatisticsByErrorResult(
+          final SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentProcessInstanceStatisticsByErrorQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toIncidentProcessInstanceStatisticsByErrorResult)
+                .toList());
+  }
+
+  private static IncidentProcessInstanceStatisticsByErrorResult
+      toIncidentProcessInstanceStatisticsByErrorResult(
+          final IncidentProcessInstanceStatisticsByErrorEntity result) {
+    return new IncidentProcessInstanceStatisticsByErrorResult()
+        .errorHashCode(result.errorHashCode())
+        .errorMessage(result.errorMessage())
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionQueryResult
+      toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
+          final SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentProcessInstanceStatisticsByDefinitionQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(
+                    SearchQueryResponseMapper
+                        ::toIncidentProcessInstanceStatisticsByDefinitionResult)
+                .toList());
+  }
+
+  private static IncidentProcessInstanceStatisticsByDefinitionResult
+      toIncidentProcessInstanceStatisticsByDefinitionResult(
+          final IncidentProcessInstanceStatisticsByDefinitionEntity result) {
+    return new IncidentProcessInstanceStatisticsByDefinitionResult()
+        .processDefinitionId(result.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionName(result.processDefinitionName())
+        .processDefinitionVersion(result.processDefinitionVersion())
+        .tenantId(result.tenantId())
+        .activeInstancesWithErrorCount(result.activeInstancesWithErrorCount());
   }
 
   public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
@@ -559,14 +657,6 @@ public final class SearchQueryResponseMapper {
         .endCursor(result.endCursor());
   }
 
-  private static ProcessDefinitionInstanceStatisticsPageResponse
-      toProcessDefinitionInstanceStatisticsPageResponse(final SearchQueryResult<?> result) {
-
-    return new ProcessDefinitionInstanceStatisticsPageResponse()
-        .totalItems(result.total())
-        .hasMoreTotalItems(result.hasMoreTotalItems());
-  }
-
   private static List<ProcessDefinitionResult> toProcessDefinitions(
       final List<ProcessDefinitionEntity> processDefinitions) {
     return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
@@ -615,7 +705,9 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
         .elementId(job.elementId())
         .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
-        .tenantId(job.tenantId());
+        .tenantId(job.tenantId())
+        .creationTime(formatDate(job.creationTime()))
+        .lastUpdateTime(formatDate(job.lastUpdateTime()));
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
@@ -648,6 +740,12 @@ public final class SearchQueryResponseMapper {
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
+        .actorType(
+            ofNullable(entity.actorType())
+                .map(Enum::name)
+                .map(BatchOperationActorTypeEnum::fromValue)
+                .orElse(null))
+        .actorId(entity.actorId())
         .operationsTotalCount(entity.operationsTotalCount())
         .operationsFailedCount(entity.operationsFailedCount())
         .operationsCompletedCount(entity.operationsCompletedCount())
@@ -849,7 +947,9 @@ public final class SearchQueryResponseMapper {
         .version(d.version())
         .decisionDefinitionId(d.decisionDefinitionId())
         .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
-        .decisionRequirementsId(d.decisionRequirementsId());
+        .decisionRequirementsId(d.decisionRequirementsId())
+        .decisionRequirementsName(d.decisionRequirementsName())
+        .decisionRequirementsVersion(d.decisionRequirementsVersion());
   }
 
   public static DecisionRequirementsResult toDecisionRequirements(
@@ -966,7 +1066,8 @@ public final class SearchQueryResponseMapper {
         .externalFormReference(t.externalFormReference())
         .processDefinitionVersion(t.processDefinitionVersion())
         .customHeaders(t.customHeaders())
-        .priority(t.priority());
+        .priority(t.priority())
+        .tags(t.tags());
   }
 
   public static FormResult toFormItem(final FormEntity f) {
@@ -1122,29 +1223,30 @@ public final class SearchQueryResponseMapper {
   }
 
   public static VariableSearchQueryResult toVariableSearchQueryResponse(
-      final SearchQueryResult<VariableEntity> result) {
+      final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
     final var page = toSearchQueryPageResponse(result);
     return new VariableSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toVariables)
+                .map(entity -> toVariables(entity, truncateValues))
                 .orElseGet(Collections::emptyList));
   }
 
   private static List<VariableSearchResult> toVariables(
-      final List<VariableEntity> variableEntities) {
-    return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
+      final List<VariableEntity> variableEntities, final boolean truncateValues) {
+    return variableEntities.stream().map(entity -> toVariable(entity, truncateValues)).toList();
   }
 
-  private static VariableSearchResult toVariable(final VariableEntity variableEntity) {
+  private static VariableSearchResult toVariable(
+      final VariableEntity variableEntity, final boolean truncateValues) {
     return new VariableSearchResult()
         .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
         .name(variableEntity.name())
-        .value(variableEntity.value())
+        .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
-        .isTruncated(variableEntity.isPreview())
+        .isTruncated(truncateValues && variableEntity.isPreview())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
   }
 
@@ -1152,10 +1254,77 @@ public final class SearchQueryResponseMapper {
     return new VariableResult()
         .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
         .name(variableEntity.name())
-        .value(variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value())
+        .value(getFullValueIfPresent(variableEntity))
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
+  }
+
+  private static String getFullValueIfPresent(final VariableEntity variableEntity) {
+    return variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value();
+  }
+
+  public static ClusterVariableSearchQueryResult toClusterVariableSearchQueryResponse(
+      final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ClusterVariableSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    clusterVariableEntities ->
+                        toClusterVariablesSearchResult(clusterVariableEntities, truncateValues))
+                .orElseGet(Collections::emptyList));
+  }
+
+  private static List<ClusterVariableSearchResult> toClusterVariablesSearchResult(
+      final List<ClusterVariableEntity> clusterVariableEntities, final boolean truncateValues) {
+    return clusterVariableEntities.stream()
+        .map(
+            clusterVariableEntity ->
+                toClusterVariableSearchResult(clusterVariableEntity, truncateValues))
+        .toList();
+  }
+
+  public static ClusterVariableSearchResult toClusterVariableSearchResult(
+      final ClusterVariableEntity clusterVariableEntity, final boolean truncateValues) {
+    final var clusterVariableResult =
+        new ClusterVariableSearchResult()
+            .name(clusterVariableEntity.name())
+            .value(
+                !truncateValues
+                    ? getFullValueIfPresent(clusterVariableEntity)
+                    : clusterVariableEntity.value())
+            .isTruncated(truncateValues && clusterVariableEntity.isPreview());
+    return switch (clusterVariableEntity.scope()) {
+      case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
+      case TENANT ->
+          clusterVariableResult
+              .scope(ClusterVariableScopeEnum.TENANT)
+              .tenantId(clusterVariableEntity.tenantId());
+    };
+  }
+
+  public static ClusterVariableResult toClusterVariableResult(
+      final ClusterVariableEntity clusterVariableEntity) {
+
+    final var clusterVariableResult =
+        new ClusterVariableResult()
+            .name(clusterVariableEntity.name())
+            .value(getFullValueIfPresent(clusterVariableEntity));
+    return switch (clusterVariableEntity.scope()) {
+      case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
+      case TENANT ->
+          clusterVariableResult
+              .scope(ClusterVariableScopeEnum.TENANT)
+              .tenantId(clusterVariableEntity.tenantId());
+    };
+  }
+
+  private static String getFullValueIfPresent(final ClusterVariableEntity clusterVariableEntity) {
+    return clusterVariableEntity.isPreview()
+        ? clusterVariableEntity.fullValue()
+        : clusterVariableEntity.value();
   }
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
@@ -1174,21 +1343,81 @@ public final class SearchQueryResponseMapper {
   }
 
   public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
-    final var resourceId =
-        (WILDCARD.getMatcher().value() == authorization.resourceMatcher())
-            ? "*"
-            : authorization.resourceId();
     return new AuthorizationResult()
         .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
         .ownerId(authorization.ownerId())
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .resourceId(resourceId)
+        .resourceId(defaultIfEmpty(authorization.resourceId(), null))
+        .resourcePropertyName(defaultIfEmpty(authorization.resourcePropertyName(), null))
         .permissionTypes(
             authorization.permissionTypes().stream()
                 .map(PermissionType::name)
                 .map(PermissionTypeEnum::fromValue)
                 .toList());
+  }
+
+  public static AuditLogSearchQueryResult toAuditLogSearchQueryResponse(
+      final SearchQueryResult<AuditLogEntity> result) {
+    return new AuditLogSearchQueryResult()
+        .items(toAuditLogs(result.items()))
+        .page(toSearchQueryPageResponse(result));
+  }
+
+  private static List<AuditLogResult> toAuditLogs(final List<AuditLogEntity> auditLogs) {
+    return auditLogs.stream().map(SearchQueryResponseMapper::toAuditLog).toList();
+  }
+
+  public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
+    return new AuditLogResult()
+        .auditLogKey(auditLog.auditLogKey())
+        .entityKey(auditLog.entityKey())
+        .entityType(
+            ofNullable(auditLog.entityType())
+                .map(Enum::name)
+                .map(AuditLogEntityTypeEnum::fromValue)
+                .orElse(null))
+        .operationType(
+            ofNullable(auditLog.operationType())
+                .map(Enum::name)
+                .map(AuditLogOperationTypeEnum::fromValue)
+                .orElse(null))
+        .batchOperationKey(KeyUtil.keyToString(auditLog.batchOperationKey()))
+        .batchOperationType(
+            ofNullable(auditLog.batchOperationType())
+                .map(Enum::name)
+                .map(BatchOperationTypeEnum::fromValue)
+                .orElse(null))
+        .timestamp(formatDate(auditLog.timestamp()))
+        .actorId(auditLog.actorId())
+        .actorType(
+            ofNullable(auditLog.actorType())
+                .map(Enum::name)
+                .map(AuditLogActorTypeEnum::fromValue)
+                .orElse(null))
+        .tenantId(auditLog.tenantId())
+        .result(
+            ofNullable(auditLog.result())
+                .map(Enum::name)
+                .map(AuditLogResultEnum::fromValue)
+                .orElse(null))
+        .annotation(auditLog.annotation())
+        .category(
+            ofNullable(auditLog.category())
+                .map(Enum::name)
+                .map(AuditLogCategoryEnum::fromValue)
+                .orElse(null))
+        .processDefinitionId(auditLog.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(auditLog.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(auditLog.processInstanceKey()))
+        .elementInstanceKey(KeyUtil.keyToString(auditLog.elementInstanceKey()))
+        .jobKey(KeyUtil.keyToString(auditLog.jobKey()))
+        .userTaskKey(KeyUtil.keyToString(auditLog.userTaskKey()))
+        .decisionRequirementsId(auditLog.decisionRequirementsId())
+        .decisionRequirementsKey(KeyUtil.keyToString(auditLog.decisionRequirementsKey()))
+        .decisionDefinitionId(auditLog.decisionDefinitionId())
+        .decisionDefinitionKey(KeyUtil.keyToString(auditLog.decisionDefinitionKey()))
+        .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()));
   }
 
   private static ProcessInstanceStateEnum toProtocolState(
@@ -1218,6 +1447,36 @@ public final class SearchQueryResponseMapper {
             processInstanceEntity.processDefinitionName().isBlank()
                 ? processInstanceEntity.processDefinitionId()
                 : processInstanceEntity.processDefinitionName());
+  }
+
+  private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>
+      toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
+          final List<ProcessDefinitionMessageSubscriptionStatisticsEntity> entities) {
+    return entities.stream()
+        .map(
+            e ->
+                new ProcessDefinitionMessageSubscriptionStatisticsResult()
+                    .processDefinitionId(e.processDefinitionId())
+                    .tenantId(e.tenantId())
+                    .processDefinitionKey(KeyUtil.keyToString(e.processDefinitionKey()))
+                    .activeSubscriptions(e.activeSubscriptions())
+                    .processInstancesWithActiveSubscriptions(
+                        e.processInstancesWithActiveSubscriptions()))
+        .toList();
+  }
+
+  public static ProcessDefinitionMessageSubscriptionStatisticsQueryResult
+      toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
+          final SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ProcessDefinitionMessageSubscriptionStatisticsQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    SearchQueryResponseMapper
+                        ::toProcessDefinitionMessageSubscriptionStatisticsQueryResponse)
+                .orElseGet(Collections::emptyList));
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

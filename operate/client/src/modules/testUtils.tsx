@@ -6,17 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
 import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
-import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
-import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
   Variable,
   CurrentUser,
   Incident,
+  ProcessDefinition,
+  QueryProcessDefinitionsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
@@ -38,30 +37,11 @@ const randomProcessIdIterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
 
-/**
- * @returns a mocked incident Object
- * @param {*} customProps Obj with any type of custom property
- */
-const createIncident = (options: Partial<IncidentDto> = {}): IncidentDto => {
-  return {
-    errorMessage: 'Some Condition error has occurred',
-    errorType: {
-      name: 'Condition error',
-      id: 'CONDITION_ERROR',
-    },
-    id: randomIdIterator.next().value,
-    jobId: randomJobIdIterator.next().value,
-    flowNodeId: 'flowNodeId_alwaysFailingTask',
-    flowNodeInstanceId: randomFlowNodeInstanceIdIterator.next().value,
-    creationTime: '2019-03-01T14:26:19',
-    hasActiveOperation: false,
-    lastOperation: null,
-    rootCauseInstance: null,
-    ...options,
-  };
-};
+function searchResult<T>(items: T[], totalItems = items.length) {
+  return {items, page: {totalItems}};
+}
 
-const createIncidentV2 = (options: Partial<Incident> = {}): Incident => {
+const createIncident = (options: Partial<Incident> = {}): Incident => {
   return {
     errorMessage: 'Some Condition error has occurred',
     errorType: 'CONDITION_ERROR',
@@ -79,10 +59,10 @@ const createIncidentV2 = (options: Partial<Incident> = {}): Incident => {
   };
 };
 
-const createEnhancedIncidentV2 = (
+const createEnhancedIncident = (
   options: Partial<EnhancedIncident> = {},
 ): EnhancedIncident => {
-  const incident = createIncidentV2(options);
+  const incident = createIncident(options);
   return {
     ...incident,
     processDefinitionName: 'Some Process Name',
@@ -173,6 +153,22 @@ const createProcessInstance = (
   };
 };
 
+const createProcessDefinition = (
+  options: Partial<ProcessDefinition> = {},
+): ProcessDefinition => {
+  return {
+    name: 'Big variable process',
+    processDefinitionId: 'bigVarProcess',
+    processDefinitionKey: '2223894723423800',
+    resourceName: 'processes/process.bpmn',
+    version: 1,
+    versionTag: undefined,
+    tenantId: '<default>',
+    hasStartForm: false,
+    ...options,
+  };
+};
+
 const createvariable = (options: Partial<Variable> = {}): Variable => {
   const name = options.name ?? 'testVariableName';
   return {
@@ -202,105 +198,91 @@ const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
   ...options,
 });
 
-/**
- * A hard coded object to use when mocking fetchGroupedProcesses api/instances.js
- */
-const groupedProcessesMock: ProcessDto[] = [
-  {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    tenantId: '<default>',
-    processes: [
-      {
-        id: 'demoProcess3',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess',
-        versionTag: null,
-      },
-      {
-        id: 'demoProcess2',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess',
-        versionTag: null,
-      },
-      {
-        id: 'demoProcess1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess',
-        versionTag: null,
-      },
-    ],
-    permissions: ['UPDATE_PROCESS_INSTANCE'],
-  },
-  {
-    bpmnProcessId: 'eventBasedGatewayProcess',
-    name: null,
-    tenantId: '<default>',
-    processes: [
-      {
-        id: '2251799813696866',
-        name: 'Event based gateway with timer start',
-        version: 2,
-        bpmnProcessId: 'eventBasedGatewayProcess',
-        versionTag: null,
-      },
-      {
-        id: '2251799813685911',
-        name: 'Event based gateway with message start',
-        version: 1,
-        bpmnProcessId: 'eventBasedGatewayProcess',
-        versionTag: null,
-      },
-    ],
-    permissions: ['DELETE'],
-  },
-  {
-    bpmnProcessId: 'bigVarProcess',
-    name: 'Big variable process',
-    tenantId: '<default>',
-    processes: [
-      {
-        id: '2251799813685892',
-        name: 'Big variable process',
-        version: 1,
-        bpmnProcessId: 'bigVarProcess',
-        versionTag: 'MyVersionTag',
-      },
-    ],
-    permissions: ['DELETE_PROCESS_INSTANCE'],
-  },
-  {
-    bpmnProcessId: 'bigVarProcess',
-    name: 'Big variable process',
-    tenantId: '<tenant-A>',
-    processes: [
-      {
-        id: '2251799813685893',
-        name: 'Big variable process',
-        version: 2,
-        bpmnProcessId: 'bigVarProcess',
-        versionTag: null,
-      },
-      {
-        id: '2251799813685894',
-        name: 'Big variable process',
-        version: 1,
-        bpmnProcessId: 'bigVarProcess',
-        versionTag: null,
-      },
-    ],
-    permissions: ['DELETE_PROCESS_INSTANCE'],
-  },
-  {
-    bpmnProcessId: 'orderProcess',
-    tenantId: '<default>',
-    name: 'Order',
-    processes: [],
-  },
-];
+const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
+  searchResult([
+    {
+      name: 'New demo process',
+      processDefinitionId: 'demoProcess',
+      processDefinitionKey: 'demoProcess3',
+      resourceName: 'processes/process.bpmn',
+      version: 3,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Demo process',
+      processDefinitionId: 'demoProcess',
+      processDefinitionKey: 'demoProcess2',
+      resourceName: 'processes/process.bpmn',
+      version: 2,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Demo process',
+      processDefinitionId: 'demoProcess',
+      processDefinitionKey: 'demoProcess1',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: undefined,
+      processDefinitionId: 'eventBasedGatewayProcess',
+      processDefinitionKey: '2251799813696866',
+      resourceName: 'processes/process.bpmn',
+      version: 2,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Event based gateway with message start',
+      processDefinitionId: 'eventBasedGatewayProcess',
+      processDefinitionKey: '2251799813685911',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Big variable process',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionKey: '2251799813685892',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      versionTag: 'MyVersionTag',
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Big variable process',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionKey: '2251799813685893',
+      resourceName: 'processes/process.bpmn',
+      version: 2,
+      tenantId: '<tenant-A>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Big variable process',
+      processDefinitionId: 'bigVarProcess',
+      processDefinitionKey: '2251799813685894',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<tenant-A>',
+      hasStartForm: false,
+    },
+    {
+      name: 'Order',
+      processDefinitionId: 'orderProcess',
+      processDefinitionKey: 'orderProcess1',
+      resourceName: 'processes/process.bpmn',
+      version: 1,
+      tenantId: '<default>',
+      hasStartForm: false,
+    },
+  ]);
 
 /**
  * @returns a mocked process Object with a unique id
@@ -392,27 +374,6 @@ const createDiagramNode = (options = {}) => {
     $instanceOf: (type: string) => type === 'bpmn:StartEvent',
     ...options,
   };
-};
-
-const createSequenceFlows = () => {
-  return [
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_0drux68',
-    },
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_0j6tsnn',
-    },
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_1dwqvrt',
-    },
-    {
-      processInstanceId: '2251799813693731',
-      activityId: 'SequenceFlow_1fgekwd',
-    },
-  ];
 };
 
 const mockProcessStatisticsV2 = {
@@ -1024,228 +985,122 @@ const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-const createMultiInstanceFlowNodeInstances = (
-  processInstanceId: string,
-): {
-  level1: FlowNodeInstances;
-  level1Next: FlowNodeInstances;
-  level1Prev: FlowNodeInstances;
-  level1Poll: FlowNodeInstances;
-  level2: FlowNodeInstances;
-  level3: FlowNodeInstances;
-} => {
-  return {
-    level1: {
-      [processInstanceId]: {
-        running: null,
-        children: [
-          {
-            id: '2251799813686130',
-            type: 'PARALLEL_GATEWAY',
-            state: 'COMPLETED',
-            flowNodeId: 'peterFork',
-            startDate: '2020-08-18T12:07:33.953+0000',
-            endDate: '2020-08-18T12:07:34.034+0000',
-            treePath: `${processInstanceId}/2251799813686130`,
-            sortValues: ['1606300828415', '2251799813686130'],
-          },
-          {
-            id: '2251799813686156',
-            type: 'MULTI_INSTANCE_BODY',
-            state: 'INCIDENT',
-            flowNodeId: 'filterMapSubProcess',
-            startDate: '2020-08-18T12:07:34.205+0000',
-            endDate: null,
-            treePath: `${processInstanceId}/2251799813686156`,
-            sortValues: ['1606300828415', '2251799813686156'],
-          },
-        ],
-      },
-    },
-    level1Next: {
-      [processInstanceId]: {
-        running: null,
-        children: [
-          {
-            id: '2251799813686472',
-            type: 'PARALLEL_GATEWAY',
-            state: 'INCIDENT',
-            flowNodeId: 'filterMapSubProcess',
-            startDate: '2020-08-18T12:08:00.205+0000',
-            endDate: null,
-            treePath: `${processInstanceId}/2251799813686472`,
-            sortValues: ['1606300828415', '2251799813686472'],
-          },
-        ],
-      },
-    },
-    level1Prev: {
-      [processInstanceId]: {
-        running: null,
-        children: [
-          {
-            id: '2251390423657139',
-            type: 'START_EVENT',
-            state: 'INCIDENT',
-            flowNodeId: 'startFilterMap',
-            startDate: '2020-08-18T12:08:00.205+0000',
-            endDate: null,
-            treePath: `${processInstanceId}/2251390423657139`,
-            sortValues: ['1606300828415', '2251390423657139'],
-          },
-        ],
-      },
-    },
-    level1Poll: {
-      [processInstanceId]: {
-        running: null,
-        children: [
-          {
-            id: '2251799813686130',
-            type: 'PARALLEL_GATEWAY',
-            state: 'COMPLETED',
-            flowNodeId: 'peterFork',
-            startDate: '2020-08-18T12:07:33.953+0000',
-            endDate: '2020-08-18T12:07:34.034+0000',
-            treePath: `${processInstanceId}/2251799813686130`,
-            sortValues: ['1606300828415', '2251799813686130'],
-          },
-          {
-            id: '2251799813686156',
-            type: 'MULTI_INSTANCE_BODY',
-            state: 'COMPLETED',
-            flowNodeId: 'filterMapSubProcess',
-            startDate: '2020-08-18T12:07:34.205+0000',
-            endDate: '2020-08-18T12:07:34.034+0000',
-            treePath: `${processInstanceId}/2251799813686156`,
-            sortValues: ['1606300828415', '2251799813686156'],
-          },
-        ],
-      },
-    },
-    level2: {
-      [`${processInstanceId}/2251799813686156`]: {
-        running: true,
-        children: [
-          {
-            id: '2251799813686166',
-            type: 'SUB_PROCESS',
-            state: 'INCIDENT',
-            flowNodeId: 'filterMapSubProcess',
-            startDate: '2020-08-18T12:07:34.281+0000',
-            endDate: null,
-            treePath: `${processInstanceId}/2251799813686156/2251799813686166`,
-            sortValues: ['1606300828415', '2251799813686166'],
-          },
-        ],
-      },
-    },
-    level3: {
-      [`${processInstanceId}/2251799813686156/2251799813686166`]: {
-        running: false,
-        children: [
-          {
-            id: '2251799813686204',
-            type: 'START_EVENT',
-            state: 'COMPLETED',
-            flowNodeId: 'startFilterMap',
-            startDate: '2020-08-18T12:07:34.337+0000',
-            endDate: '2020-08-18T12:07:34.445+0000',
-            treePath: `${processInstanceId}/2251799813686156/2251799813686166/2251799813686204`,
-            sortValues: ['1606300828415', '2251799813686204'],
-          },
-        ],
-      },
-    },
-  };
-};
+const adHocSubProcessInnerInstance = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1fekqd5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="ad_hoc_inner_subprocess_test" isExecutable="true">
+    <bpmn:startEvent id="start_event">
+      <bpmn:outgoing>Flow_1mi8489</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1mi8489" sourceRef="start_event" targetRef="ad_hoc_subprocess" />
+    <bpmn:endEvent id="end_event">
+      <bpmn:incoming>Flow_0em90ai</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0em90ai" sourceRef="ad_hoc_subprocess" targetRef="end_event" />
+    <bpmn:adHocSubProcess id="ad_hoc_subprocess" zeebe:modelerTemplate="io.camunda.connectors.agenticai.aiagent.jobworker.v1" zeebe:modelerTemplateVersion="5" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNBNTZFRkYiLz4KPG1hc2sgaWQ9InBhdGgtMi1vdXRzaWRlLTFfMTg1XzYiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjQiIHk9IjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iYmxhY2siPgo8cmVjdCBmaWxsPSJ3aGl0ZSIgeD0iNCIgeT0iNCIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ii8+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIvPgo8L21hc2s+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMjAuMDEwNSAxMi4wOTg3QzE4LjQ5IDEwLjU4OTQgMTcuMTU5NCA4LjEwODE0IDE2LjE3OTkgNi4wMTEwM0MxNi4xNTIgNi4wMDQ1MSAxNi4xMTc2IDYgMTYuMDc5NCA2QzE2LjA0MTEgNiAxNi4wMDY2IDYuMDA0NTEgMTUuOTc4OCA2LjAxMTA0QzE0Ljk5OTQgOC4xMDgxNCAxMy42Njk3IDEwLjU4ODkgMTIuMTQ4MSAxMi4wOTgxQzEwLjYyNjkgMTMuNjA3MSA4LjEyNTY4IDE0LjkyNjQgNi4wMTE1NyAxNS44OTgxQzYuMDA0NzQgMTUuOTI2MSA2IDE1Ljk2MTEgNiAxNkM2IDE2LjAzODcgNi4wMDQ2OCAxNi4wNzM2IDYuMDExNDQgMTYuMTAxNEM4LjEyNTE5IDE3LjA3MjkgMTAuNjI2MiAxOC4zOTE5IDEyLjE0NzcgMTkuOTAxNkMxMy42Njk3IDIxLjQxMDcgMTQuOTk5NiAyMy44OTIgMTUuOTc5MSAyNS45ODlDMTYuMDA2OCAyNS45OTU2IDE2LjA0MTEgMjYgMTYuMDc5MyAyNkMxNi4xMTc1IDI2IDE2LjE1MTkgMjUuOTk1NCAxNi4xNzk2IDI1Ljk4OUMxNy4xNTkxIDIzLjg5MiAxOC40ODg4IDIxLjQxMSAyMC4wMDk5IDE5LjkwMjFNMjAuMDA5OSAxOS45MDIxQzIxLjUyNTMgMTguMzk4NyAyMy45NDY1IDE3LjA2NjkgMjUuOTkxNSAxNi4wODI0QzI1Ljk5NjUgMTYuMDU5MyAyNiAxNi4wMzEgMjYgMTUuOTk5N0MyNiAxNS45Njg0IDI1Ljk5NjUgMTUuOTQwMyAyNS45OTE1IDE1LjkxNzFDMjMuOTQ3NCAxNC45MzI3IDIxLjUyNTkgMTMuNjAxIDIwLjAxMDUgMTIuMDk4NyIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yMC4wMTA1IDEyLjA5ODdDMTguNDkgMTAuNTg5NCAxNy4xNTk0IDguMTA4MTQgMTYuMTc5OSA2LjAxMTAzQzE2LjE1MiA2LjAwNDUxIDE2LjExNzYgNiAxNi4wNzk0IDZDMTYuMDQxMSA2IDE2LjAwNjYgNi4wMDQ1MSAxNS45Nzg4IDYuMDExMDRDMTQuOTk5NCA4LjEwODE0IDEzLjY2OTcgMTAuNTg4OSAxMi4xNDgxIDEyLjA5ODFDMTAuNjI2OSAxMy42MDcxIDguMTI1NjggMTQuOTI2NCA2LjAxMTU3IDE1Ljg5ODFDNi4wMDQ3NCAxNS45MjYxIDYgMTUuOTYxMSA2IDE2QzYgMTYuMDM4NyA2LjAwNDY4IDE2LjA3MzYgNi4wMTE0NCAxNi4xMDE0QzguMTI1MTkgMTcuMDcyOSAxMC42MjYyIDE4LjM5MTkgMTIuMTQ3NyAxOS45MDE2QzEzLjY2OTcgMjEuNDEwNyAxNC45OTk2IDIzLjg5MiAxNS45NzkxIDI1Ljk4OUMxNi4wMDY4IDI1Ljk5NTYgMTYuMDQxMSAyNiAxNi4wNzkzIDI2QzE2LjExNzUgMjYgMTYuMTUxOSAyNS45OTU0IDE2LjE3OTYgMjUuOTg5QzE3LjE1OTEgMjMuODkyIDE4LjQ4ODggMjEuNDExIDIwLjAwOTkgMTkuOTAyMU0yMC4wMDk5IDE5LjkwMjFDMjEuNTI1MyAxOC4zOTg3IDIzLjk0NjUgMTcuMDY2OSAyNS45OTE1IDE2LjA4MjRDMjUuOTk2NSAxNi4wNTkzIDI2IDE2LjAzMSAyNiAxNS45OTk3QzI2IDE1Ljk2ODQgMjUuOTk2NSAxNS45NDAzIDI1Ljk5MTUgMTUuOTE3MUMyMy45NDc0IDE0LjkzMjcgMjEuNTI1OSAxMy42MDEgMjAuMDEwNSAxMi4wOTg3IiBzdHJva2U9IiM0OTFEOEIiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgbWFzaz0idXJsKCNwYXRoLTItb3V0c2lkZS0xXzE4NV82KSIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:aiagent-job-worker:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="anthropic" target="provider.type" />
+          <zeebe:input source="xxxx" target="provider.anthropic.authentication.apiKey" />
+          <zeebe:input source="claude-3-5-sonnet-20240620" target="provider.anthropic.model.model" />
+          <zeebe:input source="=&#34;You are **TaskAgent**, a helpful, generic chat agent that can handle a wide variety of customer requests using your own domain knowledge **and** any tools explicitly provided to you at runtime.&#10;&#10;If tools are provided, you should prefer them instead of guessing an answer. You can call the same tool multiple times by providing different input values. Don&#39;t guess any tools which were not explicitly configured. If no tool matches the request, try to generate an answer. If you&#39;re not able to find a good answer, return with a message stating why you&#39;re not able to.&#10;&#10;Wrap minimal, inspectable reasoning in *exactly* this XML template:&#10;&#10;&#60;thinking&#62;&#10;&#60;context&#62;…briefly state the customer’s need and current state…&#60;/context&#62;&#10;&#60;reflection&#62;…list candidate tools, justify which you will call next and why…&#60;/reflection&#62;&#10;&#60;/thinking&#62;&#10;&#10;Reveal **no** additional private reasoning outside these tags.&#34;" target="data.systemPrompt.prompt" />
+          <zeebe:input source="=foo" target="data.userPrompt.prompt" />
+          <zeebe:input target="agentContext" />
+          <zeebe:input source="in-process" target="data.memory.storage.type" />
+          <zeebe:input source="=20" target="data.memory.contextWindowSize" />
+          <zeebe:input source="=10" target="data.limits.maxModelCalls" />
+          <zeebe:input source="WAIT_FOR_TOOL_CALL_RESULTS" target="data.events.behavior" />
+          <zeebe:input source="text" target="data.response.format.type" />
+          <zeebe:input source="=false" target="data.response.format.parseJson" />
+          <zeebe:input source="=false" target="data.response.includeAssistantMessage" />
+          <zeebe:input source="=false" target="data.response.includeAgentContext" />
+          <zeebe:output source="=agent" target="agent" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="5" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.aiagent.jobworker.v1" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+        <zeebe:adHoc outputCollection="toolCallResults" outputElement="={&#10;  id: toolCall._meta.id,&#10;  name: toolCall._meta.name,&#10;  content: toolCallResult&#10;}" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1mi8489</bpmn:incoming>
+      <bpmn:outgoing>Flow_0em90ai</bpmn:outgoing>
+      <bpmn:userTask id="user_task_in_ad_hoc_subprocess">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+    </bpmn:adHocSubProcess>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="ad_hoc_inner_subprocess_test">
+      <bpmndi:BPMNShape id="Event_18tmc7l_di" bpmnElement="end_event">
+        <dc:Bounds x="792" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="start_event">
+        <dc:Bounds x="132" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0m8gcqy_di" bpmnElement="ad_hoc_subprocess" isExpanded="true">
+        <dc:Bounds x="265" y="80" width="350" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1p5z08g_di" bpmnElement="user_task_in_ad_hoc_subprocess">
+        <dc:Bounds x="380" y="130" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0em90ai_di" bpmnElement="Flow_0em90ai">
+        <di:waypoint x="615" y="180" />
+        <di:waypoint x="792" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mi8489_di" bpmnElement="Flow_1mi8489">
+        <di:waypoint x="168" y="180" />
+        <di:waypoint x="265" y="180" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+`;
 
-const createEventSubProcessFlowNodeInstances = (
-  processInstanceId: string,
-): {
-  level1: FlowNodeInstances;
-  level2: FlowNodeInstances;
-} => {
-  return {
-    level1: {
-      [processInstanceId]: {
-        children: [
-          {
-            id: '6755399441057427',
-            type: 'START_EVENT',
-            state: 'COMPLETED',
-            flowNodeId: 'StartEvent_1vnazga',
-            startDate: '2021-06-22T13:43:59.698+0000',
-            endDate: '2021-06-22T13:43:59.701+0000',
-            treePath: `${processInstanceId}/6755399441057427`,
-            sortValues: ['1624369439698', '6755399441057427'],
-          },
-          {
-            id: '6755399441057429',
-            type: 'SERVICE_TASK',
-            state: 'TERMINATED',
-            flowNodeId: 'ServiceTask_1daop2o',
-            startDate: '2021-06-22T13:43:59.707+0000',
-            endDate: '2021-06-22T13:46:59.705+0000',
-            treePath: `${processInstanceId}/6755399441057429`,
-            sortValues: ['1624369439707', '6755399441057429'],
-          },
-          {
-            id: '6755399441063916',
-            type: 'EVENT_SUB_PROCESS',
-            state: 'INCIDENT',
-            flowNodeId: 'SubProcess_1ip6c6s',
-            startDate: '2021-06-22T13:46:59.705+0000',
-            endDate: null,
-            treePath: `${processInstanceId}/6755399441063916`,
-            sortValues: ['1624369619705', '6755399441063916'],
-          },
-        ],
-        running: null,
-      },
-    },
-    level2: {
-      [`${processInstanceId}/6755399441063916`]: {
-        children: [
-          {
-            id: '6755399441063918',
-            type: 'START_EVENT',
-            state: 'COMPLETED',
-            flowNodeId: 'StartEvent_1u9mwoj',
-            startDate: '2021-06-22T13:46:59.714+0000',
-            endDate: '2021-06-22T13:46:59.719+0000',
-            treePath: `${processInstanceId}/6755399441063916/6755399441063918`,
-            sortValues: ['1624369619714', '6755399441063918'],
-          },
-          {
-            id: '6755399441063920',
-            type: 'SERVICE_TASK',
-            state: 'INCIDENT',
-            flowNodeId: 'ServiceTask_0h8cwwl',
-            startDate: '2021-06-22T13:46:59.722+0000',
-            endDate: null,
-            treePath: `${processInstanceId}/6755399441063916/6755399441063920`,
-            sortValues: ['1624369619722', '6755399441063920'],
-          },
-        ],
-        running: true,
-      },
-    },
-  };
+const mockProcessInstancesV2 = {
+  items: [
+    createProcessInstance({
+      processInstanceKey: '2251799813685594',
+      processDefinitionKey: '2251799813685592',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'someProcessName',
+      state: 'ACTIVE',
+    }),
+    createProcessInstance({
+      processInstanceKey: '2251799813685596',
+      processDefinitionKey: '2251799813685592',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'someProcessName',
+      state: 'ACTIVE',
+      hasIncident: true,
+    }),
+    createProcessInstance({
+      processInstanceKey: '2251799813685598',
+      processDefinitionKey: '2251799813685592',
+      processDefinitionId: 'someKey',
+      processDefinitionName: 'someProcessName',
+      state: 'TERMINATED',
+      endDate: '2018-06-22',
+    }),
+  ],
+  page: {
+    totalItems: 912,
+  },
 };
 
 export {
+  searchResult,
   createIncident,
-  createIncidentV2,
-  createEnhancedIncidentV2,
+  createEnhancedIncident,
   createOperation,
-  groupedProcessesMock,
+  mockProcessDefinitions,
   createProcess,
   createInstanceByProcess,
   createIncidentByError,
   createIncidentsByError,
   createDiagramNode,
-  createSequenceFlows,
   mockProcessStatisticsV2,
   mockMultipleStatesStatistics,
   mockProcessXML,
@@ -1257,11 +1112,12 @@ export {
   operations,
   multiInstanceProcess,
   eventSubProcess,
-  createMultiInstanceFlowNodeInstances,
-  createEventSubProcessFlowNodeInstances,
+  mockProcessInstancesV2,
   createvariable,
   createBatchOperation,
   createUser,
   createProcessInstance,
+  createProcessDefinition,
   createInstance,
+  adHocSubProcessInnerInstance,
 };

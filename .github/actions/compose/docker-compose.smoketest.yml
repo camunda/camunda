@@ -74,7 +74,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -q -f -I http://localhost:8090/api/readyz | grep -q 'HTTP/1.1 200'",
+          "wget -q -S -O /dev/null http://localhost:8090/api/readyz 2>&1 | grep -q 'HTTP/1.1 200'",
         ]
       interval: 30s
       timeout: 5s
@@ -108,7 +108,7 @@ services:
     ports:
       - "18080:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]
+      test: ["CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:8080/auth"]
       interval: 30s
       timeout: 15s
       retries: 5

@@ -12,13 +12,16 @@ import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import java.util.List;
 
-public interface UserTaskMapper extends ProcessBasedHistoryCleanupMapper {
+public interface UserTaskMapper
+    extends ProcessBasedHistoryCleanupMapper, ProcessInstanceDependantMapper {
 
   void insert(UserTaskDbModel taskDbModel);
 
   void insertCandidateUsers(UserTaskDbModel taskDbModel);
 
   void insertCandidateGroups(UserTaskDbModel taskDbModel);
+
+  void insertTags(UserTaskDbModel taskDbModel);
 
   void update(UserTaskDbModel taskDbModel);
 

@@ -199,13 +199,31 @@ public final class FilterBuilders {
     return fn.apply(new AuthorizationFilter.Builder()).build();
   }
 
+  public static AuditLogFilter.Builder auditLog() {
+    return new AuditLogFilter.Builder();
+  }
+
+  public static AuditLogFilter auditLog(
+      final Function<AuditLogFilter.Builder, ObjectBuilder<AuditLogFilter>> fn) {
+    return fn.apply(new AuditLogFilter.Builder()).build();
+  }
+
   public static VariableFilter.Builder variable() {
     return new VariableFilter.Builder();
+  }
+
+  public static ClusterVariableFilter.Builder clusterVariable() {
+    return new ClusterVariableFilter.Builder();
   }
 
   public static VariableFilter variable(
       final Function<VariableFilter.Builder, ObjectBuilder<VariableFilter>> fn) {
     return fn.apply(variable()).build();
+  }
+
+  public static ClusterVariableFilter clusterVariable(
+      final Function<ClusterVariableFilter.Builder, ObjectBuilder<ClusterVariableFilter>> fn) {
+    return fn.apply(clusterVariable()).build();
   }
 
   public static VariableValueFilter.Builder variableValue() {
@@ -290,5 +308,19 @@ public final class FilterBuilders {
               ObjectBuilder<CorrelatedMessageSubscriptionFilter>>
           fn) {
     return fn.apply(correlatedMessageSubscription()).build();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsFilter.Builder
+      processDefinitionInstanceVersionStatistics() {
+    return new ProcessDefinitionInstanceVersionStatisticsFilter.Builder();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsFilter
+      processDefinitionInstanceVersionStatistics(
+          final Function<
+                  ProcessDefinitionInstanceVersionStatisticsFilter.Builder,
+                  ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsFilter>>
+              fn) {
+    return fn.apply(processDefinitionInstanceVersionStatistics()).build();
   }
 }

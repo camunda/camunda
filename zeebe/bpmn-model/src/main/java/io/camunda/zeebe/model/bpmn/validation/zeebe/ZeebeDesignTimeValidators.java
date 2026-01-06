@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
@@ -150,6 +151,10 @@ public final class ZeebeDesignTimeValidators {
         ZeebeElementValidator.verifyThat(ZeebePriorityDefinition.class)
             .hasNonEmptyAttribute(
                 ZeebePriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
+    validators.add(
+        ZeebeElementValidator.verifyThat(Condition.class)
+            .hasNonEmptyAttribute(Condition::getTextContent, ZeebeConstants.ATTRIBUTE_CONDITION));
+    validators.add(new ZeebeConditionalFilterValidator());
     validators.addAll(ExtensionElementDuplicationValidators.VALIDATORS);
 
     VALIDATORS = Collections.unmodifiableList(validators);

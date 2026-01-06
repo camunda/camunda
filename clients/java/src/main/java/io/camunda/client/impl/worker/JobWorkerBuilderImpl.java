@@ -23,6 +23,7 @@ import static io.camunda.client.impl.command.ArgumentUtil.ensurePositive;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class JobWorkerBuilderImpl
@@ -44,7 +46,8 @@ public final class JobWorkerBuilderImpl
       BackoffSupplier.newBackoffBuilder().build();
   public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
   private final JobClient jobClient;
-  private final ScheduledExecutorService executorService;
+  private final ScheduledExecutorService scheduledExecutor;
+  private final ExecutorService jobHandlingExecutor;
   private final List<Closeable> closeables;
   private String jobType;
   private JobHandler handler;
@@ -60,14 +63,17 @@ public final class JobWorkerBuilderImpl
   private boolean enableStreaming;
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
+  private JobExceptionHandler jobExceptionHandler;
 
   public JobWorkerBuilderImpl(
       final CamundaClientConfiguration configuration,
       final JobClient jobClient,
-      final ScheduledExecutorService executorService,
+      final ScheduledExecutorService scheduledExecutor,
+      final ExecutorService jobHandlingExecutor,
       final List<Closeable> closeables) {
     this.jobClient = jobClient;
-    this.executorService = executorService;
+    this.scheduledExecutor = scheduledExecutor;
+    this.jobHandlingExecutor = jobHandlingExecutor;
     this.closeables = closeables;
 
     timeout = configuration.getDefaultJobTimeout();
@@ -77,6 +83,7 @@ public final class JobWorkerBuilderImpl
     requestTimeout = configuration.getDefaultRequestTimeout();
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
+    jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
@@ -165,6 +172,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 jobExceptionHandler(final JobExceptionHandler jobExceptionHandler) {
+    this.jobExceptionHandler = jobExceptionHandler;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -173,7 +186,8 @@ public final class JobWorkerBuilderImpl
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
 
     final JobStreamer jobStreamer;
-    final JobRunnableFactory jobRunnableFactory = new JobRunnableFactoryImpl(jobClient, handler);
+    final JobRunnableFactory jobRunnableFactory =
+        new JobRunnableFactoryImpl(jobClient, handler, jobExceptionHandler);
     final JobPoller jobPoller =
         new JobPollerImpl(
             jobClient,
@@ -201,17 +215,17 @@ public final class JobWorkerBuilderImpl
               getTenantIds(),
               streamingTimeout,
               backoffSupplier,
-              executorService);
-      jobExecutor = new BlockingExecutor(executorService, maxJobsActive, timeout);
+              scheduledExecutor);
+      jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
-      jobExecutor = executorService;
+      jobExecutor = jobHandlingExecutor;
     }
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(
             maxJobsActive,
-            executorService,
+            scheduledExecutor,
             pollInterval,
             jobRunnableFactory,
             jobPoller,

@@ -10,10 +10,7 @@ package io.camunda.zeebe.stream.impl.records;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.stream.impl.TypedEventRegistry;
-import io.camunda.zeebe.util.ReflectUtil;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 
 public final class RecordValues {
@@ -21,10 +18,7 @@ public final class RecordValues {
   private final Map<ValueType, UnifiedRecordValue> eventCache;
 
   public RecordValues() {
-    final EnumMap<ValueType, UnifiedRecordValue> cache = new EnumMap<>(ValueType.class);
-    TypedEventRegistry.EVENT_REGISTRY.forEach((t, c) -> cache.put(t, ReflectUtil.newInstance(c)));
-
-    eventCache = Collections.unmodifiableMap(cache);
+    eventCache = Collections.unmodifiableMap(UnifiedRecordValue.allRecordsMap());
   }
 
   public UnifiedRecordValue readRecordValue(final LoggedEvent event, final ValueType valueType) {

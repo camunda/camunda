@@ -16,6 +16,7 @@ import {
 } from './flowNodeSelection';
 import {useHasMultipleInstances} from './flowNodeMetadata';
 import {getScopeId} from 'modules/utils/variables';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -48,7 +49,7 @@ const useDisplayStatus = ({
   const hasMultipleInstances = useHasMultipleInstances();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
 
-  if (isError) {
+  if (isError || flowNodeMetaDataStore.state.status === 'error') {
     return 'error';
   }
 

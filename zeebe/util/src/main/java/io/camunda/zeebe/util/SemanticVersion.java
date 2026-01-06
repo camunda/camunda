@@ -52,6 +52,10 @@ public record SemanticVersion(
     }
   }
 
+  public boolean isPreRelease() {
+    return preRelease != null;
+  }
+
   public static Optional<SemanticVersion> parse(final String version) {
     if (version == null) {
       return Optional.empty();

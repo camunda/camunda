@@ -13,8 +13,8 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
+import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.io.InputStream;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -507,7 +508,7 @@ public final class ZeebeRuntimeValidationTest {
     final ExpressionLanguage expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage(
             new ZeebeFeelEngineClock(InstantSource.system()));
-    final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
+    final ScopedEvaluationContext emptyLookup = ScopedEvaluationContext.NONE_INSTANCE;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
         new ValidationVisitor(
@@ -541,7 +542,7 @@ public final class ZeebeRuntimeValidationTest {
     final List<ExpectedValidationResult> unmatchedExpectations = new ArrayList<>(expectedResults);
     final List<ValidationResult> unmatchedResults =
         results.getResults().values().stream()
-            .flatMap(l -> l.stream())
+            .flatMap(Collection::stream)
             .collect(Collectors.toList());
 
     match(unmatchedResults, unmatchedExpectations);

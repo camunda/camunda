@@ -95,7 +95,7 @@ public class TaskController extends ApiErrorController {
       summary = "Search tasks",
       description =
           "Returns the list of tasks that satisfy search request params.<br>"
-              + "<ul><li>If an empty body is provided, all tasks are returned.</li>"
+              + "<ul><li>If an empty body is provided, all tasks except CANCELED are returned.</li>"
               + "<li>Only one of `[searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual]` search options must be present in request.</li></ul>",
       responses = {
         @ApiResponse(

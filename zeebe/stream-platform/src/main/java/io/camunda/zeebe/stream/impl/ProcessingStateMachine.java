@@ -15,7 +15,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -164,6 +163,7 @@ public final class ProcessingStateMachine {
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
+  private String currentStateDescription = "idle";
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -200,6 +200,10 @@ public final class ProcessingStateMachine {
     clock = context.getClock();
   }
 
+  String describeCurrentState() {
+    return currentStateDescription;
+  }
+
   private void skipRecord() {
     notifySkippedListener(currentRecord);
     markProcessingCompleted();
@@ -208,6 +212,7 @@ public final class ProcessingStateMachine {
   }
 
   void markProcessingCompleted() {
+    currentStateDescription = String.format("finished processing '%s %s'", currentRecord, metadata);
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
@@ -263,6 +268,7 @@ public final class ProcessingStateMachine {
 
     metadata.reset();
     loggedEvent.readMetadata(metadata);
+    currentStateDescription = String.format("processing '%s %s'", currentRecord, metadata);
 
     try {
       // Here we need to get the current time, since we want to calculate
@@ -345,7 +351,8 @@ public final class ProcessingStateMachine {
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents,
             initialCommand.getOperationReference(),
-            initialCommand.getBatchOperationReference());
+            initialCommand.getBatchOperationReference(),
+            initialCommand.getAuthorizations());
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -363,6 +370,13 @@ public final class ProcessingStateMachine {
     while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
+      if (LOG.isTraceEnabled()) {
+        if (command instanceof final UnwrittenRecord unwrittenRecord) {
+          LOG.trace("Processing batched command {}: {}", processedCommandsCount, unwrittenRecord);
+        } else {
+          LOG.trace("Processing command {}: {}", command.getPosition(), command);
+        }
+      }
 
       currentProcessor =
           recordProcessors.stream()
@@ -388,6 +402,9 @@ public final class ProcessingStateMachine {
       processedCommandsCount++;
       processingMetrics.commandsProcessed();
     }
+    // We are done with processing, no new writes or responses will be added.
+    pendingWrites = Collections.unmodifiableList(pendingWrites);
+    pendingResponses = Collections.unmodifiableCollection(pendingResponses);
   }
 
   /**
@@ -469,7 +486,7 @@ public final class ProcessingStateMachine {
             Expected to process command %d (%s.%s), but caught an exception. Check broker logs \
             (partition %s) for details, or ask your operator to do so."""
             .formatted(
-                Protocol.encodePartitionId(context.getPartitionId(), currentRecord.getKey()),
+                currentRecord.getKey(),
                 metadata.getValueType(),
                 metadata.getIntent(),
                 context.getPartitionId());
@@ -493,8 +510,6 @@ public final class ProcessingStateMachine {
           currentRecord,
           metadata,
           e);
-      pendingResponses.clear();
-      pendingWrites.clear();
     }
     return false;
   }
@@ -538,7 +553,8 @@ public final class ProcessingStateMachine {
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents,
             typedCommand.getOperationReference(),
-            typedCommand.getBatchOperationReference());
+            typedCommand.getBatchOperationReference(),
+            typedCommand.getAuthorizations());
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -582,7 +598,8 @@ public final class ProcessingStateMachine {
               new BufferedProcessingResultBuilder(
                   logStreamWriter::canWriteEvents,
                   typedCommand.getOperationReference(),
-                  typedCommand.getBatchOperationReference());
+                  typedCommand.getBatchOperationReference(),
+                  typedCommand.getAuthorizations());
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
@@ -778,6 +795,12 @@ public final class ProcessingStateMachine {
   }
 
   private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {
+    if (errorHandlingPhase != ErrorHandlingPhase.NO_ERROR) {
+      currentStateDescription =
+          String.format(
+              "in error handling phase %s for '%s %s'",
+              errorHandlingPhase, currentRecord, metadata);
+    }
     this.errorHandlingPhase = errorHandlingPhase;
     processingMetrics.errorHandlingPhase(errorHandlingPhase);
   }

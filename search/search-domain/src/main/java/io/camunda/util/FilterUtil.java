@@ -9,6 +9,7 @@ package io.camunda.util;
 
 import io.camunda.search.filter.Operation;
 import java.util.List;
+import java.util.function.Function;
 
 public final class FilterUtil {
 
@@ -23,6 +24,12 @@ public final class FilterUtil {
 
   @SafeVarargs
   public static <T> Operation<T> mapDefaultToOperation(final T value, final T... values) {
-    return mapDefaultToOperation(CollectionUtil.collectValues(value, values));
+    return mapDefaultToOperation(e -> e, value, values);
+  }
+
+  @SafeVarargs
+  public static <T, R> Operation<T> mapDefaultToOperation(
+      final Function<R, T> typeMapper, final R value, final R... values) {
+    return mapDefaultToOperation(CollectionUtil.collectValues(typeMapper, value, values));
   }
 }

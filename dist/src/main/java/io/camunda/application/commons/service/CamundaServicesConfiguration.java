@@ -9,8 +9,10 @@ package io.camunda.application.commons.service;
 
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
+import io.camunda.search.clients.ClusterVariableSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
@@ -35,14 +37,18 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.ApiServicesExecutorProvider;
+import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
+import io.camunda.service.ClusterVariableServices;
+import io.camunda.service.ConditionalServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
@@ -56,6 +62,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
@@ -240,6 +247,22 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  public AuditLogServices auditLogServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final AuditLogSearchClient auditLogSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new AuditLogServices(
+        brokerClient,
+        securityContextProvider,
+        auditLogSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
   public IncidentServices incidentServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -356,6 +379,36 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         variableSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public ClusterVariableServices clusterVariableServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ClusterVariableSearchClient clusterVariableSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ClusterVariableServices(
+        brokerClient,
+        securityContextProvider,
+        clusterVariableSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public ExpressionServices expressionServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ExpressionServices(
+        brokerClient,
+        securityContextProvider,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);
@@ -511,6 +564,34 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         messageSubscriptionSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public ConditionalServices conditionalEventServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new ConditionalServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public TopologyServices topologyServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new TopologyServices(
+        brokerClient,
+        securityContextProvider,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);

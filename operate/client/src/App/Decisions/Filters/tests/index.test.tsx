@@ -8,14 +8,11 @@
 
 import {AppHeader} from 'App/Layout/AppHeader';
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {groupedDecisions} from 'modules/mocks/groupedDecisions';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from '../';
-import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
-import {act, useEffect} from 'react';
+import {act} from 'react';
 import {
   clearComboBox,
   selectDecision,
@@ -26,13 +23,11 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
+import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
+import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return groupedDecisionsStore.reset;
-    }, []);
-
     return (
       <QueryClientProvider client={getMockQueryClient()}>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -66,10 +61,9 @@ const MOCK_FILTERS_PARAMS = {
 
 describe('<Filters />', () => {
   beforeEach(async () => {
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
-    await groupedDecisionsStore.fetchDecisions();
     vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
@@ -107,6 +101,12 @@ describe('<Filters />', () => {
   });
 
   it('should write filters to url', async () => {
+    // Note: Reversed call order. Second one for name suggestions, first one for versions.
+    mockSearchDecisionDefinitions().withSuccess({
+      items: mockDecisionDefinitions.items.slice(0, 2),
+      page: {totalItems: 2},
+    });
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -114,6 +114,7 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
     await selectDecision({user, option: 'Assign Approver Group'});
     await selectDecisionVersion({user, option: '2'});
 
@@ -203,12 +204,17 @@ describe('<Filters />', () => {
     );
   });
 
-  it('initialise filter values from url', () => {
+  it('initialize filter values from url', async () => {
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     render(<Filters />, {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Assign Approver Group');
+    await waitFor(() =>
+      expect(screen.getByLabelText('Name')).toHaveValue(
+        'Assign Approver Group',
+      ),
+    );
     expectVersion('2');
 
     expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
@@ -217,7 +223,7 @@ describe('<Filters />', () => {
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
   });
 
-  it('initialise filter values from url - evaluation date range', async () => {
+  it('initialize filter values from url - evaluation date range', async () => {
     const MOCK_PARAMS = {
       evaluationDateAfter: '2021-02-21 09:00:00',
       evaluationDateBefore: '2021-02-22 10:00:00',
@@ -265,6 +271,7 @@ describe('<Filters />', () => {
 
     unmount();
 
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -327,6 +334,12 @@ describe('<Filters />', () => {
   });
 
   it('should select decision name and version', async () => {
+    // Note: Reversed call order. Second one for name suggestions, first one for versions.
+    mockSearchDecisionDefinitions().withSuccess({
+      items: mockDecisionDefinitions.items.slice(0, 2),
+      page: {totalItems: 2},
+    });
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -335,9 +348,9 @@ describe('<Filters />', () => {
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeDisabled();
 
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue(''));
     await selectDecision({user, option: 'Assign Approver Group'});
     await waitFor(() => expectVersion('2'));
-
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeEnabled();
@@ -514,20 +527,17 @@ describe('<Filters />', () => {
   });
 
   it('should omit all versions option', async () => {
-    const firstDecision = groupedDecisions[0]!;
-    const firstVersion = firstDecision.decisions[1]!;
-
-    mockFetchGroupedDecisions().withSuccess([
-      {...firstDecision, decisions: [firstVersion]},
-    ]);
-
-    await groupedDecisionsStore.fetchDecisions();
-
-    vi.useFakeTimers();
+    const firstDecision = mockDecisionDefinitions.items[0]!;
+    // Note: Reversed call order. Second one for name suggestions, first one for versions.
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [firstDecision],
+      page: {totalItems: 1},
+    });
+    mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
-        `/decisions?name=${firstDecision.decisionId}&version=${firstVersion}`,
+        `/decisions?name=${firstDecision.decisionDefinitionId}&version=${firstDecision.version}`,
       ),
     });
 

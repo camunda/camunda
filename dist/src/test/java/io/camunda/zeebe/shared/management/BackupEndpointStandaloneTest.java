@@ -9,6 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,15 @@ public abstract class BackupEndpointStandaloneTest {
   }
 
   @Test
+  public void shouldCallTakeWithoutIdWhenIsStandalone() {
+    // when
+    backupEndpointStandalone.take();
+
+    // then
+    verify(backupEndpoint).take();
+  }
+
+  @Test
   public void shouldCallListWhenIsStandalone() {
     // when
     backupEndpointStandalone.query(null);
@@ -44,10 +54,10 @@ public abstract class BackupEndpointStandaloneTest {
   @Test
   public void shouldCallGetWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query("11");
+    backupEndpointStandalone.query(new String[] {"11"});
 
     // then
-    verify(backupEndpoint).query("11");
+    verify(backupEndpoint).query(new String[] {"11"});
   }
 
   @Test
@@ -57,5 +67,14 @@ public abstract class BackupEndpointStandaloneTest {
 
     // then
     verify(backupEndpoint).delete(11L);
+  }
+
+  @Test
+  public void shouldCallQueryWhenIsStandalone() {
+    // when
+    backupEndpointStandalone.query(new String[] {BackupApi.STATE});
+
+    // then
+    verify(backupEndpoint).query(new String[] {BackupApi.STATE});
   }
 }

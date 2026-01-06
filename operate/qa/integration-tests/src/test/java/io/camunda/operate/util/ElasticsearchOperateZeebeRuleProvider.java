@@ -7,19 +7,18 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.TestContainerUtil.ELS_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.Topology;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
+import io.camunda.operate.qa.util.TestContext;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.zeebe.containers.ZeebeContainer;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,7 +55,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Qualifier("esClient")
   protected RestHighLevelClient esClient;
 
-  protected ZeebeContainer zeebeContainer;
+  protected TestStandaloneBroker zeebeBroker;
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
@@ -150,20 +149,24 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Override
   public void startZeebe() {
 
-    final String zeebeVersion =
-        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
-    zeebeContainer =
-        testContainerUtil.startZeebe(
-            zeebeVersion,
-            prefix,
-            2,
-            isMultitTenancyEnabled(),
-            ConnectionTypes.ELASTICSEARCH.getType());
+    final TestContext testContext =
+        new TestContext()
+            .setInternalElsHost("localhost")
+            .setExternalElsHost("localhost")
+            .setExternalElsPort(ELS_PORT)
+            .setInternalElsPort(ELS_PORT)
+            .setIndexPrefix(prefix)
+            .setDatabaseType("elasticsearch")
+            .setPartitionCount(2)
+            .setMultitenancyEnabled(isMultitTenancyEnabled());
+
+    zeebeBroker = testContainerUtil.startZeebe(testContext);
 
     client =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .grpcAddress(zeebeContainer.getGrpcAddress())
+            .restAddress(zeebeBroker.restAddress())
+            .grpcAddress(zeebeBroker.grpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 
@@ -186,8 +189,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   }
 
   @Override
-  public ZeebeContainer getZeebeContainer() {
-    return zeebeContainer;
+  public TestStandaloneBroker getZeebeBroker() {
+    return zeebeBroker;
   }
 
   @Override

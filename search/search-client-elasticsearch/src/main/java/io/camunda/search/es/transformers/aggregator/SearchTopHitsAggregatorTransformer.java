@@ -27,16 +27,28 @@ public class SearchTopHitsAggregatorTransformer
                 topHitsAggBuilder -> {
                   topHitsAggBuilder
                       .size(value.size())
-                      .sort(
-                          sortBuilder -> {
-                            sortBuilder.field(
-                                fieldSort -> {
-                                  fieldSort.field(value.field());
-                                  fieldSort.order(SortOrder.Desc);
-                                  return fieldSort;
-                                });
-                            return sortBuilder;
+                      .source(s -> s.filter(f -> f.includes(value.fields())));
+
+                  // Convert FieldSorting list to SortOptions
+                  value
+                      .sortOption()
+                      .getFieldSortings()
+                      .forEach(
+                          fieldSorting -> {
+                            topHitsAggBuilder.sort(
+                                sortBuilder ->
+                                    sortBuilder.field(
+                                        fieldSort -> {
+                                          fieldSort.field(fieldSorting.field());
+                                          fieldSort.order(
+                                              fieldSorting.order()
+                                                      == io.camunda.search.sort.SortOrder.ASC
+                                                  ? SortOrder.Asc
+                                                  : SortOrder.Desc);
+                                          return fieldSort;
+                                        }));
                           });
+
                   return topHitsAggBuilder;
                 });
     applySubAggregations(builder, value);

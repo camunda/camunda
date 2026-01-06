@@ -28,7 +28,6 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
-import org.opensearch.client.opensearch._types.aggregations.LongTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
@@ -67,10 +66,6 @@ public class SearchAggregationResultTransformer<T>
         .docCount(aggregate.docCount())
         .aggregations(transformAggregation(aggregate.aggregations()))
         .build();
-  }
-
-  private AggregationResult transformLTermsBucketAggregate(final LongTermsAggregate aggregate) {
-    return new Builder().docCount((long) aggregate.buckets().array().size()).build();
   }
 
   private AggregationResult transformSingleMetricAggregate(
@@ -122,6 +117,7 @@ public class SearchAggregationResultTransformer<T>
     final var map = new LinkedHashMap<String, AggregationResult>();
     final var buckets = aggregate.buckets();
     final var searchAfter = extractSearchAfter(aggregate);
+    final var builder = new Builder().aggregations(map).endCursor(Cursor.encode(searchAfter));
     if (buckets.isKeyed()) {
       buckets
           .keyed()
@@ -136,6 +132,7 @@ public class SearchAggregationResultTransformer<T>
               });
     } else if (buckets.isArray()) {
       final List<B> array = buckets.array();
+      builder.docCount((long) array.size());
       array.forEach(
           bucket -> {
             final String key =
@@ -144,7 +141,7 @@ public class SearchAggregationResultTransformer<T>
                   case final LongTermsBucket b -> b.keyAsString();
                   case final CompositeBucket b ->
                       b.key().values().stream()
-                          .map(JsonData::toString)
+                          .map(SearchAggregationResultTransformer::fieldValueToString)
                           .collect(Collectors.joining(COMPOSITE_KEY_DELIMITER));
                   default ->
                       throw new IllegalStateException(
@@ -158,7 +155,7 @@ public class SearchAggregationResultTransformer<T>
             map.put(key, result);
           });
     }
-    return new Builder().aggregations(map).endCursor(Cursor.encode(searchAfter)).build();
+    return builder.build();
   }
 
   private <B extends MultiBucketBase> Object[] extractSearchAfter(
@@ -167,12 +164,17 @@ public class SearchAggregationResultTransformer<T>
       return compositeAggregate.afterKey() != null
           ? compositeAggregate.afterKey().entrySet().stream()
               .collect(
-                  Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().to(String.class)))
+                  Collectors.toMap(
+                      Map.Entry::getKey, entry -> fieldValueToString(entry.getValue())))
               .entrySet()
               .toArray()
           : null;
     }
     return null;
+  }
+
+  private static String fieldValueToString(final JsonData fieldValue) {
+    return fieldValue.to(String.class);
   }
 
   private Map<String, AggregationResult> transformAggregation(
@@ -191,7 +193,7 @@ public class SearchAggregationResultTransformer<T>
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());
             case Filters -> res = transformMultiBucketAggregate(aggregate.filters());
             case Sterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.sterms()));
-            case Lterms -> res = transformLTermsBucketAggregate(warnDocError(aggregate.lterms()));
+            case Lterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.lterms()));
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());

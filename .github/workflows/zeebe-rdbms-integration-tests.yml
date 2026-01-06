@@ -1,0 +1,60 @@
+# description: Runs Integration tests on different versions and vendors of RDBMS databases
+# test location: /qa/acceptance-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Rdbms Manual/Scheduled Run Integration Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/zeebe-rdbms-integration-tests.yml"
+  schedule:
+    - cron: "0 5 * * Mon-Fri"
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  rdbms-integration-tests:
+    name: "RDBMS ${{ matrix.database-name }}"
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-name: "Postgres 18"
+            database-type: "postgres"
+            database-image-version: "18-alpine"
+            it-database-type: "rdbms_postgres"
+          - database-name: "MySQL 9.4"
+            database-type: "mysql"
+            database-image-version: "9.4"
+            it-database-type: "rdbms_mysql"
+          - database-name: "MariaDB 12.0"
+            database-type: "mariadb"
+            database-image-version: "12.0"
+            it-database-type: "rdbms_mariadb"
+          - database-name: "MSSQL 2025"
+            database-type: "mssql"
+            database-image-version: "2025-latest"
+            it-database-type: "rdbms_mssql"
+          - database-name: "Oracle 23c"
+            database-type: "oracle"
+            database-image-version: "23-slim-faststart"
+            it-database-type: "rdbms_oracle"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      it-database-type: ${{ matrix.it-database-type }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}

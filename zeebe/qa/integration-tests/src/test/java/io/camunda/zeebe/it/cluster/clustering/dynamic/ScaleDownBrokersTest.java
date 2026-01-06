@@ -45,22 +45,27 @@ final class ScaleDownBrokersTest {
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
           .withBrokerConfig(
-              b ->
-                  b.brokerConfig()
-                      .getCluster()
-                      .getMembership()
-                      // Decrease the timeouts for fast convergence of broker topology.
-                      .setSyncInterval(Duration.ofSeconds(1)))
+              b -> {
+                // Decrease the timeouts for fast convergence of broker topology.
+                b.unifiedConfig()
+                    .getCluster()
+                    .getMembership()
+                    .setSyncInterval(Duration.ofSeconds(1));
+              })
           .withGatewayConfig(
-              g ->
-                  g.gatewayConfig()
-                      .getCluster()
-                      .getMembership()
-                      // Decrease the timeouts for fast convergence of gateway topology. When the
-                      // broker is shutdown, the topology update takes at least 10 seconds with the
-                      // default values.
-                      .setSyncInterval(Duration.ofSeconds(1))
-                      .setFailureTimeout(Duration.ofSeconds(2)))
+              g -> {
+                // Decrease the timeouts for fast convergence of gateway topology. When the
+                // broker is shutdown, the topology update takes at least 10 seconds with the
+                // default values.
+                g.unifiedConfig()
+                    .getCluster()
+                    .getMembership()
+                    .setSyncInterval(Duration.ofSeconds(1));
+                g.unifiedConfig()
+                    .getCluster()
+                    .getMembership()
+                    .setFailureTimeout(Duration.ofSeconds(2));
+              })
           .build();
 
   @BeforeEach

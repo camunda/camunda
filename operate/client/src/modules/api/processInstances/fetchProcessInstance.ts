@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {requestAndParse, requestWithThrow} from 'modules/request';
+import {requestAndParse} from 'modules/request';
 import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const fetchProcessInstance = async (
@@ -21,11 +21,4 @@ const fetchProcessInstance = async (
   );
 };
 
-const fetchProcessInstanceDeprecated = async (processInstanceKey: string) => {
-  return requestWithThrow<ProcessInstanceEntity>({
-    url: `/api/process-instances/${processInstanceKey}`,
-    method: 'GET',
-  });
-};
-
-export {fetchProcessInstance, fetchProcessInstanceDeprecated};
+export {fetchProcessInstance};

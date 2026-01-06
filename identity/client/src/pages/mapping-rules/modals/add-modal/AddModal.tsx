@@ -21,7 +21,7 @@ import {
 } from "../components";
 import { spacing05 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
-import { isValidId } from "src/utility/validate";
+import { isValidId, getIdPattern } from "src/utility/validate";
 
 type FormData = {
   mappingRuleId: string;
@@ -91,7 +91,10 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
         rules={{
           required: t("mappingRuleIdRequired"),
           validate: (value) =>
-            isValidId(value) || t("pleaseEnterValidMappingRuleId"),
+            isValidId(value) ||
+            t("pleaseEnterValidMappingRuleId", {
+              pattern: getIdPattern(),
+            }),
         }}
         render={({ field }) => (
           <TextField

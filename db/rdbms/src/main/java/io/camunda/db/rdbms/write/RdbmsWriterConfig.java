@@ -14,6 +14,11 @@ public record RdbmsWriterConfig(
     int partitionId,
     int queueSize,
     /*
+     * Maximum memory (in MB) that the execution queue can consume before flushing.
+     * 0 or negative value means no memory limit (only count-based limit applies).
+     */
+    int queueMemoryLimit,
+    /*
      * The number of batch operation items to insert in a single insert statement.
      */
     int batchOperationItemInsertBlockSize,
@@ -26,6 +31,8 @@ public record RdbmsWriterConfig(
     HistoryConfig history) {
 
   public static final int DEFAULT_QUEUE_SIZE = 1000;
+  // Default memory limit: 20MB - aligned with CamundaExporter's default
+  public static final int DEFAULT_QUEUE_MEMORY_LIMIT = 20;
   public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
   public static final boolean DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION = true;
 
@@ -37,6 +44,7 @@ public record RdbmsWriterConfig(
 
     private int partitionId;
     private int queueSize = DEFAULT_QUEUE_SIZE;
+    private int queueMemoryLimit = DEFAULT_QUEUE_MEMORY_LIMIT;
     private int batchOperationItemInsertBlockSize = DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
     private boolean exportBatchOperationItemsOnCreation =
         DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
@@ -49,6 +57,11 @@ public record RdbmsWriterConfig(
 
     public Builder queueSize(final int queueSize) {
       this.queueSize = queueSize;
+      return this;
+    }
+
+    public Builder queueMemoryLimit(final int queueMemoryLimit) {
+      this.queueMemoryLimit = queueMemoryLimit;
       return this;
     }
 
@@ -73,6 +86,7 @@ public record RdbmsWriterConfig(
       return new RdbmsWriterConfig(
           partitionId,
           queueSize,
+          queueMemoryLimit,
           batchOperationItemInsertBlockSize,
           exportBatchOperationItemsOnCreation,
           history);
@@ -81,6 +95,7 @@ public record RdbmsWriterConfig(
 
   public record HistoryConfig(
       Duration defaultHistoryTTL,
+      Duration decisionInstanceTTL,
       Duration batchOperationCancelProcessInstanceHistoryTTL,
       Duration batchOperationMigrateProcessInstanceHistoryTTL,
       Duration batchOperationModifyProcessInstanceHistoryTTL,
@@ -93,11 +108,11 @@ public record RdbmsWriterConfig(
 
     public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
     public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
-    public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
+    public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofSeconds(5);
     public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
     public static final Duration DEFAULT_USAGE_METRICS_CLEANUP = Duration.ofDays(1);
     public static final Duration DEFAULT_USAGE_METRICS_TTL = Duration.ofDays(730);
-    public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
+    public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 10000;
 
     public static RdbmsWriterConfig.Builder builder() {
       return new RdbmsWriterConfig.Builder();
@@ -106,6 +121,7 @@ public record RdbmsWriterConfig(
     public static class Builder implements ObjectBuilder<HistoryConfig> {
 
       private Duration defaultHistoryTTL = DEFAULT_HISTORY_TTL;
+      private Duration decisionInstanceTTL = DEFAULT_HISTORY_TTL;
       private Duration batchOperationCancelProcessInstanceHistoryTTL =
           DEFAULT_BATCH_OPERATION_HISTORY_TTL;
       private Duration batchOperationMigrateProcessInstanceHistoryTTL =
@@ -122,6 +138,11 @@ public record RdbmsWriterConfig(
 
       public HistoryConfig.Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
         this.defaultHistoryTTL = defaultHistoryTTL;
+        return this;
+      }
+
+      public HistoryConfig.Builder decisionInstanceTTL(final Duration decisionInstanceTTL) {
+        this.decisionInstanceTTL = decisionInstanceTTL;
         return this;
       }
 
@@ -183,6 +204,7 @@ public record RdbmsWriterConfig(
       public HistoryConfig build() {
         return new HistoryConfig(
             defaultHistoryTTL,
+            decisionInstanceTTL,
             batchOperationCancelProcessInstanceHistoryTTL,
             batchOperationMigrateProcessInstanceHistoryTTL,
             batchOperationModifyProcessInstanceHistoryTTL,
@@ -195,4 +217,10 @@ public record RdbmsWriterConfig(
       }
     }
   }
+
+  public record HistoryDeletionConfig(
+      Duration delayBetweenRuns,
+      Duration maxDelayBetweenRuns,
+      int queueBatchSize,
+      int dependentRowLimit) {}
 }

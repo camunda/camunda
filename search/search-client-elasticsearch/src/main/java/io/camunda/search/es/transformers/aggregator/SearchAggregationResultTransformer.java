@@ -12,7 +12,6 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeBucket;
-import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
@@ -70,10 +69,6 @@ public class SearchAggregationResultTransformer<T>
         .build();
   }
 
-  private AggregationResult transformLTermsBucketAggregate(final LongTermsAggregate aggregate) {
-    return new Builder().docCount((long) aggregate.buckets().array().size()).build();
-  }
-
   private AggregationResult transformSingleMetricAggregate(
       final SingleMetricAggregateBase aggregate) {
     return new Builder().docCount((long) aggregate.value()).build();
@@ -123,6 +118,7 @@ public class SearchAggregationResultTransformer<T>
     final var map = new LinkedHashMap<String, AggregationResult>();
     final var buckets = aggregate.buckets();
     final var searchAfter = extractSearchAfter(aggregate);
+    final var builder = new Builder().aggregations(map).endCursor(Cursor.encode(searchAfter));
     if (buckets.isKeyed()) {
       buckets
           .keyed()
@@ -137,15 +133,17 @@ public class SearchAggregationResultTransformer<T>
               });
     } else if (buckets.isArray()) {
       final List<B> array = buckets.array();
+      builder.docCount((long) array.size());
       array.forEach(
           bucket -> {
             final String key =
                 switch (bucket) {
                   case final StringTermsBucket b -> b.key().stringValue();
-                  case final LongTermsBucket b -> b.keyAsString();
+                  case final LongTermsBucket b ->
+                      b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key());
                   case final CompositeBucket b ->
                       b.key().values().stream()
-                          .map(FieldValue::stringValue)
+                          .map(SearchAggregationResultTransformer::fieldValueToString)
                           .collect(Collectors.joining(COMPOSITE_KEY_DELIMITER));
                   default ->
                       throw new IllegalStateException(
@@ -159,7 +157,7 @@ public class SearchAggregationResultTransformer<T>
             map.put(key, result);
           });
     }
-    return new Builder().aggregations(map).endCursor(Cursor.encode(searchAfter)).build();
+    return builder.build();
   }
 
   private <B extends MultiBucketBase> Object[] extractSearchAfter(
@@ -167,12 +165,18 @@ public class SearchAggregationResultTransformer<T>
     if (aggregate instanceof final CompositeAggregate compositeAggregate) {
       return compositeAggregate.afterKey() != null
           ? compositeAggregate.afterKey().entrySet().stream()
-              .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stringValue()))
+              .collect(
+                  Collectors.toMap(
+                      Map.Entry::getKey, entry -> fieldValueToString(entry.getValue())))
               .entrySet()
               .toArray()
           : null;
     }
     return null;
+  }
+
+  private static String fieldValueToString(final FieldValue fieldValue) {
+    return String.valueOf(fieldValue._get());
   }
 
   private Map<String, AggregationResult> transformAggregation(
@@ -191,7 +195,7 @@ public class SearchAggregationResultTransformer<T>
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());
             case Filters -> res = transformMultiBucketAggregate(aggregate.filters());
             case Sterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.sterms()));
-            case Lterms -> res = transformLTermsBucketAggregate(warnDocError(aggregate.lterms()));
+            case Lterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.lterms()));
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());

@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
  * semantic version the field was introduced.
  *
  * <p>In addition, all fields with this annotation must have a non-null default value. This is to
- * maintain backwards compatability. However, if the nullable field is set to true then it is
+ * maintain backwards compatability. However, if the requireDefault field is set to false then it is
  * acceptable for the field to have a null default.
  *
  * <p>Example usage:
@@ -30,15 +30,15 @@ import java.lang.annotation.Target;
  *    {@literal @SinceVersion("8.8.0")}
  *     private String newField = "bar" // This will pass
  *
- *    {@literal @SinceVersion(value = "8.8.0", nullable = true)}
+ *    {@literal @SinceVersion(value = "8.8.0", requireDefault = false)}
  *     private String newField; // This will pass
  *   }
  * </code></pre>
  */
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SinceVersion {
   String value();
 
-  boolean nullable() default false;
+  boolean requireDefault() default true;
 }

@@ -161,6 +161,7 @@ public final class MessageCorrelateBehavior {
             commandSender.correlateProcessMessageSubscription(
                 subscription.getProcessInstanceKey(),
                 subscription.getElementInstanceKey(),
+                subscription.getProcessDefinitionKey(),
                 subscription.getBpmnProcessId(),
                 messageData.messageName(),
                 messageData.messageKey(),

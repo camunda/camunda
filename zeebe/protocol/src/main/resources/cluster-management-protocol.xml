@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.management"
-  id="1" version="0" semanticVersion="${project.version}"
+  id="1" version="1" semanticVersion="${project.version}"
   description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
 
   <xi:include href="common-types.xml"/>
@@ -22,6 +22,7 @@
       <validValue name="QUERY_STATUS">1</validValue>
       <validValue name="LIST">2</validValue>
       <validValue name="DELETE">3</validValue>
+      <validValue name="QUERY_STATE">4</validValue>
     </enum>
 
     <enum name="BackupStatusCode" encodingType="uint8">
@@ -57,6 +58,7 @@
     <field name="partitionId" id="1" type="uint16"/>
     <field name="type" id="2" type="BackupRequestType"/>
     <field name="backupId" id="3" type="int64"/>
+    <field name="checkpointType" id="5"  type="uint8" sinceVersion="1"/>
     <data name="pattern" id="4" type="varDataEncoding"/>
   </sbe:message>
 
@@ -89,6 +91,23 @@
       <data name="createdAt" id="9" type="varDataEncoding"/>
       <!-- Broker version which created this backup -->
       <data name="brokerVersion" id="11" type="varDataEncoding"/>
+    </group>
+  </sbe:message>
+
+  <sbe:message name="CheckpointStateResponse" id="6">
+    <group name="checkpointStates" id="1">
+      <field name="partitionId" id="1" type="uint16"/>
+      <field name="checkpointId" id="2"  type="int64"/>
+      <field name="checkpointType" id="3"  type="uint8"/>
+      <field name="checkpointPosition" id="4"  type="uint64"/>
+      <field name="checkpointTimestamp" id="5"  type="uint64"/>
+    </group>
+    <group name="backupStates" id="2">
+      <field name="partitionId" id="1" type="uint16"/>
+      <field name="checkpointId" id="2"  type="int64"/>
+      <field name="checkpointType" id="3"  type="uint8"/>
+      <field name="checkpointPosition" id="4"  type="uint64"/>
+      <field name="checkpointTimestamp" id="5"  type="uint64"/>
     </group>
   </sbe:message>
 </sbe:messageSchema>

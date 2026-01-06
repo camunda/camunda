@@ -19,9 +19,10 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.metrics.MetricsRecorder;
-import java.time.Instant;
+import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 public class CommandWrapper {
 
@@ -29,7 +30,7 @@ public class CommandWrapper {
   private final ActivatedJob job;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
-
+  private final CounterMetricsContext metricsContext;
   private long currentRetryDelay = 50L;
   private int invocationCounter = 0;
   private final int maxRetries;
@@ -39,12 +40,14 @@ public class CommandWrapper {
       final ActivatedJob job,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
+      final CounterMetricsContext metricsContext,
       final int maxRetries) {
     this.command = command;
     this.job = job;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
-    this.metricsRecorder = metricsRecorder;
     this.maxRetries = maxRetries;
+    this.metricsRecorder = metricsRecorder;
+    this.metricsContext = metricsContext;
   }
 
   public void executeAsync() {
@@ -59,13 +62,13 @@ public class CommandWrapper {
   }
 
   public void executeAsyncWithMetrics(
-      final String metricName, final String action, final String type) {
+      final BiConsumer<MetricsRecorder, CounterMetricsContext> increaser) {
     invocationCounter++;
     command
         .send()
         .thenApply(
             result -> {
-              metricsRecorder.increase(metricName, action, type);
+              increaser.accept(metricsRecorder, metricsContext);
               return result;
             })
         .exceptionally(
@@ -105,6 +108,6 @@ public class CommandWrapper {
   }
 
   private boolean jobDeadlineExceeded() {
-    return (Instant.now().getEpochSecond() > job.getDeadline());
+    return (System.currentTimeMillis() > job.getDeadline());
   }
 }

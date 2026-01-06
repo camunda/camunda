@@ -51,7 +51,6 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
                               command, RejectionType.INVALID_ARGUMENT, errorMessage);
                         },
                         () -> {
-                          stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, job);
                           responseWriter.writeEventOnCommand(
                               jobKey, JobIntent.RETRIES_UPDATED, job, command);
                         }),

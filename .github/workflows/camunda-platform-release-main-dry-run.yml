@@ -11,6 +11,10 @@ on:
         default: 'main'
         required: false
         type: string
+      includeOptimize:
+        description: 'Whether to include Optimize in the dry run. Defaults to false.'
+        type: boolean
+        default: false
   schedule:
     # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
     - cron: '0 1 * * 1-5'
@@ -23,15 +27,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # These versions were selected to ensure compatibility with the japicmp plugin (introduced Oct 10, 2025),
-        # which requires webapps-schema artifact (introduced Sep 13, 2024).
-        # Earlier versions from 2021 predate this dependency and cause build failures.
-        # See discussion at: https://camunda.slack.com/archives/C06UWQNCU7M/p1760468857576009?thread_ts=1760406101.424439&cid=C06UWQNCU7M
-        version: [ 8.6.1, 8.8.0-alpha8 ]
+        # Uses fake tag for dry run testing without affecting real releases
+        version: [ 0.0.0-dryrun-minor, 0.0.0-dryrun-alpha ]
         include:
-          - version: 8.6.1
+          - version: 0.0.0-dryrun-minor
             latest: true
-          - version: 8.8.0-alpha8
+          - version: 0.0.0-dryrun-alpha
             latest: false
     with:
       releaseBranch: ${{ inputs.branch || 'main' }}
@@ -39,6 +40,7 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
       dryRun: true
+      includeOptimize: ${{ inputs.includeOptimize || false }}
 
   notify:
     name: Send Slack notification

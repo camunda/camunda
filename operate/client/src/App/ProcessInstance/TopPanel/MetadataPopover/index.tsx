@@ -19,19 +19,11 @@ import {useElementInstance} from 'modules/queries/elementInstances/useElementIns
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useMemo} from 'react';
 import {Details} from './Details';
-import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
-import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
-import {useJobs} from 'modules/queries/jobs/useJobs';
-import {useSearchMessageSubscriptions} from 'modules/queries/messageSubscriptions/useSearchMessageSubscriptions';
-import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
-import {useDecisionDefinition} from 'modules/queries/decisionDefinitions/useDecisionDefinition';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
-import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 import {Incidents} from './Incidents';
-import {incidentsStore} from 'modules/stores/incidents';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -91,14 +83,12 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {
     data: elementInstancesSearchResult,
     isLoading: isSearchingElementInstances,
-  } = useElementInstancesSearch(
-    elementId ?? '',
-    processInstance?.processInstanceKey ?? '',
-    convertBpmnJsTypeToAPIType(businessObject?.$type),
-    {
-      enabled: shouldFetchElementInstances,
-    },
-  );
+  } = useElementInstancesSearch({
+    elementId: elementId ?? '',
+    processInstanceKey: processInstance?.processInstanceKey ?? '',
+    elementType: convertBpmnJsTypeToAPIType(businessObject?.$type),
+    enabled: shouldFetchElementInstances,
+  });
 
   const elementInstanceMetadata = useMemo(() => {
     if (elementInstanceKey && elementInstance) {
@@ -121,97 +111,10 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     elementInstancesSearchResult,
   ]);
 
-  const {data: userTask, isLoading: isSearchingUserTasks} =
-    useGetUserTaskByElementInstance(
-      elementInstanceMetadata?.elementInstanceKey ?? '',
-      {
-        enabled:
-          !!elementInstanceMetadata?.elementInstanceKey &&
-          elementInstanceMetadata?.type === 'USER_TASK',
-      },
-    );
-
-  const {
-    data: processInstancesSearchResult,
-    isLoading: isSearchingProcessInstances,
-  } = useProcessInstancesSearch(
-    {
-      filter: {
-        parentElementInstanceKey:
-          elementInstanceMetadata?.elementInstanceKey ?? '',
-      },
-    },
-    {
-      enabled: !!elementInstanceMetadata?.elementInstanceKey,
-    },
-  );
-
-  const {data: jobSearchResult, isLoading: isSearchingJob} = useJobs({
-    payload: {
-      filter: {
-        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
-        listenerEventType: 'UNSPECIFIED',
-      },
-    },
-    disabled: !elementInstanceMetadata?.elementInstanceKey,
-    select: (data) => data.pages?.flatMap((page) => page.items),
-  });
-
-  const {
-    data: messageSubscriptionSearchResult,
-    isLoading: isSearchingMessageSubscription,
-  } = useSearchMessageSubscriptions(
-    {
-      filter: {
-        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
-      },
-    },
-    {
-      enabled: !!elementInstanceMetadata?.elementInstanceKey,
-    },
-  );
-
-  const {
-    data: decisionInstanceSearchResult,
-    isLoading: isSearchingDecisionInstances,
-  } = useDecisionInstancesSearch(
-    {
-      filter: {
-        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
-      },
-    },
-    {
-      enabled:
-        !!elementInstanceMetadata?.elementInstanceKey &&
-        elementInstanceMetadata?.type === 'BUSINESS_RULE_TASK',
-    },
-  );
-
-  const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
-    (instance) =>
-      instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
-  );
-
-  const calledDecisionDefinitionId =
-    decisionInstanceSearchResult?.items?.[0]?.rootDecisionDefinitionKey;
-
-  const {
-    data: calledDecisionDefinition,
-    isLoading: isSearchingCalledDecisionDefinition,
-  } = useDecisionDefinition(calledDecisionDefinitionId ?? '', {
-    enabled: !!calledDecisionDefinitionId && !calledDecisionInstance,
-  });
-
   if (
     elementId === undefined ||
     (shouldFetchElementInstances && isSearchingElementInstances) ||
-    (!!elementInstanceKey && isFetchingInstance) ||
-    isSearchingUserTasks ||
-    isSearchingProcessInstances ||
-    isSearchingJob ||
-    isSearchingMessageSubscription ||
-    isSearchingCalledDecisionDefinition ||
-    isSearchingDecisionInstances
+    (!!elementInstanceKey && isFetchingInstance)
   ) {
     return null;
   }
@@ -245,16 +148,6 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             <Details
               elementInstance={elementInstanceMetadata}
               businessObject={businessObject}
-              job={jobSearchResult?.[0]}
-              calledProcessInstance={processInstancesSearchResult?.items?.[0]}
-              messageSubscription={messageSubscriptionSearchResult?.items?.[0]}
-              calledDecisionDefinition={calledDecisionDefinition}
-              calledDecisionInstance={calledDecisionInstance}
-              userTask={
-                elementInstanceMetadata.type === 'USER_TASK'
-                  ? userTask
-                  : undefined
-              }
             />
             {elementInstanceMetadata.hasIncident && (
               <Incidents
@@ -272,12 +165,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             <MultiIncidents
               count={incidentCount}
               onButtonClick={() => {
-                if (IS_INCIDENTS_PANEL_V2) {
-                  return incidentsPanelStore.setPanelOpen(true);
-                }
-                incidentsStore.clearSelection();
-                incidentsStore.toggleFlowNodeSelection(elementId);
-                incidentsStore.setIncidentBarOpen(true);
+                incidentsPanelStore.showIncidentsForElementId(elementId);
               }}
             />
           </>

@@ -126,7 +126,11 @@ export class IdentityAuthorizationsPage {
   }
 
   async fillResourceId(resourceId: string) {
+    await expect(this.createAuthorizationResourceIdField).toBeVisible();
     await this.createAuthorizationResourceIdField.fill(resourceId);
+    await expect(this.createAuthorizationResourceIdField).toHaveValue(
+      resourceId,
+    );
   }
 
   async checkAccessPermissions(permission: string[]) {
@@ -182,7 +186,7 @@ export class IdentityAuthorizationsPage {
         await this.selectResourceType(authorization.resourceType);
         await this.fillResourceId(authorization.resourceId);
         await this.selectAccessPermissions(authorization.accessPermissions);
-        await this.createAuthorizationSubmitButton.click();
+        await this.createAuthorizationSubmitButton.click({timeout: 15000});
         await expect(this.createAuthorizationModal).toBeHidden({
           timeout: 15000,
         });
@@ -191,6 +195,7 @@ export class IdentityAuthorizationsPage {
         const item = this.getAuthorizationCell(authorization.ownerId);
         await waitForItemInList(this.page, item, {
           timeout: 30000,
+          clickNext: true,
           onAfterReload: () =>
             this.selectResourceTypeTab(authorization.resourceType),
         });
@@ -259,8 +264,12 @@ export class IdentityAuthorizationsPage {
     ownerId: string,
     ownerType: string,
     accessPermissions?: string[],
+    authorizationTab?: string,
   ) {
-    const exists = await this.findAuthorizationInPaginatedList(ownerId);
+    const exists = await this.findAuthorizationInPaginatedList(
+      ownerId,
+      authorizationTab,
+    );
 
     if (!exists) {
       throw new Error(

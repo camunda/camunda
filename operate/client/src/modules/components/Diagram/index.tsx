@@ -14,18 +14,10 @@ import {
 } from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
-import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {useTotalRunningInstancesForFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {
-  clearSelection,
-  getSelectedRunningInstanceCount,
-} from 'modules/utils/flowNodeSelection';
-import {
-  useIsRootNodeSelected,
-  useRootNode,
-} from 'modules/hooks/flowNodeSelection';
+import {clearSelection} from 'modules/utils/flowNodeSelection';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -45,6 +37,8 @@ type Props = {
     | false;
   highlightedSequenceFlows?: string[];
   highlightedFlowNodeIds?: string[];
+  nonSelectableNodeTooltipText?: string;
+  hasOuterBorderOnSelection?: boolean;
 };
 
 const Diagram: React.FC<Props> = observer(
@@ -59,20 +53,13 @@ const Diagram: React.FC<Props> = observer(
     children,
     highlightedSequenceFlows,
     highlightedFlowNodeIds,
+    nonSelectableNodeTooltipText,
+    hasOuterBorderOnSelection = true,
   }) => {
     const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
     const [isDiagramRendered, setIsDiagramRendered] = useState(false);
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
-    const {isModificationModeEnabled} = modificationsStore;
-    const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
-    const {data: totalRunningInstances} =
-      useTotalRunningInstancesForFlowNode(flowNodeId);
-    const isRootNodeSelected = useIsRootNodeSelected();
-    const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
-      totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
-      isRootNodeSelected,
-    });
     const rootNode = useRootNode();
 
     function getViewer() {
@@ -94,12 +81,9 @@ const Diagram: React.FC<Props> = observer(
             selectedFlowNodeIds,
             overlaysData,
             highlightedSequenceFlows,
-            highlightedFlowNodeIds: highlightedFlowNodeIds,
-            nonSelectableNodeTooltipText: isModificationModeEnabled
-              ? 'Modification is not supported for this flow node.'
-              : undefined,
-            hasOuterBorderOnSelection:
-              !isModificationModeEnabled || selectedRunningInstanceCount > 1,
+            highlightedFlowNodeIds,
+            nonSelectableNodeTooltipText,
+            hasOuterBorderOnSelection,
           });
           setIsDiagramRendered(true);
         }
@@ -112,9 +96,9 @@ const Diagram: React.FC<Props> = observer(
       overlaysData,
       viewer,
       highlightedSequenceFlows,
-      isModificationModeEnabled,
-      selectedRunningInstanceCount,
       highlightedFlowNodeIds,
+      nonSelectableNodeTooltipText,
+      hasOuterBorderOnSelection,
     ]);
 
     useEffect(() => {

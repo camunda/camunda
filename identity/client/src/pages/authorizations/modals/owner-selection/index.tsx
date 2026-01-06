@@ -16,6 +16,9 @@ import useTranslate from "src/utility/localization";
 import OwnerSelection from "./OwnerSelection";
 import TextField from "src/components/form/TextField";
 import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
+import { Caption } from "src/pages/authorizations/modals/components.tsx";
+import { DocumentationLink } from "src/components/documentation";
+import { getIdPattern } from "src/utility/validate";
 
 type SelectionProps = {
   type: OwnerType;
@@ -34,7 +37,7 @@ const Selection: FC<SelectionProps> = ({
   isEmpty = false,
   isInvalidId = false,
 }) => {
-  const { t } = useTranslate("authorizations");
+  const { t, Translate } = useTranslate("authorizations");
 
   switch (type) {
     case OwnerType.USER:
@@ -46,12 +49,28 @@ const Selection: FC<SelectionProps> = ({
             onChange={onChange}
             onBlur={onBlur}
             placeholder={t("enterUsername")}
+            helperText={
+              <Caption>
+                <Translate i18nKey="usernameDescription">
+                  Check the documentation for{" "}
+                  <DocumentationLink
+                    path="/docs/components/identity/authorization/#about-authorizations"
+                    withIcon
+                  >
+                    how to reference users
+                  </DocumentationLink>{" "}
+                  .
+                </Translate>
+              </Caption>
+            }
             type="text"
             errors={
               isEmpty
                 ? t("usernameRequired")
                 : isInvalidId
-                  ? t("pleaseEnterValidUsername")
+                  ? t("pleaseEnterValidUsername", {
+                      pattern: getIdPattern(),
+                    })
                   : ""
             }
           />
@@ -94,7 +113,9 @@ const Selection: FC<SelectionProps> = ({
             isEmpty
               ? t("groupIdRequired")
               : isInvalidId
-                ? t("pleaseEnterValidGroupId")
+                ? t("pleaseEnterValidGroupId", {
+                    pattern: getIdPattern(),
+                  })
                 : ""
           }
         />
@@ -138,7 +159,9 @@ const Selection: FC<SelectionProps> = ({
             isEmpty
               ? t("ownerRequired")
               : isInvalidId
-                ? t("pleaseEnterValidClientId")
+                ? t("pleaseEnterValidClientId", {
+                    pattern: getIdPattern(),
+                  })
                 : ""
           }
         />

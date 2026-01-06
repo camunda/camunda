@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -134,17 +134,17 @@ public class ProcessInstanceSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<ProcessInstanceSort>> sortBuilder,
       final Comparator<ProcessInstanceEntity> comparator) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceDbReader reader = rdbmsService.getProcessInstanceReader();
 
     final var version = new Random().nextInt(32767);
     for (int i = 0; i < 20; i++) {
       final var def =
           ProcessDefinitionFixtures.createAndSaveProcessDefinition(
-              rdbmsWriter, b -> b.version(version));
+              rdbmsWriters, b -> b.version(version));
 
       createAndSaveRandomProcessInstance(
-          rdbmsWriter,
+          rdbmsWriters,
           b ->
               b.processDefinitionKey(def.processDefinitionKey())
                   .processDefinitionId(def.processDefinitionId())

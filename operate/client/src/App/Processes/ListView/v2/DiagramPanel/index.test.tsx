@@ -13,16 +13,18 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {
-  groupedProcessesMock,
+  mockProcessDefinitions,
   mockProcessStatisticsV2 as mockProcessStatistics,
   mockProcessInstances,
   mockMultipleStatesStatistics,
   mockProcessXML,
+  mockProcessInstancesV2,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
@@ -77,9 +79,10 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 describe('DiagramPanel', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchProcessInstances().withSuccess(mockProcessInstancesV2);
 
     processesStore.fetchProcesses();
   });

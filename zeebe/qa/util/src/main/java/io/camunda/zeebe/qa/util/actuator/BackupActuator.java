@@ -25,6 +25,7 @@ import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
@@ -104,6 +105,14 @@ public interface BackupActuator {
   @Body("%7B\"backupId\": \"{backupId}\"%7D")
   TakeBackupRuntimeResponse take(@Param("backupId") long backupId);
 
+  /**
+   * Triggers taking a backup of the cluster.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST")
+  TakeBackupRuntimeResponse take();
+
   @RequestLine("GET /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   BackupInfo status(@Param final long id);
@@ -119,6 +128,10 @@ public interface BackupActuator {
   @RequestLine("DELETE /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void delete(@Param final long id);
+
+  @RequestLine("GET /state")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  CheckpointStateResponse state();
 
   /**
    * Custom error handler, mapping errors with body to custom types for easier

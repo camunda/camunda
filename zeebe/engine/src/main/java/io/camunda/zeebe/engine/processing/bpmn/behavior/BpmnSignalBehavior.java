@@ -65,7 +65,7 @@ public final class BpmnSignalBehavior {
 
     if (signal.getSignalName().isEmpty()) {
       return expressionBehavior.evaluateStringExpression(
-          signal.getSignalNameExpression(), context.getElementInstanceKey());
+          signal.getSignalNameExpression(), context.getElementInstanceKey(), context.getTenantId());
     }
 
     return Either.right(signal.getSignalName().get());

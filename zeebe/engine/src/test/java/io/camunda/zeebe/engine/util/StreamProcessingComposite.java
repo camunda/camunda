@@ -80,10 +80,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final TypedRecordProcessorContext typedRecordProcessorContext) {
     processingState = typedRecordProcessorContext.getProcessingState();
 
-    return factory.build(
-        TypedRecordProcessors.processors(
-            processingState.getKeyGenerator(), typedRecordProcessorContext.getWriters()),
-        typedRecordProcessorContext);
+    return factory.build(TypedRecordProcessors.processors(), typedRecordProcessorContext);
   }
 
   public StreamProcessor startTypedStreamProcessor(

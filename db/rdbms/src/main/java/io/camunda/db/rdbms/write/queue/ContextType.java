@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.queue;
 
 public enum ContextType {
+  AUDIT_LOG(false),
   AUTHORIZATION(true),
   BATCH_OPERATION(false),
   CORRELATED_MESSAGE_SUBSCRIPTION(false),
@@ -17,6 +18,7 @@ public enum ContextType {
   FLOW_NODE(false),
   FORM(false),
   GROUP(false),
+  HISTORY_DELETION(false),
   INCIDENT(false),
   JOB(false),
   MAPPING_RULE(false),
@@ -30,7 +32,8 @@ public enum ContextType {
   USAGE_METRIC_TU(false),
   USER(false),
   USER_TASK(true),
-  VARIABLE(false);
+  VARIABLE(false),
+  CLUSTER_VARIABLE(false);
 
   private final boolean preserveOrder;
 

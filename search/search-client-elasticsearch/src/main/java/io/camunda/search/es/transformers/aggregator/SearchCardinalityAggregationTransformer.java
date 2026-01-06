@@ -7,6 +7,7 @@
  */
 package io.camunda.search.es.transformers.aggregator;
 
+import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
 import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregation;
@@ -25,6 +26,17 @@ public final class SearchCardinalityAggregationTransformer
   public Aggregation apply(final SearchCardinalityAggregator value) {
     // Create the CardinalityAggregation
     final CardinalityAggregation.Builder cardinalityBuilder = AggregationBuilders.cardinality();
+
+    Optional.ofNullable(value.script())
+        .ifPresent(
+            script ->
+                cardinalityBuilder.script(
+                    Script.of(
+                        s -> {
+                          s.source(script);
+                          Optional.ofNullable(value.lang()).ifPresent(s::lang);
+                          return s;
+                        })));
     Optional.ofNullable(value.field()).ifPresent(cardinalityBuilder::field);
     final var builder = new Aggregation.Builder().cardinality(cardinalityBuilder.build());
     applySubAggregations(builder, value);

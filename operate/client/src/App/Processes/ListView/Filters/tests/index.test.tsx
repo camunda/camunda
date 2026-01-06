@@ -8,14 +8,13 @@
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {
+  createProcessDefinition,
   createUser,
-  groupedProcessesMock,
   mockProcessXML,
+  searchResult,
 } from 'modules/testUtils';
 import {Filters} from '../index';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 import {
   selectFlowNode,
@@ -25,14 +24,20 @@ import {
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('Filters', () => {
   beforeEach(async () => {
-    mockFetchGroupedProcesses().withSuccess(
-      groupedProcessesMock.filter(({tenantId}) => tenantId === '<default>'),
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({version: 2}),
+        createProcessDefinition({version: 1}),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([createProcessDefinition({version: 2})]),
     );
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    processesStore.fetchProcesses();
     mockMe().withSuccess(createUser());
     vi.useFakeTimers({shouldAdvanceTime: true});
   });
@@ -142,10 +147,8 @@ describe('Filters', () => {
       wrapper: getWrapper(initialPath),
     });
 
-    // Wait for data to be fetched
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
 
-    // Hidden fields
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.endDateAfter),
     ).toBeInTheDocument();
@@ -158,7 +161,6 @@ describe('Filters', () => {
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.endDateBefore),
     ).toBeInTheDocument();
-    // Non-hidden fields
     expect(
       screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00'),
     ).toBeInTheDocument();
@@ -168,6 +170,15 @@ describe('Filters', () => {
   });
 
   it('should set modified values to the URL', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          name: 'New demo process',
+          processDefinitionId: 'demoProcess',
+          version: 3,
+        }),
+      ]),
+    );
     const MOCK_VALUES = {
       process: 'demoProcess',
       version: '3',
@@ -186,7 +197,6 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    // Wait for data to be fetched
     await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
     await waitFor(() =>
       expect(screen.getByLabelText('Flow Node')).toBeEnabled(),
@@ -306,7 +316,7 @@ describe('Filters', () => {
     } as const;
 
     await waitFor(() => {
-      return expect(
+      expect(
         Object.fromEntries(
           new URLSearchParams(
             screen.getByTestId('search').textContent ?? '',
@@ -366,8 +376,6 @@ describe('Filters', () => {
   });
 
   it('should enable the reset button', async () => {
-    vi.useFakeTimers();
-
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
@@ -448,7 +456,7 @@ describe('Filters', () => {
     );
   });
 
-  it('Should order optional filters', async () => {
+  it('should order optional filters', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),
     });
@@ -468,9 +476,9 @@ describe('Filters', () => {
       return [...acc, ...optionalFilter.fields];
     }, [] as string[]);
 
-    for (let i = 0; i < optionalFilters.length; i++) {
+    for (const filter of optionalFilters) {
       await user.click(screen.getByRole('button', {name: 'More Filters'}));
-      await user.click(screen.getByText(optionalFilters[i]!.name));
+      await user.click(screen.getByText(filter.name));
     }
 
     let visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
@@ -490,9 +498,9 @@ describe('Filters', () => {
       return [...acc, ...optionalFilter.fields];
     }, [] as string[]);
 
-    for (let i = 0; i < optionalFilters.length; i++) {
+    for (const filter of optionalFilters) {
       await user.click(screen.getByRole('button', {name: 'More Filters'}));
-      await user.click(screen.getByText(optionalFilters[i]!.name));
+      await user.click(screen.getByText(filter.name));
     }
 
     visibleOptionalFilters = screen.getAllByTestId(/^optional-filter-/i);
@@ -503,6 +511,12 @@ describe('Filters', () => {
   });
 
   it('should omit all versions option', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([createProcessDefinition({version: 1})]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([createProcessDefinition({version: 1})]),
+    );
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
         `/?${new URLSearchParams(

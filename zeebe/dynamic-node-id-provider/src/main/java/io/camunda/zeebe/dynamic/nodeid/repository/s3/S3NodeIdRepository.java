@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.nodeid.repository.s3;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static io.camunda.zeebe.dynamic.nodeid.Lease.OBJECT_MAPPER;
+
 import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
@@ -30,22 +31,23 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class S3NodeIdRepository implements NodeIdRepository {
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final Logger LOG = LoggerFactory.getLogger(S3NodeIdRepository.class);
   private final S3Client client;
   private final Config config;
   private final InstantSource clock;
   private final boolean closeClient;
+  private volatile boolean initialized = false;
 
   public S3NodeIdRepository(
-      final S3Client s3AsyncClient,
+      final S3Client s3Client,
       final Config config,
       final InstantSource clock,
       final boolean closeClient) {
-    client = s3AsyncClient;
+    client = s3Client;
     this.config = config;
     this.clock = clock;
     this.closeClient = closeClient;
@@ -60,7 +62,10 @@ public class S3NodeIdRepository implements NodeIdRepository {
 
   @Override
   public void initialize(final int count) {
-    IntStream.range(0, count).forEach(this::initializeForNode);
+    if (!initialized) {
+      IntStream.range(0, count).forEach(this::initializeForNode);
+    }
+    initialized = true;
   }
 
   @Override
@@ -83,12 +88,15 @@ public class S3NodeIdRepository implements NodeIdRepository {
 
   @Override
   public StoredLease.Initialized acquire(final Lease lease, final String previousETag) {
+    if (lease == null) {
+      throw new IllegalArgumentException("lease is null");
+    }
     final var nodeId = lease.nodeInstance().id();
     final var metadata = Metadata.fromLease(lease);
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(previousETag)).build();
     try {
-      if (!lease.isStillValid(clock.millis(), config.expiryDuration)) {
+      if (!lease.isStillValid(clock.millis())) {
         throw new IllegalArgumentException("The provided lease is not valid anymore: " + lease);
       }
       LOG.debug("Acquiring lease {}, previous ETag {}", lease, previousETag);
@@ -107,7 +115,9 @@ public class S3NodeIdRepository implements NodeIdRepository {
   public void release(final StoredLease.Initialized lease) {
     final var nodeId = lease.lease().nodeInstance().id();
     final PutObjectRequest putRequest =
-        createPutObjectRequest(nodeId, Optional.empty(), Optional.of(lease.eTag())).build();
+        createPutObjectRequest(
+                nodeId, Optional.of(lease.metadata().forRelease()), Optional.of(lease.eTag()))
+            .build();
     try {
       LOG.info("Release lease {}", lease);
       client.putObject(putRequest, RequestBody.empty());
@@ -125,6 +135,13 @@ public class S3NodeIdRepository implements NodeIdRepository {
       final var res = client.putObject(putRequest, RequestBody.empty());
       LOG.debug("File created for nodeId {}: {}", nodeId, res.eTag());
     } catch (final Exception e) {
+      if (e instanceof final S3Exception s3Exception) {
+        // if bucket does not exist, it return 404
+        if (s3Exception.statusCode() == 404) {
+          throw new IllegalArgumentException(
+              "Cannot create file for node " + nodeId + " in bucket " + config.bucketName, e);
+        }
+      }
       LOG.debug(
           "File creation failed for nodeId {}: {}",
           nodeId,
@@ -177,13 +194,22 @@ public class S3NodeIdRepository implements NodeIdRepository {
     return builder.build();
   }
 
-  public record Config(String bucketName, Duration expiryDuration) {
+  public record Config(
+      String bucketName, Duration leaseDuration, Duration nodeIdMappingUpdateTimeout) {
     public Config {
-      if (expiryDuration.toMillis() <= 0) {
-        throw new IllegalArgumentException("expiryDuration must be greater than 0");
+      if (leaseDuration.toMillis() <= 0) {
+        throw new IllegalArgumentException("leaseDuration must be greater than 0");
       }
       if (bucketName == null || bucketName.isEmpty()) {
         throw new IllegalArgumentException("bucketName cannot be null or empty");
+      }
+      if (nodeIdMappingUpdateTimeout.toMillis() <= 0) {
+        throw new IllegalArgumentException("nodeIdMappingUpdateTimeout must be greater than 0");
+      }
+      if (nodeIdMappingUpdateTimeout.toMillis() <= leaseDuration.toMillis()) {
+        throw new IllegalArgumentException(
+            "Expected nodeIdMappingUpdateTimeout to be greater than leaseDuration (%s), but got %s."
+                .formatted(leaseDuration, nodeIdMappingUpdateTimeout));
       }
     }
   }

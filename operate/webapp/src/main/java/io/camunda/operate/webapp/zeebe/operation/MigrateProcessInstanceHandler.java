@@ -12,6 +12,7 @@ import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.client.api.command.MigrationPlanImpl;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 /** Operation handler to migrate process instances */
 @Component
+@ConditionalOnRdbmsDisabled
 public class MigrateProcessInstanceHandler extends AbstractOperationHandler
     implements OperationHandler {
 

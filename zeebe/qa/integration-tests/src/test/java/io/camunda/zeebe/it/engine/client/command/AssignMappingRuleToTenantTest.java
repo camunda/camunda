@@ -32,7 +32,7 @@ class AssignMappingRuleToTenantTest {
   private static final String ID = "mapping-id";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
@@ -41,7 +41,7 @@ class AssignMappingRuleToTenantTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
 
     // Create Tenant
     client.newCreateTenantCommand().tenantId(TENANT_ID).name("Initial Tenant Name").send().join();

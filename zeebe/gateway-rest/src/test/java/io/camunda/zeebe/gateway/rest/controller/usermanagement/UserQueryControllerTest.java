@@ -326,7 +326,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Failed to read request",
+                      "detail": "Only one of [from, after, before] is allowed.",
                       "instance": "%s"
                     }""",
                 USERS_SEARCH_URL)));

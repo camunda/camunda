@@ -44,6 +44,10 @@ public final class SortOptionBuilders {
     return new VariableSort.Builder();
   }
 
+  public static ClusterVariableSort.Builder clusterVariable() {
+    return new ClusterVariableSort.Builder();
+  }
+
   public static DecisionDefinitionSort.Builder decisionDefinition() {
     return new DecisionDefinitionSort.Builder();
   }
@@ -116,6 +120,11 @@ public final class SortOptionBuilders {
     return fn.apply(variable()).build();
   }
 
+  public static ClusterVariableSort clusterVariable(
+      final Function<ClusterVariableSort.Builder, ObjectBuilder<ClusterVariableSort>> fn) {
+    return fn.apply(clusterVariable()).build();
+  }
+
   public static DecisionDefinitionSort decisionDefinition(
       final Function<DecisionDefinitionSort.Builder, ObjectBuilder<DecisionDefinitionSort>> fn) {
     return fn.apply(decisionDefinition()).build();
@@ -186,6 +195,20 @@ public final class SortOptionBuilders {
     return fn.apply(incident()).build();
   }
 
+  public static IncidentProcessInstanceStatisticsByErrorSort.Builder
+      incidentProcessInstanceStatisticsByError() {
+    return new IncidentProcessInstanceStatisticsByErrorSort.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByErrorSort
+      incidentProcessInstanceStatisticsByError(
+          final Function<
+                  IncidentProcessInstanceStatisticsByErrorSort.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByErrorSort>>
+              fn) {
+    return fn.apply(incidentProcessInstanceStatisticsByError()).build();
+  }
+
   public static BatchOperationSort.Builder batchOperation() {
     return new BatchOperationSort.Builder();
   }
@@ -209,6 +232,15 @@ public final class SortOptionBuilders {
     return fn.apply(authorization()).build();
   }
 
+  public static AuditLogSort.Builder auditLog() {
+    return new AuditLogSort.Builder();
+  }
+
+  public static AuditLogSort auditLog(
+      final Function<AuditLogSort.Builder, ObjectBuilder<AuditLogSort>> fn) {
+    return fn.apply(auditLog()).build();
+  }
+
   public static JobSort.Builder job() {
     return new JobSort.Builder();
   }
@@ -224,6 +256,20 @@ public final class SortOptionBuilders {
   public static MessageSubscriptionSort messageSubscription(
       final Function<MessageSubscriptionSort.Builder, ObjectBuilder<MessageSubscriptionSort>> fn) {
     return fn.apply(messageSubscription()).build();
+  }
+
+  public static ProcessDefinitionMessageSubscriptionStatisticsSort.Builder
+      processDefinitionMessageSubscriptionStatistics() {
+    return new ProcessDefinitionMessageSubscriptionStatisticsSort.Builder();
+  }
+
+  public static ProcessDefinitionMessageSubscriptionStatisticsSort
+      processDefinitionMessageSubscriptionStatistics(
+          final Function<
+                  ProcessDefinitionMessageSubscriptionStatisticsSort.Builder,
+                  ObjectBuilder<ProcessDefinitionMessageSubscriptionStatisticsSort>>
+              fn) {
+    return fn.apply(processDefinitionMessageSubscriptionStatistics()).build();
   }
 
   public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
@@ -249,5 +295,33 @@ public final class SortOptionBuilders {
               ObjectBuilder<ProcessDefinitionInstanceStatisticsSort>>
           fn) {
     return fn.apply(processDefinitionInstanceStatistics()).build();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsSort.Builder
+      processDefinitionInstanceVersionStatistics() {
+    return new ProcessDefinitionInstanceVersionStatisticsSort.Builder();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsSort
+      processDefinitionInstanceVersionStatistics(
+          final Function<
+                  ProcessDefinitionInstanceVersionStatisticsSort.Builder,
+                  ObjectBuilder<ProcessDefinitionInstanceVersionStatisticsSort>>
+              fn) {
+    return fn.apply(new ProcessDefinitionInstanceVersionStatisticsSort.Builder()).build();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionSort.Builder
+      incidentProcessInstanceStatisticsByDefinition() {
+    return new IncidentProcessInstanceStatisticsByDefinitionSort.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionSort
+      incidentProcessInstanceStatisticsByDefinition(
+          final Function<
+                  IncidentProcessInstanceStatisticsByDefinitionSort.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionSort>>
+              fn) {
+    return fn.apply(new IncidentProcessInstanceStatisticsByDefinitionSort.Builder()).build();
   }
 }

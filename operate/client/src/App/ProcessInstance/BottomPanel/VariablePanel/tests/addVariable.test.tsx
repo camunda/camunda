@@ -577,7 +577,7 @@ describe('Add variable', () => {
       within(screen.getByRole('dialog')).getByRole('button', {name: /apply/i}),
     ).toBeEnabled();
     expect(
-      within(screen.getByRole('dialog')).getByTestId('monaco-editor'),
+      await within(screen.getByRole('dialog')).findByTestId('monaco-editor'),
     ).toBeInTheDocument();
   });
 });

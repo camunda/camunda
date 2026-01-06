@@ -70,11 +70,10 @@
       </if>
       <!-- basic filters -->
       <if
-        test="filter.decisionInstanceIds != null and !filter.decisionInstanceIds.isEmpty()">
-        AND di.DECISION_INSTANCE_ID IN
-        <foreach collection="filter.decisionInstanceIds" item="key" open="(" close=")"
-          separator=", ">
-          #{key}
+        test="filter.decisionInstanceIdOperations != null and !filter.decisionInstanceIdOperations.isEmpty()">
+        <foreach collection="filter.decisionInstanceIdOperations" item="operation">
+          AND di.DECISION_INSTANCE_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if
@@ -99,10 +98,10 @@
           #{key}
         </foreach>
       </if>
-      <if test="filter.states != null and !filter.states.isEmpty()">
-        AND di.STATE IN
-        <foreach collection="filter.states" item="value" open="(" close=")" separator=", ">
-          #{value}
+      <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+        <foreach collection="filter.stateOperations" item="operation">
+          AND di.STATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
       <if test="filter.evaluationFailures != null and !filter.evaluationFailures.isEmpty()">
@@ -322,6 +321,11 @@
   <delete id="cleanupHistory">
     <bind name="tableName" value="'DECISION_INSTANCE'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
   </delete>
 
 </mapper>

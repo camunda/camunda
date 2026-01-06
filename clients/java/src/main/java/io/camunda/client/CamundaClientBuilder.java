@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
@@ -24,6 +25,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
@@ -83,37 +85,93 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder defaultJobWorkerMaxJobsActive(int maxJobsActive);
 
   /**
-   * @param numThreads The number of threads for invocation of job workers. Setting this value to 0
-   *     effectively disables subscriptions and workers. Default value is 1.
+   * @param numThreads The number of threads for invocation of job workers. Default value is 1.
+   *     Setting this value to 0 causes the client to reuse the scheduled executor for job handling
+   *     (backward compatibility behavior).
    */
   CamundaClientBuilder numJobWorkerExecutionThreads(int numThreads);
 
   /**
-   * Identical behavior as {@link #jobWorkerExecutor(ScheduledExecutorService,boolean)}, but taking
-   * ownership of the executor by default. This means the given executor is closed when the client
-   * is closed.
+   * Identical behavior as {@link #jobWorkerExecutor(ScheduledExecutorService,boolean)}, replaced in
+   * favor of more fine-grained configuration of job worker executors.
    *
-   * @param executor an executor service to use when invoking job workers
-   * @see #jobWorkerExecutor(ScheduledExecutorService, boolean)
+   * @deprecated use {@link #jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)} and
+   *     {@link #jobHandlingExecutor(ExecutorService, boolean)} instead
    */
+  @Deprecated
   default CamundaClientBuilder jobWorkerExecutor(final ScheduledExecutorService executor) {
     return jobWorkerExecutor(executor, true);
   }
 
   /**
-   * Allows passing a custom executor service that will be shared by all job workers created via
-   * this client.
+   * Identical behavior as {@link #jobWorkerSchedulingExecutor(ScheduledExecutorService,boolean)}.
+   * Replaced in favor of more fine-grained configuration of job worker executors.
    *
-   * <p>Polling and handling jobs (e.g. via {@link JobHandler} will all be invoked on this executor.
+   * @deprecated use {@link #jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)} and
+   *     {@link #jobHandlingExecutor(ExecutorService, boolean)} instead
+   */
+  @Deprecated
+  CamundaClientBuilder jobWorkerExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership);
+
+  /**
+   * Identical behavior as {@link #jobWorkerSchedulingExecutor(ScheduledExecutorService,boolean)},
+   * but taking ownership of the executor by default. This means the given executor is closed when
+   * the client is closed.
+   *
+   * @param executor an executor service to use for scheduling job worker tasks
+   * @see #jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)
+   */
+  default CamundaClientBuilder jobWorkerSchedulingExecutor(
+      final ScheduledExecutorService executor) {
+    return jobWorkerSchedulingExecutor(executor, true);
+  }
+
+  /**
+   * Allows passing a custom scheduled executor service that will be used for scheduling job worker
+   * tasks such as polling for new jobs.
+   *
+   * <p>Note that job handling (i.e. executing the {@link JobHandler}) is done on a separate
+   * executor configured via {@link #jobHandlingExecutor(ExecutorService, boolean)}.
+   *
+   * <p>If no job handling executor is provided, this scheduling executor will also be used for job
+   * handling. If no executor is provided here, a default scheduled executor will be created.
+   *
+   * @param executor an executor service to use for scheduling job worker tasks
+   * @param takeOwnership if true, the executor will be closed when the client is closed otherwise,
+   *     it's up to the caller to manage its lifecycle
+   * @see #jobHandlingExecutor(ExecutorService, boolean)
+   */
+  CamundaClientBuilder jobWorkerSchedulingExecutor(
+      final ScheduledExecutorService executor, final boolean takeOwnership);
+
+  /**
+   * Identical behavior as {@link #jobHandlingExecutor(ExecutorService,boolean)}, but taking
+   * ownership of the executor by default. This means the given executor is closed when the client
+   * is closed.
+   *
+   * @param executor an executor service to use for handling jobs
+   * @see #jobHandlingExecutor(ExecutorService, boolean)
+   */
+  default CamundaClientBuilder jobHandlingExecutor(final ExecutorService executor) {
+    return jobHandlingExecutor(executor, true);
+  }
+
+  /**
+   * Allows passing a custom executor service that will be used for handling jobs (i.e. executing
+   * the {@link JobHandler}). This executor is separate from the scheduling executor configured via
+   * {@link #jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)}.
+   *
+   * <p>If no executor is provided here, the scheduling executor will also be used for job handling.
    *
    * <p>When non-null, this setting override {@link #numJobWorkerExecutionThreads(int)}.
    *
-   * @param executor an executor service to use when invoking job workers
-   * @param takeOwnership if true, the executor will be closed when the client is closed. otherwise,
+   * @param executor an executor service to use for handling jobs
+   * @param takeOwnership if true, the executor will be closed when the client is closed otherwise,
    *     it's up to the caller to manage its lifecycle
    */
-  CamundaClientBuilder jobWorkerExecutor(
-      final ScheduledExecutorService executor, final boolean takeOwnership);
+  CamundaClientBuilder jobHandlingExecutor(
+      final ExecutorService executor, final boolean takeOwnership);
 
   /**
    * The name of the worker which is used when none is set for a job worker. Default is 'default'.
@@ -233,6 +291,17 @@ public interface CamundaClientBuilder {
 
   /** Sets the maximum number of concurrent HTTP connections the client can open. */
   CamundaClientBuilder maxHttpConnections(int maxConnections);
+
+  /**
+   * A custom retryBackoffSupplier allows the client to determine the default retry backoff strategy
+   * that every job worker will apply unless configured otherwise. By default, a static retry
+   * backoff of <code>PT0S</code> is used.
+   *
+   * @param jobExceptionHandler the retry backoff supplier to retrieve the retry backoff for every
+   *     fail job command
+   * @return this builder for chaining
+   */
+  CamundaClientBuilder defaultJobWorkerExceptionHandler(JobExceptionHandler jobExceptionHandler);
 
   /**
    * @return a new {@link CamundaClient} with the provided configuration options.

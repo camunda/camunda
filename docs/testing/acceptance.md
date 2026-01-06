@@ -229,7 +229,7 @@ docker run -d -p 9200:9200 \
               -e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!" \
               -e "OPENSEARCH_PASSWORD=changeme" \
               -e "DISABLE_SECURITY_PLUGIN=true" \
-              opensearchproject/opensearch:latest
+              opensearchproject/opensearch:2.17.0
 ```
 
 To run with OpenSearch from your IDE, you have two options:

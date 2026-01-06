@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,6 +23,8 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
@@ -45,8 +48,8 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -402,7 +405,7 @@ public final class ProcessInstanceServiceTest {
         new ProcessInstanceModifyBatchOperationRequest(
             filter,
             List.of(
-                new BatchOperationProcessInstanceModificationMoveInstruction()
+                new ProcessInstanceModificationMoveInstruction()
                     .setSourceElementId("source1")
                     .setTargetElementId("target1")));
 
@@ -494,5 +497,89 @@ public final class ProcessInstanceServiceTest {
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
     verifyNoInteractions(incidentServices);
+  }
+
+  @Test
+  void shouldDeleteProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result = services.deleteProcessInstancesBatchOperation(filter).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
+  }
+
+  @Test
+  void shouldDeleteProcessInstanceWithResult() {
+    // given
+    final long batchOperationKey = 1L;
+    final long processInstanceKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    final var entity = mock(ProcessInstanceEntity.class);
+    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
+    when(entity.processDefinitionId()).thenReturn("processId");
+    when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey))).thenReturn(entity);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result = services.deleteProcessInstance(processInstanceKey, null).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
+        .isEqualTo(authentication);
+  }
+
+  @Test
+  void shouldNotDeleteProcessInstanceWithResult() {
+    // given
+    final long processInstanceKey = 123L;
+
+    when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey)))
+        .thenThrow(
+            new CamundaSearchException(
+                ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Process Instance", processInstanceKey),
+                Reason.NOT_FOUND));
+
+    // when/then
+    assertThatThrownBy(() -> services.deleteProcessInstance(processInstanceKey, null).join())
+        .isInstanceOf(ServiceException.class)
+        .hasMessage("Process Instance with key '123' not found");
   }
 }

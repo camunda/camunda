@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.MoveInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
@@ -24,6 +25,7 @@ public class ModifyProcessInstanceTest {
 
   private static final String VALID_VARIABLES = "{ \"test\": \"value\"}";
   // missing closing quote in second variable
+  private static final String VALID_MOVE_VARIABLES = "{ \"testMove\": \"valueMove\"}";
   private static final String INVALID_VARIABLES =
       "{ \"test\": \"value\", \"error\": \"errorrvalue }";
 
@@ -44,7 +46,34 @@ public class ModifyProcessInstanceTest {
                             .build())
                     .build())
             .addTerminateInstructions(
-                TerminateInstruction.newBuilder().setElementInstanceKey(3L).build())
+                TerminateInstruction.newBuilder()
+                    .setElementInstanceKey(3L)
+                    .setElementId("elementId")
+                    .build())
+            .addMoveInstructions(
+                MoveInstruction.newBuilder()
+                    .setSourceElementId("fromElementId")
+                    .setTargetElementId("toElementId")
+                    .setAncestorElementInstanceKey(3L)
+                    .setInferAncestorScopeFromSourceHierarchy(true)
+                    .addVariableInstructions(
+                        VariableInstruction.newBuilder()
+                            .setScopeId("scopeIdMove")
+                            .setVariables(VALID_MOVE_VARIABLES)
+                            .build())
+                    .build())
+            .addMoveInstructions(
+                MoveInstruction.newBuilder()
+                    .setSourceElementInstanceKey(123L)
+                    .setTargetElementId("toElementId")
+                    .setAncestorElementInstanceKey(3L)
+                    .setInferAncestorScopeFromSourceHierarchy(true)
+                    .addVariableInstructions(
+                        VariableInstruction.newBuilder()
+                            .setScopeId("scopeIdMove")
+                            .setVariables(VALID_MOVE_VARIABLES)
+                            .build())
+                    .build())
             .build();
 
     // when
@@ -67,6 +96,31 @@ public class ModifyProcessInstanceTest {
     assertThat(terminateInstructions).hasSize(1);
     final var terminateInstruction = terminateInstructions.get(0);
     assertThat(terminateInstruction.getElementInstanceKey()).isEqualTo(3L);
+    assertThat(terminateInstruction.getElementId()).isEqualTo("elementId");
+    final var moveInstructions = record.getMoveInstructions();
+    assertThat(moveInstructions).hasSize(2);
+    final var moveInstruction1 = moveInstructions.get(0);
+    assertThat(moveInstruction1.getSourceElementId()).isEqualTo("fromElementId");
+    assertThat(moveInstruction1.getTargetElementId()).isEqualTo("toElementId");
+    assertThat(moveInstruction1.getAncestorScopeKey()).isEqualTo(3L);
+    assertThat(moveInstruction1.isInferAncestorScopeFromSourceHierarchy()).isTrue();
+    final var moveVariableInstructions1 = moveInstruction1.getVariableInstructions();
+    assertThat(moveVariableInstructions1).hasSize(1);
+    final var moveVariableInstruction1 = moveVariableInstructions1.get(0);
+    assertThat(moveVariableInstruction1.getElementId()).isEqualTo("scopeIdMove");
+    assertThat(moveVariableInstruction1.getVariables())
+        .containsOnly(entry("testMove", "valueMove"));
+    final var moveInstruction2 = moveInstructions.get(1);
+    assertThat(moveInstruction2.getSourceElementInstanceKey()).isEqualTo(123L);
+    assertThat(moveInstruction2.getTargetElementId()).isEqualTo("toElementId");
+    assertThat(moveInstruction2.getAncestorScopeKey()).isEqualTo(3L);
+    assertThat(moveInstruction2.isInferAncestorScopeFromSourceHierarchy()).isTrue();
+    final var moveVariableInstructions2 = moveInstruction2.getVariableInstructions();
+    assertThat(moveVariableInstructions2).hasSize(1);
+    final var moveVariableInstruction2 = moveVariableInstructions2.get(0);
+    assertThat(moveVariableInstruction2.getElementId()).isEqualTo("scopeIdMove");
+    assertThat(moveVariableInstruction2.getVariables())
+        .containsOnly(entry("testMove", "valueMove"));
   }
 
   @Test

@@ -3,6 +3,7 @@
 paths:
   /users:
     post:
+      x-eventually-consistent: true
       tags:
         - User
       operationId: createUser
@@ -37,10 +38,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: true
 
   /users/search:
     post:
+      x-eventually-consistent: true
       tags:
         - User
       operationId: searchUsers
@@ -66,10 +67,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /users/{username}:
     get:
+      x-eventually-consistent: true
       tags:
         - User
       operationId: getUser
@@ -101,7 +102,6 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
     put:
       x-eventually-consistent: true
@@ -146,6 +146,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
     delete:
+      x-eventually-consistent: true
       tags:
         - User
       operationId: deleteUser
@@ -173,7 +174,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -261,7 +261,7 @@ components:
             - name
             - email
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 

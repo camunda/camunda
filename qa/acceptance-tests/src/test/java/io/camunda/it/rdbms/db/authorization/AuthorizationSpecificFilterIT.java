@@ -14,19 +14,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.sort.AuthorizationSort;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -48,19 +51,19 @@ public class AuthorizationSpecificFilterIT {
 
   @Autowired private AuthorizationDbReader authorizationReader;
 
-  private RdbmsWriter rdbmsWriter;
+  private RdbmsWriters rdbmsWriters;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriters = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final AuthorizationFilter filter) {
-    createAndSaveRandomAuthorizations(rdbmsWriter);
+    createAndSaveRandomAuthorizations(rdbmsWriters);
     createAndSaveAuthorization(
-        rdbmsWriter,
+        rdbmsWriters,
         AuthorizationFixtures.createRandomized(
             b ->
                 b.authorizationKey(100L)
@@ -81,9 +84,9 @@ public class AuthorizationSpecificFilterIT {
   @ParameterizedTest
   @CsvSource({"USER, 1", "GROUP, 0"})
   public void shouldFindWithOwnerType(final EntityType ownerType, final int expectedCpount) {
-    createAndSaveRandomAuthorizations(rdbmsWriter);
+    createAndSaveRandomAuthorizations(rdbmsWriters);
     createAndSaveAuthorization(
-        rdbmsWriter,
+        rdbmsWriters,
         AuthorizationFixtures.createRandomized(
             b ->
                 b.authorizationKey(100L)
@@ -102,6 +105,39 @@ public class AuthorizationSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(expectedCpount);
     assertThat(searchResult.items()).hasSize(expectedCpount);
+  }
+
+  @Test
+  public void shouldFindByResourcePropertyName() {
+    // given
+    createAndSaveRandomAuthorizations(rdbmsWriters);
+    final AuthorizationDbModel authDbModel =
+        AuthorizationFixtures.createRandomized(
+            b ->
+                b.resourceMatcher(AuthorizationResourceMatcher.PROPERTY.value())
+                    .resourcePropertyName("priority_prop"));
+
+    createAndSaveAuthorization(rdbmsWriters, authDbModel);
+
+    // when
+    final var searchResult =
+        authorizationReader.search(
+            new AuthorizationQuery(
+                new AuthorizationFilter.Builder().resourcePropertyNames("priority_prop").build(),
+                AuthorizationSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // then
+    assertThat(searchResult.total()).isOne();
+    assertThat(searchResult.items())
+        .singleElement()
+        .satisfies(
+            a -> {
+              assertThat(a.authorizationKey()).isEqualTo(authDbModel.authorizationKey());
+              assertThat(a.resourceMatcher())
+                  .isEqualTo(AuthorizationResourceMatcher.PROPERTY.value());
+              assertThat(a.resourcePropertyName()).isEqualTo("priority_prop");
+            });
   }
 
   static List<AuthorizationFilter> shouldFindWithSpecificFilterParameters() {

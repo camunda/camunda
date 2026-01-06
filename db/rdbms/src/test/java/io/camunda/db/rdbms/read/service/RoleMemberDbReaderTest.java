@@ -8,7 +8,11 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.search.query.RoleMemberQuery;
@@ -43,5 +47,20 @@ class RoleMemberDbReaderTest {
 
     final var items = roleMemberDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyPageWhenPageSizeIsZero() {
+    when(roleMapper.countMembers(any())).thenReturn(21L);
+
+    final RoleMemberQuery query = RoleMemberQuery.of(b -> b.page(p -> p.size(0)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    final var result = roleMemberDbReader.search(query, resourceAccessChecks);
+
+    assertThat(result.total()).isEqualTo(21L);
+    assertThat(result.items()).isEmpty();
+    verify(roleMapper, times(0)).search(any());
   }
 }

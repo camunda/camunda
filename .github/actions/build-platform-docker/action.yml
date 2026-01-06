@@ -37,6 +37,10 @@ inputs:
     description: 'Path to the dockerfile, that should be used; defaults to Dockerfile'
     required: false
     default: 'Dockerfile'
+  debug:
+    description: 'Enable debug logging for BuildKit daemon'
+    required: false
+    default: 'false'
 
 outputs:
   image:
@@ -79,6 +83,7 @@ runs:
       with:
         # to be able to push to local registry, which we use in our tests, we need to use host network
         driver-opts: network=host
+        buildkitd-flags: ${{ inputs.debug == 'true' && '--debug' || '' }}
         endpoint: zeebe-context
         install: true
 

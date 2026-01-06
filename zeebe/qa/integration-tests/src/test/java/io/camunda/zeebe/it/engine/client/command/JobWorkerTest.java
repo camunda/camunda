@@ -422,14 +422,12 @@ final class JobWorkerTest {
       final var startedPiKeys = new CopyOnWriteArrayList<Long>();
 
       // when
-      RecordingExporter.setMaximumWaitTime(100);
-      Awaitility.await("until transport is suspended and jobs are yielded")
+      RecordingExporter.await()
           .untilAsserted(
               () -> {
                 startedPiKeys.add(createProcessInstance(uniqueId, payload));
-                assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(1)).hasSize(1);
+                assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).exists()).isTrue();
               });
-      RecordingExporter.setMaximumWaitTime(5000);
 
       final var firstYieldedPi =
           RecordingExporter.jobRecords(JobIntent.YIELDED)

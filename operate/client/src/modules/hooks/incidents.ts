@@ -7,36 +7,21 @@
  */
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {incidentsStore} from 'modules/stores/incidents';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
+import {
+  queryIncidentsRequestBodySchema,
+  type Incident,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
+import {useSearchParams} from 'react-router-dom';
+import {parseSortParamsV2} from 'modules/utils/filter';
+import {useMemo} from 'react';
 
 type EnhancedIncident = Incident & {
   processDefinitionName: string;
   elementName: string;
   isSelected: boolean;
-};
-
-const useIncidents = () => {
-  const {data: businessObjects} = useBusinessObjects();
-
-  if (incidentsStore.state.response === null) {
-    return [];
-  }
-  return incidentsStore.state.response.incidents.map((incident) => ({
-    ...incident,
-    flowNodeName: getFlowNodeName({
-      businessObjects,
-      flowNodeId: incident.flowNodeId,
-    }),
-    isSelected: flowNodeSelectionStore.isSelected({
-      flowNodeId: incident.flowNodeId,
-      flowNodeInstanceId: incident.flowNodeInstanceId,
-      isMultiInstance: false,
-    }),
-  }));
 };
 
 const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
@@ -78,25 +63,20 @@ const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
   });
 };
 
-const useIncidentsElements = () => {
-  const {data: businessObjects} = useBusinessObjects();
+const IncidentsSortFieldSchema =
+  queryIncidentsRequestBodySchema.shape.sort.def.innerType.def.element.shape
+    .field;
 
-  if (incidentsStore.state.response === null) {
-    return [];
-  }
-
-  return incidentsStore.state.response.flowNodes.map((flowNode) => ({
-    ...flowNode,
-    name: getFlowNodeName({
-      businessObjects,
-      flowNodeId: flowNode.id,
-    }),
-  }));
+const useIncidentsSort = () => {
+  const [search] = useSearchParams();
+  return useMemo(
+    () =>
+      parseSortParamsV2(search, IncidentsSortFieldSchema, {
+        field: 'creationTime',
+        order: 'desc',
+      }),
+    [search],
+  );
 };
 
-export {
-  useIncidents,
-  useIncidentsElements,
-  useEnhancedIncidents,
-  type EnhancedIncident,
-};
+export {useEnhancedIncidents, useIncidentsSort, type EnhancedIncident};

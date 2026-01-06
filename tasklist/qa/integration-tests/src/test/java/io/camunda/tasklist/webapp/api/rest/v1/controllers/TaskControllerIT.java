@@ -12,6 +12,7 @@ import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -47,6 +48,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -100,14 +102,31 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
   private TasklistTester createTask(
       final String bpmnProcessId, final String flowNodeBpmnId, final String payload) {
-    return tester
-        .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
-        .then()
-        .processIsDeployed()
-        .and()
-        .startProcessInstance(bpmnProcessId, payload)
-        .then()
-        .taskIsCreated(flowNodeBpmnId);
+    var testerChain =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .then()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(bpmnProcessId, payload)
+            .then()
+            .taskIsCreated(flowNodeBpmnId);
+
+    // Extract variable names from JSON payload if present
+    if (payload != null && !payload.isBlank()) {
+      try {
+        @SuppressWarnings("unchecked")
+        final Map<String, Object> variableMap = objectMapper.readValue(payload, Map.class);
+        final var variableNames = variableMap.keySet().toArray(new String[0]);
+        if (variableNames.length > 0) {
+          testerChain = testerChain.variablesExist(variableNames);
+        }
+      } catch (final JsonProcessingException e) {
+        fail("Could not parse payload JSON: " + payload, e);
+      }
+    }
+
+    return testerChain;
   }
 
   private TasklistTester createTaskWithCandidateGroup(
@@ -367,6 +386,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var taskId =
           createTask(bpmnProcessId, flowNodeBpmnId, 1)
               .claimAndCompleteHumanTask(flowNodeBpmnId, "varA", "\"test\"", "varB", "2.02")
+              .taskVariableExists("varA")
+              .taskVariableExists("varB")
               .getTaskId();
 
       // when
@@ -1029,6 +1050,83 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getCompletionDate()).isNull();
                 assertThat(task.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK));
               });
+    }
+
+    @Test
+    public void assignUnassignAssignZeebeUserTask() {
+      final String bpmnProcessId = "testProcess";
+      final String flowNodeBpmnId = "taskA";
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(bpmnProcessId)
+              .then()
+              .taskIsCreated(flowNodeBpmnId)
+              .getTaskId();
+      final var resultAssign1 =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId));
+      assertThat(resultAssign1)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isEqualTo(DEFAULT_USER_ID);
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() != null);
+
+      final var resultUnassign =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign"), taskId));
+
+      // then
+      assertThat(resultUnassign)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isNull();
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() == null);
+
+      final var resultAssign2 =
+          mockMvcHelper.doRequest(
+              patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId));
+      assertThat(resultAssign2)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingContent(objectMapper, TaskResponse.class)
+          .satisfies(
+              task -> {
+                assertThat(task.getId()).isEqualTo(taskId);
+                assertThat(task.getAssignee()).isEqualTo(DEFAULT_USER_ID);
+                assertThat(task.getCreationDate()).isNotNull();
+                assertThat(task.getCompletionDate()).isNull();
+                assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+              });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() != null);
     }
 
     @Test

@@ -38,7 +38,6 @@ jobs:
   detect-changes:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
-      check-copilot-commits: ${{ steps.filter.outputs.check-copilot-commits }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
@@ -78,9 +77,9 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.7'
+      ACTIONLINT_VERSION: '1.7.10'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.62.0'
+      CONFTEST_VERSION: '0.64.0'
     steps:
       - uses: actions/checkout@v4
       - uses: camunda/infra-global-github-actions/actionlint@main
@@ -89,6 +88,8 @@ jobs:
           ignore: |-
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
+            condition "false" is always evaluated to false
+            constant expression "false" in condition
           use_shellcheck: true
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
@@ -102,59 +103,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  check-copilot-commits:
-    if: needs.detect-changes.outputs.check-copilot-commits == 'true'
-    name: "Check for Copilot Authorship in Commits"
-    needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-    - name: Check for Copilot commits
-      id: copilot-check
-      uses: camunda/infra-global-github-actions/check-copilot-commits@main
-      with:
-        repository: ${{ github.repository }}
-        branch: ${{ github.event.pull_request.head.ref }}
-        base-branch: ${{ github.event.pull_request.base.ref }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Fail if Copilot commits found
-      if: steps.copilot-check.outputs.copilot-commits-found == 'true'
-      run: |
-        # Create clickable links for each commit hash
-        commit_hashes="${{ steps.copilot-check.outputs.copilot-commits-hashes }}"
-        repo_url="https://github.com/${{ github.repository }}"
-        commit_links=""
-
-        for hash in ${commit_hashes}; do
-          if [ -n "${commit_links}" ]; then
-            commit_links="${commit_links} "
-          fi
-          commit_links="${commit_links}${repo_url}/commit/${hash}"
-        done
-
-        echo "::error title=Copilot commits detected::Commits authored by GitHub Copilot found: ${commit_links}"
-        echo "❌ Copilot commits detected in this PR!"
-        echo "Commit hashes: ${{ steps.copilot-check.outputs.copilot-commits-hashes }}"
-        echo ""
-        echo "According to Camunda's Copilot policies, commits authored by GitHub Copilot are not allowed."
-        echo "Please review and recreate these commits without Copilot authorship."
-        echo ""
-        echo "For more information, see: https://confluence.camunda.com/spaces/HAN/pages/245401394/GitHub+Copilot+-+AI+for+Code+and+Text+Generation"
-        exit 1
-    - name: Observe build status
-      if: always()
-      continue-on-error: true
-      uses: ./.github/actions/observe-build-status
-      with:
-        build_status: ${{ job.status }}
-        secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
@@ -433,9 +381,9 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=7
+          -D forkCount=3
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
-          -D junitThreadCount=16
+          -D junitThreadCount=8
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
@@ -444,15 +392,18 @@ jobs:
         id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
+        continue-on-error: true
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        continue-on-error: true
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suite}}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
+        continue-on-error: true
         id: matrix-write
         with:
           matrix-step-name: ${{ github.job }}
@@ -475,269 +426,36 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   elasticsearch-integration-tests:
+    name: "Database Integration Tests / Elasticsearch"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "General / Integration / Elasticsearch ITs"
-    timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-16-default
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    services:
-      # Set up an elastic search service container
-      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
-        # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
-        ports:
-          - 9200:9200
-        options: >-
-          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-        env:
-          # Disabling the security to make sure we can access without tls in our tests
-          # https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#general-security-settings
-          xpack.security.enabled: "false"
-          # We run a single node for our integration tests
-          discovery.type: "single-node"
-          # Disabling to make sure we can delete indices via wildcards
-          # https://www.elastic.co/guide/en/elasticsearch/reference/current/index-management-settings.html
-          action.destructive_requires_name: "false"
-          # We need to configure ILM to run more often, to make sure data is cleaned up earlier
-          # Useful for tests where we verify history clean up
-          # Default is 10m
-          # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-settings.html
-          indices.lifecycle.poll_interval: "1s"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: it-elasticsearch
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # Build the platform before running the integration tests; skipping frontend
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -Dquickly
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      # Run specific integration tests with ES service container
-      #
-      # To communicate to the IT what database to expect and run against:
-      # -D test.integration.camunda.database.type=es
-      #
-      - name: Run integration test with externalized ES
-        shell: bash
-        run: >
-          ./mvnw -B -T 1 --no-snapshot-updates
-          -D forkCount=4
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=es
-          -pl 'qa/acceptance-tests'
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Analyze Test Runs
-        id: analyze-test-run
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
-        with:
-          name: "[IT] Elasticsearch"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
-          detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "elasticsearch"
+      database-image-version: "8.18.4"
+      it-database-type: "es"
 
   opensearch-integration-tests:
+    name: "Database Integration Tests / Opensearch"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "General / Integration / OpenSearch ITs"
-    timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-16-default
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    services:
-      # Set up an OpenSearch service container
-      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
-      opensearch:
-        image: opensearchproject/opensearch:2.19.3
-        # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
-        ports:
-          - 9200:9200
-        options: >-
-          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-        env:
-          # Disabling the security to make sure we can access without tls in our tests
-          # https://opensearch.org/docs/latest/security/configuration/disable-enable-security/
-          DISABLE_SECURITY_PLUGIN: "true"
-          # We run a single node for our integration tests
-          discovery.type: "single-node"
-          # Disabling to make sure we can delete indices via wildcards
-          # https://opensearch.org/docs/latest/install-and-configure/configuring-opensearch/index-settings/
-          action.destructive_requires_name: "false"
-          # We have to specify an initial password to bootstrap OpenSearch
-          # https://opensearch.org/blog/replacing-default-admin-credentials/
-          OPENSEARCH_INITIAL_ADMIN_PASSWORD: "yourStrongPassword123!"
-          # We need to configure ISM to run more often, to make sure data is cleaned up earlier
-          # Useful for tests where we verify history clean up
-          # Default is 5 - unit is minutes
-          # https://opensearch.org/docs/latest/im-plugin/ism/settings/
-          plugins.index_state_management.job_interval: "1"
-          # A randomized delay that is added to a job’s base run time to prevent a surge of activity from all indexes at the same time.
-          plugins.index_state_management.jitter: "0"
-          knn.algo_param.index_thread_qty: 4
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: it-elasticsearch
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # Build the platform before running the integration tests; skipping frontend
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -Dquickly
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      # Run specific integration tests with OS service container
-      #
-      # To communicate to the IT what database to expect and run against:
-      # -D test.integration.camunda.database.type=os
-      #
-      - name: Run integration test with externalized OS
-        shell: bash
-        run: >
-          ./mvnw -B -T 1 --no-snapshot-updates
-          -D forkCount=4
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=os
-          -pl 'qa/acceptance-tests'
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Analyze Test Runs
-        id: analyze-test-run
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
-        with:
-          name: "[IT] OpenSearch"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
-          detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+    secrets: inherit
+    with:
+      database-type: "opensearch"
+      database-image-version: "2.17.0"
+      it-database-type: "os"
 
   rdbms-h2-integration-tests:
+    name: "Database Integration Tests / RDBMS H2"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "General / Integration / RDBMS - H2 ITs"
-    timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: it-elasticsearch
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # Build the platform before running the integration tests; skipping frontend
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      # Run specific integration tests with H2 inmemory database
-      #
-      # To communicate to the IT what database to expect and run against:
-      # -Dcamunda.it.database.type=rdbms
-      #
-      - name: Run integration test with InMemory H2
-        shell: bash
-        timeout-minutes: 10
-        run: >
-          ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=3
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -D test.integration.camunda.database.type=rdbms
-          -pl 'qa/acceptance-tests'
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Analyze Test Runs
-        id: analyze-test-run
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
-        with:
-          name: "[IT] RDBMS - H2"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "General"
-          detailed_junit_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "h2"
+      it-database-type: "rdbms_h2"
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -917,6 +635,18 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
+      - name: Generate cache key with current hour
+        if: matrix.group == 'qa-update'
+        id: cache-key
+        run: echo "hour=$(date -u +%Y%m%d%H)" >> "$GITHUB_OUTPUT"
+      - name: Cache Zeebe versions (hourly refresh)
+        if: matrix.group == 'qa-update'
+        uses: actions/cache@v4
+        with:
+          path: .cache/camunda
+          key: zeebe-versions-${{ steps.cache-key.outputs.hour }}
+          restore-keys: |
+            zeebe-versions-
       - name: Print metadata
         uses: ./.github/actions/print-metadata
         with:
@@ -961,6 +691,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
         env:
+          GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
         shell: bash
@@ -981,17 +712,20 @@ jobs:
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/analyze-test-runs
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        continue-on-error: true
         with:
           name: "[IT] ${{ matrix.name }}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
         id: matrix-write
+        continue-on-error: true
         with:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }}
@@ -1065,7 +799,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "General / Unit - ArchUnit"
+          name: "[UT] General - ArchUnit"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1111,6 +845,7 @@ jobs:
           verbose: true
       - name: Upload Hadolint Results
         if: always()
+        continue-on-error: ${{ github.event_name == 'merge_group' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ./hadolint.sarif
@@ -1410,7 +1145,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=daveshanley/vacuum
-      VACUUM_VERSION: 'v0.18.0'
+      VACUUM_VERSION: 'v0.23.0'
     steps:
       - uses: actions/checkout@v4
       - name: Install vacuum
@@ -1474,7 +1209,6 @@ jobs:
       - actionlint
       - archunit-tests
       - build-platform-frontend
-      - check-copilot-commits
       - client-components
       - commitlint
       - detect-changes

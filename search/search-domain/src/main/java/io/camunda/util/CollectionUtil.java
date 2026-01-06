@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class CollectionUtil {
@@ -73,10 +74,15 @@ public final class CollectionUtil {
   }
 
   public static <T> List<T> collectValues(final T value, final T... values) {
+    return collectValues(e -> e, value, values);
+  }
+
+  public static <T, R> List<T> collectValues(
+      final Function<R, T> typeMapper, final R value, final R... values) {
     final List<T> collectedValues = new ArrayList<>();
-    collectedValues.add(value);
+    collectedValues.add(typeMapper.apply(value));
     if (values != null && values.length > 0) {
-      collectedValues.addAll(Arrays.asList(values));
+      collectedValues.addAll(Arrays.stream(values).map(typeMapper).toList());
     }
     return collectedValues;
   }

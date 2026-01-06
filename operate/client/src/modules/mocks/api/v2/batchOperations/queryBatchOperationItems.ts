@@ -6,11 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.8';
+import {
+  endpoints,
+  type QueryBatchOperationItemsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockPostRequest} from '../../mockRequest';
 
 const mockQueryBatchOperationItems = (contextPath = '') =>
-  mockPostRequest(
+  mockPostRequest<QueryBatchOperationItemsResponseBody>(
     `${contextPath}${endpoints.queryBatchOperationItems.getUrl()}`,
   );
 

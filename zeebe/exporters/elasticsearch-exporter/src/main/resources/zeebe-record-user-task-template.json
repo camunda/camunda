@@ -82,8 +82,14 @@
             "priority": {
               "type": "integer"
             },
+            "tags": {
+              "type": "keyword"
+            },
             "deniedReason": {
               "type": "text"
+            },
+            "listenersConfigKey": {
+              "type": "long"
             }
           }
         }

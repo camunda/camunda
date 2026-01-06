@@ -22,8 +22,9 @@ import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 
 public class AuthorizationFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.AuthorizationFilter>
@@ -49,13 +50,23 @@ public class AuthorizationFilterImpl
 
   @Override
   public AuthorizationFilter resourceIds(final String... resourceIds) {
-    filter.setResourceIds(Arrays.asList(resourceIds));
+    return resourceIds(Arrays.asList(resourceIds));
+  }
+
+  @Override
+  public AuthorizationFilter resourceIds(final Collection<String> resourceIds) {
+    filter.setResourceIds(new ArrayList<>(resourceIds));
     return this;
   }
 
   @Override
-  public AuthorizationFilter resourceIds(final List<String> resourceIds) {
-    filter.setResourceIds(resourceIds);
+  public AuthorizationFilter resourcePropertyNames(final String... resourcePropertyNames) {
+    return resourcePropertyNames(Arrays.asList(resourcePropertyNames));
+  }
+
+  @Override
+  public AuthorizationFilter resourcePropertyNames(final Collection<String> resourcePropertyNames) {
+    filter.setResourcePropertyNames(new ArrayList<>(resourcePropertyNames));
     return this;
   }
 

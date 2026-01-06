@@ -26,7 +26,9 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getRejectedCancelProce
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -40,6 +42,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -53,14 +56,24 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",
-      "zeebe.broker.exporters.rdbms.args.queueSize=0",
       "camunda.data.secondary-storage.type=rdbms",
-      "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
-      "camunda.database.index-prefix=C8_"
+      "camunda.data.secondary-storage.rdbms.queue-size=0",
     })
 class RdbmsExporterBatchOperationsIT {
 
   private final ExporterTestController controller = new ExporterTestController();
+  private final VendorDatabaseProperties vendorDatabaseProperties =
+      new VendorDatabaseProperties(
+          new Properties() {
+            {
+              setProperty("variableValue.previewSize", "100");
+              setProperty("userCharColumn.size", "50");
+              setProperty("errorMessage.size", "500");
+              setProperty("disableFkBeforeTruncate", "true");
+            }
+          });
+
+  @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -72,7 +85,8 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   private void setup(final boolean exportPendingItems) {
-    exporter = new RdbmsExporterWrapper(rdbmsService);
+    exporter =
+        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
     exporter.configure(
         new ExporterContext(
             null,

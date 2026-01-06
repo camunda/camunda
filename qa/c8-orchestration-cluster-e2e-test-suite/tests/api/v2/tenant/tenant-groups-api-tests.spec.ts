@@ -16,6 +16,7 @@ import {
   assertConflictRequest,
   paginatedResponseFields,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -41,10 +42,10 @@ test.describe.parallel('Tenant Groups API Tests', () => {
   });
 
   test('Assign Group To Tenant', async ({request}) => {
-    const groupKey = `${state['tenantId1']}6`;
+    const groupKey = `${state['tenantId1']}`;
     await createGroupAndStoreResponseFields(request, 1, state, groupKey);
     const p = {
-      groupId: groupIdFromState(groupKey, state, 6) as string,
+      groupId: groupIdFromState('tenantId1', state, 1) as string,
       tenantId: state['tenantId1'] as string,
     };
 
@@ -55,7 +56,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -73,7 +74,10 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         headers: jsonHeaders(),
       },
     );
-    expect(res.status()).toBe(204);
+    await assertNotFoundRequest(
+      res,
+      `Command 'ADD_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
   });
 
   test('Assign Group To Tenant Non Existent Tenant Not Found', async ({
@@ -144,7 +148,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -158,7 +162,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
           },
         );
 
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);

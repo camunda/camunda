@@ -1,0 +1,131 @@
+# description: Runs regression tests on C8Run. Tests are defined as .http files
+# test location: /qa/http/c8run-tests
+# type: CI
+# owner: @camunda/qa-engineering
+name: C8Run RDBMS Regression Tests
+
+on:
+  pull_request:
+    paths:
+      - "c8run/**"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests on'
+        required: true
+        default: 'main'
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
+jobs:
+  build_and_test_c8run:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        env: [ 'local' ]
+        config:
+          - 'config/application.yaml'
+          - 'qa/http/c8run-tests/application-h2.yaml'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.23.1'
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/common NEXUS_USERNAME;
+            secret/data/products/qa/ci/common NEXUS_PASSWORD;
+
+      - name: Build c8run
+        working-directory: ./c8run
+        run: go build -o c8run ./cmd/c8run
+
+      - name: Package c8run
+        run: ./package.sh
+        working-directory: ./c8run
+        env:
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: Run c8run
+        run: |
+          echo "Matrix config: $CONFIG"
+          if [[ "$CONFIG" == *"application-h2.yaml" ]]; then
+            echo "Using H2 configuration..."
+            cp "../$CONFIG" ./configuration/application.yaml
+          else
+            echo "Using default configuration (no override)"
+          fi
+          nohup ./start.sh --detached &
+        working-directory: ./c8run
+        env:
+          CONFIG: ${{ matrix.config }}
+
+      - name: Wait for app to start
+        run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
+        timeout-minutes: 5
+
+      - name: Install IntelliJ HTTP Client
+        shell: bash
+        run: |
+          curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
+          unzip ijhttp.zip
+          ijhttp/ijhttp qa/http/c8run-tests/c8run-tests.http --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
+
+      - name: Cleanup
+        shell: bash
+        if: always()
+        run: |
+          rm qa/http/http-client.private.env.json
+
+      - name: Shut down Docker Compose
+        if: always()
+        working-directory: ./c8run
+        run: ./shutdown.sh
+
+      - name: Publish Test Report
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: '**/reports/report.xml'
+          comment_mode: off

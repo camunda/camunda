@@ -1,4 +1,5 @@
 # type: Release
+# DEPRECATED: This workflow is deprecated and should be removed when 8.7 reaches EOL in favor of Monorepo Release Process camunda/40184.
 name: Optimize Release Camunda Optimize C8
 
 on:
@@ -51,7 +52,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Log Input Variables
         run: |
@@ -130,6 +131,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
           maven-servers: |
             [{
                 "id": "central",
@@ -156,7 +158,7 @@ jobs:
           if [[ ! $RELEASE_VERSION =~ rc[0-9]+$ ]]; then
             is_rc="false"
           fi
-          if [[ ! $RELEASE_VERSION =~ alpha[0-9]+$ ]]; then
+          if [[ ! $RELEASE_VERSION =~ alpha[0-9]+(\.[0-9]+)*$ ]]; then
             is_alpha="false"
           fi
           {
@@ -204,14 +206,14 @@ jobs:
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
 
       - name: Login to infosec registry
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Checkout release branch
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
@@ -275,29 +277,16 @@ jobs:
             git push origin :refs/tags/"${TAG}"
           fi
 
-      - name: Create a GitHub release
-        if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.4.0
-        with:
-          route: POST /repos/camunda/camunda/releases
-          draft: true
-          name: ${{ env.TAG }}
-          tag_name: ${{ env.TAG }}
-          make_latest: \"false\"
-          body: |
-            Please refer to the [Camunda Monorepo ${{ env.RELEASE_VERSION }} Release Notes](https://github.com/camunda/camunda/releases/tag/${{ env.RELEASE_VERSION }}) for full details.
-
       - name: Auto-update previous version
         run: |
+          POM_FILE="optimize/pom.xml"
           if [ "$IS_PATCH" = "false" ]; then
             # only major / minor GA (.0) release versions will trigger an auto-update of previousVersion property.
             echo "Auto-updating previousVersion property as release version is a valid major/minor version."
             git fetch
             git checkout "${BRANCH}"
-            sed -i "s/project.previousVersion>.*</project.previousVersion>${RELEASE_VERSION}</g" pom.xml
-            git add pom.xml
+            sed --fail-if-no-match -i "s/project.previousVersion>.*</project.previousVersion>${RELEASE_VERSION}</g" "$POM_FILE"
+            git add "$POM_FILE"
             # This is needed to not abort the job in case 'git diff' returns a status different from 0
             set +e
             git diff --staged --quiet
@@ -346,7 +335,7 @@ jobs:
           DATE="$(date +%FT%TZ)"
           export DATE
           export REVISION="${REVISION}"
-          export BASE_IMAGE=docker.io/library/alpine:3.22.0
+          export BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
 
           # if CI (GHA) export the variables for pushing in a later step
           if [ "${CI}" = "true" ]; then
@@ -360,12 +349,17 @@ jobs:
               --build-arg VERSION="${RELEASE_VERSION}" \
               --build-arg DATE="${DATE}" \
               --build-arg REVISION="${REVISION}" \
+              --build-arg BASE_IMAGE="${BASE_IMAGE}" \
               --provenance false \
               --load \
               -f optimize.Dockerfile \
               .
 
-          ./optimize/docker/test/verify.sh "${tags[@]}"
+          echo "Docker build completed. Running verification..."
+          echo "Verifying with VERSION=${VERSION}, REVISION=${REVISION}, DATE=${DATE}, BASE_IMAGE=${BASE_IMAGE}"
+
+          # Verify using the most reliable tag (DockerHub)
+          ./optimize/docker/test/verify.sh "${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}"
 
       - name: Start Smoketest
         uses: ./.github/actions/compose
@@ -375,7 +369,7 @@ jobs:
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_docker_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 
       - name: Wait for Optimize to start
@@ -387,6 +381,18 @@ jobs:
           version: ${{ env.RELEASE_VERSION }}
           date: ${{ env.DATE }}
           revision: ${{ env.REVISION }}
+
+      - name: Create a GitHub release
+        if: ${{ env.IS_RC == 'false' && env.IS_DRY_RUN == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: octokit/request-action@v2.4.0
+        with:
+          route: POST /repos/camunda/camunda/releases
+          make_latest: false
+          name: ${{ env.TAG }}
+          tag_name: ${{ env.TAG }}
+          generate_release_notes: true
 
       - name: Docker log dump
         if: always()

@@ -10,9 +10,11 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.RequestUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.MoveInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
@@ -75,7 +77,8 @@ public final class BrokerModifyProcessInstanceRequest
         .map(
             terminateInstruction ->
                 new ProcessInstanceModificationTerminateInstruction()
-                    .setElementInstanceKey(terminateInstruction.getElementInstanceKey()))
+                    .setElementInstanceKey(terminateInstruction.getElementInstanceKey())
+                    .setElementId(terminateInstruction.getElementId()))
         .forEach(requestDto::addTerminateInstruction);
     return this;
   }
@@ -83,6 +86,34 @@ public final class BrokerModifyProcessInstanceRequest
   public BrokerModifyProcessInstanceRequest addTerminationInstructions(
       final List<ProcessInstanceModificationTerminateInstruction> instructions) {
     instructions.forEach(requestDto::addTerminateInstruction);
+    return this;
+  }
+
+  public BrokerModifyProcessInstanceRequest addMoveInstructions(
+      final List<MoveInstruction> moveInstructions) {
+    moveInstructions.stream()
+        .map(
+            moveInstruction -> {
+              final var mappedInstruction =
+                  new ProcessInstanceModificationMoveInstruction()
+                      .setSourceElementInstanceKey(moveInstruction.getSourceElementInstanceKey())
+                      .setSourceElementId(moveInstruction.getSourceElementId())
+                      .setTargetElementId(moveInstruction.getTargetElementId())
+                      .setAncestorScopeKey(moveInstruction.getAncestorElementInstanceKey())
+                      .setInferAncestorScopeFromSourceHierarchy(
+                          moveInstruction.getInferAncestorScopeFromSourceHierarchy());
+              moveInstruction.getVariableInstructionsList().stream()
+                  .map(this::mapVariableInstruction)
+                  .forEach(mappedInstruction::addVariableInstruction);
+              return mappedInstruction;
+            })
+        .forEach(requestDto::addMoveInstruction);
+    return this;
+  }
+
+  public BrokerModifyProcessInstanceRequest addMovingInstructions(
+      final List<ProcessInstanceModificationMoveInstruction> instructions) {
+    instructions.forEach(requestDto::addMoveInstruction);
     return this;
   }
 

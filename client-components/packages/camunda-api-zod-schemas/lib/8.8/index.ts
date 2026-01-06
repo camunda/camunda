@@ -82,6 +82,7 @@ import {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	resolveProcessInstanceIncidents,
 } from './process-instance';
 import {
 	getUserTask,
@@ -98,10 +99,12 @@ import {getVariable, queryVariables} from './variable';
 import {queryJobs, activateJobs, failJob, throwJobError, completeJob, updateJob} from './job';
 import {
 	getProcessDefinition,
-	getProcessDefinitionStatistics,
-	queryProcessDefinitions,
 	getProcessDefinitionXml,
 	getProcessStartForm,
+	getProcessDefinitionStatistics,
+	queryProcessDefinitions,
+	getProcessDefinitionInstanceStatistics,
+	getProcessDefinitionInstanceVersionStatistics,
 } from './process-definition';
 import {createDeployment, deleteResource, getResource, getResourceContent} from './resource';
 import {
@@ -232,10 +235,12 @@ const endpoints = {
 	completeJob,
 	updateJob,
 	getProcessDefinition,
-	getProcessDefinitionStatistics,
-	queryProcessDefinitions,
 	getProcessDefinitionXml,
 	getProcessStartForm,
+	getProcessDefinitionStatistics,
+	queryProcessDefinitions,
+	getProcessDefinitionInstanceStatistics,
+	getProcessDefinitionInstanceVersionStatistics,
 	getProcessInstance,
 	queryProcessInstances,
 	cancelProcessInstance,
@@ -296,6 +301,7 @@ const endpoints = {
 	createMigrationBatchOperation,
 	createModificationBatchOperation,
 	modifyProcessInstance,
+	resolveProcessInstanceIncidents,
 } as const;
 
 export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
@@ -432,8 +438,8 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
-  queryElementInstanceIncidentsRequestBodySchema,
-  queryElementInstanceIncidentsResponseBodySchema,
+	queryElementInstanceIncidentsRequestBodySchema,
+	queryElementInstanceIncidentsResponseBodySchema,
 	type ElementInstanceState,
 	type ElementInstanceType,
 	type ElementInstance,
@@ -441,8 +447,8 @@ export {
 	type QueryElementInstancesResponseBody,
 	type GetElementInstanceResponseBody,
 	type UpdateElementInstanceVariablesRequestBody,
-  type QueryElementInstanceIncidentsRequestBody,
-  type QueryElementInstanceIncidentsResponseBody,
+	type QueryElementInstanceIncidentsRequestBody,
+	type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
 export {
 	createGroupRequestBodySchema,
@@ -610,6 +616,7 @@ export {
 	type CreateModificationBatchOperationRequestBody,
 	type CreateModificationBatchOperationResponseBody,
 	type ModifyProcessInstanceRequestBody,
+	type ResolveProcessInstanceIncidentsResponseBody,
 } from './process-instance';
 export {
 	userTaskSchema,
@@ -648,12 +655,24 @@ export {
 	queryProcessDefinitionsRequestBodySchema,
 	queryProcessDefinitionsResponseBodySchema,
 	processDefinitionSchema,
+	getProcessDefinitionInstanceStatisticsRequestBodySchema,
+	getProcessDefinitionInstanceStatisticsResponseBodySchema,
+	processDefinitionInstanceStatisticsSchema,
+	getProcessDefinitionInstanceVersionStatisticsRequestBodySchema,
+	getProcessDefinitionInstanceVersionStatisticsResponseBodySchema,
+	processDefinitionInstanceVersionStatisticsSchema,
 	type ProcessDefinition,
 	type ProcessDefinitionStatistic,
-	type QueryProcessDefinitionsRequestBody,
-	type QueryProcessDefinitionsResponseBody,
 	type GetProcessDefinitionStatisticsRequestBody,
 	type GetProcessDefinitionStatisticsResponseBody,
+	type QueryProcessDefinitionsRequestBody,
+	type QueryProcessDefinitionsResponseBody,
+	type GetProcessDefinitionInstanceStatisticsRequestBody,
+	type GetProcessDefinitionInstanceStatisticsResponseBody,
+	type ProcessDefinitionInstanceStatistics,
+	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+	type GetProcessDefinitionInstanceVersionStatisticsResponseBody,
+	type ProcessDefinitionInstanceVersionStatistics,
 } from './process-definition';
 export {
 	problemDetailsSchema,
@@ -664,7 +683,7 @@ export {
 	type QueryPage,
 	type QuerySortOrder,
 	type ProblemDetailsResponse,
-} from './common';
+} from '../common';
 export {
 	createDeploymentResponseBodySchema,
 	deleteResourceRequestBodySchema,

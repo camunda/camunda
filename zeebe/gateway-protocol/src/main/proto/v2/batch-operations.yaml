@@ -3,6 +3,7 @@
 paths:
   /batch-operations/{batchOperationKey}:
     get:
+      x-eventually-consistent: true
       tags:
         - Batch operation
       operationId: getBatchOperation
@@ -36,10 +37,10 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /batch-operations/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Batch operation
       operationId: searchBatchOperations
@@ -66,10 +67,10 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /batch-operations/{batchOperationKey}/cancellation:
     post:
+      x-eventually-consistent: true
       tags:
         - Batch operation
       operationId: cancelBatchOperation
@@ -104,10 +105,10 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
   /batch-operations/{batchOperationKey}/suspension:
     post:
+      x-eventually-consistent: true
       tags:
         - Batch operation
       operationId: suspendBatchOperation
@@ -144,10 +145,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: true
 
   /batch-operations/{batchOperationKey}/resumption:
     post:
+      x-eventually-consistent: true
       tags:
         - Batch operation
       operationId: resumeBatchOperation
@@ -184,10 +185,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-      x-eventually-consistent: true
 
   /batch-operation-items/search:
     post:
+      x-eventually-consistent: true
       tags:
         - Batch operation
       operationId: searchBatchOperationItems
@@ -214,7 +215,6 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -243,8 +243,10 @@ components:
             - state
             - startDate
             - endDate
+            - actorType
+            - actorId
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -281,6 +283,14 @@ components:
           description: The state of the batch operation.
           allOf:
             - $ref: '#/components/schemas/BatchOperationStateFilterProperty'
+        actorType:
+          description: The type of the actor who performed the operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationActorTypeEnum'
+        actorId:
+          description: The ID of the actor who performed the operation.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     BatchOperationSearchQueryResult:
       description: The batch operation search query result.
@@ -313,6 +323,11 @@ components:
           type: string
           description: The end date of the batch operation.
           format: date-time
+        actorType:
+          $ref: '#/components/schemas/BatchOperationActorTypeEnum'
+        actorId:
+          type: string
+          description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
         operationsTotalCount:
           type: integer
           description: The total number of items contained in this batch operation.
@@ -358,9 +373,10 @@ components:
             - batchOperationKey
             - itemKey
             - processInstanceKey
+            - processedDate
             - state
         order:
-          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -396,12 +412,16 @@ components:
         processInstanceKey:
           description: The process instance key of the processed item.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
         state:
           type: string
           description: The state of the batch operation.
           allOf:
             - $ref: '#/components/schemas/BatchOperationItemStateFilterProperty'
+        operationType:
+          description: The type of the batch operation.
+          allOf:
+            - $ref: '#/components/schemas/BatchOperationTypeFilterProperty'
 
     BatchOperationItemSearchQueryResult:
       type: object
@@ -475,6 +495,20 @@ components:
       required:
         - filter
 
+    ProcessInstanceDeletionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be deleted.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
     ProcessInstanceMigrationBatchOperationRequest:
       type: object
       additionalProperties: false
@@ -534,9 +568,11 @@ components:
         - moveInstructions
 
     ProcessInstanceModificationMoveBatchOperationInstruction:
-      description: |-
-        Instructions describing a move operation. This instruction will terminate all active elementInstance
-        at sourceElementId and activate a new element instance for each terminated one at targetElementId.
+      description: |
+        Instructions describing a move operation. This instruction will terminate all active
+        element instances at `sourceElementId` and activate a new element instance for each
+        terminated one at `targetElementId`. The new element instances are created in the parent
+        scope of the source element instances.
       type: object
       properties:
         sourceElementId:
@@ -554,7 +590,7 @@ components:
     ## Enums
 
     BatchOperationItemStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      description: The batch operation item state.
       type: string
       enum:
         - ACTIVE
@@ -578,15 +614,22 @@ components:
       description: The type of the batch operation.
       type: string
       enum:
-        - CANCEL_PROCESS_INSTANCE
-        - RESOLVE_INCIDENT
-        - MIGRATE_PROCESS_INSTANCE
-        - MODIFY_PROCESS_INSTANCE
-        - DELETE_PROCESS_INSTANCE
         - ADD_VARIABLE
-        - UPDATE_VARIABLE
+        - CANCEL_PROCESS_INSTANCE
         - DELETE_DECISION_DEFINITION
         - DELETE_PROCESS_DEFINITION
+        - DELETE_PROCESS_INSTANCE
+        - MIGRATE_PROCESS_INSTANCE
+        - MODIFY_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - UPDATE_VARIABLE
+
+    BatchOperationActorTypeEnum:
+      description: The type of the actor. Available for batch operations created since 8.9.
+      type: string
+      enum:
+        - CLIENT
+        - USER
 
     ## Filters
 

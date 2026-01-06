@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.listview;
 
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -18,16 +19,17 @@ public class VariableForListViewEntity
         PartitionedEntity<VariableForListViewEntity>,
         TenantOwned {
 
-  private String id;
-  private long key;
-  private int partitionId;
-  private Long processInstanceKey;
-  private Long scopeKey;
-  private String varName;
-  private String varValue;
-  private String tenantId;
-  private Long position;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private Long scopeKey;
+  @BeforeVersion880 private String varName;
+  @BeforeVersion880 private String varValue;
+  @BeforeVersion880 private String tenantId;
+  @BeforeVersion880 private Long position;
 
+  @BeforeVersion880
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 

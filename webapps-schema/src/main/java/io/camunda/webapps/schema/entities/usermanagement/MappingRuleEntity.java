@@ -8,15 +8,16 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 
 public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-  private Long key;
-  private String mappingRuleId;
-  private String claimName;
-  private String claimValue;
-  private String name;
+  @BeforeVersion880 private Long key;
+  @BeforeVersion880 private String mappingRuleId;
+  @BeforeVersion880 private String claimName;
+  @BeforeVersion880 private String claimValue;
+  @BeforeVersion880 private String name;
 
   public MappingRuleEntity() {}
 

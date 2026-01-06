@@ -14,7 +14,7 @@ import {
 	advancedDateTimeFilterSchema,
 	getEnumFilterSchema,
 	type Endpoint,
-} from './common';
+} from '../common';
 
 const incidentErrorTypeSchema = z.enum([
 	'UNSPECIFIED',

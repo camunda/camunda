@@ -14,7 +14,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -38,9 +41,16 @@ import org.mockito.Mockito;
 final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = MessageSubscriptionTemplate.INDEX_NAME;
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
 
   private final MessageSubscriptionFromProcessMessageSubscriptionHandler underTest =
-      new MessageSubscriptionFromProcessMessageSubscriptionHandler(indexName);
+      new MessageSubscriptionFromProcessMessageSubscriptionHandler(indexName, exporterMetadata);
+
+  @BeforeEach
+  void resetMetadata() {
+    exporterMetadata.setFirstProcessMessageSubscriptionKey(-1);
+  }
 
   @Test
   void testGetHandledValueType() {
@@ -81,8 +91,8 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   @Test
   void testGenerateIds() {
     // given
-    final int processInstanceKey = 123;
-    final int elementInstanceKey = 456;
+    final long processInstanceKey = 123L;
+    final long elementInstanceKey = 456L;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
@@ -98,6 +108,86 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     // then
     assertThat(ids)
         .containsExactly(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+  }
+
+  @Test
+  void shouldGenerateIdForNewVersionRecord() {
+    // given
+    final long recordKey = 110L;
+    exporterMetadata.setFirstProcessMessageSubscriptionKey(recordKey - 1);
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessInstanceKey(123L)
+            .withElementInstanceKey(456L)
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(recordValue));
+
+    // when
+    final var ids = underTest.generateIds(record);
+
+    // then
+    assertThat(ids).containsExactly(String.valueOf(recordKey));
+    assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey - 1);
+  }
+
+  @Test
+  void shouldGenerateIdForOldVersionRecord() {
+    // given
+    final long recordKey = 90L;
+    final int processInstanceKey = 123;
+    final int elementInstanceKey = 456;
+    exporterMetadata.setFirstProcessMessageSubscriptionKey(recordKey + 1);
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(recordValue));
+
+    // when
+    final var ids = underTest.generateIds(record);
+
+    // then
+    assertThat(ids)
+        .containsExactly(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+    assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey + 1);
+  }
+
+  @Test
+  void shouldSetFirstProcessMessageSubscriptionKeyOnCreatedIntent() {
+    // given
+    final long recordKey = 100L;
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessInstanceKey(123L)
+            .withElementInstanceKey(456L)
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r ->
+                r.withIntent(ProcessMessageSubscriptionIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(recordValue));
+
+    // when
+    final var ids = underTest.generateIds(record);
+
+    // then
+    assertThat(ids).containsExactly(String.valueOf(recordKey));
+    assertThat(exporterMetadata.getFirstProcessMessageSubscriptionKey()).isEqualTo(recordKey);
   }
 
   @Test
@@ -120,6 +210,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     final int position = 9999;
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
+    final int processDefinitionKey = 555;
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
     final String tenantId = "tenantId";
@@ -130,6 +221,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .withElementId(elementId)
             .withBpmnProcessId(bpmnProcessId)
             .withTenantId(tenantId)
@@ -147,12 +239,12 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
                     .withValue(recordValue));
 
     // when
-    final MessageSubscriptionEntity entity = new MessageSubscriptionEntity();
+    final var ids = underTest.generateIds(record);
+    final MessageSubscriptionEntity entity = underTest.createNewEntity(ids.getFirst());
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getId())
-        .isEqualTo(String.format(ID_PATTERN, processInstanceKey, elementInstanceKey));
+    assertThat(entity.getId()).isEqualTo(String.valueOf(recordKey));
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getEventSourceType()).isEqualTo(EventSourceType.PROCESS_MESSAGE_SUBSCRIPTION);
@@ -162,6 +254,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getPositionProcessMessageSubscription()).isEqualTo(position);
     assertThat(entity.getMetadata().getMessageName()).isEqualTo(messageName);

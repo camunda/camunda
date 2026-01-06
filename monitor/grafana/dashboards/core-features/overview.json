@@ -615,7 +615,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/ceolah0px5og0e/api?orgId=1&from=now-15m&to=now&timezone=browser&${region:queryparam}&${namespace:queryparam}&${container:queryparam}&var-uri=${__value.raw}"
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&${region:queryparam}&${namespace:queryparam}&${container:queryparam}&var-uri=${__value.raw}"
                       }
                     ]
                   }
@@ -833,7 +833,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/ceolah0px5og0e/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
                       }
                     ]
                   }
@@ -1059,7 +1059,7 @@
                     "value": [
                       {
                         "title": "Show details",
-                        "url": "/d/ceolah0px5og0e/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
                       }
                     ]
                   }
@@ -1266,7 +1266,7 @@
                     "value": [
                       {
                         "title": "Show details",
-                        "url": "/d/ceolah0px5og0e/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
                       }
                     ]
                   }
@@ -1477,7 +1477,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/ceolah0px5og0e/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
                       }
                     ]
                   }
@@ -1692,7 +1692,7 @@
                       {
                         "targetBlank": true,
                         "title": "Show details",
-                        "url": "/d/ceolah0px5og0e/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
+                        "url": "/d/core-features-rest/api?orgId=1&from=now-15m&to=now&timezone=browser&var-uri=${__value.raw}&${region:queryparam}&${container:queryparam}&${namespace:queryparam}"
                       }
                     ]
                   }
@@ -2957,7 +2957,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\r\n<strong><a href=\"/d/zeebe-overview/zeebe-overview?orgId=1&$__url_time_range&var-DS_PROMETHEUS=thanos-global-view&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe Overview<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/zeebe-dashboard/zeebe?orgId=1&$__url_time_range&var-DS_PROMETHEUS=thanos-global-view&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe<br/>Dashboard</a></strong>\r\n</center>",
+            "content": "<center>\r\n<strong><a href=\"/d/zeebe-overview/zeebe-overview?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe Overview<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/zeebe-dashboard/zeebe?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all&cluster=${cluster}\" target=\"_blank\">\r\nZeebe<br/>Dashboard</a></strong>\r\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -2967,7 +2967,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the top 10 processing queue size per partition over time. Processing queue defines, what is already appended but not yet processed by the stream processor.\nFilters by namespace, cluster, generation and sales plan type.",
           "fieldConfig": {
@@ -3056,7 +3056,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "topk(10,\r\n    (\r\n        max by (partition) (\r\n            zeebe_log_appender_last_appended_position{cluster=~\"$cluster\", namespace=~\"$namespace\"}\r\n            * on(namespace) group_left()\r\n            max(\r\n                kube_namespace_labels{\r\n                label_cloud_camunda_io_generation=~\"$generation\",\r\n                label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n                }\r\n            ) by (namespace)\r\n        )\r\n    )\r\n    -\r\n    (\r\n        max by (partition) (\r\n            zeebe_stream_processor_last_processed_position{cluster=~\"$cluster\", namespace=~\"$namespace\"}\r\n            * on(namespace) group_left()\r\n            max(\r\n                kube_namespace_labels{\r\n                label_cloud_camunda_io_generation=~\"$generation\",\r\n                label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n                }\r\n            ) by (namespace)\r\n        )\r\n    )\r\n)",
@@ -3842,7 +3842,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Displays the roles of each node per partition.",
           "fieldConfig": {
@@ -3936,7 +3936,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -3972,7 +3972,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows when a role change has happened. \n1 = Follower\n2 = Candidate\n3 = Leader",
           "fieldConfig": {
@@ -4060,7 +4060,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -4077,7 +4077,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Amount of unhealthy (and dead) pods per namespace.\nCan be filtered by namespace and cluster.",
           "fieldConfig": {
@@ -4162,7 +4162,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -4478,7 +4478,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Number of pending command distributions by partition, target partition and namespace.\np = partition\ntp = target partition\n\nFilters by namespace and cluster.",
           "fieldConfig": {
@@ -4562,7 +4562,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum (zeebe_command_distributions_pending{namespace=~\"$namespace\", cluster=~\"$cluster\"}) by (partition, targetPartition, namespace)",
@@ -4577,7 +4577,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the increase of total command distribution retries by namespace, pod, partition and target partition.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -4667,7 +4667,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -4700,7 +4700,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Average persistent volume claim in relation to volume stats capacity per namespace.\n\nShows the top 10.\n\nFilters by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -4785,7 +4785,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "topk (10,\r\n    (avg by (persistentvolumeclaim, namespace)(\r\n        (kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n        /\r\n        kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"})\r\n        )\r\n        * on(namespace)\r\n        group_left(\r\n            label_cloud_camunda_io_generation,\r\n            label_cloud_camunda_io_sales_plan_type\r\n        )\r\n        max(\r\n            kube_namespace_labels{\r\n            namespace=~\"$namespace\",\r\n            label_cloud_camunda_io_generation=~\"$generation\",\r\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n            }\r\n        ) by (\r\n            namespace\r\n        )\r\n    )\r\n)",
@@ -5020,7 +5020,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Discrepancy between last committed log appender position and last exported position.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -5106,7 +5106,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "topk(10,\r\n    max (\r\n        zeebe_log_appender_last_committed_position{\r\n            cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\r\n            }\r\n    ) by (partition, namespace)\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n    -\r\n    max (\r\n        zeebe_exporter_last_exported_position{\r\n            cluster=~\"$cluster\", namespace=~\"$namespace\", exporter=\"camundaexporter\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"\r\n            }\r\n    ) by (partition, namespace)\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n)",
@@ -5121,7 +5121,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "How much time it took to export a record from the moment it was written (not committed).\n\nFiltered by namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -5206,7 +5206,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "max by (partition, pod, namespace, camund) (\r\n    zeebe_camunda_exporter_record_export_duration_seconds_max{namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n    )\r\n* on(namespace) group_left() \r\nmax by (namespace)\r\n(\r\n    kube_namespace_labels{\r\n        label_cloud_camunda_io_generation=~\"$generation\",\r\n        label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n        }\r\n)",
@@ -5315,7 +5315,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "How long an export request is open on average and collecting new records before flushing.\n\nShows the top 10 pods with the highest latency.\n\nFilters by namespace, cluster, generation, sales plan type.",
           "fieldConfig": {
@@ -5400,7 +5400,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "topk(10,\r\n    avg by (namespace, pod, partition) ( \r\n        rate(zeebe_camunda_exporter_flush_latency_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])\r\n        * on(namespace)\r\n        group_left(\r\n            label_cloud_camunda_io_generation,\r\n            label_cloud_camunda_io_sales_plan_type\r\n        )\r\n        max(\r\n            kube_namespace_labels{\r\n            namespace=~\"$namespace\",\r\n            label_cloud_camunda_io_generation=~\"$generation\",\r\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n            }\r\n        ) by (\r\n            namespace\r\n        )\r\n        /\r\n        rate(zeebe_camunda_exporter_flush_latency_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])\r\n        * on(namespace)\r\n        group_left(\r\n            label_cloud_camunda_io_generation,\r\n            label_cloud_camunda_io_sales_plan_type\r\n        )\r\n        max(\r\n            kube_namespace_labels{\r\n            namespace=~\"$namespace\",\r\n            label_cloud_camunda_io_generation=~\"$generation\",\r\n            label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n            }\r\n        ) by (\r\n            namespace\r\n        )\r\n    )\r\n)",
@@ -5531,7 +5531,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Histogram to show the distribution of the overall archiving duration, which includes searching, reindexing, and deletion.\n\nFilters by cluster, namespace, geo area, cloud provider, generation, sales plan type.",
           "fieldConfig": {
@@ -5596,7 +5596,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "sum(\r\n    rate(zeebe_camunda_exporter_archiver_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}[$__rate_interval])\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n    )\r\n     by (le)",
@@ -6054,7 +6054,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\r\n<strong><a href=\"/d/6MTxqUDWk/operate?orgId=1&$__url_time_range&var-DS_PROMETHEUS=thanos-global-view&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nOperate<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/benchmark-1/camunda-cloud??orgId=1&$__url_time_range&var-DS_PROMETHEUS=thanos-global-view&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nBenchmark<br/>Dashboard</a></strong>\r\n</center>",
+            "content": "<center>\r\n<strong><a href=\"/d/6MTxqUDWk/operate?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nOperate<br/>Dashboard</a></strong>\r\n<br/><br/><br/>\r\n<strong><a href=\"/d/benchmark-1/camunda-cloud??orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all\" target=\"_blank\">\r\nBenchmark<br/>Dashboard</a></strong>\r\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -6467,7 +6467,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "CPU usage of core features containers relative to the resource limit. Shows the top 20.\n\nCan be filtered by namespace, cluster, geo area, cloud provider, generation and sales plan type.",
           "fieldConfig": {
@@ -6556,7 +6556,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -6575,7 +6575,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "thanos-global-view"
+            "uid": "${DS_PROMETHEUS}"
           },
           "description": "Memory usage relative to the resource limit. Shows the top 20 containers.\n\nCan be filtered by namespace, cluster, geo area, cloud provider, generation and sales plan type.",
           "fieldConfig": {
@@ -6664,7 +6664,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "thanos-global-view"
+                "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
               "expr": "topk(20,\r\navg (node_namespace_pod_container:container_memory_working_set_bytes{container=~\"zeebe.*|operate.*|tasklist.*|optimize.*|elasticsearch.*\",\r\n    cluster=~\"$cluster\",\r\n    namespace=~\"$namespace\",\r\n    camunda_geo_area=~\"$geo_area\",\r\n    camunda_provider=~\"$cloud_provider\"}\r\n    * on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n    /\r\navg (kube_pod_container_resource_limits{resource=\"memory\", cluster=~\"$cluster\", namespace=~\"$namespace\", camunda_geo_area=~\"$geo_area\", camunda_provider=~\"$cloud_provider\"}\r\n* on(namespace)\r\n  group_left(\r\n    label_cloud_camunda_io_generation,\r\n    label_cloud_camunda_io_sales_plan_type\r\n  )\r\n  max(\r\n    kube_namespace_labels{\r\n      namespace=~\"$namespace\",\r\n      label_cloud_camunda_io_generation=~\"$generation\",\r\n      label_cloud_camunda_io_sales_plan_type=~\"$sales_plan_type\"\r\n    }\r\n  ) by (\r\n    namespace\r\n  )\r\n  ) by (container, namespace)\r\n)",
@@ -6695,7 +6695,7 @@
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<center>\n<strong><a href=\"/d/kubernetes-workload/kubernetes-workload?orgId=1&$__url_time_range&var-DS_PROMETHEUS=thanos-global-view&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all)\" target=\"_blank\">\nSRE<br/>Dashboard</a></strong>\n</center>",
+            "content": "<center>\n<strong><a href=\"/d/kubernetes-workload/kubernetes-workload?orgId=1&$__url_time_range&var-DS_PROMETHEUS=${DS_PROMETHEUS}&var-namespace=${namespace}&var-pod=$__all&var-partition=$__all)\" target=\"_blank\">\nSRE<br/>Dashboard</a></strong>\n</center>",
             "mode": "html"
           },
           "pluginVersion": "12.2.0",
@@ -7073,13 +7073,16 @@
   ],
   "preload": false,
   "schemaVersion": 42,
-  "tags": [],
+  "tags": [
+    "as code"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "text": "Thanos: global-view",
-          "value": "thanos-global-view"
+          "selected": false,
+          "text": "Prometheus",
+          "value": "${DS_PROMETHEUS}"
         },
         "label": "datasource",
         "name": "DS_PROMETHEUS",
@@ -7169,7 +7172,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "thanos-global-view"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(atomix_role,cluster)",
         "description": "Kubernetes cluster",
@@ -7196,7 +7199,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "thanos-global-view"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(camunda_region)",
         "includeAll": true,
@@ -7223,7 +7226,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "thanos-global-view"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(container_cpu_usage_seconds_total,container)",
         "includeAll": true,
@@ -7362,7 +7365,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "thanos-global-view"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(http_server_requests_seconds_count{container=~\"$container\", uri!~\"^/($|actuator($|/.*)|\\\\*\\\\*($|/.*)|\\\\*\\\\*/\\\\{regex:\\\\[\\\\\\\\w-]+\\\\})$\"},uri)",
         "includeAll": true,
@@ -7388,7 +7391,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "thanos-global-view"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(grpc_server_processing_duration_seconds_count,method)",
         "includeAll": true,
@@ -7407,12 +7410,41 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-15m",
     "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "collapse": false,
+    "enable": true,
+    "notice": false,
+    "now": true,
+    "refresh_intervals": [
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "status": "Stable",
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ],
+    "type": "timepicker"
+  },
   "timezone": "browser",
   "title": "Core Features Overview",
-  "uid": "fel9lob8vajggd",
-  "version": 371
+  "uid": "core-features-overview",
+  "version": 2
 }

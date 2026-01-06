@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -51,11 +52,10 @@ public final class CheckpointCreateProcessor {
 
     final var checkpointRecord = record.getValue();
     final long checkpointId = checkpointRecord.getCheckpointId();
-    final var checkpointPosition = record.getPosition();
 
     if (checkpointState.getLatestCheckpointId() < checkpointId) {
       // Only process checkpoint if it is newer
-      return processNewCheckpoint(record, resultBuilder, checkpointId, checkpointPosition);
+      return processNewCheckpoint(record, resultBuilder);
     } else {
       // A checkpoint already exists. Ignore the command.
       return processExistingCheckpoint(record, resultBuilder);
@@ -63,36 +63,35 @@ public final class CheckpointCreateProcessor {
   }
 
   private ProcessingResult processNewCheckpoint(
-      final TypedRecord<CheckpointRecord> record,
-      final ProcessingResultBuilder resultBuilder,
-      final long checkpointId,
-      final long checkpointPosition) {
+      final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
 
     final boolean scalingInProgress = scalingStatusSupplier.isScalingInProgress();
+    final var checkpointRecord = record.getValue();
+    // Get current partition count from routing information if available
+    final int currentPartitionCount = partitionCountSupplier.getCurrentPartitionCount();
+    final long checkpointId = checkpointRecord.getCheckpointId();
+    final var descriptor = BackupDescriptorImpl.from(record, currentPartitionCount);
 
     // Create backup (either normal or failed based on scaling state)
     if (scalingInProgress) {
       // We want to mark the backup as failed for observability
       backupManager.createFailedBackup(
-          checkpointId,
-          checkpointPosition,
-          "Cannot create checkpoint while scaling is in progress");
-    } else {
-      // Get current partition count from routing information if available
-      final int currentPartitionCount = partitionCountSupplier.getCurrentPartitionCount();
-      backupManager.takeBackup(checkpointId, checkpointPosition, currentPartitionCount);
+          checkpointId, descriptor, "Cannot create checkpoint while scaling is in progress");
+    } else if (checkpointRecord.getCheckpointType().shouldCreateBackup()) {
+      backupManager.takeBackup(checkpointId, descriptor);
     }
 
     // Create follow-up record
     final var followupRecord =
         new CheckpointRecord()
-            .setCheckpointId(checkpointId)
-            .setCheckpointPosition(checkpointPosition);
+            .setCheckpointId(checkpointRecord.getCheckpointId())
+            .setCheckpointPosition(record.getPosition())
+            .setCheckpointType(checkpointRecord.getCheckpointType());
 
     // Checkpoint should be created even if we don't take a backup for checkpoint-consistency
     appendCheckpointCreatedEvent(record, resultBuilder, followupRecord);
 
-    checkpointCreatedApplier.apply(followupRecord);
+    checkpointCreatedApplier.apply(followupRecord, record.getTimestamp());
 
     // Handle client response based on scaling state
     if (scalingInProgress) {
@@ -112,7 +111,8 @@ public final class CheckpointCreateProcessor {
     final var latestCheckpointRecord =
         new CheckpointRecord()
             .setCheckpointId(checkpointState.getLatestCheckpointId())
-            .setCheckpointPosition(checkpointState.getLatestCheckpointPosition());
+            .setCheckpointPosition(checkpointState.getLatestCheckpointPosition())
+            .setCheckpointType(checkpointState.getLatestCheckpointType());
 
     return createFollowUpAndResponse(
         record, CheckpointIntent.IGNORED, latestCheckpointRecord, resultBuilder);

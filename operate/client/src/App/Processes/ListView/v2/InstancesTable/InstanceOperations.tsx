@@ -6,39 +6,87 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
-import {processInstancesStore} from 'modules/stores/processInstances';
+import {handleOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
-import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
+import {applyOperation as applyOperationV1} from 'modules/api/processInstances/operations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
-import {logger} from 'modules/logger';
 
 type Props = {
   processInstanceKey: string;
   hasIncident: boolean;
   isInstanceActive: boolean;
-  activeOperations: OperationEntityType[];
 };
 
 const InstanceOperations: React.FC<Props> = ({
   processInstanceKey,
   hasIncident,
   isInstanceActive,
-  activeOperations,
 }) => {
+  const queryClient = useQueryClient();
+
+  const handleOperationSuccess = (operationType: OperationEntityType) => {
+    tracking.track({
+      eventName: 'single-operation',
+      operationType,
+      source: 'instances-list',
+    });
+    queryClient.invalidateQueries({
+      queryKey: ['processInstances'],
+    });
+  };
+
+  const {
+    mutate: resolveProcessInstanceIncidents,
+    isPending: isResolveIncidentsPending,
+  } = useResolveProcessInstanceIncidents(processInstanceKey, {
+    onError: (error) => {
+      handleOperationError(error.status);
+    },
+    onSuccess: () => {
+      handleOperationSuccess('RESOLVE_INCIDENT');
+    },
+  });
+
+  //TODO update with v2 usage in the scope of #33063
+  const {mutate: deleteProcessInstance, isPending: isDeletePending} =
+    useMutation({
+      mutationFn: async () => {
+        const response = await applyOperationV1(processInstanceKey, {
+          operationType: 'DELETE_PROCESS_INSTANCE',
+        });
+
+        if (response.isSuccess) {
+          return response.data;
+        }
+        throw new Error(response.statusCode?.toString());
+      },
+      onSuccess: () => {
+        handleOperationSuccess('DELETE_PROCESS_INSTANCE');
+      },
+      onError: (error) => {
+        const statusCode =
+          error instanceof Error && error.message
+            ? parseInt(error.message, 10)
+            : undefined;
+        handleOperationError(statusCode);
+      },
+    });
+
   const {
     mutate: cancelProcessInstance,
     isPending: isCancelProcessInstancePending,
   } = useCancelProcessInstance(processInstanceKey, {
-    shouldSkipResultCheck: true,
+    shouldSkipResultCheck: false,
+    onSuccess: () => {
+      handleOperationSuccess('CANCEL_PROCESS_INSTANCE');
+    },
     onError: (error) => {
-      processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-        instanceIds: [processInstanceKey],
-        operationType: 'CANCEL_PROCESS_INSTANCE',
-      });
       notificationsStore.displayNotification({
         kind: 'error',
         title: 'Failed to cancel process instance',
@@ -48,97 +96,36 @@ const InstanceOperations: React.FC<Props> = ({
     },
   });
 
-  const handleOperationError: ErrorHandler = ({statusCode}) => {
-    notificationsStore.displayNotification({
-      kind: 'error',
-      title: 'Operation could not be created',
-      subtitle: statusCode === 403 ? 'You do not have permission' : undefined,
-      isDismissable: true,
-    });
-  };
-
-  const handleOperationSuccess = (operationType: OperationEntityType) => {
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source: 'instances-list',
-    });
-  };
-
-  const applyOperation = async (operationType: OperationEntityType) => {
-    try {
-      processInstancesStore.markProcessInstancesWithActiveOperations({
-        ids: [processInstanceKey],
-        operationType,
-      });
-
-      await operationsStore.applyOperation({
-        instanceId: processInstanceKey,
-        payload: {
-          operationType,
-        },
-        onError: (error) => {
-          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-            instanceIds: [processInstanceKey],
-            operationType,
-          });
-          handleOperationError(error);
-        },
-        onSuccess: () => handleOperationSuccess(operationType),
-      });
-    } catch (error) {
-      processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-        instanceIds: [processInstanceKey],
-        operationType,
-      });
-      logger.error(error);
-    }
-  };
-
-  const handleDelete = () => {
-    applyOperation('DELETE_PROCESS_INSTANCE');
-  };
+  const isLoading =
+    isCancelProcessInstancePending ||
+    isResolveIncidentsPending ||
+    isDeletePending;
 
   const operations: OperationConfig[] = [];
 
   if (isInstanceActive && hasIncident) {
     operations.push({
       type: 'RESOLVE_INCIDENT',
-      onExecute: () => {
-        applyOperation('RESOLVE_INCIDENT');
-      },
-      disabled: activeOperations.includes('RESOLVE_INCIDENT'),
+      onExecute: () => resolveProcessInstanceIncidents(),
+      disabled: isResolveIncidentsPending,
     });
   }
 
   if (isInstanceActive) {
     operations.push({
       type: 'CANCEL_PROCESS_INSTANCE',
-      onExecute: () => {
-        processInstancesStore.markProcessInstancesWithActiveOperations({
-          ids: [processInstanceKey],
-          operationType: 'CANCEL_PROCESS_INSTANCE',
-        });
-        cancelProcessInstance();
-      },
-      disabled:
-        isCancelProcessInstancePending ||
-        activeOperations.includes('CANCEL_PROCESS_INSTANCE'),
+      onExecute: () => cancelProcessInstance(),
+      disabled: isCancelProcessInstancePending,
     });
   }
 
   if (!isInstanceActive) {
     operations.push({
       type: 'DELETE_PROCESS_INSTANCE',
-      onExecute: handleDelete,
-      disabled: activeOperations.includes('DELETE_PROCESS_INSTANCE'),
+      onExecute: () => deleteProcessInstance(),
+      disabled: isDeletePending,
     });
   }
-
-  const isLoading =
-    processInstancesStore.processInstanceIdsWithActiveOperations.includes(
-      processInstanceKey,
-    ) || isCancelProcessInstancePending;
 
   return (
     <Operations

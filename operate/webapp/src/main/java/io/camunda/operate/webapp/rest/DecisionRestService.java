@@ -15,6 +15,7 @@ import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Decisions")
 @RestController
 @RequestMapping(value = DecisionRestService.DECISION_URL)
+@ConditionalOnRdbmsDisabled
 public class DecisionRestService extends InternalAPIErrorController {
 
   public static final String DECISION_URL = "/api/decisions";

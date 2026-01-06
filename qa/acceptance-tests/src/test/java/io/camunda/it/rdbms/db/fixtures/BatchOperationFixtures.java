@@ -10,10 +10,11 @@ package io.camunda.it.rdbms.db.fixtures;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.randomEnum;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel.Builder;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
@@ -38,6 +39,8 @@ public final class BatchOperationFixtures {
             .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))
+            .actorType(randomEnum(BatchOperationActorType.class))
+            .actorId("actor-" + key)
             .operationsTotalCount(0)
             .operationsFailedCount(0)
             .operationsCompletedCount(0);
@@ -45,47 +48,47 @@ public final class BatchOperationFixtures {
   }
 
   public static List<BatchOperationDbModel> createAndSaveRandomBatchOperations(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final List<BatchOperationDbModel> models =
         IntStream.range(0, 20)
             .mapToObj(i -> createRandomized(builderFunction))
-            .peek(rdbmsWriter.getBatchOperationWriter()::createIfNotAlreadyExists)
+            .peek(rdbmsWriters.getBatchOperationWriter()::createIfNotAlreadyExists)
             .collect(Collectors.toList());
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
     return models;
   }
 
   public static List<BatchOperationItemDbModel> createAndSaveRandomBatchOperationItems(
-      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final int count) {
-    return createSaveReturnRandomBatchOperationItems(rdbmsWriter, batchOperationKey, count);
+      final RdbmsWriters rdbmsWriters, final String batchOperationKey, final int count) {
+    return createSaveReturnRandomBatchOperationItems(rdbmsWriters, batchOperationKey, count);
   }
 
   public static List<BatchOperationItemDbModel> createSaveReturnRandomBatchOperationItems(
-      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final int count) {
+      final RdbmsWriters rdbmsWriters, final String batchOperationKey, final int count) {
     final Set<Long> itemKeys =
         IntStream.range(0, count)
             .mapToObj(i -> CommonFixtures.nextKey())
             .collect(Collectors.toSet());
-    return insertBatchOperationsItems(rdbmsWriter, batchOperationKey, itemKeys);
+    return insertBatchOperationsItems(rdbmsWriters, batchOperationKey, itemKeys);
   }
 
   public static BatchOperationDbModel createAndSaveBatchOperation(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var instance = createRandomized(builderFunction);
-    createAndSaveBatchOperations(rdbmsWriter, List.of(instance));
+    createAndSaveBatchOperations(rdbmsWriters, List.of(instance));
     return instance;
   }
 
   public static void createAndSaveBatchOperations(
-      final RdbmsWriter rdbmsWriter, final List<BatchOperationDbModel> batchOperationList) {
+      final RdbmsWriters rdbmsWriters, final List<BatchOperationDbModel> batchOperationList) {
     for (final BatchOperationDbModel batchOperation : batchOperationList) {
-      rdbmsWriter.getBatchOperationWriter().createIfNotAlreadyExists(batchOperation);
+      rdbmsWriters.getBatchOperationWriter().createIfNotAlreadyExists(batchOperation);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static List<BatchOperationItemDbModel> insertBatchOperationsItems(
-      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final Set<Long> itemKeys) {
+      final RdbmsWriters rdbmsWriters, final String batchOperationKey, final Set<Long> itemKeys) {
     final var batchItems =
         itemKeys.stream()
             .map(
@@ -99,8 +102,8 @@ public final class BatchOperationFixtures {
                         null))
             .toList();
 
-    rdbmsWriter.getBatchOperationWriter().updateBatchAndInsertItems(batchOperationKey, batchItems);
-    rdbmsWriter.flush();
+    rdbmsWriters.getBatchOperationWriter().updateBatchAndInsertItems(batchOperationKey, batchItems);
+    rdbmsWriters.flush();
 
     return batchItems;
   }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
@@ -35,6 +36,7 @@ public class IncidentControllerTest extends RestControllerTest {
   static final String INCIDENT_BASE_URL = "/v2/incidents";
 
   @MockitoBean IncidentServices incidentServices;
+
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
@@ -68,7 +70,7 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(incidentServices).resolveIncident(1L, 12345678L);
+    verify(incidentServices).resolveIncident(1L, 12345678L);
   }
 
   @Test
@@ -109,6 +111,6 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(incidentServices).resolveIncident(1L, null);
+    verify(incidentServices).resolveIncident(1L, null);
   }
 }

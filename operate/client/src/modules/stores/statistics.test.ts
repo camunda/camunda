@@ -10,14 +10,14 @@ import {statisticsStore} from './statistics';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {waitFor} from 'modules/testing-library';
 import {processInstancesStore} from './processInstances';
-import {groupedProcessesMock, createInstance} from 'modules/testUtils';
+import {createInstance, mockProcessDefinitions} from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 const mockInstance = createInstance({id: '2251799813685625'});
 
@@ -124,7 +124,7 @@ describe('stores/statistics', () => {
     });
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     // mock for refresh all instances
     mockFetchProcessInstances().withSuccess({

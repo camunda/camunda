@@ -68,6 +68,15 @@ public final class SearchQueryBuilders {
     return fn.apply(variableSearchQuery()).build();
   }
 
+  public static ClusterVariableQuery.Builder clusterVariableSearchQuery() {
+    return new ClusterVariableQuery.Builder();
+  }
+
+  public static ClusterVariableQuery clusterVariableSearchQuery(
+      final Function<ClusterVariableQuery.Builder, ObjectBuilder<ClusterVariableQuery>> fn) {
+    return fn.apply(clusterVariableSearchQuery()).build();
+  }
+
   public static DecisionDefinitionQuery.Builder decisionDefinitionSearchQuery() {
     return new DecisionDefinitionQuery.Builder();
   }
@@ -186,6 +195,15 @@ public final class SearchQueryBuilders {
     return fn.apply(authorizationSearchQuery()).build();
   }
 
+  public static AuditLogQuery.Builder auditLogSearchQuery() {
+    return new AuditLogQuery.Builder();
+  }
+
+  public static AuditLogQuery auditLogSearchQuery(
+      final Function<AuditLogQuery.Builder, ObjectBuilder<AuditLogQuery>> fn) {
+    return fn.apply(auditLogSearchQuery()).build();
+  }
+
   public static IncidentQuery.Builder incidentSearchQuery() {
     return new IncidentQuery.Builder();
   }
@@ -193,6 +211,20 @@ public final class SearchQueryBuilders {
   public static IncidentQuery incidentSearchQuery(
       final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
     return fn.apply(incidentSearchQuery()).build();
+  }
+
+  public static IncidentProcessInstanceStatisticsByErrorQuery.Builder
+      incidentProcessInstanceStatisticsByErrorQuery() {
+    return new IncidentProcessInstanceStatisticsByErrorQuery.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByErrorQuery
+      incidentProcessInstanceStatisticsByErrorQuery(
+          final Function<
+                  IncidentProcessInstanceStatisticsByErrorQuery.Builder,
+                  ObjectBuilder<IncidentProcessInstanceStatisticsByErrorQuery>>
+              fn) {
+    return fn.apply(incidentProcessInstanceStatisticsByErrorQuery()).build();
   }
 
   public static BatchOperationQuery.Builder batchOperationQuery() {
@@ -226,6 +258,11 @@ public final class SearchQueryBuilders {
     return new MessageSubscriptionQuery.Builder();
   }
 
+  public static ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder
+      processDefinitionMessageSubscriptionStatisticsQuery() {
+    return new ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder();
+  }
+
   public static CorrelatedMessageSubscriptionQuery.Builder
       correlatedMessageSubscriptionSearchQuery() {
     return new CorrelatedMessageSubscriptionQuery.Builder();
@@ -242,5 +279,15 @@ public final class SearchQueryBuilders {
   public static ProcessDefinitionInstanceStatisticsQuery.Builder
       processDefinitionInstanceStatisticsQuery() {
     return new ProcessDefinitionInstanceStatisticsQuery.Builder();
+  }
+
+  public static ProcessDefinitionInstanceVersionStatisticsQuery.Builder
+      processDefinitionInstanceVersionStatisticsQuery() {
+    return new ProcessDefinitionInstanceVersionStatisticsQuery.Builder();
+  }
+
+  public static IncidentProcessInstanceStatisticsByDefinitionQuery.Builder
+      incidentProcessInstanceStatisticsByDefinitionQuery() {
+    return new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder();
   }
 }

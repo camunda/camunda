@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.engine.processing.timer.CronTimer;
 import io.camunda.zeebe.model.bpmn.instance.Association;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
@@ -90,6 +92,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     } else if (eventDefinition instanceof CompensateEventDefinition) {
       transformCompensationEventDefinition(
           context, element, executableElement, (CompensateEventDefinition) eventDefinition);
+    } else if (eventDefinition instanceof ConditionalEventDefinition) {
+      transformConditionalEventDefinition(
+          context, executableElement, (ConditionalEventDefinition) eventDefinition);
     }
   }
 
@@ -116,19 +121,19 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       final String duration = timerEventDefinition.getTimeDuration().getTextContent();
       expression = expressionLanguage.parseExpression(duration);
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey) ->
+          (expressionProcessor, scopeKey, tenantId) ->
               expressionProcessor
-                  .evaluateIntervalExpression(expression, scopeKey)
+                  .evaluateIntervalExpression(expression, scopeKey, tenantId)
                   .map(interval -> new RepeatingInterval(1, interval)));
 
     } else if (timerEventDefinition.getTimeCycle() != null) {
       final String cycle = timerEventDefinition.getTimeCycle().getTextContent();
       expression = expressionLanguage.parseExpression(cycle);
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey) -> {
+          (expressionProcessor, scopeKey, tenantId) -> {
             try {
               return expressionProcessor
-                  .evaluateStringExpression(expression, scopeKey)
+                  .evaluateStringExpression(expression, scopeKey, tenantId)
                   .map(
                       text -> {
                         if (text.startsWith("R")) {
@@ -147,9 +152,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       final String timeDate = timerEventDefinition.getTimeDate().getTextContent();
       expression = expressionLanguage.parseExpression(timeDate);
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey) ->
+          (expressionProcessor, scopeKey, tenantId) ->
               expressionProcessor
-                  .evaluateDateTimeExpression(expression, scopeKey)
+                  .evaluateDateTimeExpression(expression, scopeKey, tenantId)
                   .map(TimeDateTimer::new));
     }
   }
@@ -246,5 +251,15 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
         });
 
     executableElement.setEventType(BpmnEventType.COMPENSATION);
+  }
+
+  private void transformConditionalEventDefinition(
+      final TransformContext context,
+      final ExecutableCatchEventElement executableElement,
+      final ConditionalEventDefinition conditionalEventDefinition) {
+    final ExecutableConditional executableCondition =
+        context.getConditional(conditionalEventDefinition.getId());
+    executableElement.setConditional(executableCondition);
+    executableElement.setEventType(BpmnEventType.CONDITIONAL);
   }
 }

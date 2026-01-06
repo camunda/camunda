@@ -18,11 +18,9 @@ import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
-import java.io.File;
 import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,19 +44,16 @@ import org.testcontainers.utility.MountableFile;
       UnifiedConfigurationHelper.class
     })
 @ContextConfiguration(initializers = {ElasticsearchConnectorSSLAuthIT.ElasticsearchStarter.class})
-@Disabled
 public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
-  static String certDir = new File("src/test/resources/certs").getAbsolutePath();
+  private static final String CERTIFICATE_RESOURCE_PATH = "certs/elastic-stack-ca.p12";
 
-  static ElasticsearchContainer elasticsearch =
+  private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
       new ElasticsearchContainer(
               "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
           .withCopyFileToContainer(
-              MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
+              MountableFile.forClasspathResource(CERTIFICATE_RESOURCE_PATH),
               "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
-          // .withCopyFileToContainer(MountableFile.forClasspathResource("/certs/elastic-stack-ca.p12"),"/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
-          .withPassword("elastic")
           .withEnv(
               Map.of(
                   "xpack.security.enabled",
@@ -68,16 +63,17 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
                   "xpack.security.http.ssl.keystore.path",
                   "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12"))
           .withExposedPorts(9200)
-          .waitingFor(Wait.forHttps("/").withBasicCredentials("elastic", "elastic"));
+          .withPassword("elastic")
+          .waitingFor(
+              Wait.forHttps("/").allowInsecure().withBasicCredentials("elastic", "elastic"));
 
   @Autowired RestHighLevelClient tasklistEsClient;
 
   @BeforeAll
-  public static void beforeClass() {
+  static void beforeAll() {
     assumeTrue(TestUtil.isElasticSearch());
   }
 
-  @Disabled("Can be tested manually")
   @Test
   public void canConnect() {
     assertThat(tasklistEsClient).isNotNull();
@@ -88,33 +84,30 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      elasticsearch.start();
+      ELASTICSEARCH_CONTAINER.start();
 
       final String elsUrl =
           String.format(
-              "https://%s:%d/", elasticsearch.getHost(), elasticsearch.getFirstMappedPort());
+              "https://%s:%d/",
+              ELASTICSEARCH_CONTAINER.getHost(), ELASTICSEARCH_CONTAINER.getFirstMappedPort());
+
       TestPropertyValues.of(
-              // DB url
-              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
-              "camunda.database.url=" + elsUrl,
-              "camunda.operate.elasticsearch.url=" + elsUrl,
-              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
-              "camunda.tasklist.elasticsearch.url=" + elsUrl,
-              // DB type
               "camunda.data.secondary-storage.type=elasticsearch",
               "camunda.database.type=elasticsearch",
               "camunda.tasklist.database=elasticsearch",
               "camunda.operate.database=elasticsearch",
-              //
-              "camunda.tasklist.elasticsearch.username=elastic",
-              "camunda.tasklist.elasticsearch.password=elastic",
-              "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
-              // "camunda.tasklist.elasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
-              // "camunda.tasklist.elasticsearch.ssl.selfSigned=true",
-              // "camunda.tasklist.elasticsearch.ssl.verifyHostname=true",
-              // Unified config
+              "zeebe.broker.exporters.camundaexporter.args.connect.type=elasticsearch",
+              "camunda.database.url=" + elsUrl,
+              "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.operate.elasticsearch.url=" + elsUrl,
+              "camunda.tasklist.elasticsearch.url=" + elsUrl,
+              "zeebe.broker.exporters.camundaexporter.args.connect.url=" + elsUrl,
               "camunda.data.secondary-storage.elasticsearch.username=elastic",
-              "camunda.data.secondary-storage.elasticsearch.password=elastic")
+              "camunda.data.secondary-storage.elasticsearch.password=elastic",
+              "camunda.data.secondary-storage.elasticsearch.security.certificate-path="
+                  + getClass().getClassLoader().getResource(CERTIFICATE_RESOURCE_PATH).getPath(),
+              "camunda.data.secondary-storage.elasticsearch.security.self-signed=true",
+              "camunda.data.secondary-storage.elasticsearch.security.verify-hostname=false")
           .applyTo(applicationContext.getEnvironment());
     }
   }

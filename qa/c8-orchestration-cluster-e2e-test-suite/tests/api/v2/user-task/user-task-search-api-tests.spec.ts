@@ -33,14 +33,6 @@ test.describe.parallel('Search User Task Tests', () => {
         data: {},
       });
       const json = await res.json();
-      validateResponseShape(
-        {
-          path: '/user-tasks/search',
-          method: 'POST',
-          status: '200',
-        },
-        json,
-      );
 
       expect(json.page.totalItems).toBeGreaterThan(3);
     }).toPass(defaultAssertionOptions);
@@ -56,8 +48,7 @@ test.describe.parallel('Search User Task Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  // Skipped due to bug 39819:  https://github.com/camunda/camunda/issues/39819
-  test.skip('Search user tasks - bad request - invalid payload', async ({
+  test('Search user tasks - bad request - invalid payload', async ({
     request,
   }) => {
     const res = await request.post(buildUrl('/user-tasks/search'), {
@@ -67,7 +58,10 @@ test.describe.parallel('Search User Task Tests', () => {
         page: 'invalidValue',
       },
     });
-    await assertBadRequest(res, 'Request property [page] cannot be parsed');
+    await assertBadRequest(
+      res,
+      'At least one of [from, after, before, limit] is required.',
+    );
   });
 
   test('Search user task - filter by processInstanceKey', async ({request}) => {

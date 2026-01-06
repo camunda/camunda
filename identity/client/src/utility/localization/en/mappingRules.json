@@ -10,7 +10,7 @@
   "mappingRuleCreatedSuccessfully": "You have successfully created mapping rule {{ name }}",
   "createNewMappingRule": "Create new mapping rule",
   "enterMappingRuleId": "Enter mapping rule ID",
-  "pleaseEnterValidMappingRuleId": "Please enter a valid mapping rule ID (only characters, numbers and _ ~ @ . + - and max 256 characters)",
+  "pleaseEnterValidMappingRuleId": "Please enter a valid mapping rule ID, max 256 characters and matching the pattern {{pattern}}",
   "uniqueIdForMappingRule": "Enter a unique ID for this mapping rule",
   "enterMappingRuleName": "Enter mapping rule name",
   "uniqueNameForMappingRule": "Enter a unique name for this mapping rule",

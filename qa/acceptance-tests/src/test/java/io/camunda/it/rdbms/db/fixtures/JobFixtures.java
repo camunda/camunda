@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
@@ -41,42 +41,44 @@ public final class JobFixtures extends CommonFixtures {
             .errorCode("error-code-" + generateRandomString(20))
             .deniedReason("denied-reason-" + generateRandomString(20))
             .listenerEventType(randomEnum(ListenerEventType.class))
+            .creationTime(NOW)
+            .lastUpdateTime(NOW)
             .kind(randomEnum(JobKind.class));
 
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomJobs(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomJobs(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomJobs(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomJobs(rdbmsWriters, b -> b);
   }
 
   public static void createAndSaveRandomJobs(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<JobDbModel.Builder, JobDbModel.Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getJobWriter().create(JobFixtures.createRandomized(builderFunction));
+      rdbmsWriters.getJobWriter().create(JobFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static JobDbModel createAndSaveJob(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<JobDbModel.Builder, JobDbModel.Builder> builderFunction) {
     final JobDbModel randomized = createRandomized(builderFunction);
-    createAndSaveJobs(rdbmsWriter, List.of(randomized));
+    createAndSaveJobs(rdbmsWriters, List.of(randomized));
     return randomized;
   }
 
-  public static void createAndSaveJob(final RdbmsWriter rdbmsWriter, final JobDbModel job) {
-    createAndSaveJobs(rdbmsWriter, List.of(job));
+  public static void createAndSaveJob(final RdbmsWriters rdbmsWriters, final JobDbModel job) {
+    createAndSaveJobs(rdbmsWriters, List.of(job));
   }
 
   public static void createAndSaveJobs(
-      final RdbmsWriter rdbmsWriter, final List<JobDbModel> jobList) {
+      final RdbmsWriters rdbmsWriters, final List<JobDbModel> jobList) {
     for (final JobDbModel job : jobList) {
-      rdbmsWriter.getJobWriter().create(job);
+      rdbmsWriters.getJobWriter().create(job);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

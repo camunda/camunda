@@ -17,6 +17,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Processes")
 @RestController
 @RequestMapping(value = PROCESS_URL)
+@ConditionalOnRdbmsDisabled
 public class ProcessRestService extends InternalAPIErrorController {
 
   public static final String PROCESS_URL = "/api/processes";

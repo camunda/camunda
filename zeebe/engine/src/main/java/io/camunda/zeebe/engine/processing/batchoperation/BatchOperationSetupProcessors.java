@@ -12,6 +12,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.CancelProcessInstanceBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.DeleteProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
@@ -22,7 +23,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperatio
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -70,9 +71,10 @@ public final class BatchOperationSetupProcessors {
                 brokerRequestAuthorizationConverter),
             BatchOperationType.MODIFY_PROCESS_INSTANCE,
             new ModifyProcessInstanceBatchOperationExecutor(
-                writers.command(),
-                processingState.getElementInstanceState(),
-                brokerRequestAuthorizationConverter));
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.DELETE_PROCESS_INSTANCE,
+            new DeleteProcessInstanceBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
         new BatchOperationInitializer(
@@ -93,8 +95,9 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.CREATE,
-            new BatchOperationCreateProcessor(
+            new BatchOperationCreationCreateProcessor(
                 writers,
+                processingState,
                 keyGenerator,
                 commandDistributionBehavior,
                 authorizationCheckBehavior,
@@ -103,15 +106,16 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.INITIALIZE,
-            new BatchOperationInitializeProcessor(writers))
+            new BatchOperationInitializationInitializeProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_INITIALIZATION,
             BatchOperationIntent.FINISH_INITIALIZATION,
-            new BatchOperationFinishInitializationProcessor(writers, batchOperationMetrics))
+            new BatchOperationInitializationFinishInitializationProcessor(
+                writers, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL,
-            new BatchOperationFailProcessor(
+            new BatchOperationPartitionLifecycleFailProcessor(
                 writers,
                 commandDistributionBehavior,
                 keyGenerator,
@@ -120,11 +124,11 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
-            new BatchOperationCreateChunkProcessor(writers))
+            new BatchOperationChunkCreateProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,
-            new BatchOperationExecuteProcessor(
+            new BatchOperationExecutionExecuteProcessor(
                 writers,
                 processingState,
                 commandDistributionBehavior,
@@ -134,7 +138,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.CANCEL,
-            new BatchOperationCancelProcessor(
+            new BatchOperationLifecycleManagementCancelProcessor(
                 writers,
                 commandDistributionBehavior,
                 processingState,
@@ -144,7 +148,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.SUSPEND,
-            new BatchOperationSuspendProcessor(
+            new BatchOperationLifecycleManagementSuspendProcessor(
                 writers,
                 commandDistributionBehavior,
                 processingState,
@@ -154,7 +158,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.RESUME,
-            new BatchOperationResumeProcessor(
+            new BatchOperationLifecycleManagementResumeProcessor(
                 writers,
                 commandDistributionBehavior,
                 processingState,
@@ -164,12 +168,12 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.COMPLETE_PARTITION,
-            new BatchOperationLeadPartitionCompleteProcessor(
+            new BatchOperationPartitionLifecycleCompletePartitionProcessor(
                 writers, processingState, commandDistributionBehavior, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL_PARTITION,
-            new BatchOperationLeadPartitionFailProcessor(
+            new BatchOperationPartitionLifecycleFailPartitionProcessor(
                 writers, processingState, commandDistributionBehavior, batchOperationMetrics))
         .withListener(
             new BatchOperationExecutionScheduler(

@@ -122,6 +122,8 @@ public abstract class AbstractCamundaDockerIT {
                 .withReadTimeout(Duration.ofSeconds(120)))
         .withStartupTimeout(Duration.ofSeconds(300))
         // Unified Configuration
+        .withEnv("CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_PROCESSING", "512MB")
+        .withEnv("CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_REPLICATION", "200MB")
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
         // ---
@@ -141,8 +143,10 @@ public abstract class AbstractCamundaDockerIT {
                 .forPort(MANAGEMENT_PORT)
                 .forPath("/actuator/health")
                 .withReadTimeout(Duration.ofSeconds(120)))
-        .withStartupTimeout(Duration.ofSeconds(300))
+        .withStartupTimeout(Duration.ofSeconds(420))
         // Unified Configuration
+        .withEnv("CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_PROCESSING", "512MB")
+        .withEnv("CAMUNDA_DATA_PRIMARYSTORAGE_DISK_FREESPACE_REPLICATION", "200MB")
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "rdbms")
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", url)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", "camunda")

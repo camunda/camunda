@@ -66,6 +66,7 @@ public class AuthorizationCreatedUpdatedHandler
         .setResourceMatcher(value.getResourceMatcher().value())
         .setResourceType(value.getResourceType().name())
         .setResourceId(value.getResourceId())
+        .setResourcePropertyName(value.getResourcePropertyName())
         .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
   }
 

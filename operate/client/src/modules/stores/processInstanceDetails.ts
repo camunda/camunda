@@ -18,7 +18,7 @@ import {
 import {fetchProcessInstance} from 'modules/api/processInstances/fetchProcessInstance';
 import {createOperation, getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
-import {PAGE_TITLE, PERMISSIONS} from 'modules/constants';
+import {PAGE_TITLE} from 'modules/constants';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {hasActiveOperations} from './utils/hasActiveOperations';
@@ -27,7 +27,6 @@ import isEqual from 'lodash/isEqual';
 import isNil from 'lodash/isNil';
 import type {
   ProcessInstanceEntity,
-  ResourceBasedPermissionDto,
   OperationEntityType,
 } from 'modules/types/operate';
 
@@ -200,25 +199,6 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
 
     return undefined;
   }
-
-  getPermissions = () => {
-    const {processInstance} = this.state;
-    if (!window.clientConfig?.resourcePermissionsEnabled) {
-      return PERMISSIONS;
-    }
-
-    if (processInstance === null) {
-      return [];
-    }
-
-    return processInstance.permissions;
-  };
-
-  hasPermission = (scopes: ResourceBasedPermissionDto[]) => {
-    return scopes.some((permission) =>
-      this.getPermissions()?.includes(permission),
-    );
-  };
 
   startFetch = () => {
     if (this.state.status === 'initial') {

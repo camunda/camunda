@@ -49,7 +49,7 @@ import org.mockito.Mockito;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.GetResponse;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -63,7 +63,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 final class OpensearchExporterIT {
   @Container
-  private static final OpensearchContainer<?> CONTAINER =
+  private static final OpenSearchContainer<?> CONTAINER =
       TestSearchContainers.createDefaultOpensearchContainer()
           .withEnv("action.destructive_requires_name", "false");
 
@@ -125,6 +125,24 @@ final class OpensearchExporterIT {
             indexRouter.idFor(record),
             String.valueOf(record.getPartitionId()),
             record);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
+  void shouldSerializeAndIndexUsingImplementationRecordValue(final ValueType valueType) {
+    // given - generate implementation record with ALL fields populated
+    final var record =
+        factory.generateRecordWithImplValue(
+            valueType, builder -> builder.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+
+    // when - serialize and export to Opensearch
+    export(record);
+
+    // then - verify document was indexed successfully
+    final var response = testClient.getExportedDocumentFor(record);
+    assertThat(response.found()).isTrue();
+    assertThat(response.index()).isEqualTo(indexRouter.indexFor(record));
+    assertThat(response.id()).isEqualTo(indexRouter.idFor(record));
   }
 
   // both tests below are regression tests for https://github.com/camunda/camunda/issues/4640

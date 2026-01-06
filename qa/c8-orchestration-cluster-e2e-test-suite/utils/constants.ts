@@ -8,6 +8,10 @@
 
 export const LOGIN_CREDENTIALS = {username: 'demo', password: 'demo'};
 
+// Date regex for matching date formats (supports both ISO 8601 and space-separated formats)
+export const DATE_REGEX =
+  /\d{4}-[01]\d-[0-3]\d[T\s][0-2]\d:[0-5]\d:[0-5]\d(\.\d+)?([+-][0-2]\d:[0-5]\d|Z)?/;
+
 // Generate a simple random alphanumeric string for test isolation
 export const generateUniqueId = () => {
   return Math.random().toString(36).substring(2, 10);

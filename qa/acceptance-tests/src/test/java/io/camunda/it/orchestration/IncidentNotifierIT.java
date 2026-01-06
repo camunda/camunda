@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class IncidentNotifierIT {
 
@@ -81,9 +81,10 @@ public class IncidentNotifierIT {
     final var camundaExporter = CamundaExporter.class.getSimpleName().toLowerCase();
 
     // configure exporter to point to WireMock
-    STANDALONE_CAMUNDA.withBrokerConfig(
+    STANDALONE_CAMUNDA.withUnifiedConfig(
         c -> {
-          final var newArgs = new HashMap<>(c.getExporters().get(camundaExporter).getArgs());
+          final var newArgs =
+              new HashMap<>(c.getData().getExporters().get(camundaExporter).getArgs());
           final var baseUrl = wireMockServer.baseUrl();
           newArgs.put(
               "notifier",
@@ -95,7 +96,7 @@ public class IncidentNotifierIT {
                   "auth0Protocol",
                   "http"));
 
-          c.getExporters().get(camundaExporter).setArgs(newArgs);
+          c.getData().getExporters().get(camundaExporter).setArgs(newArgs);
         });
   }
 

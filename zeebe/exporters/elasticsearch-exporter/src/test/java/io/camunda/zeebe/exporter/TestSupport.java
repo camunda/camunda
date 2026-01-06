@@ -76,6 +76,9 @@ final class TestSupport {
       case USAGE_METRIC -> config.usageMetrics = value;
       case RUNTIME_INSTRUCTION -> config.runtimeInstruction = value;
       case CLUSTER_VARIABLE -> config.clusterVariable = value;
+      case CONDITIONAL_SUBSCRIPTION -> config.conditionalSubscription = value;
+      case CONDITIONAL_EVALUATION -> config.conditionalEvaluation = value;
+      case GLOBAL_LISTENER_BATCH -> config.globalListenerBatch = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -130,7 +133,11 @@ final class TestSupport {
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             ValueType.BATCH_OPERATION_INITIALIZATION,
             ValueType.USAGE_METRIC,
-            ValueType.MULTI_INSTANCE);
+            ValueType.MULTI_INSTANCE,
+            ValueType.HISTORY_DELETION,
+            ValueType.CONDITIONAL_SUBSCRIPTION,
+            ValueType.CONDITIONAL_EVALUATION,
+            ValueType.EXPRESSION);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

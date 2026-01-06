@@ -16,6 +16,7 @@ export enum PermissionType {
   CREATE = "CREATE",
   CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE",
   CREATE_DECISION_INSTANCE = "CREATE_DECISION_INSTANCE",
+  EVALUATE = "EVALUATE",
   READ = "READ",
   READ_PROCESS_INSTANCE = "READ_PROCESS_INSTANCE",
   READ_USER_TASK = "READ_USER_TASK",
@@ -43,6 +44,8 @@ export enum PermissionType {
   CANCEL_PROCESS_INSTANCE = "CANCEL_PROCESS_INSTANCE",
   MODIFY_PROCESS_INSTANCE = "MODIFY_PROCESS_INSTANCE",
   READ_USAGE_METRIC = "READ_USAGE_METRIC",
+  COMPLETE = "COMPLETE",
+  CLAIM = "CLAIM",
 }
 
 export type PermissionTypes = keyof typeof PermissionType;
@@ -56,15 +59,19 @@ export enum OwnerType {
 }
 
 export enum ResourceType {
+  AUDIT_LOG = "AUDIT_LOG",
   AUTHORIZATION = "AUTHORIZATION",
   BATCH = "BATCH",
+  CLUSTER_VARIABLE = "CLUSTER_VARIABLE",
   COMPONENT = "COMPONENT",
   DECISION_DEFINITION = "DECISION_DEFINITION",
   DECISION_REQUIREMENTS_DEFINITION = "DECISION_REQUIREMENTS_DEFINITION",
   DOCUMENT = "DOCUMENT",
+  EXPRESSION = "EXPRESSION",
   GROUP = "GROUP",
   MAPPING_RULE = "MAPPING_RULE",
   MESSAGE = "MESSAGE",
+  USER_TASK = "USER_TASK",
   PROCESS_DEFINITION = "PROCESS_DEFINITION",
   RESOURCE = "RESOURCE",
   ROLE = "ROLE",
@@ -73,14 +80,34 @@ export enum ResourceType {
   USER = "USER",
 }
 
-export type Authorization = {
+type BaseAuthorization = {
   authorizationKey: string;
   ownerId: string;
-  ownerType: keyof typeof OwnerType;
-  resourceId: string;
-  resourceType: string;
+  ownerType: OwnerType;
   permissionTypes: readonly PermissionTypes[];
 };
+
+export enum ResourcePropertyName {
+  assignee = "assignee",
+  candidateGroups = "candidateGroups",
+  candidateUsers = "candidateUsers",
+}
+
+export type TaskAuthorization = BaseAuthorization & {
+  resourceType: ResourceType.USER_TASK;
+  resourcePropertyName: ResourcePropertyName;
+};
+
+export type GeneralAuthorization = BaseAuthorization & {
+  resourceType: Exclude<ResourceType, ResourceType.USER_TASK>;
+  resourceId: string;
+};
+
+export type Authorization = TaskAuthorization | GeneralAuthorization;
+
+export type NewAuthorization =
+  | Omit<TaskAuthorization, "authorizationKey">
+  | Omit<GeneralAuthorization, "authorizationKey">;
 
 export enum PatchAuthorizationAction {
   ADD = "ADD",
@@ -98,10 +125,9 @@ export const searchAuthorization: ApiDefinition<
   searchAuthorizationsParams
 > = (param) => apiPost(`${AUTHORIZATIONS_ENDPOINT}/search`, param);
 
-export const createAuthorization: ApiDefinition<
-  undefined,
-  Omit<Authorization, "authorizationKey">
-> = (authorization) => apiPost(AUTHORIZATIONS_ENDPOINT, authorization);
+export const createAuthorization: ApiDefinition<undefined, NewAuthorization> = (
+  authorization,
+) => apiPost(AUTHORIZATIONS_ENDPOINT, authorization);
 
 export type DeleteAuthorizationParams = {
   authorizationKey: string;

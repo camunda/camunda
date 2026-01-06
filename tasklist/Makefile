@@ -69,7 +69,7 @@ env-sso-up: $(DATABASE) setup-maven-context
 .PHONY: env-identity-up
 env-identity-up: $(DATABASE) identity setup-maven-context
 	$(eval SERVICES := zeebe_identity)
-	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,identity-auth)
+	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL $${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_BASEURL $${EXT_CAMUNDA_IDENTITY_URL} $(MAVEN_CONTEXT) && \
@@ -84,7 +84,7 @@ env-identity-up: $(DATABASE) identity setup-maven-context
 .PHONY: env-identity-oauth-up
 env-identity-oauth-up: $(DATABASE) identity-oauth setup-maven-context
 	$(eval SERVICES := zeebe_oauth)
-	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,identity-auth)
+	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL $${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_BASEURL $${EXT_CAMUNDA_IDENTITY_URL} $(MAVEN_CONTEXT) && \
@@ -97,7 +97,7 @@ env-identity-oauth-up: $(DATABASE) identity-oauth setup-maven-context
 .PHONY: env-identity-mt-up
 env-identity-mt-up: $(DATABASE) identity-oauth multi-tenancy setup-maven-context
 	$(eval SERVICES := zeebe_mt)
-	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data,identity-auth)
+	$(eval SPRING_PROFILES_ACTIVE = dev,dev-data)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL $${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IDENTITY_BASEURL $${EXT_CAMUNDA_IDENTITY_URL} $(MAVEN_CONTEXT) && \

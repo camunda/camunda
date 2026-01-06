@@ -48,6 +48,10 @@ public class ItemProviderFactory {
           forResolveIncident(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
               batchOperation.getAuthentication());
+      case DELETE_PROCESS_INSTANCE ->
+          forDeleteProcessInstance(
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getAuthentication());
     };
   }
 
@@ -97,6 +101,15 @@ public class ItemProviderFactory {
             .partitionId(partitionId)
             .states(ProcessInstanceState.ACTIVE.name())
             .build(),
+        authentication);
+  }
+
+  private ProcessInstanceItemProvider forDeleteProcessInstance(
+      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    return new ProcessInstanceItemProvider(
+        searchClientsProxy,
+        metrics,
+        filter.toBuilder().partitionId(partitionId).build(),
         authentication);
   }
 }

@@ -30,8 +30,11 @@ import org.awaitility.core.TerminalFailureException;
 
 public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
 
-  private static final String INITIAL_FAILURE_MESSAGE =
+  private static final String TIMEOUT_FAILURE_MESSAGE =
       "<No assertion error occurred. Maybe, the assertion timed out before it could be tested.>";
+
+  private static final String UNEXPECTED_FAILURE_MESSAGE =
+      "<No assertion error occurred, but an unexpected exception was thrown.>";
 
   private final boolean expectFailure;
 
@@ -52,7 +55,8 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
 
   @Override
   public void untilAsserted(final ThrowingRunnable assertion) throws AssertionError {
-    final AtomicReference<String> failureMessage = new AtomicReference<>(INITIAL_FAILURE_MESSAGE);
+    final AtomicReference<String> failureMessage = new AtomicReference<>();
+    final AtomicReference<Throwable> unexpectedException = new AtomicReference<>();
     final AtomicBoolean failFastCondition = new AtomicBoolean(false);
 
     try {
@@ -60,7 +64,7 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
           .failFast(failFastCondition::get)
           .timeout(assertionTimeout)
           .pollInterval(assertionInterval)
-          .ignoreException(ClientException.class)
+          .ignoreExceptionsInstanceOf(ClientException.class)
           .untilAsserted(
               () -> {
                 try {
@@ -72,10 +76,19 @@ public final class DevAwaitBehavior implements CamundaAssertAwaitBehavior {
                     failFastCondition.set(true);
                   }
                   throw e;
+                } catch (final Exception unexpected) {
+                  unexpectedException.set(unexpected);
+                  throw unexpected;
                 }
               });
     } catch (final ConditionTimeoutException | TerminalFailureException ignore) {
-      fail(failureMessage.get());
+      if (failureMessage.get() != null) {
+        fail(failureMessage.get());
+      } else if (unexpectedException.get() != null) {
+        fail(UNEXPECTED_FAILURE_MESSAGE, unexpectedException.get());
+      } else {
+        fail(TIMEOUT_FAILURE_MESSAGE);
+      }
     }
   }
 

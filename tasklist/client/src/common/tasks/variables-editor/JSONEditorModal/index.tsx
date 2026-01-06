@@ -16,20 +16,24 @@ import {themeStore} from 'common/theme/theme';
 import Editor from '@monaco-editor/react';
 import styles from './styles.module.scss';
 
-const options: React.ComponentProps<typeof Editor>['options'] = {
-  minimap: {
-    enabled: false,
-  },
-  fontSize: 13,
-  lineHeight: 20,
-  fontFamily:
-    '"IBM Plex Mono", "Droid Sans Mono", "monospace", monospace, "Droid Sans Fallback"',
-  formatOnPaste: true,
-  formatOnType: true,
-  tabSize: 2,
-  wordWrap: 'on',
-  scrollBeyondLastLine: false,
-} as const;
+const getEditorOptions = (
+  readOnly: boolean,
+): React.ComponentProps<typeof Editor>['options'] =>
+  ({
+    minimap: {
+      enabled: false,
+    },
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily:
+      '"IBM Plex Mono", "Droid Sans Mono", "monospace", monospace, "Droid Sans Fallback"',
+    formatOnPaste: !readOnly,
+    formatOnType: !readOnly,
+    tabSize: 2,
+    wordWrap: 'on',
+    scrollBeyondLastLine: false,
+    readOnly,
+  }) as const;
 
 function beautifyJSON(value: string) {
   try {
@@ -47,10 +51,11 @@ type Props = {
   value: string | undefined;
   title: string;
   isOpen: boolean;
+  readOnly?: boolean;
 };
 
 const JSONEditorModal: React.FC<Props> = observer(
-  ({onClose, onSave, value = '', title, isOpen}) => {
+  ({onClose, onSave, value = '', title, isOpen, readOnly = false}) => {
     const [isValid, setIsValid] = useState(true);
     const [editedValue, setEditedValue] = useState('');
     const {t} = useTranslation();
@@ -65,39 +70,54 @@ const JSONEditorModal: React.FC<Props> = observer(
         open={isOpen}
         modalHeading={title}
         onRequestClose={onClose}
-        onRequestSubmit={() => {
-          if (isValid) {
-            onSave?.(editedValue);
-          } else {
-            editorRef.current?.trigger(
-              '',
-              'editor.action.marker.next',
-              undefined,
-            );
-            editorRef.current?.trigger(
-              '',
-              'editor.action.marker.prev',
-              undefined,
-            );
-          }
-        }}
-        primaryButtonDisabled={!isValid}
+        onRequestSubmit={
+          readOnly
+            ? undefined
+            : () => {
+                if (isValid) {
+                  onSave?.(editedValue);
+                } else {
+                  editorRef.current?.trigger(
+                    '',
+                    'editor.action.marker.next',
+                    undefined,
+                  );
+                  editorRef.current?.trigger(
+                    '',
+                    'editor.action.marker.prev',
+                    undefined,
+                  );
+                }
+              }
+        }
+        primaryButtonDisabled={readOnly ? undefined : !isValid}
         preventCloseOnClickOutside
-        primaryButtonText={t('jsonEditorApplyButtonLabel')}
-        secondaryButtonText={t('jsonEditorCancelButtonLabel')}
+        primaryButtonText={
+          readOnly ? undefined : t('jsonEditorApplyButtonLabel')
+        }
+        secondaryButtonText={
+          readOnly
+            ? t('jsonEditorCloseButtonLabel')
+            : t('jsonEditorCancelButtonLabel')
+        }
         size="lg"
+        passiveModal={readOnly}
       >
         {isOpen ? (
           <Editor
             className={styles.editor}
-            options={options}
+            options={getEditorOptions(readOnly)}
             language="json"
             value={editedValue}
-            onChange={(value) => {
-              const newValue = value ?? '';
-              setEditedValue(newValue);
-              setIsValid(isValidJSON(newValue));
-            }}
+            onChange={
+              readOnly
+                ? undefined
+                : (value) => {
+                    const newValue = value ?? '';
+                    setEditedValue(newValue);
+                    setIsValid(isValidJSON(newValue));
+                  }
+            }
             onMount={(editor, monaco) => {
               editor.focus();
               editorRef.current = editor;

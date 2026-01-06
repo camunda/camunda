@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
@@ -50,6 +51,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
     clock = Objects.requireNonNull(context.getClock());
+    meterRegistry = context.getMeterRegistry();
     processingState =
         new ProcessingDbState(
             partitionId,
@@ -59,12 +61,12 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             config,
-            clock);
+            clock,
+            new ExpressionLanguageMetricsImpl(meterRegistry));
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
     this.securityConfig = securityConfig;
-    meterRegistry = context.getMeterRegistry();
   }
 
   @Override

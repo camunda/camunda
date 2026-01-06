@@ -58,7 +58,7 @@ public final class CallActivityProcessor
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
       final int maxProcessDepth) {
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.stateTransitionBehavior = stateTransitionBehavior;
     stateBehavior = bpmnBehaviors.stateBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
@@ -243,8 +243,9 @@ public final class CallActivityProcessor
       final BpmnElementContext context, final ExecutableCallActivity element) {
     final var processIdExpression = element.getCalledElementProcessId();
     final var scopeKey = context.getElementInstanceKey();
+    final var tenantId = context.getTenantId();
     return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-        processIdExpression, scopeKey);
+        processIdExpression, scopeKey, tenantId);
   }
 
   private Either<Failure, DeployedProcess> getCalledProcess(

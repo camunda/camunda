@@ -3,7 +3,7 @@ version: "3.6"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.19.3
+    image: opensearchproject/opensearch:2.17.0
     depends_on:
       - opensearch-init
     container_name: opensearch
@@ -68,7 +68,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.7.6
+    image: camunda/identity:8.8.5
     ports:
       - "8080:8080"
     volumes:
@@ -111,7 +111,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.7.11
+    image: camunda/zeebe:8.8.8
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -145,7 +145,7 @@ services:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
       - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200
-      - SPRING_PROFILES_ACTIVE=identity-auth,dev-data
+      - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_CLIENT_ID=operate

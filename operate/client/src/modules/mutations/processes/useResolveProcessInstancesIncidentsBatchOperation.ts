@@ -16,13 +16,14 @@ import type {
   CreateIncidentResolutionBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {resolveProcessInstancesIncidentsBatchOperation} from 'modules/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
-import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
+import type {RequestError} from 'modules/request';
+import {queryKeys} from 'modules/queries/queryKeys';
 
 const useResolveProcessInstancesIncidentsBatchOperation = (
   options?: Partial<
     UseMutationOptions<
       CreateIncidentResolutionBatchOperationResponseBody,
-      Error,
+      RequestError,
       CreateIncidentResolutionBatchOperationRequestBody
     >
   >,
@@ -35,7 +36,7 @@ const useResolveProcessInstancesIncidentsBatchOperation = (
         await resolveProcessInstancesIncidentsBatchOperation(payload);
       if (response !== null) {
         await queryClient.invalidateQueries({
-          queryKey: [BATCH_OPERATIONS_QUERY_KEY],
+          queryKey: queryKeys.batchOperations.query(),
         });
         return response;
       }

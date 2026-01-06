@@ -17,8 +17,12 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ProcessCacheUtil {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCacheUtil.class);
 
   private ProcessCacheUtil() {
     // utility class
@@ -47,7 +51,20 @@ public final class ProcessCacheUtil {
         || callActivityIndex == null) {
       return Optional.empty();
     }
-    return Optional.of(cachedProcess.get().callElementIds().get(callActivityIndex));
+
+    final List<String> callElementIds = cachedProcess.get().callElementIds();
+    if (callActivityIndex < 0 || callActivityIndex >= callElementIds.size()) {
+      // TODO: This check prevents the application from crashing. A better solution shall be
+      //  implemented in the future. For more context, see
+      //  https://github.com/camunda/camunda/issues/42110
+      LOGGER.warn(
+          "Cache index {} is out of bounds for process definition key {}. Skipping cache lookup.",
+          callActivityIndex,
+          processDefinitionKey);
+      return Optional.empty();
+    }
+
+    return Optional.of(callElementIds.get(callActivityIndex));
   }
 
   /**

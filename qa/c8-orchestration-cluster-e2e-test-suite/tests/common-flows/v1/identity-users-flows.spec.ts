@@ -380,6 +380,7 @@ test.describe('Identity User Flows', () => {
         TEST_GROUP.groupId,
         'Group',
         ['Read'],
+        'Authorization',
       );
     });
 

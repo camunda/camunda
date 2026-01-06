@@ -9,6 +9,9 @@ package io.camunda.zeebe.test.broker.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
@@ -16,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import java.util.EnumSet;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -209,6 +213,62 @@ final class ProtocolFactoryTest {
 
   private static Stream<ValueType> provideValueTypes() {
     return ValueTypeMapping.getAcceptedValueTypes().stream();
+  }
+
+  @Test
+  void shouldPopulateNestedObjectsInImplRecordValue() {
+    // given - CommandDistributionRecord has AuthInfo which is not part of the
+    // CommandDistributionRecordValue interface
+
+    // when
+    final var record =
+        factory.generateRecordWithImplValue(
+            ValueType.COMMAND_DISTRIBUTION, UnaryOperator.identity());
+
+    // then
+    RecordAssert.assertThat(record).hasValueType(ValueType.COMMAND_DISTRIBUTION);
+
+    // Cast to implementation class to access AuthInfo
+    final var implValue = (CommandDistributionRecord) record.getValue();
+
+    // Verify AuthInfo is populated
+    final var authInfo = implValue.getAuthInfo();
+    assertThat(authInfo).isNotNull();
+    assertThat(authInfo.getFormat())
+        .isNotNull()
+        .isNotEqualTo(AuthInfo.AuthDataFormat.UNKNOWN); // Should be randomized
+    assertThat(authInfo.getAuthData()).isNotEmpty();
+    assertThat(authInfo.getClaims()).isNotEmpty();
+  }
+
+  @Test
+  void shouldPopulateArrayPropertiesInImplRecordValue() {
+    // given - JobRecord has array properties (tags and changedAttributes)
+
+    // when
+    final var record = factory.generateRecordWithImplValue(ValueType.JOB, UnaryOperator.identity());
+
+    // then
+    RecordAssert.assertThat(record).hasValueType(ValueType.JOB);
+
+    // Cast to implementation class to access array properties
+    final var implValue = (JobRecord) record.getValue();
+
+    // Verify tags array is populated
+    assertThat(implValue.getTags()).isNotEmpty();
+
+    // Verify changedAttributes array is populated
+    assertThat(implValue.getChangedAttributes()).isNotEmpty();
+
+    // If arrays are populated, verify they contain valid data
+    if (!implValue.getTags().isEmpty()) {
+      assertThat(implValue.getTags()).allMatch(tag -> tag != null && !tag.isEmpty());
+    }
+
+    if (!implValue.getChangedAttributes().isEmpty()) {
+      assertThat(implValue.getChangedAttributes())
+          .allMatch(attr -> attr != null && !attr.isEmpty());
+    }
   }
 
   private static Stream<Class<?>> provideProtocolClasses() {

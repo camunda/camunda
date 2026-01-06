@@ -36,6 +36,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String CANDIDATE_USERS = "candidateUsers";
   public static final String CUSTOM_HEADERS = "customHeaders";
   public static final String PRIORITY = "priority";
+  public static final String TAGS = "tags";
   public static final String ACTION = "action";
   public static final String CHANGED_ATTRIBUTES = "changedAttributes";
 
@@ -63,6 +64,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String FLOW_NODE_INSTANCE_ID = "flowNodeInstanceId";
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
+  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public static final String JOIN_FIELD_NAME = "join";
 

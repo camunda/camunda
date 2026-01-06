@@ -2,7 +2,7 @@ version: '3'
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.19.3
+    image: opensearchproject/opensearch:2.17.0
     container_name: opensearch
     environment:
       - "discovery.type=single-node"

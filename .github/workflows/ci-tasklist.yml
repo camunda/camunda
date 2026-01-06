@@ -164,7 +164,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
@@ -181,7 +181,7 @@ jobs:
           node-version: "22"
       - run: npm ci
         name: Install dependencies
-      - run: npm run test:ci
+      - run: npm run test:ci -- --no-file-parallelism --maxWorkers 1
         name: Unit & Integration tests
       - name: Observe build status
         if: always()
@@ -322,6 +322,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -332,14 +333,6 @@ jobs:
           repository: localhost:5000/camunda/tasklist
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: tasklist.Dockerfile
-          push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
-        with:
-          repository: localhost:5000/camunda/zeebe
-          version: ${{ env.DOCKER_IMAGE_TAG }}
-          dockerfile: Dockerfile
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Tasklist backup restore Tests
@@ -402,6 +395,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - id: build-backend
         uses: ./.github/actions/build-zeebe
         with:

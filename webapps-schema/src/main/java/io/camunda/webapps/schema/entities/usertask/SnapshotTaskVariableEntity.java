@@ -7,8 +7,10 @@
  */
 package io.camunda.webapps.schema.entities.usertask;
 
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
@@ -18,16 +20,20 @@ public class SnapshotTaskVariableEntity
         PartitionedEntity<SnapshotTaskVariableEntity>,
         TenantOwned {
 
-  private String id;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  private long key;
-  private int partitionId;
-  private String taskId;
-  private String name;
-  private String value;
-  private String fullValue;
-  private boolean isPreview;
-  private Long processInstanceKey;
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private String taskId;
+  @BeforeVersion880 private String name;
+  @BeforeVersion880 private String value;
+  @BeforeVersion880 private String fullValue;
+  @BeforeVersion880 private boolean isPreview;
+  @BeforeVersion880 private Long processInstanceKey;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   public SnapshotTaskVariableEntity() {}
 
@@ -126,9 +132,19 @@ public class SnapshotTaskVariableEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public SnapshotTaskVariableEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(id, tenantId, taskId, name, value, fullValue, isPreview);
+    return Objects.hash(
+        id, tenantId, taskId, name, value, fullValue, isPreview, rootProcessInstanceKey);
   }
 
   @Override
@@ -146,6 +162,7 @@ public class SnapshotTaskVariableEntity
         && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
-        && Objects.equals(fullValue, that.fullValue);
+        && Objects.equals(fullValue, that.fullValue)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
   }
 }

@@ -18,6 +18,7 @@ import {
 import {
   Authorization,
   deleteAuthorization,
+  ResourceType,
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
 
@@ -25,7 +26,13 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { authorizationKey, ownerId, ownerType, resourceId, permissionTypes },
+  entity: {
+    authorizationKey,
+    ownerId,
+    ownerType,
+    permissionTypes,
+    ...resourceData
+  },
 }) => {
   const { t } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
@@ -62,9 +69,16 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
           <ListItem>
             <strong>{t("ownerType")}</strong>: {ownerType}
           </ListItem>
-          <ListItem>
-            <strong>{t("resourceId")}</strong>: {resourceId}
-          </ListItem>
+          {resourceData.resourceType === ResourceType.USER_TASK ? (
+            <ListItem>
+              <strong>{t("resourcePropertyName")}</strong>:{" "}
+              {resourceData.resourcePropertyName}
+            </ListItem>
+          ) : (
+            <ListItem>
+              <strong>{t("resourceId")}</strong>: {resourceData.resourceId}
+            </ListItem>
+          )}
           <ListItem>
             <strong>{t("permission")}</strong>: {permissionTypes.join(", ")}
           </ListItem>

@@ -19,11 +19,13 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Client;
+import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
@@ -118,6 +120,14 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
+  public static SearchResponse<ClusterVariable> toClusterVariableSearchResponse(
+      final ClusterVariableSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ClusterVariable> instances =
+        toSearchResponseInstances(response.getItems(), ClusterVariableImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   public static SearchResponse<DecisionDefinition> toDecisionDefinitionSearchResponse(
       final DecisionDefinitionSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
@@ -150,7 +160,7 @@ public final class SearchResponseMapper {
     return new IncidentImpl(response);
   }
 
-  private static SearchResponsePage toSearchResponsePage(
+  public static SearchResponsePage toSearchResponsePage(
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
         pageResponse.getTotalItems(),
@@ -275,6 +285,7 @@ public final class SearchResponseMapper {
         response.getAuthorizationKey(),
         response.getOwnerId(),
         response.getResourceId(),
+        response.getResourcePropertyName(),
         EnumUtil.convert(response.getOwnerType(), OwnerType.class),
         EnumUtil.convert(response.getResourceType(), ResourceType.class),
         convertedPermissionTypes);
@@ -416,6 +427,14 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<CorrelatedMessageSubscription> instances =
         toSearchResponseInstances(response.getItems(), CorrelatedMessageSubscriptionImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<AuditLogResult> toAuditLogSearchResponse(
+      final AuditLogSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<AuditLogResult> instances =
+        toSearchResponseInstances(response.getItems(), AuditLogResultImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 }

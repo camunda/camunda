@@ -18,6 +18,7 @@
   <modules>
     <module>bom</module>
     <module>parent</module>
+    <module>library-parent</module>
     <module>dist</module>
     <module>build-tools</module>
     <module>zeebe</module>
@@ -36,6 +37,7 @@
     <module>clients/java</module>
     <module>clients/java-deprecated</module>
     <module>clients/camunda-spring-boot-starter</module>
+    <module>clients/camunda-spring-boot-starter-virtual-threads</module>
     <module>clients/spring-boot-starter-camunda-sdk-deprecated</module>
     <module>testing</module>
     <module>document</module>
@@ -43,6 +45,7 @@
     <module>configuration</module>
     <module>load-tests/load-tester</module>
     <module>debug-cli</module>
+    <module>microbenchmarks</module>
   </modules>
 
   <scm>

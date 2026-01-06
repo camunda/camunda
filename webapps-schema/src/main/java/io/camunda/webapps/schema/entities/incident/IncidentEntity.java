@@ -8,8 +8,10 @@
 package io.camunda.webapps.schema.entities.incident;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -17,40 +19,28 @@ import java.util.Objects;
 public class IncidentEntity
     implements ExporterEntity<IncidentEntity>, PartitionedEntity<IncidentEntity>, TenantOwned {
 
-  private String id;
-
-  private long key;
-
-  private int partitionId;
-
-  private ErrorType errorType;
-
-  private String errorMessage;
-
+  @BeforeVersion880 private String id;
+  @BeforeVersion880 private long key;
+  @BeforeVersion880 private int partitionId;
+  @BeforeVersion880 private ErrorType errorType;
+  @BeforeVersion880 private String errorMessage;
   // Is only used by binding to ES results
-  private Integer errorMessageHash;
+  @BeforeVersion880 private Integer errorMessageHash;
+  @BeforeVersion880 private IncidentState state;
+  @BeforeVersion880 private String flowNodeId;
+  @BeforeVersion880 private Long flowNodeInstanceKey;
+  @BeforeVersion880 private Long jobKey;
+  @BeforeVersion880 private Long processInstanceKey;
+  @BeforeVersion880 private OffsetDateTime creationTime;
+  @BeforeVersion880 private Long processDefinitionKey;
+  @BeforeVersion880 private String bpmnProcessId;
+  @BeforeVersion880 private String treePath;
+  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  @BeforeVersion880 private Long position;
 
-  private IncidentState state;
-
-  private String flowNodeId;
-
-  private Long flowNodeInstanceKey;
-
-  private Long jobKey;
-
-  private Long processInstanceKey;
-
-  private OffsetDateTime creationTime;
-
-  private Long processDefinitionKey;
-
-  private String bpmnProcessId;
-
-  private String treePath;
-
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-
-  private Long position;
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private Long rootProcessInstanceKey;
 
   @Deprecated @JsonIgnore private boolean pending = true;
 
@@ -222,6 +212,15 @@ public class IncidentEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public IncidentEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -270,7 +269,8 @@ public class IncidentEntity
         && Objects.equals(bpmnProcessId, incident.bpmnProcessId)
         && Objects.equals(treePath, incident.treePath)
         && Objects.equals(tenantId, incident.tenantId)
-        && Objects.equals(position, incident.position);
+        && Objects.equals(position, incident.position)
+        && Objects.equals(rootProcessInstanceKey, incident.rootProcessInstanceKey);
   }
 
   @Override
@@ -304,6 +304,8 @@ public class IncidentEntity
         + '\''
         + ", pending="
         + pending
+        + ", rootProcessInstanceKey="
+        + rootProcessInstanceKey
         + '}';
   }
 }

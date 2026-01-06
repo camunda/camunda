@@ -11,7 +11,7 @@ import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
+import {useProcessInstanceStatisticsFilters} from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {skipToken, type UseQueryOptions} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
 
@@ -40,7 +40,7 @@ function useProcessInstancesStatisticsOptions<
   RequestError,
   T
 > {
-  const filters = useProcessInstanceFilters();
+  const filters = useProcessInstanceStatisticsFilters();
 
   const combinedFilters = {
     ...payload,

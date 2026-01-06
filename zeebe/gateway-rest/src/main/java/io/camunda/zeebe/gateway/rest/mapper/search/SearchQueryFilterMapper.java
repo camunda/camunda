@@ -15,10 +15,11 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -32,6 +33,7 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
@@ -42,10 +44,16 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BaseProcessInstanceFilterFields;
+import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableSearchQueryFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilter;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterProperty;
+import io.camunda.zeebe.gateway.rest.util.AuditLogCategoryConverter;
+import io.camunda.zeebe.gateway.rest.util.AuditLogEntityTypeConverter;
+import io.camunda.zeebe.gateway.rest.util.AuditLogOperationTypeConverter;
+import io.camunda.zeebe.gateway.rest.util.DecisionInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.TagsValidator;
@@ -209,6 +217,12 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getRetries())
           .map(mapToOperations(Integer.class))
           .ifPresent(builder::retriesOperations);
+      ofNullable(filter.getCreationTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::creationTimeOperations);
+      ofNullable(filter.getLastUpdateTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::lastUpdateTimeOperations);
     }
 
     return builder.build();
@@ -222,10 +236,12 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getDecisionEvaluationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionInstanceKeys);
-      ofNullable(filter.getDecisionEvaluationInstanceKey()).ifPresent(builder::decisionInstanceIds);
+      ofNullable(filter.getDecisionEvaluationInstanceKey())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::decisionInstanceIdOperations);
       ofNullable(filter.getState())
-          .map(s -> convertEnum(s, DecisionInstanceState.class))
-          .ifPresent(builder::states);
+          .map(mapToOperations(String.class, new DecisionInstanceStateConverter()))
+          .ifPresent(builder::stateOperations);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getEvaluationDate())
           .map(mapToOperations(OffsetDateTime.class))
@@ -291,6 +307,32 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
+  static ClusterVariableFilter toClusterVariableFilter(
+      final ClusterVariableSearchQueryFilterRequest filter) {
+
+    if (filter == null) {
+      return FilterBuilders.clusterVariable().build();
+    }
+
+    final var builder = FilterBuilders.clusterVariable();
+
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getValue())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::valueOperations);
+    ofNullable(filter.getScope())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::scopeOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
+    ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+
+    return builder.build();
+  }
+
   static BatchOperationFilter toBatchOperationFilter(
       final io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter filter) {
     final var builder = FilterBuilders.batchOperation();
@@ -305,6 +347,13 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getOperationType())
           .map(mapToOperations(String.class))
           .ifPresent(builder::operationTypeOperations);
+      ofNullable(filter.getActorType())
+          .map(io.camunda.zeebe.gateway.protocol.rest.BatchOperationActorTypeEnum::getValue)
+          .map(String::toUpperCase)
+          .ifPresent(builder::actorTypes);
+      ofNullable(filter.getActorId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::actorIdOperations);
     }
 
     return builder.build();
@@ -327,6 +376,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getOperationType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::operationTypeOperations);
     }
 
     return builder.build();
@@ -540,6 +592,10 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getDecisionRequirementsKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionRequirementsKeys);
+      ofNullable(filter.getDecisionRequirementsName())
+          .ifPresent(builder::decisionRequirementsNames);
+      ofNullable(filter.getDecisionRequirementsVersion())
+          .ifPresent(builder::decisionRequirementsVersions);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
@@ -678,6 +734,15 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getFollowUpDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::followUpDateOperations);
+
+      if (!CollectionUtils.isEmpty(filter.getTags())) {
+        final var tagErrors = TagsValidator.validate(filter.getTags());
+        if (tagErrors.isEmpty()) {
+          ofNullable(filter.getTags()).ifPresent(builder::tags);
+        } else {
+          validationErrors.addAll(tagErrors);
+        }
+      }
     }
 
     return validationErrors.isEmpty()
@@ -752,6 +817,9 @@ public class SearchQueryFilterMapper {
     final var builder = FilterBuilders.messageSubscription();
 
     if (filter != null) {
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getMessageSubscriptionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::messageSubscriptionKeyOperations);
@@ -831,6 +899,68 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
+  static io.camunda.search.filter.AuditLogFilter toAuditLogFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.AuditLogFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.auditLog().build();
+    }
+
+    final var builder = FilterBuilders.auditLog();
+    ofNullable(filter.getAuditLogKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::auditLogKeyOperations);
+    ofNullable(filter.getProcessDefinitionKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::processDefinitionKeyOperations);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getElementInstanceKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::elementInstanceKeyOperations);
+    ofNullable(filter.getOperationType())
+        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
+        .ifPresent(builder::operationTypeOperations);
+    ofNullable(filter.getResult())
+        .map(io.camunda.zeebe.gateway.protocol.rest.AuditLogResultEnum::getValue)
+        .map(String::toUpperCase)
+        .ifPresent(builder::results);
+    ofNullable(filter.getTimestamp())
+        .map(mapToOperations(OffsetDateTime.class))
+        .ifPresent(builder::timestampOperations);
+    ofNullable(filter.getActorId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::actorIdOperations);
+    ofNullable(filter.getActorType())
+        .map(io.camunda.zeebe.gateway.protocol.rest.AuditLogActorTypeEnum::getValue)
+        .map(String::toUpperCase)
+        .ifPresent(builder::actorTypes);
+    ofNullable(filter.getEntityType())
+        .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
+        .ifPresent(builder::entityTypeOperations);
+    ofNullable(filter.getTenantId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::tenantIdOperations);
+    ofNullable(filter.getCategory())
+        .map(mapToOperations(String.class, new AuditLogCategoryConverter()))
+        .ifPresent(builder::categoryOperations);
+
+    return builder.build();
+  }
+
+  static ProcessDefinitionInstanceVersionStatisticsFilter
+      toProcessDefinitionInstanceVersionStatisticsFilter(
+          final io.camunda.zeebe.gateway.protocol.rest
+                  .ProcessDefinitionInstanceVersionStatisticsFilter
+              filter) {
+    final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
+    if (filter != null) {
+      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+    }
+
+    return builder.build();
+  }
+
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
       final List<VariableValueFilterProperty> filters) {
     if (CollectionUtils.isEmpty(filters)) {
@@ -883,6 +1013,7 @@ public class SearchQueryFilterMapper {
                     .ownerIds(f.getOwnerId())
                     .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
                     .resourceIds(f.getResourceIds())
+                    .resourcePropertyNames(f.getResourcePropertyNames())
                     .resourceType(
                         f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
@@ -900,5 +1031,23 @@ public class SearchQueryFilterMapper {
         .ifPresent(builder::nameOperations);
 
     return builder.build();
+  }
+
+  public static Either<List<String>, IncidentFilter>
+      toIncidentProcessInstanceStatisticsByDefinitionFilter(
+          final IncidentProcessInstanceStatisticsByDefinitionFilter filter) {
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    if (filter.equals(
+        SearchQueryRequestMapper.EMPTY_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_FILTER)) {
+      return Either.left(List.of(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("filter criteria")));
+    }
+
+    return Either.right(
+        FilterBuilders.incident()
+            .states(IncidentState.ACTIVE.name())
+            .errorMessageHashes(filter.getErrorHashCode())
+            .build());
   }
 }

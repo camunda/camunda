@@ -14,8 +14,10 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
@@ -47,7 +49,9 @@ import org.testcontainers.utility.DockerImageName;
       DatabaseInfo.class,
       OperatePropertiesOverride.class,
       UnifiedConfigurationHelper.class,
-      UnifiedConfiguration.class
+      UnifiedConfiguration.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
     })
 public class ElasticsearchConnectorIT {
 
@@ -118,11 +122,6 @@ public class ElasticsearchConnectorIT {
     setPluginConfig(registry, OperateProperties.PREFIX + ".elasticsearch", plugin);
     setPluginConfig(registry, OperateProperties.PREFIX + ".zeebeElasticsearch", plugin);
     registry.add("camunda.data.secondary-storage.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.database.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.operate.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.operate.zeebeElasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.tasklist.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
-    registry.add("camunda.tasklist.zeebeElasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
   }
 
   private static void setPluginConfig(

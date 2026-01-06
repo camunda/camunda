@@ -37,6 +37,12 @@ public interface DecisionDefinitionSort extends SearchRequestSort<DecisionDefini
   /** Sort by decision requirements key. */
   DecisionDefinitionSort decisionRequirementsKey();
 
+  /** Sort by dmn decision requirements name. */
+  DecisionDefinitionSort decisionRequirementsName();
+
+  /** Sort by decision requirements version. */
+  DecisionDefinitionSort decisionRequirementsVersion();
+
   /** Sort by tenant id. */
   DecisionDefinitionSort tenantId();
 }

@@ -43,6 +43,14 @@
     </foreach>
   </insert>
 
+  <insert id="insertTags" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
+    INSERT INTO ${prefix}USER_TASK_TAG (USER_TASK_KEY, TAG_VALUE)
+    VALUES
+    <foreach collection="tags" item="tag" separator=", ">
+      (#{userTaskKey}, #{tag})
+    </foreach>
+  </insert>
+
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     <constructor>
       <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
@@ -77,6 +85,9 @@
     <collection property="candidateUsers" ofType="java.lang.String" javaType="java.util.List">
       <id column="CANDIDATE_USER"/>
     </collection>
+    <collection property="tags" ofType="java.lang.String" javaType="java.util.Set">
+      <id column="TAG_VALUE"/>
+    </collection>
   </resultMap>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -87,7 +98,8 @@
     SELECT
     ut.*,
     cg.CANDIDATE_GROUP,
-    cu.CANDIDATE_USER
+    cu.CANDIDATE_USER,
+    t.TAG_VALUE
     FROM
     ( SELECT * FROM (
     SELECT
@@ -120,6 +132,7 @@
     ) ut
     LEFT JOIN ${prefix}CANDIDATE_USER cu ON (cu.USER_TASK_KEY = ut.USER_TASK_KEY)
     LEFT JOIN ${prefix}CANDIDATE_GROUP cg ON (cg.USER_TASK_KEY = ut.USER_TASK_KEY)
+    LEFT JOIN ${prefix}USER_TASK_TAG t ON (t.USER_TASK_KEY = ut.USER_TASK_KEY)
     ) sorted
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
@@ -133,12 +146,22 @@
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
-      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        AND ut.PROCESS_DEFINITION_ID IN
-        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
-          close=")">
-          #{resourceId}
-        </foreach>
+      <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()) or (authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty())">
+        AND
+        <trim prefix="(" suffix=")" prefixOverrides="OR">
+          <if test="authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()">
+            OR ut.PROCESS_DEFINITION_ID IN
+            <foreach collection="authorizedProcessDefinitionIds" item="processDefinitionId" open="(" separator="," close=")">
+              #{processDefinitionId}
+            </foreach>
+          </if>
+          <if test="authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty()">
+            OR ut.USER_TASK_KEY IN
+            <foreach collection="authorizedUserTaskKeys" item="userTaskKey" open="(" separator="," close=")">
+              #{userTaskKey}
+            </foreach>
+          </if>
+        </trim>
       </if>
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
         AND ut.TENANT_ID IN
@@ -146,6 +169,7 @@
           #{tenantId}
         </foreach>
       </if>
+
       <!-- basic filters -->
       <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
         AND ut.USER_TASK_KEY IN
@@ -211,6 +235,14 @@
         <foreach collection="filter.tenantIdOperations" item="operation">
           AND ut.TENANT_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <!-- tags - simple array with AND logic (like process instances) -->
+      <if test="filter.tags != null and !filter.tags.isEmpty()">
+        <foreach collection="filter.tags" item="tag">
+          AND EXISTS (Select * from ${prefix}USER_TASK_TAG t where t.USER_TASK_KEY = ut.USER_TASK_KEY
+          AND t.TAG_VALUE = #{tag})
         </foreach>
       </if>
 
@@ -365,6 +397,11 @@
   <delete id="cleanupHistory">
     <bind name="tableName" value="'USER_TASK'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'USER_TASK'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
   </delete>
 
 </mapper>

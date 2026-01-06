@@ -9,14 +9,16 @@ package io.camunda.it.operate;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static io.camunda.client.api.search.enums.ResourceType.ROLE;
+import static io.camunda.it.util.TestHelper.waitForProcessInstances;
+import static io.camunda.it.util.TestHelper.waitForUserRoleAssignment;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +51,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.springframework.http.HttpStatus;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateInternalApiRolePermissionsIT {
 
@@ -74,6 +76,7 @@ public class OperateInternalApiRolePermissionsIT {
           ADMIN_USERNAME,
           ADMIN_USERNAME,
           List.of(
+              new Permissions(ROLE, READ, List.of("*")),
               new Permissions(ROLE, CREATE, List.of("*")),
               new Permissions(ROLE, UPDATE, List.of("*")),
               new Permissions(AUTHORIZATION, CREATE, List.of("*")),
@@ -132,18 +135,8 @@ public class OperateInternalApiRolePermissionsIT {
             .send()
             .join()
             .getProcessInstanceKey();
-    await()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        adminClient
-                            .newProcessInstanceSearchRequest()
-                            .filter(f -> f.processInstanceKey(processInstanceKey))
-                            .send()
-                            .join()
-                            .items())
-                    .describedAs("Wait until the process instance is exported")
-                    .hasSize(1));
+    waitForProcessInstances(adminClient, f -> f.processInstanceKey(processInstanceKey), 1);
+    waitForUserRoleAssignment(adminClient, roleId, AUTHORIZED_USERNAME);
   }
 
   @Test

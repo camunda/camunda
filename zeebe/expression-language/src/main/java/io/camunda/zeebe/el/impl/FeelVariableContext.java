@@ -10,6 +10,7 @@ package io.camunda.zeebe.el.impl;
 import io.camunda.zeebe.el.EvaluationContext;
 import org.camunda.feel.context.CustomContext;
 import org.camunda.feel.context.VariableProvider;
+import org.camunda.feel.syntaxtree.ValContext;
 import scala.Option;
 import scala.collection.Iterable;
 import scala.collection.immutable.List$;
@@ -30,9 +31,14 @@ final class FeelVariableContext extends CustomContext {
 
     @Override
     public Option<Object> getVariable(final String name) {
-      return Option.apply(context.getVariable(name))
-          .filter(variable -> variable.capacity() > 0)
-          .map(variable -> variable);
+      return context
+          .getVariable(name)
+          .fold(
+              directBuffer ->
+                  Option.when(
+                      directBuffer != null && directBuffer.capacity() > 0, () -> directBuffer),
+              evaluationContext ->
+                  Option.apply(new ValContext(new FeelVariableContext(evaluationContext))));
     }
 
     @Override

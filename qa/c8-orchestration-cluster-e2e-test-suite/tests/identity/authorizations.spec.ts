@@ -152,9 +152,12 @@ test.describe.serial('component authorizations CRUD', () => {
     loginPage,
     page,
   }) => {
-    await identityAuthorizationsPage.createAuthorization(
-      NEW_COMPONENT_AUTHORIZATION,
-    );
+    const role = NEW_AUTH_ROLE;
+    await identityHeader.navigateToAuthorizations();
+    await identityAuthorizationsPage.createAuthorization({
+      ...NEW_COMPONENT_AUTHORIZATION,
+      ownerId: role.name,
+    });
     await identityHeader.logout();
     await loginPage.login(NEW_USER.username, NEW_USER.password);
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
@@ -172,11 +175,12 @@ test.describe.serial('component authorizations CRUD', () => {
     identityAuthorizationsPage,
   }) => {
     await test.step(`Delete component authorization for role`, async () => {
-      const resourceType = NEW_COMPONENT_AUTHORIZATION.resourceType;
+      const role = NEW_AUTH_ROLE;
+      await identityHeader.navigateToAuthorizations();
+      const componentAuth = NEW_COMPONENT_AUTHORIZATION;
+      const resourceType = componentAuth.resourceType;
       await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
-      await identityAuthorizationsPage.clickDeleteAuthorizationButton(
-        NEW_AUTH_ROLE.id,
-      );
+      await identityAuthorizationsPage.clickDeleteAuthorizationButton(role.id);
 
       await expect(
         identityAuthorizationsPage.deleteAuthorizationModal,
@@ -187,9 +191,7 @@ test.describe.serial('component authorizations CRUD', () => {
       ).toBeHidden();
 
       await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
-      const item = identityAuthorizationsPage.getAuthorizationCell(
-        NEW_AUTH_ROLE.id,
-      );
+      const item = identityAuthorizationsPage.getAuthorizationCell(role.id);
       await waitForItemInList(page, item, {
         shouldBeVisible: false,
         onAfterReload: () =>

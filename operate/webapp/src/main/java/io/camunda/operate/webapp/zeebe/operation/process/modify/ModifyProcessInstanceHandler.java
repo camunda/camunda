@@ -18,6 +18,7 @@ import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequest
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Component;
 // 'transaction'
 // So for one operation we have only one 'camundaClient.send().join()'
 @Component
+@ConditionalOnRdbmsDisabled
 public class ModifyProcessInstanceHandler extends AbstractOperationHandler
     implements OperationHandler {
 

@@ -11,7 +11,9 @@ import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterFactory;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -30,8 +32,11 @@ public class RdbmsExporterConfiguration {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
   @Bean
-  public RdbmsExporterFactory rdbmsExporterFactory(final RdbmsService rdbmsService) {
-    return new RdbmsExporterFactory(rdbmsService);
+  public RdbmsExporterFactory rdbmsExporterFactory(
+      final RdbmsService rdbmsService,
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final RdbmsSchemaManager rdbmsSchemaManager) {
+    return new RdbmsExporterFactory(rdbmsService, vendorDatabaseProperties, rdbmsSchemaManager);
   }
 
   @Bean

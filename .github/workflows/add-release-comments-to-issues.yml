@@ -1,0 +1,89 @@
+# description: Adds release comments to issues that were fixed in recent releases
+# type: CI Helper
+# owner: camunda/engineering-operations
+#
+# This workflow automatically adds comments to issues that have been resolved in recent releases.
+# 
+# Usage:
+#   - Manual trigger with optional parameters:
+#     - days_back: Number of days to look back for releases (default: 10)
+#     - dry_run: If true, logs what would be done without posting comments (default: false)
+# 
+# The workflow:
+#   1. Fetches releases from the specified lookback period
+#   2. Extracts issue references from release notes/changelog
+#   3. For each referenced closed issue (excluding PRs):
+#      - Checks if a release comment already exists
+#      - Adds: "This has been released in version [x.x.x](release-url). See release notes [here](release-url) for details."
+# 
+# Safety features:
+#   - Only processes closed issues
+#   - Excludes pull requests
+#   - Prevents duplicate comments
+#   - Supports dry-run mode for testing
+
+---
+name: Add Release Comments to Issues
+
+on:
+  schedule:
+    # Run every Wednesday at 9:00 AM UTC
+    - cron: '0 9 * * 3'
+  workflow_dispatch:
+    inputs:
+      days_back:
+        description: 'Number of days back to look for releases (default: 10)'
+        required: false
+        default: '10'
+      dry_run:
+        description: 'Dry run - only log what would be done, do not post comments'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+permissions: {}
+
+jobs:
+  add-release-comments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      issues: write
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      TEST_OWNER: Engineering Operations
+      TEST_PRODUCT: Orchestration Cluster
+      TEST_TYPE: CI Helper
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Add release comments to issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          DAYS_BACK: ${{ github.event.inputs.days_back || '10' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        shell: bash
+        run: bash .github/scripts/add-release-comments.sh
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

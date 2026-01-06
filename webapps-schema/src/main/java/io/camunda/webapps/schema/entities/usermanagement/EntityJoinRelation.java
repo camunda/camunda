@@ -7,17 +7,18 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
+import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.JoinRelationshipType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
-public record EntityJoinRelation(String name, String parent) {
+public record EntityJoinRelation(@BeforeVersion880 String name, @BeforeVersion880 String parent) {
 
-  public static class EntityJoinRelationFactory {
+  public static class EntityJoinRelationFactory<T extends JoinRelationshipType> {
 
-    private final IdentityJoinRelationshipType parent;
-    private final IdentityJoinRelationshipType child;
+    private final T parent;
+    private final T child;
 
-    public EntityJoinRelationFactory(
-        final IdentityJoinRelationshipType parent, final IdentityJoinRelationshipType child) {
+    public EntityJoinRelationFactory(final T parent, final T child) {
       this.parent = parent;
       this.child = child;
     }
@@ -46,7 +47,7 @@ public record EntityJoinRelation(String name, String parent) {
     }
   }
 
-  public enum IdentityJoinRelationshipType {
+  public enum IdentityJoinRelationshipType implements JoinRelationshipType {
     GROUP("group"),
     ROLE("role"),
     TENANT("tenant"),
@@ -58,6 +59,7 @@ public record EntityJoinRelation(String name, String parent) {
       this.type = type;
     }
 
+    @Override
     public String getType() {
       return type;
     }

@@ -46,6 +46,8 @@ public class JobDbModel implements Copyable<JobDbModel> {
   private String tenantId;
   private int partitionId;
   private OffsetDateTime historyCleanupDate;
+  private OffsetDateTime creationTime;
+  private OffsetDateTime lastUpdateTime;
 
   public JobDbModel(final Long jobKey) {
     this.jobKey = jobKey;
@@ -74,7 +76,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
       final Long elementInstanceKey,
       final String tenantId,
       final int partitionId,
-      final OffsetDateTime historyCleanupDate) {
+      final OffsetDateTime historyCleanupDate,
+      final OffsetDateTime creationTime,
+      final OffsetDateTime lastUpdateTime) {
     this.jobKey = jobKey;
     this.type = type;
     this.worker = worker;
@@ -99,6 +103,8 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.tenantId = tenantId;
     this.partitionId = partitionId;
     this.historyCleanupDate = historyCleanupDate;
+    this.creationTime = creationTime;
+    this.lastUpdateTime = lastUpdateTime;
   }
 
   @Override
@@ -142,7 +148,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
         elementInstanceKey,
         tenantId,
         partitionId,
-        historyCleanupDate);
+        historyCleanupDate,
+        creationTime,
+        lastUpdateTime);
   }
 
   public Long jobKey() {
@@ -334,6 +342,22 @@ public class JobDbModel implements Copyable<JobDbModel> {
     this.historyCleanupDate = historyCleanupDate;
   }
 
+  public OffsetDateTime creationTime() {
+    return creationTime;
+  }
+
+  public void creationTime(final OffsetDateTime creationTime) {
+    this.creationTime = creationTime;
+  }
+
+  public OffsetDateTime lastUpdateTime() {
+    return lastUpdateTime;
+  }
+
+  public void lastUpdateTime(final OffsetDateTime lastUpdateTime) {
+    this.lastUpdateTime = lastUpdateTime;
+  }
+
   public ObjectBuilder<JobDbModel> toBuilder() {
     return new Builder()
         .jobKey(jobKey)
@@ -358,7 +382,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
         .elementInstanceKey(elementInstanceKey)
         .tenantId(tenantId)
         .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate);
+        .historyCleanupDate(historyCleanupDate)
+        .creationTime(creationTime)
+        .lastUpdateTime(lastUpdateTime);
   }
 
   public static class Builder implements ObjectBuilder<JobDbModel> {
@@ -386,6 +412,8 @@ public class JobDbModel implements Copyable<JobDbModel> {
     private String tenantId;
     private int partitionId;
     private OffsetDateTime historyCleanupDate;
+    private OffsetDateTime creationTime;
+    private OffsetDateTime lastUpdateTime;
 
     public Builder jobKey(final Long jobKey) {
       this.jobKey = jobKey;
@@ -502,6 +530,16 @@ public class JobDbModel implements Copyable<JobDbModel> {
       return this;
     }
 
+    public Builder creationTime(final OffsetDateTime value) {
+      creationTime = value;
+      return this;
+    }
+
+    public Builder lastUpdateTime(final OffsetDateTime value) {
+      lastUpdateTime = value;
+      return this;
+    }
+
     @Override
     public JobDbModel build() {
       return new JobDbModel(
@@ -527,7 +565,9 @@ public class JobDbModel implements Copyable<JobDbModel> {
           elementInstanceKey,
           tenantId,
           partitionId,
-          historyCleanupDate);
+          historyCleanupDate,
+          creationTime,
+          lastUpdateTime);
     }
   }
 }

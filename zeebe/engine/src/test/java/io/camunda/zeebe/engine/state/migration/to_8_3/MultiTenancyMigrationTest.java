@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -93,7 +94,11 @@ public class MultiTenancyMigrationTest {
       legacyState = new LegacyProcessState(zeebeDb, transactionContext, InstantSource.system());
       processState =
           new DbProcessState(
-              zeebeDb, transactionContext, new EngineConfiguration(), InstantSource.system());
+              zeebeDb,
+              transactionContext,
+              new EngineConfiguration(),
+              InstantSource.system(),
+              ExpressionLanguageMetrics.noop());
     }
 
     @Test
@@ -727,6 +732,7 @@ public class MultiTenancyMigrationTest {
           new MessageSubscriptionRecord()
               .setProcessInstanceKey(123)
               .setElementInstanceKey(456)
+              .setProcessDefinitionKey(789)
               .setBpmnProcessId(wrapString("processId"))
               .setMessageKey(789)
               .setMessageName(wrapString("messageName"))
@@ -806,6 +812,7 @@ public class MultiTenancyMigrationTest {
               .setSubscriptionPartitionId(8)
               .setProcessInstanceKey(123)
               .setElementInstanceKey(456)
+              .setProcessDefinitionKey(555)
               .setBpmnProcessId(wrapString("processId"))
               .setMessageKey(789)
               .setMessageName(wrapString("messageName"))
@@ -832,6 +839,7 @@ public class MultiTenancyMigrationTest {
               ProcessMessageSubscriptionRecord::getSubscriptionPartitionId,
               ProcessMessageSubscriptionRecord::getProcessInstanceKey,
               ProcessMessageSubscriptionRecord::getElementInstanceKey,
+              ProcessMessageSubscriptionRecord::getProcessDefinitionKey,
               ProcessMessageSubscriptionRecord::getBpmnProcessId,
               ProcessMessageSubscriptionRecord::getMessageKey,
               ProcessMessageSubscriptionRecord::getMessageName,
@@ -844,6 +852,7 @@ public class MultiTenancyMigrationTest {
               record.getSubscriptionPartitionId(),
               record.getProcessInstanceKey(),
               record.getElementInstanceKey(),
+              record.getProcessDefinitionKey(),
               record.getBpmnProcessId(),
               record.getMessageKey(),
               record.getMessageName(),

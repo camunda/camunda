@@ -11,37 +11,52 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public final class IncidentServiceTest {
 
   private IncidentServices services;
   private IncidentSearchClient client;
+  private SecurityContextProvider securityContextProvider;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(IncidentSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    securityContextProvider = mock(SecurityContextProvider.class);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new IncidentServices(
             mock(BrokerClient.class),
-            mock(SecurityContextProvider.class),
+            securityContextProvider,
             client,
-            null,
+            authentication,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -64,9 +79,7 @@ public final class IncidentServiceTest {
   @Test
   public void shouldReturnIncidentByKey() {
     // given
-    final var entity = mock(IncidentEntity.class);
-    final var processId = "processId";
-    when(entity.processDefinitionId()).thenReturn(processId);
+    final var entity = Instancio.create(IncidentEntity.class);
     when(client.getIncident(any(Long.class))).thenReturn(entity);
     // when
     final var searchQueryResult = services.getByKey(1L);
@@ -78,9 +91,6 @@ public final class IncidentServiceTest {
   @Test
   public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
     // given
-    final var entity = mock(IncidentEntity.class);
-    final var processId = "processId";
-    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.getIncident(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.INCIDENT_READ_AUTHORIZATION));
     // when
@@ -93,5 +103,107 @@ public final class IncidentServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+  }
+
+  @Test
+  public void shouldReturnIncidentProcessInstanceStatisticsByError() {
+    // given
+    final var entity = Instancio.create(IncidentProcessInstanceStatisticsByErrorEntity.class);
+    when(client.incidentProcessInstanceStatisticsByError(any()))
+        .thenReturn(SearchQueryResult.of(entity));
+
+    // when
+    final var searchQueryResult =
+        services.incidentProcessInstanceStatisticsByError(
+            SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery()
+                .filter(f -> f.states(IncidentState.ACTIVE.name()))
+                .build());
+
+    // then
+    assertThat(searchQueryResult.items()).contains(entity);
+    final var queryCaptor =
+        ArgumentCaptor.forClass(
+            io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery.class);
+    verify(client).incidentProcessInstanceStatisticsByError(queryCaptor.capture());
+
+    final var capturedQuery = queryCaptor.getValue();
+    final var filter = capturedQuery.filter();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq(IncidentState.ACTIVE.name()));
+  }
+
+  @Test
+  public void shouldReturnIncidentProcessInstanceStatisticsByDefinition() {
+    // given
+    final var errorHashCode = 12345;
+    final var state = IncidentState.ACTIVE.name();
+    final var entity = Instancio.create(IncidentProcessInstanceStatisticsByDefinitionEntity.class);
+
+    // when
+    when(client.searchIncidentProcessInstanceStatisticsByDefinition(any()))
+        .thenReturn(SearchQueryResult.of(entity));
+
+    final var searchQueryResult =
+        client.searchIncidentProcessInstanceStatisticsByDefinition(
+            SearchQueryBuilders.incidentProcessInstanceStatisticsByDefinitionQuery()
+                .filter(f -> f.states(state).errorMessageHashes(errorHashCode))
+                .build());
+
+    // then
+    assertThat(searchQueryResult.items()).contains(entity);
+    final var queryCaptor =
+        ArgumentCaptor.forClass(IncidentProcessInstanceStatisticsByDefinitionQuery.class);
+    verify(client).searchIncidentProcessInstanceStatisticsByDefinition(queryCaptor.capture());
+
+    final var capturedQuery = queryCaptor.getValue();
+    final var filter = capturedQuery.filter();
+
+    assertThat(filter.errorMessageHashOperations()).containsExactly(Operation.eq(errorHashCode));
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq(state));
+  }
+
+  @Test
+  public void shouldForceActiveStateForIncidentProcessInstanceStatisticsByError() {
+    // given
+    when(client.incidentProcessInstanceStatisticsByError(any()))
+        .thenReturn(
+            SearchQueryResult.of(
+                Instancio.create(IncidentProcessInstanceStatisticsByErrorEntity.class)));
+
+    final var initialQuery =
+        SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery()
+            .filter(f -> f.states(IncidentState.RESOLVED.name()))
+            .build();
+
+    // when
+    services.incidentProcessInstanceStatisticsByError(initialQuery);
+
+    // then
+    final var queryCaptor =
+        ArgumentCaptor.forClass(IncidentProcessInstanceStatisticsByErrorQuery.class);
+    verify(client).incidentProcessInstanceStatisticsByError(queryCaptor.capture());
+    final var filter = queryCaptor.getValue().filter();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq(IncidentState.ACTIVE.name()));
+  }
+
+  @Test
+  public void shouldApplyActiveStateWhenMissingForIncidentProcessInstanceStatisticsByError() {
+    // given
+    when(client.incidentProcessInstanceStatisticsByError(any()))
+        .thenReturn(
+            SearchQueryResult.of(
+                Instancio.create(IncidentProcessInstanceStatisticsByErrorEntity.class)));
+
+    final var initialQuery =
+        SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build();
+
+    // when
+    services.incidentProcessInstanceStatisticsByError(initialQuery);
+
+    // then
+    final var queryCaptor =
+        ArgumentCaptor.forClass(IncidentProcessInstanceStatisticsByErrorQuery.class);
+    verify(client, times(1)).incidentProcessInstanceStatisticsByError(queryCaptor.capture());
+    final var filter = queryCaptor.getValue().filter();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq(IncidentState.ACTIVE.name()));
   }
 }

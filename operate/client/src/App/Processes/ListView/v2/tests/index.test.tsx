@@ -6,29 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-  within,
-} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
 import {ListView} from '../index';
 import {
-  groupedProcessesMock,
+  mockProcessDefinitions,
   mockProcessXML,
-  mockProcessInstances,
-  mockProcessInstancesWithOperation,
+  mockProcessInstancesV2 as mockProcessInstances,
   createUser,
+  searchResult,
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {act, useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
@@ -37,6 +29,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -49,7 +43,6 @@ function getWrapper(initialPath: string = Paths.processes()) {
     useEffect(() => {
       return () => {
         processInstancesSelectionStore.reset();
-        processInstancesStore.reset();
         processesStore.reset();
       };
     }, []);
@@ -77,14 +70,19 @@ function getWrapper(initialPath: string = Paths.processes()) {
 
 describe('Instances', () => {
   beforeEach(() => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
       items: [],
       page: {
         totalItems: 0,
       },
+    });
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
     });
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
   });
@@ -111,12 +109,10 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
-    // diagram panel
     expect(
       screen.getByRole('region', {name: 'Diagram Panel'}),
     ).toBeInTheDocument();
 
-    // filters panel
     expect(
       screen.getByRole('heading', {name: 'Process', level: 3}),
     ).toBeInTheDocument();
@@ -130,10 +126,8 @@ describe('Instances', () => {
       ),
     ).toBeInTheDocument();
 
-    // filters panel
     expect(screen.getByRole('heading', {name: /Filter/})).toBeInTheDocument();
 
-    // instances table
     expect(
       await screen.findByRole('heading', {
         name: /process instances - 912 results/i,
@@ -142,15 +136,15 @@ describe('Instances', () => {
   });
 
   it('should reset selected instances when filters change', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
 
     const {user} = render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('data-table-skeleton'),
-    );
+    await screen.findByRole('heading', {
+      name: /process instances - 912 results/i,
+    });
 
     const withinRow = within(
       screen.getByRole('row', {
@@ -158,22 +152,22 @@ describe('Instances', () => {
       }),
     );
 
-    expect(
-      withinRow.getByRole('checkbox', {name: /select row/i}),
-    ).not.toBeChecked();
+    const checkbox = withinRow.getByRole('checkbox');
+    expect(checkbox).not.toBeChecked();
 
-    await user.click(withinRow.getByRole('checkbox', {name: /select row/i}));
-    expect(
-      withinRow.getByRole('checkbox', {name: /select row/i}),
-    ).toBeChecked();
+    await user.click(checkbox);
+    expect(checkbox).toBeChecked();
 
-    mockFetchProcessInstances().withDelay(mockProcessInstances);
+    mockSearchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByText(/go to active/i));
-    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
 
-    expect(
-      withinRow.getByRole('checkbox', {name: /select row/i}),
-    ).not.toBeChecked();
+    const updatedRow = await screen.findByRole('row', {
+      name: /2251799813685594/i,
+    });
+
+    const updatedCheckbox = within(updatedRow).getByRole('checkbox');
+
+    expect(updatedCheckbox).not.toBeChecked();
   });
 
   it('should not reset selected instances when table is sorted', async () => {
@@ -202,15 +196,19 @@ describe('Instances', () => {
       withinRow.getByRole('checkbox', {name: /select row/i}),
     ).toBeChecked();
 
-    mockFetchProcessInstances().withDelay(mockProcessInstances);
+    mockSearchProcessInstances().withDelay(mockProcessInstances);
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
-    expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
+    });
 
-    expect(
-      withinRow.getByRole('checkbox', {name: /select row/i}),
-    ).toBeChecked();
+    const updatedRow = await screen.findByRole('row', {
+      name: /2251799813685594/i,
+    });
+    const updatedCheckbox = within(updatedRow).getByRole('checkbox');
+
+    expect(updatedCheckbox).toBeChecked();
   });
 
   it('should refetch data when navigated from header', async () => {
@@ -224,16 +222,16 @@ describe('Instances', () => {
       },
     );
 
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('data-table-skeleton'),
-    );
+    await screen.findByRole('heading', {
+      name: /process instances - 912 results/i,
+    });
 
     await waitFor(() =>
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
     );
 
-    mockFetchProcessInstances().withDelay(mockProcessInstances);
-    mockFetchGroupedProcesses().withDelay(groupedProcessesMock);
+    mockSearchProcessInstances().withDelay(mockProcessInstances);
+    mockSearchProcessDefinitions().withDelay(mockProcessDefinitions);
 
     await user.click(
       await within(
@@ -244,8 +242,6 @@ describe('Instances', () => {
         name: /processes/i,
       }),
     );
-    expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(await screen.findByTestId('data-table-loader')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
@@ -272,12 +268,16 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
-    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
-
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchProcessInstances().withSuccess({
       items: [],
       page: {
         totalItems: 0,
@@ -288,8 +288,14 @@ describe('Instances', () => {
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchProcessInstances().withSuccess({
       items: [],
       page: {
         totalItems: 0,
@@ -302,8 +308,14 @@ describe('Instances', () => {
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchProcessInstances().withSuccess({
       items: [],
       page: {
         totalItems: 0,
@@ -313,7 +325,7 @@ describe('Instances', () => {
     vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockQueryBatchOperations().withSuccess({
       items: [],
       page: {
@@ -321,13 +333,12 @@ describe('Instances', () => {
       },
     });
 
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [],
-      totalCount: 0,
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
     });
-
-    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
     vi.runOnlyPendingTimers();
 
@@ -351,96 +362,5 @@ describe('Instances', () => {
 
     vi.clearAllTimers();
     vi.useRealTimers();
-  });
-
-  it('should hide Operation State column when Operation Id filter is not set', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-
-    render(<ListView />, {
-      wrapper: getWrapper(`${Paths.processes()}`),
-    });
-
-    expect(screen.queryByText('Operation State')).not.toBeInTheDocument();
-  });
-
-  it('should show Operation State column when Operation Id filter is set', async () => {
-    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
-    render(<ListView />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
-    });
-
-    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('data-table-skeleton'),
-    );
-
-    expect(screen.getByText('Operation State')).toBeInTheDocument();
-  });
-
-  it('should show correct error message when error row is expanded', async () => {
-    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
-    const {user} = render(<ListView />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
-    });
-
-    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('data-table-skeleton'),
-    );
-
-    expect(screen.getByText('0000000000000002')).toBeInTheDocument();
-    expect(
-      screen.queryByText('Batch Operation Error Message'),
-    ).not.toBeVisible();
-
-    const withinRow = within(
-      screen.getByRole('row', {
-        name: /0000000000000002/i,
-      }),
-    );
-
-    const expandButton = withinRow.getByRole('button', {
-      name: 'Expand current row',
-    });
-    await user.click(expandButton);
-
-    expect(screen.getByText('Batch Operation Error Message')).toBeVisible();
-  });
-
-  it('should display correct operation from process instance with multiple operations', async () => {
-    const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
-    render(<ListView />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
-    });
-
-    mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('data-table-skeleton'),
-    );
-
-    const withinRow = within(
-      screen.getByRole('row', {
-        name: /0000000000000002/i,
-      }),
-    );
-
-    expect(withinRow.getByText('FAILED')).toBeInTheDocument();
-    expect(withinRow.queryByText('COMPLETED')).not.toBeInTheDocument();
   });
 });

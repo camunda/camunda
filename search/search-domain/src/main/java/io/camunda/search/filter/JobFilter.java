@@ -37,7 +37,9 @@ public record JobFilter(
     List<Operation<String>> stateOperations,
     List<Operation<String>> tenantIdOperations,
     List<Operation<String>> typeOperations,
-    List<Operation<String>> workerOperations)
+    List<Operation<String>> workerOperations,
+    List<Operation<OffsetDateTime>> creationTimeOperations,
+    List<Operation<OffsetDateTime>> lastUpdateTimeOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<JobFilter> {
@@ -61,6 +63,8 @@ public record JobFilter(
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<String>> elementIdOperation;
     private List<Operation<Long>> elementInstanceKeyOperations;
+    private List<Operation<OffsetDateTime>> creationTimeOperations;
+    private List<Operation<OffsetDateTime>> lastUpdateTimeOperations;
 
     public Builder deadlineOperations(final List<Operation<OffsetDateTime>> operations) {
       deadlineOperations = addValuesToList(deadlineOperations, operations);
@@ -342,6 +346,36 @@ public record JobFilter(
       return elementIdOperations(collectValues(operation, operations));
     }
 
+    public Builder creationTimeOperations(final List<Operation<OffsetDateTime>> operations) {
+      creationTimeOperations = addValuesToList(creationTimeOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder creationTimeOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return creationTimeOperations(collectValues(operation, operations));
+    }
+
+    public Builder creationTimes(final OffsetDateTime value, final OffsetDateTime... values) {
+      return creationTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder lastUpdateTimeOperations(final List<Operation<OffsetDateTime>> operations) {
+      lastUpdateTimeOperations = addValuesToList(lastUpdateTimeOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder lastUpdateTimeOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return lastUpdateTimeOperations(collectValues(operation, operations));
+    }
+
+    public Builder lastUpdateTimes(final OffsetDateTime value, final OffsetDateTime... values) {
+      return lastUpdateTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
     @Override
     public JobFilter build() {
       return new JobFilter(
@@ -364,7 +398,9 @@ public record JobFilter(
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(typeOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(workerOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(workerOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(creationTimeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(lastUpdateTimeOperations, Collections.emptyList()));
     }
   }
 }

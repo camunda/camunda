@@ -152,7 +152,7 @@ final class FeelEvaluationResult implements EvaluationResult {
   @Override
   public List<DirectBuffer> getList() {
     if (result instanceof final ValList l) {
-      return asJava(l.items().map(v -> cloneBuffer(messagePackTransformer.apply(v))));
+      return asJava(l.itemsAsSeq().map(v -> cloneBuffer(messagePackTransformer.apply(v))).toList());
     } else {
       return null;
     }
@@ -161,7 +161,7 @@ final class FeelEvaluationResult implements EvaluationResult {
   @Override
   public List<String> getListOfStrings() {
     if (result instanceof final ValList l && l.items().forall(ValString.class::isInstance)) {
-      return asJava(l.items().map(v -> ((ValString) v).value()));
+      return asJava(l.itemsAsSeq().map(v -> ((ValString) v).value()).toList());
     } else {
       return null;
     }

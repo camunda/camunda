@@ -14,11 +14,12 @@ import Roles from "src/pages/roles";
 import Tenants from "src/pages/tenants";
 import MappingRules from "src/pages/mapping-rules";
 import Authorizations from "src/pages/authorizations";
+import ClusterVariables from "src/pages/cluster-variables";
 import {
-  isOIDC,
   isCamundaGroupsEnabled,
-  isTenantsApiEnabled,
+  isOIDC,
   isSaaS,
+  isTenantsApiEnabled,
 } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
 
@@ -83,6 +84,12 @@ export const useGlobalRoutes = () => {
       key: Paths.authorizations(),
       label: t("authorizations"),
       element: <Authorizations />,
+    },
+    {
+      path: `${Paths.clusterVariables()}/*`,
+      key: Paths.clusterVariables(),
+      label: t("clusterVariables"),
+      element: <ClusterVariables />,
     },
   ];
 

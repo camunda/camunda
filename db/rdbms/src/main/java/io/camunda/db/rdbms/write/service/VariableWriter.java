@@ -19,7 +19,7 @@ import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
-public class VariableWriter {
+public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final VariableMapper mapper;
@@ -29,6 +29,7 @@ public class VariableWriter {
       final ExecutionQueue executionQueue,
       final VariableMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties) {
+    super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;

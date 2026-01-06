@@ -13,7 +13,7 @@ import {
 	getQueryResponseBodySchema,
 	advancedStringFilterSchema,
 	type Endpoint,
-} from './common';
+} from '../common';
 
 const userSchema = z.object({
 	username: z.string(),

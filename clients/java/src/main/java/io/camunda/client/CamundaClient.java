@@ -56,7 +56,11 @@ import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.command.EvaluateConditionalCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -68,6 +72,8 @@ import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
@@ -92,6 +98,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
@@ -102,6 +109,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.MappingRuleGetRequest;
@@ -113,17 +121,20 @@ import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
+import io.camunda.client.api.fetch.TenantScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.request.AuditLogSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
+import io.camunda.client.api.search.request.ClusterVariableSearchRequest;
 import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
@@ -138,6 +149,7 @@ import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequ
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByTenantSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesSearchRequest;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
@@ -153,7 +165,12 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionMessageSubscriptionStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
@@ -833,7 +850,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessDefinitionGetRequest newProcessDefinitionGetRequest(long processDefinitionKey);
 
-  /*
+  /**
    * Retrieves the XML representation of a process definition.
    *
    * <pre>
@@ -849,7 +866,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(long processDefinitionKey);
 
-  /*
+  /**
    * Retrieves the Form of a process definition.
    *
    * <pre>
@@ -915,6 +932,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey);
+
+  /**
+   * Executes a search request to query process definition message subscription statistics.
+   *
+   * <pre>
+   * camundaClient
+   *  .newProcessDefinitionMessageSubscriptionStatisticsRequest()
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process definition message subscription statistics request
+   */
+  ProcessDefinitionMessageSubscriptionStatisticsRequest
+      newProcessDefinitionMessageSubscriptionStatisticsRequest();
 
   /**
    * Executes a search request to query usage metrics statistics.
@@ -1065,7 +1096,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   DecisionRequirementsSearchRequest newDecisionRequirementsSearchRequest();
 
-  /*
+  /**
    * Executes a search request to query decision definitions.
    *
    * <pre>
@@ -1099,7 +1130,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   DecisionDefinitionGetRequest newDecisionDefinitionGetRequest(long decisionDefinitionKey);
 
-  /*
+  /**
    * Retrieves the XML representation of a decision definition.
    *
    * <pre>
@@ -1149,11 +1180,11 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
 
-  /*
-   * Executes a search request to query decision definitions.
+  /**
+   * Executes a search request to query incidents.
    *
    * <pre>
-   * long decisionDefinitionKey = ...;
+   * long processInstanceKey = ...;
    *
    * camundaClient
    *  .newIncidentSearchRequest()
@@ -1791,7 +1822,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   UpdateMappingRuleCommandStep1 newUpdateMappingRuleCommand(String mappingRuleId);
 
-  /*
+  /**
    * Retrieves the XML representation of a decision requirements.
    *
    * <pre>
@@ -1864,7 +1895,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .filter((f) -> f.variableKey(variableKey))
    *  .sort((s) -> s.value().asc())
    *  .page((p) -> p.limit(100))
+   *  .withFullValues()
    *  .send();
+   * </pre>
    *
    * @return a builder for the variable search request
    */
@@ -1879,26 +1912,141 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  camundaClient
    * .newVariableGetRequest(variableKey)
    * .send();
+   * </pre>
    *
-   *  @param variableKey the key of the variable
-   *  @return a builder for the request to get a variable
+   * @param variableKey the key of the variable
+   * @return a builder for the request to get a variable
    */
   VariableGetRequest newVariableGetRequest(long variableKey);
+
+  /**
+   * Creates a request to create a new globally-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGloballyScopedClusterVariableCreateRequest()
+   *       .create("myVariable", "myValue")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for creating a globally-scoped cluster variable
+   */
+  GloballyScopedClusterVariableCreationCommandStep1 newGloballyScopedClusterVariableCreateRequest();
+
+  /**
+   * Creates a request to create a new tenant-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newTenantScopedClusterVariableCreateRequest("my-tenant-id")
+   *       .create("myVariable", "myValue")
+   *       .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for creating a tenant-scoped cluster variable
+   */
+  TenantScopedClusterVariableCreationCommandStep1 newTenantScopedClusterVariableCreateRequest(
+      String tenantId);
+
+  /**
+   * Creates a request to delete a globally-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGloballyScopedClusterVariableDeleteRequest()
+   *       .delete("myVariable")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for deleting a globally-scoped cluster variable
+   */
+  GloballyScopedClusterVariableDeletionCommandStep1 newGloballyScopedClusterVariableDeleteRequest();
+
+  /**
+   * Creates a request to delete a tenant-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newTenantScopedClusterVariableDeleteRequest("my-tenant-id")
+   *       .delete("myVariable")
+   *       .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for deleting a tenant-scoped cluster variable
+   */
+  TenantScopedClusterVariableDeletionCommandStep1 newTenantScopedClusterVariableDeleteRequest(
+      String tenantId);
+
+  /**
+   * Creates a request to fetch a globally-scoped cluster variable by name.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGloballyScopedClusterVariableGetRequest()
+   *       .withName("myVariable")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for fetching a globally-scoped cluster variable
+   */
+  GloballyScopedClusterVariableGetRequest newGloballyScopedClusterVariableGetRequest();
+
+  /**
+   * Creates a request to fetch a tenant-scoped cluster variable by name.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newTenantScopedClusterVariableGetRequest("my-tenant-id")
+   *       .withName("myVariable")
+   *       .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for fetching a tenant-scoped cluster variable
+   */
+  TenantScopedClusterVariableGetRequest newTenantScopedClusterVariableGetRequest(String tenantId);
+
+  /**
+   * Creates a request to search for cluster variables.
+   *
+   * <p>Cluster variables can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newClusterVariableSearchRequest()
+   *       .filter(f -> f.scope(ClusterVariableScope.GLOBAL))
+   *       .sort(s -> s.name().asc())
+   *       .send();
+   *
+   *   // or for tenant-scoped variables
+   *   camundaClient
+   *       .newClusterVariableSearchRequest()
+   *       .filter(f -> f.scope(ClusterVariableScope.TENANT).tenantId("my-tenant-id"))
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching cluster variables
+   */
+  ClusterVariableSearchRequest newClusterVariableSearchRequest();
 
   /**
    * Executes a search request to query variables related to a user task.
    *
    * <pre>
-   *   long variableKey = ...;
+   *   long userTaskKey = ...;
    *
    *  camundaClient
-   *   .newUserTaskVariableSearchRequest(variableKey)
+   *   .newUserTaskVariableSearchRequest(userTaskKey)
    *   .sort((s) -> s.value().asc())
    *   .page((p) -> p.limit(100))
+   *   .withFullValues()
    *   .send();
+   * </pre>
    *
-   *  @param userTaskKey the key of the user task
-   *  @return a builder for the user task variable search request
+   * @param userTaskKey the key of the user task
+   * @return a builder for the user task variable search request
    */
   UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
 
@@ -1917,7 +2065,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .fileName("file.txt")
    *   .timeToLive(Duration.ofDays(1))
    *   .send();
-   *   </pre>
+   * </pre>
    *
    * @return a builder for the command
    */
@@ -2373,7 +2521,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .newCreateAuthorizationCommand()
    *   .ownerId(ownerId)
    *   .ownerType(ownerType)
-   *   .resourceId(resourceId)
+   *   .resourceId(resourceId) // or .resourcePropertyName(resourcePropertyName)
    *   .resourceType(resourceType)
    *   .permission(PermissionType.READ)
    *   .send();
@@ -2441,7 +2589,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .newUpdateAuthorizationCommand(authorizationKey)
    *   .ownerId(ownerId)
    *   .ownerType(ownerType)
-   *   .resourceId(resourceId)
+   *   .resourceId(resourceId) // or .resourcePropertyName(resourcePropertyName)
    *   .resourceType(resourceType)
    *   .permissionTypes(Set.of(PermissionType.READ))
    *   .send();
@@ -2701,6 +2849,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   MappingRulesByRoleSearchRequest newMappingRulesByRoleSearchRequest(String roleId);
 
   /**
+   * Executes a search request to query mapping rules by tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newMappingRulesByTenantSearchRequest("tenantId")
+   *  .filter((f) -> f.mappingRuleId("mapping-rule-123"))
+   *  .sort((s) -> s.mappingRuleId().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the mapping rules by tenant search request
+   */
+  MappingRulesByTenantSearchRequest newMappingRulesByTenantSearchRequest(String tenantId);
+
+  /**
    * Executes a search request to query mapping rules.
    *
    * <pre>
@@ -2843,4 +3008,147 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   IncidentsByElementInstanceSearchRequest newIncidentsByElementInstanceSearchRequest(
       long elementInstanceKey);
+
+  /**
+   * Request to get an audit log by audit log key.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newAuditLogGetRequest(auditLogKey)
+   *    .send();
+   * </pre>
+   *
+   * @param auditLogKey the key that identifies the corresponding audit log
+   * @return a builder for the audit log request
+   */
+  AuditLogGetRequest newAuditLogGetRequest(String auditLogKey);
+
+  /**
+   * Executes a search request to query audit logs by the audit log key.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newAuditLogSearchRequest()
+   *    .filter((f) -> f.processInstanceKey("myProcessInstanceKey"))
+   *    .sort((s) -> s.processDefinitionId().desc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   *
+   * @return a builder for the incidents by element instance search request
+   */
+  AuditLogSearchRequest newAuditLogSearchRequest();
+
+  /**
+   * Get statistics about process instances, grouped by process definition and tenant.
+   *
+   * <pre>
+   *
+   *  camundaClient
+   *  .newProcessDefinitionInstanceStatisticsRequest()
+   *  .sort((s) -> s.processDefinitionId().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process definition instance statistics request
+   */
+  ProcessDefinitionInstanceStatisticsRequest newProcessDefinitionInstanceStatisticsRequest();
+
+  /**
+   * Get statistics about process instances, grouped by version for a given process definition.
+   *
+   * <pre>
+   *    camundaClient
+   *    .newProcessDefinitionInstanceVersionStatisticsRequest(processDefinitionId)
+   *    .filter((f) -> f.tenantId("tenantId"))
+   *    .sort((s) -> s.processDefinitionVersion().asc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   *  </pre>
+   *
+   * @param processDefinitionId the id of the process definition
+   * @return a builder for the process definition version instance statistics request
+   */
+  ProcessDefinitionInstanceVersionStatisticsRequest
+      newProcessDefinitionInstanceVersionStatisticsRequest(String processDefinitionId);
+
+  /**
+   * Command to evaluate root-level conditional start events for process definitions.
+   *
+   * <pre>
+   * camundaClient
+   *  .newEvaluateConditionalCommand()
+   *  .variables(json)
+   *  .send();
+   *
+   * // Or for a specific process definition and tenant:
+   * camundaClient
+   *  .newEvaluateConditionalCommand()
+   *  .variables(json)
+   *  .processDefinitionKey(12345L)
+   *  .tenantId("tenant-1")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to evaluate root-level conditional start events
+   */
+  EvaluateConditionalCommandStep1 newEvaluateConditionalCommand();
+
+  /**
+   * Retrieves statistics about active process instances that currently have active incidents,
+   * grouped by incident error hash code.
+   *
+   * <pre>
+   * camundaClient
+   *  .newIncidentProcessInstanceStatisticsByErrorRequest()
+   *  .page(p -> p.limit(50))
+   *  .sort(s -> s.activeInstancesWithErrorCount().desc())
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for querying process instance statistics grouped by incident error
+   */
+  IncidentProcessInstanceStatisticsByErrorRequest
+      newIncidentProcessInstanceStatisticsByErrorRequest();
+
+  /**
+   * Command to evaluate an expression.
+   *
+   * <pre>
+   * camundaClient
+   *  .newEvaluateExpressionCommand()
+   *  .expression("=x + y")
+   *  .tenantId("tenant_123")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  EvaluateExpressionCommandStep1 newEvaluateExpressionCommand();
+
+  /**
+   * Executes a statistics request that returns counts of active process instances with active
+   * incidents, grouped by process definition.
+   *
+   * <p>The statistics are scoped to a specific incident error and therefore require an error hash
+   * code to be provided.
+   *
+   * <p>Each result item represents a single process definition (including version and tenant) and
+   * contains the number of active process instances that currently have an incident with the given
+   * error hash code.
+   *
+   * <pre>
+   * camundaClient
+   *  .newIncidentProcessInstanceStatisticsByDefinitionRequest(errorHashCode)
+   *  .page(p -> p.limit(50))
+   *  .sort(s -> s.activeInstancesWithErrorCount().desc())
+   *  .send();
+   * </pre>
+   *
+   * @param errorHashCode the error hash code to filter the incidents by
+   * @return a builder for the incident process instance statistics request grouped by definition
+   */
+  IncidentProcessInstanceStatisticsByDefinitionRequest
+      newIncidentProcessInstanceStatisticsByDefinitionRequest(int errorHashCode);
 }

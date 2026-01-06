@@ -11,7 +11,8 @@ import io.camunda.search.clients.impl.NoopSearchClientsProxy;
 import io.camunda.security.auth.SecurityContext;
 
 public interface SearchClientsProxy
-    extends AuthorizationSearchClient,
+    extends AuditLogSearchClient,
+        AuthorizationSearchClient,
         BatchOperationSearchClient,
         DecisionDefinitionSearchClient,
         DecisionInstanceSearchClient,
@@ -31,7 +32,8 @@ public interface SearchClientsProxy
         UsageMetricsSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
-        VariableSearchClient {
+        VariableSearchClient,
+        ClusterVariableSearchClient {
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);

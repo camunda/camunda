@@ -28,8 +28,11 @@ import org.awaitility.core.ConditionTimeoutException;
 
 public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
 
-  private static final String INITIAL_FAILURE_MESSAGE =
+  private static final String TIMEOUT_FAILURE_MESSAGE =
       "<No assertion error occurred. Maybe, the assertion timed out before it could be tested.>";
+
+  private static final String UNEXPECTED_FAILURE_MESSAGE =
+      "<No assertion error occurred, but an unexpected exception was thrown. Check the cause for details.>";
 
   private Duration assertionTimeout = CamundaAssert.DEFAULT_ASSERTION_TIMEOUT;
   private Duration assertionInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
@@ -38,7 +41,8 @@ public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
   public void untilAsserted(final ThrowingRunnable assertion) throws AssertionError {
     // If await() times out, the exception doesn't contain the assertion error. Use a reference to
     // store the error's failure message.
-    final AtomicReference<String> failureMessage = new AtomicReference<>(INITIAL_FAILURE_MESSAGE);
+    final AtomicReference<String> failureMessage = new AtomicReference<>();
+    final AtomicReference<Throwable> unexpectedException = new AtomicReference<>();
     try {
       Awaitility.await()
           .timeout(assertionTimeout)
@@ -51,11 +55,20 @@ public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
                 } catch (final AssertionError e) {
                   failureMessage.set(e.getMessage());
                   throw e;
+                } catch (final Exception unexpected) {
+                  unexpectedException.set(unexpected);
+                  throw unexpected;
                 }
               });
 
     } catch (final ConditionTimeoutException ignore) {
-      fail(failureMessage.get());
+      if (failureMessage.get() != null) {
+        fail(failureMessage.get());
+      } else if (unexpectedException.get() != null) {
+        fail(UNEXPECTED_FAILURE_MESSAGE, unexpectedException.get());
+      } else {
+        fail(TIMEOUT_FAILURE_MESSAGE);
+      }
     }
   }
 

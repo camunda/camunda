@@ -7,7 +7,7 @@
  */
 
 import {Stack} from '@carbon/react';
-import {useState} from 'react';
+import {useState, useMemo} from 'react';
 import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
@@ -17,43 +17,65 @@ import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DetailsModal} from './DetailsModal';
-import type {
-  DecisionDefinition,
-  DecisionInstance,
-  ElementInstance,
-  Job,
-  MessageSubscription,
-  ProcessInstance,
-  UserTask,
-} from '@camunda/camunda-api-zod-schemas/8.8';
-import {createInstanceMetadata} from '../types';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
+import {useJobs} from 'modules/queries/jobs/useJobs';
+import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 
 type Props = {
   elementInstance: ElementInstance;
   businessObject?: BusinessObject | null;
-  job?: Job;
-  calledProcessInstance?: ProcessInstance;
-  messageSubscription?: MessageSubscription;
-  calledDecisionDefinition?: DecisionDefinition;
-  calledDecisionInstance?: DecisionInstance;
-  userTask?: UserTask;
 };
 
-const Details: React.FC<Props> = ({
-  elementInstance,
-  businessObject,
-  job,
-  calledProcessInstance,
-  messageSubscription,
-  calledDecisionDefinition,
-  calledDecisionInstance,
-  userTask,
-}) => {
+const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const {elementId, startDate, endDate, type, elementInstanceKey} =
-    elementInstance;
-  const elementName = businessObject?.name || elementId;
+  const {startDate, endDate, type, elementInstanceKey} = elementInstance;
+
+  const {data: calledProcessInstancesSearchResult} = useProcessInstancesSearch(
+    {
+      filter: {
+        parentElementInstanceKey: elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled: !!elementInstanceKey && type === 'CALL_ACTIVITY',
+    },
+  );
+
+  const {data: jobSearchResult} = useJobs({
+    payload: {
+      filter: {
+        elementInstanceKey: elementInstanceKey ?? '',
+        listenerEventType: 'UNSPECIFIED',
+      },
+    },
+    disabled: !elementInstanceKey,
+    select: (data) => data.pages?.flatMap((page) => page.items),
+  });
+
+  const {data: decisionInstanceSearchResult} = useDecisionInstancesSearch(
+    {
+      filter: {
+        elementInstanceKey: elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled: !!elementInstanceKey && type === 'BUSINESS_RULE_TASK',
+    },
+  );
+
+  const calledDecisionInstance = useMemo(
+    () =>
+      decisionInstanceSearchResult?.items?.find(
+        (instance) =>
+          instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
+      ),
+    [decisionInstanceSearchResult],
+  );
+
+  const calledProcessInstance = calledProcessInstancesSearchResult?.items?.[0];
+  const job = jobSearchResult?.[0];
 
   return (
     <>
@@ -149,17 +171,10 @@ const Details: React.FC<Props> = ({
       </Stack>
       {elementInstanceKey !== null && (
         <DetailsModal
-          elementInstanceKey={elementInstanceKey}
-          elementName={elementName}
-          instanceMetadata={createInstanceMetadata(
-            elementInstance,
-            job,
-            calledProcessInstance,
-            messageSubscription,
-            calledDecisionDefinition,
-            calledDecisionInstance,
-            userTask,
-          )}
+          elementInstance={elementInstance}
+          job={job}
+          calledProcessInstance={calledProcessInstance}
+          calledDecisionInstance={calledDecisionInstance}
           isVisible={isModalVisible}
           onClose={() => setIsModalVisible(false)}
         />

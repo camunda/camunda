@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -157,9 +158,48 @@ abstract class AbstractEntityReader<T> {
    * @return {@code true} if the search result should be empty, {@code false
    */
   protected boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty()
-        || resourceAccessChecks.tenantCheck().enabled()
-            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
+    return noResourceAccess(resourceAccessChecks) || noTenantAccess(resourceAccessChecks);
+  }
+
+  protected boolean noResourceAccess(final ResourceAccessChecks resourceAccessChecks) {
+    return !resourceAccessChecks.authorizationCheck().hasAnyResourceAccess();
+  }
+
+  protected boolean noTenantAccess(final ResourceAccessChecks resourceAccessChecks) {
+    return !resourceAccessChecks.tenantCheck().hasAnyTenantAccess();
+  }
+
+  /**
+   * Checks if the provided database query page should result in an empty page.
+   *
+   * @param page the database query page to check
+   * @param totalHits the total number of hits
+   * @return {@code true} if the page size is zero or total hits is zero, {@code false} otherwise
+   */
+  protected boolean shouldReturnEmptyPage(final DbQueryPage page, final long totalHits) {
+    return page.size() == 0 || totalHits == 0;
+  }
+
+  /**
+   * Executes a paged query using provided suppliers for count and results, handling empty page
+   * logic.
+   *
+   * @param countSupplier supplies the total count of hits
+   * @param resultsSupplier supplies the result list
+   * @param page the database query page
+   * @param dbSort the database query sorting
+   * @return a SearchQueryResult containing the results and total count
+   */
+  protected SearchQueryResult<T> executePagedQuery(
+      final Supplier<Long> countSupplier,
+      final Supplier<List<T>> resultsSupplier,
+      final DbQueryPage page,
+      final DbQuerySorting<T> dbSort) {
+    final long totalHits = countSupplier.get();
+    if (shouldReturnEmptyPage(page, totalHits)) {
+      return buildSearchQueryResult(totalHits, List.of(), dbSort);
+    }
+    final List<T> results = resultsSupplier.get();
+    return buildSearchQueryResult(totalHits, results, dbSort);
   }
 }

@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -19,52 +20,70 @@ import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
-public class DecisionInstanceWriter {
+public class DecisionInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final DecisionInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;
+  private final RdbmsWriterConfig config;
 
   public DecisionInstanceWriter(
       final DecisionInstanceMapper mapper,
       final ExecutionQueue executionQueue,
-      final VendorDatabaseProperties vendorDatabaseProperties) {
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final RdbmsWriterConfig config) {
+    super(mapper);
     this.mapper = mapper;
     this.executionQueue = executionQueue;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
+    this.config = config;
   }
 
   public void create(final DecisionInstanceDbModel decisionInstance) {
+    // Set cleanup date for decision instances without a process instance
+    final DecisionInstanceDbModel processedInstance;
+    if ((decisionInstance.processInstanceKey() == null
+            || decisionInstance.processInstanceKey() == -1L)
+        && decisionInstance.historyCleanupDate() == null) {
+      processedInstance =
+          decisionInstance.toBuilder()
+              .historyCleanupDate(
+                  decisionInstance.evaluationDate().plus(config.history().decisionInstanceTTL()))
+              .build();
+    } else {
+      processedInstance = decisionInstance;
+    }
+
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.DECISION_INSTANCE,
             WriteStatementType.INSERT,
-            decisionInstance.decisionInstanceKey(),
+            processedInstance.decisionInstanceKey(),
             "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insert",
-            decisionInstance.truncateErrorMessage(
+            processedInstance.truncateErrorMessage(
                 vendorDatabaseProperties.errorMessageSize(),
                 vendorDatabaseProperties.charColumnMaxBytes())));
-    if (decisionInstance.evaluatedInputs() != null
-        && !decisionInstance.evaluatedInputs().isEmpty()) {
+    if (processedInstance.evaluatedInputs() != null
+        && !processedInstance.evaluatedInputs().isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.DECISION_INSTANCE,
               WriteStatementType.INSERT,
-              decisionInstance.decisionInstanceKey(),
+              processedInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertInput",
-              decisionInstance.truncateErrorMessage(
+              processedInstance.truncateErrorMessage(
                   vendorDatabaseProperties.errorMessageSize(),
                   vendorDatabaseProperties.charColumnMaxBytes())));
     }
-    if (decisionInstance.evaluatedOutputs() != null
-        && !decisionInstance.evaluatedOutputs().isEmpty()) {
+    if (processedInstance.evaluatedOutputs() != null
+        && !processedInstance.evaluatedOutputs().isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.DECISION_INSTANCE,
               WriteStatementType.INSERT,
-              decisionInstance.decisionInstanceKey(),
+              processedInstance.decisionInstanceKey(),
               "io.camunda.db.rdbms.sql.DecisionInstanceMapper.insertOutput",
-              decisionInstance.truncateErrorMessage(
+              processedInstance.truncateErrorMessage(
                   vendorDatabaseProperties.errorMessageSize(),
                   vendorDatabaseProperties.charColumnMaxBytes())));
     }

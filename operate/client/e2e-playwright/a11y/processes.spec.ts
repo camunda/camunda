@@ -9,7 +9,7 @@
 import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
+  mockProcessDefinitions,
   mockProcessInstances,
   mockProcessXml,
   mockResponses,
@@ -36,7 +36,7 @@ test.describe('processes', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,

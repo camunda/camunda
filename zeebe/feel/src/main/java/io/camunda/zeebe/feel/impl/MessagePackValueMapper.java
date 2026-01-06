@@ -50,7 +50,7 @@ public final class MessagePackValueMapper extends JavaValueMapper {
         for (int i = 0; i < size; i++) {
           items.add(readNext());
         }
-        yield new ValList(CollectionConverters.asScala(items).toList());
+        yield new ValList(CollectionConverters.asScala(items).toSeq());
       }
       case MAP -> new ValContext(new MessagePackContext(msgPackReader, offset, token.getSize()));
       case STRING -> new ValString(bufferAsString(token.getValueBuffer()));

@@ -99,7 +99,8 @@ class BackupPrioritiesTest {
     assertThat(indices.size()).isEqualTo(7);
     final var iterator = indices.iterator();
     // PRIO 1
-    assertThat(iterator.next().allIndices()).containsExactlyInAnyOrder("operate-metadata-8.8.0_");
+    assertThat(iterator.next().allIndices())
+        .containsExactlyInAnyOrder("operate-metadata-8.8.0_", "camunda-history-deletion-8.9.0_");
     // PRIO 2
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");
@@ -174,7 +175,9 @@ class BackupPrioritiesTest {
             "camunda-tenant-8.8.0_",
             "camunda-user-8.8.0_",
             "camunda-usage-metric-8.8.0_",
-            "camunda-usage-metric-tu-8.8.0_");
+            "camunda-usage-metric-tu-8.8.0_",
+            "camunda-audit-log-8.9.0_",
+            "camunda-cluster-variable-8.9.0_");
 
     for (final var indexList : indices) {
       assertThat(indexList.allIndices())

@@ -63,6 +63,10 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
     return startEvents.stream().anyMatch(ExecutableCatchEventElement::isSignal);
   }
 
+  public boolean hasConditionalStartEvent() {
+    return startEvents.stream().anyMatch(ExecutableCatchEventElement::isConditional);
+  }
+
   public void addChildElement(final AbstractFlowElement element) {
     childElements.put(element.getId(), element);
   }

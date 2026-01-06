@@ -12,18 +12,18 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {Container} from './styled.tsx';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
-import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {buildMigrationBatchOperationFilter} from './buildMigrationBatchOperationFilter.ts';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {handleOperationError} from 'modules/utils/notifications';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody.ts';
 
 const Footer: React.FC = observer(() => {
-  const baseFilter = useProcessInstanceFilters().filter;
+  const [searchParams] = useSearchParams();
 
   const navigate = useNavigate();
 
@@ -34,15 +34,9 @@ const Footer: React.FC = observer(() => {
         operationType: 'MIGRATE_PROCESS_INSTANCE',
       });
     },
-    onError: ({message}) =>
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: message.includes('403')
-          ? 'You do not have permission'
-          : undefined,
-        isDismissable: true,
-      }),
+    onError: (error) => {
+      return handleOperationError(error.response?.status);
+    },
   });
 
   return (
@@ -71,6 +65,7 @@ const Footer: React.FC = observer(() => {
             onRequestSubmit={() => {
               setOpen(false);
               processInstanceMigrationStore.disable();
+              processInstancesSelectionStore.reset();
             }}
             onRequestClose={() => setOpen(false)}
             size="md"
@@ -151,16 +146,28 @@ const Footer: React.FC = observer(() => {
                     'excludeIds' in batchOperationQuery
                       ? batchOperationQuery.excludeIds
                       : [];
+                  const variable =
+                    'variable' in batchOperationQuery
+                      ? batchOperationQuery.variable
+                      : undefined;
 
-                  const filter = buildMigrationBatchOperationFilter({
-                    baseFilter,
+                  const requestBody = buildMutationRequestBody({
+                    searchParams,
                     includeIds,
                     excludeIds,
-                    processDefinitionKey: sourceProcessDefinitionKey,
+                    variableFilter:
+                      variable !== undefined
+                        ? {
+                            name: variable.name,
+                            values: variable.values.join(','),
+                          }
+                        : undefined,
+                    processDefinitionKey:
+                      sourceProcessDefinitionKey ?? undefined,
                   });
 
                   migrateProcess({
-                    filter,
+                    ...requestBody,
                     migrationPlan: {
                       targetProcessDefinitionKey,
                       mappingInstructions: Object.entries(elementMapping).map(
@@ -174,6 +181,7 @@ const Footer: React.FC = observer(() => {
 
                   panelStatesStore.expandOperationsPanel();
                   processInstanceMigrationStore.disable();
+                  processInstancesSelectionStore.reset();
 
                   tracking.track({
                     eventName: 'process-instance-migration-confirmed',

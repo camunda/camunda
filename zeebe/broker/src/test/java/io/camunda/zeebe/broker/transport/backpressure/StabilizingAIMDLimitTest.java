@@ -11,16 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class StabilizingAIMDLimitTest {
 
-  private final StabilizingAIMDLimit limit =
-      StabilizingAIMDLimit.newBuilder()
-          .initialLimit(10)
-          .minLimit(1)
-          .expectedRTT(1, TimeUnit.SECONDS)
-          .build();
+  private StabilizingAIMDLimit limit;
+
+  @BeforeEach
+  public void setup() {
+    limit =
+        StabilizingAIMDLimit.newBuilder()
+            .initialLimit(10)
+            .minLimit(5)
+            .maxLimit(100)
+            .expectedRTT(1, TimeUnit.SECONDS)
+            .build();
+  }
 
   @Test
   void shouldIncreaseLimitOnLowerRtt() {
@@ -52,5 +59,21 @@ class StabilizingAIMDLimitTest {
     limit.onSample(0, TimeUnit.SECONDS.toNanos(2), 11, false);
     // then
     assertThat(limit.getLimit()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldNotIncreaseLimitMoreThanMax() {
+    for (int i = 0; i < 10000; i++) {
+      limit.onSample(i, TimeUnit.MILLISECONDS.toNanos(1), Math.max(i, 10), false);
+    }
+    assertThat(limit.getLimit()).isEqualTo(100);
+  }
+
+  @Test
+  void shouldNotDecreaseLimitBelowMin() {
+    for (int i = 0; i < 1000; i++) {
+      limit.onSample(0, TimeUnit.SECONDS.toNanos(10), 1, true);
+    }
+    assertThat(limit.getLimit()).isEqualTo(5);
   }
 }

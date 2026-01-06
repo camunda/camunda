@@ -112,6 +112,7 @@ public final class MessageSubscriptionRejectProcessor
     commandSender.correlateProcessMessageSubscription(
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
+        subscription.getProcessDefinitionKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageNameBuffer(),
         subscription.getMessageKey(),

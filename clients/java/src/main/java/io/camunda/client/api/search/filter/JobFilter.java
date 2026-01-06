@@ -335,4 +335,12 @@ public interface JobFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   JobFilter tenantId(final Consumer<StringProperty> fn);
+
+  JobFilter creationTime(final OffsetDateTime creationTime);
+
+  JobFilter creationTime(final Consumer<DateTimeProperty> fn);
+
+  JobFilter lastUpdateTime(final OffsetDateTime lastUpdateTime);
+
+  JobFilter lastUpdateTime(final Consumer<DateTimeProperty> fn);
 }

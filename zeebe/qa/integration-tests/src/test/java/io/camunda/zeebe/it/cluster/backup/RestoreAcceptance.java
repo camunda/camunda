@@ -49,7 +49,7 @@ public interface RestoreAcceptance {
   private void takeBackup(final long backupId) {
     try (final var zeebe =
         new TestStandaloneBroker()
-            .withBrokerConfig(this::configureBackupStore)
+            .withUnifiedConfig(this::configureBackupStore)
             .start()
             .awaitCompleteTopology()) {
       final var actuator = BackupActuator.of(zeebe);
@@ -81,7 +81,10 @@ public interface RestoreAcceptance {
 
   private void restoreBackup(final long backupId) {
     final var restore =
-        new TestRestoreApp().withConfig(this::configureBackupStore).withBackupId(backupId).start();
+        new TestRestoreApp()
+            .withUnifiedConfig(this::configureBackupStore)
+            .withBackupId(backupId)
+            .start();
     restore.close();
   }
 

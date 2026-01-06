@@ -13,6 +13,7 @@ import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.IncidentStatisticsReader;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
+import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Collection;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Incidents statistics")
 @RestController
 @RequestMapping(value = INCIDENT_URL)
+@ConditionalOnRdbmsDisabled
 public class IncidentRestService extends InternalAPIErrorController {
 
   public static final String INCIDENT_URL = "/api/incidents";

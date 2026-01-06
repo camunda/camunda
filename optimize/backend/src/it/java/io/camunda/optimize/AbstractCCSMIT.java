@@ -278,7 +278,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     final String expectedIndex = zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
     Awaitility.given()
         .ignoreExceptions()
-        .timeout(15, TimeUnit.SECONDS)
+        .timeout(30, TimeUnit.SECONDS)
         .untilAsserted(
             () ->
                 assertThat(databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex))

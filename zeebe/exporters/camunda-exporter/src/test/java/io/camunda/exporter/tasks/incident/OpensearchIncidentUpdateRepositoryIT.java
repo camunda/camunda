@@ -15,7 +15,7 @@ import org.apache.http.HttpHost;
 import org.junit.jupiter.api.AutoClose;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
@@ -25,7 +25,7 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
       LoggerFactory.getLogger(OpensearchIncidentUpdateRepositoryIT.class);
 
   @Container
-  private static final OpensearchContainer<?> CONTAINER =
+  private static final OpenSearchContainer<?> CONTAINER =
       TestSearchContainers.createDefaultOpensearchContainer();
 
   @AutoClose

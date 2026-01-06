@@ -7,6 +7,8 @@
  */
 package io.camunda.qa.util.multidb;
 
+import java.time.Duration;
+
 /**
  * Helper used in {@link CamundaMultiDBExtension} to manage the multi database setup.
  *
@@ -21,6 +23,15 @@ public interface MultiDbSetupHelper extends AutoCloseable {
    * @return true if connection can be established, false otherwise
    */
   boolean validateConnection();
+
+  /**
+   * Set a custom index policies poll interval, primarily used for ElasticSearch & OpenSearch. This
+   * is used to speed up tests which depends on an index lifecycle being applied to an index, for
+   * example delete data past minAge. This is a cluster wide setting.
+   *
+   * @param pollInterval the poll interval duration
+   */
+  void applyIndexPoliciesPollInterval(final Duration pollInterval);
 
   /**
    * To validate schema creation, used to store related test data, which can be identified under

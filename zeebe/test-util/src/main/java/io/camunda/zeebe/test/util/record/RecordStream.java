@@ -177,4 +177,15 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new AsyncRequestRecordStream(
         filter(r -> r.getValueType() == ValueType.ASYNC_REQUEST).map(Record.class::cast));
   }
+
+  public ConditionalSubscriptionRecordStream conditionalSubscriptionRecords() {
+    return new ConditionalSubscriptionRecordStream(
+        filter(r -> r.getValueType() == ValueType.CONDITIONAL_SUBSCRIPTION)
+            .map(Record.class::cast));
+  }
+
+  public GlobalListenerBatchRecordStream globalListenerBatchRecords() {
+    return new GlobalListenerBatchRecordStream(
+        filter(r -> r.getValueType() == ValueType.GLOBAL_LISTENER_BATCH).map(Record.class::cast));
+  }
 }

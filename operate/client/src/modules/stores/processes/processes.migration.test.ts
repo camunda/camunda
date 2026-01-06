@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {groupedProcessesMock} from 'modules/testUtils';
+import {mockProcessDefinitions} from 'modules/testUtils';
 import {processesStore} from './processes.migration';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('processes.migration store', () => {
   afterEach(() => {
@@ -17,7 +17,7 @@ describe('processes.migration store', () => {
   });
 
   it('should get targetProcessVersions', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     await processesStore.fetchProcesses();
 
@@ -35,7 +35,7 @@ describe('processes.migration store', () => {
   });
 
   it('should get selectedTargetProcessId', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     await processesStore.fetchProcesses();
 
@@ -54,56 +54,13 @@ describe('processes.migration store', () => {
     expect(processesStore.selectedTargetProcessId).toEqual('2251799813685894');
   });
 
-  it('should get selectable target processes when resource based permissions are enabled', async () => {
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
-    });
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
-    await processesStore.fetchProcesses();
-
-    expect(processesStore.filteredProcesses).toEqual([
-      {
-        bpmnProcessId: 'demoProcess',
-        key: '{demoProcess}-{<default>}',
-        name: 'New demo process',
-        tenantId: '<default>',
-        processes: [
-          {
-            id: 'demoProcess3',
-            name: 'New demo process',
-            version: 3,
-            bpmnProcessId: 'demoProcess',
-            versionTag: null,
-          },
-          {
-            id: 'demoProcess2',
-            name: 'Demo process',
-            version: 2,
-            bpmnProcessId: 'demoProcess',
-            versionTag: null,
-          },
-          {
-            id: 'demoProcess1',
-            name: 'Demo process',
-            version: 1,
-            bpmnProcessId: 'demoProcess',
-            versionTag: null,
-          },
-        ],
-        permissions: ['UPDATE_PROCESS_INSTANCE'],
-      },
-    ]);
-    window.clientConfig = undefined;
-  });
-
   it('should get selectable target processes when a process with single version is selected', async () => {
     vi.stubGlobal('location', {
       ...window.location,
       search:
         '?active=true&incidents=true&process=bigVarProcess&version=1&tenant=<default>',
     });
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     await processesStore.fetchProcesses();
 
@@ -112,7 +69,6 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'demoProcess',
         key: '{demoProcess}-{<default>}',
         name: 'New demo process',
-        permissions: ['UPDATE_PROCESS_INSTANCE'],
         processes: [
           {
             bpmnProcessId: 'demoProcess',
@@ -142,12 +98,11 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'eventBasedGatewayProcess',
         key: '{eventBasedGatewayProcess}-{<default>}',
         name: null,
-        permissions: ['DELETE'],
         processes: [
           {
             bpmnProcessId: 'eventBasedGatewayProcess',
             id: '2251799813696866',
-            name: 'Event based gateway with timer start',
+            name: 'eventBasedGatewayProcess',
             version: 2,
             versionTag: null,
           },
@@ -166,7 +121,6 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'bigVarProcess',
         key: '{bigVarProcess}-{<tenant-A>}',
         name: 'Big variable process',
-        permissions: ['DELETE_PROCESS_INSTANCE'],
         processes: [
           {
             bpmnProcessId: 'bigVarProcess',
@@ -190,7 +144,15 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'orderProcess',
         key: '{orderProcess}-{<default>}',
         name: 'Order',
-        processes: [],
+        processes: [
+          {
+            bpmnProcessId: 'orderProcess',
+            id: 'orderProcess1',
+            name: 'Order',
+            version: 1,
+            versionTag: null,
+          },
+        ],
         tenantId: '<default>',
       },
     ]);
@@ -202,7 +164,7 @@ describe('processes.migration store', () => {
       ...window.location,
       search: '?active=true&incidents=true&process=demoProcess&version=3',
     });
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     await processesStore.fetchProcesses();
 
@@ -211,7 +173,6 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'demoProcess',
         key: '{demoProcess}-{<default>}',
         name: 'New demo process',
-        permissions: ['UPDATE_PROCESS_INSTANCE'],
         processes: [
           {
             bpmnProcessId: 'demoProcess',
@@ -234,12 +195,11 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'eventBasedGatewayProcess',
         key: '{eventBasedGatewayProcess}-{<default>}',
         name: null,
-        permissions: ['DELETE'],
         processes: [
           {
             bpmnProcessId: 'eventBasedGatewayProcess',
             id: '2251799813696866',
-            name: 'Event based gateway with timer start',
+            name: 'eventBasedGatewayProcess',
             version: 2,
             versionTag: null,
           },
@@ -257,7 +217,6 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'bigVarProcess',
         key: '{bigVarProcess}-{<default>}',
         name: 'Big variable process',
-        permissions: ['DELETE_PROCESS_INSTANCE'],
         processes: [
           {
             bpmnProcessId: 'bigVarProcess',
@@ -273,7 +232,6 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'bigVarProcess',
         key: '{bigVarProcess}-{<tenant-A>}',
         name: 'Big variable process',
-        permissions: ['DELETE_PROCESS_INSTANCE'],
         processes: [
           {
             bpmnProcessId: 'bigVarProcess',
@@ -296,7 +254,15 @@ describe('processes.migration store', () => {
         bpmnProcessId: 'orderProcess',
         key: '{orderProcess}-{<default>}',
         name: 'Order',
-        processes: [],
+        processes: [
+          {
+            bpmnProcessId: 'orderProcess',
+            id: 'orderProcess1',
+            name: 'Order',
+            version: 1,
+            versionTag: null,
+          },
+        ],
         tenantId: '<default>',
       },
     ]);
@@ -312,7 +278,7 @@ describe('processes.migration store', () => {
 
     // when initializing processesStore
     processesStore.init();
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     await processesStore.fetchProcesses();
 
@@ -330,7 +296,7 @@ describe('processes.migration store', () => {
 
     // when initializing processesStore
     processesStore.init();
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
 
     await processesStore.fetchProcesses();
 

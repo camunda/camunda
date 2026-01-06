@@ -7,10 +7,10 @@
  */
 package io.camunda.application.initializers;
 
-import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import java.util.Optional;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -25,9 +25,14 @@ public class StandaloneSchemaManagerInitializer
             .getEnvironment()
             .getProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE);
 
-    if (elasticsearch != SecondaryStorageType.valueOf(databaseTypeProperty.toLowerCase())) {
+    final var storageType =
+        Optional.ofNullable(databaseTypeProperty)
+            .map(String::toLowerCase)
+            .map(SecondaryStorageType::valueOf)
+            .orElse(SecondaryStorageType.elasticsearch);
+    if (!storageType.isElasticSearch() && !storageType.isOpenSearch()) {
       throw new IllegalArgumentException(
-          "Cannot create schema for anything other than Elasticsearch with this script for now...");
+          "Cannot create schema for anything other than Elasticsearch and Opensearch with this script for now...");
     }
   }
 }

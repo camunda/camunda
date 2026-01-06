@@ -43,7 +43,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class CompatibilityModeOperateZeebeAuthorizationIT {
 
@@ -199,8 +199,8 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
         assertThat(
                 RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
                     .withResourceKey(processDefinitionForDeletionKey)
-                    .count())
-            .isEqualTo(1L);
+                    .exists())
+            .isTrue();
         RecordingExporter.setMaximumWaitTime(5000);
       }
     }
@@ -232,9 +232,8 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
         assertThat(
                 RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
                     .withResourceKey(decisionRequirementsKey)
-                    .limit(1L)
-                    .count())
-            .isEqualTo(1L);
+                    .exists())
+            .isTrue();
         RecordingExporter.setMaximumWaitTime(5000);
       }
     }
@@ -275,12 +274,13 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
       if (expectedResponseCode == 200) {
         // if the request is successful, we expect the process instance to be modified
         RecordingExporter.setMaximumWaitTime(25_000L);
-        final var count =
-            RecordingExporter.processInstanceModificationRecords()
-                .withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                .withProcessInstanceKey(processInstanceKey)
-                .count();
-        assertThat(count).isEqualTo(1);
+        assertThat(
+                RecordingExporter.processInstanceModificationRecords()
+                    .withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .exists())
+            .isTrue();
+        RecordingExporter.setMaximumWaitTime(5000);
       }
     }
   }

@@ -8,26 +8,20 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {
-  createUser,
-  groupedProcessesMock,
-  mockProcessXML,
-} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.list';
-
+import {createUser, mockProcessXML, searchResult} from 'modules/testUtils';
 import {Filters} from '../index';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('Optional Filters', () => {
   beforeEach(async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(createUser());
 
-    processesStore.fetchProcesses();
     vi.useFakeTimers({shouldAdvanceTime: true});
   });
 

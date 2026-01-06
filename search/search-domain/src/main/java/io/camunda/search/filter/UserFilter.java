@@ -30,6 +30,7 @@ public record UserFilter(
 
   public Builder toBuilder() {
     return new Builder()
+        .key(key)
         .usernameOperations(usernameOperations)
         .nameOperations(nameOperations)
         .emailOperations(emailOperations)

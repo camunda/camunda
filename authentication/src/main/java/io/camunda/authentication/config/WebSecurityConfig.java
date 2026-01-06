@@ -9,9 +9,8 @@ package io.camunda.authentication.config;
 
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
+import static java.util.stream.Collectors.toMap;
 
-import com.nimbusds.jose.JOSEObjectType;
-import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
@@ -25,6 +24,7 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
 import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
@@ -41,9 +41,12 @@ import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import io.camunda.service.UserServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -60,13 +63,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -79,13 +83,13 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.endpoint.NimbusJwtClientAuthenticationParametersConverter;
 import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
 import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -94,11 +98,17 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
+import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.AuthenticationEntryPointFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -109,6 +119,7 @@ import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHe
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.savedrequest.NullRequestCache;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -146,9 +157,6 @@ public class WebSecurityConfig {
           "/new/**",
           "/tasklist/new/**",
           "/favicon.ico");
-  // We explicitly support the "at+jwt" JWT 'typ' header defined in
-  // https://datatracker.ietf.org/doc/html/rfc9068#name-header
-  static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
   private static final String SPRING_DEFAULT_UI_CSS = "/default-ui.css";
   public static final Set<String> WEBAPP_PATHS =
       Set.of(
@@ -457,12 +465,6 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    @ConditionalOnMissingBean(UserDetailsService.class)
-    public CamundaUserDetailsService camundaUserDetailsService(final UserServices userServices) {
-      return new CamundaUserDetailsService(userServices);
-    }
-
-    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain httpBasicApiAuthSecurityFilterChain(
@@ -595,6 +597,11 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public MeterRegistry meterRegistry() {
+      return new SimpleMeterRegistry();
+    }
+
+    @Bean
     public TokenClaimsConverter tokenClaimsConverter(
         final SecurityConfiguration securityConfiguration,
         final MembershipService membershipService) {
@@ -658,10 +665,30 @@ public class WebSecurityConfig {
 
     @Bean
     public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
-        final TokenValidatorFactory tokenValidatorFactory) {
+        final TokenValidatorFactory tokenValidatorFactory,
+        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
+        final ClientRegistrationRepository clientRegistrationRepository) {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
       decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
+
+      final Map<String, OidcAuthenticationConfiguration> oidcAuthenticationConfigurations =
+          oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
+      final Map<ClientRegistration, JwsAlgorithm> clientRegistrationToAlgorithmMap =
+          oidcAuthenticationConfigurations.entrySet().stream()
+              .collect(
+                  toMap(
+                      e -> clientRegistrationRepository.findByRegistrationId(e.getKey()),
+                      e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
+      decoderFactory.setJwsAlgorithmResolver(clientRegistrationToAlgorithmMap::get);
       return decoderFactory;
+    }
+
+    private SignatureAlgorithm parseAlgorithm(final String algorithm) {
+      final SignatureAlgorithm value = SignatureAlgorithm.from(algorithm);
+      if (value == null) {
+        throw new IllegalStateException("Unsupported signature algorithm: " + algorithm);
+      }
+      return value;
     }
 
     @Bean
@@ -718,22 +745,27 @@ public class WebSecurityConfig {
     @Bean
     public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
         final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
-        final AssertionJwkProvider assertionJwkProvider) {
+        final AssertionJwkProvider assertionJwkProvider,
+        final MeterRegistry meterRegistry) {
       return new OidcTokenEndpointCustomizer(
-          oidcAuthenticationConfigurationRepository, assertionJwkProvider);
+          oidcAuthenticationConfigurationRepository,
+          assertionJwkProvider,
+          restClient(meterRegistry));
     }
 
     @Bean
     public OAuth2AuthorizedClientManager authorizedClientManager(
         final ClientRegistrationRepository registrations,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final AssertionJwkProvider assertionJwkProvider) {
+        final AssertionJwkProvider assertionJwkProvider,
+        final MeterRegistry meterRegistry) {
 
       final var manager =
           new DefaultOAuth2AuthorizedClientManager(registrations, authorizedClientRepository);
 
       // we build a refresh token flow client manually to add support for private_key_jwt
       final var refreshClient = new RestClientRefreshTokenTokenResponseClient();
+      refreshClient.setRestClient(restClient(meterRegistry));
       final var assertionConverter =
           new NimbusJwtClientAuthenticationParametersConverter<OAuth2RefreshTokenGrantRequest>(
               registration -> assertionJwkProvider.createJwk(registration.getRegistrationId()));
@@ -792,7 +824,10 @@ public class WebSecurityConfig {
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
               .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+                  oauth2 ->
+                      oauth2
+                          .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
               .logout(AbstractHttpConfigurer::disable);
@@ -909,6 +944,45 @@ public class WebSecurityConfig {
         LOG.warn(
             "OAuth2RefreshTokenFilter is not registered because no OAuth2AuthorizedClientService or OAuth2AuthorizedClientManager is available.");
       }
+    }
+
+    private static ObjectPostProcessor<BearerTokenAuthenticationFilter>
+        postProcessBearerTokenFailureHandler() {
+      return new ObjectPostProcessor<>() {
+        @Override
+        public <O extends BearerTokenAuthenticationFilter> O postProcess(final O filter) {
+          // the same failure handler as instantiated by spring per default.
+          final AuthenticationEntryPointFailureHandler defaultFailureHandler =
+              new AuthenticationEntryPointFailureHandler(new BearerTokenAuthenticationEntryPoint());
+          // decorated with logging technical exceptions on WARN
+          final LoggingAuthenticationFailureHandler loggingFailureHandler =
+              new LoggingAuthenticationFailureHandler(defaultFailureHandler);
+          filter.setAuthenticationFailureHandler(loggingFailureHandler);
+          return filter;
+        }
+      };
+    }
+
+    private RestClient restClient(final MeterRegistry meterRegistry) {
+      // Setup observation for RestClient as per
+      // https://docs.spring.io/spring-framework/reference/integration/observability.html#observability.http-client.restclient
+      final var observationRegistry = ObservationRegistry.create();
+      observationRegistry
+          .observationConfig()
+          .observationHandler(new DefaultMeterObservationHandler(meterRegistry));
+
+      // The message converters are taken from the expected rest client in
+      // AbstractRestClientOAuth2AccessTokenResponseClient
+      return RestClient.builder()
+          .messageConverters(
+              (messageConverters) -> {
+                messageConverters.clear();
+                messageConverters.add(new FormHttpMessageConverter());
+                messageConverters.add(new OAuth2AccessTokenResponseHttpMessageConverter());
+              })
+          .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
+          .observationRegistry(observationRegistry)
+          .build();
     }
   }
 

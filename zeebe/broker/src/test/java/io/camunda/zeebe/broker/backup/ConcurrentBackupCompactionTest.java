@@ -21,11 +21,13 @@ import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.broker.utils.InlineThreadContext;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -43,7 +45,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -117,7 +121,6 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
             new BackupService(
                 nodeId,
                 partitionId,
-                1,
                 backupStore,
                 snapshotStore,
                 dataDirectory,
@@ -140,6 +143,14 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     appendRecord(2L, "2");
     final var snapshot = takeSnapshot(2L, 2L);
     final var backupIdx = 3L;
+    final var descriptor =
+        new BackupDescriptorImpl(
+            Optional.of(snapshot.getId()),
+            3L,
+            1,
+            "1.0.0",
+            Instant.now(),
+            CheckpointType.MANUAL_BACKUP);
     logCompactor.compactFromSnapshots(snapshotStore);
     Awaitility.await("compaction is done")
         .until(() -> logCompactor.getCompactableIndex() == snapshot.getIndex());
@@ -148,7 +159,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     // when
     // a backup is taken (but the snapshot store does not complete it,
     // because the BackupStore it's blocked)
-    final var backupResultFut = backupService.takeBackup(backupIdx, backupIdx, 1);
+    final var backupResultFut = backupService.takeBackup(backupIdx, descriptor);
 
     Awaitility.await("snapshot is reserved")
         .until(

@@ -1,0 +1,116 @@
+## Endpoint definitions
+
+paths:
+  /conditionals/evaluation:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Conditional
+      operationId: evaluateConditionals
+      summary: Evaluate root level conditional start events
+      description: |
+        Evaluates root-level conditional start events for process definitions.
+        If the evaluation is successful, it will return the keys of all created process instances, along with their associated process definition key.
+        Multiple root-level conditional start events of the same process definition can trigger if their conditions evaluate to true.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConditionalEvaluationInstruction'
+            examples:
+              Evaluate conditionals across all process definitions:
+                summary: Evaluate root-level conditional start events across all process definitions
+                value:
+                  variables:
+                    orderAmount: 1000
+                    region: "EU"
+              Evaluate conditionals for specific process definition:
+                summary: Evaluate root-level conditional start events for a specific process definition
+                value:
+                  processDefinitionKey: "2251799813686749"
+                  variables:
+                    orderAmount: 1000
+              Evaluate conditionals for specific tenant:
+                summary: Evaluate root-level conditional start events for process definitions linked to a specific tenant
+                value:
+                  tenantId: "tenant-123"
+                  variables:
+                    orderAmount: 1000
+      responses:
+        "200":
+          description: Successfully evaluated root-level conditional start events.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateConditionalResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "403":
+          description: |
+            The client is not authorized to start process instances for the specified process definition.
+            If a processDefinitionKey is not provided, this indicates that the client is not authorized
+            to start process instances for at least one of the matched process definitions.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "404":
+          description: The process definition was not found for the given processDefinitionKey.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+components:
+  schemas:
+    ConditionalEvaluationInstruction:
+      type: object
+      required:
+        - variables
+      properties:
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: |
+            Used to evaluate root-level conditional start events for a tenant with the given ID.
+            This will only evaluate root-level conditional start events of process definitions which belong to the tenant.
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: |
+            Used to evaluate root-level conditional start events of the process definition with the given key.
+        variables:
+          type: object
+          description: |
+            JSON object representing the variables to use for evaluation of the conditions and to pass to the process instances that have been triggered.
+          additionalProperties: true
+          example:
+            x: 2
+
+    EvaluateConditionalResult:
+      type: object
+      required:
+        - processInstances
+      properties:
+        processInstances:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessInstanceReference'
+          description: List of process instances created. If no root-level conditional start events evaluated to true, the list will be empty.
+
+    ProcessInstanceReference:
+      type: object
+      properties:
+        processDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+          description: The key of the process definition.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the created process instance.

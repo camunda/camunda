@@ -19,6 +19,10 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const useHasPendingCancelOrMoveModification = () => {
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
   const modificationsByFlowNode = useModificationsByFlowNode();
@@ -49,6 +53,10 @@ const useHasPendingCancelOrMoveModification = () => {
   );
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const useHasRunningOrFinishedTokens = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
   const currentFlowNodeSelection = flowNodeSelectionStore.state.selection;
@@ -61,6 +69,10 @@ const useHasRunningOrFinishedTokens = () => {
   );
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const useIsRootNodeSelected = () => {
   const {data: processInstance} = useProcessInstance();
 
@@ -70,6 +82,10 @@ const useIsRootNodeSelected = () => {
   );
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const useNewTokenCountForSelectedNode = () => {
   const modificationsByFlowNode = useModificationsByFlowNode();
   const currentFlowNodeSelection = flowNodeSelectionStore.state.selection;
@@ -89,6 +105,10 @@ const useNewTokenCountForSelectedNode = () => {
   );
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const useIsPlaceholderSelected = () => {
   const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -99,6 +119,10 @@ const useIsPlaceholderSelected = () => {
   );
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const useRootNode = () => {
   const {data: processInstance} = useProcessInstance();
 
@@ -108,6 +132,10 @@ const useRootNode = () => {
   };
 };
 
+/**
+ * @deprecated
+ * will be migrated to useProcessInstanceElementSelection
+ */
 const useSelectedFlowNodeName = () => {
   const {data: processInstance} = useProcessInstance();
   const {data: businessObjects} = useBusinessObjects();

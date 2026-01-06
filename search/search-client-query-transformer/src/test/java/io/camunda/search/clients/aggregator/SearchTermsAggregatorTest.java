@@ -29,6 +29,7 @@ public class SearchTermsAggregatorTest {
     // then
     assertThat(aggregator.name()).isEqualTo("name");
     assertThat(aggregator.field()).isEqualTo("testField");
+    assertThat(aggregator.script()).isNull();
     assertThat(aggregator.size()).isEqualTo(10);
     assertThat(aggregator.minDocCount()).isEqualTo(1);
     assertThat(aggregator.aggregations())
@@ -38,18 +39,11 @@ public class SearchTermsAggregatorTest {
   @Test
   public void shouldThrowExceptionWhenNameIsNull() {
     // when - then
-    assertThatThrownBy(() -> SearchAggregatorBuilders.terms().size(10).minDocCount(1).build())
+    assertThatThrownBy(
+            () ->
+                SearchAggregatorBuilders.terms().field("testField").size(10).minDocCount(1).build())
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("Expected non-null field for name.");
-  }
-
-  @Test
-  public void shouldThrowExceptionWhenFieldIsNull() {
-    // when - then
-    assertThatThrownBy(
-            () -> SearchAggregatorBuilders.terms().name("name").size(10).minDocCount(1).build())
-        .isInstanceOf(NullPointerException.class)
-        .hasMessageContaining("Expected non-null field for field.");
   }
 
   @Test
@@ -88,5 +82,52 @@ public class SearchTermsAggregatorTest {
     assertThat(aggregator.name()).isEqualTo("name");
     assertThat(aggregator.size()).isEqualTo(20);
     assertThat(aggregator.minDocCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenFieldAndScriptBothNull() {
+    // when - then
+    assertThatThrownBy(() -> SearchAggregatorBuilders.terms().name("name").build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Exactly one of 'field' or 'script' must be provided");
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenBothFieldAndScriptProvided() {
+    // when - then
+    assertThatThrownBy(
+            () ->
+                SearchAggregatorBuilders.terms()
+                    .name("name")
+                    .field("testField")
+                    .script("doc['x'].value")
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Exactly one of 'field' or 'script' must be provided");
+  }
+
+  @Test
+  public void shouldBuildAggregatorWithScriptOnly() {
+    // when
+    final var aggregator =
+        SearchAggregatorBuilders.terms()
+            .name("scriptAgg")
+            .script("doc['x'].value + '::' + doc['y'].value")
+            .build();
+
+    // then
+    assertThat(aggregator.name()).isEqualTo("scriptAgg");
+    assertThat(aggregator.script()).isEqualTo("doc['x'].value + '::' + doc['y'].value");
+    assertThat(aggregator.field()).isNull();
+  }
+
+  @Test
+  public void shouldBuildAggregatorWithFieldOnly() {
+    final var aggregator =
+        SearchAggregatorBuilders.terms().name("fieldAgg").field("bpmnProcessId").build();
+
+    assertThat(aggregator.name()).isEqualTo("fieldAgg");
+    assertThat(aggregator.field()).isEqualTo("bpmnProcessId");
+    assertThat(aggregator.script()).isNull();
   }
 }

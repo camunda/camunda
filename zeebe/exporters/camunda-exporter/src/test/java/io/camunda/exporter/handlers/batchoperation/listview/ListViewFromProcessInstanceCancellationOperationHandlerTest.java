@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.batchoperation.listview;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -42,11 +43,13 @@ class ListViewFromProcessInstanceCancellationOperationHandlerTest
   }
 
   @Override
-  protected Record<ProcessInstanceRecordValue> createCompletedRecord() {
+  protected Record<ProcessInstanceRecordValue> createCompletedRecord(
+      final long processInstanceKey) {
     final var value =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .withBpmnElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
             .withParentProcessInstanceKey(-1)
             .build();
     return factory.generateRecord(
@@ -60,12 +63,31 @@ class ListViewFromProcessInstanceCancellationOperationHandlerTest
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .withBpmnElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(123456789L)
             .withParentProcessInstanceKey(-1)
             .build();
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE,
         b ->
-            b.withRejectionType(RejectionType.NOT_FOUND)
+            b.withRecordType(RecordType.COMMAND_REJECTION)
+                .withRejectionType(RejectionType.INVALID_STATE)
+                .withIntent(ProcessInstanceIntent.CANCEL)
+                .withValue(value));
+  }
+
+  @Override
+  protected Record<ProcessInstanceRecordValue> createNotFoundRejectedRecord() {
+    final var value =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withParentProcessInstanceKey(-1)
+            .build();
+    return factory.generateRecord(
+        ValueType.PROCESS_INSTANCE,
+        b ->
+            b.withRecordType(RecordType.COMMAND_REJECTION)
+                .withRejectionType(RejectionType.NOT_FOUND)
                 .withIntent(ProcessInstanceIntent.CANCEL)
                 .withValue(value));
   }

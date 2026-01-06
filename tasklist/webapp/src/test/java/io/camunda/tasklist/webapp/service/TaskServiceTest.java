@@ -42,6 +42,7 @@ import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
@@ -436,6 +437,8 @@ class TaskServiceTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedClientId())
+        .thenReturn("testclientid");
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var completedTask =
@@ -445,6 +448,8 @@ class TaskServiceTest {
             .setAssignee("demo")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+    final var runtimeVariable = new VariableEntity().setName("b").setValue("2");
+    when(variableService.getTaskRuntimeVariables(taskBefore)).thenReturn(List.of(runtimeVariable));
 
     // When
     final var result = instance.completeTask(taskId, variables, true);
@@ -452,7 +457,8 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
-    verify(variableService).persistTaskVariables(taskId, variables, true);
+    verify(metrics).recordCounts(eq("completed.tasks"), eq(1L), any(String[].class));
+    verify(variableService).persistTaskVariables(taskId, variables, List.of(runtimeVariable), true);
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }
@@ -462,10 +468,11 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var variables = List.of(new VariableInputDTO().setName("a").setValue("1"));
-    final Map<String, Object> variablesMap = Map.of("a", 1);
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedClientId())
+        .thenReturn("testclientid");
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var completedTask =
@@ -475,6 +482,8 @@ class TaskServiceTest {
             .setAssignee("demo")
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
+    final var runtimeVariable = new VariableEntity().setName("b").setValue("2");
+    when(variableService.getTaskRuntimeVariables(taskBefore)).thenReturn(List.of(runtimeVariable));
 
     // When
     final var result = instance.completeTask(taskId, variables, true);
@@ -482,7 +491,8 @@ class TaskServiceTest {
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
-    verify(variableService).persistTaskVariables(taskId, variables, true);
+    verify(metrics).recordCounts(eq("completed.tasks"), eq(1L), any(String[].class));
+    verify(variableService).persistTaskVariables(taskId, variables, List.of(runtimeVariable), true);
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
   }

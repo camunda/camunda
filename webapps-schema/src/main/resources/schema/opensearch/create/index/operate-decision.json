@@ -27,6 +27,12 @@
       "decisionRequirementsKey": {
         "type": "long"
       },
+      "decisionRequirementsName": {
+        "type": "keyword"
+      },
+      "decisionRequirementsVersion": {
+        "type": "long"
+      },
       "tenantId": {
         "type": "keyword"
       }

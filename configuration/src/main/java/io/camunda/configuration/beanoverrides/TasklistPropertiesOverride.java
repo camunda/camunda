@@ -8,7 +8,7 @@
 
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.Backup;
+import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -54,22 +54,22 @@ public class TasklistPropertiesOverride {
     final TasklistProperties override = new TasklistProperties();
     BeanUtils.copyProperties(legacyTasklistProperties, override);
 
-    populateFromBackup(override);
-
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
     if (SecondaryStorageType.elasticsearch == database.getType()) {
       populateFromElasticsearch(override, database);
+      populateFromBackup(override, database.getElasticsearch().getBackup());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       populateFromOpensearch(override, database);
+      populateFromBackup(override, database.getOpensearch().getBackup());
     }
 
     return override;
   }
 
-  private void populateFromBackup(final TasklistProperties override) {
-    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
+  private void populateFromBackup(
+      final TasklistProperties override, final DocumentBasedSecondaryStorageBackup backup) {
     override.getBackup().setRepositoryName(backup.getRepositoryName());
   }
 
@@ -81,6 +81,15 @@ public class TasklistPropertiesOverride {
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
+    override.getElasticsearch().setDateFormat(database.getElasticsearch().getDateFormat());
+    final var socketTimeout = database.getElasticsearch().getSocketTimeout();
+    if (socketTimeout != null) {
+      override.getElasticsearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
+    }
+    final var connectionTimeout = database.getElasticsearch().getConnectionTimeout();
+    if (connectionTimeout != null) {
+      override.getElasticsearch().setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
+    }
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -102,6 +111,15 @@ public class TasklistPropertiesOverride {
     override.getOpenSearch().setPassword(database.getOpensearch().getPassword());
     override.getOpenSearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpenSearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
+    override.getOpenSearch().setDateFormat(database.getOpensearch().getDateFormat());
+    final var socketTimeout = database.getOpensearch().getSocketTimeout();
+    if (socketTimeout != null) {
+      override.getOpenSearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
+    }
+    final var connectionTimeout = database.getOpensearch().getConnectionTimeout();
+    if (connectionTimeout != null) {
+      override.getOpenSearch().setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
+    }
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),

@@ -16,8 +16,8 @@ import {
 
 import {
   mockBatchOperations,
-  mockGroupedProcesses,
   mockOrderProcessInstances,
+  mockProcessDefinitions,
   mockResponses as mockProcessesResponses,
   mockStatisticsV2,
 } from '../mocks/processes.mocks';
@@ -61,7 +61,7 @@ test.describe('get familiar with operate', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        groupedProcesses: mockGroupedProcesses,
+        processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -121,7 +121,7 @@ test.describe('get familiar with operate', () => {
         processInstanceDetail: runningOrderProcessInstance.detail,
         processInstanceDetailV2: runningOrderProcessInstance.detailV2,
         callHierarchy: runningOrderProcessInstance.callHierarchy,
-        flowNodeInstances: runningOrderProcessInstance.flowNodeInstances,
+        elementInstances: runningOrderProcessInstance.elementInstances,
         statisticsV2: runningOrderProcessInstance.statisticsV2,
         sequenceFlows: runningOrderProcessInstance.sequenceFlows,
         sequenceFlowsV2: runningOrderProcessInstance.sequenceFlowsV2,

@@ -10,14 +10,13 @@ import {observer} from 'mobx-react';
 import {useLocation} from 'react-router-dom';
 import {TableBatchAction, Stack} from '@carbon/react';
 import {Move} from '@carbon/react/icons';
-import {Restricted} from 'modules/components/Restricted';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance';
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/utils/isAttachedToAnEventBasedGateway';
+import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 import isNil from 'lodash/isNil';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import modalButtonsImageLight from './images/modal-buttons-image-light.png';
@@ -37,9 +36,7 @@ const localStorageKey = 'hideMoveModificationHelperModal';
 
 const MoveAction: React.FC = observer(() => {
   const location = useLocation();
-  const {process, tenant, flowNodeId} = getProcessInstanceFilters(
-    location.search,
-  );
+  const {flowNodeId} = getProcessInstanceFilters(location.search);
 
   const {hasSelectedRunningInstances} = processInstancesSelectionStore;
 
@@ -56,6 +53,13 @@ const MoveAction: React.FC = observer(() => {
     : null;
 
   const isTypeSupported = (businessObject: BusinessObject) => {
+    // this is temporary until #40960 is implemented
+    if (
+      hasEventType({businessObject, types: ['bpmn:ConditionalEventDefinition']})
+    ) {
+      return false;
+    }
+
     return (
       businessObject.$type !== 'bpmn:StartEvent' &&
       businessObject.$type !== 'bpmn:BoundaryEvent' &&
@@ -95,82 +99,75 @@ const MoveAction: React.FC = observer(() => {
   };
 
   return (
-    <Restricted
-      resourceBasedRestrictions={{
-        scopes: ['UPDATE_PROCESS_INSTANCE'],
-        permissions: processesStore.getPermissions(process, tenant),
-      }}
-    >
-      <ModalStateManager
-        renderLauncher={({setOpen}) => (
-          <TableBatchAction
-            renderIcon={Move}
-            onClick={() => {
-              tracking.track({
-                eventName: 'batch-move-modification-move-button-clicked',
-              });
-              if (getStateLocally()?.[localStorageKey]) {
-                batchModificationStore.enable();
-              } else {
-                setOpen(true);
-              }
-            }}
-            disabled={isDisabled}
-            title={
-              batchModificationStore.state.isEnabled
-                ? 'Not available in batch modification mode'
-                : getTooltipText()
-            }
-          >
-            Move
-          </TableBatchAction>
-        )}
-      >
-        {({open, setOpen}) => (
-          <HelperModal
-            title="Process instance batch move mode"
-            open={open}
-            onClose={() => setOpen(false)}
-            onSubmit={() => {
-              setOpen(false);
+    <ModalStateManager
+      renderLauncher={({setOpen}) => (
+        <TableBatchAction
+          renderIcon={Move}
+          onClick={() => {
+            tracking.track({
+              eventName: 'batch-move-modification-move-button-clicked',
+            });
+            if (getStateLocally()?.[localStorageKey]) {
               batchModificationStore.enable();
-            }}
-            localStorageKey={localStorageKey}
-          >
-            <Stack gap={5}>
-              <div>
-                This mode allows you to move multiple instances as a batch in a
-                one operation
-              </div>
-              <div>1. Click on the target flow node.</div>
-              {currentTheme.theme === 'light' ? (
-                <img
-                  src={modalDiagramImageLight}
-                  alt="A bpmn diagram with a selected flow node"
-                />
-              ) : (
-                <img
-                  src={modalDiagramImageDark}
-                  alt="A bpmn diagram with a selected flow node"
-                />
-              )}
-              <div>2. Apply</div>
-              {currentTheme.theme === 'light' ? (
-                <img
-                  src={modalButtonsImageLight}
-                  alt="A button with the label Apply Modifications"
-                />
-              ) : (
-                <img
-                  src={modalButtonsImageDark}
-                  alt="A button with the label Apply Modifications"
-                />
-              )}
-            </Stack>
-          </HelperModal>
-        )}
-      </ModalStateManager>
-    </Restricted>
+            } else {
+              setOpen(true);
+            }
+          }}
+          disabled={isDisabled}
+          title={
+            batchModificationStore.state.isEnabled
+              ? 'Not available in batch modification mode'
+              : getTooltipText()
+          }
+        >
+          Move
+        </TableBatchAction>
+      )}
+    >
+      {({open, setOpen}) => (
+        <HelperModal
+          title="Process instance batch move mode"
+          open={open}
+          onClose={() => setOpen(false)}
+          onSubmit={() => {
+            setOpen(false);
+            batchModificationStore.enable();
+          }}
+          localStorageKey={localStorageKey}
+        >
+          <Stack gap={5}>
+            <div>
+              This mode allows you to move multiple instances as a batch in a
+              one operation
+            </div>
+            <div>1. Click on the target flow node.</div>
+            {currentTheme.theme === 'light' ? (
+              <img
+                src={modalDiagramImageLight}
+                alt="A bpmn diagram with a selected flow node"
+              />
+            ) : (
+              <img
+                src={modalDiagramImageDark}
+                alt="A bpmn diagram with a selected flow node"
+              />
+            )}
+            <div>2. Apply</div>
+            {currentTheme.theme === 'light' ? (
+              <img
+                src={modalButtonsImageLight}
+                alt="A button with the label Apply Modifications"
+              />
+            ) : (
+              <img
+                src={modalButtonsImageDark}
+                alt="A button with the label Apply Modifications"
+              />
+            )}
+          </Stack>
+        </HelperModal>
+      )}
+    </ModalStateManager>
   );
 });
 

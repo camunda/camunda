@@ -2,6 +2,7 @@
 paths:
   /authentication/me:
     get:
+      x-eventually-consistent: false
       tags:
         - Authentication
       operationId: getAuthentication
@@ -22,7 +23,6 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-      x-eventually-consistent: false
 
 ## Schema definitions
 

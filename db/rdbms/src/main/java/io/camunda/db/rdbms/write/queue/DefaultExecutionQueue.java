@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.queue;
 
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.zeebe.util.ObjectSizeEstimator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultExecutionQueue implements ExecutionQueue {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultExecutionQueue.class);
+  private static final long BYTES_PER_MB = 1024L * 1024L;
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
           Pattern.compile(".*updateHistoryCleanupDate$"),
@@ -41,17 +43,24 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
   private final long partitionId; // for addressing the logger
   private final int queueFlushLimit;
+  private final long queueMemoryLimitBytes; // stored as bytes for comparison
 
   private final RdbmsWriterMetrics metrics;
+
+  // Track current memory consumption of the queue
+  private long currentQueueMemoryBytes = 0;
 
   public DefaultExecutionQueue(
       final SqlSessionFactory sessionFactory,
       final long partitionId,
       final int queueFlushLimit,
+      final int queueMemoryLimitMb,
       final RdbmsWriterMetrics metrics) {
     this.sessionFactory = sessionFactory;
     this.partitionId = partitionId;
     this.queueFlushLimit = queueFlushLimit;
+    // Convert MB to bytes for internal comparison
+    this.queueMemoryLimitBytes = (long) queueMemoryLimitMb * BYTES_PER_MB;
     this.metrics = metrics;
   }
 
@@ -64,8 +73,11 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       }
 
       queue.add(entry);
+      // Track memory consumption
+      final long entrySize = ObjectSizeEstimator.estimateSize(entry);
+      currentQueueMemoryBytes += entrySize;
+
       metrics.recordEnqueuedStatement(entry.statementId());
-      checkQueueForFlush();
     }
   }
 
@@ -96,9 +108,13 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       LOG.trace("[RDBMS ExecutionQueue, Partition {}] flushing queue", partitionId);
       try (final var ignored = metrics.measureFlushDuration()) {
+        // Record memory usage before flush
+        metrics.recordQueueMemoryUsage(currentQueueMemoryBytes);
         final int numFlushedElements = doFLush();
         metrics.stopFlushLatencyMeasurement();
         metrics.recordBulkSize(numFlushedElements);
+        // Reset memory tracking after flush
+        currentQueueMemoryBytes = 0;
 
         return numFlushedElements;
       } catch (final Exception e) {
@@ -113,19 +129,22 @@ public class DefaultExecutionQueue implements ExecutionQueue {
    * queueItem will be replaced with a new, combined queueItem.
    */
   @Override
-  public boolean tryMergeWithExistingQueueItem(final QueueItemMerger... combiners) {
+  public boolean tryMergeWithExistingQueueItem(final QueueItemMerger merger) {
     synchronized (queue) {
       int index = queue.size() - 1;
       for (final Iterator<QueueItem> it = queue.descendingIterator(); it.hasNext(); ) {
         final QueueItem item = it.next();
 
-        for (final QueueItemMerger merger : combiners) {
-          if (merger.canBeMerged(item)) {
-            LOG.trace("Merging new item with item {}, {}", item.contextType(), item.id());
-            queue.set(index, merger.merge(item));
-            metrics.recordMergedQueueItem(item.contextType(), item.statementId());
-            return true;
-          }
+        if (merger.canBeMerged(item)) {
+          LOG.trace("Merging new item with item {}, {}", item.contextType(), item.id());
+          final QueueItem oldItem = item;
+          final long oldSize = ObjectSizeEstimator.estimateSize(oldItem);
+          final QueueItem newItem = merger.merge(oldItem);
+          final long newSize = ObjectSizeEstimator.estimateSize(newItem);
+          queue.set(index, newItem);
+          currentQueueMemoryBytes = currentQueueMemoryBytes - oldSize + newSize;
+          metrics.recordMergedQueueItem(item.contextType(), item.statementId());
+          return true;
         }
 
         index--;
@@ -133,6 +152,51 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       return false;
     }
+  }
+
+  @Override
+  public boolean checkQueueForFlush() {
+    final boolean hasCountLimit = queueFlushLimit > 0;
+    final boolean hasMemoryLimit = queueMemoryLimitBytes > 0;
+
+    if (!hasCountLimit && !hasMemoryLimit) {
+      // no limits, exporter must take care of it
+      return false;
+    }
+
+    final int queueSize = queue.size();
+    final long queueMemory = currentQueueMemoryBytes;
+
+    LOG.trace(
+        "[RDBMS ExecutionQueue, Partition {}] Checking if queue is flushed. Queue size: {}, memory: {} bytes",
+        partitionId,
+        queueSize,
+        queueMemory);
+
+    // Flush if either limit is exceeded
+    final boolean countLimitExceeded = hasCountLimit && queueSize >= queueFlushLimit;
+    final boolean memoryLimitExceeded = hasMemoryLimit && queueMemory >= queueMemoryLimitBytes;
+
+    if (countLimitExceeded || memoryLimitExceeded) {
+      if (countLimitExceeded) {
+        LOG.debug(
+            "[RDBMS ExecutionQueue, Partition {}] Queue count limit exceeded: {} >= {}",
+            partitionId,
+            queueSize,
+            queueFlushLimit);
+      }
+      if (memoryLimitExceeded) {
+        LOG.debug(
+            "[RDBMS ExecutionQueue, Partition {}] Queue memory limit exceeded: {} >= {} bytes",
+            partitionId,
+            queueMemory,
+            queueMemoryLimitBytes);
+      }
+      flush();
+      return true;
+    }
+
+    return false;
   }
 
   private int doFLush() {
@@ -236,21 +300,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
   LinkedList<QueueItem> getQueue() {
     return queue;
-  }
-
-  private void checkQueueForFlush() {
-    if (queueFlushLimit <= 0) {
-      // no limits, exporter must take care of it
-      return;
-    }
-
-    LOG.trace(
-        "[RDBMS ExecutionQueue, Partition {}] Checking if queue is flushed. Queue size: {}",
-        partitionId,
-        queue.size());
-    if (queue.size() >= queueFlushLimit) {
-      flush();
-    }
   }
 
   static boolean shouldIgnoreWhenNoRowsAffected(final String statementId) {

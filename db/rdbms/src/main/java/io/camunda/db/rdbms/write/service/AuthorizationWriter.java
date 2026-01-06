@@ -13,7 +13,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class AuthorizationWriter {
+public class AuthorizationWriter implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
 

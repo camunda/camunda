@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.StaticExpression;
-import io.camunda.zeebe.engine.GlobalListenerConfiguration;
-import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -32,12 +30,10 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.protocol.Protocol;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
@@ -46,13 +42,9 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final ExpressionLanguage expressionLanguage;
-  private final GlobalListenersConfiguration globalListenersConfiguration;
 
-  public UserTaskTransformer(
-      final ExpressionLanguage expressionLanguage,
-      final GlobalListenersConfiguration globalListenersConfiguration) {
+  public UserTaskTransformer(final ExpressionLanguage expressionLanguage) {
     this.expressionLanguage = expressionLanguage;
-    this.globalListenersConfiguration = globalListenersConfiguration;
   }
 
   @Override
@@ -306,40 +298,13 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       final FlowNode element,
       final ExecutableUserTask userTask,
       final UserTaskProperties userTaskProperties) {
-
-    final var taskListeners = new ArrayList<TaskListener>();
-
-    // Add global listeners to be executed before local ones
-    final var globalListenersConfiguration =
-        Optional.ofNullable(this.globalListenersConfiguration)
-            .map(GlobalListenersConfiguration::userTask);
-    globalListenersConfiguration.ifPresent(
-        listeners ->
-            listeners.stream()
-                .filter(Predicate.not(GlobalListenerConfiguration::afterNonGlobal))
-                .map(l -> toTaskListenerModel(l, userTaskProperties))
-                .forEach(taskListeners::addAll));
-
-    // Add listeners defined directly on the model
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeTaskListeners.class))
         .map(
             listeners ->
                 listeners.getTaskListeners().stream()
                     .map(listener -> toTaskListenerModel(listener, userTaskProperties))
                     .toList())
-        .ifPresent(taskListeners::addAll);
-
-    // Add global listeners to be executed after local ones
-    globalListenersConfiguration.ifPresent(
-        listeners ->
-            listeners.stream()
-                .filter(GlobalListenerConfiguration::afterNonGlobal)
-                .map(l -> toTaskListenerModel(l, userTaskProperties))
-                .forEach(taskListeners::addAll));
-
-    if (!taskListeners.isEmpty()) {
-      userTask.setTaskListeners(taskListeners);
-    }
+        .ifPresent(userTask::setTaskListeners);
   }
 
   private TaskListener toTaskListenerModel(
@@ -348,7 +313,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       final String jobRetries,
       final UserTaskProperties userTaskProperties) {
     final TaskListener listener = new TaskListener();
-    listener.setEventType(resolveTaskListenerEventType(eventType));
+    listener.setEventType(eventType.resolve());
 
     final JobWorkerProperties jobProperties = new JobWorkerProperties();
     jobProperties.wrap(userTaskProperties);
@@ -365,52 +330,5 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         zeebeTaskListener.getType(),
         zeebeTaskListener.getRetries(),
         userTaskProperties);
-  }
-
-  /** Convert global user task listener configuration to task listener model(s). */
-  private List<TaskListener> toTaskListenerModel(
-      final GlobalListenerConfiguration globalTaskListener,
-      final UserTaskProperties userTaskProperties) {
-
-    final var jobType = globalTaskListener.type();
-    final var jobRetries = globalTaskListener.retries();
-
-    // Extract the list of supported listener event typese
-    var eventTypes =
-        globalTaskListener.eventTypes().contains(GlobalListenerConfiguration.ALL_EVENT_TYPES)
-            ? List.of(ZeebeTaskListenerEventType.values())
-            : globalTaskListener.eventTypes().stream()
-                .map(ZeebeTaskListenerEventType::valueOf)
-                .toList();
-    // Remove duplicates (considering deprecated event types as equivalent to their non-deprecated
-    // counterparts)
-    eventTypes =
-        eventTypes.stream()
-            .map(UserTaskTransformer::resolveTaskListenerEventType)
-            .distinct()
-            .toList();
-
-    // Create a task listener model for each supported event type
-    final List<TaskListener> taskListeners = new ArrayList<>();
-    eventTypes.forEach(
-        eventType -> {
-          final TaskListener listener =
-              toTaskListenerModel(eventType, jobType, jobRetries, userTaskProperties);
-          taskListeners.add(listener);
-        });
-    return taskListeners;
-  }
-
-  @SuppressWarnings("deprecation")
-  private static ZeebeTaskListenerEventType resolveTaskListenerEventType(
-      final ZeebeTaskListenerEventType eventType) {
-    // convert deprecated event types to their non-deprecated counterparts
-    return switch (eventType) {
-      case create, creating -> ZeebeTaskListenerEventType.creating;
-      case assignment, assigning -> ZeebeTaskListenerEventType.assigning;
-      case update, updating -> ZeebeTaskListenerEventType.updating;
-      case complete, completing -> ZeebeTaskListenerEventType.completing;
-      case cancel, canceling -> ZeebeTaskListenerEventType.canceling;
-    };
   }
 }

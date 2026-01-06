@@ -57,7 +57,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.7.6
+    image: camunda/identity:8.8.5
     ports:
       - "8080:8080"
     volumes:
@@ -92,7 +92,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.7.11
+    image: camunda/zeebe:8.8.8
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -106,14 +106,14 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.7.11
+    image: camunda/operate:8.8.8
     container_name: operate
     environment:
       - SERVER_PORT=8081
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - SPRING_PROFILES_ACTIVE=dev-data,identity-auth
+      - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_CLIENT_ID=operate
@@ -135,14 +135,13 @@ services:
       - zeebe
       - identity
   tasklist:
-    image: camunda/tasklist:8.7.11
+    image: camunda/tasklist:8.8.8
     container_name: tasklist
     environment:
       - SERVER_PORT=8082
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - SPRING_PROFILES_ACTIVE=identity-auth
       - CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist

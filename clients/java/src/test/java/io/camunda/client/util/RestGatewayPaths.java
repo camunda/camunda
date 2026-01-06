@@ -22,8 +22,20 @@ public class RestGatewayPaths {
   private static final String URL_AUTHORIZATION = REST_API_PATH + "/authorizations/%s";
   private static final String URL_AUTHORIZATIONS = REST_API_PATH + "/authorizations";
   private static final String URL_BATCH_OPERATION = REST_API_PATH + "/batch-operations/%s";
+  private static final String URL_CLUSTER_VARIABLES = REST_API_PATH + "/cluster-variables";
+  private static final String URL_CLUSTER_VARIABLES_CREATE_GLOBAL =
+      URL_CLUSTER_VARIABLES + "/global";
+  private static final String URL_CLUSTER_VARIABLES_CREATE_TENANT =
+      URL_CLUSTER_VARIABLES + "/tenants/%s";
+  private static final String URL_CLUSTER_VARIABLES_GET_GLOBAL =
+      URL_CLUSTER_VARIABLES + "/global/%s";
+  private static final String URL_CLUSTER_VARIABLES_GET_TENANT =
+      URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
+  private static final String URL_CLUSTER_VARIABLES_SEARCH = URL_CLUSTER_VARIABLES + "/search";
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
+  private static final String URL_CONDITIONAL_EVALUATION =
+      REST_API_PATH + "/conditionals/evaluation";
   private static final String URL_DECISION_DEFINITION = REST_API_PATH + "/decision-definitions/%s";
   private static final String URL_DECISION_EVALUATION =
       REST_API_PATH + "/decision-definitions/evaluation";
@@ -32,6 +44,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/decision-requirements/%s";
   private static final String URL_DEPLOYMENTS = REST_API_PATH + "/deployments";
   private static final String URL_ELEMENT_INSTANCE = REST_API_PATH + "/element-instances/%s";
+  private static final String URL_EXPRESSION_EVALUATION = REST_API_PATH + "/expression/evaluation";
   private static final String URL_GROUP = REST_API_PATH + "/groups/%s";
   private static final String URL_GROUPS = REST_API_PATH + "/groups";
   private static final String URL_INCIDENT = REST_API_PATH + "/incidents/%s";
@@ -80,6 +93,16 @@ public class RestGatewayPaths {
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
   private static final String URL_VARIABLE = REST_API_PATH + "/variables/%s";
+  private static final String URL_AUDIT_LOG_GET = REST_API_PATH + "/audit-logs/%s";
+  private static final String URL_AUDIT_LOG_SEARCH = REST_API_PATH + "/audit-logs/search";
+  private static final String URL_PROCESS_DEFINITION_INSTANCE_STATISTICS =
+      REST_API_PATH + "/process-definitions/statistics/process-instances";
+  private static final String URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS =
+      REST_API_PATH + "/process-definitions/%s/statistics/process-instances";
+  private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION =
+      REST_API_PATH + "/incidents/statistics/process-instances-by-definition";
+  private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
+      REST_API_PATH + "/incidents/statistics/process-instances-by-error";
 
   /**
    * @return the topology request URL
@@ -171,8 +194,16 @@ public class RestGatewayPaths {
     return URL_SIGNAL_BROADCAST;
   }
 
+  public static String getEvaluateConditionalUrl() {
+    return URL_CONDITIONAL_EVALUATION;
+  }
+
   public static String getEvaluateDecisionUrl() {
     return URL_DECISION_EVALUATION;
+  }
+
+  public static String getExpressionEvaluationUrl() {
+    return URL_EXPRESSION_EVALUATION;
   }
 
   /**
@@ -312,5 +343,65 @@ public class RestGatewayPaths {
 
   public static String getElementInstanceUrl(final long elementInstanceKey) {
     return String.format(URL_ELEMENT_INSTANCE, elementInstanceKey);
+  }
+
+  public static String getClusterVariablesUrl() {
+    return URL_CLUSTER_VARIABLES;
+  }
+
+  public static String getClusterVariablesCreateGlobalUrl() {
+    return URL_CLUSTER_VARIABLES_CREATE_GLOBAL;
+  }
+
+  public static String getClusterVariablesCreateTenantUrl(final String tenantId) {
+    return String.format(URL_CLUSTER_VARIABLES_CREATE_TENANT, tenantId);
+  }
+
+  public static String getClusterVariablesGetGlobalUrl(final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_GLOBAL, variableName);
+  }
+
+  public static String getClusterVariablesGetTenantUrl(
+      final String tenantId, final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_TENANT, tenantId, variableName);
+  }
+
+  public static String getClusterVariablesSearchUrl() {
+    return URL_CLUSTER_VARIABLES_SEARCH;
+  }
+
+  public static String getAuditLogGetUrl(final String auditLogKey) {
+    return String.format(URL_AUDIT_LOG_GET, auditLogKey);
+  }
+
+  public static String getAuditLogSearchUrl() {
+    return String.format(URL_AUDIT_LOG_SEARCH);
+  }
+
+  public static String getProcessDefinitionInstanceStatisticsUrl() {
+    return URL_PROCESS_DEFINITION_INSTANCE_STATISTICS;
+  }
+
+  public static String getProcessDefinitionInstanceVersionStatisticsUrl(
+      final String processDefinitionId) {
+    return String.format(URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS, processDefinitionId);
+  }
+
+  public static String getIncidentProcessInstanceStatisticsByErrorUrl() {
+    return URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR;
+  }
+
+  public static String getIncidentProcessInstanceStatisticsByDefinitionUrl() {
+    return URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION;
+  }
+
+  @Deprecated
+  public static String getClusterVariablesUrl(final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_GLOBAL, variableName);
+  }
+
+  @Deprecated
+  public static String getClusterVariablesUrl(final String variableName, final String tenantId) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_TENANT, tenantId, variableName);
   }
 }

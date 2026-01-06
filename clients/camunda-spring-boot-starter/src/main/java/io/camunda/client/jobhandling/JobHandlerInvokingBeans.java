@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
@@ -23,11 +22,12 @@ import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
-import io.camunda.client.jobhandling.JobExceptionHandlingStrategy.ExceptionHandlingContext;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.result.ResultProcessor;
 import io.camunda.client.jobhandling.result.ResultProcessorContext;
+import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.metrics.MetricsRecorder.CounterMetricsContext;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -35,63 +35,69 @@ import org.slf4j.Logger;
 public class JobHandlerInvokingBeans implements JobHandler {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
-  private final JobWorkerValue workerValue;
+  private final String jobWorkerName;
+  private final BeanMethod method;
+  private final boolean autoComplete;
+  private final int maxRetries;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
   private final ResultProcessor resultProcessor;
-  private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
 
   public JobHandlerInvokingBeans(
-      final JobWorkerValue workerValue,
+      final String jobWorkerName,
+      final BeanMethod method,
+      final boolean autoComplete,
+      final int maxRetries,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final List<ParameterResolver> parameterResolvers,
-      final ResultProcessor resultProcessor,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
-    this.workerValue = workerValue;
+      final ResultProcessor resultProcessor) {
+    this.jobWorkerName = jobWorkerName;
+    this.method = method;
+    this.autoComplete = autoComplete;
+    this.maxRetries = maxRetries;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolvers = parameterResolvers;
     this.resultProcessor = resultProcessor;
-    this.jobExceptionHandlingStrategy = jobExceptionHandlingStrategy;
   }
 
   @Override
   public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
+    final CounterMetricsContext counterMetricsContext = JobHandlerMetrics.counter(job);
     final List<Object> args = createParameters(jobClient, job);
-    LOG.trace("Handle {} and invoke worker {}", job, workerValue);
-    metricsRecorder.increase(
-        MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
-    try {
-      final Object methodInvocationResult = workerValue.getMethodInfo().invoke(args.toArray());
-      final Object result =
-          resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
-      if (workerValue.getAutoComplete()) {
-        LOG.trace("Auto completing {}", job);
-        final CommandWrapper command =
-            createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
-        command.executeAsyncWithMetrics(
-            MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
-      } else {
-        if (result != null) {
-          LOG.warn("Result provided but auto complete disabled for job {}", job);
-        }
+    LOG.trace("Handle {} and invoke worker {}", job, jobWorkerName);
+    metricsRecorder.increaseActivated(counterMetricsContext);
+    final Object methodInvocationResult =
+        metricsRecorder.executeWithTimer(
+            JobHandlerMetrics.timer(job), () -> method.invoke(args.toArray()));
+    final Object result =
+        resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
+    if (autoComplete) {
+      LOG.trace("Auto completing {}", job);
+      final CommandWrapper command =
+          createCommandWrapper(
+              createCompleteCommand(jobClient, job, result), job, counterMetricsContext);
+      command.executeAsyncWithMetrics(MetricsRecorder::increaseCompleted);
+    } else {
+      if (result != null) {
+        LOG.warn("Result provided but auto complete disabled for job {}", job);
       }
-    } catch (final Exception e) {
-      jobExceptionHandlingStrategy.handleException(
-          e, new ExceptionHandlingContext(jobClient, job, workerValue));
     }
   }
 
   private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command, final ActivatedJob job) {
+      final FinalCommandStep<?> command,
+      final ActivatedJob job,
+      final CounterMetricsContext metricsContext) {
     return new CommandWrapper(
         command,
         job,
         commandExceptionHandlingStrategy,
         metricsRecorder,
-        workerValue.getMaxRetries());
+        metricsContext,
+        maxRetries);
   }
 
   private List<Object> createParameters(final JobClient jobClient, final ActivatedJob job) {

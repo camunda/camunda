@@ -34,6 +34,7 @@ const finishMovingToken = (
   businessObjects: BusinessObjects,
   bpmnProcessId?: string,
   targetFlowNodeId?: string,
+  ancestorSelectionRequired?: boolean,
 ) => {
   tracking.track({
     eventName: 'move-token',
@@ -71,7 +72,11 @@ const finishMovingToken = (
     });
   }
 
-  modificationsStore.setStatus('enabled');
+  if (ancestorSelectionRequired) {
+    modificationsStore.setStatus('requires-ancestor-selection');
+  } else {
+    modificationsStore.setStatus('enabled');
+  }
   modificationsStore.setSourceFlowNodeIdForMoveOperation(null);
   modificationsStore.setSourceFlowNodeInstanceKeyForMoveOperation(null);
 };

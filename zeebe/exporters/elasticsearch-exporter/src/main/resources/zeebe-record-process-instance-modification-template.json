@@ -28,6 +28,38 @@
               "properties": {
                 "elementInstanceKey": {
                   "type": "long"
+                },
+                "elementId": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "moveInstructions": {
+              "properties": {
+                "sourceElementId": {
+                  "type": "keyword"
+                },
+                "sourceElementInstanceKey": {
+                  "type": "long"
+                },
+                "targetElementId": {
+                  "type": "keyword"
+                },
+                "variableInstructions": {
+                  "properties": {
+                    "variables": {
+                      "enabled": false
+                    },
+                    "elementId": {
+                      "type": "keyword"
+                    }
+                  }
+                },
+                "ancestorScopeKey": {
+                  "type": "long"
+                },
+                "inferAncestorScopeFromSourceHierarchy": {
+                  "type": "boolean"
                 }
               }
             },

@@ -14,11 +14,15 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.feel.impl.FeelFunctionProvider;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.feel.impl.MessagePackValueMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
@@ -42,14 +46,25 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
       new FeelToMessagePackTransformer();
 
   private final FeelEngine feelEngine;
+  private final ExpressionLanguageMetrics metrics;
 
   public FeelExpressionLanguage(final FeelEngineClock clock) {
+    this(clock, ExpressionLanguageMetrics.noop());
+  }
+
+  public FeelExpressionLanguage(final FeelEngineClock clock, final MeterRegistry meterRegistry) {
+    this(clock, new ExpressionLanguageMetricsImpl(meterRegistry));
+  }
+
+  public FeelExpressionLanguage(
+      final FeelEngineClock clock, final ExpressionLanguageMetrics metrics) {
     feelEngine =
         new FeelEngine.Builder()
             .customValueMapper(new MessagePackValueMapper())
             .functionProvider(new FeelFunctionProvider())
             .clock(clock)
             .build();
+    this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
   }
 
   @Override
@@ -90,15 +105,24 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
   }
 
   private Expression parseFeelExpression(final String expression) {
-    final Either<Failure, ParsedExpression> parseResult = feelEngine.parseExpression(expression);
+    final long startNanos = System.nanoTime();
+    try {
+      final Either<Failure, ParsedExpression> parseResult = feelEngine.parseExpression(expression);
+      final long durationNanos = System.nanoTime() - startNanos;
 
-    if (parseResult.isLeft()) {
-      final var failure = parseResult.left().get();
-      return new InvalidExpression(expression, failure.message());
-
-    } else {
-      final var parsedExpression = parseResult.right().get();
-      return new FeelExpression(parsedExpression);
+      if (parseResult.isLeft()) {
+        final var failure = parseResult.left().get();
+        metrics.recordParsingDurationFailure(durationNanos);
+        return new InvalidExpression(expression, failure.message());
+      } else {
+        metrics.recordParsingDurationSuccess(durationNanos);
+        final var parsedExpression = parseResult.right().get();
+        return new FeelExpression(parsedExpression);
+      }
+    } catch (final Exception e) {
+      final long durationNanos = System.nanoTime() - startNanos;
+      metrics.recordParsingDurationFailure(durationNanos);
+      throw e;
     }
   }
 
@@ -110,24 +134,45 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
     final var parsedExpression = feelExpression.getParsedExpression();
     final var feelContext = new FeelVariableContext(context);
 
-    final var evaluationResult = feelEngine.evaluate(parsedExpression, feelContext);
+    final long startNanos = System.nanoTime();
+    try {
+      final var evaluationResult = feelEngine.evaluate(parsedExpression, feelContext);
+      final long durationNanos = System.nanoTime() - startNanos;
 
-    final var evaluationWarnings = extractEvaluationWarning(evaluationResult);
-    if (evaluationResult.isFailure()) {
-      final var failureMessage = evaluationResult.failure().message();
-      return new EvaluationFailure(expression, failureMessage, evaluationWarnings);
+      logSlowEvaluationIfNeeded(expression, durationNanos);
+
+      final var evaluationWarnings = extractEvaluationWarning(evaluationResult);
+      if (evaluationResult.isFailure()) {
+        metrics.recordEvaluationDurationFailure(durationNanos);
+        final var failureMessage = evaluationResult.failure().message();
+        return new EvaluationFailure(expression, failureMessage, evaluationWarnings);
+      }
+
+      metrics.recordEvaluationDurationSuccess(durationNanos);
+      final var result = evaluationResult.result();
+      if (result instanceof Val) {
+        return new FeelEvaluationResult(
+            expression, (Val) result, evaluationWarnings, messagePackTransformer::toMessagePack);
+      } else {
+        throw new IllegalStateException(
+            String.format(
+                "Expected FEEL evaluation result to be of type '%s' but was '%s'",
+                Val.class, result.getClass()));
+      }
+    } catch (final Exception e) {
+      final long durationNanos = System.nanoTime() - startNanos;
+      metrics.recordEvaluationDurationFailure(durationNanos);
+      throw e;
     }
+  }
 
-    final var result = evaluationResult.result();
-    if (result instanceof Val) {
-      return new FeelEvaluationResult(
-          expression, (Val) result, evaluationWarnings, messagePackTransformer::toMessagePack);
-
-    } else {
-      throw new IllegalStateException(
-          String.format(
-              "Expected FEEL evaluation result to be of type '%s' but was '%s'",
-              Val.class, result.getClass()));
+  private void logSlowEvaluationIfNeeded(final Expression expression, final long durationNanos) {
+    if (metrics.isSlowEvaluation(durationNanos)) {
+      Loggers.LOGGER.warn(
+          "Slow FEEL expression evaluation detected: expression '{}' took {} ms (threshold: {} ms)",
+          expression.getExpression(),
+          TimeUnit.NANOSECONDS.toMillis(durationNanos),
+          metrics.getSlowEvaluationThresholdMs());
     }
   }
 

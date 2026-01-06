@@ -16,11 +16,11 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {MemoryRouter} from 'react-router-dom';
 
 vi.mock('modules/hooks/useFilters');
-vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
 vi.mock('modules/stores/processes/processes.migration', () => ({
   processesStore: {
     getSelectedProcessDetails: () => ({
@@ -75,7 +75,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('Source Diagram', () => {
   beforeEach(() => {
-    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(
+      filterModule,
+      'useProcessInstanceStatisticsFilters',
+    ).mockReturnValue({filter: {}});
   });
 
   it('should render process name and version', async () => {

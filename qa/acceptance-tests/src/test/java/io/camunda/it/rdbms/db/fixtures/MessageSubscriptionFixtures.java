@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel.Builder;
 import io.camunda.zeebe.test.util.Strings;
@@ -37,46 +37,46 @@ public final class MessageSubscriptionFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomMessageSubscriptions(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomMessageSubscriptions(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomMessageSubscriptions(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomMessageSubscriptions(rdbmsWriters, b -> b);
   }
 
   public static MessageSubscriptionDbModel createAndSaveRandomMessageSubscription(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var definition = MessageSubscriptionFixtures.createRandomized(builderFunction);
-    rdbmsWriter.getMessageSubscriptionWriter().create(definition);
-    rdbmsWriter.flush();
+    rdbmsWriters.getMessageSubscriptionWriter().create(definition);
+    rdbmsWriters.flush();
     return definition;
   }
 
   public static void createAndSaveRandomMessageSubscriptions(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter
+      rdbmsWriters
           .getMessageSubscriptionWriter()
           .create(MessageSubscriptionFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static MessageSubscriptionDbModel createAndSaveMessageSubscription(
-      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveMessageSubscriptions(rdbmsWriter, List.of(definition));
+    createAndSaveMessageSubscriptions(rdbmsWriters, List.of(definition));
     return definition;
   }
 
   public static void createAndSaveMessageSubscription(
-      final RdbmsWriter rdbmsWriter, final MessageSubscriptionDbModel group) {
-    createAndSaveMessageSubscriptions(rdbmsWriter, List.of(group));
+      final RdbmsWriters rdbmsWriters, final MessageSubscriptionDbModel group) {
+    createAndSaveMessageSubscriptions(rdbmsWriters, List.of(group));
   }
 
   public static void createAndSaveMessageSubscriptions(
-      final RdbmsWriter rdbmsWriter, final List<MessageSubscriptionDbModel> groupList) {
+      final RdbmsWriters rdbmsWriters, final List<MessageSubscriptionDbModel> groupList) {
     for (final MessageSubscriptionDbModel group : groupList) {
-      rdbmsWriter.getMessageSubscriptionWriter().create(group);
+      rdbmsWriters.getMessageSubscriptionWriter().create(group);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

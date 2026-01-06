@@ -1,0 +1,26 @@
+{
+  "testCases": [
+    {
+      "name": "Happy path order processing",
+      "description": "The order should be processed successfully from creation to shipping with tracking code received.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "process"
+          },
+          "variables": {
+            "order_id": "order-1"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "process"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    }
+  ]
+}

@@ -20,6 +20,12 @@ public class RdbmsHistory {
    */
   private Duration defaultHistoryTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
 
+  /**
+   * The default time to live for decision instances without a process instance. Specified in Java
+   * Duration format.
+   */
+  private Duration decisionInstanceTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
+
   /** The default time to live for all batch operations. Specified in Java Duration format. */
   private Duration defaultBatchOperationHistoryTTL =
       RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
@@ -153,6 +159,14 @@ public class RdbmsHistory {
 
   public void setDefaultHistoryTTL(final Duration defaultHistoryTTL) {
     this.defaultHistoryTTL = defaultHistoryTTL;
+  }
+
+  public Duration getDecisionInstanceTTL() {
+    return decisionInstanceTTL;
+  }
+
+  public void setDecisionInstanceTTL(final Duration decisionInstanceTTL) {
+    this.decisionInstanceTTL = decisionInstanceTTL;
   }
 
   public Duration getUsageMetricsCleanup() {

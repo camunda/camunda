@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,6 @@ public final class BackupService extends Actor implements BackupManager {
   private final JournalInfoProvider journalInfoProvider;
   private final int nodeId;
   private final int partitionId;
-  private final int numberOfPartitions;
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
@@ -42,7 +43,6 @@ public final class BackupService extends Actor implements BackupManager {
   public BackupService(
       final int nodeId,
       final int partitionId,
-      final int numberOfPartitions,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
@@ -51,13 +51,19 @@ public final class BackupService extends Actor implements BackupManager {
       final LogStreamWriter logStreamWriter) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
-    this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     metrics = new BackupManagerMetrics(partitionRegistry);
     internalBackupManager = new BackupServiceImpl(backupStore, logStreamWriter);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
   }
 
   @Override
@@ -73,7 +79,7 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public ActorFuture<Void> takeBackup(
-      final long checkpointId, final long checkpointPosition, final int partitionCount) {
+      final long checkpointId, final BackupDescriptor backupDescriptor) {
     final ActorFuture<Void> result = createFuture();
     actor.run(
         () -> {
@@ -81,8 +87,7 @@ public final class BackupService extends Actor implements BackupManager {
               new InProgressBackupImpl(
                   snapshotStore,
                   getBackupId(checkpointId),
-                  checkpointPosition,
-                  partitionCount,
+                  backupDescriptor,
                   actor,
                   segmentsDirectory,
                   journalInfoProvider);
@@ -94,17 +99,22 @@ public final class BackupService extends Actor implements BackupManager {
           backupResult.onComplete(
               (ignore, error) -> {
                 if (error != null) {
-                  LOG.warn(
-                      "Failed to take backup {} at position {}",
-                      inProgressBackup.checkpointId(),
-                      inProgressBackup.checkpointPosition(),
-                      error);
+                  LOG.atWarn()
+                      .addKeyValue("backup", inProgressBackup.id())
+                      .addKeyValue(
+                          "position", inProgressBackup.backupDescriptor().checkpointPosition())
+                      .setCause(error)
+                      .setMessage("Failed to take backup")
+                      .log();
                 } else {
-                  LOG.info(
-                      "Backup {} at position {} completed with {} partitions",
-                      inProgressBackup.checkpointId(),
-                      inProgressBackup.checkpointPosition(),
-                      partitionCount);
+                  LOG.atInfo()
+                      .addKeyValue("backup", inProgressBackup.id())
+                      .addKeyValue(
+                          "position", inProgressBackup.backupDescriptor().checkpointPosition())
+                      .addKeyValue(
+                          "partitions", inProgressBackup.backupDescriptor().numberOfPartitions())
+                      .setMessage("Completed backup")
+                      .log();
                 }
               });
           backupResult.onComplete(result);
@@ -181,12 +191,14 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public void createFailedBackup(
-      final long checkpointId, final long checkpointPosition, final String failureReason) {
+      final long checkpointId,
+      final BackupDescriptor backupDescriptor,
+      final String failureReason) {
     actor.run(
         () -> {
           final var backupId = getBackupId(checkpointId);
           internalBackupManager.createFailedBackup(
-              backupId, checkpointPosition, failureReason, actor);
+              backupId, backupDescriptor.checkpointPosition(), failureReason, actor);
         });
   }
 

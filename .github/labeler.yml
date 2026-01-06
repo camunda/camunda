@@ -10,16 +10,12 @@ component/build-pipeline:
 component/c8-api:
   - changed-files:
       - any-glob-to-any-file:
-          - 'zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml'
+          - 'zeebe/gateway-protocol/src/main/proto/v2/**'
           - 'zeebe/gateway-rest/**'
-# hint on changes done to the deprecated java client, and that might need to applied to the supported client
 deprecated-client:
-  - all:
-      - changed-files:
-          - any-glob-to-any-file:
-              - 'clients/java/src/main/java/io/camunda/zeebe/**'
-              - 'clients/java/src/test/java/io/camunda/zeebe/**'
-      - base-branch: 'main' # TODO replace with 'backport stable/8.8' in https://github.com/camunda/camunda/issues/26820
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'clients/java-deprecated/**'
 component/c8run:
   - changed-files:
       - any-glob-to-any-file:

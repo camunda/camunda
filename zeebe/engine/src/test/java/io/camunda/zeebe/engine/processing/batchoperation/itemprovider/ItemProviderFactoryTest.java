@@ -8,7 +8,8 @@
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.Operation;
@@ -106,6 +107,26 @@ class ItemProviderFactoryTest {
     final var usedFilter = ((IncidentItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
     assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldSetFiltersForDeleteProcessInstance() {
+    // Arrange
+    final var filter = new ProcessInstanceFilter.Builder().build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // Act
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // Assert
+    assertThat(itemProvider).isNotNull();
+    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
+
+    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 }

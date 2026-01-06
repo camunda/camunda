@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -42,38 +42,38 @@ public final class IncidentFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomIncidents(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomIncidents(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomIncidents(final RdbmsWriters rdbmsWriters) {
+    createAndSaveRandomIncidents(rdbmsWriters, b -> b);
   }
 
   public static void createAndSaveRandomIncidents(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getIncidentWriter().create(IncidentFixtures.createRandomized(builderFunction));
+      rdbmsWriters.getIncidentWriter().create(IncidentFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 
   public static IncidentDbModel createAndSaveIncident(
-      final RdbmsWriter rdbmsWriter,
+      final RdbmsWriters rdbmsWriters,
       final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
     final IncidentDbModel randomized = createRandomized(builderFunction);
-    createAndSaveIncidents(rdbmsWriter, List.of(randomized));
+    createAndSaveIncidents(rdbmsWriters, List.of(randomized));
     return randomized;
   }
 
   public static void createAndSaveIncident(
-      final RdbmsWriter rdbmsWriter, final IncidentDbModel incident) {
-    createAndSaveIncidents(rdbmsWriter, List.of(incident));
+      final RdbmsWriters rdbmsWriters, final IncidentDbModel incident) {
+    createAndSaveIncidents(rdbmsWriters, List.of(incident));
   }
 
   public static void createAndSaveIncidents(
-      final RdbmsWriter rdbmsWriter, final List<IncidentDbModel> incidentList) {
+      final RdbmsWriters rdbmsWriters, final List<IncidentDbModel> incidentList) {
     for (final IncidentDbModel incident : incidentList) {
-      rdbmsWriter.getIncidentWriter().create(incident);
+      rdbmsWriters.getIncidentWriter().create(incident);
     }
-    rdbmsWriter.flush();
+    rdbmsWriters.flush();
   }
 }

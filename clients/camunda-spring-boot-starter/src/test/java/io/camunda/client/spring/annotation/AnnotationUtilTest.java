@@ -16,24 +16,31 @@
 package io.camunda.client.spring.annotation;
 
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
+import static io.camunda.client.spring.testsupport.BeanInfoUtil.methodInfo;
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.parameterInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.ElementInstanceKey;
 import io.camunda.client.annotation.JobKey;
 import io.camunda.client.annotation.ProcessDefinitionKey;
 import io.camunda.client.annotation.ProcessInstanceKey;
+import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.GeneratedFromMethodInfo;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +48,80 @@ import org.junit.jupiter.api.Test;
 public class AnnotationUtilTest {
 
   public static class ComplexType {}
+
+  @Nested
+  class JobWorker {
+    @Test
+    void shouldExtractVariableFromJsonAnnotation() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithJsonProperty");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new GeneratedFromMethodInfo<>("some_name"));
+    }
+
+    @Test
+    void shouldExtractVariableName() {
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorker");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new GeneratedFromMethodInfo<>("helloWorld"));
+    }
+
+    @Test
+    void shouldExtractVariableAsTypeNames() {
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithVariablesType");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(
+              new GeneratedFromMethodInfo<>("hello"), new GeneratedFromMethodInfo<>("world"));
+    }
+
+    @Test
+    void shouldExtractVariableFromEmptyJsonAnnotation() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithEmptyJsonProperty");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("value"));
+    }
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithEmptyJsonProperty(
+        @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorker(@io.camunda.client.annotation.Variable final String helloWorld) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithVariablesType(
+        @VariablesAsType final VariablesType annotatedClass) {}
+
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorkerWithJsonProperty(
+        @VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
+
+    private static final class PropertyAnnotatedClass {
+      @JsonProperty("some_name")
+      private String value;
+    }
+
+    private static final class PropertyAnnotatedClassEmptyValue {
+      @JsonProperty() private String value;
+    }
+
+    private static final class VariablesType {
+      private String hello;
+      private String world;
+    }
+  }
 
   @Nested
   class Variable {

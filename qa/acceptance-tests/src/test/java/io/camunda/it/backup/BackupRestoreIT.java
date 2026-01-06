@@ -11,10 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import feign.FeignException.NotFound;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.it.document.DocumentClient;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
@@ -29,8 +31,7 @@ import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -113,6 +114,7 @@ public class BackupRestoreIT {
   private DataGenerator generator;
   private HistoryBackupClient historyBackupClient;
   private MultiDbConfigurator configurator;
+  private WorkingDirectory workingDirectory;
 
   @AfterEach
   public void tearDown() {
@@ -125,7 +127,8 @@ public class BackupRestoreIT {
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
             .withUnauthenticatedAccess();
     configurator = new MultiDbConfigurator(testStandaloneApplication);
-    testStandaloneApplication.withBrokerConfig(this::configureZeebeBackupStore);
+    testStandaloneApplication.withUnifiedConfig(
+        cfg -> configureZeebeBackupStore(cfg, config.databaseType));
     final String dbUrl;
     searchContainer =
         switch (config.databaseType) {
@@ -160,8 +163,6 @@ public class BackupRestoreIT {
                   "Unsupported database type: " + config.databaseType);
         };
 
-    testStandaloneApplication.withProperty("camunda.data.backup.repository-name", REPOSITORY_NAME);
-
     testStandaloneApplication.start().awaitCompleteTopology();
 
     camundaClient =
@@ -176,6 +177,7 @@ public class BackupRestoreIT {
     webappsDBClient = DocumentClient.create(dbUrl, config.databaseType, EXECUTOR);
     webappsDBClient.createRepository(REPOSITORY_NAME);
     generator = new DataGenerator(camundaClient, PROCESS_ID, TIMEOUT);
+    workingDirectory = testStandaloneApplication.bean(WorkingDirectory.class);
   }
 
   public static Stream<BackupRestoreTestConfig> sources() {
@@ -216,11 +218,16 @@ public class BackupRestoreIT {
 
     webappsDBClient.deleteAllIndices(INDEX_PREFIX);
 
-    Awaitility.await().untilAsserted(() -> assertThat(webappsDBClient.cat()).isEmpty());
+    Awaitility.await().untilAsserted(() -> assertThat(webappsDBClient.cat(INDEX_PREFIX)).isEmpty());
 
     // RESTORE PROCEDURE
     webappsDBClient.restore(REPOSITORY_NAME, snapshots);
     restoreZeebe();
+
+    // Since the unified configuration does not contain the full data directory path, we set the
+    // working directory so that the path can be properly constructed during application startup.
+    testStandaloneApplication.withBean(
+        "workingDirectory", workingDirectory, WorkingDirectory.class);
 
     testStandaloneApplication.start();
 
@@ -232,33 +239,50 @@ public class BackupRestoreIT {
     generator.verifyAllExported(ProcessInstanceState.COMPLETED);
   }
 
-  private void configureZeebeBackupStore(final BrokerCfg cfg) {
-    final var backup = cfg.getData().getBackup();
+  private void configureZeebeBackupStore(final Camunda cfg, final DatabaseType databaseType) {
+    final var backup = cfg.getData().getPrimaryStorage().getBackup();
     final var azure = backup.getAzure();
 
     backup.setStore(BackupStoreType.AZURE);
     azure.setBasePath(containerName);
     azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+
+    if (databaseType.isElasticSearch()) {
+      cfg.getData()
+          .getSecondaryStorage()
+          .getElasticsearch()
+          .getBackup()
+          .setRepositoryName(REPOSITORY_NAME);
+    } else {
+      cfg.getData()
+          .getSecondaryStorage()
+          .getOpensearch()
+          .getBackup()
+          .setRepositoryName(REPOSITORY_NAME);
+    }
   }
 
   private void restoreZeebe() {
     final var unifiedRestoreConfig = new Camunda();
-    final var backup = unifiedRestoreConfig.getData().getBackup();
+    final var backup = unifiedRestoreConfig.getData().getPrimaryStorage().getBackup();
 
-    backup.setStore(Backup.BackupStoreType.AZURE); // We are configuring Azure always
+    backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE); // We are configuring Azure always
     backup.getAzure().setBasePath(containerName);
     backup.getAzure().setConnectionString(AZURITE_CONTAINER.getConnectString());
 
-    final var brokerCfg = testStandaloneApplication.brokerConfig();
+    final var brokerCfg = testStandaloneApplication.unifiedConfig();
     unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());
-    unifiedRestoreConfig
-        .getCluster()
-        .setPartitionCount(brokerCfg.getCluster().getPartitionsCount());
+    unifiedRestoreConfig.getCluster().setPartitionCount(brokerCfg.getCluster().getPartitionCount());
+    // The directory is constructed using the broker’s working directory because the unified
+    // configuration does not contain the full path
     unifiedRestoreConfig
         .getData()
         .getPrimaryStorage()
-        .setDirectory(brokerCfg.getData().getDirectory());
-    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getClusterSize());
+        .setDirectory(
+            ConfigurationUtil.toAbsolutePath(
+                brokerCfg.getData().getPrimaryStorage().getDirectory(),
+                workingDirectory.path().toString()));
+    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getSize());
 
     try (final var restoreApp = new TestRestoreApp(unifiedRestoreConfig).withBackupId(BACKUP_ID)) {
       assertThatNoException().isThrownBy(restoreApp::start);
@@ -302,10 +326,7 @@ public class BackupRestoreIT {
     final var metadata = new Metadata(BACKUP_ID, "current", 1, 1);
     final List<String> indices;
     try {
-      indices =
-          webappsDBClient.cat().stream()
-              .filter(name -> name.startsWith(configurator.zeebeIndexPrefix()))
-              .toList();
+      indices = webappsDBClient.cat(configurator.zeebeIndexPrefix());
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

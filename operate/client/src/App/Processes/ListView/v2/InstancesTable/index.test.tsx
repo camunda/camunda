@@ -7,19 +7,18 @@
  */
 
 import {render, screen, within} from 'modules/testing-library';
-import {InstancesTable} from '.';
+import {InstancesTable} from './index.tsx';
 import {MemoryRouter} from 'react-router-dom';
-import {Paths} from 'modules/Routes';
+import {Paths} from 'modules/Routes.tsx';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
+import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockProcessDefinitions} from 'modules/testUtils';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 vi.mock('modules/utils/bpmn');
 vi.mock('modules/hooks/useCallbackPrompt', () => {
@@ -32,11 +31,28 @@ vi.mock('modules/hooks/useCallbackPrompt', () => {
   };
 });
 
+const mockProcessInstances: ProcessInstance[] = [
+  {
+    processInstanceKey: '123',
+    processDefinitionKey: 'process-1',
+    processDefinitionId: 'process-id',
+    processDefinitionName: 'Test Process',
+    processDefinitionVersion: 1,
+    processDefinitionVersionTag: 'v1.0',
+    startDate: '2024-01-01T00:00:00.000Z',
+    endDate: undefined,
+    state: 'ACTIVE',
+    hasIncident: false,
+    tenantId: 'tenant-a',
+    parentProcessInstanceKey: undefined,
+    parentElementInstanceKey: undefined,
+  },
+];
+
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        processInstancesStore.reset();
         processInstancesSelectionStore.reset();
         processesStore.reset();
         batchModificationStore.reset();
@@ -60,9 +76,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
 
 describe('<InstancesTable />', () => {
   beforeEach(() => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     processesStore.fetchProcesses();
   });
 
@@ -73,16 +87,23 @@ describe('<InstancesTable />', () => {
         multiTenancyEnabled: true,
       });
 
-      render(<InstancesTable />, {
-        wrapper: getWrapper(
-          `${Paths.processes()}?${new URLSearchParams(
-            tenant === undefined ? undefined : {tenant},
-          )}`,
-        ),
-      });
+      render(
+        <InstancesTable
+          state="content"
+          processInstances={mockProcessInstances}
+          totalProcessInstancesCount={mockProcessInstances.length}
+        />,
+        {
+          wrapper: getWrapper(
+            `${Paths.processes()}?${new URLSearchParams(
+              tenant === undefined ? undefined : {tenant},
+            )}`,
+          ),
+        },
+      );
 
       expect(
-        screen.getByRole('columnheader', {name: 'Tenant'}),
+        screen.getByRole('columnheader', {name: /Tenant/i}),
       ).toBeInTheDocument();
     },
   );
@@ -92,11 +113,18 @@ describe('<InstancesTable />', () => {
       multiTenancyEnabled: true,
     });
 
-    render(<InstancesTable />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?${new URLSearchParams({tenant: 'tenant-a'})}`,
-      ),
-    });
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={mockProcessInstances}
+        totalProcessInstancesCount={mockProcessInstances.length}
+      />,
+      {
+        wrapper: getWrapper(
+          `${Paths.processes()}?${new URLSearchParams({tenant: 'tenant-a'})}`,
+        ),
+      },
+    );
 
     expect(
       screen.queryByRole('columnheader', {name: 'Tenant'}),
@@ -104,11 +132,18 @@ describe('<InstancesTable />', () => {
   });
 
   it('should hide tenant column when multi tenancy is disabled', async () => {
-    render(<InstancesTable />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?${new URLSearchParams({tenant: 'all'})}`,
-      ),
-    });
+    render(
+      <InstancesTable
+        state="content"
+        processInstances={mockProcessInstances}
+        totalProcessInstancesCount={mockProcessInstances.length}
+      />,
+      {
+        wrapper: getWrapper(
+          `${Paths.processes()}?${new URLSearchParams({tenant: 'all'})}`,
+        ),
+      },
+    );
 
     expect(
       screen.queryByRole('columnheader', {name: 'Tenant'}),
@@ -116,7 +151,14 @@ describe('<InstancesTable />', () => {
   });
 
   it('should render batch modification footer', async () => {
-    const {user} = render(<InstancesTable />, {wrapper: getWrapper()});
+    const {user} = render(
+      <InstancesTable
+        state="content"
+        processInstances={mockProcessInstances}
+        totalProcessInstancesCount={mockProcessInstances.length}
+      />,
+      {wrapper: getWrapper()},
+    );
 
     await user.click(
       screen.getByRole('button', {name: /enable batch modification mode/i}),
@@ -143,10 +185,14 @@ describe('<InstancesTable />', () => {
   });
 
   it('should display empty state message when there are no process instances', async () => {
-    processInstancesStore.state.processInstances = [];
-    processInstancesStore.state.status = 'fetched';
-
-    render(<InstancesTable />, {wrapper: getWrapper()});
+    render(
+      <InstancesTable
+        state="empty"
+        processInstances={[]}
+        totalProcessInstancesCount={0}
+      />,
+      {wrapper: getWrapper()},
+    );
 
     expect(
       screen.getByText('There are no Instances matching this filter set'),

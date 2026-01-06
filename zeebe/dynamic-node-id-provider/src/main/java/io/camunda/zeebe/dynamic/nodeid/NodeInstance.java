@@ -7,11 +7,18 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
+import java.util.Objects;
+
 // id ~ integer from 0 to clusterSize
-public record NodeInstance(int id /*, int version*/) {
+public record NodeInstance(int id, Version version) {
   public NodeInstance {
     if (id < 0) {
       throw new IllegalArgumentException("id cannot be negative, was " + id);
     }
+    Objects.requireNonNull(version, "version cannot be null");
+  }
+
+  public NodeInstance nextVersion() {
+    return new NodeInstance(id, version.next());
   }
 }

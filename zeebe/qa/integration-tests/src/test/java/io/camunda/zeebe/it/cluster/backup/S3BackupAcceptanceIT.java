@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -106,12 +106,12 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
   }
 
   private void configureBroker(final TestStandaloneBroker broker) {
-    broker.withBrokerConfig(
+    broker.withUnifiedConfig(
         cfg -> {
-          final var backup = cfg.getData().getBackup();
+          final var backup = cfg.getData().getPrimaryStorage().getBackup();
           final var s3 = backup.getS3();
 
-          backup.setStore(BackupStoreType.S3);
+          backup.setStore(PrimaryStorageBackup.BackupStoreType.S3);
           s3.setBucketName(bucketName);
           s3.setEndpoint(minio.externalEndpoint());
           s3.setRegion(minio.region());

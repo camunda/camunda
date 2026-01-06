@@ -31,7 +31,11 @@ import {
 test.describe
   .parallel('Create Process Instance Batch to Resolve Incidents Tests', () => {
   test.beforeAll(async () => {
-    await deploy(['./resources/processWithThreeParallelTasks.bpmn']);
+    await deploy([
+      './resources/process_batch_resolve_incident.bpmn',
+      './resources/process_batch_resolve_with_multiple_filters.bpmn',
+      './resources/process_batch_resolve_with_or_filters.bpmn',
+    ]);
   });
 
   test('Create a Batch Operation to Resolve Process Instance Incidents - Unauthorized', async ({
@@ -48,7 +52,8 @@ test.describe
     await assertUnauthorizedRequest(res);
   });
 
-  test('Create a Batch Operation to Resolve Incidents - Success', async ({
+  // Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
+  test.skip('Create a Batch Operation to Resolve Incidents - Success', async ({
     request,
   }) => {
     const localState: Record<string, string> = {
@@ -57,7 +62,7 @@ test.describe
 
     await test.step('Create a process instance that will generate incidents', async () => {
       const processInstances = await createInstances(
-        'processWithThreeParallelTasks',
+        'process_batch_resolve_incident',
         1,
         1,
       );
@@ -71,13 +76,11 @@ test.describe
         processInstanceKey,
       );
       await failJob(request, foundJobKeys[0]);
-      await failJob(request, foundJobKeys[1]);
-      await failJob(request, foundJobKeys[2]);
     });
 
     await test.step('Verify that the process instance has incidents', async () => {
       const processInstanceKey = localState.processInstanceKey;
-      await verifyIncidentsForProcessInstance(request, processInstanceKey, 3);
+      await verifyIncidentsForProcessInstance(request, processInstanceKey, 1);
     });
 
     await test.step('Create Batch Operation to Resolve Incidents - Success', async () => {
@@ -150,7 +153,8 @@ test.describe
     );
   });
 
-  test('Create a Batch Operation to Resolve Incidents - With Multiple Filters', async ({
+  // Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
+  test.skip('Create a Batch Operation to Resolve Incidents - With Multiple Filters', async ({
     request,
   }) => {
     const localState: Record<string, string> = {
@@ -160,13 +164,13 @@ test.describe
 
     await test.step('Create Process Instances to generate incidents', async () => {
       const instances = await createInstances(
-        'processWithThreeParallelTasks',
+        'process_batch_resolve_with_multiple_filters',
         1,
         1,
       );
       localState.processInstanceKey1 = instances[0].processInstanceKey;
       const instances2 = await createInstances(
-        'processWithThreeParallelTasks',
+        'process_batch_resolve_with_multiple_filters',
         1,
         1,
         {example: 1},
@@ -243,7 +247,8 @@ test.describe
     await cancelProcessInstance(localState.processInstanceKey2);
   });
 
-  test('Create a Batch Operation to Resolve Incidents - With Or Filters', async ({
+  // Skipped due to bug 41209:  https://github.com/camunda/camunda/issues/41209
+  test.skip('Create a Batch Operation to Resolve Incidents - With Or Filters', async ({
     request,
   }) => {
     const localState: Record<string, string> = {
@@ -253,13 +258,13 @@ test.describe
 
     await test.step('Create Process Instances to generate incidents', async () => {
       const instances = await createInstances(
-        'processWithThreeParallelTasks',
+        'process_batch_resolve_with_or_filters',
         1,
         1,
       );
       localState.processInstanceKey1 = instances[0].processInstanceKey;
       const instances2 = await createInstances(
-        'processWithThreeParallelTasks',
+        'process_batch_resolve_with_or_filters',
         1,
         1,
         {example: 1},

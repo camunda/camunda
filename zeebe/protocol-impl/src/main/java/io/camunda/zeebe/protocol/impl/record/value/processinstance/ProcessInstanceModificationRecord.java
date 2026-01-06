@@ -10,12 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,17 +25,21 @@ import java.util.stream.Collectors;
 public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     implements ProcessInstanceModificationRecordValue {
 
+  public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   // Static StringValue keys to avoid memory waste
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue TERMINATE_INSTRUCTIONS_KEY =
       new StringValue("terminateInstructions");
   private static final StringValue ACTIVATE_INSTRUCTIONS_KEY =
       new StringValue("activateInstructions");
+  private static final StringValue MOVE_INSTRUCTIONS_KEY = new StringValue("moveInstructions");
   private static final StringValue ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY =
       new StringValue("activatedElementInstanceKeys");
-
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final StringProperty tenantIdProp =
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
   private final ArrayProperty<ProcessInstanceModificationTerminateInstruction>
       terminateInstructionsProperty =
           new ArrayProperty<>(
@@ -42,16 +48,20 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       activateInstructionsProperty =
           new ArrayProperty<>(
               ACTIVATE_INSTRUCTIONS_KEY, ProcessInstanceModificationActivateInstruction::new);
+  private final ArrayProperty<ProcessInstanceModificationMoveInstruction> moveInstructionsProperty =
+      new ArrayProperty<>(MOVE_INSTRUCTIONS_KEY, ProcessInstanceModificationMoveInstruction::new);
 
   private final ArrayProperty<LongValue> activatedElementInstanceKeys =
       new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
 
   public ProcessInstanceModificationRecord() {
-    super(4);
+    super(6);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
-        .declareProperty(activatedElementInstanceKeys);
+        .declareProperty(moveInstructionsProperty)
+        .declareProperty(activatedElementInstanceKeys)
+        .declareProperty(tenantIdProp);
   }
 
   /**
@@ -94,6 +104,26 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
         .toList();
   }
 
+  /**
+   * This method is expensive because it copies each element before returning it. It is recommended
+   * to use {@link #hasMoveInstructions()} before calling this.
+   *
+   * <p>{@inheritDoc}
+   */
+  @Override
+  public List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions() {
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return moveInstructionsProperty.stream()
+        .map(
+            element -> {
+              final var elementCopy = new ProcessInstanceModificationMoveInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceModificationMoveInstructionValue) elementCopy;
+            })
+        .toList();
+  }
+
   @Override
   public Set<Long> getAncestorScopeKeys() {
     final Set<Long> activatedElementInstanceKeys =
@@ -120,6 +150,18 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   public ProcessInstanceModificationRecord addTerminateInstruction(
       final ProcessInstanceModificationTerminateInstructionValue terminateInstruction) {
     terminateInstructionsProperty.add().copy(terminateInstruction);
+    return this;
+  }
+
+  /** Returns true if this record has move instructions, otherwise false. */
+  @JsonIgnore
+  public boolean hasMoveInstructions() {
+    return !moveInstructionsProperty.isEmpty();
+  }
+
+  public ProcessInstanceModificationRecord addMoveInstruction(
+      final ProcessInstanceModificationMoveInstructionValue moveInstruction) {
+    moveInstructionsProperty.add().copy(moveInstruction);
     return this;
   }
 
@@ -159,7 +201,11 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13288): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessInstanceModificationRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }

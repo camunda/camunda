@@ -9,11 +9,10 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.Gcs;
+import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -87,17 +86,19 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
   }
 
   private void configureBroker(final TestStandaloneBroker broker) {
-    broker.withBrokerConfig(
+    broker.withUnifiedConfig(
         cfg -> {
-          final var backup = cfg.getData().getBackup();
-          backup.setStore(BackupStoreType.GCS);
+          cfg.getData()
+              .getPrimaryStorage()
+              .getBackup()
+              .setStore(PrimaryStorageBackup.BackupStoreType.GCS);
 
-          final var config = new GcsBackupStoreConfig();
-          config.setAuth(GcsBackupStoreAuth.NONE);
+          final var config = new Gcs();
+          config.setAuth(Gcs.GcsBackupStoreAuth.NONE);
           config.setBasePath(basePath);
           config.setBucketName(BUCKET_NAME);
           config.setHost(GCS.externalEndpoint());
-          backup.setGcs(config);
+          cfg.getData().getPrimaryStorage().getBackup().setGcs(config);
         });
   }
 

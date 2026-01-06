@@ -29,15 +29,15 @@ class CreateGroupTest {
   private static final String GROUP_NAME = "groupName";
   private static final String GROUP_DESCRIPTION = "groupDescription";
 
-  @AutoClose CamundaClient client;
-
   @TestZeebe
-  private final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+
+  @AutoClose CamundaClient client;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
   }
 
   @Test

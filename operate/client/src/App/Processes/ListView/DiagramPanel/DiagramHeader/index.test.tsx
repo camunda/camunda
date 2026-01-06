@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {MemoryRouter} from 'react-router-dom';
 import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 
@@ -17,11 +18,14 @@ vi.mock('modules/stores/processInstances', () => ({
   },
 }));
 
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return <MemoryRouter>{children}</MemoryRouter>;
+};
+
 describe('DiagramHeader', () => {
   it('should render header with full data', async () => {
     render(
       <DiagramHeader
-        isVersionSelected
         processDetails={{
           processName: 'My Process',
           bpmnProcessId: 'MyProcess',
@@ -29,8 +33,8 @@ describe('DiagramHeader', () => {
           versionTag: 'MyVersionTag',
         }}
         processDefinitionId=""
-        tenant=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -50,15 +54,14 @@ describe('DiagramHeader', () => {
   it('should render header without version tag', async () => {
     render(
       <DiagramHeader
-        isVersionSelected
         processDetails={{
           processName: 'My Process',
           bpmnProcessId: 'MyProcess',
           version: '1',
         }}
         processDefinitionId=""
-        tenant=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -77,13 +80,12 @@ describe('DiagramHeader', () => {
   it('should render header without data', async () => {
     render(
       <DiagramHeader
-        isVersionSelected
         processDetails={{
           processName: 'My Process',
         }}
         processDefinitionId=""
-        tenant=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.queryByText(/^process name$/i)).not.toBeInTheDocument();

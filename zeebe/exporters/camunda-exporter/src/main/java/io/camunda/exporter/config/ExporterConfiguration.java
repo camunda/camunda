@@ -10,6 +10,8 @@ package io.camunda.exporter.config;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 
 public class ExporterConfiguration {
 
@@ -19,11 +21,30 @@ public class ExporterConfiguration {
   private HistoryConfiguration history = new HistoryConfiguration();
   private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
+  private CacheConfiguration decisionRequirementsCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
+  private AuditLogConfiguration auditLog = new AuditLogConfiguration();
+  private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private boolean createSchema = true;
+
+  public AuditLogConfiguration getAuditLog() {
+    return auditLog;
+  }
+
+  public void setAuditLog(final AuditLogConfiguration auditLog) {
+    this.auditLog = auditLog;
+  }
+
+  public HistoryDeletionConfiguration getHistoryDeletion() {
+    return historyDeletion;
+  }
+
+  public void setHistoryDeletion(final HistoryDeletionConfiguration historyDeletion) {
+    this.historyDeletion = historyDeletion;
+  }
 
   public ConnectConfiguration getConnect() {
     return connect;
@@ -63,6 +84,14 @@ public class ExporterConfiguration {
 
   public void setProcessCache(final CacheConfiguration processCache) {
     this.processCache = processCache;
+  }
+
+  public CacheConfiguration getDecisionRequirementsCache() {
+    return decisionRequirementsCache;
+  }
+
+  public void setDecisionRequirementsCache(final CacheConfiguration decisionRequirementsCache) {
+    this.decisionRequirementsCache = decisionRequirementsCache;
   }
 
   public CacheConfiguration getFormCache() {
@@ -130,18 +159,24 @@ public class ExporterConfiguration {
         + batchOperationCache
         + ", processCache="
         + processCache
+        + ", decisionRequirementsCache="
+        + decisionRequirementsCache
         + ", formCache="
         + formCache
         + ", postExport="
         + postExport
         + ", batchOperation="
         + batchOperation
+        + ", auditLog="
+        + auditLog
+        + ", historyDeletion="
+        + historyDeletion
         + '}';
   }
 
   public static class BulkConfiguration {
     // delay before forced flush
-    private int delay = 5;
+    private int delay = 1;
     // bulk size before flush
     private int size = 1_000;
     // bulk memory utilisation before flush (in Mb)
@@ -327,7 +362,7 @@ public class ExporterConfiguration {
   public static final class PostExportConfiguration {
     private int batchSize = 100;
     private int delayBetweenRuns = 2000;
-    private int maxDelayBetweenRuns = 60000;
+    private int maxDelayBetweenRuns = 5000;
     private boolean ignoreMissingData = false;
 
     public int getBatchSize() {

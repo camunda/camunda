@@ -11,8 +11,8 @@ import {Container, Tab, Content, TabPanel, TabList} from './styled';
 import {tracking} from 'modules/tracking';
 import {Tabs, TabPanels, Stack} from '@carbon/react';
 
-type TabType = {
-  id: string;
+type TabType<TabId extends string = string> = {
+  id: TabId;
   labelIcon?: React.ReactNode;
   label: string;
   content: React.ReactNode;
@@ -21,13 +21,19 @@ type TabType = {
   onClick?: () => void;
 };
 
-type Props = {
-  tabs: TabType[];
+type Props<TabId extends string = string> = {
+  tabs: TabType<TabId>[];
   eventName?: 'variables-panel-used';
   dataTestId?: string;
+  onTabChange?: (id: TabId) => void;
 };
 
-const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
+function TabView<TabId extends string = string>({
+  tabs = [],
+  eventName,
+  dataTestId,
+  onTabChange,
+}: Props<TabId>) {
   return (
     <Container data-testid={dataTestId}>
       {tabs.length === 1 && tabs[0] !== undefined ? (
@@ -44,6 +50,7 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
                 data-testid={testId}
                 onClick={() => {
                   onClick?.();
+                  onTabChange?.(id);
                   if (eventName !== undefined) {
                     tracking.track({
                       eventName,
@@ -70,6 +77,6 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
       )}
     </Container>
   );
-};
+}
 
 export {TabView};
