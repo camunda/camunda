@@ -21,7 +21,7 @@
   <fileSets>
     <fileSet>
       <outputDirectory>/</outputDirectory>
-      <directory>${project.basedir}/target/liquibase</directory>
+      <directory>${project.build.outputDirectory}/liquibase</directory>
     </fileSet>
     <fileSet>
       <outputDirectory>/liquibase</outputDirectory>

@@ -64,7 +64,7 @@
         <configuration>
           <mainClass>io.camunda.db.rdbms.LiquibaseScriptGenerator</mainClass>
           <arguments>
-            <argument>${project.basedir}/target</argument>
+            <argument>${project.build.outputDirectory}</argument>
             <argument>${project.version}</argument>
           </arguments>
         </configuration>
@@ -98,6 +98,7 @@
           </execution>
         </executions>
       </plugin>
+
     </plugins>
 
   </build>

@@ -16,6 +16,8 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import liquibase.Liquibase;
+import liquibase.changelog.ChangeSet;
+import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
@@ -53,7 +55,7 @@ public class LiquibaseScriptGenerator {
           CHANGELOG_PATH + "changelog-master.xml",
           prefix,
           targetDir + "/create",
-          database + "_create_" + projectVersion + ".sql");
+          database + "_master.sql");
 
       // We generate upgrade scripts for each version (except 8.9.0) from the changesets, so that
       // customers, who created their schema with an older version can upgrade to the latest
@@ -128,24 +130,47 @@ public class LiquibaseScriptGenerator {
     final var sqlScript = new StringBuilder();
 
     for (final var changeSet : changelog.getChangeSets()) {
-      sqlScript.append("-- ");
-      sqlScript.append(changeSet.getId());
-      sqlScript.append("\n");
-
-      for (final var change : changeSet.getChanges()) {
-        final var sql = sqlGenerator.generateSql(change, database);
-        for (final var s : sql) {
-          final var formattedSql = SqlFormatter.format(s.toSql());
-
-          sqlScript.append(formattedSql);
-          sqlScript.append(";");
-          sqlScript.append("\n");
-        }
-
-        sqlScript.append("\n");
-      }
+      processChangeSet(changeSet, sqlScript, sqlGenerator, database);
     }
 
     return sqlScript.toString();
+  }
+
+  private static void processChangeSet(
+      final ChangeSet changeSet,
+      final StringBuilder sqlScript,
+      final SqlGeneratorFactory sqlGenerator,
+      final Database database) {
+    sqlScript.append("-- ");
+    sqlScript.append(changeSet.getId());
+    sqlScript.append("\n");
+
+    for (final var change : changeSet.getChanges()) {
+      final var sql = sqlGenerator.generateSql(change, database);
+
+      for (final var s : sql) {
+        var sqlString = s.toSql();
+
+        // Apply SQL visitors (which handle modifySql directives)
+        for (final var visitor : changeSet.getSqlVisitors()) {
+          sqlString = visitor.modifySql(sqlString, database);
+        }
+
+        sqlScript.append(formatSql(sqlString));
+        sqlScript.append(";");
+        sqlScript.append("\n");
+      }
+
+      sqlScript.append("\n");
+    }
+  }
+
+  private static String formatSql(final String sqlString) {
+    var formattedSql = SqlFormatter.format(sqlString);
+
+    // Fix spaces inside backticked identifiers (e.g., ` DESCRIPTION ` -> `DESCRIPTION`)
+    // Match backtick pairs and remove leading/trailing whitespace inside them
+    formattedSql = formattedSql.replaceAll("`\\s+([^`]+?)\\s+`", "`$1`");
+    return formattedSql;
   }
 }
