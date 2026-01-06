@@ -200,6 +200,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                       123L,
                       "Test_Process",
                       789L,
+                      37L,
                       ErrorType.CALLED_DECISION_ERROR,
                       "Process crashed",
                       "elementId",
