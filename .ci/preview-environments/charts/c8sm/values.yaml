@@ -32,6 +32,10 @@ global:
     ingress:
       # The domain name under which to expose the preview environment
       domain: camunda.camunda.cloud
+      # When enabled, bypasses Vouch/Okta for internal IPs (10.0.0.0/8),
+      # allowing CI access via Teleport TCP tunnel.
+      internalAuthBypass:
+        enabled: false
 
   # Camunda 8 Self-Managed global configurations
   elasticsearch:
