@@ -68,7 +68,8 @@ public class CompleteUserTaskInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
+    verify(processTestContext)
+        .completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
 
     selectorCaptor.getValue().applyFilter(userTaskFilter);
     verify(userTaskFilter).taskName("Approve Request");
@@ -88,7 +89,8 @@ public class CompleteUserTaskInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
+    verify(processTestContext)
+        .completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
 
     selectorCaptor.getValue().applyFilter(userTaskFilter);
     verify(userTaskFilter).elementId("task1");
@@ -109,7 +111,8 @@ public class CompleteUserTaskInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
+    verify(processTestContext)
+        .completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
 
     selectorCaptor.getValue().applyFilter(userTaskFilter);
     verify(userTaskFilter).processDefinitionId("my-process");
@@ -134,7 +137,8 @@ public class CompleteUserTaskInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
+    verify(processTestContext)
+        .completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
 
     selectorCaptor.getValue().applyFilter(userTaskFilter);
     verify(userTaskFilter).processDefinitionId("my-process");
