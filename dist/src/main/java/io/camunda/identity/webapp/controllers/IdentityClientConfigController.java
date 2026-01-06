@@ -29,7 +29,6 @@ public class IdentityClientConfigController {
   private static final String IS_TENANTS_API_ENABLED = "isTenantsApiEnabled";
   private static final String ORGANIZATION_ID = "organizationId";
   private static final String CLUSTER_ID = "clusterId";
-  private static final String ID_PATTERN = "idPattern";
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
@@ -64,7 +63,6 @@ public class IdentityClientConfigController {
         String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
     config.put(ORGANIZATION_ID, saasConfiguration.getOrganizationId());
     config.put(CLUSTER_ID, saasConfiguration.getClusterId());
-    config.put(ID_PATTERN, securityConfiguration.getIdValidationPattern());
 
     return config;
   }

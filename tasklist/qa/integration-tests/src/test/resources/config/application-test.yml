@@ -10,7 +10,7 @@ camunda:
 
 camunda.tasklist:
   elasticsearch:
-    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     gatewayAddress: localhost:26500
     worker: tasklist
@@ -37,7 +37,7 @@ server.error.include-message: always
 management.health.defaults.enabled: false
 management.endpoint.health.probes.enabled: true
 management.endpoints.web.exposure.include: health,prometheus,loggers,usage-metrics,backups
-management.endpoint.health.group.readiness.include: readinessState
+management.endpoint.health.group.readiness.include: readinessState,searchEngineCheck
 ---
-spring.config.activate.on-profile: sso-auth
+spring.config.activate.on-profile: identity-auth, sso-auth
 camunda.webapps.login-delegated: true

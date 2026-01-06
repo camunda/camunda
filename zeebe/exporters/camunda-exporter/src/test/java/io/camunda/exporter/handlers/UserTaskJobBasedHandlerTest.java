@@ -86,7 +86,6 @@ public class UserTaskJobBasedHandlerTest {
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
             .withType(Protocol.USER_TASK_JOB_TYPE)
-            .withJobToUserTaskMigration(false)
             .build();
 
     SUPPORTED_INTENTS.forEach(
@@ -96,26 +95,6 @@ public class UserTaskJobBasedHandlerTest {
                   ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
           // when - then
           assertThat(underTest.handlesRecord(jobRecord)).isTrue();
-        });
-  }
-
-  @Test
-  void shouldNotHandleUserTaskMigrationRecord() {
-    // given
-    final JobRecordValue jobRecordValue =
-        ImmutableJobRecordValue.builder()
-            .from(factory.generateObject(JobRecordValue.class))
-            .withType(Protocol.USER_TASK_JOB_TYPE)
-            .withJobToUserTaskMigration(true)
-            .build();
-
-    SUPPORTED_INTENTS.forEach(
-        intent -> {
-          final Record<JobRecordValue> jobRecord =
-              factory.generateRecord(
-                  ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
-          // when - then
-          assertThat(underTest.handlesRecord(jobRecord)).isFalse();
         });
   }
 
@@ -325,8 +304,7 @@ public class UserTaskJobBasedHandlerTest {
     formCache.put(formKey, new CachedFormEntity("my-form", 987L));
     processCache.put(
         processDefinitionKey,
-        new CachedProcessEntity(
-            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node")));
+        new CachedProcessEntity("my-process", "v1", List.of(), Map.of(elementId, "my-flow-node")));
 
     // when
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(recordKey));

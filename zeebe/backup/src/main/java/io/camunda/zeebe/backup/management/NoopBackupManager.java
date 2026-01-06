@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.backup.management;
 
-import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -32,7 +31,7 @@ public class NoopBackupManager implements BackupManager {
 
   @Override
   public ActorFuture<Void> takeBackup(
-      final long checkpointId, final BackupDescriptor backupDescriptor) {
+      final long checkpointId, final long checkpointPosition, final int partitionCount) {
     final var result = new CompletableActorFuture<Void>();
     result.completeExceptionally(new UnsupportedOperationException(errorMessage));
     return result;
@@ -71,9 +70,7 @@ public class NoopBackupManager implements BackupManager {
 
   @Override
   public void createFailedBackup(
-      final long checkpointId,
-      final BackupDescriptor backupDescriptor,
-      final String failureReason) {
+      final long checkpointId, final long checkpointPosition, final String failureReason) {
     LOG.warn("Attempted to create failed backup, but cannot do it. {}", errorMessage);
   }
 }

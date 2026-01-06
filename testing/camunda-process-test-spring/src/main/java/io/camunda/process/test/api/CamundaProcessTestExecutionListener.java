@@ -28,11 +28,9 @@ import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConf
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
-import io.camunda.process.test.impl.dsl.CamundaTestScenarioRunner;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
-import io.camunda.process.test.impl.proxy.TestScenarioRunnerProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -162,10 +160,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
         .setContext(camundaProcessTestContext);
-    testContext
-        .getApplicationContext()
-        .getBean(TestScenarioRunnerProxy.class)
-        .setRunner(new CamundaTestScenarioRunner(camundaProcessTestContext));
 
     // publish Zeebe client
     testContext
@@ -220,7 +214,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
         .removeContext();
-    testContext.getApplicationContext().getBean(TestScenarioRunnerProxy.class).removeRunner();
 
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it

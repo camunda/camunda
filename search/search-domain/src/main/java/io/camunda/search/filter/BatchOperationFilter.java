@@ -20,9 +20,7 @@ import java.util.Objects;
 public record BatchOperationFilter(
     List<Operation<String>> batchOperationKeyOperations,
     List<Operation<String>> operationTypeOperations,
-    List<Operation<String>> stateOperations,
-    List<Operation<String>> actorTypeOperations,
-    List<Operation<String>> actorIdOperations)
+    List<Operation<String>> stateOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<BatchOperationFilter> {
@@ -30,8 +28,6 @@ public record BatchOperationFilter(
     private List<Operation<String>> batchOperationKeyOperations;
     private List<Operation<String>> operationTypeOperations;
     private List<Operation<String>> stateOperations;
-    private List<Operation<String>> actorTypeOperations;
-    private List<Operation<String>> actorIdOperations;
 
     public Builder batchOperationKeyOperations(final List<Operation<String>> operations) {
       batchOperationKeyOperations = addValuesToList(batchOperationKeyOperations, operations);
@@ -93,54 +89,12 @@ public record BatchOperationFilter(
       return stateOperations(collectValues(operation, operations));
     }
 
-    public Builder actorTypeOperations(final List<Operation<String>> operations) {
-      actorTypeOperations = addValuesToList(actorTypeOperations, operations);
-      return this;
-    }
-
-    public Builder actorTypes(final String value, final String... values) {
-      return actorTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
-    }
-
-    public Builder replaceActorTypeOperations(final List<Operation<String>> operations) {
-      actorTypeOperations = new ArrayList<>(operations);
-      return this;
-    }
-
-    @SafeVarargs
-    public final Builder actorTypeOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return actorTypeOperations(collectValues(operation, operations));
-    }
-
-    public Builder actorIdOperations(final List<Operation<String>> operations) {
-      actorIdOperations = addValuesToList(actorIdOperations, operations);
-      return this;
-    }
-
-    public Builder actorIds(final String value, final String... values) {
-      return actorIdOperations(FilterUtil.mapDefaultToOperation(value, values));
-    }
-
-    public Builder replaceActorIdOperations(final List<Operation<String>> operations) {
-      actorIdOperations = new ArrayList<>(operations);
-      return this;
-    }
-
-    @SafeVarargs
-    public final Builder actorIdOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return actorIdOperations(collectValues(operation, operations));
-    }
-
     @Override
     public BatchOperationFilter build() {
       return new BatchOperationFilter(
           Objects.requireNonNullElse(batchOperationKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(operationTypeOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(actorTypeOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(actorIdOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()));
     }
   }
 }

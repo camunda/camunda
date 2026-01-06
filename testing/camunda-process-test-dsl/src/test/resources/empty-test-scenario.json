@@ -1,9 +1,0 @@
-{
-  "testCases": [
-    {
-      "name": "Test Case 1",
-      "description": "A human-readable description of what this test case is verifying.",
-      "instructions": []
-    }
-  ]
-}

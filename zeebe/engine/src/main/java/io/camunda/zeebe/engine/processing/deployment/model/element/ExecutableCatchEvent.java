@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.function.TriFunction;
+import java.util.function.BiFunction;
 
 public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
@@ -29,8 +29,6 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
   boolean isCompensation();
 
-  boolean isConditional();
-
   default boolean isNone() {
     return !isTimer()
         && !isMessage()
@@ -38,8 +36,7 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
         && !isLink()
         && !isEscalation()
         && !isSignal()
-        && !isCompensation()
-        && !isConditional();
+        && !isCompensation();
   }
 
   ExecutableMessage getMessage();
@@ -48,13 +45,11 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
     return true;
   }
 
-  TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> getTimerFactory();
+  BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> getTimerFactory();
 
   ExecutableError getError();
 
   ExecutableEscalation getEscalation();
 
   ExecutableSignal getSignal();
-
-  ExecutableConditional getConditional();
 }

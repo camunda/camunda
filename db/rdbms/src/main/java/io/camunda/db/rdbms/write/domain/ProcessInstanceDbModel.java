@@ -10,7 +10,6 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
-import java.util.Set;
 import java.util.function.Function;
 
 public record ProcessInstanceDbModel(
@@ -27,8 +26,7 @@ public record ProcessInstanceDbModel(
     int version,
     int partitionId,
     String treePath,
-    OffsetDateTime historyCleanupDate,
-    Set<String> tags)
+    OffsetDateTime historyCleanupDate)
     implements DbModel<ProcessInstanceDbModel> {
 
   @Override
@@ -51,9 +49,7 @@ public record ProcessInstanceDbModel(
                 .tenantId(tenantId)
                 .version(version)
                 .partitionId(partitionId)
-                .treePath(treePath)
-                .historyCleanupDate(historyCleanupDate)
-                .tags(tags))
+                .historyCleanupDate(historyCleanupDate))
         .build();
   }
 
@@ -74,7 +70,6 @@ public record ProcessInstanceDbModel(
     private int partitionId;
     private String treePath;
     private OffsetDateTime historyCleanupDate;
-    private Set<String> tags;
 
     // Public constructor to initialize the builder
     public ProcessInstanceDbModelBuilder() {}
@@ -156,11 +151,6 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
-    public ProcessInstanceDbModelBuilder tags(final Set<String> tags) {
-      this.tags = tags;
-      return this;
-    }
-
     @Override
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
@@ -177,8 +167,7 @@ public record ProcessInstanceDbModel(
           version,
           partitionId,
           treePath,
-          historyCleanupDate,
-          tags);
+          historyCleanupDate);
     }
   }
 }

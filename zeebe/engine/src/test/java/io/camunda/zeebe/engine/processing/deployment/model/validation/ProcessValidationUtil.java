@@ -13,7 +13,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
@@ -73,7 +73,7 @@ public class ProcessValidationUtil {
     final ExpressionLanguage expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage(
             new ZeebeFeelEngineClock(InstantSource.system()));
-    final ScopedEvaluationContext emptyLookup = ScopedEvaluationContext.NONE_INSTANCE;
+    final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
         new ValidationVisitor(

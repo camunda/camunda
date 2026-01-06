@@ -16,15 +16,12 @@
 package io.camunda.client.api.search.enums;
 
 public enum ResourceType {
-  AUDIT_LOG,
   AUTHORIZATION,
   BATCH,
-  CLUSTER_VARIABLE,
   COMPONENT,
   DECISION_DEFINITION,
   DECISION_REQUIREMENTS_DEFINITION,
   DOCUMENT,
-  EXPRESSION,
   GROUP,
   MAPPING_RULE,
   MESSAGE,

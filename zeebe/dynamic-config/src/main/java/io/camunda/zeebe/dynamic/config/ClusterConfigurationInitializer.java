@@ -250,7 +250,7 @@ public interface ClusterConfigurationInitializer {
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
-    private final Duration syncDelay;
+    private static final Duration SYNC_QUERY_RETRY_DELAY = Duration.ofSeconds(5);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final ActorFuture<ClusterConfiguration> initialized;
     private final List<MemberId> knownMembersToSync;
@@ -258,12 +258,10 @@ public interface ClusterConfigurationInitializer {
     private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
 
     public SyncInitializer(
-        final Duration syncDelay,
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final List<MemberId> knownMembersToSync,
         final ConcurrencyControl executor,
         final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester) {
-      this.syncDelay = syncDelay;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.knownMembersToSync = knownMembersToSync;
       this.executor = executor;
@@ -311,7 +309,7 @@ public interface ClusterConfigurationInitializer {
                 }
                 // retry
                 if (!initialized.isDone()) {
-                  executor.schedule(syncDelay, () -> tryInitializeFrom(memberId));
+                  executor.schedule(SYNC_QUERY_RETRY_DELAY, () -> tryInitializeFrom(memberId));
                 }
               });
     }

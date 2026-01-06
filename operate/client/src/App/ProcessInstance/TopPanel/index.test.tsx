@@ -24,6 +24,7 @@ import {
 } from 'modules/mocks/metadata';
 import {createInstance, createIncident} from 'modules/testUtils';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
@@ -54,9 +55,29 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
 const mockIncidents = {
-  page: {totalItems: 1},
-  items: [
-    createIncident({errorType: 'CONDITION_ERROR', elementId: 'Service5678'}),
+  count: 1,
+  incidents: [
+    createIncident({
+      errorType: {
+        name: 'Condition error',
+        id: 'CONDITION_ERROR',
+      },
+      flowNodeId: 'Service5678',
+    }),
+  ],
+  errorTypes: [
+    {
+      id: 'Condition error',
+      name: 'Condition error',
+      count: 1,
+    },
+  ],
+  flowNodes: [
+    {
+      id: 'Service5678',
+      name: 'Do something',
+      count: 1,
+    },
   ],
 };
 
@@ -183,15 +204,7 @@ describe('TopPanel', () => {
       createInstance({id: 'instance_id', state: 'INCIDENT'}),
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidents,
-    );
-    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidents,
-    );
-    mockSearchIncidentsByProcessInstance(':instance_id').withSuccess(
-      mockIncidents,
-    );
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
@@ -210,6 +223,10 @@ describe('TopPanel', () => {
           canceled: 0,
         },
       ],
+    });
+    mockSearchIncidentsByProcessInstance('instance_id').withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
 
     mockSearchJobs().withSuccess({
@@ -327,10 +344,6 @@ describe('TopPanel', () => {
   });
 
   it('should toggle incident bar', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      createInstance({id: 'instance_id', state: 'INCIDENT'}),
-    );
-
     const {user} = render(<TopPanel />, {
       wrapper: getWrapper(),
     });
@@ -339,17 +352,21 @@ describe('TopPanel', () => {
 
     await waitFor(() =>
       expect(
-        screen.queryByText('Incidents - 1 result'),
+        screen.queryByText('Incidents View - 1 result'),
       ).not.toBeInTheDocument(),
     );
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(await screen.findByText('Incidents - 1 result')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Incidents View - 1 result'),
+    ).toBeInTheDocument();
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(screen.queryByText('Incidents - 1 result')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Incidents View - 1 result'),
+    ).not.toBeInTheDocument();
   });
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {
@@ -383,6 +400,7 @@ describe('TopPanel', () => {
         },
       ],
     });
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     flowNodeMetaDataStore.setMetaData({
       ...calledInstanceMetadata,
@@ -565,74 +583,6 @@ describe('TopPanel', () => {
     expect(
       screen.queryByText(/select the target flow node in the diagram/i),
     ).not.toBeInTheDocument();
-  });
-
-  it('should render modification info banner when move modification requires an ancestor', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      open('subprocessInsideMultiInstance.bpmn'),
-    );
-
-    const parentElement = {
-      flowNodeId: 'sub-2',
-    };
-    const element = {
-      flowNodeInstanceId: '2251799813699889',
-      flowNodeId: 'task-1',
-    };
-
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: [
-        {
-          elementId: element.flowNodeId,
-          active: 2,
-          completed: 0,
-          canceled: 0,
-          incidents: 0,
-        },
-        {
-          elementId: parentElement.flowNodeId,
-          active: 2,
-          completed: 0,
-          canceled: 0,
-          incidents: 0,
-        },
-      ],
-    });
-
-    flowNodeMetaDataStore.setMetaData({
-      ...calledInstanceMetadata,
-      ...element,
-      instanceMetadata: {
-        ...calledInstanceMetadata.instanceMetadata,
-        endDate: null,
-      },
-    });
-
-    const {user} = render(<TopPanel />, {
-      wrapper: getWrapper(),
-    });
-
-    modificationsStore.enableModificationMode();
-
-    selectFlowNode({}, element);
-
-    expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
-    ).not.toBeInTheDocument();
-
-    await user.click(await screen.findByRole('button', {name: /move/i}));
-
-    expect(
-      await screen.findByText(/select the target flow node in the diagram/i),
-    ).toBeInTheDocument();
-
-    await user.click(await screen.findByTestId('task-2'));
-
-    expect(
-      await screen.findByText(
-        /Target flow node has multiple parent scopes. Please select parent node from Instance History to move./i,
-      ),
-    ).toBeInTheDocument();
   });
 
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(

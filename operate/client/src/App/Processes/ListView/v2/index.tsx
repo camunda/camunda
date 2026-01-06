@@ -8,24 +8,25 @@
 
 import {InstancesList} from '../../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
-import {Filters} from './Filters';
-import {InstancesTableWrapper} from './InstancesTable/InstancesTableWrapper';
+import {Filters} from '../Filters';
+import {InstancesTable} from './InstancesTable';
 import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {deleteSearchParams} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesStore} from 'modules/stores/processInstances';
 import {PAGE_TITLE} from 'modules/constants';
 import {notificationsStore} from 'modules/stores/notifications';
-import {OperationsPanel} from 'modules/components/OperationsPanel';
-import {batchModificationStore} from 'modules/stores/batchModification';
-import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
-import {useFilters} from 'modules/hooks/useFilters';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
+import {OperationsPanel} from 'modules/components/OperationsPanel';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -34,13 +35,12 @@ type LocationType = Omit<Location, 'state'> & {
 const ListView: React.FC = observer(() => {
   const location = useLocation() as LocationType;
   const navigate = useNavigate();
-  const {getFilters} = useFilters();
 
-  const filters = getFilters();
-
+  const filters = getProcessInstanceFilters(location.search);
   const {process, tenant, version} = filters;
   const {
     state: {status: processesStatus},
+    isInitialLoadComplete,
   } = processesStore;
   const filtersJSON = JSON.stringify(filters);
 
@@ -55,11 +55,13 @@ const ListView: React.FC = observer(() => {
 
   useEffect(() => {
     processInstancesSelectionStore.init();
+    processInstancesStore.init();
     processesStore.fetchProcesses();
 
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
+      processInstancesStore.reset();
       processesStore.reset();
     };
   }, []);
@@ -67,6 +69,18 @@ const ListView: React.FC = observer(() => {
   useEffect(() => {
     processInstancesSelectionStore.resetState();
   }, [filtersJSON]);
+
+  useEffect(() => {
+    if (isInitialLoadComplete && !location.state?.refreshContent) {
+      processInstancesStore.fetchProcessInstancesFromFilters();
+    }
+  }, [location.search, isInitialLoadComplete, location.state]);
+
+  useEffect(() => {
+    if (isInitialLoadComplete && location.state?.refreshContent) {
+      processInstancesStore.fetchProcessInstancesFromFilters();
+    }
+  }, [isInitialLoadComplete, location.state]);
 
   useEffect(() => {
     const disposer = reaction(
@@ -78,9 +92,11 @@ const ListView: React.FC = observer(() => {
             filterName: 'variable',
             multipleValues: variableFilterStore.state.isInMultipleMode,
           });
+          processInstancesStore.fetchProcessInstancesFromFilters();
         }
       },
     );
+
     return disposer;
   }, [processesStatus]);
 
@@ -116,7 +132,7 @@ const ListView: React.FC = observer(() => {
         type="process"
         leftPanel={<Filters />}
         topPanel={<DiagramPanel />}
-        bottomPanel={<InstancesTableWrapper />}
+        bottomPanel={<InstancesTable />}
         rightPanel={<OperationsPanel />}
         frame={{
           isVisible: batchModificationStore.state.isEnabled,

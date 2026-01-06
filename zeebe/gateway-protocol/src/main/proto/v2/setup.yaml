@@ -3,7 +3,6 @@
 paths:
   /setup/user:
     post:
-      x-eventually-consistent: true
       tags:
         - Setup
       operationId: createAdminUser
@@ -26,3 +25,4 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: true

@@ -15,7 +15,6 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirement
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementActivatingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getGlobalClusterVariableRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRuleRecord;
@@ -23,15 +22,12 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCr
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getRoleRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantClusterVariableRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -41,9 +37,6 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.reader.AuthorizationCheck;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.security.reader.TenantCheck;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -52,7 +45,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -64,7 +56,6 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -83,7 +74,6 @@ import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -98,32 +88,22 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       "spring.liquibase.enabled=false",
+      "zeebe.broker.exporters.rdbms.args.queueSize=0",
       "camunda.data.secondary-storage.type=rdbms",
-      "camunda.data.secondary-storage.rdbms.queue-size=0",
+      "zeebe.broker.exporters.rdbms.args.maxQueueSize=0",
+      "camunda.database.index-prefix=C8_"
     })
 class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
-  private final VendorDatabaseProperties vendorDatabaseProperties =
-      new VendorDatabaseProperties(
-          new Properties() {
-            {
-              setProperty("variableValue.previewSize", "100");
-              setProperty("userCharColumn.size", "50");
-              setProperty("errorMessage.size", "500");
-              setProperty("disableFkBeforeTruncate", "true");
-            }
-          });
 
-  @Autowired private LiquibaseSchemaManager liquibaseSchemaManager;
   @Autowired private RdbmsService rdbmsService;
 
   private RdbmsExporterWrapper exporter;
 
   @BeforeEach
   void setUp() {
-    exporter =
-        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+    exporter = new RdbmsExporterWrapper(rdbmsService);
     exporter.configure(
         new ExporterContext(
             null,
@@ -226,62 +206,6 @@ class RdbmsExporterIT {
         (VariableRecordValue) variableCreatedRecord.getValue();
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(variableRecordValue.getValue());
-  }
-
-  @Test
-  public void shouldExportGlobalClusterVariables() {
-    // given
-    final Record<RecordValue> clusterVariableCreatedRecord =
-        getGlobalClusterVariableRecord(ClusterVariableIntent.CREATED);
-
-    // when
-    exporter.export(clusterVariableCreatedRecord);
-
-    final ClusterVariableRecordValue clusterVariableRecordValue =
-        (ClusterVariableRecordValue) clusterVariableCreatedRecord.getValue();
-
-    // then
-    final var variable =
-        rdbmsService
-            .getClusterVariableReader()
-            .getGloballyScopedClusterVariable(
-                clusterVariableRecordValue.getName(),
-                ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
-
-    assertThat(variable).isNotNull();
-    assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());
-    assertThat(variable.name()).isEqualTo(clusterVariableRecordValue.getName());
-    assertThat(variable.scope().toString())
-        .isEqualTo(clusterVariableRecordValue.getScope().toString());
-  }
-
-  @Test
-  public void shouldExportTenantClusterVariables() {
-    // given
-    final Record<RecordValue> clusterVariableCreatedRecord =
-        getTenantClusterVariableRecord("tenant-1", ClusterVariableIntent.CREATED);
-
-    // when
-    exporter.export(clusterVariableCreatedRecord);
-
-    final ClusterVariableRecordValue clusterVariableRecordValue =
-        (ClusterVariableRecordValue) clusterVariableCreatedRecord.getValue();
-
-    // then
-    final var variable =
-        rdbmsService
-            .getClusterVariableReader()
-            .getTenantScopedClusterVariable(
-                clusterVariableRecordValue.getName(),
-                clusterVariableRecordValue.getTenantId(),
-                ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
-
-    assertThat(variable).isNotNull();
-    assertThat(variable.value()).isEqualTo(clusterVariableRecordValue.getValue());
-    assertThat(variable.tenantId()).isEqualTo(clusterVariableRecordValue.getTenantId());
-    assertThat(variable.name()).isEqualTo(clusterVariableRecordValue.getName());
-    assertThat(variable.scope().toString())
-        .isEqualTo(clusterVariableRecordValue.getScope().toString());
   }
 
   @Test

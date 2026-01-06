@@ -12,11 +12,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,16 +65,6 @@ public class UnifiedConfigurationHelper {
       final BackwardsCompatibilityMode backwardsCompatibilityMode,
       final Set<String> legacyProperties) {
 
-    // If the environment is not set, it is assumed that the helper is used
-    // in a non-Spring context, and the validation of backward compatibility
-    // is not necessary.
-    // This is the case when running the test applications
-    // (e.g., TestCluster, TestStandaloneBroker, TestStandaloneGateway).
-    // These applications are configured using only the unified configuration.
-    if (environment == null) {
-      return newValue;
-    }
-
     if (backwardsCompatibilityMode == null) {
       throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
     }
@@ -95,60 +83,6 @@ public class UnifiedConfigurationHelper {
       case SUPPORTED -> {
         final T legacyValue = getLegacyValue(legacyProperties, expectedType);
         yield backwardsCompatibilitySupported(
-            legacyProperties, legacyValue, newProperty, newValue, expectedType);
-      }
-    };
-  }
-
-  public static <T> T validateLegacyConfigurationWithOrdering(
-      final String newProperty,
-      final T newValue,
-      final Class<T> expectedType,
-      final BackwardsCompatibilityMode backwardsCompatibilityMode,
-      final Set<Set<String>> legacyProperties) {
-
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-        newProperty,
-        newValue,
-        ResolvableType.forClass(expectedType),
-        backwardsCompatibilityMode,
-        legacyProperties);
-  }
-
-  public static <T> T validateLegacyConfigurationWithOrdering(
-      final String newProperty,
-      final T newValue,
-      final ResolvableType expectedType,
-      final BackwardsCompatibilityMode backwardsCompatibilityMode,
-      final Set<Set<String>> legacyProperties) {
-
-    // If the environment is not set, it is assumed that the helper is used
-    // in a non-Spring context, and the validation of backward compatibility
-    // is not necessary.
-    // This is the case when running the test applications
-    // (e.g., TestCluster, TestStandaloneBroker, TestStandaloneGateway).
-    // These applications are configured using only the unified configuration.
-    if (environment == null) {
-      return newValue;
-    }
-
-    if (backwardsCompatibilityMode == null) {
-      throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
-    }
-    if (legacyProperties == null) {
-      throw new UnifiedConfigurationException("legacyProperties cannot be null");
-    }
-
-    return switch (backwardsCompatibilityMode) {
-      case NOT_SUPPORTED ->
-          throw new UnifiedConfigurationException(
-              "backwardsCompatibilityMode cannot be NOT_SUPPORTED when using ordered properties");
-      case SUPPORTED_ONLY_IF_VALUES_MATCH ->
-          throw new UnifiedConfigurationException(
-              "backwardsCompatibilityMode cannot be SUPPORTED_ONLY_IF_VALUES_MATCH when using ordered properties");
-      case SUPPORTED -> {
-        final T legacyValue = getLegacyValueNested(legacyProperties, expectedType);
-        yield backwardsCompatibilitySupportedInOrderedProperties(
             legacyProperties, legacyValue, newProperty, newValue, expectedType);
       }
     };
@@ -182,60 +116,6 @@ public class UnifiedConfigurationHelper {
     }
 
     return legacyValues.iterator().next();
-  }
-
-  private static <T> T getLegacyValueNested(
-      final Set<Set<String>> legacyProperties, final ResolvableType expectedType) {
-    final var legacyConfigurationValues = new HashMap<String, T>();
-
-    for (final Set<String> legacyProperty : legacyProperties) {
-      for (final String prop : legacyProperty) {
-        final T legacyValue = parseLegacyValue(prop, expectedType);
-
-        LOGGER.trace("Parsing legacy property '{}' -> '{}'", prop, legacyValue);
-        if (legacyValue != null) {
-          legacyConfigurationValues.put(prop, legacyValue);
-          LOGGER.trace("Parsed actual value: '{}'", legacyValue);
-        } else {
-          LOGGER.trace("Parsed null object");
-        }
-      }
-    }
-
-    final Set<T> legacyValues = new LinkedHashSet<>();
-
-    // Maintain property order
-    for (final Set<String> legacyPropertySet : legacyProperties) {
-      final var setValues =
-          legacyPropertySet.stream()
-              .filter(legacyConfigurationValues::containsKey)
-              .map(legacyConfigurationValues::get)
-              .collect(Collectors.toSet());
-
-      // Check that each property set has a unique value
-      if (setValues.size() > 1) {
-        throw new UnifiedConfigurationException(
-            String.format(
-                "Ambiguous legacy configuration. Legacy properties: %s",
-                legacyConfigurationValues.entrySet().stream()
-                    .filter(e -> legacyPropertySet.contains(e.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))));
-      }
-
-      legacyValues.addAll(setValues);
-    }
-
-    if (legacyValues.isEmpty()) {
-      return null;
-    }
-
-    if (legacyValues.size() > legacyProperties.size()) {
-      throw new UnifiedConfigurationException(
-          String.format(
-              "Ambiguous legacy configuration. Legacy properties: %s", legacyConfigurationValues));
-    }
-
-    return legacyValues.stream().reduce((first, second) -> second).orElse(null);
   }
 
   private static <T> T backwardsCompatibilityNotSupported(
@@ -333,43 +213,7 @@ public class UnifiedConfigurationHelper {
     if (!legacyPresent) {
       // Legacy config: not present
       // New config...: not present
-      // We can return the new default value
-      return newValue;
-    } else if (!newPresent) {
-      // Legacy config: present
-      // New config...: not present
-      // We can return the legacy value
-      LOGGER.warn(warningMessage);
-      return legacyValue;
-    } else {
-      // Legacy config: present
-      // New config...: present
-      // The new value wins
-      LOGGER.warn(warningMessage);
-      return newValue;
-    }
-  }
-
-  private static <T> T backwardsCompatibilitySupportedInOrderedProperties(
-      final Set<Set<String>> legacyProperties,
-      final T legacyValue,
-      final String newProperty,
-      final T newValue,
-      final ResolvableType expectedType) {
-    final boolean legacyPresent =
-        legacyConfigPresentInOrderedProperties(legacyProperties, expectedType);
-    final boolean newPresent = newConfigPresent(newProperty, expectedType);
-
-    final String warningMessage =
-        String.format(
-            "The following legacy configuration properties should be removed in favor of '%s': %s",
-            newProperty,
-            String.join(", ", legacyProperties.stream().flatMap(Set::stream).toList()));
-
-    if (!legacyPresent) {
-      // Legacy config: not present
-      // New config...: not present
-      // We can return the new default value
+      // We can retrun the new default value
       return newValue;
     } else if (!newPresent) {
       // Legacy config: present
@@ -393,22 +237,6 @@ public class UnifiedConfigurationHelper {
       if (environmentContainsProperty(legacyProperty, expectedType)) {
         LOGGER.trace("Found legacy property '{}'", legacyProperty);
         return true;
-      }
-    }
-
-    return false;
-  }
-
-  private static boolean legacyConfigPresentInOrderedProperties(
-      final Set<Set<String>> legacyProperties, final ResolvableType expectedType) {
-
-    for (final Set<String> legacyPropertyBundle : legacyProperties) {
-      for (final String legacyProperty : legacyPropertyBundle) {
-
-        if (environmentContainsProperty(legacyProperty, expectedType)) {
-          LOGGER.trace("Found legacy property '{}'", legacyProperty);
-          return true;
-        }
       }
     }
 
@@ -439,27 +267,15 @@ public class UnifiedConfigurationHelper {
     // generic types
     if (isPropertyCollection(expectedType) && generics.length == 1) {
       final Collection collection = getCollectionFromEnvironment(legacyProperty);
-      if (collection.isEmpty()) {
+      if (collection != null) {
+        final TypeDescriptor targetType =
+            TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
+        return (T)
+            CONVERSION_SERVICE.convert(
+                collection, TypeDescriptor.valueOf(Collection.class), targetType);
+      } else {
         return null;
       }
-      final TypeDescriptor targetType =
-          TypeDescriptor.collection(rawClass, TypeDescriptor.valueOf(generics[0].resolve()));
-      return (T)
-          CONVERSION_SERVICE.convert(
-              collection, TypeDescriptor.valueOf(Collection.class), targetType);
-    }
-
-    if (isPropertyMap(expectedType) && generics.length == 2) {
-      final Map map = getMapFromEnvironment(legacyProperty);
-      if (map.isEmpty()) {
-        return null;
-      }
-      final TypeDescriptor targetType =
-          TypeDescriptor.map(
-              rawClass,
-              TypeDescriptor.valueOf(generics[0].resolve()),
-              TypeDescriptor.valueOf(generics[1].resolve()));
-      return (T) CONVERSION_SERVICE.convert(map, TypeDescriptor.valueOf(Map.class), targetType);
     }
 
     throw new IllegalArgumentException("Unsupported type: " + expectedType);
@@ -469,8 +285,6 @@ public class UnifiedConfigurationHelper {
       final String property, final ResolvableType expectedType) {
     if (isPropertyCollection(expectedType)) {
       return !getCollectionFromEnvironment(property).isEmpty();
-    } else if (isPropertyMap(expectedType)) {
-      return !getMapFromEnvironment(property).isEmpty();
     } else {
       return environment.containsProperty(property);
     }
@@ -487,18 +301,6 @@ public class UnifiedConfigurationHelper {
     return Binder.get(environment)
         .bind(normalizedProperty.toString(), Collection.class)
         .orElse(Collections.emptyList());
-  }
-
-  private static boolean isPropertyMap(final ResolvableType expectedType) {
-    return expectedType.resolve() != null && Map.class.isAssignableFrom(expectedType.resolve());
-  }
-
-  private static Map getMapFromEnvironment(final String property) {
-    final ConfigurationPropertyName normalizedProperty =
-        ConfigurationPropertyName.adapt(property, '.');
-    return Binder.get(environment)
-        .bind(normalizedProperty.toString(), Map.class)
-        .orElse(Collections.emptyMap());
   }
 
   /* Helper methods */

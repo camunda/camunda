@@ -32,16 +32,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 @ZeebeIntegration
 public final class IncidentTest {
 
+  @AutoClose CamundaClient client;
+
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   public void init() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 

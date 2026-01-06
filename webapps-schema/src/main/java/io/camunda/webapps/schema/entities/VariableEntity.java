@@ -15,29 +15,25 @@ import java.util.Objects;
 public class VariableEntity
     implements ExporterEntity<VariableEntity>, PartitionedEntity<VariableEntity>, TenantOwned {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private long key;
-  @BeforeVersion880 private int partitionId;
-  @BeforeVersion880 private String name;
-  @BeforeVersion880 private String value;
-  @BeforeVersion880 private String fullValue;
-  @BeforeVersion880 private boolean isPreview;
-  @BeforeVersion880 private Long scopeKey;
-  @BeforeVersion880 private Long processInstanceKey;
+  private String id;
+  private long key;
+  private int partitionId;
+  private String name;
+  private String value;
+  private String fullValue;
+  private boolean isPreview;
+  private Long scopeKey;
+  private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  @BeforeVersion880 private Long processDefinitionKey;
+  private Long processDefinitionKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  @BeforeVersion880 private String bpmnProcessId;
+  private String bpmnProcessId;
 
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  @BeforeVersion880 private Long position;
-
-  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long rootProcessInstanceKey;
+  private Long position;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -172,15 +168,6 @@ public class VariableEntity
     return this;
   }
 
-  public Long getRootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public VariableEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-    return this;
-  }
-
   @Override
   public int hashCode() {
     int result =
@@ -197,8 +184,7 @@ public class VariableEntity
             processDefinitionKey,
             bpmnProcessId,
             tenantId,
-            position,
-            rootProcessInstanceKey);
+            position);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -225,8 +211,7 @@ public class VariableEntity
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(position, that.position)
-        && Arrays.equals(sortValues, that.sortValues)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
@@ -251,8 +236,6 @@ public class VariableEntity
         + '\''
         + ", position="
         + position
-        + ", rootProcessInstanceKey="
-        + rootProcessInstanceKey
         + "} "
         + super.toString();
   }

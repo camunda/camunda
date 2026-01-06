@@ -309,7 +309,7 @@ public class RaftPartitionServer implements HealthMonitorable {
         .withFreeDiskSpace(storageConfig.getFreeDiskSpace())
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexDensity(storageConfig.getJournalIndexDensity())
-        .withSegmentAllocator(storageConfig.getSegmentAllocator())
+        .withPreallocateSegmentFiles(storageConfig.isPreallocateSegmentFiles())
         .build();
   }
 

@@ -13,10 +13,6 @@ import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.Refresh;
-import co.elastic.clients.elasticsearch._types.ScriptLanguage;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -35,12 +31,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -60,8 +62,6 @@ public class ElasticsearchOperationStore implements OperationStore {
   private ObjectMapper objectMapper;
 
   @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private ElasticsearchClient es8Client;
 
   @Autowired private OperationTemplate operationTemplate;
 
@@ -121,11 +121,11 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Override
   public String add(final BatchOperationEntity batchOperationEntity) throws PersistenceException {
     try {
-      es8Client.index(
-          i ->
-              i.index(batchOperationTemplate.getFullQualifiedName())
-                  .id(batchOperationEntity.getId())
-                  .document(batchOperationEntity));
+      final var indexRequest =
+          new IndexRequest(batchOperationTemplate.getFullQualifiedName())
+              .id(batchOperationEntity.getId())
+              .source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
+      esClient.index(indexRequest, RequestOptions.DEFAULT);
     } catch (final IOException e) {
       LOGGER.error("Error persisting batch operation", e);
       throw new PersistenceException(
@@ -143,15 +143,16 @@ public class ElasticsearchOperationStore implements OperationStore {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      es8Client.update(
-          u ->
-              u.index(operationTemplate.getFullQualifiedName())
-                  .id(operation.getId())
-                  .doc(jsonMap)
-                  .retryOnConflict(UPDATE_RETRY_COUNT)
-                  .refresh(refreshImmediately ? Refresh.True : Refresh.False),
-          Void.class);
-
+      UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(operationTemplate.getFullQualifiedName())
+              .id(operation.getId())
+              .doc(jsonMap)
+              .retryOnConflict(UPDATE_RETRY_COUNT);
+      if (refreshImmediately) {
+        updateRequest = updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      }
+      esClient.update(updateRequest, RequestOptions.DEFAULT);
     } catch (final IOException e) {
       throw new PersistenceException(
           String.format(
@@ -168,13 +169,13 @@ public class ElasticsearchOperationStore implements OperationStore {
       final String script,
       final Map<String, Object> parameters) {
     try {
-      es8Client.update(
-          u ->
-              u.index(index)
-                  .id(id)
-                  .retryOnConflict(UPDATE_RETRY_COUNT)
-                  .script(getScriptWithParameters(script, parameters)),
-          Void.class);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(index)
+              .id(id)
+              .script(getScriptWithParameters(script, parameters))
+              .retryOnConflict(UPDATE_RETRY_COUNT);
+      esClient.update(updateRequest, RequestOptions.DEFAULT);
     } catch (final Exception e) {
       final String message =
           String.format("Exception occurred, while executing update request: %s", e.getMessage());
@@ -187,16 +188,16 @@ public class ElasticsearchOperationStore implements OperationStore {
     return beanFactory.getBean(BatchRequest.class);
   }
 
-  private co.elastic.clients.elasticsearch._types.Script getScriptWithParameters(
-      final String script, final Map<String, Object> params) {
-    final Map<String, JsonData> jsonDataParams =
-        params.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
-
-    return new co.elastic.clients.elasticsearch._types.Script.Builder()
-        .params(jsonDataParams)
-        .source(script)
-        .lang(ScriptLanguage.Painless)
-        .build();
+  private Script getScriptWithParameters(final String script, final Map<String, Object> parameters)
+      throws PersistenceException {
+    try {
+      return new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          script,
+          objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
+    } catch (final IOException e) {
+      throw new PersistenceException(e);
+    }
   }
 }

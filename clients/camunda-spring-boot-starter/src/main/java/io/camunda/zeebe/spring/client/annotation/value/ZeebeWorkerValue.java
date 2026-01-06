@@ -16,8 +16,6 @@
 package io.camunda.zeebe.spring.client.annotation.value;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;
@@ -55,27 +53,21 @@ public class ZeebeWorkerValue {
       final Duration streamTimeout,
       final int maxRetries) {
     this();
-    jobWorkerValue.setType(new FromLegacy<>(type));
-    jobWorkerValue.setName(new FromLegacy<>(name));
-    jobWorkerValue.setTimeout(new FromLegacy<>(timeout));
-    jobWorkerValue.setMaxJobsActive(new FromLegacy<>(maxJobsActive));
-    jobWorkerValue.setRequestTimeout(new FromLegacy<>(requestTimeout));
-    jobWorkerValue.setPollInterval(new FromLegacy<>(pollInterval));
-    jobWorkerValue.setAutoComplete(new FromLegacy<>(autoComplete));
-    jobWorkerValue.setFetchVariables(
-        fetchVariables.stream()
-            .map(fetchVariable -> (SourceAware<String>) new FromLegacy<>(fetchVariable))
-            .toList());
-    jobWorkerValue.setEnabled(new FromLegacy<>(enabled));
+    jobWorkerValue.setType(type);
+    jobWorkerValue.setName(name);
+    jobWorkerValue.setTimeout(timeout);
+    jobWorkerValue.setMaxJobsActive(maxJobsActive);
+    jobWorkerValue.setRequestTimeout(requestTimeout);
+    jobWorkerValue.setPollInterval(pollInterval);
+    jobWorkerValue.setAutoComplete(autoComplete);
+    jobWorkerValue.setFetchVariables(fetchVariables);
+    jobWorkerValue.setEnabled(enabled);
     jobWorkerValue.setMethodInfo(methodInfo);
-    jobWorkerValue.setTenantIds(
-        tenantIds.stream()
-            .map(tenantId -> (SourceAware<String>) new FromLegacy<>(tenantId))
-            .toList());
-    jobWorkerValue.setForceFetchAllVariables(new FromLegacy<>(forceFetchAllVariables));
-    jobWorkerValue.setStreamEnabled(new FromLegacy<>(streamEnabled));
-    jobWorkerValue.setStreamTimeout(new FromLegacy<>(streamTimeout));
-    jobWorkerValue.setMaxRetries(new FromLegacy<>(maxRetries));
+    jobWorkerValue.setTenantIds(tenantIds);
+    jobWorkerValue.setForceFetchAllVariables(forceFetchAllVariables);
+    jobWorkerValue.setStreamEnabled(streamEnabled);
+    jobWorkerValue.setStreamTimeout(streamTimeout);
+    jobWorkerValue.setMaxRetries(maxRetries);
   }
 
   public JobWorkerValue getJobWorkerValue() {
@@ -83,134 +75,125 @@ public class ZeebeWorkerValue {
   }
 
   public String getType() {
-    return jobWorkerValue.getType().value();
+    return jobWorkerValue.getType();
   }
 
   public void setType(final String type) {
-    jobWorkerValue.setType(new FromLegacy<>(type));
+    jobWorkerValue.setType(type);
   }
 
   public String getName() {
-    return jobWorkerValue.getName().value();
+    return jobWorkerValue.getName();
   }
 
   public void setName(final String name) {
-    jobWorkerValue.setName(new FromLegacy<>(name));
+    jobWorkerValue.setName(name);
   }
 
   public Duration getTimeout() {
-    return jobWorkerValue.getTimeout().value();
+    return jobWorkerValue.getTimeout();
   }
 
   public void setTimeout(final Duration timeout) {
-    jobWorkerValue.setTimeout(new FromLegacy<>(timeout));
+    jobWorkerValue.setTimeout(timeout);
   }
 
   public Integer getMaxJobsActive() {
-    return jobWorkerValue.getMaxJobsActive().value();
+    return jobWorkerValue.getMaxJobsActive();
   }
 
   public void setMaxJobsActive(final Integer maxJobsActive) {
-    jobWorkerValue.setMaxJobsActive(new FromLegacy<>(maxJobsActive));
+    jobWorkerValue.setMaxJobsActive(maxJobsActive);
   }
 
   public Duration getRequestTimeout() {
-    return jobWorkerValue.getRequestTimeout().value();
+    return jobWorkerValue.getRequestTimeout();
   }
 
   public void setRequestTimeout(final Duration requestTimeout) {
-    jobWorkerValue.setRequestTimeout(new FromLegacy<>(requestTimeout));
+    jobWorkerValue.setRequestTimeout(requestTimeout);
   }
 
   public Duration getPollInterval() {
-    return jobWorkerValue.getPollInterval().value();
+    return jobWorkerValue.getPollInterval();
   }
 
   public void setPollInterval(final Duration pollInterval) {
-    jobWorkerValue.setPollInterval(new FromLegacy<>(pollInterval));
+    jobWorkerValue.setPollInterval(pollInterval);
   }
 
   public Boolean getAutoComplete() {
-    return jobWorkerValue.getAutoComplete().value();
+    return jobWorkerValue.getAutoComplete();
   }
 
   public void setAutoComplete(final Boolean autoComplete) {
-    jobWorkerValue.setAutoComplete(new FromLegacy<>(autoComplete));
+    jobWorkerValue.setAutoComplete(autoComplete);
   }
 
   public List<String> getFetchVariables() {
-    return jobWorkerValue.getFetchVariables().stream().map(SourceAware::value).toList();
+    return jobWorkerValue.getFetchVariables();
   }
 
   public void setFetchVariables(final List<String> fetchVariables) {
-    jobWorkerValue.setFetchVariables(
-        fetchVariables.stream()
-            .map(fetchVariable -> (SourceAware<String>) new FromLegacy<>(fetchVariable))
-            .toList());
+    jobWorkerValue.setFetchVariables(fetchVariables);
   }
 
   public Boolean getEnabled() {
-    return jobWorkerValue.getEnabled().value();
+    return jobWorkerValue.getEnabled();
   }
 
   public void setEnabled(final Boolean enabled) {
-    jobWorkerValue.setEnabled(new FromLegacy<>(enabled));
+    jobWorkerValue.setEnabled(enabled);
   }
 
-  @Deprecated
   public MethodInfo getMethodInfo() {
     return jobWorkerValue.getMethodInfo();
   }
 
-  @Deprecated
   public void setMethodInfo(final MethodInfo methodInfo) {
     jobWorkerValue.setMethodInfo(methodInfo);
   }
 
   public List<String> getTenantIds() {
-    return jobWorkerValue.getTenantIds().stream().map(SourceAware::value).toList();
+    return jobWorkerValue.getTenantIds();
   }
 
   public void setTenantIds(final List<String> tenantIds) {
-    jobWorkerValue.setTenantIds(
-        tenantIds.stream()
-            .map(tenantId -> (SourceAware<String>) new FromLegacy<>(tenantId))
-            .toList());
+    jobWorkerValue.setTenantIds(tenantIds);
   }
 
   public Boolean getForceFetchAllVariables() {
-    return jobWorkerValue.getForceFetchAllVariables().value();
+    return jobWorkerValue.getForceFetchAllVariables();
   }
 
   public void setForceFetchAllVariables(final Boolean forceFetchAllVariables) {
-    jobWorkerValue.setForceFetchAllVariables(new FromLegacy<>(forceFetchAllVariables));
+    jobWorkerValue.setForceFetchAllVariables(forceFetchAllVariables);
   }
 
   public Boolean getStreamEnabled() {
-    return jobWorkerValue.getStreamEnabled().value();
+    return jobWorkerValue.getStreamEnabled();
   }
 
   public void setStreamEnabled(final Boolean streamEnabled) {
-    jobWorkerValue.setStreamEnabled(new FromLegacy<>(streamEnabled));
+    jobWorkerValue.setStreamEnabled(streamEnabled);
   }
 
   public Duration getStreamTimeout() {
-    return jobWorkerValue.getStreamTimeout().value();
+    return jobWorkerValue.getStreamTimeout();
   }
 
   public void setStreamTimeout(final Duration streamTimeout) {
-    jobWorkerValue.setStreamTimeout(new FromLegacy<>(streamTimeout));
+    jobWorkerValue.setStreamTimeout(streamTimeout);
   }
 
   public int getMaxRetries() {
-    return jobWorkerValue.getMaxRetries().value();
+    return jobWorkerValue.getMaxRetries();
   }
 
   public void setMaxRetries(final int maxRetries) {
-    jobWorkerValue.setMaxRetries(new FromLegacy<>(maxRetries));
+    jobWorkerValue.setMaxRetries(maxRetries);
   }
 
-  @Deprecated
   public MethodInfo getBeanInfo() {
     return jobWorkerValue.getMethodInfo();
   }

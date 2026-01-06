@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceTagDbModel;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import java.time.OffsetDateTime;
@@ -24,7 +25,7 @@ public interface ProcessInstanceMapper extends ProcessBasedHistoryCleanupMapper 
 
   void decrementIncidentCount(Long processInstanceKey);
 
-  void insertTags(ProcessInstanceDbModel processInstance);
+  void insertTags(ProcessInstanceTagsDto tagList);
 
   ProcessInstanceEntity findOne(Long processInstanceKey);
 
@@ -34,10 +35,10 @@ public interface ProcessInstanceMapper extends ProcessBasedHistoryCleanupMapper 
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
 
-  void deleteByKeys(List<Long> processInstanceKeys);
-
   record EndProcessInstanceDto(
       long processInstanceKey,
       ProcessInstanceEntity.ProcessInstanceState state,
       OffsetDateTime endDate) {}
+
+  record ProcessInstanceTagsDto(Long processInstanceKey, List<ProcessInstanceTagDbModel> tags) {}
 }

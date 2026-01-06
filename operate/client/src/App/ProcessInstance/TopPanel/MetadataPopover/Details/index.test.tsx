@@ -26,11 +26,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
-import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
-import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
-import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
-import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 
 const mockSingleIncident: Incident = {
   incidentKey: '2251799813696584',
@@ -51,29 +46,14 @@ const mockSingleIncident: Incident = {
 describe('MetadataPopover <Details />', () => {
   beforeEach(() => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchUserTasks().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
-    mockSearchMessageSubscriptions().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
-    mockSearchDecisionInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
   });
 
   it('should render element instance details', () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {
         wrapper: TestWrapper,
@@ -85,20 +65,19 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.getByText('123456789')).toBeInTheDocument();
   });
 
-  it('should display job retries when available', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
+  it('should display job retries when available', () => {
     render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {
         wrapper: TestWrapper,
       },
     );
 
-    expect(await screen.findByText('Retries Left')).toBeInTheDocument();
+    expect(screen.getByText('Retries Left')).toBeInTheDocument();
     expect(screen.getByTestId('retries-left-count')).toHaveTextContent('3');
   });
 
@@ -117,12 +96,11 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should show metadata dialog when "Show more metadata" is clicked', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     const {user} = render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {wrapper: TestWrapper},
     );
@@ -178,12 +156,11 @@ describe('MetadataPopover <Details />', () => {
       type: 'USER_TASK',
     };
 
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     render(
       <Details
         elementInstance={userTaskInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {
         wrapper: TestWrapper,
@@ -199,12 +176,11 @@ describe('MetadataPopover <Details />', () => {
     const tasklistUrl = 'https://tasklist.example.com';
     vi.stubGlobal('clientConfig', {tasklistUrl});
 
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {
         wrapper: TestWrapper,
@@ -217,12 +193,11 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display execution duration info', () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {
         wrapper: TestWrapper,
@@ -267,15 +242,11 @@ describe('MetadataPopover <Details />', () => {
       processDefinitionVersion: 1,
     };
 
-    mockSearchUserTasks().withSuccess({
-      items: [userTask],
-      page: {totalItems: 1},
-    });
-
     const {user} = render(
       <Details
         elementInstance={userTaskInstance}
         businessObject={mockBusinessObject}
+        userTask={userTask}
       />,
       {wrapper: TestWrapper},
     );
@@ -286,9 +257,7 @@ describe('MetadataPopover <Details />', () => {
       screen.getByText(/Element "Service Task" 123456789 Metadata/),
     ).toBeInTheDocument();
 
-    expect(
-      await screen.findByText(/"assignee": "john.doe"/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/"assignee": "john.doe"/)).toBeInTheDocument();
     expect(
       screen.getByText(/"dueDate": "2023-12-31T23:59:59.000Z"/),
     ).toBeInTheDocument();
@@ -358,35 +327,28 @@ describe('MetadataPopover <Details />', () => {
       priority: 0,
     };
 
-    mockSearchUserTasks().withSuccess({
-      items: [partialUserTask],
-      page: {totalItems: 1},
-    });
-
     const {user} = render(
       <Details
         elementInstance={userTaskInstance}
         businessObject={mockBusinessObject}
+        userTask={partialUserTask}
       />,
       {wrapper: TestWrapper},
     );
 
     await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
 
-    expect(
-      await screen.findByText(/"assignee": "jane.smith"/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/"assignee": "jane.smith"/)).toBeInTheDocument();
     expect(screen.getByText(/"formKey": "simple-form"/)).toBeInTheDocument();
     expect(screen.getByText(/"userTaskKey": "ut-789"/)).toBeInTheDocument();
   });
 
   it('should not display user task fields for non-user task types', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     const {user} = render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {wrapper: TestWrapper},
     );
@@ -442,15 +404,11 @@ describe('MetadataPopover <Details />', () => {
       $type: 'bpmn:CallActivity',
     };
 
-    mockSearchProcessInstances().withSuccess({
-      items: [mockCalledProcessInstance],
-      page: {totalItems: 1},
-    });
-
     const {user} = render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={callActivityBusinessObject}
+        calledProcessInstance={mockCalledProcessInstance}
       />,
       {wrapper: TestWrapper},
     );
@@ -464,12 +422,11 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display job data fields', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     const {user} = render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {wrapper: TestWrapper},
     );
@@ -498,15 +455,11 @@ describe('MetadataPopover <Details />', () => {
       tenantId: '<default>',
     };
 
-    mockSearchMessageSubscriptions().withSuccess({
-      items: [messageSubscription],
-      page: {totalItems: 1},
-    });
-
     const {user} = render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        messageSubscription={messageSubscription}
       />,
       {wrapper: TestWrapper},
     );
@@ -518,7 +471,7 @@ describe('MetadataPopover <Details />', () => {
     ).toBeInTheDocument();
 
     expect(
-      await screen.findByText(/"messageName": "orderReceived"/),
+      screen.getByText(/"messageName": "orderReceived"/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"correlationKey": "order-123"/),
@@ -526,12 +479,11 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should not display message fields when message name and correlation key are absent', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
-
     const {user} = render(
       <Details
         elementInstance={mockElementInstance}
         businessObject={mockBusinessObject}
+        job={mockJob}
       />,
       {wrapper: TestWrapper},
     );
@@ -562,15 +514,11 @@ describe('MetadataPopover <Details />', () => {
       tenantId: '<default>',
     };
 
-    mockSearchMessageSubscriptions().withSuccess({
-      items: [messageSubscription],
-      page: {totalItems: 1},
-    });
-
     const {user} = render(
       <Details
         elementInstance={eventElementInstance}
         businessObject={mockBusinessObject}
+        messageSubscription={messageSubscription}
       />,
       {wrapper: TestWrapper},
     );
@@ -582,7 +530,7 @@ describe('MetadataPopover <Details />', () => {
     ).toBeInTheDocument();
 
     expect(
-      await screen.findByText(/"messageName": "clientMessage"/),
+      screen.getByText(/"messageName": "clientMessage"/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"correlationKey": "client-456"/),

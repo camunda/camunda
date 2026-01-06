@@ -51,7 +51,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
-import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
@@ -978,9 +977,7 @@ public class ClusteringRule extends ExternalResource {
     final var workingDir =
         new WorkingDirectoryConfiguration.WorkingDirectory(brokerBase.toPath(), false);
 
-    final var staticNodeIdProvider = NodeIdProvider.staticProvider(cfg.getCluster().getNodeId());
-    return new BrokerBasedConfiguration(
-        workingDir, staticNodeIdProvider, cfg, new LifecycleProperties());
+    return new BrokerBasedConfiguration(workingDir, cfg, new LifecycleProperties());
   }
 
   public Leader getCurrentLeaderForPartition(final int partition) {

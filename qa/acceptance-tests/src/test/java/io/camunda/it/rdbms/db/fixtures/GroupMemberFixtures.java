@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel.Builder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -28,18 +28,18 @@ public final class GroupMemberFixtures extends CommonFixtures {
   }
 
   public static void createAndSaveRandomGroupMember(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
-    rdbmsWriters.getGroupWriter().addMember(createRandomized(builderFunction));
-    rdbmsWriters.flush();
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+    rdbmsWriter.getGroupWriter().addMember(createRandomized(builderFunction));
+    rdbmsWriter.flush();
   }
 
   public static void createAndSaveRandomGroupMembers(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<GroupMemberDbModel.Builder, GroupMemberDbModel.Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters.getGroupWriter().addMember(createRandomized(builderFunction));
+      rdbmsWriter.getGroupWriter().addMember(createRandomized(builderFunction));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 }

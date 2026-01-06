@@ -17,7 +17,6 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -47,27 +46,17 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
       return new SearchQueryResult.Builder<GroupEntity>().total(0).items(List.of()).build();
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.GROUP.name(), List.of());
     final var dbSort = convertSort(query.sort(), GroupSearchColumn.GROUP_ID);
-    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         GroupDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .sort(dbSort)
-                    .page(dbPage));
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for groups with filter {}", dbQuery);
     final var totalHits = groupMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = groupMapper.search(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
@@ -88,6 +77,7 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
   private boolean shouldReturnEmptyResult(
       final GroupFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.memberIds() != null && filter.memberIds().isEmpty())
-        || shouldReturnEmptyResult(resourceAccessChecks);
+        || (resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

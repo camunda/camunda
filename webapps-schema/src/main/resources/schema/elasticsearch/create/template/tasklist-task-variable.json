@@ -33,9 +33,6 @@
 			},
       "processInstanceKey": {
         "type": "long"
-      },
-      "rootProcessInstanceKey": {
-        "type": "long"
       }
     }
 	}

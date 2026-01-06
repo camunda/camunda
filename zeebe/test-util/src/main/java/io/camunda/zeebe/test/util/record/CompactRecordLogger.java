@@ -14,15 +14,11 @@ import static io.camunda.zeebe.protocol.record.ValueType.CHECKPOINT;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.COMMAND_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.COMPENSATION_SUBSCRIPTION;
-import static io.camunda.zeebe.protocol.record.ValueType.CONDITIONAL_EVALUATION;
-import static io.camunda.zeebe.protocol.record.ValueType.CONDITIONAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
-import static io.camunda.zeebe.protocol.record.ValueType.EXPRESSION;
-import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENER_BATCH;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.IDENTITY_SETUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
@@ -86,18 +82,12 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
-import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
-import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
-import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -117,7 +107,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -220,12 +209,8 @@ public class CompactRecordLogger {
           entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
           entry(ESCALATION.name(), "ESC"),
           entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
-          entry(CONDITIONAL_SUBSCRIPTION.name(), "COND_SUB"),
-          entry(CONDITIONAL_EVALUATION.name(), "COND_EVAL"),
-          entry(EXPRESSION.name(), "EXPR"),
           entry(IDENTITY_SETUP.name(), "ID"),
-          entry(CHECKPOINT.name(), "CHK"),
-          entry(GLOBAL_LISTENER_BATCH.name(), "GL_BATCH"));
+          entry(CHECKPOINT.name(), "CHK"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -310,15 +295,10 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
-    valueLoggers.put(ValueType.CONDITIONAL_SUBSCRIPTION, this::summarizeConditionalSubscription);
-    valueLoggers.put(CONDITIONAL_EVALUATION, this::summarizeConditionalEvaluation);
-    valueLoggers.put(EXPRESSION, this::summarizeExpression);
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
     valueLoggers.put(ValueType.FORM, this::summarizeForm);
-    valueLoggers.put(ValueType.HISTORY_DELETION, this::summarizeHistoryDeletion);
-    valueLoggers.put(ValueType.GLOBAL_LISTENER_BATCH, this::summarizeGlobalListenerBatch);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -858,7 +838,6 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append(summarizeActivateInstructions(value.getActivateInstructions()))
         .append(summarizeTerminateInstructions(value.getTerminateInstructions()))
-        .append(summarizeMoveInstructions(value.getMoveInstructions()))
         .toString();
   }
 
@@ -899,23 +878,7 @@ public class CompactRecordLogger {
       return "";
     }
     return terminateInstructions.stream()
-        .map(
-            t ->
-                "terminate [%s]"
-                    .formatted(
-                        t.getElementInstanceKey() > 0
-                            ? shortenKey(t.getElementInstanceKey())
-                            : t.getElementId()))
-        .collect(Collectors.joining("> <", "<", "> "));
-  }
-
-  private String summarizeMoveInstructions(
-      final List<ProcessInstanceModificationMoveInstructionValue> moveInstructions) {
-    if (moveInstructions.isEmpty()) {
-      return "";
-    }
-    return moveInstructions.stream()
-        .map(t -> "move [%s to %s]".formatted(t.getSourceElementId(), t.getTargetElementId()))
+        .map(t -> "terminate [%s]".formatted(shortenKey(t.getElementInstanceKey())))
         .collect(Collectors.joining("> <", "<", "> "));
   }
 
@@ -986,65 +949,6 @@ public class CompactRecordLogger {
     final var value = (ClusterVariableRecordValue) record.getValue();
     return "%s->%s%s"
         .formatted(value.getName(), formatVariableValue(value.getValue()), formatTenant(value));
-  }
-
-  private String summarizeConditionalSubscription(final Record<?> record) {
-    final var value = (ConditionalSubscriptionRecordValue) record.getValue();
-
-    return new StringBuilder()
-        .append("\"")
-        .append(value.getCondition())
-        .append("\" \"")
-        .append(String.join(", ", value.getVariableNames()))
-        .append("\" \"")
-        .append(String.join(", ", value.getVariableEvents()))
-        .append("\" ")
-        .append(" <catch event ")
-        .append(formatId(value.getCatchEventId()))
-        .append(formatKey(value.getElementInstanceKey()))
-        .append(">")
-        .toString();
-  }
-
-  private String summarizeConditionalEvaluation(final Record<?> record) {
-    final var value = (ConditionalEvaluationRecordValue) record.getValue();
-    final var result = new StringBuilder();
-
-    if (value.getProcessDefinitionKey() > 0) {
-      result
-          .append("<process definition [")
-          .append(shortenKey(value.getProcessDefinitionKey()))
-          .append("]>");
-    } else {
-      result.append("(all process definitions)");
-    }
-
-    result.append(formatVariables(value)).append(formatTenant(value));
-
-    // Add started process instances if any
-    if (!value.getStartedProcessInstances().isEmpty()) {
-      result.append(" -> started: [");
-      result.append(
-          value.getStartedProcessInstances().stream()
-              .map(
-                  instance ->
-                      shortenKey(instance.getProcessDefinitionKey())
-                          + ":"
-                          + shortenKey(instance.getProcessInstanceKey()))
-              .collect(Collectors.joining(", ")));
-      result.append("]");
-    }
-
-    return result.toString();
-  }
-
-  private String summarizeExpression(final Record<?> record) {
-    final var value = (ExpressionRecordValue) record.getValue();
-    return "\""
-        + StringUtils.abbreviate(value.getExpression(), "..", 50)
-        + "\" = "
-        + formatVariableValue(value.getResultValue())
-        + formatTenant(value);
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
@@ -1799,37 +1703,6 @@ public class CompactRecordLogger {
     final var value = (CheckpointRecordValue) record.getValue();
     return "checkpoint %s @ #%s"
         .formatted(value.getCheckpointId(), formatPosition(value.getCheckpointPosition()));
-  }
-
-  private String summarizeHistoryDeletion(final Record<?> record) {
-    final var value = (HistoryDeletionRecordValue) record.getValue();
-
-    return "Resource key: "
-        + shortenKey(value.getResourceKey())
-        + ", Resource type: "
-        + value.getResourceType();
-  }
-
-  private String summarizeGlobalListener(final GlobalListenerRecordValue value) {
-    return String.format(
-        "%s<%s> x %s%s",
-        formatId(value.getType()),
-        value.getEventTypes().stream().collect(Collectors.joining(", ")),
-        value.getRetries(),
-        value.isAfterNonGlobal() ? " [after]" : "");
-  }
-
-  private String summarizeGlobalListenerBatch(final Record<?> record) {
-    final var value = (GlobalListenerBatchRecordValue) record.getValue();
-    final StringBuilder summary = new StringBuilder();
-    if (record.getKey() != value.getGlobalListenerBatchKey()) {
-      summary.append("key: ").append(shortenKey(value.getGlobalListenerBatchKey())).append(" ");
-    }
-    summary.append(
-        value.getTaskListeners().stream()
-            .map(this::summarizeGlobalListener)
-            .collect(Collectors.joining("; ", "taskListeners: {", "}")));
-    return summary.toString();
   }
 
   private String summarizeForm(final Record<?> record) {

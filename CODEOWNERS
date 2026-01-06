@@ -3,7 +3,7 @@
 # If you'd like to be added as an owner, don't hesitate to reach out to one of the existing ones.
 
 # C8 REST OpenAPI specification
-/zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
+/zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml @camunda/c8-api-team
 
 # Testing guide
 /docs/testing.md       @npepinpe @ChrisKujawa
@@ -19,8 +19,8 @@
 /c8run/ @camunda/distribution
 
 # Camunda Ex Team Clients, SDK and CPT
-/clients/        @camunda/camundaex
-/testing/        @camunda/camundaex
+/clients/*        @camunda/camundaex
+/testing/*        @camunda/camundaex
 
 # General Automation, Unified CI and release helpers by Monorepo DevOps team
 /.github/actions/build*/*                                @camunda/monorepo-devops-team
@@ -126,6 +126,6 @@
 /zeebe/load-tests @camunda/zeebe-distributed-platform
 
 # Identity
-/identity/        @camunda/identity
-/authentication/  @camunda/identity
-/security/        @camunda/identity
+/identity/*        @camunda/identity
+/authentication/*  @camunda/identity
+/security/*        @camunda/identity

@@ -2,7 +2,6 @@
 paths:
   /groups:
     post:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: createGroup
@@ -30,10 +29,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /groups/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Group
       operationId: searchGroups
@@ -60,10 +59,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           description: An internal error occurred while processing the request.
+      x-eventually-consistent: true
 
   /groups/{groupId}:
     get:
-      x-eventually-consistent: true
       tags:
         - Group
       operationId: getGroup
@@ -95,9 +94,9 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
     put:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: updateGroup
@@ -137,9 +136,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: deleteGroup
@@ -167,10 +166,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /groups/{groupId}/users/{username}:
     put:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: assignUserToGroup
@@ -214,9 +213,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: unassignUserFromGroup
@@ -254,10 +253,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /groups/{groupId}/users/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Group
       operationId: searchUsersForGroup
@@ -297,10 +296,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /groups/{groupId}/clients/{clientId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: assignClientToGroup
@@ -344,9 +343,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: unassignClientFromGroup
@@ -384,10 +383,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /groups/{groupId}/clients/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Group
       operationId: searchClientsForGroup
@@ -427,10 +426,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /groups/{groupId}/mapping-rules/{mappingRuleId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: assignMappingRuleToGroup
@@ -472,9 +471,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Group
       operationId: unassignMappingRuleFromGroup
@@ -510,10 +509,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /groups/{groupId}/mapping-rules/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Group
       operationId: searchMappingRulesForGroup
@@ -531,7 +530,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleSearchQueryRequest'
+              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       responses:
         "200":
           description: The mapping rules assigned to the group.
@@ -553,10 +552,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /groups/{groupId}/roles/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Group
       operationId: searchRolesForGroup
@@ -574,7 +573,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'roles.yaml#/components/schemas/RoleSearchQueryRequest'
+              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       responses:
         "200":
           description: The roles assigned to the group.
@@ -596,6 +595,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -682,7 +682,7 @@ components:
             - name
             - groupId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -764,7 +764,7 @@ components:
           enum:
             - username
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -806,6 +806,6 @@ components:
           enum:
             - clientId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field

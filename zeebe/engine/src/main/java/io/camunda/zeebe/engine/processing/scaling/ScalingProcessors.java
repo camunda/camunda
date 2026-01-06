@@ -30,15 +30,15 @@ public final class ScalingProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.SCALE_UP,
-        new ScaleScaleUpProcessor(keyGenerator, writers, processingState, distributionBehavior));
+        new ScaleUpProcessor(keyGenerator, writers, processingState, distributionBehavior));
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.STATUS,
-        new ScaleStatusProcessor(keyGenerator, writers, processingState.getRoutingState()));
+        new ScaleUpStatusProcessor(keyGenerator, writers, processingState.getRoutingState()));
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-        new ScaleMarkPartitionBootstrappedProcessor(
+        new MarkPartitionBootstrappedProcessor(
             keyGenerator, writers, processingState, distributionBehavior, bpmnBehaviours));
   }
 }

@@ -971,7 +971,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Only one of [from, after, before] is allowed.",
+                      "detail": "Failed to read request",
                       "instance": "%s"
                     }""",
                 endpoint)));

@@ -84,10 +84,8 @@ public class OpensearchKeyFilteringDaoTest {
           }
 
           @Override
-          protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
-              final Query<Object> query) {
-            return mockQueryWrapper.matchAll();
-          }
+          protected void buildFiltering(
+              final Query<Object> query, final SearchRequest.Builder request) {}
 
           @Override
           protected Object convertInternalToApiResult(final Object internalResult) {

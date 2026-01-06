@@ -16,9 +16,7 @@ public record DecisionDefinitionDbModel(
     String tenantId,
     int version,
     String decisionRequirementsId,
-    Long decisionRequirementsKey,
-    String decisionRequirementsName,
-    int decisionRequirementsVersion) {
+    Long decisionRequirementsKey) {
 
   // create a builder for this record extending ObjectBuilder
   public static class DecisionDefinitionDbModelBuilder
@@ -31,8 +29,6 @@ public record DecisionDefinitionDbModel(
     private int version;
     private String decisionRequirementsId;
     private Long decisionRequirementsKey;
-    private String decisionRequirementsName;
-    private int decisionRequirementsVersion;
 
     public DecisionDefinitionDbModelBuilder decisionDefinitionKey(
         final Long decisionDefinitionKey) {
@@ -73,18 +69,6 @@ public record DecisionDefinitionDbModel(
       return this;
     }
 
-    public DecisionDefinitionDbModelBuilder decisionRequirementsName(
-        final String decisionRequirementsName) {
-      this.decisionRequirementsName = decisionRequirementsName;
-      return this;
-    }
-
-    public DecisionDefinitionDbModelBuilder decisionRequirementsVersion(
-        final int decisionRequirementsVersion) {
-      this.decisionRequirementsVersion = decisionRequirementsVersion;
-      return this;
-    }
-
     @Override
     public DecisionDefinitionDbModel build() {
       return new DecisionDefinitionDbModel(
@@ -94,9 +78,7 @@ public record DecisionDefinitionDbModel(
           tenantId,
           version,
           decisionRequirementsId,
-          decisionRequirementsKey,
-          decisionRequirementsName,
-          decisionRequirementsVersion);
+          decisionRequirementsKey);
     }
   }
 }

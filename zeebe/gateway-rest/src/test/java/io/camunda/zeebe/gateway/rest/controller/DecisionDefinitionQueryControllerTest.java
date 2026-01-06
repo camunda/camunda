@@ -54,9 +54,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                       "name": "name",
                       "version": 1,
                       "decisionRequirementsId": "drId",
-                      "decisionRequirementsKey": "2",
-                      "decisionRequirementsName": "drN",
-                      "decisionRequirementsVersion": 2
+                      "decisionRequirementsKey": "2"
                   }
               ],
               "page": {
@@ -70,9 +68,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   static final SearchQueryResult<DecisionDefinitionEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionDefinitionEntity>()
           .total(1L)
-          .items(
-              List.of(
-                  new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "drN", 2, "t")))
+          .items(List.of(new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "t")))
           .startCursor("f")
           .endCursor("v")
           .build();
@@ -152,9 +148,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 "version": 1,
                 "decisionRequirementsId": "drId",
                 "decisionRequirementsKey": "2",
-                "decisionDefinitionId": "dId",
-                "decisionRequirementsName": "drN",
-                "decisionRequirementsVersion": 2
+                "decisionDefinitionId": "dId"
               }
             }""";
 
@@ -185,8 +179,6 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                         .decisionRequirementsIds("drId")
                         .decisionRequirementsKeys(2L)
                         .decisionDefinitionIds("dId")
-                        .decisionRequirementsNames("drN")
-                        .decisionRequirementsVersions(2)
                         .build())
                 .build());
   }
@@ -220,12 +212,6 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     },
                     {
                          "field": "decisionRequirementsId"
-                    },
-                    {
-                         "field": "decisionRequirementsName"
-                    },
-                    {
-                         "field": "decisionRequirementsVersion"
                     },
                     {
                          "field": "tenantId"
@@ -264,10 +250,6 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                         .asc()
                         .decisionRequirementsId()
                         .asc()
-                        .decisionRequirementsName()
-                        .asc()
-                        .decisionRequirementsVersion()
-                        .asc()
                         .tenantId()
                         .asc()
                         .build())
@@ -293,7 +275,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "type": "about:blank",
               "title": "Bad Request",
               "status": 400,
-              "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionDefinitionKey, decisionDefinitionId, name, version, decisionRequirementsId, decisionRequirementsKey, decisionRequirementsName, decisionRequirementsVersion, tenantId]",
+              "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionDefinitionKey, decisionDefinitionId, name, version, decisionRequirementsId, decisionRequirementsKey, tenantId]",
               "instance": "%s"
             }"""
             .formatted(DECISION_DEFINITIONS_SEARCH_URL);
@@ -433,7 +415,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final Long decisionDefinitionKey = 1L;
     final DecisionDefinitionEntity decisionDefinitionEntity =
-        new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "drN", 2, "t");
+        new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "t");
     when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
         .thenReturn(decisionDefinitionEntity);
     final var expectedResponse =
@@ -445,9 +427,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "name": "name",
               "version": 1,
               "decisionRequirementsId": "drId",
-              "decisionRequirementsKey": "2",
-              "decisionRequirementsName": "drN",
-              "decisionRequirementsVersion": 2
+              "decisionRequirementsKey": "2"
             }""";
     // when/then
     webClient

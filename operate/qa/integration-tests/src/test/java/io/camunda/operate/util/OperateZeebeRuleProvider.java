@@ -8,7 +8,7 @@
 package io.camunda.operate.util;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.zeebe.containers.ZeebeContainer;
 import java.time.Instant;
 import org.junit.runner.Description;
 
@@ -29,7 +29,7 @@ public interface OperateZeebeRuleProvider {
 
   String getPrefix();
 
-  TestStandaloneBroker getZeebeBroker();
+  ZeebeContainer getZeebeContainer();
 
   CamundaClient getClient();
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,11 +29,23 @@ public final class ExecutableUserTask extends ExecutableJobWorkerTask {
     this.userTaskProperties = userTaskProperties;
   }
 
+  public List<TaskListener> getTaskListeners(final ZeebeTaskListenerEventType eventType) {
+    return taskListeners.stream().filter(tl -> tl.getEventType() == eventType).toList();
+  }
+
   public List<TaskListener> getTaskListeners() {
     return taskListeners;
   }
 
   public void setTaskListeners(final List<TaskListener> taskListeners) {
     this.taskListeners = taskListeners;
+  }
+
+  public boolean hasTaskListeners(final ZeebeTaskListenerEventType eventType) {
+    return !getTaskListeners(eventType).isEmpty();
+  }
+
+  public boolean hasTaskListeners() {
+    return !getTaskListeners().isEmpty();
   }
 }

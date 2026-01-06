@@ -65,6 +65,9 @@ jobs:
     runs-on: ${{ inputs.runner-type }}
     permissions: {}
     if: ${{ !startsWith(inputs.branch, 'fe-') && !(startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')) }}
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+      ZEEBE_TEST_DOCKER_IMAGE_TAG: current-test
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
@@ -102,16 +105,26 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          # we use a local registry for pushing
+          repository: ${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          version: ${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }}
+          # push is needed to make accessible for integration tests
+          push: true
 
       # Run integration tests in parallel
       - name: Backend - ${{ inputs.test-type }}
         run: |
-          ${{ inputs.command }}
+          ${{ inputs.command }} \
+          -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
+          -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
 
       # Reports: publish test metrics results
       - name: Upload Test Report

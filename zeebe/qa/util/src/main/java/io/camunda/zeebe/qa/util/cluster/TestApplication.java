@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import com.google.common.collect.ObjectArrays;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SequencedCollection;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
@@ -268,12 +266,4 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
   default T withAdditionalProfile(final Profile profile) {
     return withAdditionalProfile(profile.getId());
   }
-
-  /**
-   * Modifies the unified configuration (camunda.* properties).
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
-   */
-  T withUnifiedConfig(final Consumer<Camunda> modifier);
 }

@@ -9,13 +9,9 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
-import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
-import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
-import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
-import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
@@ -35,12 +31,4 @@ public interface ProcessDefinitionSearchClient {
 
   SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> processDefinitionInstanceStatistics(
       final ProcessDefinitionInstanceStatisticsQuery query);
-
-  SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity>
-      getProcessDefinitionMessageSubscriptionStatistics(
-          ProcessDefinitionMessageSubscriptionStatisticsQuery query);
-
-  SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
-      processDefinitionInstanceVersionStatistics(
-          final ProcessDefinitionInstanceVersionStatisticsQuery query);
 }

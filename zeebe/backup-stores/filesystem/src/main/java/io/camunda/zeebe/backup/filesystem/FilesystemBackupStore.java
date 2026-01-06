@@ -10,8 +10,6 @@ package io.camunda.zeebe.backup.filesystem;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
-import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -30,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * {@link BackupStore} for local filesystem. Stores all backups in a given baseDir.
@@ -53,7 +52,6 @@ public final class FilesystemBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
-  private final FilesystemIndexManager indexManager;
 
   FilesystemBackupStore(final FilesystemBackupConfig config) {
     this(config, Executors.newVirtualThreadPerTaskExecutor());
@@ -66,11 +64,9 @@ public final class FilesystemBackupStore implements BackupStore {
 
     final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
     final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
-    final var indexDir = Path.of(config.basePath()).resolve("index");
     try {
       FileUtil.ensureDirectoryExists(contentsDir);
       FileUtil.ensureDirectoryExists(manifestsDir);
-      FileUtil.ensureDirectoryExists(indexDir);
     } catch (final IOException e) {
       throw new UncheckedIOException(
           "Unable to create backup directory structure; do you have the right permissions or configuration?",
@@ -79,7 +75,6 @@ public final class FilesystemBackupStore implements BackupStore {
 
     fileSetManager = new FileSetManager(contentsDir);
     manifestManager = new ManifestManager(manifestsDir);
-    indexManager = new FilesystemIndexManager(indexDir);
   }
 
   @Override
@@ -169,25 +164,6 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final FilesystemBackupIndexFile filesystemIndexFile)) {
-      throw new IllegalArgumentException(
-          "Expected index file of type %s but got %s: %s"
-              .formatted(
-                  FilesystemBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
-    }
-    return CompletableFuture.runAsync(() -> indexManager.upload(filesystemIndexFile), executor);
-  }
-
-  @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
-      final BackupIndexIdentifier id, final Path targetPath) {
-    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
-  }
-
-  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -221,6 +197,6 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   public static BackupStore of(final FilesystemBackupConfig storeConfig) {
-    return new FilesystemBackupStore(storeConfig);
+    return new FilesystemBackupStore(storeConfig).logging(LOG, Level.INFO);
   }
 }

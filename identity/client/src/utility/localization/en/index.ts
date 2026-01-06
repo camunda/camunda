@@ -14,7 +14,6 @@ import users from "./users.json";
 import groups from "./groups.json";
 import roles from "./roles.json";
 import mappingRules from "./mappingRules.json";
-import clusterVariables from "./clusterVariables.json";
 
 export default {
   components,
@@ -25,5 +24,4 @@ export default {
   groups,
   roles,
   mappingRules,
-  clusterVariables,
 };

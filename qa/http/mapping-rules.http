@@ -13,7 +13,7 @@ Content-Type: application/x-www-form-urlencoded
 
 > {%
   client.test("Get token should be successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 201");
     client.global.set("TOKEN", response.body.access_token)
   });
 %}
@@ -33,7 +33,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule creation should be unsuccessful", function () {
-    client.assert(response.status === 401, "Expected 401, got " + response.status);
+    client.assert(response.status === 401, "Response status is not 401");
   });
 %}
 
@@ -53,7 +53,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule creation should be successful", function () {
-    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.assert(response.status === 201, "Response status is not 201");
     client.global.set("MAPPING_ID", response.body.mappingRuleId);
   });
 %}
@@ -73,7 +73,7 @@ Accept: application/json
 
 > {%
   client.test("Tenant creation should be successful", function () {
-    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.assert(response.status === 201, "Response status is not 201");
     client.global.set("TENANT_ID", response.body.tenantId);
   });
 %}
@@ -86,7 +86,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule assignment should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -110,7 +110,7 @@ Accept: application/json
 > {%
   client.test("Mapping rule search should be successful", function () {
     let expectedMappingId = client.global.get("MAPPING_ID");
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping rule was not found");
   });
 %}
@@ -123,7 +123,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule removal should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -141,7 +141,7 @@ Accept: application/json
 
 > {%
   client.test("Group creation should be successful", function () {
-    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.assert(response.status === 201, "Response status is not 201");
     client.global.set("GROUP_ID", response.body.groupId);
   });
 %}
@@ -154,7 +154,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule assignment should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -178,7 +178,7 @@ Accept: application/json
 > {%
   client.test("Mapping search should be successful", function () {
     let expectedMappingId = client.global.get("MAPPING_ID");
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping was not found");
   });
 %}
@@ -191,7 +191,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule removal should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -209,7 +209,7 @@ Accept: application/json
 
 > {%
   client.test("Role creation should be successful", function () {
-    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.assert(response.status === 201, "Response status is not 201");
     client.global.set("ROLE_ID", response.body.roleId);
   });
 %}
@@ -222,7 +222,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule assignment should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -246,7 +246,7 @@ Accept: application/json
 > {%
   client.test("Mapping rule search should be successful", function () {
     let expectedMappingId = client.global.get("MAPPING_ID");
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping rule was not found");
   });
 %}
@@ -263,7 +263,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule removal should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -286,7 +286,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule update should be successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.name === "mapping31", "Name was not updated correctly.");
     client.assert(response.body.claimName === "test111", "Claim name was not updated correctly.");
   });
@@ -306,7 +306,7 @@ Accept: application/json
   let expectedMappingId = client.global.get("MAPPING_ID");
 
   client.test("Mapping rule retrieval should be successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.mappingRuleId === expectedMappingId, "mappingId was not found.");
   });
 %}
@@ -332,7 +332,7 @@ Accept: application/json
   let expectedMappingId = client.global.get("MAPPING_ID");
 
   client.test("Mapping rule search should be successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping was not found");
   });
 %}
@@ -349,9 +349,7 @@ Accept: application/json
     "CREATE",
     "DELETE_DRD",
     "DELETE_PROCESS",
-    "DELETE_FORM",
-    "DELETE_RESOURCE",
-    "READ"
+    "DELETE_FORM"
   ],
   "ownerType": "MAPPING_RULE",
   "ownerId": "{{MAPPING_ID}}",
@@ -361,7 +359,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization creation should be successful", function () {
-    client.assert(response.status === 201, "Expected 201, got " + response.status);
+    client.assert(response.status === 201, "Response status is not 201");
   });
 
   client.test("Response should be JSON", function () {
@@ -387,7 +385,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization update should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
     client.assert(response.body === "" || response.body === null, "Response body is not empty");
   });
 %}
@@ -422,7 +420,7 @@ Accept: application/json
 
 > {%
   client.test("Authorization search should be successful", function () {
-    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    client.assert(response.status === 200, "Response status is not 200");
   });
 
   client.test("Response should be JSON", function () {
@@ -453,7 +451,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule deletion should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -469,7 +467,7 @@ Accept: application/json
 
 > {%
   client.test("Tenant deletion should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -485,7 +483,7 @@ Accept: application/json
 
 > {%
   client.test("Group deletion should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -501,6 +499,6 @@ Accept: application/json
 
 > {%
   client.test("Role deletion should be successful", function () {
-    client.assert(response.status === 204, "Expected 204, got " + response.status);
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}

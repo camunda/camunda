@@ -104,14 +104,17 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @Test
   public void testBuildFilteringWithNullFilter() {
-    final var filtering = underTest.buildFiltering(new Query<>());
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    underTest.buildFiltering(new Query<>(), mockSearchRequest);
 
-    verify(mockQueryWrapper, times(1)).matchAll();
-    assertThat(filtering).isEqualTo(mockQueryWrapper.matchAll());
+    // Verify that the query was not modified in any way
+    verifyNoInteractions(mockSearchRequest);
+    verifyNoInteractions(mockQueryWrapper);
   }
 
   @Test
   public void testBuildFilteringWithValidFields() {
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     final FlowNodeInstance filter =
         new FlowNodeInstance()
             .setKey(1L)
@@ -131,7 +134,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
     final Query<FlowNodeInstance> inputQuery = new Query<FlowNodeInstance>().setFilter(filter);
 
-    underTest.buildFiltering(inputQuery);
+    underTest.buildFiltering(inputQuery, mockSearchRequest);
 
     // Verify that each field from the flow node filter was added as a query term to the query
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.KEY, filter.getKey());

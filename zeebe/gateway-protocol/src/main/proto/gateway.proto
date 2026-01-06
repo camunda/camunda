@@ -757,8 +757,6 @@ message ModifyProcessInstanceRequest {
   repeated TerminateInstruction terminateInstructions = 3;
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 4;
-  // instructions describing which elements should be moved from one scope to another.
-  repeated MoveInstruction moveInstructions = 5;
 
   message ActivateInstruction {
     // the id of the element that should be activated
@@ -784,28 +782,8 @@ message ModifyProcessInstanceRequest {
   }
 
   message TerminateInstruction {
-    // the key of the element instance that should be terminated
+    // the id of the element that should be terminated
     int64 elementInstanceKey = 1;
-    // the id of the elements that should be terminated
-    string elementId = 2;
-  }
-
-  message MoveInstruction {
-    // the key of the element instance that should be moved
-    int64 sourceElementInstanceKey = 1;
-    // the id of the elements that should be moved
-    string sourceElementId = 2;
-    // the id of the element scope that the elements should be moved to
-    string targetElementId = 3;
-    // instructions describing which variables should be created
-    repeated VariableInstruction variableInstructions = 4;
-    // the key of the ancestor scope the element instance should be created in;
-    // set to -1 to create the new element instance within an existing element
-    // instance of the flow scope
-    int64 ancestorElementInstanceKey = 5;
-    // whether to use the source element hierarchy to infer the ancestor element
-    // instance key
-    bool inferAncestorScopeFromSourceHierarchy = 6;
   }
 }
 
@@ -867,28 +845,6 @@ message BroadcastSignalResponse {
   int64 key = 1;
   // the tenant id of the signal that was broadcasted.
   string tenantId = 2;
-}
-
-message EvaluateConditionalRequest {
-  // Used to evaluate root-level conditional start events for a tenant with the given ID.
-  // This will only evaluate root-level conditional start events of process definitions which belong to the tenant.
-  string tenantId = 1;
-  // Used to evaluate root-level conditional start events of the process definition with the given key.
-  optional int64 processDefinitionKey = 2;
-  // Serialised JSON object representing the variables to use for evaluation of the conditions and to pass to the process instances that have been triggered.
-  string variables = 3;
-}
-
-message ProcessInstanceReference {
-  // The key of the process definition.
-  int64 processDefinitionKey = 1;
-  // The key of the created process instance.
-  int64 processInstanceKey = 2;
-}
-
-message EvaluateConditionalResponse {
-  // List of process instances created. If no root-level conditional start events evaluated to true, the list will be empty.
-  repeated ProcessInstanceReference processInstances = 1;
 }
 
 service Gateway {
@@ -1210,25 +1166,6 @@ service Gateway {
     Broadcasts a signal.
    */
   rpc BroadcastSignal (BroadcastSignalRequest) returns (BroadcastSignalResponse) {
-
-  }
-
-  /*
-    Evaluates root-level conditional start events for process definitions.
-    If the evaluation is successful, it will return the keys of all created process instances, along with their associated process definition key.
-    Multiple root-level conditional start events of the same process definition can trigger if their conditions evaluate to true.
-
-    Errors:
-     INVALID_ARGUMENT:
-      - The provided data is not valid
-     NOT_FOUND:
-      - The process definition was not found for the given processDefinitionKey
-     PERMISSION_DENIED:
-      - The client is not authorized to start process instances for the specified process definition
-      - If a processDefinitionKey is not provided, this indicates that the client is not authorized
-        to start process instances for at least one of the matched process definitions
-   */
-  rpc EvaluateConditional (EvaluateConditionalRequest) returns (EvaluateConditionalResponse) {
 
   }
 }

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.DecisionDefinitionFilter;
@@ -44,19 +44,19 @@ public class DecisionDefinitionSpecificFilterIT {
 
   @Autowired private DecisionDefinitionDbReader decisionDefinitionReader;
 
-  private RdbmsWriters rdbmsWriters;
+  private RdbmsWriter rdbmsWriter;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriters = rdbmsService.createWriter(0L);
+    rdbmsWriter = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final DecisionDefinitionFilter filter) {
-    createAndSaveRandomDecisionDefinitions(rdbmsWriters);
+    createAndSaveRandomDecisionDefinitions(rdbmsWriter);
     createAndSaveDecisionDefinition(
-        rdbmsWriters,
+        rdbmsWriter,
         DecisionDefinitionFixtures.createRandomized(
             b ->
                 b.decisionDefinitionKey(1337L)
@@ -65,8 +65,6 @@ public class DecisionDefinitionSpecificFilterIT {
                     .version(1337)
                     .decisionRequirementsKey(1338L)
                     .decisionRequirementsId("requirements-1338")
-                    .decisionRequirementsName("requirements-name-1338")
-                    .decisionRequirementsVersion(1338)
                     .tenantId("sorting-tenant1")));
 
     final var searchResult =
@@ -91,10 +89,6 @@ public class DecisionDefinitionSpecificFilterIT {
         new DecisionDefinitionFilter.Builder().decisionRequirementsIds("requirements-1338").build(),
         new DecisionDefinitionFilter.Builder().decisionRequirementsKeys(1338L).build(),
         new DecisionDefinitionFilter.Builder().versions(1337).build(),
-        new DecisionDefinitionFilter.Builder()
-            .decisionRequirementsNames("requirements-name-1338")
-            .build(),
-        new DecisionDefinitionFilter.Builder().decisionRequirementsVersions(1338).build(),
         new DecisionDefinitionFilter.Builder().tenantIds("sorting-tenant1").build());
   }
 }

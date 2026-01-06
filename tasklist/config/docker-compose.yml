@@ -40,7 +40,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.17.0
+    image: opensearchproject/opensearch:2.19.3
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -158,6 +158,7 @@ services:
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
+      - SPRING_PROFILES_ACTIVE=identity-auth
       - CAMUNDA_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_BASEURL=http://identity:8084
@@ -228,7 +229,7 @@ services:
     <<: *tasklist
     environment:
       - SERVER_PORT=8082
-      - SPRING_PROFILES_ACTIVE=dev,dev-data
+      - SPRING_PROFILES_ACTIVE=dev,dev-data,identity-auth
     ports:
       - 8082:8082
     depends_on:
@@ -311,7 +312,7 @@ services:
       - 8081:8081
     environment:
       - SERVER_PORT=8081
-      - SPRING_PROFILES_ACTIVE=dev,dev-data
+      - SPRING_PROFILES_ACTIVE=dev,dev-data,identity-auth
     depends_on:
       - ${DATABASE}
       - zeebe_identity

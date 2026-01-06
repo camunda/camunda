@@ -30,8 +30,7 @@ public final class BatchOperationItemFilterTransformer
         stringOperations(BATCH_OPERATION_ID, filter.batchOperationKeyOperations()),
         stringOperations(STATE, mapStateOperations(filter.stateOperations())),
         longOperations(ITEM_KEY, filter.itemKeyOperations()),
-        longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()),
-        stringOperations(TYPE, filter.operationTypeOperations()));
+        longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()));
   }
 
   @Override

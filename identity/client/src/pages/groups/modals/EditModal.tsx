@@ -13,7 +13,7 @@ import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
 import { Group, updateGroup } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
-import { isValidId } from "src/utility/validate.ts";
+import { isValidGroupId } from "./isValidGroupId";
 
 const EditModal: FC<UseEntityModalProps<Group>> = ({
   entity: group,
@@ -50,7 +50,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   };
 
   const validateGroupId = (id: string) => {
-    setIsGroupIdValid(isValidId(id));
+    setIsGroupIdValid(isValidGroupId(id));
   };
 
   return (

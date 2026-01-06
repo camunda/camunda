@@ -7,110 +7,165 @@
  */
 
 import {observer} from 'mobx-react';
-import {useEffect} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import {Restricted} from 'modules/components/Restricted';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
+import {useEffect, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {DecisionOperations} from './DecisionOperations';
 import {CopiableContent, PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
+import {deleteSearchParams} from 'modules/utils/filter';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
+import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
+import {useQuery} from '@tanstack/react-query';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {useDecisionDefinitionSelection} from 'modules/hooks/decisionDefinition';
 
 const Decision: React.FC = observer(() => {
-  const [_, setParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const {
-    data: definitionSelection = {kind: 'no-match'},
-    status: definitionSelectionStatus,
-    isLoading: isDefinitionSelectionLoading,
-    isEnabled: isDefinitionSelectionEnabled,
-    isError: isDefinitionSelectionError,
-  } = useDecisionDefinitionSelection();
-  const selectedDefinitionKey =
-    definitionSelection.kind === 'single-version'
-      ? definitionSelection.definition.decisionDefinitionKey
-      : undefined;
-  const selectedDefinitionId =
-    definitionSelection.kind === 'single-version'
-      ? definitionSelection.definition.decisionDefinitionId
-      : undefined;
-  const selectedDefinitionName =
-    definitionSelection.kind !== 'no-match'
-      ? definitionSelection.definition.name
-      : 'Decision';
+    state: {status},
+    getDecisionName,
+    getDecisionDefinitionId,
+  } = groupedDecisionsStore;
+
+  const params = new URLSearchParams(location.search);
+  const version = params.get('version');
+  const decisionId = params.get('name');
+  const tenant = params.get('tenant');
+  const [currentDecisionId, setCurrentDecisionId] = useState<string | null>(
+    null,
+  );
+
+  const isDecisionSelected = decisionId !== null;
+  const isVersionSelected = version !== null && version !== 'all';
+  const decisionName =
+    getDecisionName({decisionId, tenantId: tenant}) ?? 'Decision';
+
+  const decisionDefinitionId =
+    isDecisionSelected && isVersionSelected
+      ? getDecisionDefinitionId({
+          decisionId,
+          tenantId: tenant,
+          version: Number(version),
+        })
+      : null;
 
   useEffect(() => {
-    if (
-      definitionSelectionStatus === 'success' &&
-      definitionSelection.kind === 'no-match'
-    ) {
-      setParams((p) => {
-        p.delete('name');
-        p.delete('version');
-        return p;
-      });
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Decision could not be found',
-        isDismissable: true,
-      });
+    if (status === 'fetched' && isDecisionSelected) {
+      if (decisionDefinitionId === null) {
+        if (
+          !groupedDecisionsStore.isSelectedDecisionValid({
+            decisionId,
+            tenantId: tenant,
+          })
+        ) {
+          navigate(deleteSearchParams(location, ['name', 'version']));
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: 'Decision could not be found',
+            isDismissable: true,
+          });
+        }
+      }
     }
-  }, [definitionSelection, definitionSelectionStatus, setParams]);
+  }, [
+    decisionDefinitionId,
+    isDecisionSelected,
+    status,
+    decisionId,
+    tenant,
+    location,
+    navigate,
+  ]);
 
   const {
     data: decisionDefinitionXml,
     isFetching,
+    isFetched,
     isError,
-  } = useDecisionDefinitionXml({decisionDefinitionKey: selectedDefinitionKey});
+  } = useQuery(
+    useDecisionDefinitionXmlOptions({
+      decisionDefinitionKey: decisionDefinitionId!,
+      enabled:
+        decisionDefinitionId !== null &&
+        status === 'fetched' &&
+        isDecisionSelected,
+    }),
+  );
 
-  const getDisplayStatus = () => {
-    switch (true) {
-      case isFetching || isDefinitionSelectionLoading:
-        return 'loading';
-      case isError || isDefinitionSelectionError:
-        return 'error';
-      case !isDefinitionSelectionEnabled ||
-        definitionSelection.kind !== 'single-version':
-        return 'empty';
-      default:
-        return 'content';
+  useEffect(() => {
+    if (isFetched) {
+      setCurrentDecisionId(decisionId);
     }
+  }, [isFetched, decisionId]);
+
+  const getStatus = () => {
+    if (
+      isFetching ||
+      decisionName === undefined ||
+      !groupedDecisionsStore.isInitialLoadComplete ||
+      (groupedDecisionsStore.state.status === 'fetching' &&
+        location.state?.refreshContent)
+    ) {
+      return 'loading';
+    }
+
+    if (isError) {
+      return 'error';
+    }
+
+    if (!isVersionSelected) {
+      return 'empty';
+    }
+
+    return 'content';
   };
 
   return (
     <Section>
       <PanelHeader
-        title={selectedDefinitionName}
+        title={decisionName}
         className={
           panelStatesStore.state.isOperationsCollapsed
             ? undefined
             : 'panelOffset'
         }
       >
-        {definitionSelection.kind !== 'no-match' && (
-          <CopiableContent
-            copyButtonDescription="Decision ID / Click to copy"
-            content={definitionSelection.definition.decisionDefinitionId}
-          />
-        )}
-        {definitionSelection.kind === 'single-version' && (
-          <DecisionOperations
-            decisionDefinitionKey={
-              definitionSelection.definition.decisionDefinitionKey
-            }
-            decisionName={definitionSelection.definition.name}
-            decisionVersion={definitionSelection.definition.version}
-          />
-        )}
+        <>
+          {decisionId !== null && (
+            <CopiableContent
+              copyButtonDescription="Decision ID / Click to copy"
+              content={decisionId}
+            />
+          )}
+          {isVersionSelected && decisionDefinitionId !== null && (
+            <Restricted
+              resourceBasedRestrictions={{
+                scopes: ['DELETE'],
+                permissions: groupedDecisionsStore.getPermissions(
+                  decisionId ?? undefined,
+                  tenant,
+                ),
+              }}
+            >
+              <DecisionOperations
+                decisionDefinitionId={decisionDefinitionId}
+                decisionName={decisionName}
+                decisionVersion={version}
+              />
+            </Restricted>
+          )}
+        </>
       </PanelHeader>
       <DiagramShell
-        status={getDisplayStatus()}
+        status={getStatus()}
         emptyMessage={
-          definitionSelection.kind === 'all-versions'
+          version === 'all'
             ? {
-                message: `There is more than one Version selected for Decision "${selectedDefinitionName}"`,
+                message: `There is more than one Version selected for Decision "${decisionName}"`,
                 additionalInfo:
                   'To see a Decision Table or a Literal Expression, select a single Version',
               }
@@ -123,7 +178,7 @@ const Decision: React.FC = observer(() => {
       >
         <DecisionViewer
           xml={decisionDefinitionXml ?? null}
-          decisionViewId={selectedDefinitionId ?? null}
+          decisionViewId={currentDecisionId}
         />
       </DiagramShell>
     </Section>

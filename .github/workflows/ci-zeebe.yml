@@ -42,12 +42,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows, linux ]
+        os: [ macos, windows, linux ]
         arch: [ amd64 ]
         include:
           - os: macos
             runner: macos-latest
-            arch: arm64
           - os: windows
             runner: windows-latest
           - os: linux
@@ -65,7 +64,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -180,8 +178,8 @@ jobs:
 
   performance-tests:
     name: "Performance"
-    runs-on: gcp-perf-core-8-default
-    timeout-minutes: 15
+    runs-on: gcp-perf-core-16-default
+    timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
@@ -341,7 +339,6 @@ jobs:
           verbose: true
       - name: Upload Hadolint Results
         if: always()
-        continue-on-error: ${{ github.event_name == 'merge_group' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ./hadolint.sarif
@@ -351,7 +348,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -432,7 +428,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:

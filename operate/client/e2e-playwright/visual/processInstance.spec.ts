@@ -63,14 +63,13 @@ test.describe('process instance page', () => {
         processInstanceDetail: runningInstance.detail,
         processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
-        elementInstances: runningInstance.elementInstances,
+        flowNodeInstances: runningInstance.flowNodeInstances,
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
         incidents: runningInstance.incidents,
-        incidentsV2: runningInstance.incidentsV2,
       }),
     );
 
@@ -91,7 +90,7 @@ test.describe('process instance page', () => {
         processInstanceDetail: runningInstance.detail,
         processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
-        elementInstances: runningInstance.elementInstances,
+        flowNodeInstances: runningInstance.flowNodeInstances,
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
@@ -119,7 +118,7 @@ test.describe('process instance page', () => {
         processInstanceDetail: runningInstance.detail,
         processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
-        elementInstances: runningInstance.elementInstances,
+        flowNodeInstances: runningInstance.flowNodeInstances,
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
@@ -151,14 +150,13 @@ test.describe('process instance page', () => {
         processInstanceDetail: instanceWithIncident.detail,
         processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
-        elementInstances: instanceWithIncident.elementInstances,
+        flowNodeInstances: instanceWithIncident.flowNodeInstances,
         statisticsV2: instanceWithIncident.statisticsV2,
         sequenceFlows: instanceWithIncident.sequenceFlows,
         sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
       }),
     );
 
@@ -186,7 +184,7 @@ test.describe('process instance page', () => {
         processInstanceDetail: completedInstance.detail,
         processInstanceDetailV2: completedInstance.detailV2,
         callHierarchy: completedInstance.callHierarchy,
-        elementInstances: completedInstance.elementInstances,
+        flowNodeInstances: completedInstance.flowNodeInstances,
         statisticsV2: completedInstance.statisticsV2,
         sequenceFlows: completedInstance.sequenceFlows,
         sequenceFlowsV2: completedInstance.sequenceFlowsV2,
@@ -202,10 +200,10 @@ test.describe('process instance page', () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
-    await expect(processInstancePage.executionCountToggle).toBeEnabled();
-    await processInstancePage.executionCountToggle.click({force: true});
+    await expect(processInstancePage.executionCountToggleOn).toBeEnabled();
+    await processInstancePage.executionCountToggleOn.click({force: true});
 
-    await processInstancePage.endDateToggle.click({force: true});
+    await page.getByText(/show end date/i).click();
 
     await expect(page).toHaveScreenshot();
   });
@@ -217,7 +215,7 @@ test.describe('process instance page', () => {
         processInstanceDetail: compensationProcessInstance.detail,
         processInstanceDetailV2: compensationProcessInstance.detailV2,
         callHierarchy: compensationProcessInstance.callHierarchy,
-        elementInstances: compensationProcessInstance.elementInstances,
+        flowNodeInstances: compensationProcessInstance.flowNodeInstances,
         statisticsV2: compensationProcessInstance.statisticsV2,
         sequenceFlows: compensationProcessInstance.sequenceFlows,
         sequenceFlowsV2: compensationProcessInstance.sequenceFlowsV2,
@@ -233,9 +231,9 @@ test.describe('process instance page', () => {
     await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
-    await processInstancePage.executionCountToggle.click({force: true});
+    await processInstancePage.executionCountToggleOn.click({force: true});
 
-    await processInstancePage.endDateToggle.click({force: true});
+    await page.getByText(/show end date/i).click();
 
     await expect(page).toHaveScreenshot();
   });

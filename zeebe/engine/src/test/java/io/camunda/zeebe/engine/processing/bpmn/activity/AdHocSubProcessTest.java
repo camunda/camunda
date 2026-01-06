@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
-import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +54,7 @@ public final class AdHocSubProcessTest {
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
   private static final String AHSP_INNER_INSTANCE_ELEMENT_ID =
       "ad-hoc" + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+  private static final String AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE = "adHocSubProcessElements";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -706,7 +706,7 @@ public final class AdHocSubProcessTest {
                 .filter(
                     v ->
                         v.getIntent() == VariableIntent.CREATED
-                            && v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS))
+                            && v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE))
                 .limit(1))
         .first()
         .describedAs(

@@ -12,22 +12,18 @@ import java.util.Objects;
 
 public class SequenceFlowEntity implements ExporterEntity<SequenceFlowEntity>, TenantOwned {
 
-  @BeforeVersion880 private String id;
+  private String id;
 
-  @BeforeVersion880 private Long processInstanceKey;
-
-  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  @BeforeVersion880 private Long processDefinitionKey;
+  private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  @BeforeVersion880 private String bpmnProcessId;
+  private Long processDefinitionKey;
 
-  @BeforeVersion880 private String activityId;
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
+  private String bpmnProcessId;
 
-  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long rootProcessInstanceKey;
+  private String activityId;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Override
   public String getId() {
@@ -86,25 +82,10 @@ public class SequenceFlowEntity implements ExporterEntity<SequenceFlowEntity>, T
     return this;
   }
 
-  public Long getRootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public SequenceFlowEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-    return this;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(
-        id,
-        processInstanceKey,
-        processDefinitionKey,
-        bpmnProcessId,
-        activityId,
-        tenantId,
-        rootProcessInstanceKey);
+        id, processInstanceKey, processDefinitionKey, bpmnProcessId, activityId, tenantId);
   }
 
   @Override
@@ -121,7 +102,6 @@ public class SequenceFlowEntity implements ExporterEntity<SequenceFlowEntity>, T
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(activityId, that.activityId)
-        && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(tenantId, that.tenantId);
   }
 }

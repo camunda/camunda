@@ -29,14 +29,6 @@ const InfiniteScroller: React.FC<Props> = ({
   const intersectionObserver = useRef<IntersectionObserver | null>(null);
   const mutationObserver = useRef<MutationObserver | null>(null);
 
-  // Box the provided callbacks in ref objects and use those in the
-  // intersection observer. Otherwise the observer works with a stale closure
-  // over the initial callbacks.
-  const onVerticalScrollStartReachRef = useRef(onVerticalScrollStartReach);
-  const onVerticalScrollEndReachRef = useRef(onVerticalScrollEndReach);
-  onVerticalScrollStartReachRef.current = onVerticalScrollStartReach;
-  onVerticalScrollEndReachRef.current = onVerticalScrollEndReach;
-
   const observeIntersections = (node: HTMLElement) => {
     const firstChild = node.firstElementChild;
     const lastChild = node.lastElementChild;
@@ -91,19 +83,23 @@ const InfiniteScroller: React.FC<Props> = ({
               scrollTop > prevScrollTop &&
               target.parentElement?.lastElementChild === target
             ) {
-              onVerticalScrollEndReachRef.current?.(scrollUp);
+              onVerticalScrollEndReach?.(scrollUp);
             } else if (
               scrollTop < prevScrollTop &&
               target.parentElement?.firstElementChild === target
             ) {
-              onVerticalScrollStartReachRef.current?.(scrollDown);
+              onVerticalScrollStartReach?.(scrollDown);
             }
           });
         prevScrollTop = scrollTop;
       },
       {root: scrollableContainerRef.current, threshold: 0.5},
     );
-  }, [scrollableContainerRef]);
+  }, [
+    onVerticalScrollStartReach,
+    onVerticalScrollEndReach,
+    scrollableContainerRef,
+  ]);
 
   const observedContainerRef = useCallback(
     (node: HTMLElement) => {

@@ -55,13 +55,6 @@ func validateKeystore(settings types.C8RunSettings, parentDir string) error {
 	return nil
 }
 
-func validatePort(port int) error {
-	if port < 1 || port > 65535 {
-		return fmt.Errorf("--port must be between 1 and 65535 (got %d)", port)
-	}
-	return nil
-}
-
 func runDockerCommand(composeExtractedFolder string, args ...string) error {
 	err := os.Chdir(composeExtractedFolder)
 	if err != nil {
@@ -90,37 +83,8 @@ func runDockerCommand(composeExtractedFolder string, args ...string) error {
 	return nil
 }
 
-var helpTemplate = `Usage:
-  %[1]s [command] [options]
-
-Commands:
-  start                 Start Camunda 8 Run
-  stop                  Stop any running Camunda 8 Run processes
-  help                  Show this help message
-
-Options:
-  --config <path>           Use a custom Zeebe application.yaml
-  --keystore <path>         Enable HTTPS with a TLS certificate (JKS format)
-  --keystorePassword <pw>  Password for the provided keystore
-  --port <number>           Set the main Camunda port (default: 8080)
-  --log-level <level>       Set log level (e.g., info, debug)
-  --docker                  Start using Docker Compose
-
-Examples:
-  %[1]s start
-  %[1]s start --docker
-  %[1]s start --config ./my-config.yaml
-  %[1]s stop
-  %[1]s stop --docker
-
-Docs & Support:
-  https://docs.camunda.io/docs/guides/getting-started-java-spring/
-  https://docs.camunda.io/docs/next/guides/getting-started-agentic-orchestration/
-  https://forum.camunda.io
-`
-
 func usage(exitcode int) {
-	fmt.Printf(helpTemplate, os.Args[0])
+	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n", os.Args[0])
 	os.Exit(exitcode)
 }
 
@@ -134,8 +98,6 @@ func getBaseCommand() (string, error) {
 		return "start", nil
 	case "stop":
 		return "stop", nil
-	case "help":
-		usage(0)
 	case "-h", "--help":
 		usage(0)
 	default:
@@ -172,13 +134,8 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 	return nil // This line will never be reached, but it's required to satisfy the function signature
 }
 
-const docsStartupURL = "https://docs.camunda.io/docs/next/self-managed/quickstart/developer-quickstart/c8run/#work-with-camunda-8-run"
-
-func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, error) {
-	var (
-		settings           types.C8RunSettings
-		startupURLProvided bool
-	)
+func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, error) {
+	var settings types.C8RunSettings
 
 	startFlagSet := createStartFlagSet(&settings)
 	stopFlagSet := createStopFlagSet(&settings)
@@ -187,20 +144,20 @@ func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, bool, erro
 	case "start":
 		err := startFlagSet.Parse(os.Args[2:])
 		if err != nil {
-			return settings, startupURLProvided, fmt.Errorf("error parsing start argument: %w", err)
+			return settings, fmt.Errorf("error parsing start argument: %w", err)
 		}
-		startupURLProvided = flagPassed(startFlagSet, "startup-url")
-		if err := validatePort(settings.Port); err != nil {
-			return settings, startupURLProvided, err
+		// If the user did not explicitly set --startup-url, regenerate it using the (possibly overridden) port.
+		if !flagPassed(startFlagSet, "startup-url") {
+			settings.StartupUrl = createOperateUrl(&settings)
 		}
 	case "stop":
 		err := stopFlagSet.Parse(os.Args[2:])
 		if err != nil {
-			return settings, startupURLProvided, fmt.Errorf("error parsing stop argument: %w", err)
+			return settings, fmt.Errorf("error parsing stop argument: %w", err)
 		}
 	}
 
-	return settings, startupURLProvided, nil
+	return settings, nil
 }
 
 // flagPassed determines if a flag was explicitly set by the user.
@@ -222,7 +179,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", true, "Skip managing Elasticsearch (default). Set to false (and configure the application) to run with Elasticsearch instead of H2.")
+	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (disabling will enable H2)")
 	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
@@ -232,45 +189,6 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 
 func createOperateUrl(settings *types.C8RunSettings) string {
 	return fmt.Sprintf("%s://localhost:%s/operate", settings.GetProtocol(), strconv.Itoa(settings.Port))
-}
-
-func createDefaultStartupUrl(settings *types.C8RunSettings, camundaVersion string) string {
-	if shouldUseDocsStartup(camundaVersion) {
-		return docsStartupURL
-	}
-	return createOperateUrl(settings)
-}
-
-func shouldUseDocsStartup(camundaVersion string) bool {
-	major, minor, ok := parseMajorMinor(camundaVersion)
-	if !ok {
-		return false
-	}
-	if major > 8 {
-		return true
-	}
-	return major == 8 && minor >= 9
-}
-
-func parseMajorMinor(version string) (int, int, bool) {
-	version = strings.TrimSpace(version)
-	if version == "" {
-		return 0, 0, false
-	}
-	base := strings.SplitN(version, "-", 2)[0]
-	parts := strings.Split(base, ".")
-	if len(parts) < 2 {
-		return 0, 0, false
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, false
-	}
-	minor, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, false
-	}
-	return major, minor, true
 }
 
 func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
@@ -295,17 +213,13 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	connectorsPidPath := filepath.Join(baseDir, "connectors.process")
 	camundaPidPath := filepath.Join(baseDir, "camunda.process")
 
-	settings, startupURLProvided, err := getBaseCommandSettings(baseCommand)
+	settings, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
 	applySecondaryStorageDefaults(baseDir, &settings)
-
-	if !startupURLProvided {
-		settings.StartupUrl = createDefaultStartupUrl(&settings, camundaVersion)
-	}
 
 	if settings.LogLevel != "" {
 		if err := os.Setenv("ZEEBE_LOG_LEVEL", settings.LogLevel); err != nil {
@@ -383,7 +297,7 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 		event.Msg("Secondary storage type is not Elasticsearch; Elasticsearch processes will be skipped")
 		return
 	}
-
+	
 	event := log.Debug().
 		Str("secondaryStorage.type", settings.SecondaryStorageType)
 	if configSource != "" {

@@ -42,6 +42,7 @@ const instanceWithIncident: InstanceMock = {
       },
     ],
     sortValues: [],
+    permissions: [],
     tenantId: '',
   },
   detailV2: {
@@ -272,37 +273,32 @@ const instanceWithIncident: InstanceMock = {
     </bpmndi:BPMNDiagram>
   </bpmn:definitions>
   `,
-  elementInstances: {
-    items: [
-      {
-        elementInstanceKey: '6755399441062837',
-        processInstanceKey: '6755399441062827',
-        processDefinitionKey: '2251799813687188',
-        processDefinitionId: 'orderProcess',
-        elementId: 'StartEvent_1',
-        elementName: 'Order received',
-        type: 'START_EVENT',
-        state: 'COMPLETED',
-        hasIncident: false,
-        startDate: '2023-08-14T05:47:07.376+0000',
-        endDate: '2023-08-14T05:47:07.376+0000',
-        tenantId: '',
-      },
-      {
-        elementInstanceKey: '6755399441062840',
-        processInstanceKey: '6755399441062827',
-        processDefinitionKey: '2251799813687188',
-        processDefinitionId: 'orderProcess',
-        elementId: 'Task_1b1r7ow',
-        elementName: 'Check payment',
-        type: 'SERVICE_TASK',
-        state: 'ACTIVE',
-        hasIncident: true,
-        startDate: '2023-08-14T05:47:07.376+0000',
-        tenantId: '',
-      },
-    ],
-    page: {totalItems: 2},
+  flowNodeInstances: {
+    '6755399441062827': {
+      children: [
+        {
+          id: '6755399441062837',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'StartEvent_1',
+          startDate: '2023-08-14T05:47:07.376+0000',
+          endDate: '2023-08-14T05:47:07.376+0000',
+          treePath: '6755399441062827/6755399441062837',
+          sortValues: ['', ''],
+        },
+        {
+          id: '6755399441062840',
+          type: 'SERVICE_TASK',
+          state: 'INCIDENT',
+          flowNodeId: 'Task_1b1r7ow',
+          startDate: '2023-08-14T05:47:07.376+0000',
+          endDate: null,
+          treePath: '6755399441062827/6755399441062840',
+          sortValues: ['', ''],
+        },
+      ],
+      running: null,
+    },
   },
   variables: [
     {
@@ -413,25 +409,6 @@ const instanceWithIncident: InstanceMock = {
       {
         id: 'Task_1b1r7ow',
         count: 1,
-      },
-    ],
-  },
-  incidentsV2: {
-    page: {totalItems: 1},
-    items: [
-      {
-        errorMessage:
-          "failed to evaluate expression '{orderId:orderNo,amountToPay:total}': no variable found for name 'total'",
-        errorType: 'IO_MAPPING_ERROR',
-        incidentKey: '6755399441062843',
-        elementId: 'Task_1b1r7ow',
-        elementInstanceKey: '6755399441062840',
-        creationTime: '2023-08-14T05:47:07.376+0000',
-        processInstanceKey: '6755399441062827',
-        processDefinitionId: 'orderProcess',
-        processDefinitionKey: '2251799813687188',
-        tenantId: '<default>',
-        state: 'ACTIVE',
       },
     ],
   },

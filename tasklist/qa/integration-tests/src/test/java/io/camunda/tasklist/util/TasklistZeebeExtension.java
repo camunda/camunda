@@ -8,15 +8,16 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.Camunda;
-import io.camunda.exporter.CamundaExporter;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.zeebe.containers.ZeebeContainer;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -26,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.DockerImageName;
 
 public abstract class TasklistZeebeExtension
     implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler {
@@ -36,7 +39,7 @@ public abstract class TasklistZeebeExtension
   @Autowired protected TasklistProperties tasklistProperties;
   @Autowired protected SecurityConfiguration securityConfiguration;
   @Autowired protected TasklistIndexPrefixHolder indexPrefixHolder;
-  protected TestStandaloneBroker zeebeBroker;
+  protected ZeebeContainer zeebeContainer;
   protected boolean failed = false;
 
   private CamundaClient client;
@@ -64,64 +67,72 @@ public abstract class TasklistZeebeExtension
   }
 
   private void startZeebe() {
-
-    final String indexPrefix = indexPrefixHolder.getIndexPrefix();
-    prefix = indexPrefix;
-
-    final var app =
-        new TestStandaloneBroker()
-            .withAdditionalProperties(
-                Map.of(
-                    "zeebe.log.level", "ERROR",
-                    "atomix.log.level", "ERROR",
-                    "zeebe.clock.controlled", "true",
-                    "zeebe.broker.gateway.enable", "true"))
-            .withExporter(
-                CamundaExporter.class.getSimpleName().toLowerCase(),
-                cfg -> {
-                  cfg.setClassName(CamundaExporter.class.getName());
-                  cfg.setArgs(
-                      Map.of(
-                          "connect",
-                          Map.of(
-                              "url",
-                              "http://localhost:9200",
-                              "indexPrefix",
-                              indexPrefix,
-                              "type",
-                              getDatabaseType().toString(),
-                              "index",
-                              Map.of("prefix", indexPrefix),
-                              "bulk",
-                              Map.of("size", 1))));
-                })
-            .withUnifiedConfig(uni -> uni.getCluster().setPartitionCount(2))
-            .withUnauthenticatedAccess()
-            .withAuthorizationsDisabled();
-
-    setSecondaryStorageConfig(app.unifiedConfig(), indexPrefix);
-
-    zeebeBroker = app.start();
     Testcontainers.exposeHostPorts(getDatabasePort());
-
-    LOGGER.info("Using StandaloneBroker with indexPrefix={}", prefix);
+    zeebeContainer = createZeebeContainer();
+    zeebeContainer.start();
+    prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
+    LOGGER.info("Using Zeebe container with indexPrefix={}", prefix);
+    final Integer zeebeRestPort = zeebeContainer.getMappedPort(8080);
 
     client =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .grpcAddress(app.grpcAddress())
-            .restAddress(app.restAddress())
+            .grpcAddress(zeebeContainer.getGrpcAddress())
+            .restAddress(
+                getURIFromString(
+                    String.format("http://%s:%s", zeebeContainer.getExternalHost(), zeebeRestPort)))
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
   }
 
-  protected abstract DatabaseType getDatabaseType();
+  protected abstract String getZeebeExporterIndexPrefixConfigParameterName();
 
-  protected abstract void setSecondaryStorageConfig(Camunda camunda, String indexPrefix);
+  private ZeebeContainer createZeebeContainer() {
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(
+            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+    final String zeebeRepo =
+        ContainerVersionsUtil.readProperty(
+            ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME);
+    final String indexPrefix = indexPrefixHolder.getIndexPrefix();
+    LOGGER.info(
+        "************ Starting Zeebe - {}:{}, indexPrefix={} ************",
+        zeebeRepo,
+        zeebeVersion,
+        indexPrefix);
+    final ZeebeContainer zContainer =
+        new ZeebeContainer(DockerImageName.parse(zeebeRepo).withTag(zeebeVersion))
+            .withEnv(getDatabaseEnvironmentVariables(indexPrefix))
+            .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
+            .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
+            .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
+            .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
+            .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
+            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+            .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+            .withEnv(
+                "JAVA_OPTS",
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");
+    zContainer.withLogConsumer(new Slf4jLogConsumer(LOGGER));
+    zContainer.addExposedPort(8080);
+    zContainer.addExposedPort(5005);
+    return zContainer;
+  }
+
+  private static URI getURIFromString(final String uri) {
+    try {
+      return new URI(uri);
+    } catch (final URISyntaxException e) {
+      throw new IllegalArgumentException("Failed to parse URI string", e);
+    }
+  }
+
+  protected abstract Map<String, String> getDatabaseEnvironmentVariables(String indexPrefix);
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
-    zeebeBroker.stop();
+    CompletableFuture.runAsync(() -> zeebeContainer.stop());
 
     if (client != null) {
       client.close();
@@ -137,8 +148,8 @@ public abstract class TasklistZeebeExtension
     this.prefix = prefix;
   }
 
-  public TestStandaloneBroker getZeebeBroker() {
-    return zeebeBroker;
+  public ZeebeContainer getZeebeContainer() {
+    return zeebeContainer;
   }
 
   public CamundaClient getClient() {

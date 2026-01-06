@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.util.Properties;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ public class RocksDbPropertiesTest {
         "camunda.data.primary-storage.rocks-db.statistics-enabled=true",
         "camunda.data.primary-storage.rocks-db.access-metrics=fine",
         "camunda.data.primary-storage.rocks-db.memory-limit=1GB",
-        "camunda.data.primary-storage.rocks-db.memory-allocation-strategy=BROKER",
         "camunda.data.primary-storage.rocks-db.max-open-files=1000",
         "camunda.data.primary-storage.rocks-db.max-write-buffer-number=8",
         "camunda.data.primary-storage.rocks-db.min-write-buffer-number-to-merge=4",
@@ -63,12 +61,6 @@ public class RocksDbPropertiesTest {
     void shouldSetMemoryLimit() {
       assertThat(brokerCfg.getExperimental().getRocksdb().getMemoryLimit())
           .isEqualTo(DataSize.ofGigabytes(1));
-    }
-
-    @Test
-    void shouldSetMemoryAllocationStrategy() {
-      assertThat(brokerCfg.getExperimental().getRocksdb().getMemoryAllocationStrategy())
-          .isEqualTo(MemoryAllocationStrategy.BROKER);
     }
 
     @Test

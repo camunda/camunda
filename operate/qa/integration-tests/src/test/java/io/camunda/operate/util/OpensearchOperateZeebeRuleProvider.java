@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.qa.util.TestContainerUtil.ELS_PORT;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,12 +17,12 @@ import io.camunda.client.api.response.Topology;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -48,7 +48,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Autowired public OperateProperties operateProperties;
   @Autowired public SearchEngineConfiguration searchEngineConfiguration;
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
-  protected TestStandaloneBroker zeebeBroker;
+  protected ZeebeContainer zeebeContainer;
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
@@ -125,24 +125,20 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Override
   public void startZeebe() {
 
-    final TestContext testContext =
-        new TestContext()
-            .setInternalElsHost("localhost")
-            .setExternalElsHost("localhost")
-            .setInternalElsPort(ELS_PORT)
-            .setExternalElsPort(ELS_PORT)
-            .setIndexPrefix(prefix)
-            .setDatabaseType(ConnectionTypes.OPENSEARCH.getType())
-            .setPartitionCount(2)
-            .setMultitenancyEnabled(isMultitTenancyEnabled());
-
-    zeebeBroker = testContainerUtil.startZeebe(testContext);
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+    zeebeContainer =
+        testContainerUtil.startZeebe(
+            zeebeVersion,
+            prefix,
+            2,
+            isMultitTenancyEnabled(),
+            ConnectionTypes.OPENSEARCH.getType());
 
     client =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .restAddress(zeebeBroker.restAddress())
-            .grpcAddress(zeebeBroker.grpcAddress())
+            .grpcAddress(zeebeContainer.getGrpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 
@@ -165,8 +161,8 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public TestStandaloneBroker getZeebeBroker() {
-    return zeebeBroker;
+  public ZeebeContainer getZeebeContainer() {
+    return zeebeContainer;
   }
 
   @Override

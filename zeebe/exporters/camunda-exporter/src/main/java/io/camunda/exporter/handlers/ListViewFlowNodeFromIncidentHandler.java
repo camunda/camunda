@@ -17,11 +17,9 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +28,6 @@ public class ListViewFlowNodeFromIncidentHandler
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromIncidentHandler.class);
-
-  private static final Set<IncidentIntent> SUPPORTED_INTENTS =
-      EnumSet.of(IncidentIntent.CREATED, IncidentIntent.MIGRATED, IncidentIntent.RESOLVED);
 
   private final String indexName;
 
@@ -52,7 +47,7 @@ public class ListViewFlowNodeFromIncidentHandler
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    return SUPPORTED_INTENTS.contains((IncidentIntent) record.getIntent());
+    return true;
   }
 
   @Override

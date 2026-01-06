@@ -13,31 +13,30 @@ import {InstancesList} from '../Layout/InstancesList';
 import {InstancesTable} from './InstancesTable';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {useLocation, type Location} from 'react-router-dom';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
-import {useQueryClient} from '@tanstack/react-query';
-import {queryKeys} from 'modules/queries/queryKeys';
+
+type LocationType = Omit<Location, 'state'> & {
+  state: {refreshContent?: boolean};
+};
 
 const Decisions: React.FC = () => {
-  const location = useLocation() as Location<{refreshContent?: boolean}>;
-  const client = useQueryClient();
+  const location = useLocation() as LocationType;
 
   useEffect(() => {
     document.title = PAGE_TITLE.DECISION_INSTANCES;
+    return groupedDecisionsStore.reset;
   }, []);
 
   useEffect(() => {
-    if (location.state?.refreshContent) {
-      client.refetchQueries({
-        queryKey: queryKeys.decisionDefinitions.search(),
-        type: 'active',
-      });
-      client.refetchQueries({
-        queryKey: queryKeys.decisionInstances.searchPaginated(),
-        type: 'active',
-      });
+    if (
+      groupedDecisionsStore.state.status === 'initial' ||
+      location.state?.refreshContent
+    ) {
+      groupedDecisionsStore.fetchDecisions();
     }
-  }, [location.state, client]);
+  }, [location.state]);
 
   return (
     <>

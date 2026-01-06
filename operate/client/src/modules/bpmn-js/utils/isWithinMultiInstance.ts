@@ -15,18 +15,4 @@ const isWithinMultiInstance = (businessObject: BusinessObject) => {
   );
 };
 
-const getFirstMultiInstanceParent = (
-  businessObject?: BusinessObject,
-): BusinessObject | undefined => {
-  if (!businessObject) {
-    return undefined;
-  }
-
-  if (isWithinMultiInstance(businessObject)) {
-    return businessObject.$parent;
-  }
-
-  return getFirstMultiInstanceParent(businessObject.$parent);
-};
-
-export {isWithinMultiInstance, getFirstMultiInstanceParent};
+export {isWithinMultiInstance};

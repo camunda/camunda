@@ -34,11 +34,6 @@
       <artifactId>camunda-security-core</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-spring-utils</artifactId>
-    </dependency>
-
     <!-- SPRING -->
     <dependency>
       <groupId>org.springframework</groupId>

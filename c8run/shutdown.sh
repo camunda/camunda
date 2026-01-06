@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./c8run stop "$@"
+./c8run stop

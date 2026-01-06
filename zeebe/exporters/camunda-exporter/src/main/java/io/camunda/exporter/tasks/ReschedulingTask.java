@@ -11,7 +11,6 @@ import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,13 +50,7 @@ public final class ReschedulingTask implements RunnableTask {
   @Override
   public void run() {
     scheduled = true;
-    CompletionStage<Integer> result;
-    try {
-      result = task.execute();
-    } catch (final Exception e) {
-      // in case the task throws an exception instead of returning a failed CompletionStage
-      result = CompletableFuture.failedFuture(e);
-    }
+    var result = task.execute();
     // while we could always expect this to return a non-null result, we don't necessarily want to
     // stop, and more importantly, we want to make it transparent that something went wrong
     if (result == null) {

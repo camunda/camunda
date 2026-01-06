@@ -13,14 +13,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.sort.BatchOperationSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
@@ -31,7 +29,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,8 +76,6 @@ class BatchOperationControllerTest extends RestControllerTest {
               "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
-              "actorType":"USER",
-              "actorId":"frodo.baggins@fellowship",
               "operationsTotalCount":10,
               "operationsFailedCount":0,
               "operationsCompletedCount":10,
@@ -114,8 +109,6 @@ class BatchOperationControllerTest extends RestControllerTest {
               "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
-              "actorType":"USER",
-              "actorId":"frodo.baggins@fellowship",
               "operationsTotalCount":10,
               "operationsFailedCount":0,
               "operationsCompletedCount":10,
@@ -159,8 +152,6 @@ class BatchOperationControllerTest extends RestControllerTest {
               "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
-              "actorType":"USER",
-              "actorId":"frodo.baggins@fellowship",
               "operationsTotalCount":0,
               "operationsFailedCount":0,
               "operationsCompletedCount":0,
@@ -222,34 +213,6 @@ class BatchOperationControllerTest extends RestControllerTest {
                     String.valueOf(BatchOperationStateEnum.ACTIVE)),
                 Operation.like("act"))),
         true);
-    customOperationTestCases(
-        streamBuilder,
-        "actorType",
-        ops ->
-            new io.camunda.search.filter.BatchOperationFilter.Builder()
-                .actorTypeOperations(ops)
-                .build(),
-        List.of(
-            List.of(Operation.eq(String.valueOf(BatchOperationActorType.USER))),
-            List.of(Operation.eq(String.valueOf(BatchOperationActorType.CLIENT)))),
-        true);
-
-    customOperationTestCases(
-        streamBuilder,
-        "actorId",
-        ops ->
-            new io.camunda.search.filter.BatchOperationFilter.Builder()
-                .actorIdOperations(ops)
-                .build(),
-        List.of(
-            List.of(Operation.eq("frodo.baggins@fellowship")),
-            List.of(Operation.neq("aragorn@fellowship")),
-            List.of(Operation.in("frodo@fellowship", "aragorn@fellowship")),
-            List.of(Operation.notIn("samwise@fellowship", "gandalf@fellowship")),
-            List.of(Operation.exists(true)),
-            List.of(Operation.exists(false)),
-            List.of(Operation.like("fro*"))),
-        true);
 
     return streamBuilder.build();
   }
@@ -269,7 +232,7 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     // when / then
     when(batchOperationServices.search(any(BatchOperationQuery.class)))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
+        .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
 
     webClient
         .post()
@@ -290,8 +253,6 @@ class BatchOperationControllerTest extends RestControllerTest {
                 "batchOperationType": "CANCEL_PROCESS_INSTANCE",
                 "startDate": "2025-03-18T10:57:44.000+01:00",
                 "endDate": "2025-03-18T10:57:45.000+01:00",
-                "actorType": "USER",
-                "actorId": "frodo.baggins@fellowship",
                 "operationsTotalCount": 10,
                 "operationsFailedCount": 0,
                 "operationsCompletedCount": 10,
@@ -353,90 +314,6 @@ class BatchOperationControllerTest extends RestControllerTest {
         .isNoContent();
   }
 
-  private static Stream<Arguments> provideSortParameters() {
-    final var entityWithEarlyStart =
-        getBatchOperationEntityWithStartDate(
-            "1", OffsetDateTime.parse("2025-03-18T10:57:43+01:00"));
-    final var entityWithLateStart =
-        getBatchOperationEntityWithStartDate(
-            "2", OffsetDateTime.parse("2025-03-18T10:57:45+01:00"));
-    final var entityAragorn = getBatchOperationEntityWithActorId("3", "aragorn@fellowship");
-    final var entityFrodo = getBatchOperationEntityWithActorId("4", "frodo@fellowship");
-    final var entityActorClient =
-        getBatchOperationEntityWithActorType("5", BatchOperationActorType.CLIENT);
-    final var entityActorUser =
-        getBatchOperationEntityWithActorType("6", BatchOperationActorType.USER);
-
-    return Stream.of(
-        Arguments.of(
-            BatchOperationSort.of(s -> s.startDate().asc()),
-            List.of(entityWithEarlyStart, entityWithLateStart),
-            List.of("2025-03-18T10:57:43.000+01:00", "2025-03-18T10:57:45.000+01:00")),
-        Arguments.of(
-            BatchOperationSort.of(s -> s.startDate().desc()),
-            List.of(entityWithLateStart, entityWithEarlyStart),
-            List.of("2025-03-18T10:57:45.000+01:00", "2025-03-18T10:57:43.000+01:00")),
-        Arguments.of(
-            BatchOperationSort.of(s -> s.actorId().asc()),
-            List.of(entityAragorn, entityFrodo),
-            List.of("aragorn@fellowship", "frodo@fellowship")),
-        Arguments.of(
-            BatchOperationSort.of(s -> s.actorId().desc()),
-            List.of(entityFrodo, entityAragorn),
-            List.of("frodo@fellowship", "aragorn@fellowship")),
-        Arguments.of(
-            BatchOperationSort.of(s -> s.actorType().asc()),
-            List.of(entityActorClient, entityActorUser),
-            List.of("CLIENT", "USER")),
-        Arguments.of(
-            BatchOperationSort.of(s -> s.actorType().desc()),
-            List.of(entityActorUser, entityActorClient),
-            List.of("USER", "CLIENT")));
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideSortParameters")
-  void shouldSearchBatchOperationsSorted(
-      final BatchOperationSort sort,
-      final List<BatchOperationEntity> searchResultItems,
-      final List<String> expectedOrder) {
-    // given
-    final var fieldSortings = sort.getFieldSortings();
-    Assertions.assertThat(fieldSortings).as("Test assumes exactly one sort entry").hasSize(1);
-
-    final var fieldSorting = fieldSortings.getFirst();
-    final var sortedByField = fieldSorting.field();
-    final var order = fieldSorting.order().value();
-
-    final var request =
-        """
-        { "sort": [{ "field": "%s", "order": "%s" }] }"""
-            .formatted(sortedByField, order);
-
-    when(batchOperationServices.search(any(BatchOperationQuery.class)))
-        .thenReturn(
-            new SearchQueryResult<>(
-                searchResultItems.size(), false, searchResultItems, null, null));
-
-    // when
-    webClient
-        .post()
-        .uri("/v2/batch-operations/search")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .jsonPath("$.items[0].%s".formatted(sortedByField))
-        .isEqualTo(expectedOrder.get(0))
-        .jsonPath("$.items[1].%s".formatted(sortedByField))
-        .isEqualTo(expectedOrder.get(1));
-
-    // then
-    verify(batchOperationServices).search(new BatchOperationQuery.Builder().sort(sort).build());
-  }
-
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationKey) {
     return new BatchOperationEntity(
         batchOperationKey,
@@ -444,56 +321,6 @@ class BatchOperationControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
-        "frodo.baggins@fellowship",
-        10,
-        0,
-        10,
-        emptyList());
-  }
-
-  private static BatchOperationEntity getBatchOperationEntityWithStartDate(
-      final String batchOperationKey, final OffsetDateTime startDate) {
-    return new BatchOperationEntity(
-        batchOperationKey,
-        BatchOperationState.COMPLETED,
-        BatchOperationType.CANCEL_PROCESS_INSTANCE,
-        startDate,
-        OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
-        "frodo@fellowship",
-        10,
-        0,
-        10,
-        emptyList());
-  }
-
-  private static BatchOperationEntity getBatchOperationEntityWithActorId(
-      final String batchOperationKey, final String actorId) {
-    return new BatchOperationEntity(
-        batchOperationKey,
-        BatchOperationState.COMPLETED,
-        BatchOperationType.CANCEL_PROCESS_INSTANCE,
-        OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
-        OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
-        actorId,
-        10,
-        0,
-        10,
-        emptyList());
-  }
-
-  private static BatchOperationEntity getBatchOperationEntityWithActorType(
-      final String batchOperationKey, final BatchOperationActorType actorType) {
-    return new BatchOperationEntity(
-        batchOperationKey,
-        BatchOperationState.COMPLETED,
-        BatchOperationType.CANCEL_PROCESS_INSTANCE,
-        OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
-        OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        actorType,
-        "frodo@fellowship",
         10,
         0,
         10,
@@ -512,8 +339,6 @@ class BatchOperationControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
-        "frodo.baggins@fellowship",
         operationsTotalCount,
         operationsFailedCount,
         operationsCompletedCount,

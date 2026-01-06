@@ -243,16 +243,6 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 metrics(final JobWorkerMetrics metrics);
 
     /**
-     * Sets the job exception handler to use for this worker. See {@link JobExceptionHandler} for
-     * more. Defaults to {@link
-     * io.camunda.client.CamundaClientBuilder#defaultJobWorkerExceptionHandler(JobExceptionHandler)}.
-     *
-     * @param jobExceptionHandler the retry backoff supplier to use
-     * @return the builder for this worker
-     */
-    JobWorkerBuilderStep3 jobExceptionHandler(JobExceptionHandler jobExceptionHandler);
-
-    /**
      * Open the worker and start to work on available tasks.
      *
      * @return the worker

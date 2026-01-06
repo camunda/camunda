@@ -222,10 +222,8 @@ public final class RaftPartitionFactoryTest {
     final var partition = buildRaftPartition(brokerCfg);
 
     // then
-    final var expected =
-        brokerCfg.getExperimental().getRaft().getSegmentPreallocationStrategy().segmentAllocator();
-    assertThat(partition.getPartitionConfig().getStorageConfig().getSegmentAllocator())
-        .isEqualTo(expected);
+    assertThat(partition.getPartitionConfig().getStorageConfig().isPreallocateSegmentFiles())
+        .isEqualTo(value);
   }
 
   private RaftPartition buildRaftPartition(final BrokerCfg brokerCfg) {

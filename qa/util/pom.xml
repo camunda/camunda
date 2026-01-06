@@ -34,7 +34,11 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-elasticsearch</artifactId>
+      <artifactId>elasticsearch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>
@@ -163,6 +167,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
     </dependency>
 
     <dependency>

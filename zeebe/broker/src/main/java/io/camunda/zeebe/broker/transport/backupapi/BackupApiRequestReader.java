@@ -11,7 +11,6 @@ import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.protocol.management.BackupRequestDecoder;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import org.agrona.DirectBuffer;
 
 public final class BackupApiRequestReader implements RequestReader {
@@ -43,12 +42,5 @@ public final class BackupApiRequestReader implements RequestReader {
 
   public BackupRequestType type() {
     return messageDecoder.type();
-  }
-
-  public CheckpointType checkpointType() {
-    if (messageDecoder.checkpointType() != BackupRequestDecoder.checkpointTypeNullValue()) {
-      return CheckpointType.valueOf(messageDecoder.checkpointType());
-    }
-    return CheckpointType.MANUAL_BACKUP;
   }
 }

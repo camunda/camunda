@@ -10,17 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
-import io.camunda.search.entities.BatchOperationType;
-import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -60,24 +50,6 @@ public class SearchColumnTest {
               List.of(
                   Tuple.of(BatchOperationItemState.ACTIVE, BatchOperationItemState.ACTIVE),
                   Tuple.of(BatchOperationItemState.ACTIVE, "ACTIVE"))),
-          Map.entry(
-              BatchOperationState.class,
-              List.of(
-                  Tuple.of(BatchOperationState.ACTIVE, BatchOperationState.ACTIVE),
-                  Tuple.of(BatchOperationState.ACTIVE, "ACTIVE"))),
-          Map.entry(
-              BatchOperationType.class,
-              List.of(
-                  Tuple.of(
-                      BatchOperationType.MIGRATE_PROCESS_INSTANCE,
-                      BatchOperationType.MIGRATE_PROCESS_INSTANCE),
-                  Tuple.of(
-                      BatchOperationType.MIGRATE_PROCESS_INSTANCE, "MIGRATE_PROCESS_INSTANCE"))),
-          Map.entry(
-              BatchOperationActorType.class,
-              List.of(
-                  Tuple.of(BatchOperationActorType.USER, BatchOperationActorType.USER),
-                  Tuple.of(BatchOperationActorType.USER, "USER"))),
           Map.entry(
               ProcessInstanceState.class,
               List.of(
@@ -139,43 +111,7 @@ public class SearchColumnTest {
           Map.entry(
               EntityType.class,
               List.of(
-                  Tuple.of(EntityType.USER, EntityType.USER), Tuple.of(EntityType.USER, "USER"))),
-          Map.entry(
-              ClusterVariableScope.class,
-              List.of(
-                  Tuple.of(ClusterVariableScope.GLOBAL, ClusterVariableScope.GLOBAL),
-                  Tuple.of(ClusterVariableScope.GLOBAL, "GLOBAL"))),
-          Map.entry(
-              AuditLogActorType.class,
-              List.of(
-                  Tuple.of(AuditLogActorType.USER, AuditLogActorType.USER),
-                  Tuple.of(AuditLogActorType.USER, "USER"))),
-          Map.entry(
-              AuditLogEntityType.class,
-              List.of(
-                  Tuple.of(
-                      AuditLogEntityType.PROCESS_INSTANCE, AuditLogEntityType.PROCESS_INSTANCE),
-                  Tuple.of(AuditLogEntityType.PROCESS_INSTANCE, "PROCESS_INSTANCE"))),
-          Map.entry(
-              AuditLogOperationCategory.class,
-              List.of(
-                  Tuple.of(AuditLogOperationCategory.ADMIN, AuditLogOperationCategory.ADMIN),
-                  Tuple.of(AuditLogOperationCategory.ADMIN, "ADMIN"))),
-          Map.entry(
-              AuditLogOperationResult.class,
-              List.of(
-                  Tuple.of(AuditLogOperationResult.SUCCESS, AuditLogOperationResult.SUCCESS),
-                  Tuple.of(AuditLogOperationResult.SUCCESS, "SUCCESS"))),
-          Map.entry(
-              AuditLogOperationType.class,
-              List.of(
-                  Tuple.of(AuditLogOperationType.CREATE, AuditLogOperationType.CREATE),
-                  Tuple.of(AuditLogOperationType.CREATE, "CREATE"))),
-          Map.entry(
-              AuditLogTenantScope.class,
-              List.of(
-                  Tuple.of(AuditLogTenantScope.TENANT, AuditLogTenantScope.TENANT),
-                  Tuple.of(AuditLogTenantScope.TENANT, "TENANT"))));
+                  Tuple.of(EntityType.USER, EntityType.USER), Tuple.of(EntityType.USER, "USER"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()

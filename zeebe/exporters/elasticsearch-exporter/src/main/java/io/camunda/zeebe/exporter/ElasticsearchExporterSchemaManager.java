@@ -190,15 +190,6 @@ public class ElasticsearchExporterSchemaManager {
       if (index.clusterVariable) {
         createValueIndexTemplate(ValueType.CLUSTER_VARIABLE, version);
       }
-      if (index.conditionalSubscription) {
-        createValueIndexTemplate(ValueType.CONDITIONAL_SUBSCRIPTION, version);
-      }
-      if (index.conditionalEvaluation) {
-        createValueIndexTemplate(ValueType.CONDITIONAL_EVALUATION, version);
-      }
-      if (index.globalListenerBatch) {
-        createValueIndexTemplate(ValueType.GLOBAL_LISTENER_BATCH, version);
-      }
     }
 
     indexTemplatesCreated.add(version);

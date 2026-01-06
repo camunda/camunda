@@ -13,22 +13,69 @@ import {Paths} from 'modules/Routes';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import type {QueryProcessInstanceIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const firstIncident = createIncident({
-  errorType: 'CONDITION_ERROR',
-  creationTime: '2022-03-01T14:26:19',
-  elementId: 'flowNodeId_exclusiveGateway',
-});
+const mockIncidents = {
+  count: 2,
+  incidents: [
+    createIncident({
+      errorType: {name: 'Condition errortype', id: 'CONDITION_ERROR'},
+      flowNodeId: 'flowNodeId_exclusiveGateway',
+      creationTime: '2022-03-01T14:26:19',
+    }),
+    createIncident({
+      errorType: {name: 'Extract value errortype', id: 'EXTRACT_VALUE_ERROR'},
+      flowNodeId: 'flowNodeId_alwaysFailingTask',
+    }),
+  ],
+  errorTypes: [
+    {
+      id: 'CONDITION_ERROR',
+      name: 'Condition errortype',
+      count: 1,
+    },
+    {
+      id: 'EXTRACT_VALUE_ERROR',
+      name: 'Extract value errortype',
+      count: 1,
+    },
+  ],
 
-const secondIncident = createIncident({
-  errorType: 'EXTRACT_VALUE_ERROR',
-  elementId: 'flowNodeId_alwaysFailingTask',
-});
+  flowNodes: [
+    {
+      id: 'flowNodeId_exclusiveGateway',
+      name: 'flowNodeName_exclusiveGateway',
+      count: 1,
+    },
+    {
+      id: 'flowNodeId_alwaysFailingTask',
+      name: 'flowNodeName_alwaysFailingTask',
+      count: 1,
+    },
+  ],
+};
 
-const mockIncidents: QueryProcessInstanceIncidentsResponseBody = {
-  page: {totalItems: 2},
-  items: [firstIncident, secondIncident],
+const mockResolvedIncidents = {
+  count: 1,
+  incidents: [
+    createIncident({
+      errorType: {name: 'Extract value errortype', id: 'EXTRACT_VALUE_ERROR'},
+      flowNodeId: 'flowNodeId_alwaysFailingTask',
+    }),
+  ],
+  errorTypes: [
+    {
+      id: 'EXTRACT_VALUE_ERROR',
+      name: 'Extract value errortype',
+      count: 1,
+    },
+  ],
+  flowNodes: [
+    {
+      id: 'flowNodeId_alwaysFailingTask',
+      name: 'flowNodeName_alwaysFailingTask',
+      count: 1,
+    },
+  ],
 };
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -53,4 +100,4 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-export {mockIncidents, firstIncident, secondIncident, Wrapper};
+export {mockIncidents, mockResolvedIncidents, Wrapper};

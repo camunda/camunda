@@ -25,7 +25,6 @@ public class SequenceFlowTemplate extends AbstractTemplateDescriptor
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String ACTIVITY_ID = "activityId";
-  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public SequenceFlowTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

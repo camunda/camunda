@@ -317,26 +317,10 @@ public class ObjectVariableService {
 
   private Optional<OffsetDateTime> parsePossibleDate(final String dateAsString) {
     try {
-      /*
-       * The DateParserUtils uses a list of 240+ rules/regexes to attempt and convert a string to
-       * a date. This includes fixed-length (10-13, 16, 19), numeric strings which it interprets
-       * as unix timestamps, microseconds or nanoseconds. In those cases it will incorrectly map
-       * such a String to a date, leading Optimize reports to display the value as a nonsensical
-       * date. Therefore, we first check to see if the string is composed of only digits and skip
-       * calling the DateParserUtils if that's the case.
-       */
-      if (isDigitOnlyString(dateAsString)) {
-        return Optional.empty();
-      }
-
       return Optional.of(DateParserUtils.parseOffsetDateTime(dateAsString));
     } catch (final Exception e) {
       return Optional.empty();
     }
-  }
-
-  private boolean isDigitOnlyString(final String dateAsString) {
-    return dateAsString.matches("^\\d+$");
   }
 
   private void parseStringOrDateVariableAndSet(

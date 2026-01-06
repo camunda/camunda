@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import com.google.common.collect.Lists;
 import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
@@ -90,7 +89,6 @@ public class IncidentItemProvider implements ItemProvider {
           new IncidentFilter.Builder()
               .processInstanceKeyOperations(
                   FilterUtil.mapDefaultToOperation(processInstanceKeysBatch))
-              .states(IncidentState.ACTIVE.name())
               .build();
       incidents.addAll(fetchIncidentItems(filter, pageSize));
     }

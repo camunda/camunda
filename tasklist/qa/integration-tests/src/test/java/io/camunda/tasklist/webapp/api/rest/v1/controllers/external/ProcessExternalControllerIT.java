@@ -60,13 +60,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "startedByForm";
     final String formId = "testForm";
 
-    tester
-        .having()
-        .deployProcess("startedByFormProcess.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .waitUntil()
-        .formExists(formId);
+    tester.having().deployProcess("startedByFormProcess.bpmn").waitUntil().processIsDeployed();
 
     // when
     final var result =
@@ -98,13 +92,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
         .send()
         .join();
 
-    tester
-        .having()
-        .deployProcess("startedByLinkedForm.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .waitUntil()
-        .formExists(formId);
+    tester.having().deployProcess("startedByLinkedForm.bpmn").waitUntil().processIsDeployed();
 
     // when
     final var result =
@@ -140,13 +128,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
         .send()
         .join();
 
-    tester
-        .having()
-        .deployProcess("startedByLinkedForm.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .waitUntil()
-        .formExists("Form_0mik7px", 2L);
+    tester.having().deployProcess("startedByLinkedForm.bpmn").waitUntil().processIsDeployed();
 
     // when
     final var result =

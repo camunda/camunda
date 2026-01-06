@@ -70,14 +70,13 @@ final class AdvertisedAddressTest {
         .values()
         .forEach(
             b ->
-                b.withUnifiedConfig(
-                    cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
+                b.withBrokerConfig(cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
     cluster
         .gateways()
         .values()
         .forEach(
             g ->
-                g.withUnifiedConfig(
+                g.withGatewayConfig(
                     cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
   }
 
@@ -136,9 +135,9 @@ final class AdvertisedAddressTest {
     final var internalApiProxy =
         PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
 
-    broker.withUnifiedConfig(
+    broker.withBrokerConfig(
         cfg -> {
-          final var network = cfg.getCluster().getNetwork();
+          final var network = cfg.getNetwork();
           network.getInternalApi().setAdvertisedHost(TOXIPROXY.getHost());
           network
               .getInternalApi()
@@ -158,12 +157,11 @@ final class AdvertisedAddressTest {
     final var gatewayClusterProxy =
         PROXY_REGISTRY.getOrCreateHostProxy(gateway.mappedPort(TestZeebePort.CLUSTER));
 
-    gateway.withUnifiedConfig(
+    gateway.withGatewayConfig(
         cfg -> {
-          final var internalApi = cfg.getCluster().getNetwork().getInternalApi();
-          internalApi.setAdvertisedHost(TOXIPROXY.getHost());
-          internalApi.setAdvertisedPort(
-              TOXIPROXY.getMappedPort(gatewayClusterProxy.internalPort()));
+          cfg.getCluster()
+              .setAdvertisedHost(TOXIPROXY.getHost())
+              .setAdvertisedPort(TOXIPROXY.getMappedPort(gatewayClusterProxy.internalPort()));
         });
   }
 

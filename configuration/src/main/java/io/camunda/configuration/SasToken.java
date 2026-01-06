@@ -9,21 +9,14 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class SasToken {
-  private static final String PREFIX = "camunda.data.primary-storage.backup.azure.sas-token";
-  private static final Set<Set<String>> LEGACY_SASTOKEN_TYPE_PROPERTIES = new LinkedHashSet<>(2);
-  private static final Set<Set<String>> LEGACY_SASTOKEN_VALUE_PROPERTIES = new LinkedHashSet<>(2);
-
-  static {
-    LEGACY_SASTOKEN_TYPE_PROPERTIES.add(Set.of("zeebe.broker.data.backup.azure.sasToken.type"));
-    LEGACY_SASTOKEN_TYPE_PROPERTIES.add(Set.of("camunda.data.backup.azure.sas-token.type"));
-
-    LEGACY_SASTOKEN_VALUE_PROPERTIES.add(Set.of("zeebe.broker.data.backup.azure.sasToken.value"));
-    LEGACY_SASTOKEN_VALUE_PROPERTIES.add(Set.of("camunda.data.backup.azure.sas-token.value"));
-  }
+  private static final String PREFIX = "camunda.data.backup.azure.sas-token";
+  private static final Set<String> LEGACY_SASTOKEN_TYPE_PROPERTIES =
+      Set.of("zeebe.broker.data.backup.azure.sasToken.type");
+  private static final Set<String> LEGACY_SASTOKEN_VALUE_PROPERTIES =
+      Set.of("zeebe.broker.data.backup.azure.sasToken.value");
 
   /** The SAS token must be of the following types: "delegation", "service" or "account". */
   private SasTokenType type;
@@ -39,7 +32,7 @@ public class SasToken {
   }
 
   public SasTokenType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".type",
         type,
         SasTokenType.class,
@@ -52,7 +45,7 @@ public class SasToken {
   }
 
   public String getValue() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".value",
         value,
         String.class,
@@ -65,9 +58,6 @@ public class SasToken {
   }
 
   public SasTokenConfig toSasTokenConfig() {
-    if (getType() == null || getValue() == null) {
-      return null;
-    }
     return new SasTokenConfig.Builder()
         .withValue(getValue())
         .withTokenType(io.camunda.zeebe.backup.azure.SasTokenType.valueOf(getType().name()))

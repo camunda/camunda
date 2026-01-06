@@ -9,7 +9,6 @@ package io.camunda.exporter.tasks;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
-import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -27,7 +26,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
   private final ArchiverRepository archiverRepository;
   private final IncidentUpdateRepository incidentRepository;
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
-  private final HistoryDeletionRepository historyDeletionRepository;
   private final Logger logger;
   private final ScheduledThreadPoolExecutor executor;
   private final List<RunnableTask> tasks;
@@ -41,7 +39,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
       final @WillCloseWhenClosed ArchiverRepository archiverRepository,
       final @WillCloseWhenClosed IncidentUpdateRepository incidentRepository,
       final @WillCloseWhenClosed BatchOperationUpdateRepository batchOperationUpdateRepository,
-      final @WillCloseWhenClosed HistoryDeletionRepository historyDeletionRepository,
       final Logger logger,
       final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
       final List<RunnableTask> tasks,
@@ -54,9 +51,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
     this.batchOperationUpdateRepository =
         Objects.requireNonNull(
             batchOperationUpdateRepository, "must specify a batch operation update repository");
-    this.historyDeletionRepository =
-        Objects.requireNonNull(
-            historyDeletionRepository, "must specify a history deletion repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
     this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
@@ -82,8 +76,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
         error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
         archiverRepository,
         incidentRepository,
-        batchOperationUpdateRepository,
-        historyDeletionRepository);
+        batchOperationUpdateRepository);
   }
 
   public void start() {

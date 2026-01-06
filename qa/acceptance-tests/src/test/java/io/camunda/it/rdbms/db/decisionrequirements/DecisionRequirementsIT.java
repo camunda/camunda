@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -24,7 +24,6 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.search.sort.DecisionRequirementsSort;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -40,12 +39,12 @@ public class DecisionRequirementsIT {
   @TestTemplate
   public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
         rdbmsService.getDecisionRequirementsReader();
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
-    createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
+    createAndSaveDecisionRequirement(rdbmsWriter, decisionRequirements);
 
     final var instance =
         decisionRequirementsReader
@@ -66,14 +65,14 @@ public class DecisionRequirementsIT {
   @TestTemplate
   public void shouldFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
         rdbmsService.getDecisionRequirementsReader();
 
     final var decisionRequirements =
         DecisionRequirementsFixtures.createRandomized(
             b -> b.decisionRequirementsId("test-process-unique"));
-    createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
+    createAndSaveDecisionRequirement(rdbmsWriter, decisionRequirements);
 
     final var searchResult =
         decisionRequirementsReader.search(
@@ -104,20 +103,18 @@ public class DecisionRequirementsIT {
   @TestTemplate
   public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
         rdbmsService.getDecisionRequirementsReader();
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
-    createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
-    createAndSaveRandomDecisionRequirements(rdbmsWriters);
+    createAndSaveDecisionRequirement(rdbmsWriter, decisionRequirements);
+    createAndSaveRandomDecisionRequirements(rdbmsWriter);
 
     final var searchResult =
         decisionRequirementsReader.search(
             DecisionRequirementsQuery.of(b -> b),
-            resourceAccessChecksFromResourceIds(
-                AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                decisionRequirements.decisionRequirementsId()));
+            resourceAccessChecksFromResourceIds(decisionRequirements.decisionRequirementsId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
@@ -131,13 +128,13 @@ public class DecisionRequirementsIT {
   @TestTemplate
   public void shouldFindByAuthorizedTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
         rdbmsService.getDecisionRequirementsReader();
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
-    createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
-    createAndSaveRandomDecisionRequirements(rdbmsWriters);
+    createAndSaveDecisionRequirement(rdbmsWriter, decisionRequirements);
+    createAndSaveRandomDecisionRequirements(rdbmsWriter);
 
     final var searchResult =
         decisionRequirementsReader.search(
@@ -156,13 +153,13 @@ public class DecisionRequirementsIT {
   @TestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
         rdbmsService.getDecisionRequirementsReader();
 
     final String decisionRequirementsId = DecisionRequirementsFixtures.nextStringId();
     createAndSaveRandomDecisionRequirements(
-        rdbmsWriters, b -> b.decisionRequirementsId(decisionRequirementsId));
+        rdbmsWriter, b -> b.decisionRequirementsId(decisionRequirementsId));
 
     final var searchResult =
         decisionRequirementsReader.search(
@@ -189,13 +186,13 @@ public class DecisionRequirementsIT {
   @TestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
         rdbmsService.getDecisionRequirementsReader();
 
     final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
-    createAndSaveRandomDecisionRequirements(rdbmsWriters);
-    createAndSaveDecisionRequirement(rdbmsWriters, decisionRequirements);
+    createAndSaveRandomDecisionRequirements(rdbmsWriter);
+    createAndSaveDecisionRequirement(rdbmsWriter, decisionRequirements);
 
     final var searchResult =
         decisionRequirementsReader.search(
@@ -222,11 +219,11 @@ public class DecisionRequirementsIT {
   @TestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader decisionRequirementsReader =
         rdbmsService.getDecisionRequirementsReader();
 
-    createAndSaveRandomDecisionRequirements(rdbmsWriters, b -> b.tenantId("search-after-123456"));
+    createAndSaveRandomDecisionRequirements(rdbmsWriter, b -> b.tenantId("search-after-123456"));
     final var sort =
         DecisionRequirementsSort.of(s -> s.name().asc().version().asc().tenantId().desc());
     final var searchResult =

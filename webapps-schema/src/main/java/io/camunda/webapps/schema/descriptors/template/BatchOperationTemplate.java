@@ -30,8 +30,6 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor implement
 
   // New fields for engine batch operations
   public static final String STATE = "state";
-  public static final String ACTOR_TYPE = "actorType";
-  public static final String ACTOR_ID = "actorId";
   public static final String OPERATIONS_FAILED_COUNT = "operationsFailedCount";
   public static final String OPERATIONS_COMPLETED_COUNT = "operationsCompletedCount";
   public static final String ERRORS = "errors";

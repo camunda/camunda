@@ -7,9 +7,11 @@
  */
 package io.camunda.operate;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.qa.util.TestContext;
 import org.junit.After;
@@ -47,7 +49,8 @@ public class StartupIT {
     testContext.setDatabaseType("elasticsearch");
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(testContext);
+    testContainerUtil.startZeebe(
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
 
     operateContainer =
         testContainerUtil

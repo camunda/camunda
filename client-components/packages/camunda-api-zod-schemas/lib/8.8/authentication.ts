@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
+import {API_VERSION, type Endpoint} from './common';
 
 const currentUserSchema = z.object({
 	username: z.string(),

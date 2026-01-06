@@ -11,8 +11,8 @@ import java.util.Objects;
 
 public class ProcessFlowNodeEntity {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private String name;
+  private String id;
+  private String name;
 
   public ProcessFlowNodeEntity() {}
 

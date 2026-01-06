@@ -3,7 +3,6 @@
 paths:
   /mapping-rules:
     post:
-      x-eventually-consistent: false
       tags:
         - Mapping rule
       operationId: createMappingRule
@@ -40,9 +39,9 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
+      x-eventually-consistent: false
   /mapping-rules/{mappingRuleId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Mapping rule
       operationId: updateMappingRule
@@ -88,8 +87,8 @@ paths:
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
           $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
-    delete:
       x-eventually-consistent: false
+    delete:
       tags:
         - Mapping rule
       operationId: deleteMappingRule
@@ -118,8 +117,8 @@ paths:
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
         "503":
           $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
+      x-eventually-consistent: false
     get:
-      x-eventually-consistent: true
       tags:
         - Mapping rule
       operationId: getMappingRule
@@ -150,9 +149,9 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
+      x-eventually-consistent: true
   /mapping-rules/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Mapping rule
       operationId: searchMappingRule
@@ -179,6 +178,7 @@ paths:
           $ref: "common-responses.yaml#/components/responses/Forbidden"
         "500":
           $ref: "common-responses.yaml#/components/responses/InternalServerError"
+      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -283,7 +283,7 @@ components:
             - claimValue
             - name
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 

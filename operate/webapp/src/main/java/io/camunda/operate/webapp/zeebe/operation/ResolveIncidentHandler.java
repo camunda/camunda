@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE
 
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 /** Resolve the incident. */
 @Component
-@ConditionalOnRdbmsDisabled
 public class ResolveIncidentHandler extends AbstractOperationHandler implements OperationHandler {
 
   @Autowired private IncidentReader incidentReader;

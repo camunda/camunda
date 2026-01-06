@@ -142,11 +142,6 @@ public class RoleClient {
       return expectation.apply(position);
     }
 
-    public Record<RoleRecordValue> update(final String username) {
-      final long position = writer.writeCommand(RoleIntent.UPDATE, username, roleRecord);
-      return expectation.apply(position);
-    }
-
     public RoleUpdateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
@@ -191,11 +186,6 @@ public class RoleClient {
 
     public Record<RoleRecordValue> add(final AuthInfo authorization) {
       final long position = writer.writeCommand(RoleIntent.ADD_ENTITY, roleRecord, authorization);
-      return expectation.apply(position);
-    }
-
-    public Record<RoleRecordValue> add(final String username) {
-      final long position = writer.writeCommand(RoleIntent.ADD_ENTITY, username, roleRecord);
       return expectation.apply(position);
     }
 
@@ -255,11 +245,6 @@ public class RoleClient {
       return expectation.apply(position);
     }
 
-    public Record<RoleRecordValue> remove(final String username) {
-      final long position = writer.writeCommand(RoleIntent.REMOVE_ENTITY, username, roleRecord);
-      return expectation.apply(position);
-    }
-
     public Record<RoleRecordValue> remove(final AuthInfo authorization) {
       final long position =
           writer.writeCommand(RoleIntent.REMOVE_ENTITY, roleRecord, authorization);
@@ -300,11 +285,6 @@ public class RoleClient {
 
     public Record<RoleRecordValue> delete() {
       final long position = writer.writeCommand(RoleIntent.DELETE, roleRecord);
-      return expectation.apply(position);
-    }
-
-    public Record<RoleRecordValue> delete(final String username) {
-      final long position = writer.writeCommand(RoleIntent.DELETE, username, roleRecord);
       return expectation.apply(position);
     }
 

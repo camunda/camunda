@@ -63,7 +63,7 @@ public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler
         .setFlowNodeInstanceKey(value.getElementInstanceKey())
         .setMessageKey(value.getMessageKey())
         .setMessageName(value.getMessageName())
-        .setProcessDefinitionKey(value.getProcessDefinitionKey())
+        .setProcessDefinitionKey(null) // not available for process message subscriptions
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setSubscriptionType("PROCESS_EVENT")
         .setTenantId(tenantOrDefault(value.getTenantId()));

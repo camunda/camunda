@@ -11,16 +11,12 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
-import io.camunda.search.clients.reader.AuditLogDocumentReader;
-import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.BatchOperationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
-import io.camunda.search.clients.reader.ClusterVariableDocumentReader;
-import io.camunda.search.clients.reader.ClusterVariableReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
@@ -38,8 +34,6 @@ import io.camunda.search.clients.reader.GroupMemberDocumentReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.clients.reader.IncidentDocumentReader;
-import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorDocumentReader;
-import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorReader;
 import io.camunda.search.clients.reader.IncidentReader;
 import io.camunda.search.clients.reader.JobDocumentReader;
 import io.camunda.search.clients.reader.JobReader;
@@ -50,10 +44,6 @@ import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
-import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsDocumentReader;
-import io.camunda.search.clients.reader.ProcessDefinitionInstanceVersionStatisticsReader;
-import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsDocumentReader;
-import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
@@ -86,7 +76,6 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -96,7 +85,6 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
-import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -254,14 +242,6 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionMessageSubscriptionStatisticsReader
-      processDefinitionMessageSubscriptionStatisticsReader(
-          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ProcessDefinitionMessageSubscriptionStatisticsDocumentReader(
-        executor, descriptors.get(MessageSubscriptionTemplate.class));
-  }
-
-  @Bean
   public ProcessDefinitionReader processDefinitionReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new ProcessDefinitionDocumentReader(executor, descriptors.get(ProcessIndex.class));
@@ -278,17 +258,11 @@ public class SearchClientReaderConfiguration {
 
   @Bean
   public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptors descriptors,
+      final IncidentErrorHashCodeNormalizer normalizer) {
     return new ProcessDefinitionInstanceStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class)) {};
-  }
-
-  @Bean
-  public ProcessDefinitionInstanceVersionStatisticsReader
-      processDefinitionInstanceVersionStatisticsReader(
-          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ProcessDefinitionInstanceVersionStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class)) {};
+        executor, descriptors.get(ListViewTemplate.class), normalizer) {};
   }
 
   @Bean
@@ -379,25 +353,5 @@ public class SearchClientReaderConfiguration {
   public VariableReader variableReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new VariableDocumentReader(executor, descriptors.get(VariableTemplate.class));
-  }
-
-  @Bean
-  public ClusterVariableReader clusterVariableReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new ClusterVariableDocumentReader(executor, descriptors.get(ClusterVariableIndex.class));
-  }
-
-  @Bean
-  public AuditLogReader auditLogReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new AuditLogDocumentReader(executor, descriptors.get(AuditLogTemplate.class));
-  }
-
-  @Bean
-  public IncidentProcessInstanceStatisticsByErrorReader
-      incidentProcessInstanceStatisticsByErrorReader(
-          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new IncidentProcessInstanceStatisticsByErrorDocumentReader(
-        executor, descriptors.get(IncidentTemplate.class)) {};
   }
 }

@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch.core.SearchRequest;
 
 @ExtendWith(MockitoExtension.class)
 public class OpensearchProcessDefinitionDaoTest {
@@ -56,7 +57,7 @@ public class OpensearchProcessDefinitionDaoTest {
         new Query<ProcessDefinition>().setFilter(processDefinition);
 
     // when
-    processDefinitionDao.buildFiltering(query);
+    processDefinitionDao.buildFiltering(query, mock(SearchRequest.Builder.class));
 
     // then
     verify(wrapper, times(1)).term(ProcessDefinition.NAME, processDefinition.getName());

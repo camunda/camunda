@@ -24,9 +24,6 @@
             },
             "checkpointPosition": {
               "type": "long"
-            },
-            "checkpointType": {
-              "type": "keyword"
             }
           }
         }

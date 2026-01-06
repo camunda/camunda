@@ -1000,7 +1000,6 @@ public class SchemaManagerIT {
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
             newPrefix + "-camunda-authorization-8.8.0_",
-            newPrefix + "-camunda-cluster-variable-8.9.0_",
             newPrefix + "-camunda-correlated-message-subscription-8.8.0_",
             newPrefix + "-camunda-group-8.8.0_",
             newPrefix + "-camunda-mapping-rule-8.8.0_",
@@ -1010,8 +1009,6 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-usage-metric-tu-8.8.0_",
             newPrefix + "-camunda-user-8.8.0_",
             newPrefix + "-camunda-web-session-8.8.0_",
-            newPrefix + "-camunda-audit-log-8.9.0_",
-            newPrefix + "-camunda-history-deletion-8.9.0_",
             newPrefix + "-operate-batch-operation-1.0.0_",
             newPrefix + "-operate-decision-8.3.0_",
             newPrefix + "-operate-decision-instance-8.3.0_",

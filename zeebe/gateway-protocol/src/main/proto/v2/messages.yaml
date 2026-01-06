@@ -3,7 +3,6 @@
 paths:
   /messages/publication:
     post:
-      x-eventually-consistent: false
       tags:
         - Message
       operationId: publishMessage
@@ -33,10 +32,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /messages/correlation:
     post:
-      x-eventually-consistent: false
       tags:
         - Message
       operationId: correlateMessage
@@ -73,10 +72,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /message-subscriptions/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Message subscription
       operationId: searchMessageSubscriptions
@@ -103,15 +102,16 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /correlated-message-subscriptions/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Message subscription
       operationId: searchCorrelatedMessageSubscriptions
       summary: Search correlated message subscriptions
       description: Search correlated message subscriptions based on given criteria.
+      x-eventually-consistent: true
       requestBody:
         required: false
         content:
@@ -169,9 +169,7 @@ components:
       type: object
       properties:
         tenantId:
-          description: The tenant ID of the correlated message
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
             - $ref: '#/components/schemas/MessageKey'
@@ -219,9 +217,7 @@ components:
       type: object
       properties:
         tenantId:
-          description: The tenant ID of the message.
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
         messageKey:
           allOf:
             - $ref: '#/components/schemas/MessageKey'
@@ -299,7 +295,7 @@ components:
             - correlationKey
             - tenantId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -327,17 +323,13 @@ components:
           allOf:
             - $ref: '#/components/schemas/MessageSubscriptionKeyFilterProperty'
           description: The message subscription key associated with this message subscription.
-        processDefinitionKey:
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
-          description: The process definition key associated with this correlated message subscription. This only works for data created with 8.9 and later.
         processDefinitionId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The process definition ID associated with this message subscription.
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The process instance key associated with this message subscription.
         elementId:
           allOf:
@@ -345,7 +337,7 @@ components:
           description: The element ID associated with this message subscription.
         elementInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The element instance key associated with this message subscription.
         messageSubscriptionState:
           allOf:
@@ -475,7 +467,7 @@ components:
             - subscriptionKey
             - tenantId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -510,7 +502,7 @@ components:
           description: The element ID that received the message.
         elementInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The element instance key that received the message.
         messageKey:
           allOf:
@@ -530,11 +522,11 @@ components:
           description: The process definition ID associated with this correlated message subscription.
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
-          description: The process definition key associated with this correlated message subscription. For intermediate message events, this only works for data created with 8.9 and later.
+            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+          description: The process definition key associated with this correlated message subscription.
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The process instance key associated with this correlated message subscription.
         subscriptionKey:
           allOf:

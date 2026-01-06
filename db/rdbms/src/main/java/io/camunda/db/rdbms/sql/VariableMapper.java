@@ -13,8 +13,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
-public interface VariableMapper
-    extends ProcessBasedHistoryCleanupMapper, ProcessInstanceDependantMapper {
+public interface VariableMapper extends ProcessBasedHistoryCleanupMapper {
 
   void insert(VariableDbModel variable);
 

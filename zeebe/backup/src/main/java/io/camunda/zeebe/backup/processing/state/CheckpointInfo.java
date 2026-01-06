@@ -9,24 +9,16 @@ package io.camunda.zeebe.backup.processing.state;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 
 /** Checkpoint info stored in db in msgpack format. */
 public final class CheckpointInfo extends UnpackedObject implements DbValue {
   private final LongProperty idProperty = new LongProperty("id");
   private final LongProperty positionProperty = new LongProperty("position");
-  private final LongProperty timestamp = new LongProperty("timestamp");
-  private final EnumProperty<CheckpointType> typeProperty =
-      new EnumProperty<>("type", CheckpointType.class, CheckpointType.MANUAL_BACKUP);
 
   public CheckpointInfo() {
-    super(4);
-    declareProperty(idProperty)
-        .declareProperty(positionProperty)
-        .declareProperty(timestamp)
-        .declareProperty(typeProperty);
+    super(2);
+    declareProperty(idProperty).declareProperty(positionProperty);
   }
 
   public long getId() {
@@ -44,24 +36,6 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
 
   public CheckpointInfo setPosition(final long position) {
     positionProperty.setValue(position);
-    return this;
-  }
-
-  public long getTimestamp() {
-    return timestamp.getValue();
-  }
-
-  public CheckpointInfo setTimestamp(final long timestamp) {
-    this.timestamp.setValue(timestamp);
-    return this;
-  }
-
-  public CheckpointType getType() {
-    return typeProperty.getValue();
-  }
-
-  public CheckpointInfo setType(final CheckpointType type) {
-    typeProperty.setValue(type);
     return this;
   }
 }

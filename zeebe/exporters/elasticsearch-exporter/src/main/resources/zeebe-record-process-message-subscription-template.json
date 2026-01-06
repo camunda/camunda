@@ -19,9 +19,6 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "processDefinitionKey": {
-              "type": "long"
-            },
             "processInstanceKey": {
               "type": "long"
             },

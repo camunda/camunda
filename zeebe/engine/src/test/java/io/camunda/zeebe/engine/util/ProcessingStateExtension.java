@@ -12,7 +12,6 @@ import static java.util.stream.Collectors.joining;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
@@ -169,8 +168,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
                 new EngineConfiguration(),
-                InstantSource.system(),
-                ExpressionLanguageMetrics.noop());
+                InstantSource.system());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }

@@ -12,7 +12,7 @@ import {useProcessDefinitionXml} from './useProcessDefinitionXml';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
+vi.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('useProcessDefinitionXml', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => {

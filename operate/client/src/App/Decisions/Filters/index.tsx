@@ -7,12 +7,12 @@
  */
 
 import {
-  parseDecisionsFilter,
-  updateDecisionsFilterSearchString,
-  type DecisionsFilter,
-} from 'modules/utils/filter/decisionsFilter';
+  type DecisionInstanceFilters,
+  getDecisionInstanceFilters,
+  updateDecisionsFiltersSearchString,
+} from 'modules/utils/filter';
 import {Form} from 'react-final-form';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {
   Container,
   Form as StyledForm,
@@ -32,43 +32,49 @@ import {useState} from 'react';
 import {Locations} from 'modules/Routes';
 import {FiltersPanel} from 'modules/components/FiltersPanel';
 import {TenantField} from 'modules/components/TenantField';
-import {
-  getDefinitionIdentifier,
-  getDefinitionIdFromIdentifier,
-} from 'modules/hooks/decisionDefinition';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
-const initialValues: DecisionsFilter = {
+const initialValues: DecisionInstanceFilters = {
   evaluated: true,
   failed: true,
 };
 
+type LocationType = Omit<Location, 'state'> & {
+  state: {hideOptionalFilters?: boolean};
+};
+
 const Filters: React.FC = observer(() => {
-  const [params] = useSearchParams();
+  const location = useLocation() as LocationType;
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filterValues = parseDecisionsFilter(params);
-  if (filterValues.name && filterValues.tenant !== 'all') {
-    filterValues.name = getDefinitionIdentifier(
-      filterValues.name,
-      filterValues.tenant,
-    );
-  }
-  if (filterValues.tenant === 'all') {
-    delete filterValues.name;
-    delete filterValues.version;
-  }
-
+  const filtersFromUrl = getDecisionInstanceFilters(location.search);
   return (
-    <Form<DecisionsFilter>
+    <Form<DecisionInstanceFilters>
       onSubmit={(values) => {
         navigate({
-          search: updateDecisionsFilterSearchString(params, {
+          search: updateDecisionsFiltersSearchString(location.search, {
             ...values,
-            name: getDefinitionIdFromIdentifier(values.name),
+            ...(values.name !== undefined
+              ? {
+                  name: groupedDecisionsStore.state.decisions.find(
+                    ({key}) => key === values.name,
+                  )?.decisionId,
+                }
+              : {}),
           }),
         });
       }}
-      initialValues={filterValues}
+      initialValues={{
+        ...filtersFromUrl,
+        ...(filtersFromUrl.name !== undefined
+          ? {
+              name: groupedDecisionsStore.getDecision(
+                filtersFromUrl.name,
+                filtersFromUrl.tenant,
+              )?.key,
+            }
+          : {}),
+      }}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
@@ -99,9 +105,11 @@ const Filters: React.FC = observer(() => {
                     <div>
                       <Title>Tenant</Title>
                       <TenantField
-                        onChange={() => {
+                        onChange={(selectedItem) => {
                           form.change('name', undefined);
                           form.change('version', undefined);
+
+                          groupedDecisionsStore.fetchDecisions(selectedItem);
                         }}
                       />
                     </div>

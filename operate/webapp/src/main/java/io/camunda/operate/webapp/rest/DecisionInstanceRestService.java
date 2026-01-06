@@ -19,7 +19,6 @@ import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,7 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = DECISION_INSTANCE_URL)
 @Validated
-@ConditionalOnRdbmsDisabled
 public class DecisionInstanceRestService extends InternalAPIErrorController {
 
   public static final String DECISION_INSTANCE_URL = "/api/decision-instances";

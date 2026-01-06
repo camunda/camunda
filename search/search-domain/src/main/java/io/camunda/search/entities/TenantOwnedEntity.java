@@ -10,8 +10,4 @@ package io.camunda.search.entities;
 public interface TenantOwnedEntity {
 
   String tenantId();
-
-  default boolean hasTenantScope() {
-    return true;
-  }
 }

@@ -37,17 +37,18 @@ public final class SetVariablesTest {
 
   private static final String PROCESS_ID = "process";
 
+  @AutoClose CamundaClient client;
+
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
   private long processDefinitionKey;
 
   @BeforeEach
   public void init() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
     processDefinitionKey =
         resourcesHelper.deployProcess(

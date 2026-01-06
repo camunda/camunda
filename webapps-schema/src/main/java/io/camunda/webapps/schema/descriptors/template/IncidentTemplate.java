@@ -33,7 +33,6 @@ public class IncidentTemplate extends AbstractTemplateDescriptor
   public static final String STATE = "state";
   public static final String CREATION_TIME = "creationTime";
   public static final String TREE_PATH = "treePath";
-  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public IncidentTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

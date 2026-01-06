@@ -27,18 +27,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 @ZeebeIntegration
 class ActivateJobsTest {
 
+  @AutoClose CamundaClient client;
+
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withUnifiedConfig(c -> c.getApi().getLongPolling().setEnabled(true));
+          .withGatewayConfig(c -> c.getLongPolling().setEnabled(true));
 
-  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofMillis(500)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofMillis(500)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -74,7 +75,7 @@ class ActivateJobsTest {
   @ValueSource(booleans = {true, false})
   public void shouldReturnEmptyListOnUserDefinedGlobalRequestTimeout(final boolean useRest) {
     // when
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(1)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(1)).build();
     final var actual =
         getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send().join();
 

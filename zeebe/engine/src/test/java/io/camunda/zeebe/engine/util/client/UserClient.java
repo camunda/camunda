@@ -171,11 +171,6 @@ public final class UserClient {
       return expectation.apply(position);
     }
 
-    public Record<UserRecordValue> update(final String username) {
-      final long position = writer.writeCommand(UserIntent.UPDATE, username, userRecord);
-      return expectation.apply(position);
-    }
-
     public UpdateUserClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
@@ -229,11 +224,6 @@ public final class UserClient {
 
     public Record<UserRecordValue> delete() {
       final long position = writer.writeCommand(UserIntent.DELETE, userRecord);
-      return expectation.apply(position);
-    }
-
-    public Record<UserRecordValue> delete(final String username) {
-      final long position = writer.writeCommand(UserIntent.DELETE, username, userRecord);
       return expectation.apply(position);
     }
 

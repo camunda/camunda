@@ -65,6 +65,12 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- TEST CONTAINERS -->
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-container</artifactId>
+    </dependency>
+
     <!-- Necessary for zeebe-test-container -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -73,7 +79,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-elasticsearch</artifactId>
+      <artifactId>elasticsearch</artifactId>
     </dependency>
 
     <dependency>
@@ -84,7 +90,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-postgresql</artifactId>
+      <artifactId>postgresql</artifactId>
     </dependency>
 
     <dependency>
@@ -100,6 +106,11 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.docker-java</groupId>
+      <artifactId>docker-java-api</artifactId>
     </dependency>
 
     <dependency>
@@ -185,36 +196,6 @@
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-qa-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-zeebe</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>configuration</artifactId>
     </dependency>
 
   </dependencies>

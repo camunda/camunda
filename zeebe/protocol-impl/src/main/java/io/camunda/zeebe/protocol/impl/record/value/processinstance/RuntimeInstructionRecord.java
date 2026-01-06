@@ -9,7 +9,6 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -36,9 +35,8 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return bufferAsString(elementIdProperty.getValue());
   }
 
-  public RuntimeInstructionRecord setElementId(final String interruptingElementId) {
+  public void setElementId(final String interruptingElementId) {
     elementIdProperty.setValue(interruptingElementId);
-    return this;
   }
 
   @Override
@@ -46,9 +44,8 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return processInstanceKeyProperty.getValue();
   }
 
-  public RuntimeInstructionRecord setProcessInstanceKey(final long processInstanceKey) {
+  public void setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
-    return this;
   }
 
   @Override
@@ -56,12 +53,10 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return bufferAsString(tenantIdProperty.getValue());
   }
 
-  public RuntimeInstructionRecord setTenantId(final String tenantId) {
+  public void setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
-    return this;
   }
 
-  @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProperty.getValue();
   }

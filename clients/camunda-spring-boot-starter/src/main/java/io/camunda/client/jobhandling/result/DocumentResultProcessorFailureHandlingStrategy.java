@@ -22,6 +22,7 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.jobhandling.DocumentContext;
+import io.camunda.client.jobhandling.JobExceptionHandlingStrategy;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -33,7 +34,8 @@ public interface DocumentResultProcessorFailureHandlingStrategy {
 
   /**
    * The method that will be invoked on failure. This method can throw runtime exception, including
-   * {@link JobError} and {@link BpmnError} that will be respected and processed
+   * {@link JobError} and {@link BpmnError} that will be respected and processed by a {@link
+   * JobExceptionHandlingStrategy}
    *
    * @param context the context being available for handling the failure
    * @throws RuntimeException the exception that may be thrown

@@ -12,7 +12,7 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpenSearchContainer;
+import org.opensearch.testcontainers.OpensearchContainer;
 
 /**
  * {@code ContainerizedSearchDBExtension} is an extension that creates and manages a containerized
@@ -21,7 +21,7 @@ import org.opensearch.testcontainers.OpenSearchContainer;
  */
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
-  private static OpenSearchContainer opensearchContainer;
+  private static OpensearchContainer opensearchContainer;
   private static OpenSearchClient osClient;
   private static OpenSearchAsyncClient asyncOsClient;
 

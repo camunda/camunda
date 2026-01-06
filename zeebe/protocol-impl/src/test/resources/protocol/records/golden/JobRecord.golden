@@ -13,7 +13,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -73,8 +72,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final StringValue CHANGED_ATTRIBUTES_KEY = new StringValue("changedAttributes");
   private static final StringValue RESULT_KEY = new StringValue("result");
   private static final StringValue TAGS = new StringValue("tags");
-  private static final StringValue IS_JOB_TO_USERTASK_MIGRATION_KEY =
-      new StringValue("isUserTaskMigration");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
 
@@ -118,11 +115,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final ObjectProperty<JobResult> resultProp =
       new ObjectProperty<>(RESULT_KEY, new JobResult());
   private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>(TAGS, StringValue::new);
-  private final BooleanProperty isJobToUserTaskMigrationProp =
-      new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
 
   public JobRecord() {
-    super(24);
+    super(23);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -145,8 +140,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(resultProp)
-        .declareProperty(tagsProp)
-        .declareProperty(isJobToUserTaskMigrationProp);
+        .declareProperty(tagsProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -172,7 +166,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     tenantIdProp.setValue(record.getTenantId());
     setChangedAttributes(record.getChangedAttributes());
     resultProp.getValue().wrap(record.getResult());
-    isJobToUserTaskMigrationProp.setValue(record.isJobToUserTaskMigration());
 
     setTags(record.getTags());
   }
@@ -340,11 +333,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  @Override
-  public boolean isJobToUserTaskMigration() {
-    return isJobToUserTaskMigrationProp.getValue();
-  }
-
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -438,11 +426,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
     jobListenerEventTypeProp.setValue(jobListenerEventType);
-    return this;
-  }
-
-  public JobRecord setIsJobToUserTaskMigration(final boolean isJobToUserTaskMigration) {
-    isJobToUserTaskMigrationProp.setValue(isJobToUserTaskMigration);
     return this;
   }
 

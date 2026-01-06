@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
 import org.opensearch.client.Request;
-import org.opensearch.client.ResponseException;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -143,7 +142,6 @@ final class TestClient implements CloseableSilently {
     try {
       final var request =
           new Request("PUT", "_plugins/_ism/policies/" + config.retention.getPolicyName());
-      decoratePolicyVersionSeq(request);
       final var requestEntity = createPutIndexManagementPolicyRequest(minimumAge);
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
       restClient.performRequest(request);
@@ -170,19 +168,6 @@ final class TestClient implements CloseableSilently {
   @Override
   public void close() {
     CloseHelper.quietCloseAll(osClient._transport());
-  }
-
-  private void decoratePolicyVersionSeq(final Request request) {
-    try {
-      final GetIndexStateManagementPolicyResponse policy = getIndexStateManagementPolicy();
-      request.addParameter("if_seq_no", String.valueOf(policy.seqNo()));
-      request.addParameter("if_primary_term", String.valueOf(policy.primaryTerm()));
-    } catch (final Exception e) {
-      if (!(e.getCause() instanceof final ResponseException responseException
-          && responseException.getResponse().getStatusLine().getStatusCode() == 404)) {
-        throw e;
-      }
-    }
   }
 
   private PutIndexStateManagementPolicyRequest createPutIndexManagementPolicyRequest(

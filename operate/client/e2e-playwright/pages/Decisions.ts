@@ -23,7 +23,7 @@ export class Decisions {
   readonly decisionViewer: Locator;
   readonly decisionInstanceKeysFilter: Locator;
   readonly deleteResourceButton: Locator;
-  readonly fetchDecisionErrorMessage: Locator;
+  readonly fetchErrorMessage: Locator;
   readonly diagramSpinner: Locator;
   readonly deleteResourceModal: InstanceType<typeof DeleteResourceModal>;
 
@@ -50,9 +50,7 @@ export class Decisions {
 
     this.diagramSpinner = page.getByTestId('diagram-spinner');
 
-    this.fetchDecisionErrorMessage = page
-      .getByTestId('diagram-body')
-      .getByText('Data could not be fetched');
+    this.fetchErrorMessage = page.getByText('Data could not be fetched');
   }
 
   async selectDecision(option: string) {

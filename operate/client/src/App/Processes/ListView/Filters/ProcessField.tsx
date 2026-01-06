@@ -9,26 +9,24 @@
 import React from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {ComboBox} from 'modules/components/ComboBox';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
-import {useProcessDefinitions} from 'modules/hooks/processDefinitions';
 
 const ProcessField: React.FC = observer(() => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const {processes, versionsByProcessAndTenant} = processesStore;
+  const form = useForm();
   const tenantsById = useAvailableTenants();
 
-  const form = useForm();
-  const tenantValue = useField('tenant').input.value;
-  const specificTenantId =
-    isMultiTenancyEnabled && tenantValue !== '' && tenantValue !== 'all'
-      ? tenantValue
-      : undefined;
+  const selectedTenant = useField('tenant').input.value;
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
-  const {data: definitions = []} = useProcessDefinitions(specificTenantId);
+  const isSpecificTenantSelected =
+    selectedTenant !== '' && selectedTenant !== 'all';
 
   const isDisabled =
-    (isMultiTenancyEnabled && tenantValue === '') ||
+    (isMultiTenancyEnabled && selectedTenant === '') ||
     batchModificationStore.state.isEnabled;
 
   return (
@@ -40,23 +38,36 @@ const ProcessField: React.FC = observer(() => {
           aria-label="Select a Process"
           placeholder="Search by Process Name"
           onChange={({selectedItem}) => {
-            const matchingProcess = definitions.find(
-              (d) => d.identifier === selectedItem?.id,
-            );
+            const versions = selectedItem
+              ? versionsByProcessAndTenant[selectedItem.id]
+              : [];
+            const initialVersionSelection =
+              versions === undefined
+                ? undefined
+                : versions[versions.length - 1]?.version;
+
             input.onChange(selectedItem?.id);
-            form.change('version', matchingProcess?.version ?? '');
+
+            form.change('version', initialVersionSelection);
             form.change('flowNodeId', undefined);
-            if (isMultiTenancyEnabled && matchingProcess) {
-              form.change('tenant', matchingProcess.tenantId);
+
+            if (isMultiTenancyEnabled) {
+              const tenant = processes.find(
+                ({id}) => id === selectedItem?.id,
+              )?.tenantId;
+
+              if (tenant !== undefined) {
+                form.change('tenant', tenant);
+              }
             }
           }}
-          items={definitions.map((definition) => {
+          items={processes.map(({id, label, tenantId}) => {
             return {
-              id: definition.identifier,
               label:
-                isMultiTenancyEnabled && !specificTenantId
-                  ? `${definition.label} - ${tenantsById[definition.tenantId]}`
-                  : definition.label,
+                isMultiTenancyEnabled && !isSpecificTenantSelected
+                  ? `${label} - ${tenantsById[tenantId]}`
+                  : label,
+              id,
             };
           })}
           value={input.value}

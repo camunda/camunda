@@ -6,59 +6,51 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IncidentsTable} from '..';
-import {createProcessInstance} from 'modules/testUtils';
+import {IncidentsTable} from '../index';
+import {createIncident} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
-import {Wrapper, firstIncident, incidentsMock} from './mocks';
-import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {incidentsStore} from 'modules/stores/incidents';
+import {Wrapper, incidentsMock, shortError} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Sorting', () => {
-  beforeEach(() => {
-    mockFetchProcessInstanceV2().withSuccess(
-      createProcessInstance({
-        hasIncident: true,
-      }),
-    );
-  });
-
-  it('should enable sorting for all', async () => {
-    render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidentsMock}
-      />,
-      {wrapper: Wrapper},
-    );
+  it('should enable sorting for all', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    incidentsStore.setIncidents(incidentsMock);
+    render(<IncidentsTable />, {wrapper: Wrapper});
 
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Incident Type')).toBeEnabled();
-    expect(screen.getByText('Failing Element')).toBeEnabled();
+    expect(screen.getByText('Failing Flow Node')).toBeEnabled();
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Creation Date')).toBeEnabled();
     expect(screen.getByText('Error Message')).toBeEnabled();
-    expect(await screen.findByText('Operations')).toBeInTheDocument();
+    expect(screen.getByText('Operations')).toBeEnabled();
   });
 
-  it('should disable sorting for jobKey and elementName', () => {
-    const incidents = [{...firstIncident, jobKey: ''}];
+  it('should disable sorting for jobId', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    const incidents = [
+      createIncident({
+        errorType: {
+          name: 'Error A',
+          id: 'ERROR-A',
+        },
+        errorMessage: shortError,
+        flowNodeId: 'Task A',
+        flowNodeInstanceId: 'flowNodeInstanceIdA',
+        jobId: null,
+      }),
+    ];
 
-    render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidents}
-      />,
-      {wrapper: Wrapper},
-    );
+    incidentsStore.setIncidents({...incidentsMock, incidents, count: 1});
+
+    render(<IncidentsTable />, {wrapper: Wrapper});
     expect(
       screen.getByRole('button', {name: 'Sort by Creation Date'}),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Sort by Job Id'}),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: 'Sort by Failing Element'}),
     ).not.toBeInTheDocument();
   });
 });

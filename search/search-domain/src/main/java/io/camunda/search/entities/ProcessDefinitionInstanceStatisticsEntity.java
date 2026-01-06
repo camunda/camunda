@@ -13,7 +13,6 @@ import io.camunda.util.ObjectBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessDefinitionInstanceStatisticsEntity(
     String processDefinitionId,
-    String tenantId,
     String latestProcessDefinitionName,
     Boolean hasMultipleVersions,
     Long activeInstancesWithoutIncidentCount,
@@ -21,7 +20,6 @@ public record ProcessDefinitionInstanceStatisticsEntity(
 
   public static class Builder implements ObjectBuilder<ProcessDefinitionInstanceStatisticsEntity> {
     private String processDefinitionId;
-    private String tenantId;
     private String latestProcessDefinitionName;
     private Boolean hasMultipleVersions;
     private Long activeInstancesWithoutIncidentCount;
@@ -29,11 +27,6 @@ public record ProcessDefinitionInstanceStatisticsEntity(
 
     public Builder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      return this;
-    }
-
-    public Builder tenantId(final String tenantId) {
-      this.tenantId = tenantId;
       return this;
     }
 
@@ -61,7 +54,6 @@ public record ProcessDefinitionInstanceStatisticsEntity(
     public ProcessDefinitionInstanceStatisticsEntity build() {
       return new ProcessDefinitionInstanceStatisticsEntity(
           processDefinitionId,
-          tenantId,
           latestProcessDefinitionName,
           hasMultipleVersions,
           activeInstancesWithoutIncidentCount,

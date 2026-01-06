@@ -97,10 +97,6 @@ class FakeAuthorizationReader implements AuthorizationReader, AutoCloseable {
         && !filter.resourceIds().contains(authorization.resourceId())) {
       return false;
     }
-    if (filter.resourcePropertyNames() != null
-        && !filter.resourcePropertyNames().contains(authorization.resourcePropertyName())) {
-      return false;
-    }
     if (filter.resourceType() != null
         && !filter.resourceType().equals(authorization.resourceType())) {
       return false;

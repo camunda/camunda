@@ -18,7 +18,6 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_DEN
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
-import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
@@ -209,10 +208,6 @@ final class JobHandlerTest {
     assertThat(entity.getEndTime()).isNull();
     assertThat(entity.getDeadline())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(deadline)));
-    assertThat(entity.getCreationTime())
-        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    assertThat(entity.getLastUpdateTime())
-        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     // these values are only updated on JobIntent.COMPLETED
     assertThat(entity.isDenied()).isEqualTo(null);
     assertThat(entity.getDeniedReason()).isEqualTo(null);
@@ -417,7 +412,6 @@ final class JobHandlerTest {
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
     expectedUpdateFields.put(JOB_DENIED, denied);
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
-    expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
@@ -481,7 +475,6 @@ final class JobHandlerTest {
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
     expectedUpdateFields.put(JOB_DENIED, denied);
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
-    expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 

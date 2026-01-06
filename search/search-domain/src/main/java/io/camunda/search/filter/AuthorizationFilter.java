@@ -25,7 +25,6 @@ public record AuthorizationFilter(
     String ownerType,
     Short resourceMatcher,
     List<String> resourceIds,
-    List<String> resourcePropertyNames,
     String resourceType,
     List<PermissionType> permissionTypes,
     Map<EntityType, Set<String>> ownerTypeToOwnerIds)
@@ -35,7 +34,6 @@ public record AuthorizationFilter(
     private List<String> ownerIds;
     private String ownerType;
     private List<String> resourceIds;
-    private List<String> resourcePropertyNames;
     private Short resourceMatcher;
     private String resourceType;
     private List<PermissionType> permissionTypes;
@@ -73,15 +71,6 @@ public record AuthorizationFilter(
 
     public Builder resourceIds(final String... values) {
       return resourceIds(collectValuesAsList(values));
-    }
-
-    public Builder resourcePropertyNames(final List<String> value) {
-      resourcePropertyNames = value;
-      return this;
-    }
-
-    public Builder resourcePropertyNames(final String... values) {
-      return resourcePropertyNames(collectValuesAsList(values));
     }
 
     public Builder resourceType(final String value) {
@@ -131,7 +120,6 @@ public record AuthorizationFilter(
           ownerType,
           resourceMatcher,
           resourceIds,
-          resourcePropertyNames,
           resourceType,
           permissionTypes,
           getValidOwnerTypeToOwnerIdsOrThrow());

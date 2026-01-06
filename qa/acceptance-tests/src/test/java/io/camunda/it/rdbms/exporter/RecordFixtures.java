@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
@@ -37,8 +36,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
-import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
@@ -46,7 +43,6 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecord
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
@@ -322,43 +318,6 @@ public class RecordFixtures {
                 .from((UserRecordValue) recordValueRecord.getValue())
                 .withUserKey(userKey)
                 .withUsername(username)
-                .build())
-        .build();
-  }
-
-  protected static ImmutableRecord<RecordValue> getGlobalClusterVariableRecord(
-      final ClusterVariableIntent intent) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.CLUSTER_VARIABLE);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(intent)
-        .withPosition(2L)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableClusterVariableRecordValue.builder()
-                .from((ClusterVariableRecordValue) recordValueRecord.getValue())
-                .withScope(ClusterVariableScope.GLOBAL)
-                .build())
-        .build();
-  }
-
-  protected static ImmutableRecord<RecordValue> getTenantClusterVariableRecord(
-      final String tenant, final ClusterVariableIntent intent) {
-    final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.CLUSTER_VARIABLE);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(intent)
-        .withPosition(2L)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableClusterVariableRecordValue.builder()
-                .from((ClusterVariableRecordValue) recordValueRecord.getValue())
-                .withScope(ClusterVariableScope.TENANT)
-                .withTenantId(tenant)
                 .build())
         .build();
   }

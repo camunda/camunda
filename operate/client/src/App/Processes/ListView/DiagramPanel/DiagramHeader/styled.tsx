@@ -22,7 +22,6 @@ const PanelHeader = styled(BasePanelHeader)`
 `;
 
 const Description = styled.dl`
-  min-width: 5rem;
   overflow: hidden;
 `;
 
@@ -40,18 +39,4 @@ const DescriptionData = styled.dd`
   white-space: nowrap;
 `;
 
-const HeaderActions = styled.div`
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-03);
-  margin-right: var(--cds-spacing-03);
-`;
-
-export {
-  PanelHeader,
-  Description,
-  DescriptionTitle,
-  DescriptionData,
-  HeaderActions,
-};
+export {PanelHeader, Description, DescriptionTitle, DescriptionData};

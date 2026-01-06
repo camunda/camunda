@@ -104,6 +104,6 @@ final class LongPollingIT {
   }
 
   private void configureGateway(final TestGateway<?> gateway) {
-    gateway.withUnifiedConfig(cfg -> cfg.getApi().getLongPolling().setEnabled(true));
+    gateway.withGatewayConfig(cfg -> cfg.getLongPolling().setEnabled(true));
   }
 }

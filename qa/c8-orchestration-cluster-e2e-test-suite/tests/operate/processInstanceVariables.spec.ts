@@ -16,7 +16,6 @@ import {
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {expectInViewport} from 'utils/expectInViewport';
-import {sleep} from 'utils/sleep';
 
 test.beforeAll(async () => {
   await deploy([
@@ -53,7 +52,6 @@ test.describe('Process Instance Variables', () => {
       await operateProcessesPage.filterByProcessName(
         'variable scrolling process',
       );
-      await sleep(100);
       await operateProcessesPage.clickProcessInstanceLink();
       await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
     });

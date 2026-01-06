@@ -11,11 +11,11 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.ObjectSizeEstimator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public final class ExporterBatchWriter {
     handler.updateEntity(record, entity);
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
-    cachedEntitySizes.put(cacheKey, ObjectSizeEstimator.estimateSize(entity));
+    cachedEntitySizes.put(cacheKey, EntitySizeEstimator.estimateEntitySize(entity));
 
     // we store all handlers for an entity to make sure not to miss any flushes
     entityAndHandlers.handlers.add(handler);

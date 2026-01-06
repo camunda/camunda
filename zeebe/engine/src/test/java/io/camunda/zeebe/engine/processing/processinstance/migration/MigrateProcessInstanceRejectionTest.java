@@ -1075,15 +1075,16 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             String.format(
                 """
-      Expected to migrate process instance '%s' \
-      but active user task with id 'A' and implementation 'zeebe user task' is mapped to \
-      a user task with id 'B' and deprecated implementation 'job worker'.""",
+              Expected to migrate process instance '%s' \
+              but active user task with id 'A' and implementation 'zeebe user task' is mapped to \
+              an user task with id 'B' and different implementation 'job worker'. \
+              Elements must be mapped to elements of the same implementation.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);
   }
 
   @Test
-  public void shouldNotRejectCommandWhenUserTaskIsMappedToNativeUserTask() {
+  public void shouldRejectCommandWhenUserTaskIsMappedToNativeUserTask() {
     // given
     final var deployment =
         ENGINE
@@ -1114,15 +1115,25 @@ public class MigrateProcessInstanceRejectionTest {
         .migration()
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
         .addMappingInstruction("A", "B")
+        .expectRejection()
         .migrate();
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceMigrationRecords()
-                .limit(record -> record.getIntent().equals(ProcessInstanceMigrationIntent.MIGRATE))
-                .onlyCommandRejections()
-                .exists())
-        .isFalse();
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+              Expected to migrate process instance '%s' \
+              but active user task with id 'A' and implementation 'job worker' is mapped to \
+              an user task with id 'B' and different implementation 'zeebe user task'. \
+              Elements must be mapped to elements of the same implementation.""",
+                processInstanceKey))
+        .hasKey(processInstanceKey);
   }
 
   @Test

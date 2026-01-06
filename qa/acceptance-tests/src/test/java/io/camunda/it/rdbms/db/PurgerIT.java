@@ -8,7 +8,7 @@
 package io.camunda.it.rdbms.db;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -32,12 +32,12 @@ public class PurgerIT {
   public void shouldSaveAndFindProcessInstanceByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
-    ProcessInstanceFixtures.createAndSaveRandomProcessInstances(rdbmsWriters);
-    ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions(rdbmsWriters);
+    ProcessInstanceFixtures.createAndSaveRandomProcessInstances(rdbmsWriter);
+    ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions(rdbmsWriter);
 
-    rdbmsWriters.getRdbmsPurger().purgeRdbms();
+    rdbmsWriter.getRdbmsPurger().purgeRdbms();
 
     Assertions.assertThat(
             rdbmsService.getProcessInstanceReader().search(ProcessInstanceQuery.of(b -> b)).total())

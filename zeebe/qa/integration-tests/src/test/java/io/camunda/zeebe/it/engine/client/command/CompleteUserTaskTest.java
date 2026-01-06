@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 class CompleteUserTaskTest {
 
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
@@ -37,7 +37,7 @@ class CompleteUserTaskTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);
     userTaskKey = resourcesHelper.createSingleUserTask();
   }

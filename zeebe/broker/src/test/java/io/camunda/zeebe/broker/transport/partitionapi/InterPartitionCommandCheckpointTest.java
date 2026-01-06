@@ -30,7 +30,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,15 +80,14 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
-    sender.setCheckpointInfo(1, CheckpointType.MANUAL_BACKUP);
+    sender.setCheckpointId(1);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
 
     // then
     final var io = inOrder(logStreamWriter);
-    io.verify(logStreamWriter, times(1))
-        .tryWrite(any(WriteContext.class), matchesCheckpoint(1, CheckpointType.MANUAL_BACKUP));
+    io.verify(logStreamWriter, times(1)).tryWrite(any(WriteContext.class), matchesCheckpoint(1));
     io.verify(logStreamWriter, times(1))
         .tryWrite(
             any(WriteContext.class),
@@ -102,16 +100,15 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
-    receiver.setCheckpointInfo(5, CheckpointType.MANUAL_BACKUP);
-    sender.setCheckpointInfo(17, CheckpointType.SCHEDULED_BACKUP);
+    receiver.setCheckpointId(5);
+    sender.setCheckpointId(17);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
 
     // then
     final var io = inOrder(logStreamWriter);
-    io.verify(logStreamWriter)
-        .tryWrite(any(WriteContext.class), matchesCheckpoint(17, CheckpointType.SCHEDULED_BACKUP));
+    io.verify(logStreamWriter).tryWrite(any(WriteContext.class), matchesCheckpoint(17));
     io.verify(logStreamWriter)
         .tryWrite(
             any(WriteContext.class),
@@ -123,8 +120,8 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
-    receiver.setCheckpointInfo(5, CheckpointType.MANUAL_BACKUP);
-    sender.setCheckpointInfo(5, CheckpointType.MANUAL_BACKUP);
+    receiver.setCheckpointId(5);
+    sender.setCheckpointId(5);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -142,8 +139,8 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.right(1L));
-    receiver.setCheckpointInfo(6, CheckpointType.MANUAL_BACKUP);
-    sender.setCheckpointInfo(5, CheckpointType.MANUAL_BACKUP);
+    receiver.setCheckpointId(6);
+    sender.setCheckpointId(5);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -161,8 +158,8 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED), Either.right(1L));
-    receiver.setCheckpointInfo(5, CheckpointType.MANUAL_BACKUP);
-    sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
+    receiver.setCheckpointId(5);
+    sender.setCheckpointId(17);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -179,8 +176,8 @@ final class InterPartitionCommandCheckpointTest {
   void shouldNotWriteCommandIfNoDiskAvailable() {
     // given
     receiver.setDiskSpaceAvailable(false);
-    receiver.setCheckpointInfo(5, CheckpointType.MANUAL_BACKUP);
-    sender.setCheckpointInfo(17, CheckpointType.MANUAL_BACKUP);
+    receiver.setCheckpointId(5);
+    sender.setCheckpointId(17);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -199,14 +196,12 @@ final class InterPartitionCommandCheckpointTest {
     return metadata.getValueType() == valueType && metadata.getIntent() == intent;
   }
 
-  private LogAppendEntry matchesCheckpoint(
-      final long checkpointId, final CheckpointType checkpointType) {
+  private LogAppendEntry matchesCheckpoint(final long checkpointId) {
     return Mockito.argThat(
         entry ->
             matchesMetadata(entry, ValueType.CHECKPOINT, CheckpointIntent.CREATE)
                 && entry.recordValue() instanceof final CheckpointRecord checkpoint
-                && checkpoint.getCheckpointId() == checkpointId
-                && checkpoint.getCheckpointType() == checkpointType);
+                && checkpoint.getCheckpointId() == checkpointId);
   }
 
   private void sendAndReceive(final ValueType valueType, final Intent intent) {

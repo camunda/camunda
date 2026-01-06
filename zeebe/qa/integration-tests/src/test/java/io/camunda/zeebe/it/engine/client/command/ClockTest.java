@@ -42,16 +42,16 @@ class ClockTest {
   private static final Instant PAST_FIXED_INSTANT = Instant.parse("2024-08-15T14:00:00Z");
   private static final Duration DELTA = Duration.ofSeconds(1);
 
-  @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
-
   @AutoClose private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
 
+  @TestZeebe
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 

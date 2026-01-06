@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -39,20 +39,20 @@ public class GroupMemberIT {
   @TestTemplate
   public void shouldFindGroupMember(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final GroupMemberDbReader reader = rdbmsService.getGroupMemberReader();
 
-    final var group = GroupFixtures.createAndSaveGroup(rdbmsWriters, b -> b);
+    final var group = GroupFixtures.createAndSaveGroup(rdbmsWriter, b -> b);
     final var userid1 = "user-" + UUID.randomUUID();
     final var userid2 = "user-" + UUID.randomUUID();
-    addUserToGroup(rdbmsWriters, group.groupId(), userid1);
-    addUserToGroup(rdbmsWriters, group.groupId(), userid2);
+    addUserToGroup(rdbmsWriter, group.groupId(), userid1);
+    addUserToGroup(rdbmsWriter, group.groupId(), userid2);
 
-    final var group2 = GroupFixtures.createAndSaveGroup(rdbmsWriters, b -> b);
+    final var group2 = GroupFixtures.createAndSaveGroup(rdbmsWriter, b -> b);
     final var userid3 = "user-" + UUID.randomUUID();
     final var userid4 = "user-" + UUID.randomUUID();
-    addUserToGroup(rdbmsWriters, group2.groupId(), userid3);
-    addUserToGroup(rdbmsWriters, group2.groupId(), userid4);
+    addUserToGroup(rdbmsWriter, group2.groupId(), userid3);
+    addUserToGroup(rdbmsWriter, group2.groupId(), userid4);
 
     final var searchResult =
         reader.search(
@@ -69,8 +69,8 @@ public class GroupMemberIT {
   }
 
   private void addUserToGroup(
-      final RdbmsWriters rdbmsWriters, final String groupId, final String entityId) {
-    rdbmsWriters.getGroupWriter().addMember(new GroupMemberDbModel(groupId, entityId, "USER"));
-    rdbmsWriters.flush();
+      final RdbmsWriter rdbmsWriter, final String groupId, final String entityId) {
+    rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, entityId, "USER"));
+    rdbmsWriter.flush();
   }
 }

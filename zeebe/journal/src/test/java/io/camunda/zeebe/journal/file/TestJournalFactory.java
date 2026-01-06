@@ -66,7 +66,7 @@ final class TestJournalFactory {
    * @param maxEntryCount the max number of entries per segment
    */
   TestJournalFactory(final String data, final int maxEntryCount) {
-    this(data, maxEntryCount, SegmentAllocator.defaultAllocator());
+    this(data, maxEntryCount, SegmentAllocator.noop());
   }
 
   TestJournalFactory(final String data, final int maxEntryCount, final SegmentAllocator allocator) {

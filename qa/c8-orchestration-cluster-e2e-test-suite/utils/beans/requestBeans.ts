@@ -123,31 +123,6 @@ export const decisionDefinitionRequiredFields: string[] = [
   'decisionDefinitionKey',
   'decisionRequirementsKey',
 ];
-export const decisionRequirementRequiredFields: string[] = [
-  'decisionRequirementsId',
-  'version',
-  'decisionRequirementsName',
-  'tenantId',
-  'decisionRequirementsKey',
-  'resourceName',
-];
-export const decisionInstanceRequiredFields: string[] = [
-  'decisionEvaluationInstanceKey',
-  'state',
-  'evaluationDate',
-  'decisionDefinitionId',
-  'decisionDefinitionName',
-  'decisionDefinitionVersion',
-  'decisionDefinitionType',
-  'result',
-  'tenantId',
-  'decisionEvaluationKey',
-  'processDefinitionKey',
-  'processInstanceKey',
-  'decisionDefinitionKey',
-  'elementInstanceKey',
-  'rootDecisionDefinitionKey',
-];
 export const evaluateDecisionRequiredFields: string[] = [
   'decisionDefinitionId',
   'decisionDefinitionName',
@@ -612,26 +587,5 @@ export function DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(
     name: decision.name,
     version: decision.version,
     tenantId: decision.tenantId,
-  };
-}
-
-// Cluster Variable beans
-export const clusterVariableRequiredFields: string[] = [
-  'name',
-  'value',
-  'scope',
-];
-export const clusterVariableSearchItemRequiredFields: string[] = [
-  'name',
-  'value',
-  'scope',
-  'isTruncated',
-];
-
-export function CREATE_CLUSTER_VARIABLE() {
-  const uid = generateUniqueId();
-  return {
-    name: `cluster-var-${uid}`,
-    value: {testKey: `testValue-${uid}`},
   };
 }

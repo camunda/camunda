@@ -48,7 +48,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   @Test
   void shouldHandleCompletedRecord() {
     // Given
-    final var record = createCompletedRecord(123456789L);
+    final var record = createCompletedRecord();
     when(CACHE.get(Mockito.anyString()))
         .thenReturn(
             Optional.of(
@@ -74,25 +74,11 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   }
 
   @Test
-  void shouldNotHandleNotFoundRejectionRecord() {
-    // Given
-    final var record = createNotFoundRejectedRecord();
-    when(CACHE.get(Mockito.anyString()))
-        .thenReturn(
-            Optional.of(
-                new CachedBatchOperationEntity(
-                    String.valueOf(record.getBatchOperationReference()),
-                    map(underTest.getRelevantOperationType()))));
-
-    assertThat(underTest.handlesRecord(record)).isFalse();
-  }
-
-  @Test
   void shouldNotHandleRecordsWithNoOperationReference() {
     // Given
     final var record =
         ImmutableRecord.<R>builder()
-            .from(createCompletedRecord(123456789L))
+            .from(createCompletedRecord())
             .withBatchOperationReference(batchOperationReferenceNullValue())
             .build();
     when(CACHE.get(Mockito.anyString()))
@@ -109,27 +95,9 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   }
 
   @Test
-  void shouldNotHandleRecordsWithInvalidProcessInstanceKey() {
-    // Given
-    final var record = createCompletedRecord(-1L);
-    when(CACHE.get(Mockito.anyString()))
-        .thenReturn(
-            Optional.of(
-                new CachedBatchOperationEntity(
-                    String.valueOf(record.getBatchOperationReference()),
-                    map(underTest.getRelevantOperationType()))));
-
-    // When
-    final boolean result = underTest.handlesRecord(record);
-
-    // Then
-    assertThat(result).isFalse();
-  }
-
-  @Test
   void shouldNotHandleIrrelevantRecord() {
     // Given
-    final var record = createCompletedRecord(123456789L);
+    final var record = createCompletedRecord();
     final var irrelevantOperationType =
         Arrays.stream(OperationType.values())
             .filter(t -> t != underTest.getRelevantOperationType())
@@ -153,7 +121,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   @Test
   void shouldGenerateId() {
     // Given
-    final var record = createCompletedRecord(123456789L);
+    final var record = createCompletedRecord();
 
     // When
     final var idList = underTest.generateIds(record);
@@ -165,7 +133,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
   @Test
   void shouldUpdateEntityFromRecord() {
     // Given
-    final var record = createCompletedRecord(123456789L);
+    final var record = createCompletedRecord();
     final var entity = underTest.createNewEntity("test-id");
 
     // When
@@ -195,9 +163,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
             eq(Map.of("batchOperationId", "batch-op-1")));
   }
 
-  protected abstract Record<R> createCompletedRecord(final long processInstanceKey);
+  protected abstract Record<R> createCompletedRecord();
 
   protected abstract Record<R> createRejectedRecord();
-
-  protected abstract Record<R> createNotFoundRejectedRecord();
 }

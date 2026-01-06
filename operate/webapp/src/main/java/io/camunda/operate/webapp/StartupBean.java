@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp;
 
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component;
 @Component
 @DependsOn("searchEngineSchemaInitializer")
 @Profile({"!test", "test-executor"})
-@ConditionalOnRdbmsDisabled
 public class StartupBean {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupBean.class);

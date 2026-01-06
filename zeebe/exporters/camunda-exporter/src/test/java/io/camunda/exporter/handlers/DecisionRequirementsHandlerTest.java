@@ -12,11 +12,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.exporter.cache.TestDecisionRequirementsCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
-import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -31,11 +29,8 @@ import org.junit.jupiter.api.Test;
 final class DecisionRequirementsHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = DecisionRequirementsIndex.INDEX_NAME;
-  private final TestDecisionRequirementsCache decisionRequirementsCache =
-      new TestDecisionRequirementsCache();
 
-  private final DecisionRequirementsHandler underTest =
-      new DecisionRequirementsHandler(indexName, decisionRequirementsCache);
+  private final DecisionRequirementsHandler underTest = new DecisionRequirementsHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -150,38 +145,6 @@ final class DecisionRequirementsHandlerTest {
 
     // then
     verify(mockRequest, times(1)).add(indexName, inputEntity);
-  }
-
-  @Test
-  void shouldUpdateDecisionRequirementsCache() {
-    // given
-    final long expectedKey = 123;
-    final String expectedName = "name";
-    final int expectedVersion = 2;
-    final DecisionRequirementsRecordValue recordValue =
-        ImmutableDecisionRequirementsRecordValue.builder()
-            .from(factory.generateObject(DecisionRequirementsRecordValue.class))
-            .withDecisionRequirementsKey(expectedKey)
-            .withDecisionRequirementsName(expectedName)
-            .withDecisionRequirementsVersion(expectedVersion)
-            .build();
-
-    final Record<DecisionRequirementsRecordValue> decisionRequirementsRecord =
-        factory.generateRecord(
-            ValueType.DECISION_REQUIREMENTS,
-            r -> r.withIntent(DecisionRequirementsIntent.CREATED).withValue(recordValue));
-
-    // when
-    final DecisionRequirementsEntity entity = new DecisionRequirementsEntity();
-    underTest.updateEntity(decisionRequirementsRecord, entity);
-
-    // then
-    assertThat(decisionRequirementsCache.get(recordValue.getDecisionRequirementsKey()))
-        .isPresent()
-        .get()
-        .extracting(
-            CachedDecisionRequirementsEntity::name, CachedDecisionRequirementsEntity::version)
-        .containsExactly(expectedName, expectedVersion);
   }
 
   private Record<DecisionRequirementsRecordValue> generateRecord(

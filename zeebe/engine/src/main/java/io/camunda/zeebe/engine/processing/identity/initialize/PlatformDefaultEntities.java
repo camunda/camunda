@@ -54,16 +54,15 @@ public class PlatformDefaultEntities {
           resourceType.getSupportedPermissionTypes().stream()
               .filter(PermissionType::isReadPermission)
               .collect(Collectors.toSet());
-      if (!readBasedPermissions.isEmpty()) {
-        setupRecord.addAuthorization(
-            new AuthorizationRecord()
-                .setOwnerType(AuthorizationOwnerType.ROLE)
-                .setOwnerId(readOnlyAdminRoleId)
-                .setResourceType(resourceType)
-                .setResourceMatcher(WILDCARD.getMatcher())
-                .setResourceId(WILDCARD.getResourceId())
-                .setPermissionTypes(readBasedPermissions));
-      }
+
+      setupRecord.addAuthorization(
+          new AuthorizationRecord()
+              .setOwnerType(AuthorizationOwnerType.ROLE)
+              .setOwnerId(readOnlyAdminRoleId)
+              .setResourceType(resourceType)
+              .setResourceMatcher(WILDCARD.getMatcher())
+              .setResourceId(WILDCARD.getResourceId())
+              .setPermissionTypes(readBasedPermissions));
     }
   }
 
@@ -125,22 +124,6 @@ public class PlatformDefaultEntities {
             .setResourceId(WILDCARD.getResourceId())
             .setPermissionTypes(
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE)));
-    setupRecord.addAuthorization(
-        new AuthorizationRecord()
-            .setOwnerType(AuthorizationOwnerType.ROLE)
-            .setOwnerId(connectorsRoleId)
-            .setResourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
-            .setResourceMatcher(WILDCARD.getMatcher())
-            .setResourceId(WILDCARD.getResourceId())
-            .setPermissionTypes(Set.of(PermissionType.READ)));
-    setupRecord.addAuthorization(
-        new AuthorizationRecord()
-            .setOwnerType(AuthorizationOwnerType.ROLE)
-            .setOwnerId(connectorsRoleId)
-            .setResourceType(AuthorizationResourceType.EXPRESSION)
-            .setResourceMatcher(WILDCARD.getMatcher())
-            .setResourceId(WILDCARD.getResourceId())
-            .setPermissionTypes(Set.of(PermissionType.EVALUATE)));
     setupRecord.addTenantMember(
         new TenantRecord()
             .setTenantId(DEFAULT_TENANT_ID)

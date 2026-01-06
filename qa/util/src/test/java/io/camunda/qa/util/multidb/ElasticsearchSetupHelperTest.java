@@ -30,7 +30,7 @@ public class ElasticsearchSetupHelperTest {
 
   private static ElasticsearchContainer elasticsearchContainer;
   private static String elasticSearchUrl;
-  private ElasticsearchSetupHelper elasticsearchSetupHelper;
+  private ElasticOpenSearchSetupHelper elasticOpenSearchSetupHelper;
   private String indexPrefix;
 
   @BeforeAll
@@ -50,10 +50,10 @@ public class ElasticsearchSetupHelperTest {
     @Test
     public void shouldValidateConnection() {
       // given
-      elasticsearchSetupHelper = new ElasticsearchSetupHelper(elasticSearchUrl, List.of());
+      elasticOpenSearchSetupHelper = new ElasticOpenSearchSetupHelper(elasticSearchUrl, List.of());
 
       // when
-      final boolean connectionIsValid = elasticsearchSetupHelper.validateConnection();
+      final boolean connectionIsValid = elasticOpenSearchSetupHelper.validateConnection();
 
       // then
       assertThat(connectionIsValid).isTrue();
@@ -63,10 +63,10 @@ public class ElasticsearchSetupHelperTest {
     public void shouldFailValidatingConnectionOnWrongURL() {
       // given
       final String wrongEndpoint = "http://wrongUrl";
-      elasticsearchSetupHelper = new ElasticsearchSetupHelper(wrongEndpoint, List.of());
+      elasticOpenSearchSetupHelper = new ElasticOpenSearchSetupHelper(wrongEndpoint, List.of());
 
       // when
-      final boolean connectionIsValid = elasticsearchSetupHelper.validateConnection();
+      final boolean connectionIsValid = elasticOpenSearchSetupHelper.validateConnection();
 
       // then
       assertThat(connectionIsValid).isFalse();
@@ -89,8 +89,8 @@ public class ElasticsearchSetupHelperTest {
 
       multiDbConfigurator.configureElasticsearchSupport(elasticSearchUrl, indexPrefix);
       final var expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
-      elasticsearchSetupHelper =
-          new ElasticsearchSetupHelper(elasticSearchUrl, expectedDescriptors);
+      elasticOpenSearchSetupHelper =
+          new ElasticOpenSearchSetupHelper(elasticSearchUrl, expectedDescriptors);
 
       testApplication.start();
       testApplication.awaitCompleteTopology();
@@ -119,7 +119,7 @@ public class ElasticsearchSetupHelperTest {
           .untilAsserted(
               () -> {
                 final boolean schemaHasBeenCreated =
-                    elasticsearchSetupHelper.validateSchemaCreation(indexPrefix);
+                    elasticOpenSearchSetupHelper.validateSchemaCreation(indexPrefix);
 
                 // then
                 assertThat(schemaHasBeenCreated).isTrue();
@@ -132,7 +132,7 @@ public class ElasticsearchSetupHelperTest {
 
       // when
       final boolean schemaHasBeenCreated =
-          elasticsearchSetupHelper.validateSchemaCreation("wrongPrefix");
+          elasticOpenSearchSetupHelper.validateSchemaCreation("wrongPrefix");
 
       // then
       assertThat(schemaHasBeenCreated).isFalse();
@@ -145,7 +145,7 @@ public class ElasticsearchSetupHelperTest {
           .untilAsserted(
               () -> {
                 final boolean schemaHasBeenCreated =
-                    elasticsearchSetupHelper.validateSchemaCreation(indexPrefix);
+                    elasticOpenSearchSetupHelper.validateSchemaCreation(indexPrefix);
                 assertThat(schemaHasBeenCreated).isTrue();
 
                 // We want to wait in our test whether ES Indices have been created, to validate
@@ -157,11 +157,11 @@ public class ElasticsearchSetupHelperTest {
                 // generate additional data, to trigger such, which we don't want for most tests
                 final String esExporterPrefix = multiDbConfigurator.zeebeIndexPrefix() + "_";
                 final int indexCount =
-                    elasticsearchSetupHelper.getCountOfIndicesWithPrefix(
+                    elasticOpenSearchSetupHelper.getCountOfIndicesWithPrefix(
                         elasticSearchUrl, esExporterPrefix);
                 assertThat(indexCount).isNotZero();
                 final int templateCount =
-                    elasticsearchSetupHelper.getCountOfIndexTemplatesWithPrefix(
+                    elasticOpenSearchSetupHelper.getCountOfIndexTemplatesWithPrefix(
                         elasticSearchUrl, esExporterPrefix);
                 assertThat(templateCount).isNotZero();
               });
@@ -170,7 +170,7 @@ public class ElasticsearchSetupHelperTest {
       testApplication.close();
 
       // when
-      elasticsearchSetupHelper.cleanup(indexPrefix);
+      elasticOpenSearchSetupHelper.cleanup(indexPrefix);
 
       // then
       Awaitility.await("Indices should be cleaned up")
@@ -178,16 +178,16 @@ public class ElasticsearchSetupHelperTest {
           .untilAsserted(
               () -> {
                 final boolean schemaHasBeenCreated =
-                    elasticsearchSetupHelper.validateSchemaCreation(indexPrefix);
+                    elasticOpenSearchSetupHelper.validateSchemaCreation(indexPrefix);
                 assertThat(schemaHasBeenCreated).isFalse();
 
                 final int countOfIndicesWithPrefix =
-                    elasticsearchSetupHelper.getCountOfIndicesWithPrefix(
+                    elasticOpenSearchSetupHelper.getCountOfIndicesWithPrefix(
                         elasticSearchUrl, indexPrefix);
                 assertThat(countOfIndicesWithPrefix).isZero();
 
                 final int countOfIndexTemplatesWithPrefix =
-                    elasticsearchSetupHelper.getCountOfIndexTemplatesWithPrefix(
+                    elasticOpenSearchSetupHelper.getCountOfIndexTemplatesWithPrefix(
                         elasticSearchUrl, indexPrefix);
                 assertThat(countOfIndexTemplatesWithPrefix).isZero();
               });
@@ -195,7 +195,7 @@ public class ElasticsearchSetupHelperTest {
 
     @AfterEach
     public void tearDown() {
-      elasticsearchSetupHelper.close();
+      elasticOpenSearchSetupHelper.close();
       testApplication.close();
     }
   }

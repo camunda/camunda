@@ -37,7 +37,7 @@ public final class ExclusiveGatewayProcessor
   public ExclusiveGatewayProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     this.stateTransitionBehavior = stateTransitionBehavior;
-    expressionBehavior = behaviors.expressionProcessor();
+    expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
     jobBehavior = behaviors.jobBehavior();
   }
@@ -124,7 +124,7 @@ public final class ExclusiveGatewayProcessor
         final Expression condition = sequenceFlow.getCondition();
         final Either<Failure, Boolean> isFulfilledOrFailure =
             expressionBehavior.evaluateBooleanExpression(
-                condition, context.getElementInstanceKey(), context.getTenantId());
+                condition, context.getElementInstanceKey());
         if (isFulfilledOrFailure.isLeft()) {
           return Either.left(isFulfilledOrFailure.getLeft());
 

@@ -12,8 +12,7 @@ import {
   mockBatchOperations,
   mockDecisionInstances,
   mockDecisionXml,
-  mockedDecisionDefinitions,
-  mockEmptyDecisionInstances,
+  mockGroupedDecisions,
   mockResponses,
 } from '../mocks/decisions.mocks';
 import {URL_API_PATTERN} from '../constants';
@@ -46,9 +45,12 @@ test.describe('decisions page', () => {
       URL_API_PATTERN,
       mockResponses({
         batchOperations: {items: [], page: {totalItems: 0}},
-        decisionDefinitions: mockedDecisionDefinitions,
+        groupedDecisions: mockGroupedDecisions,
         decisionXml: '',
-        decisionInstances: mockEmptyDecisionInstances,
+        decisionInstances: {
+          decisionInstances: [],
+          totalCount: 0,
+        },
       }),
     );
 
@@ -76,7 +78,7 @@ test.describe('decisions page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        decisionDefinitions: mockedDecisionDefinitions,
+        groupedDecisions: mockGroupedDecisions,
       }),
     );
 
@@ -89,7 +91,7 @@ test.describe('decisions page', () => {
       },
     });
 
-    await expect(decisionsPage.fetchDecisionErrorMessage).toBeVisible();
+    await expect(decisionsPage.fetchErrorMessage).toBeVisible();
     await expect(decisionsPage.diagramSpinner).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();
@@ -99,7 +101,7 @@ test.describe('decisions page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        decisionDefinitions: mockedDecisionDefinitions,
+        groupedDecisions: mockGroupedDecisions,
         batchOperations: mockBatchOperations,
         decisionInstances: mockDecisionInstances,
         decisionXml: mockDecisionXml,
@@ -134,7 +136,7 @@ test.describe('decisions page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        decisionDefinitions: mockedDecisionDefinitions,
+        groupedDecisions: mockGroupedDecisions,
         batchOperations: mockBatchOperations,
         decisionInstances: mockDecisionInstances,
         decisionXml: mockDecisionXml,
@@ -166,7 +168,7 @@ test.describe('decisions page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        decisionDefinitions: mockedDecisionDefinitions,
+        groupedDecisions: mockGroupedDecisions,
         batchOperations: mockBatchOperations,
         decisionInstances: mockDecisionInstances,
         decisionXml: mockDecisionXml,

@@ -12,8 +12,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -96,13 +96,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
     final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.MESSAGE)
-            .permissionType(PermissionType.CREATE)
-            .tenantId(command.getValue().getTenantId())
-            .newResource()
-            .build();
+        new AuthorizationRequest(
+            command,
+            AuthorizationResourceType.MESSAGE,
+            PermissionType.CREATE,
+            command.getValue().getTenantId(),
+            true);
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

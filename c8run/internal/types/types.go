@@ -2,12 +2,13 @@ package types
 
 import (
 	"context"
+	"os"
 	"os/exec"
 )
 
 type C8Run interface {
 	OpenBrowser(ctx context.Context, url string) error
-	ProcessTree(commandPid int) []int
+	ProcessTree(commandPid int) []*os.Process
 	VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd
 	ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd
 	ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd

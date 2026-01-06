@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
+import {API_VERSION, type Endpoint} from './common';
 
 const usageMetricsSchema = z.object({
 	assignees: z.number().int(),

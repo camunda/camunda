@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.it.rdbms.db.fixtures.MessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -37,12 +37,12 @@ public class MessageSubscriptionIT {
   @TestTemplate
   public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
     final var subscriptionDbModel = MessageSubscriptionFixtures.createRandomized(b -> b);
-    MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, subscriptionDbModel);
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriter, subscriptionDbModel);
 
     final var instance =
         messageSubscriptionReader
@@ -55,18 +55,18 @@ public class MessageSubscriptionIT {
   @TestTemplate
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
     final var subscription = MessageSubscriptionFixtures.createRandomized(b -> b);
-    MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, subscription);
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriter, subscription);
 
     final var roleUpdate =
         MessageSubscriptionFixtures.createRandomized(
             b -> b.messageSubscriptionKey(subscription.messageSubscriptionKey()));
-    rdbmsWriters.getMessageSubscriptionWriter().update(roleUpdate);
-    rdbmsWriters.flush();
+    rdbmsWriter.getMessageSubscriptionWriter().update(roleUpdate);
+    rdbmsWriter.flush();
 
     final var instance =
         messageSubscriptionReader.findOne(subscription.messageSubscriptionKey()).orElse(null);
@@ -77,14 +77,14 @@ public class MessageSubscriptionIT {
   @TestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
     final var messageName = "message-" + UUID.randomUUID();
 
     MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(
-        rdbmsWriters, b -> b.messageName(messageName));
+        rdbmsWriter, b -> b.messageName(messageName));
 
     final var searchResult =
         messageSubscriptionReader.search(

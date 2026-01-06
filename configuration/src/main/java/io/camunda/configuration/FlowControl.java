@@ -11,19 +11,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class FlowControl {
 
-  /** Configure request limit */
-  @NestedConfigurationProperty private Limit request = null;
-
   /** Configure rate limit */
   @NestedConfigurationProperty private Write write = null;
-
-  public Limit getRequest() {
-    return request;
-  }
-
-  public void setRequest(final Limit request) {
-    this.request = request;
-  }
 
   public Write getWrite() {
     return write;

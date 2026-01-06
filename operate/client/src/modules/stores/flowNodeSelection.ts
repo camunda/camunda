@@ -7,7 +7,7 @@
  */
 
 import {makeAutoObservable, when, reaction, type IReactionDisposer} from 'mobx';
-import type {FlowNodeInstance} from 'modules/types/operate';
+import type {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
@@ -40,10 +40,6 @@ class FlowNodeSelection {
     makeAutoObservable(this, {init: false, selectFlowNode: false});
   }
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   init = () => {
     this.rootNodeSelectionDisposer = when(
       () => processInstanceDetailsStore.state.processInstance?.id !== undefined,
@@ -100,26 +96,14 @@ class FlowNodeSelection {
     );
   };
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   setSelection = (selection: Selection | null) => {
     this.state.selection = selection;
   };
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   clearSelection = () => {
     this.setSelection(this.rootNode);
   };
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   selectFlowNode = (selection: Selection) => {
     if (
       selection.flowNodeId === undefined ||
@@ -131,10 +115,6 @@ class FlowNodeSelection {
     }
   };
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   get areMultipleInstancesSelected(): boolean {
     if (this.state.selection === null) {
       return false;
@@ -144,10 +124,6 @@ class FlowNodeSelection {
     return flowNodeId !== undefined && flowNodeInstanceId === undefined;
   }
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   get rootNode() {
     return {
       flowNodeInstanceId: processInstanceDetailsStore.state.processInstance?.id,
@@ -155,10 +131,6 @@ class FlowNodeSelection {
     };
   }
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   get isRootNodeSelected() {
     return (
       this.state.selection?.flowNodeInstanceId ===
@@ -166,18 +138,10 @@ class FlowNodeSelection {
     );
   }
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   get selectedFlowNodeId() {
     return this.state.selection?.flowNodeId;
   }
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   get selectedFlowNodeInstanceId() {
     return (
       this.state.selection?.flowNodeInstanceId ??
@@ -185,10 +149,6 @@ class FlowNodeSelection {
     );
   }
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   isSelected = ({
     flowNodeId,
     flowNodeInstanceId,
@@ -215,10 +175,6 @@ class FlowNodeSelection {
     return selection.flowNodeInstanceId === flowNodeInstanceId;
   };
 
-  /**
-   * @deprecated
-   * will be migrated to useProcessInstanceElementSelection
-   */
   reset = () => {
     this.state = {...DEFAULT_STATE};
     this.rootNodeSelectionDisposer?.();

@@ -38,14 +38,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.ContainerState;
@@ -59,8 +57,6 @@ import org.testcontainers.utility.DockerImageName;
  * versions.
  */
 final class RollingUpdateTest {
-
-  private static List<Arguments> cachedVersionMatrix;
 
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process")
@@ -97,13 +93,6 @@ final class RollingUpdateTest {
 
   private final Collection<ZeebeVolume> volumes = new LinkedList<>();
 
-  static Stream<Arguments> versionMatrix() {
-    if (cachedVersionMatrix == null) {
-      cachedVersionMatrix = VersionCompatibilityMatrix.auto().toList();
-    }
-    return cachedVersionMatrix.stream();
-  }
-
   @BeforeEach
   public void setup() {
     cluster.getBrokers().values().forEach(this::configureBroker);
@@ -117,7 +106,7 @@ final class RollingUpdateTest {
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
-  @MethodSource("versionMatrix")
+  @MethodSource("io.camunda.zeebe.test.VersionCompatibilityMatrix#auto")
   void shouldBeAbleToRestartContainerWithNewVersion(final String from, final String to) {
     // given
     updateAllBrokers(from);
@@ -148,7 +137,7 @@ final class RollingUpdateTest {
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
-  @MethodSource("versionMatrix")
+  @MethodSource("io.camunda.zeebe.test.VersionCompatibilityMatrix#auto")
   void shouldReplicateSnapshotAcrossVersions(final String from, final String to) {
     // given
     updateAllBrokers(from);
@@ -215,7 +204,7 @@ final class RollingUpdateTest {
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
-  @MethodSource("versionMatrix")
+  @MethodSource("io.camunda.zeebe.test.VersionCompatibilityMatrix#auto")
   void shouldPerformRollingUpdate(final String from, final String to) {
     // given
     updateAllBrokers(from);

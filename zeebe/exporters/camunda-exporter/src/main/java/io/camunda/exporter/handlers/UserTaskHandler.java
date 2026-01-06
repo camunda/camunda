@@ -115,7 +115,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
       case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
         entity.setState(TaskState.CREATED);
-        entity.setCompletionTime(null);
         updateChangedAttributes(record, entity);
       }
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
@@ -188,25 +187,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     }
     if (entity.getState() != null) {
       updateFields.put(TaskTemplate.STATE, entity.getState());
-      // Add update fields for migrated user tasks
-      if (entity.getState() == TaskState.CREATING) {
-        updateFields.put(TaskTemplate.KEY, entity.getKey());
-        if (entity.getImplementation() != null) {
-          updateFields.put(TaskTemplate.IMPLEMENTATION, entity.getImplementation());
-        }
-        if (entity.getPriority() != null) {
-          updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
-        }
-        if (entity.getFormId() != null) {
-          updateFields.put(TaskTemplate.FORM_ID, entity.getFormId());
-        }
-        if (entity.getFormKey() != null) {
-          updateFields.put(TaskTemplate.FORM_KEY, entity.getFormKey());
-        }
-        if (entity.getFormVersion() != null) {
-          updateFields.put(TaskTemplate.FORM_VERSION, entity.getFormVersion());
-        }
-      }
     }
     if (entity.getFlowNodeBpmnId() != null) {
       updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
@@ -262,10 +242,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setPriority(taskValue.getPriority())
         .setCandidateGroups(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateGroupsList()))
         .setCandidateUsers(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateUsersList()));
-
-    if (taskValue.getTags() != null && !taskValue.getTags().isEmpty()) {
-      entity.setTags(taskValue.getTags());
-    }
 
     if (!ExporterUtil.isEmpty(formKey)) {
       formCache

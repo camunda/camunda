@@ -23,7 +23,6 @@ import io.camunda.client.protocol.rest.UserTaskResult;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class UserTaskImpl implements UserTask {
 
@@ -36,7 +35,6 @@ public class UserTaskImpl implements UserTask {
   private final List<String> candidateGroup;
   private final List<String> candidateUser;
   private final String bpmnProcessId;
-  private final String processName;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long formKey;
@@ -49,7 +47,6 @@ public class UserTaskImpl implements UserTask {
   private final Integer processDefinitionVersion;
   private final Map<String, String> customHeaders;
   private final Integer priority;
-  private final Set<String> tags;
 
   public UserTaskImpl(final UserTaskResult item) {
     userTaskKey = ParseUtil.parseLongOrNull(item.getUserTaskKey());
@@ -61,7 +58,6 @@ public class UserTaskImpl implements UserTask {
     candidateGroup = item.getCandidateGroups();
     candidateUser = item.getCandidateUsers();
     bpmnProcessId = item.getProcessDefinitionId();
-    processName = item.getProcessName();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     formKey = ParseUtil.parseLongOrNull(item.getFormKey());
@@ -74,7 +70,6 @@ public class UserTaskImpl implements UserTask {
     processDefinitionVersion = item.getProcessDefinitionVersion();
     customHeaders = item.getCustomHeaders();
     priority = item.getPriority();
-    tags = item.getTags();
   }
 
   @Override
@@ -120,11 +115,6 @@ public class UserTaskImpl implements UserTask {
   @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
-  }
-
-  @Override
-  public String getProcessName() {
-    return processName;
   }
 
   @Override
@@ -185,10 +175,5 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Integer getPriority() {
     return priority;
-  }
-
-  @Override
-  public Set<String> getTags() {
-    return tags;
   }
 }

@@ -11,7 +11,7 @@ import type {
   BusinessObjects,
 } from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import type {FlowNodeInstance} from 'modules/types/operate';
+import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {
   instanceHistoryModificationStore,
   type ModificationPlaceholder,
@@ -255,4 +255,27 @@ const hasChildPlaceholders = (
   ).some(({parentInstanceId}) => parentInstanceId === id);
 };
 
-export {hasChildPlaceholders, getVisibleChildPlaceholders};
+const appendExpandedFlowNodeInstanceIds = (
+  id: FlowNodeInstance['id'],
+  businessObjects: BusinessObjects,
+  processDefinitionId?: string,
+  processInstanceKey?: string,
+) => {
+  if (
+    !getModificationPlaceholders(
+      businessObjects,
+      processDefinitionId,
+      processInstanceKey,
+    ).some(({parentInstanceId}) => parentInstanceId === id)
+  ) {
+    return;
+  }
+
+  instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(id);
+};
+
+export {
+  hasChildPlaceholders,
+  appendExpandedFlowNodeInstanceIds,
+  getVisibleChildPlaceholders,
+};

@@ -17,7 +17,8 @@ import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {Button} from '@carbon/react';
 import {Close, Maximize, Minimize} from '@carbon/react/icons';
 import {StateOverlay} from 'modules/components/StateOverlay';
-import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
+import {useQuery} from '@tanstack/react-query';
+import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {useDrdData} from 'modules/queries/decisionInstances/useDrdData';
 import {useDrdStateOverlay} from 'modules/queries/decisionInstances/useDrdStateOverlay';
 import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
@@ -37,9 +38,12 @@ const Drd: React.FC<DrdProps> = observer((props) => {
 
   const [overlayState, overlayActions] = useDrdStateOverlay();
   const {data: drdData} = useDrdData(props.decisionEvaluationKey);
-  const {data: decisionDefinitionXml} = useDecisionDefinitionXml({
-    decisionDefinitionKey: props.decisionDefinitionKey,
-  });
+  const {data: decisionDefinitionXml} = useQuery(
+    useDecisionDefinitionXmlOptions({
+      decisionDefinitionKey: props.decisionDefinitionKey ?? '',
+      enabled: props.decisionDefinitionKey !== undefined,
+    }),
+  );
 
   if (drdViewer.current === null) {
     const handleDecisionSelection = (decisionEvaluationInstanceKey: string) => {

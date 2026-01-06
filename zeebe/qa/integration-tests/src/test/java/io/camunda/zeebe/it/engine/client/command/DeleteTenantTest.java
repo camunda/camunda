@@ -26,14 +26,14 @@ class DeleteTenantTest {
   private static final String TENANT_ID = "tenantId";
 
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     client.newCreateTenantCommand().tenantId(TENANT_ID).name("Tenant Name").send().join();
   }
 

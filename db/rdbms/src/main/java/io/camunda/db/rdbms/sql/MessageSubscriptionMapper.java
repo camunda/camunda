@@ -8,13 +8,10 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.MessageSubscriptionDbQuery;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionMessageSubscriptionStatisticsDbQuery;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
-import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import java.util.List;
 
-public interface MessageSubscriptionMapper
-    extends HistoryCleanupMapper, ProcessInstanceDependantMapper {
+public interface MessageSubscriptionMapper extends HistoryCleanupMapper {
 
   void insert(MessageSubscriptionDbModel messageSubscription);
 
@@ -23,7 +20,4 @@ public interface MessageSubscriptionMapper
   Long count(MessageSubscriptionDbQuery filter);
 
   List<MessageSubscriptionDbModel> search(MessageSubscriptionDbQuery filter);
-
-  List<ProcessDefinitionMessageSubscriptionStatisticsEntity> getProcessDefinitionStatistics(
-      ProcessDefinitionMessageSubscriptionStatisticsDbQuery query);
 }

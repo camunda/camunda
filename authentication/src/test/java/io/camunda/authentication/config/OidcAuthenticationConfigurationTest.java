@@ -7,8 +7,6 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.security.configuration.OidcAuthenticationConfiguration.DEFAULT_CLOCK_SKEW;
-
 import io.camunda.security.configuration.AssertionConfiguration;
 import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
 import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
@@ -61,14 +59,6 @@ public class OidcAuthenticationConfigurationTest {
             "clientSecret is set",
             OidcAuthenticationConfiguration.builder().clientSecret("cs").build(),
             true),
-        Arguments.of(
-            "idTokenAlgorithm is set",
-            OidcAuthenticationConfiguration.builder().idTokenAlgorithm("PS256").build(),
-            true),
-        Arguments.of(
-            "default idTokenAlgorithm is set",
-            OidcAuthenticationConfiguration.builder().idTokenAlgorithm("RS256").build(),
-            false),
         Arguments.of(
             "authorizeRequestConfiguration is set to null",
             OidcAuthenticationConfiguration.builder().authorizeRequestConfiguration(null).build(),
@@ -229,12 +219,6 @@ public class OidcAuthenticationConfigurationTest {
                         .build())
                 .build(),
             true),
-        Arguments.of(
-            "clockSkew is set",
-            OidcAuthenticationConfiguration.builder()
-                .clockSkew(DEFAULT_CLOCK_SKEW.plusSeconds(1))
-                .build(),
-            true),
         Arguments.of("default", new OidcAuthenticationConfiguration(), false),
         Arguments.of(
             "default authorizeRequestConfiguration is set",
@@ -259,10 +243,6 @@ public class OidcAuthenticationConfigurationTest {
             OidcAuthenticationConfiguration.builder()
                 .clientAuthenticationMethod("client_secret_basic")
                 .build(),
-            false),
-        Arguments.of(
-            "default clockSkew is set",
-            OidcAuthenticationConfiguration.builder().clockSkew(DEFAULT_CLOCK_SKEW).build(),
             false),
         Arguments.of(
             "AssertionConfiguration values are not set",

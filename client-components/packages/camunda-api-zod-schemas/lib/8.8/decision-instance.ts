@@ -14,8 +14,7 @@ import {
 	advancedDateTimeFilterSchema,
 	basicStringFilterSchema,
 	type Endpoint,
-	getEnumFilterSchema,
-} from '../common';
+} from './common';
 import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
 
 const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION']);
@@ -53,6 +52,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 		'evaluationFailure',
 		'processDefinitionKey',
 		'processInstanceKey',
+		'processInstanceId',
 		'decisionDefinitionKey',
 		'decisionDefinitionId',
 		'decisionDefinitionName',
@@ -64,12 +64,11 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 	] as const,
 	filter: z
 		.object({
-			decisionEvaluationInstanceKey: basicStringFilterSchema,
-			state: getEnumFilterSchema(decisionInstanceStateSchema),
 			evaluationDate: advancedDateTimeFilterSchema,
 			decisionDefinitionKey: basicStringFilterSchema,
-			elementInstanceKey: basicStringFilterSchema,
 			...decisionInstanceSchema.pick({
+				decisionEvaluationInstanceKey: true,
+				state: true,
 				evaluationFailure: true,
 				decisionDefinitionId: true,
 				decisionDefinitionName: true,
@@ -79,6 +78,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 				decisionEvaluationKey: true,
 				processDefinitionKey: true,
 				processInstanceKey: true,
+				elementInstanceKey: true,
 				rootDecisionDefinitionKey: true,
 			}).shape,
 		})

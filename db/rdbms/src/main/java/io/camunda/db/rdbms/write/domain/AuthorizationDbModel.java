@@ -20,7 +20,6 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
   private String resourceType;
   private Short resourceMatcher;
   private String resourceId;
-  private String resourcePropertyName;
   private Set<PermissionType> permissionTypes;
 
   public Long authorizationKey() {
@@ -71,14 +70,6 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     this.resourceId = resourceId;
   }
 
-  public String resourcePropertyName() {
-    return resourcePropertyName;
-  }
-
-  public void resourcePropertyName(final String resourcePropertyName) {
-    this.resourcePropertyName = resourcePropertyName;
-  }
-
   public Set<PermissionType> permissionTypes() {
     return permissionTypes;
   }
@@ -99,7 +90,6 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
                 .ownerType(ownerType)
                 .resourceMatcher(resourceMatcher)
                 .resourceId(resourceId)
-                .resourcePropertyName(resourcePropertyName)
                 .resourceType(resourceType)
                 .permissionTypes(permissionTypes))
         .build();
@@ -112,7 +102,6 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
     private String ownerType;
     private Short resourceMatcher;
     private String resourceId;
-    private String resourcePropertyName;
     private String resourceType;
     private Set<PermissionType> permissionTypes;
 
@@ -148,11 +137,6 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
       return this;
     }
 
-    public Builder resourcePropertyName(final String resourcePropertyName) {
-      this.resourcePropertyName = resourcePropertyName;
-      return this;
-    }
-
     public Builder permissionTypes(final Set<PermissionType> permissionTypes) {
       this.permissionTypes = permissionTypes;
       return this;
@@ -166,7 +150,6 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
       model.ownerType(ownerType);
       model.resourceMatcher(resourceMatcher);
       model.resourceId(resourceId);
-      model.resourcePropertyName(resourcePropertyName);
       model.resourceType(resourceType);
       model.permissionTypes(permissionTypes);
       return model;

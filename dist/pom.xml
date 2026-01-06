@@ -31,11 +31,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-domain</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client</artifactId>
     </dependency>
 
@@ -70,11 +65,6 @@
     </dependency>
 
     <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>regions</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-query-transformer</artifactId>
     </dependency>
@@ -82,11 +72,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>dynamic-node-id-provider</artifactId>
     </dependency>
 
     <dependency>
@@ -319,6 +304,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
     </dependency>
@@ -348,11 +338,6 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.jdbc</groupId>
-      <artifactId>aws-advanced-jdbc-wrapper</artifactId>
     </dependency>
 
     <dependency>
@@ -434,6 +419,16 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-config</artifactId>
     </dependency>
 
     <dependency>
@@ -619,8 +614,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>debug-cli</artifactId>
+      <groupId>com.auth0</groupId>
+      <artifactId>java-jwt</artifactId>
     </dependency>
 
     <!-- /end -->
@@ -695,28 +690,34 @@
 
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-elasticsearch</artifactId>
+      <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-postgresql</artifactId>
+      <artifactId>postgresql</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-oracle-free</artifactId>
+      <artifactId>oracle-free</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-mysql</artifactId>
+      <artifactId>mysql</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -781,8 +782,7 @@
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8 -Xshare:auto
-            --add-opens=java.base/java.io=ALL-UNNAMED</extraJvmArguments>
+            -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
           <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
           <endorsedDir>driver-lib</endorsedDir>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
@@ -831,10 +831,6 @@
               <id>camunda</id>
               <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
-            <program>
-              <id>cdbg</id>
-              <mainClass>io.camunda.debug.cli.Main</mainClass>
-            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -851,33 +847,6 @@
           </execution>
         </executions>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-openapi-yaml</id>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <outputDirectory>${project.build.directory}/camunda-zeebe/config/openapi/v2</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${project.basedir}/../zeebe/gateway-protocol/src/main/proto/v2</directory>
-                  <includes>
-                    <include>**/*.yaml</include>
-                  </includes>
-                  <filtering>false</filtering>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
@@ -916,8 +885,7 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
-            <!-- Needed for the debug CLI tool -->
-            <dependency>io.camunda:debug-cli</dependency>
+            <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
@@ -951,7 +919,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.17.0</version>
+        <version>7.12.0</version>
         <executions>
           <execution>
             <id>backups</id>
@@ -1026,30 +994,6 @@
                 <java.version>${java.version}</java.version>
                 <description>${project.description}</description>
               </additionalProperties>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-compile</id>
-            <configuration>
-              <!-- See https://logging.apache.org/log4j/2.x/manual/plugins.html#plugin-registry -->
-              <annotationProcessorPaths>
-                <!-- Include `log4j-core` providing `org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor` that generates `Log4j2Plugins.dat`-->
-                <path>
-                  <groupId>org.apache.logging.log4j</groupId>
-                  <artifactId>log4j-core</artifactId>
-                  <version>${version.log4j}</version>
-                </path>
-              </annotationProcessorPaths>
-              <annotationProcessors>
-                <!-- Process sources using `PluginProcessor` to generate `Log4j2Plugins.dat` -->
-                <processor>org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor</processor>
-              </annotationProcessors>
             </configuration>
           </execution>
         </executions>

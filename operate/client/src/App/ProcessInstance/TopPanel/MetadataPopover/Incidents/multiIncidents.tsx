@@ -7,7 +7,7 @@
  */
 
 import {Header} from '../Header';
-import {SummaryText} from '../styled';
+import {SummaryDataValue} from '../styled';
 
 type Props = {count: number; onButtonClick: () => void};
 
@@ -23,7 +23,7 @@ const MultiIncidents: React.FC<Props> = ({count, onButtonClick}) => {
           onClick: onButtonClick,
         }}
       />
-      <SummaryText>{`${count} incidents occurred`}</SummaryText>
+      <SummaryDataValue>{`${count} incidents occurred`}</SummaryDataValue>
     </>
   );
 };

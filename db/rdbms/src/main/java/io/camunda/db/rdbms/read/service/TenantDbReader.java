@@ -17,7 +17,6 @@ import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -47,27 +46,17 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
       return new SearchQueryResult.Builder<TenantEntity>().total(0).items(List.of()).build();
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.TENANT.name(), List.of());
     final var dbSort = convertSort(query.sort(), TenantSearchColumn.TENANT_ID);
-    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         TenantDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .sort(dbSort)
-                    .page(dbPage));
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for tenants with filter {}", dbQuery);
     final var totalHits = tenantMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = tenantMapper.search(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
@@ -86,8 +75,9 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
   }
 
   private boolean shouldReturnEmptyResult(
-      final TenantFilter filter, final ResourceAccessChecks resourceAccessChecks) {
+      final TenantFilter filter, ResourceAccessChecks resourceAccessChecks) {
     return (filter.memberIds() != null && filter.memberIds().isEmpty())
-        || shouldReturnEmptyResult(resourceAccessChecks);
+        || (resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

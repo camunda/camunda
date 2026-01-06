@@ -58,6 +58,6 @@ public class MultiInstanceInputCollectionBehavior {
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     final var inputCollectionExpression = element.getLoopCharacteristics().getInputCollection();
     return expressionProcessor.evaluateArrayExpression(
-        inputCollectionExpression, context.getElementInstanceKey(), context.getTenantId());
+        inputCollectionExpression, context.getElementInstanceKey());
   }
 }

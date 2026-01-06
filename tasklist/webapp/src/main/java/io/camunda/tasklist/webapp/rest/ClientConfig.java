@@ -10,7 +10,6 @@ package io.camunda.tasklist.webapp.rest;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import io.camunda.tasklist.webapp.service.EnvironmentService;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +27,6 @@ public class ClientConfig {
   public String contextPath;
   public String baseName;
   public String clientMode;
-  public String databaseType;
 
   // Cloud related properties for mixpanel events
   @Value("${CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID:#{null}}")
@@ -61,7 +59,6 @@ public class ClientConfig {
   private boolean isV2ModeEnabled;
 
   @Autowired private TasklistProfileService profileService;
-  @Autowired private EnvironmentService environmentService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private ServletContext context;
@@ -76,6 +73,5 @@ public class ClientConfig {
     isLoginDelegated = profileService.isLoginDelegated();
     maxRequestSize = maxRequestSizeConfigValue.toBytes();
     clientMode = isV2ModeEnabled ? "v2" : "v1";
-    databaseType = environmentService.getDatabaseType();
   }
 }

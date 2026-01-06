@@ -41,9 +41,7 @@ public final class RemoteDebugger {
     // when configuring a port binding, we need to expose the port as well; the port binding just
     // decides to which host port the exposed port will bind, but it will not expose the port itself
     container.addExposedPort(port);
-    final var portBindings = container.getPortBindings();
-    portBindings.add(port + ":" + port);
-    container.setPortBindings(portBindings);
+    container.getPortBindings().add(port + ":" + port);
 
     // prepend agent configuration in front of javaOpts to ensure it's enabled but also keep
     // previously defined options

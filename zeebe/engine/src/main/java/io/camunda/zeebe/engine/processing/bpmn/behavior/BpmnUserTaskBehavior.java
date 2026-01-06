@@ -11,19 +11,14 @@ import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefiniti
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_UPPER_BOUND;
 
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.el.impl.StaticExpression;
-import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
-import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
-import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -32,7 +27,6 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -40,12 +34,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -71,7 +63,6 @@ public final class BpmnUserTaskBehavior {
   private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
-  private final GlobalListenersState globalListenersState;
   private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
@@ -83,7 +74,6 @@ public final class BpmnUserTaskBehavior {
       final UserTaskState userTaskState,
       final VariableState variableState,
       final AsyncRequestState asyncRequestState,
-      final GlobalListenersState globalListenersState,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -94,7 +84,6 @@ public final class BpmnUserTaskBehavior {
     this.userTaskState = userTaskState;
     this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
-    this.globalListenersState = globalListenersState;
     this.clock = clock;
   }
 
@@ -102,29 +91,21 @@ public final class BpmnUserTaskBehavior {
       final ExecutableUserTask element, final BpmnElementContext context) {
     final var userTaskProps = element.getUserTaskProperties();
     final var scopeKey = context.getElementInstanceKey();
-    final var tenantId = context.getTenantId();
     return Either.<Failure, UserTaskProperties>right(new UserTaskProperties())
         .flatMap(
-            p ->
-                evaluateAssigneeExpression(userTaskProps.getAssignee(), scopeKey, tenantId)
-                    .map(p::assignee))
+            p -> evaluateAssigneeExpression(userTaskProps.getAssignee(), scopeKey).map(p::assignee))
         .flatMap(
             p ->
-                evaluateCandidateGroupsExpression(
-                        userTaskProps.getCandidateGroups(), scopeKey, tenantId)
+                evaluateCandidateGroupsExpression(userTaskProps.getCandidateGroups(), scopeKey)
                     .map(p::candidateGroups))
         .flatMap(
             p ->
-                evaluateCandidateUsersExpression(
-                        userTaskProps.getCandidateUsers(), scopeKey, tenantId)
+                evaluateCandidateUsersExpression(userTaskProps.getCandidateUsers(), scopeKey)
                     .map(p::candidateUsers))
+        .flatMap(p -> evaluateDateExpression(userTaskProps.getDueDate(), scopeKey).map(p::dueDate))
         .flatMap(
             p ->
-                evaluateDateExpression(userTaskProps.getDueDate(), scopeKey, tenantId)
-                    .map(p::dueDate))
-        .flatMap(
-            p ->
-                evaluateDateExpression(userTaskProps.getFollowUpDate(), scopeKey, tenantId)
+                evaluateDateExpression(userTaskProps.getFollowUpDate(), scopeKey)
                     .map(p::followUpDate))
         .flatMap(
             p ->
@@ -133,18 +114,16 @@ public final class BpmnUserTaskBehavior {
                         userTaskProps.getFormBindingType(),
                         userTaskProps.getFormVersionTag(),
                         context,
-                        scopeKey,
-                        tenantId)
+                        scopeKey)
                     .map(p::formKey))
         .flatMap(
             p ->
                 evaluateExternalFormReferenceExpression(
-                        userTaskProps.getExternalFormReference(), scopeKey, tenantId)
+                        userTaskProps.getExternalFormReference(), scopeKey)
                     .map(p::externalFormReference))
         .flatMap(
             p ->
-                evaluatePriorityExpression(userTaskProps.getPriority(), scopeKey, tenantId)
-                    .map(p::priority));
+                evaluatePriorityExpression(userTaskProps.getPriority(), scopeKey).map(p::priority));
   }
 
   public UserTaskRecord createNewUserTask(
@@ -176,53 +155,43 @@ public final class BpmnUserTaskBehavior {
             .setElementInstanceKey(context.getElementInstanceKey())
             .setTenantId(context.getTenantId())
             .setPriority(userTaskProperties.getPriority())
-            .setCreationTimestamp(clock.millis())
-            .setTags(getTagsFromProcessInstance(context));
+            .setCreationTimestamp(clock.millis());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
   }
 
-  private Set<String> getTagsFromProcessInstance(final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-    if (elementInstance == null) {
-      return Collections.emptySet();
-    }
-    final var processInstance = elementInstance.getValue();
-    return processInstance != null ? processInstance.getTags() : Collections.emptySet();
-  }
-
   public Either<Failure, String> evaluateAssigneeExpression(
-      final Expression assignee, final long scopeKey, final String tenantId) {
+      final Expression assignee, final long scopeKey) {
     if (assignee == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateStringExpression(assignee, scopeKey, tenantId);
+    return expressionBehavior.evaluateStringExpression(assignee, scopeKey);
   }
 
   public Either<Failure, List<String>> evaluateCandidateGroupsExpression(
-      final Expression candidateGroups, final long scopeKey, final String tenantId) {
+      final Expression candidateGroups, final long scopeKey) {
     if (candidateGroups == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey, tenantId);
+    return expressionBehavior.evaluateArrayOfStringsExpression(candidateGroups, scopeKey);
   }
 
   public Either<Failure, List<String>> evaluateCandidateUsersExpression(
-      final Expression candidateUsers, final long scopeKey, final String tenantId) {
+      final Expression candidateUsers, final long scopeKey) {
     if (candidateUsers == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateArrayOfStringsExpression(candidateUsers, scopeKey, tenantId);
+    return expressionBehavior.evaluateArrayOfStringsExpression(candidateUsers, scopeKey);
   }
 
   public Either<Failure, String> evaluateDateExpression(
-      final Expression date, final long scopeKey, final String tenantId) {
+      final Expression date, final long scopeKey) {
     if (date == null) {
       return Either.right(null);
     }
     return expressionBehavior
-        .evaluateDateTimeExpression(date, scopeKey, tenantId, true)
+        .evaluateDateTimeExpression(date, scopeKey, true)
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
   }
 
@@ -231,13 +200,12 @@ public final class BpmnUserTaskBehavior {
       final ZeebeBindingType bindingType,
       final String versionTag,
       final BpmnElementContext context,
-      final long scopeKey,
-      final String tenantId) {
+      final long scopeKey) {
     if (formIdExpression == null) {
       return Either.right(null);
     }
     return expressionBehavior
-        .evaluateStringExpression(formIdExpression, scopeKey, tenantId)
+        .evaluateStringExpression(formIdExpression, scopeKey)
         .flatMap(
             formId -> {
               final var form = findLinkedForm(formId, bindingType, versionTag, context, scopeKey);
@@ -323,20 +291,20 @@ public final class BpmnUserTaskBehavior {
   }
 
   public Either<Failure, String> evaluateExternalFormReferenceExpression(
-      final Expression externalFormReference, final long scopeKey, final String tenantId) {
+      final Expression externalFormReference, final long scopeKey) {
     if (externalFormReference == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey, tenantId);
+    return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey);
   }
 
   public Either<Failure, Integer> evaluatePriorityExpression(
-      final Expression priorityExpression, final long scopeKey, final String tenantId) {
+      final Expression priorityExpression, final long scopeKey) {
     if (priorityExpression == null) {
       return Either.right(ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY);
     }
     return expressionBehavior
-        .evaluateIntegerExpression(priorityExpression, scopeKey, tenantId)
+        .evaluateIntegerExpression(priorityExpression, scopeKey)
         .flatMap(
             priority -> {
               if (priority < PRIORITY_LOWER_BOUND || priority > PRIORITY_UPPER_BOUND) {
@@ -451,86 +419,6 @@ public final class BpmnUserTaskBehavior {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
     userTaskRecord.setAssignee(assignee);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-  }
-
-  private List<TaskListener> toTaskListenerModel(
-      final GlobalListenerRecordValue globalTaskListener,
-      final ExecutableUserTask executableUserTask) {
-
-    final Expression jobType = new StaticExpression(globalTaskListener.getType());
-    final Expression jobRetries =
-        new StaticExpression(String.valueOf(globalTaskListener.getRetries()));
-
-    // Extract the list of supported listener event types
-    var eventTypes =
-        globalTaskListener.getEventTypes().contains(GlobalListenerConfiguration.ALL_EVENT_TYPES)
-            ? List.of(ZeebeTaskListenerEventType.values())
-            : globalTaskListener.getEventTypes().stream()
-                .map(ZeebeTaskListenerEventType::valueOf)
-                .toList();
-    // Remove duplicates (considering deprecated event types as equivalent to their non-deprecated
-    // counterparts)
-    eventTypes = eventTypes.stream().map(ZeebeTaskListenerEventType::resolve).distinct().toList();
-
-    // Create a task listener model for each supported event type
-    final List<TaskListener> taskListeners = new ArrayList<>();
-    eventTypes.forEach(
-        eventType -> {
-          final TaskListener listener = new TaskListener();
-          listener.setEventType(eventType);
-
-          final JobWorkerProperties jobProperties = new JobWorkerProperties();
-          jobProperties.wrap(executableUserTask.getUserTaskProperties());
-          jobProperties.setType(jobType);
-          jobProperties.setRetries(jobRetries);
-          listener.setJobWorkerProperties(jobProperties);
-          taskListeners.add(listener);
-        });
-    return taskListeners;
-  }
-
-  public List<TaskListener> getTaskListeners(
-      final ExecutableUserTask element, final long userTaskKey) {
-    // Retrieve pinned global listeners configuration for the user task
-    final var intermediateState = userTaskState.getIntermediateState(userTaskKey);
-    final var listenersConfig =
-        intermediateState != null
-            ? globalListenersState.getVersionedConfig(
-                intermediateState.getRecord().getListenersConfigKey())
-            : null;
-
-    // Convert global listeners to task listener models
-    final List<TaskListener> beforeNonGlobalListeners = new ArrayList<>();
-    final List<TaskListener> afterNonGlobalListeners = new ArrayList<>();
-    if (listenersConfig != null) {
-      listenersConfig
-          .getTaskListeners()
-          .forEach(
-              listener -> {
-                final var listenersList =
-                    listener.isAfterNonGlobal()
-                        ? afterNonGlobalListeners
-                        : beforeNonGlobalListeners;
-                listenersList.addAll(toTaskListenerModel(listener, element));
-              });
-    }
-
-    // Combine global and model-level task listeners
-    final List<TaskListener> taskListeners = new ArrayList<>();
-    taskListeners.addAll(beforeNonGlobalListeners);
-    taskListeners.addAll(element.getTaskListeners());
-    taskListeners.addAll(afterNonGlobalListeners);
-
-    return taskListeners;
-  }
-
-  public List<TaskListener> getTaskListeners(
-      final ExecutableUserTask element,
-      final long userTaskKey,
-      final ZeebeTaskListenerEventType eventType) {
-    return getTaskListeners(element, userTaskKey).stream()
-        .filter(tl -> tl.getEventType() == eventType)
-        .toList();
   }
 
   public static final class UserTaskProperties {

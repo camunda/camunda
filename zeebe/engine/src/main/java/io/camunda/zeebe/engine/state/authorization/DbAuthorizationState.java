@@ -21,10 +21,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class DbAuthorizationState implements MutableAuthorizationState {
 
@@ -128,69 +126,35 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   @Override
   public void delete(final long authorizationKey) {
     this.authorizationKey.wrapLong(authorizationKey);
-    final var authorizationToDelete =
-        authorizationByAuthorizationKeyColumnFamily.get(
-            this.authorizationKey, PersistedAuthorization::new);
+    final var persistedAuthorization =
+        authorizationByAuthorizationKeyColumnFamily.get(this.authorizationKey);
 
-    ownerId.wrapString(authorizationToDelete.getOwnerId());
-    ownerType.wrapString(authorizationToDelete.getOwnerType().name());
-
-    final var authorizationKeysForOwnerTypeAndOwnerId =
-        authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId, AuthorizationKeys::new);
-    authorizationKeysForOwnerTypeAndOwnerId.removeAuthorizationKey(authorizationKey);
-
-    // For each authorization key get the authorization and check if it matches the persisted
-    // Authorization ResourceType and ResourceMatcher, collecting the matching authorization
-    // permissions in a set.
-    final var sharedPermissionTypes =
-        authorizationKeysForOwnerTypeAndOwnerId.getAuthorizationKeys().stream()
-            .map(
-                key -> {
-                  this.authorizationKey.wrapLong(key);
-                  return authorizationByAuthorizationKeyColumnFamily.get(
-                      this.authorizationKey, PersistedAuthorization::new);
-                })
-            .filter(Objects::nonNull)
-            .filter(
-                storedAuthorization ->
-                    filterMatchingAuthorization(authorizationToDelete, storedAuthorization))
-            .flatMap(
-                overlappingAuthorization -> overlappingAuthorization.getPermissionTypes().stream())
-            .collect(Collectors.toSet());
-
-    authorizationToDelete
+    // remove the old permissions
+    persistedAuthorization
         .getPermissionTypes()
         .forEach(
             permissionType -> {
-              if (sharedPermissionTypes.contains(permissionType)) {
-                return;
-              }
-
               removePermission(
-                  authorizationToDelete.getOwnerType(),
-                  authorizationToDelete.getOwnerId(),
-                  authorizationToDelete.getResourceType(),
+                  persistedAuthorization.getOwnerType(),
+                  persistedAuthorization.getOwnerId(),
+                  persistedAuthorization.getResourceType(),
                   permissionType,
                   Set.of(
                       new AuthorizationScope(
-                          authorizationToDelete.getResourceMatcher(),
-                          authorizationToDelete.getResourceId(),
-                          authorizationToDelete.getResourcePropertyName())));
+                          persistedAuthorization.getResourceMatcher(),
+                          persistedAuthorization.getResourceId(),
+                          persistedAuthorization.getResourcePropertyName())));
             });
 
-    this.authorizationKey.wrapLong(authorizationToDelete.getAuthorizationKey());
+    // delete the old authorization record
     authorizationByAuthorizationKeyColumnFamily.deleteExisting(this.authorizationKey);
 
-    authorizationKeysByOwnerColumnFamily.update(
-        ownerTypeAndOwnerId, authorizationKeysForOwnerTypeAndOwnerId);
-  }
-
-  private boolean filterMatchingAuthorization(
-      final PersistedAuthorization candidateAuthorization,
-      final PersistedAuthorization storedAuthorization) {
-    return candidateAuthorization.getResourceType() == storedAuthorization.getResourceType()
-        && Objects.equals(
-            candidateAuthorization.getResourceId(), storedAuthorization.getResourceId());
+    // remove authorization key from owner
+    ownerId.wrapString(persistedAuthorization.getOwnerId());
+    ownerType.wrapString(persistedAuthorization.getOwnerType().name());
+    final var keys = authorizationKeysByOwnerColumnFamily.get(ownerTypeAndOwnerId);
+    keys.removeAuthorizationKey(authorizationKey);
+    authorizationKeysByOwnerColumnFamily.update(ownerTypeAndOwnerId, keys);
   }
 
   @Override

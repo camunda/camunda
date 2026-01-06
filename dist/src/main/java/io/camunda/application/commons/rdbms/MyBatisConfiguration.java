@@ -7,15 +7,10 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
-import io.camunda.db.rdbms.NoopSchemaManager;
-import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
-import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
-import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
@@ -24,7 +19,6 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
-import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
@@ -34,7 +28,6 @@ import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
-import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
@@ -45,6 +38,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
+import liquibase.integration.spring.MultiTenantSpringLiquibase;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -55,7 +49,6 @@ import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -73,7 +66,7 @@ public class MyBatisConfiguration {
       name = "auto-ddl",
       havingValue = "true",
       matchIfMissing = true)
-  public RdbmsSchemaManager rdbmsExporterLiquibase(
+  public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
       final DataSource dataSource,
       final VendorDatabaseProperties vendorDatabaseProperties,
       @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
@@ -81,7 +74,7 @@ public class MyBatisConfiguration {
     LOGGER.info(
         "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
 
-    final var moduleConfig = new LiquibaseSchemaManager();
+    final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);
     moduleConfig.setDatabaseChangeLogTable(trimmedPrefix + "DATABASECHANGELOG");
     moduleConfig.setDatabaseChangeLogLockTable(trimmedPrefix + "DATABASECHANGELOGLOCK");
@@ -95,12 +88,6 @@ public class MyBatisConfiguration {
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
     return moduleConfig;
-  }
-
-  @Bean
-  @ConditionalOnMissingBean(RdbmsSchemaManager.class)
-  public RdbmsSchemaManager rdbmsNoopSchemaManager() {
-    return new NoopSchemaManager();
   }
 
   @Bean
@@ -149,12 +136,6 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<AuthorizationMapper> authorizationMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, AuthorizationMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<AuditLogMapper> auditLogMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, AuditLogMapper.class);
   }
 
   @Bean
@@ -214,12 +195,6 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<VariableMapper> variableMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, VariableMapper.class);
-  }
-
-  @Bean
-  public MapperFactoryBean<ClusterVariableMapper> clusterVariableMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, ClusterVariableMapper.class);
   }
 
   @Bean
@@ -299,18 +274,6 @@ public class MyBatisConfiguration {
   MapperFactoryBean<CorrelatedMessageSubscriptionMapper> correlatedMessageSubscriptionMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageSubscriptionMapper.class);
-  }
-
-  @Bean
-  MapperFactoryBean<TableMetricsMapper> tableMetricsMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, TableMetricsMapper.class);
-  }
-
-  @Bean
-  MapperFactoryBean<HistoryDeletionMapper> historyDeletionMapper(
-      final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, HistoryDeletionMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

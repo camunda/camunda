@@ -27,14 +27,12 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
-import io.camunda.process.test.impl.proxy.TestScenarioRunnerProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
@@ -80,7 +78,6 @@ public class ExecutionListenerTest {
   @Mock private CamundaClientProxy camundaClientProxy;
   @Mock private ZeebeClientProxy zeebeClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
-  @Mock private TestScenarioRunnerProxy testScenarioRunnerProxy;
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
@@ -97,7 +94,6 @@ public class ExecutionListenerTest {
   @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeClientJsonMapper;
   @Captor private ArgumentCaptor<ZeebeClient> zeebeClientArgumentCaptor;
   @Captor private ArgumentCaptor<CamundaProcessTestContext> camundaProcessTestContextArgumentCaptor;
-  @Captor private ArgumentCaptor<TestScenarioRunner> testScenarioRunnerArgumentCaptor;
 
   @Captor
   private ArgumentCaptor<CamundaClientCreatedSpringEvent> camundaClientCreatedEventArgumentCaptor;
@@ -129,8 +125,6 @@ public class ExecutionListenerTest {
     when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class)).thenReturn(null);
     when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
-    when(applicationContext.getBean(TestScenarioRunnerProxy.class))
-        .thenReturn(testScenarioRunnerProxy);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(new CamundaProcessTestRuntimeConfiguration());
     when(applicationContext.getBean(CamundaClientProperties.class))
@@ -208,24 +202,6 @@ public class ExecutionListenerTest {
     final CamundaClientConfiguration configuration = newCamundaClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
-  }
-
-  @Test
-  void shouldWireTestScenarioRunner() throws Exception {
-    // given
-    final CamundaProcessTestExecutionListener listener =
-        new CamundaProcessTestExecutionListener(
-            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    listener.beforeTestClass(testContext);
-    listener.beforeTestMethod(testContext);
-
-    // then
-    verify(testScenarioRunnerProxy).setRunner(testScenarioRunnerArgumentCaptor.capture());
-
-    final TestScenarioRunner testScenarioRunner = testScenarioRunnerArgumentCaptor.getValue();
-    assertThat(testScenarioRunner).isNotNull();
   }
 
   @Test

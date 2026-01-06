@@ -19,6 +19,7 @@ import {
   mockInstanceWithParentInstance,
   mockOperationCreated,
   Wrapper,
+  mockInstanceDeprecated,
 } from './index.setup';
 
 import {
@@ -27,6 +28,7 @@ import {
   mockProcessXML,
 } from 'modules/testUtils';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -34,7 +36,6 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -49,10 +50,8 @@ describe('InstanceHeader', () => {
   });
 
   it('should render process instance data', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
@@ -97,10 +96,8 @@ describe('InstanceHeader', () => {
   });
 
   it('should render "View All" link for call activity process', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
@@ -119,10 +116,8 @@ describe('InstanceHeader', () => {
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
     panelStatesStore.toggleFiltersPanel();
 
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
     const {user} = render(
@@ -146,10 +141,8 @@ describe('InstanceHeader', () => {
   });
 
   it('should render parent Process Instance Key', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(
@@ -176,17 +169,8 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner when instance has active operations', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [
-        {
-          batchOperationKey: '1',
-          itemKey: '1',
-          processInstanceKey: mockInstance.processInstanceKey,
-          state: 'ACTIVE',
-        },
-      ],
-      page: {totalItems: 1},
-    });
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
@@ -201,9 +185,10 @@ describe('InstanceHeader', () => {
   });
 
   it('should not show spinner when instance has no active operations', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess({
+      ...mockInstanceDeprecated,
+      operations: [],
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -219,10 +204,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show operation buttons for running process instance when user has permission', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
@@ -245,10 +227,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show operation buttons for finished process instance when user has permission', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(
@@ -272,10 +251,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should redirect and show notification when "Delete Instance" is clicked', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(
@@ -291,18 +267,12 @@ describe('InstanceHeader', () => {
       screen.queryByTestId('instance-header-skeleton'),
     );
 
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
 
     mockApplyOperation().withSuccess(mockOperationCreated);
 
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     await user.click(screen.getByRole('button', {name: /danger delete/i}));
 
     await waitFor(() =>
@@ -319,9 +289,10 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner on process instance cancellation', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess({
+      ...mockInstanceDeprecated,
+      operations: [],
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockCancelProcessInstance().withSuccess({});
@@ -343,11 +314,6 @@ describe('InstanceHeader', () => {
       screen.queryByTestId('instance-header-skeleton'),
     );
 
-    // Mock for refetch after successful cancel
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
     await user.click(screen.getByRole('button', {name: /cancel instance/i}));
     await user.click(screen.getByRole('button', {name: /apply/i}));
 

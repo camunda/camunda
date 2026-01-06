@@ -29,8 +29,8 @@
       "description": "Global default properties for job workers registered to the Camunda client."
     },
     {
-      "name": "management.endpoint.jobworkers",
-      "description": "Properties for configuring the `jobworkers` management endpoint."
+      "name": "camunda.client.worker.override",
+      "description": "Properties for overriding settings of individual job workers registered to the Camunda client. Overrides are specified as key-value pairs, where the key is the worker's job type and the values have the same properties as `camunda.client.worker.defaults` each: `camunda.client.worker.override.<job-type>.<property-name>: <property-value>`."
     },
     {
       "name": "camunda.client.zeebe",
@@ -114,14 +114,6 @@
   ],
   "properties": [
     {
-      "name": "camunda.client.worker.defaults.enabled",
-      "defaultValue": true
-    },
-    {
-      "name": "camunda.client.worker.defaults.auto-complete",
-      "defaultValue": true
-    },
-    {
       "name": "camunda.client.worker.defaults.tenant-ids",
       "defaultValue": ["<default>"]
     },
@@ -138,32 +130,12 @@
       "defaultValue": "PT0.1S"
     },
     {
-      "name": "camunda.client.worker.defaults.retry-backoff",
-      "defaultValue": "PT0S"
-    },
-    {
       "name": "camunda.client.worker.defaults.name",
       "defaultValue": "default"
     },
     {
       "name": "camunda.client.worker.defaults.stream-enabled",
       "defaultValue": false
-    },
-    {
-      "name": "camunda.client.worker.defaults.request-timeout",
-      "defaultValue": "PT10S"
-    },
-    {
-      "name": "camunda.client.worker.defaults.force-fetch-all-variables",
-      "defaultValue": false
-    },
-    {
-      "name": "camunda.client.worker.defaults.max-retries",
-      "defaultValue": 0
-    },
-    {
-      "name": "camunda.client.worker.defaults.stream-timeout",
-      "defaultValue": "PT8H"
     },
     {
       "name": "camunda.client.auth.connect-timeout",

@@ -17,21 +17,17 @@ package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.health.HealthCheck;
-import io.camunda.client.jobhandling.JobWorkerManager;
-import io.camunda.client.metrics.JobWorkerMetricsFactory;
 import io.camunda.client.metrics.MetricsRecorder;
-import io.camunda.client.metrics.MicrometerJobWorkerMetricsFactory;
 import io.camunda.client.metrics.MicrometerMetricsRecorder;
 import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
-import io.camunda.client.spring.actuator.JobWorkerController;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
+import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
@@ -42,22 +38,10 @@ import org.springframework.context.annotation.Lazy;
   MeterRegistry.class
 }) // only if actuator is on classpath
 public class CamundaActuatorConfiguration {
-
-  @Bean
-  public JobWorkerController jobWorkerController(final JobWorkerManager jobWorkerManager) {
-    return new JobWorkerController(jobWorkerManager);
-  }
-
   @Bean
   @ConditionalOnMissingBean
   public MetricsRecorder micrometerMetricsRecorder(@Lazy final MeterRegistry meterRegistry) {
     return new MicrometerMetricsRecorder(meterRegistry);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public JobWorkerMetricsFactory jobWorkerMetricsFactory(@Lazy final MeterRegistry meterRegistry) {
-    return new MicrometerJobWorkerMetricsFactory(meterRegistry);
   }
 
   @Bean

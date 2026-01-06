@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
-import org.agrona.DirectBuffer;
 
 public final class ClusterVariableInstance extends UnpackedObject implements DbValue {
 
@@ -25,9 +24,5 @@ public final class ClusterVariableInstance extends UnpackedObject implements DbV
 
   public void setRecord(final ClusterVariableRecord clusterVariableRecord) {
     clusterVariable.getValue().copyFrom(clusterVariableRecord);
-  }
-
-  public DirectBuffer getValueBuffer() {
-    return clusterVariable.getValue().getValueBuffer();
   }
 }

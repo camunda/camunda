@@ -8,7 +8,6 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -19,15 +18,13 @@ public class TaskProcessInstanceEntity
         PartitionedEntity<TaskProcessInstanceEntity>,
         TenantOwned {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  @BeforeVersion880 private int partitionId;
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private int partitionId;
 
-  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long processInstanceId;
 
-  @BeforeVersion880
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 

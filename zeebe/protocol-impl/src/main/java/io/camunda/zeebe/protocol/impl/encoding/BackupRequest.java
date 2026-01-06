@@ -12,7 +12,6 @@ import io.camunda.zeebe.protocol.management.BackupRequestEncoder;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -28,7 +27,6 @@ public class BackupRequest implements BufferReader, BufferWriter {
   private int partitionId;
   private long backupId;
   private String pattern;
-  private CheckpointType checkpointType;
 
   public BackupRequest reset() {
     type = BackupRequestType.NULL_VAL;
@@ -74,15 +72,6 @@ public class BackupRequest implements BufferReader, BufferWriter {
     return this;
   }
 
-  public CheckpointType getCheckpointType() {
-    return checkpointType;
-  }
-
-  public BackupRequest setCheckpointType(final CheckpointType checkpointType) {
-    this.checkpointType = checkpointType;
-    return this;
-  }
-
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
@@ -90,9 +79,6 @@ public class BackupRequest implements BufferReader, BufferWriter {
     type = bodyDecoder.type();
     backupId = bodyDecoder.backupId();
     pattern = bodyDecoder.pattern();
-    if (bodyDecoder.checkpointType() != BackupRequestEncoder.checkpointTypeNullValue()) {
-      checkpointType = CheckpointType.valueOf(bodyDecoder.checkpointType());
-    }
   }
 
   @Override
@@ -111,9 +97,5 @@ public class BackupRequest implements BufferReader, BufferWriter {
         .type(type)
         .backupId(backupId)
         .pattern(pattern);
-
-    if (checkpointType != null) {
-      bodyEncoder.checkpointType(checkpointType.getValue());
-    }
   }
 }

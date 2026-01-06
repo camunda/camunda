@@ -36,9 +36,7 @@ public record JobEntity(
     Long processInstanceKey,
     String elementId,
     Long elementInstanceKey,
-    String tenantId,
-    OffsetDateTime creationTime,
-    OffsetDateTime lastUpdateTime)
+    String tenantId)
     implements TenantOwnedEntity {
 
   public static class Builder implements ObjectBuilder<JobEntity> {
@@ -63,8 +61,6 @@ public record JobEntity(
     private String elementId;
     private Long elementInstanceKey;
     private String tenantId;
-    private OffsetDateTime creationTime;
-    private OffsetDateTime lastUpdateTime;
 
     public Builder jobKey(final Long jobKey) {
       this.jobKey = jobKey;
@@ -171,16 +167,6 @@ public record JobEntity(
       return this;
     }
 
-    public Builder creationTime(final OffsetDateTime creationTime) {
-      this.creationTime = creationTime;
-      return this;
-    }
-
-    public Builder lastUpdateTime(final OffsetDateTime lastUpdateTime) {
-      this.lastUpdateTime = lastUpdateTime;
-      return this;
-    }
-
     @Override
     public JobEntity build() {
       return new JobEntity(
@@ -204,9 +190,7 @@ public record JobEntity(
           processInstanceKey,
           elementId,
           elementInstanceKey,
-          tenantId,
-          creationTime,
-          lastUpdateTime);
+          tenantId);
     }
   }
 

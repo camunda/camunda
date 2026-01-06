@@ -132,7 +132,7 @@ public class OpensearchProcessInstanceDaoTest {
   @Test
   public void testBuildFilteringWithNullFilter() {
     final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    underTest.buildFiltering(new Query<>());
+    underTest.buildFiltering(new Query<>(), mockSearchRequest);
 
     // Verify that the join relation was still set
     verify(mockQueryWrapper, times(1))
@@ -145,7 +145,7 @@ public class OpensearchProcessInstanceDaoTest {
     final Query<ProcessInstance> inputQuery =
         new Query<ProcessInstance>().setFilter(new ProcessInstance());
 
-    underTest.buildFiltering(inputQuery);
+    underTest.buildFiltering(inputQuery, mockSearchRequest);
 
     // Verify that the join relation was still set
     verify(mockQueryWrapper, times(1))
@@ -175,7 +175,7 @@ public class OpensearchProcessInstanceDaoTest {
 
     final Query<ProcessInstance> inputQuery = new Query<ProcessInstance>().setFilter(filter);
 
-    underTest.buildFiltering(inputQuery);
+    underTest.buildFiltering(inputQuery, mockSearchRequest);
 
     // Verify that each field from the process instance filter was added as a query term to the
     // query

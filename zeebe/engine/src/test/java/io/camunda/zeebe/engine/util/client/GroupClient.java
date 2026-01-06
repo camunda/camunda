@@ -79,11 +79,6 @@ public class GroupClient {
       return expectation.apply(position);
     }
 
-    public Record<GroupRecordValue> create(final String username) {
-      final long position = writer.writeCommand(GroupIntent.CREATE, username, groupRecord);
-      return expectation.apply(position);
-    }
-
     public GroupCreateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
@@ -124,11 +119,6 @@ public class GroupClient {
 
     public Record<GroupRecordValue> update() {
       final long position = writer.writeCommand(GroupIntent.UPDATE, groupRecord);
-      return expectation.apply(position);
-    }
-
-    public Record<GroupRecordValue> update(final String username) {
-      final long position = writer.writeCommand(GroupIntent.UPDATE, username, groupRecord);
       return expectation.apply(position);
     }
 
@@ -181,11 +171,6 @@ public class GroupClient {
       return expectation.apply(position);
     }
 
-    public Record<GroupRecordValue> add(final String username) {
-      final long position = writer.writeCommand(GroupIntent.ADD_ENTITY, username, groupRecord);
-      return expectation.apply(position);
-    }
-
     public GroupAddEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
@@ -234,11 +219,6 @@ public class GroupClient {
       return expectation.apply(position);
     }
 
-    public Record<GroupRecordValue> remove(final String username) {
-      final long position = writer.writeCommand(GroupIntent.REMOVE_ENTITY, username, groupRecord);
-      return expectation.apply(position);
-    }
-
     public GroupRemoveEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
@@ -280,11 +260,6 @@ public class GroupClient {
 
     public Record<GroupRecordValue> delete() {
       final long position = writer.writeCommand(GroupIntent.DELETE, groupRecord);
-      return expectation.apply(position);
-    }
-
-    public Record<GroupRecordValue> delete(final String username) {
-      final long position = writer.writeCommand(GroupIntent.DELETE, username, groupRecord);
       return expectation.apply(position);
     }
 

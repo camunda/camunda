@@ -169,13 +169,8 @@ public final class LogEntryDescriptor {
     return buffer.getByte(flagsOffset(offset)) != 0;
   }
 
-  public static void skipProcessing(
-      final MutableDirectBuffer buffer, final int offset, final boolean shouldSkip) {
-    buffer.putByte(flagsOffset(offset), (byte) (shouldSkip ? 1 : 0));
-  }
-
-  public static void zeroReserved(final MutableDirectBuffer buffer, final int offset) {
-    buffer.putByte(flagsOffset(offset) + 1, (byte) 0);
+  public static void skipProcessing(final MutableDirectBuffer buffer, final int offset) {
+    buffer.putByte(flagsOffset(offset), (byte) 1);
   }
 
   public static int timestampOffset(final int offset) {

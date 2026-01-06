@@ -6,15 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {type Icon} from '@carbon/react/icons';
 import {
   TextArea as BaseTextArea,
   IconButton as BaseIconButton,
 } from '@carbon/react';
-import type {CarbonIconType} from '@carbon/react/icons';
 import {Container, IconContainer, TextArea, IconButton} from './styled';
 
 interface Props extends React.ComponentProps<typeof BaseTextArea> {
-  Icon: CarbonIconType;
+  Icon: Icon;
   invalid?: boolean;
   onIconClick: () => void;
   buttonLabel: string;

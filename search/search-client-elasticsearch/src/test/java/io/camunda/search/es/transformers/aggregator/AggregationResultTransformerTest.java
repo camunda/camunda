@@ -111,7 +111,6 @@ public class AggregationResultTransformerTest {
                     "docCount": 2,
                     "aggregations": {
                       "group-flow-nodes": {
-                       "docCount": 1,
                         "aggregations": {
                           "EndEvent": {
                             "docCount": 2,

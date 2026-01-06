@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.MethodInfo;
 
 public interface ResultProcessorStrategy {
@@ -25,9 +24,7 @@ public interface ResultProcessorStrategy {
     return new ResultProcessor() {};
   }
 
-  default ResultProcessor createProcessor(final ResultProcessorStrategyContext context) {
-    return createProcessor(context.methodInfo().getReturnType());
+  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
+    return createProcessor(methodInfo.getReturnType());
   }
-
-  record ResultProcessorStrategyContext(MethodInfo methodInfo, CamundaClient camundaClient) {}
 }

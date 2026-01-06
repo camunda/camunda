@@ -7,14 +7,7 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	basicStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from '../common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 
 const batchOperationTypeSchema = z.enum([
 	'CANCEL_PROCESS_INSTANCE',
@@ -24,8 +17,6 @@ const batchOperationTypeSchema = z.enum([
 	'DELETE_DECISION_DEFINITION',
 	'DELETE_PROCESS_DEFINITION',
 	'DELETE_PROCESS_INSTANCE',
-	'ADD_VARIABLE',
-	'UPDATE_VARIABLE',
 ]);
 type BatchOperationType = z.infer<typeof batchOperationTypeSchema>;
 
@@ -70,9 +61,9 @@ const queryBatchOperationsRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate'] as const,
 	filter: z
 		.object({
-			batchOperationKey: basicStringFilterSchema,
-			operationType: getEnumFilterSchema(batchOperationTypeSchema),
-			state: getEnumFilterSchema(batchOperationStateSchema),
+			batchOperationKey: z.string(),
+			operationType: batchOperationTypeSchema,
+			state: batchOperationStateSchema,
 		})
 		.partial(),
 });
@@ -82,14 +73,13 @@ const queryBatchOperationsResponseBodySchema = getQueryResponseBodySchema(batchO
 type QueryBatchOperationsResponseBody = z.infer<typeof queryBatchOperationsResponseBodySchema>;
 
 const queryBatchOperationItemsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['batchOperationKey', 'itemKey', 'processedDate', 'processInstanceKey', 'state'] as const,
+	sortFields: ['batchOperationKey', 'itemKey', 'processInstanceKey', 'state'] as const,
 	filter: z
 		.object({
-			batchOperationKey: basicStringFilterSchema,
-			itemKey: basicStringFilterSchema,
-			processInstanceKey: basicStringFilterSchema,
-			state: getEnumFilterSchema(batchOperationItemStateSchema),
-			operationType: getEnumFilterSchema(batchOperationTypeSchema),
+			batchOperationKey: z.string(),
+			itemKey: z.string(),
+			processInstanceKey: z.string(),
+			state: batchOperationItemStateSchema,
 		})
 		.partial(),
 });

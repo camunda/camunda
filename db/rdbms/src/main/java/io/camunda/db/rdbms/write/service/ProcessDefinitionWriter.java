@@ -13,7 +13,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class ProcessDefinitionWriter implements RdbmsWriter {
+public class ProcessDefinitionWriter {
 
   private final ExecutionQueue executionQueue;
 

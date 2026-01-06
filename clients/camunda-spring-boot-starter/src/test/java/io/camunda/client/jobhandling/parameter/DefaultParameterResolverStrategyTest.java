@@ -23,12 +23,10 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.Document;
 import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.response.UserTaskProperties;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.jobhandling.DocumentContext;
-import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -38,19 +36,15 @@ public class DefaultParameterResolverStrategyTest {
   @Test
   void shouldResolveLegacyParameter() {
     final ZeebeClient zeebeClient = mock(ZeebeClient.class);
-    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), zeebeClient);
+        new DefaultParameterResolverStrategy(
+            new CamundaObjectMapper(), zeebeClient, mock(CamundaClient.class));
 
     final List<ParameterInfo> parameters = parameterInfos(this, "legacyMethod");
     assertThat(parameters).hasSize(2);
-    final ParameterResolver jobClientResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
+    final ParameterResolver jobClientResolver = strategy.createResolver(parameters.get(0));
     assertThat(jobClientResolver).isInstanceOf(CompatJobClientParameterResolver.class);
-    final ParameterResolver activatedJobResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(1), camundaClient));
+    final ParameterResolver activatedJobResolver = strategy.createResolver(parameters.get(1));
     assertThat(activatedJobResolver).isInstanceOf(CompatActivatedJobParameterResolver.class);
     final Object resolvedJobClient = jobClientResolver.resolve(null, null);
     assertThat(resolvedJobClient).isEqualTo(zeebeClient);
@@ -58,45 +52,33 @@ public class DefaultParameterResolverStrategyTest {
 
   @Test
   void shouldResolveCurrentParameter() {
-    final CamundaClient camundaClient = mock(CamundaClient.class);
-
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
     final List<ParameterInfo> parameters = parameterInfos(this, "currentMethod");
     assertThat(parameters).hasSize(2);
-    final ParameterResolver jobClientResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
+    final ParameterResolver jobClientResolver = strategy.createResolver(parameters.get(0));
     assertThat(jobClientResolver).isInstanceOf(JobClientParameterResolver.class);
-    final ParameterResolver activatedJobResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(1), camundaClient));
+    final ParameterResolver activatedJobResolver = strategy.createResolver(parameters.get(1));
     assertThat(activatedJobResolver).isInstanceOf(ActivatedJobParameterResolver.class);
   }
 
   @Test
   void shouldResolveDocument() {
-    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
     final List<ParameterInfo> parameters = parameterInfos(this, "documentMethod");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
+    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
     assertThat(parameterResolver).isInstanceOf(DocumentParameterResolver.class);
   }
 
   @Test
   void shouldResolveProcessInstanceKeyNative() {
-    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyNative");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
+    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
     assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
     final KeyParameterResolver processInstanceKeyParameterResolver =
         (KeyParameterResolver) parameterResolver;
@@ -106,14 +88,11 @@ public class DefaultParameterResolverStrategyTest {
 
   @Test
   void shouldResolveProcessInstanceKeyLong() {
-    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyLong");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
+    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
     assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
     final KeyParameterResolver processInstanceKeyParameterResolver =
         (KeyParameterResolver) parameterResolver;
@@ -123,32 +102,16 @@ public class DefaultParameterResolverStrategyTest {
 
   @Test
   void shouldResolveProcessInstanceKeyString() {
-    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
     final List<ParameterInfo> parameters = parameterInfos(this, "processInstanceKeyString");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
+    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
     assertThat(parameterResolver).isInstanceOf(KeyParameterResolver.class);
     final KeyParameterResolver processInstanceKeyParameterResolver =
         (KeyParameterResolver) parameterResolver;
     assertThat(processInstanceKeyParameterResolver.getKeyTargetType())
         .isEqualTo(KeyTargetType.STRING);
-  }
-
-  @Test
-  void shouldResolveUserTaskProperties() {
-    final CamundaClient camundaClient = mock(CamundaClient.class);
-    final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
-    final List<ParameterInfo> parameters = parameterInfos(this, "userTaskProperties");
-    assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver =
-        strategy.createResolver(
-            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
-    assertThat(parameterResolver).isInstanceOf(UserTaskPropertiesParameterResolver.class);
   }
 
   public void legacyMethod(
@@ -164,6 +127,4 @@ public class DefaultParameterResolverStrategyTest {
   public void processInstanceKeyLong(@ProcessInstanceKey final Long processInstanceKey) {}
 
   public void processInstanceKeyString(@ProcessInstanceKey final String processInstanceKey) {}
-
-  public void userTaskProperties(UserTaskProperties userTaskProperties) {}
 }

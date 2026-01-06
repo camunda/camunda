@@ -502,7 +502,6 @@ class VariableServiceTest {
         List.of(
             new VariableInputDTO().setName("varB").setValue("\"changedB\""),
             new VariableInputDTO().setName("varC").setValue("\"changedC\"")),
-        instance.getTaskRuntimeVariables(task),
         false);
 
     // then
@@ -568,7 +567,6 @@ class VariableServiceTest {
                 .setName("varD")
                 .setValue("\"changedD_longValueThatExceedLimit\""),
             new VariableInputDTO().setName("varE").setValue("\"changedE\"")),
-        instance.getTaskRuntimeVariables(task),
         true);
 
     // then

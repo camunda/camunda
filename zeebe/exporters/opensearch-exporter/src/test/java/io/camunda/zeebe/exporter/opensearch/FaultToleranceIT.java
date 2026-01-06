@@ -19,7 +19,7 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.opensearch.testcontainers.OpenSearchContainer;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.SocatContainer;
 
@@ -52,7 +52,7 @@ final class FaultToleranceIT {
                 .withTarget(9200, "opensearch")
                 .withNetwork(network)
                 .withNetworkAliases("proxy")) {
-      try (final OpenSearchContainer<?> container =
+      try (final OpensearchContainer<?> container =
           TestSearchContainers.createDefaultOpensearchContainer()
               .withNetwork(network)
               .withNetworkAliases("opensearch")) {

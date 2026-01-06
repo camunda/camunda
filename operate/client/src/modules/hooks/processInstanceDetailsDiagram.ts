@@ -7,16 +7,12 @@
  */
 
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
-import {getFirstMultiInstanceParent} from 'modules/bpmn-js/utils/isWithinMultiInstance';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useTotalRunningInstancesByFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {modificationsStore} from 'modules/stores/modifications';
-import {
-  hasMultipleScopes,
-  hasSingleScope,
-} from 'modules/utils/processInstanceDetailsDiagram';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const useFlowNodes = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
@@ -25,7 +21,6 @@ const useFlowNodes = () => {
   const {data: businessObjects} = useBusinessObjects();
 
   return Object.values(businessObjects ?? {}).map((flowNode) => {
-    const firstMultiInstanceParent = getFirstMultiInstanceParent(flowNode);
     const flowNodeState = statistics?.items.find(
       ({elementId}) => elementId === flowNode.id,
     );
@@ -36,61 +31,23 @@ const useFlowNodes = () => {
         flowNodeState !== undefined &&
         (flowNodeState.active > 0 || flowNodeState.incidents > 0),
       isMoveModificationTarget: isMoveModificationTarget(flowNode),
-      firstMultiInstanceParent,
       hasMultipleScopes: hasMultipleScopes(
         flowNode.$parent,
         totalRunningInstancesByFlowNode,
       ),
-      hasSingleScope:
-        !firstMultiInstanceParent ||
-        hasSingleScope(flowNode.$parent, totalRunningInstancesByFlowNode),
     };
   });
 };
 
 const useAppendableFlowNodes = () => {
-  const flowNodes = useFlowNodes();
-  const {
-    state: {status, sourceFlowNodeIdForMoveOperation},
-    isMoveAllOperation,
-  } = modificationsStore;
-
-  const sourceMultiInstanceParent = flowNodes.find(
-    ({id}) => id === sourceFlowNodeIdForMoveOperation,
-  )?.firstMultiInstanceParent;
-
-  return flowNodes
-    .filter((flowNode) => {
-      if (!flowNode.isMoveModificationTarget) {
-        return false;
-      }
-
-      // Add token
-      if (status !== 'moving-token') {
-        if (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED) {
-          return flowNode.hasMultipleScopes || flowNode.hasSingleScope;
-        } else {
-          return flowNode.hasSingleScope && !flowNode.hasMultipleScopes;
-        }
-      }
-
-      // Moving token is allowed for 1 scope
-      if (flowNode.hasSingleScope) {
-        return true;
-      }
-
-      // Moving multiple tokens to another element inside the multi-instance is not allowed
-      if (isMoveAllOperation) {
-        return false;
-      }
-
-      // Moving to/from different multi-instance parents is not allowed
-      if (sourceMultiInstanceParent !== flowNode.firstMultiInstanceParent) {
-        return false;
-      }
-
-      return true;
-    })
+  return useFlowNodes()
+    .filter(
+      (flowNode) =>
+        flowNode.isMoveModificationTarget &&
+        ((IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED &&
+          modificationsStore.state.status !== 'moving-token') ||
+          !flowNode.hasMultipleScopes),
+    )
     .map(({id}) => id);
 };
 
@@ -103,11 +60,6 @@ const useCancellableFlowNodes = () => {
 const useModifiableFlowNodes = () => {
   const appendableFlowNodes = useAppendableFlowNodes();
   const cancellableFlowNodes = useCancellableFlowNodes();
-
-  // disable all flownodes while ancestor selection is required
-  if (modificationsStore.state.status === 'requires-ancestor-selection') {
-    return [];
-  }
 
   if (modificationsStore.state.status === 'moving-token') {
     return appendableFlowNodes.filter(

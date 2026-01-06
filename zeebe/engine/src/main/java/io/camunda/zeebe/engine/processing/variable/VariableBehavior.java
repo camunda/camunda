@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
@@ -17,10 +15,7 @@ import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 /**
@@ -34,7 +29,6 @@ public final class VariableBehavior {
 
   private final VariableState variableState;
   private final StateWriter stateWriter;
-  private final BpmnConditionalBehavior conditionalBehavior;
   private final KeyGenerator keyGenerator;
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
@@ -43,11 +37,9 @@ public final class VariableBehavior {
   public VariableBehavior(
       final VariableState variableState,
       final StateWriter stateWriter,
-      final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
-    this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
   }
 
@@ -83,14 +75,10 @@ public final class VariableBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId);
-    final List<VariableEvent> variableEvents = new ArrayList<>();
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
-      variableEvent.ifPresent(variableEvents::add);
+      setLocalVariable(variableRecord);
     }
-
-    conditionalBehavior.evaluateConditionals(processDefinitionKey, variableEvents);
   }
 
   /**
@@ -128,7 +116,6 @@ public final class VariableBehavior {
 
     long currentScope = scopeKey;
     long parentScope;
-    final List<VariableEvent> variableEvents = new ArrayList<>();
 
     variableRecord
         .setProcessDefinitionKey(processDefinitionKey)
@@ -148,9 +135,6 @@ public final class VariableBehavior {
           applyEntryToRecord(entry);
           stateWriter.appendFollowUpEvent(
               variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
-          variableEvents.add(
-              new VariableEvent(
-                  currentScope, VariableIntent.UPDATED, getVariableRecordCopy(variableRecord)));
           entryIterator.remove();
         }
       }
@@ -161,11 +145,8 @@ public final class VariableBehavior {
     variableRecord.setScopeKey(currentScope);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
-      variableEvent.ifPresent(variableEvents::add);
+      setLocalVariable(variableRecord);
     }
-
-    conditionalBehavior.evaluateConditionals(processDefinitionKey, variableEvents);
   }
 
   /**
@@ -204,42 +185,21 @@ public final class VariableBehavior {
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 
-    final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
-    final var variableEvents = variableEvent.map(List::of).orElseGet(List::of);
-
-    conditionalBehavior.evaluateConditionals(processDefinitionKey, variableEvents);
+    setLocalVariable(variableRecord);
   }
 
-  private Optional<VariableEvent> setLocalVariable(final VariableRecord record) {
-    Optional<VariableEvent> event = Optional.empty();
+  private void setLocalVariable(final VariableRecord record) {
     final VariableInstance variableInstance =
         variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
     if (variableInstance == null) {
       final long key = keyGenerator.nextKey();
       stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
-      event =
-          Optional.of(
-              new VariableEvent(
-                  record.getScopeKey(), VariableIntent.CREATED, getVariableRecordCopy(record)));
     } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
       stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
-      event =
-          Optional.of(
-              new VariableEvent(
-                  record.getScopeKey(), VariableIntent.UPDATED, getVariableRecordCopy(record)));
     }
-
-    return event;
   }
 
   private void applyEntryToRecord(final DocumentEntry entry) {
     variableRecord.setName(entry.getName()).setValue(entry.getValue());
-  }
-
-  private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {
-    final VariableRecord variableRecordCopy = new VariableRecord();
-    variableRecordCopy.copyFrom(variableRecord);
-
-    return variableRecordCopy;
   }
 }

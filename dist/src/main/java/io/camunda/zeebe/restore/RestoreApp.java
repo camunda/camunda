@@ -17,7 +17,6 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -43,7 +42,6 @@ import org.springframework.context.annotation.Import;
       UnifiedConfiguration.class,
       BrokerBasedPropertiesOverride.class,
       // ---
-      NodeIdProviderConfiguration.class,
       BrokerBasedConfiguration.class,
       RestorePropertiesOverride.class,
       WorkingDirectoryConfiguration.class

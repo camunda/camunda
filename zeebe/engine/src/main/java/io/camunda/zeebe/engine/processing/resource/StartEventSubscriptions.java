@@ -44,10 +44,7 @@ public final class StartEventSubscriptions {
                 final Either<Failure, Timer> failureOrTimer =
                     timerStartEvent
                         .getTimerFactory()
-                        .apply(
-                            expressionProcessor,
-                            NO_ELEMENT_INSTANCE,
-                            deployedProcess.getTenantId());
+                        .apply(expressionProcessor, NO_ELEMENT_INSTANCE);
 
                 if (failureOrTimer.isLeft()) {
                   throw new EvaluationException(failureOrTimer.getLeft().getMessage());

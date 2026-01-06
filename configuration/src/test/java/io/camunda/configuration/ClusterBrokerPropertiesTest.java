@@ -52,8 +52,7 @@ public class ClusterBrokerPropertiesTest {
         "camunda.cluster.size=10",
         "camunda.cluster.compression-algorithm=gzip",
         "camunda.cluster.name=zeebeClusterNew",
-        "camunda.cluster.initial-contact-points=1new,2new",
-        "camunda.cluster.cluster-id=clusterIdNew"
+        "camunda.cluster.initial-contact-points=1new,2new"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -71,8 +70,7 @@ public class ClusterBrokerPropertiesTest {
           .returns(10, ClusterCfg::getClusterSize)
           .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
           .returns("zeebeClusterNew", ClusterCfg::getClusterName)
-          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints)
-          .returns("clusterIdNew", ClusterCfg::getClusterId);
+          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
     }
   }
 
@@ -108,8 +106,7 @@ public class ClusterBrokerPropertiesTest {
         "zeebe.broker.cluster.clusterSize=12",
         "zeebe.broker.cluster.messageCompression=gzip",
         "zeebe.broker.cluster.clusterName=zeebeClusterLegacyBroker",
-        "zeebe.broker.cluster.initialContactPoints=1LegacyBroker,2LegacyBroker",
-        "zeebe.broker.cluster.clusterId=clusterIdLegacyBroker"
+        "zeebe.broker.cluster.initialContactPoints=1LegacyBroker,2LegacyBroker"
       })
   class WithOnlyBrokerLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -127,8 +124,7 @@ public class ClusterBrokerPropertiesTest {
           .returns(12, ClusterCfg::getClusterSize)
           .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
           .returns("zeebeClusterLegacyBroker", ClusterCfg::getClusterName)
-          .returns(List.of("1LegacyBroker", "2LegacyBroker"), ClusterCfg::getInitialContactPoints)
-          .returns("clusterIdLegacyBroker", ClusterCfg::getClusterId);
+          .returns(List.of("1LegacyBroker", "2LegacyBroker"), ClusterCfg::getInitialContactPoints);
     }
   }
 
@@ -143,7 +139,6 @@ public class ClusterBrokerPropertiesTest {
         "camunda.cluster.compression-algorithm=gzip",
         "camunda.cluster.name=zeebeClusterNew",
         "camunda.cluster.initial-contact-points=1new,2new",
-        "camunda.cluster.cluster-id=clusterIdNew",
         // legacy gateway
         "zeebe.gateway.cluster.messageCompression=snappy",
         "zeebe.gateway.cluster.clusterName=zeebeClusterLegacyGateway",
@@ -155,8 +150,7 @@ public class ClusterBrokerPropertiesTest {
         "zeebe.broker.cluster.clusterSize=99",
         "zeebe.broker.cluster.messageCompression=snappy",
         "zeebe.broker.cluster.clusterName=zeebeClusterLegacyBroker",
-        "zeebe.broker.cluster.initialContactPoints=1LegacyBroker,2LegacyBroker",
-        "zeebe.broker.cluster.clusterId=clusterIdLegacyBroker"
+        "zeebe.broker.cluster.initialContactPoints=1LegacyBroker,2LegacyBroker"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -174,8 +168,7 @@ public class ClusterBrokerPropertiesTest {
           .returns(15, ClusterCfg::getClusterSize)
           .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
           .returns("zeebeClusterNew", ClusterCfg::getClusterName)
-          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints)
-          .returns("clusterIdNew", ClusterCfg::getClusterId);
+          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
     }
   }
 }

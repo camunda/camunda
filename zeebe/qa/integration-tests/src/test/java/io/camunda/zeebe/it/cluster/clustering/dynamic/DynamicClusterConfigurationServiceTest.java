@@ -30,12 +30,13 @@ final class DynamicClusterConfigurationServiceTest {
       TestCluster.builder()
           .withGatewaysCount(1)
           .withGatewayConfig(
-              g -> {
-                final var membership = g.unifiedConfig().getCluster().getMembership();
-                // Reduce timeouts so that the test is faster
-                membership.setProbeInterval(Duration.ofMillis(100));
-                membership.setFailureTimeout(Duration.ofSeconds(2));
-              })
+              g ->
+                  g.gatewayConfig()
+                      .getCluster()
+                      .getMembership()
+                      // Reduce timeouts so that the test is faster
+                      .setProbeInterval(Duration.ofMillis(100))
+                      .setFailureTimeout(Duration.ofSeconds(2)))
           .withEmbeddedGateway(false)
           .withBrokersCount(3)
           .withPartitionsCount(PARTITIONS_COUNT)
@@ -99,14 +100,14 @@ final class DynamicClusterConfigurationServiceTest {
 
   private void configureDynamicClusterTopology(
       final MemberId memberId, final TestStandaloneBroker broker) {
-    broker.withUnifiedConfig(
+    broker.withBrokerConfig(
         b -> {
           if (!memberId.id().equals("0")) {
             // not coordinator. Give wrong configuration to verify that it is overwritten by dynamic
             // cluster topology. Note that this would not work in production because the engine
             // still reads the partition count from the static configuration, so message correlation
             // would not work.
-            b.getCluster().setPartitionCount(1);
+            b.getCluster().setPartitionsCount(1);
           }
         });
   }

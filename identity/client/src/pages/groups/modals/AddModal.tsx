@@ -13,8 +13,8 @@ import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import { createGroup } from "src/utility/api/groups";
+import { isValidGroupId } from "./isValidGroupId";
 import { useNotifications } from "src/components/notifications";
-import { getIdPattern, isValidId } from "src/utility/validate.ts";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("groups");
@@ -73,10 +73,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         rules={{
           required: t("groupIdRequired"),
           validate: (value) =>
-            isValidId(value) ||
-            t("pleaseEnterValidGroupId", {
-              pattern: getIdPattern(),
-            }),
+            isValidGroupId(value) || t("pleaseEnterValidGroupId"),
         }}
         render={({ field, fieldState }) => (
           <TextField

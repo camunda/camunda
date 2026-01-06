@@ -17,14 +17,12 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator.BackupNotValidException;
 import io.camunda.zeebe.restore.RestoreManager.ValidatePartitionCount;
@@ -43,9 +41,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -117,6 +113,7 @@ class PartitionRestoreServiceTest {
         new BackupService(
             nodeId,
             partitionId,
+            1,
             backupStore,
             snapshotStore,
             dataDirectory,
@@ -252,15 +249,7 @@ class PartitionRestoreServiceTest {
   private Backup takeBackup(final long backupId, final long checkpointPosition) {
     final var backup =
         backupStore.waitForBackup(new BackupIdentifierImpl(nodeId, partitionId, backupId));
-    final var descriptor =
-        new BackupDescriptorImpl(
-            Optional.empty(),
-            checkpointPosition,
-            1, // Use partition count of 1 for tests
-            "test",
-            Instant.now(),
-            CheckpointType.MANUAL_BACKUP);
-    backupService.takeBackup(backupId, descriptor);
+    backupService.takeBackup(backupId, checkpointPosition, 1); // Use partition count of 1 for tests
     return backup.orTimeout(30, TimeUnit.SECONDS).join();
   }
 

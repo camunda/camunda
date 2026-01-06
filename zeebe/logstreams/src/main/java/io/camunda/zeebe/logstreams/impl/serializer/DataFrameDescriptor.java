@@ -23,11 +23,9 @@ public final class DataFrameDescriptor {
 
   public static final int HEADER_LENGTH = 12;
 
-  public static void write(final MutableDirectBuffer buffer, final int offset, final int length) {
+  public static void setFramedLength(
+      final MutableDirectBuffer buffer, final int offset, final int length) {
     buffer.putInt(offset + FRAME_LENGTH_OFFSET, length);
-    for (int i = 4; i < HEADER_LENGTH; i++) {
-      buffer.putByte(offset + i, (byte) 0);
-    }
   }
 
   public static int alignedLength(final int msgLength) {

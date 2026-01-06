@@ -18,7 +18,6 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -114,5 +113,17 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
      * @return Returns a list of move instructions
      */
     List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions();
+  }
+
+  @Value.Immutable
+  @ImmutableProtocol(
+      builder = ImmutableProcessInstanceModificationMoveInstructionValue.Builder.class)
+  interface ProcessInstanceModificationMoveInstructionValue {
+
+    /** Returns the id of the element to terminate element instances at. */
+    String getSourceElementId();
+
+    /** Returns the id of the element to create a new element instance at. */
+    String getTargetElementId();
   }
 }

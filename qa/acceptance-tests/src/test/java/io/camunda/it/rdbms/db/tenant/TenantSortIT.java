@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -94,11 +94,11 @@ public class TenantSortIT {
       final Comparator<TenantEntity> comparator,
       final Function<TenantDbModel.Builder, TenantDbModel.Builder> aggregatorBuilderFunction,
       final Function<TenantFilter.Builder, TenantFilter.Builder> aggregatorFilterFunction) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantDbReader reader = rdbmsService.getTenantReader();
 
     aggregatorBuilderFunction.apply(new TenantDbModel.Builder().name("test"));
-    createAndSaveRandomTenants(rdbmsWriters, aggregatorBuilderFunction);
+    createAndSaveRandomTenants(rdbmsWriter, aggregatorBuilderFunction);
 
     final var searchResult =
         reader

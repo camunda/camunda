@@ -11,9 +11,7 @@ public class BackupAlreadyExistException extends RuntimeException {
 
   public BackupAlreadyExistException(final long expectedBackupId, final long latestBackupId) {
     super(
-        ("Requested backup has ID %d. The latest backup has ID %d. The "
-                + "backup ID must be greater than the ID of previous backups "
-                + "that are completed, failed, or deleted.")
+        "Requested backup has id %d. The latest backup has id %d. Id of new backups must be higher than the previous one. "
             .formatted(expectedBackupId, latestBackupId));
   }
 }

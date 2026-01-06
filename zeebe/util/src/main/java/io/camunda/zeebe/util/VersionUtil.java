@@ -78,10 +78,6 @@ public final class VersionUtil {
     return lastVersion;
   }
 
-  public static Optional<SemanticVersion> getPreviousSemanticVersion() {
-    return SemanticVersion.parse(getPreviousVersion());
-  }
-
   private static String readProperty(final String property) {
     try (final InputStream lastVersionFileStream =
         VersionUtil.class.getResourceAsStream(VERSION_PROPERTIES_PATH)) {

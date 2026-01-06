@@ -15,15 +15,13 @@
  */
 package io.camunda.client.spring.configuration;
 
-import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.jobhandling.JobWorkerManager;
-import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
-import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.client.spring.event.CamundaClientEventListener;
+import java.util.List;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -47,15 +45,7 @@ public class AnnotationProcessorConfiguration {
   @Bean
   public JobWorkerAnnotationProcessor jobWorkerPostProcessor(
       final JobWorkerManager jobWorkerManager,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder,
-      final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
-    return new JobWorkerAnnotationProcessor(
-        jobWorkerManager,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        parameterResolverStrategy,
-        resultProcessorStrategy);
+      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
+    return new JobWorkerAnnotationProcessor(jobWorkerManager, jobWorkerValueCustomizers);
   }
 }

@@ -13,7 +13,7 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
-} from '../common';
+} from './common';
 
 const variableSchema = z.object({
 	name: z.string(),
@@ -53,10 +53,9 @@ type QueryVariablesRequestBody = z.infer<typeof queryVariablesRequestBodySchema>
 const queryVariablesResponseBodySchema = getQueryResponseBodySchema(variableSchema);
 type QueryVariablesResponseBody = z.infer<typeof queryVariablesResponseBodySchema>;
 
-const queryVariables: Endpoint<{truncateValues?: boolean}> = {
+const queryVariables: Endpoint = {
 	method: 'POST',
-	getUrl: ({truncateValues} = {}) =>
-		`/${API_VERSION}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
+	getUrl: () => `/${API_VERSION}/variables/search`,
 };
 
 export {getVariable, queryVariables, variableSchema, queryVariablesRequestBodySchema, queryVariablesResponseBodySchema};

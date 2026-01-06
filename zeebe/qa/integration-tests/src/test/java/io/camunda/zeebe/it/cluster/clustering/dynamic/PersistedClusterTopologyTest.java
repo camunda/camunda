@@ -41,16 +41,17 @@ public class PersistedClusterTopologyTest {
           .withPartitionsCount(PARTITION_COUNT)
           .withReplicationFactor(REPLICATION_FACTOR)
           .withGatewayConfig(
-              g -> {
-                final var membership = g.unifiedConfig().getCluster().getMembership();
-                membership.setGossipInterval(Duration.ofMillis(100));
-                // Decrease the timeouts for fast convergence of gateway topology. When the
-                // broker is shutdown, the topology update takes at least 10 seconds with
-                // the
-                // default values.
-                membership.setSyncInterval(Duration.ofMillis(100));
-                membership.setFailureTimeout(Duration.ofSeconds(5));
-              })
+              g ->
+                  g.gatewayConfig()
+                      .getCluster()
+                      .getMembership()
+                      .setGossipInterval(Duration.ofMillis(100))
+                      // Decrease the timeouts for fast convergence of gateway topology. When the
+                      // broker is shutdown, the topology update takes at least 10 seconds with
+                      // the
+                      // default values.
+                      .setSyncInterval(Duration.ofMillis(100))
+                      .setFailureTimeout(Duration.ofSeconds(5)))
           .build();
 
   @Test
@@ -99,7 +100,7 @@ public class PersistedClusterTopologyTest {
     cluster.shutdown();
 
     // when
-    cluster.brokers().forEach((id, b) -> b.unifiedConfig().getCluster().setPartitionCount(1));
+    cluster.brokers().forEach((id, b) -> b.brokerConfig().getCluster().setPartitionsCount(1));
     cluster.start();
     cluster.awaitCompleteTopology(
         CLUSTER_SIZE, PARTITION_COUNT, REPLICATION_FACTOR, Duration.ofSeconds(10));

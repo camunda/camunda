@@ -8,8 +8,6 @@
 package io.camunda.webapps.schema.entities.operation;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import io.camunda.webapps.schema.entities.BeforeVersion880;
-import io.camunda.webapps.schema.entities.SinceVersion;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -19,39 +17,35 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
   /**
    * Is used by batch operation engine in zeebe to identify the resource (process, incident, ...)
    */
-  @BeforeVersion880 private Long itemKey;
+  private Long itemKey;
 
-  @BeforeVersion880 private Long processInstanceKey;
-
-  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  @BeforeVersion880 private Long processDefinitionKey;
+  private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
-  @BeforeVersion880 private String bpmnProcessId;
+  private Long processDefinitionKey;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
+  private String bpmnProcessId;
 
   /** Attention! This field will be filled in only for data imported after v. 8.3.0. */
-  @BeforeVersion880 private Long decisionDefinitionKey;
+  private Long decisionDefinitionKey;
 
-  @BeforeVersion880 private Long incidentKey;
-  @BeforeVersion880 private Long scopeKey;
-  @BeforeVersion880 private String variableName;
-  @BeforeVersion880 private String variableValue;
-  @BeforeVersion880 private OperationType type;
-  @BeforeVersion880 private OffsetDateTime lockExpirationTime;
-  @BeforeVersion880 private String lockOwner;
-  @BeforeVersion880 private OperationState state;
-  @BeforeVersion880 private String errorMessage;
-  @BeforeVersion880 private String batchOperationId;
-  @BeforeVersion880 private Long zeebeCommandKey;
-  @BeforeVersion880 private String username;
-  @BeforeVersion880 private String modifyInstructions;
-  @BeforeVersion880 private String migrationPlan;
+  private Long incidentKey;
+  private Long scopeKey;
+  private String variableName;
+  private String variableValue;
+  private OperationType type;
+  private OffsetDateTime lockExpirationTime;
+  private String lockOwner;
+  private OperationState state;
+  private String errorMessage;
+  private String batchOperationId;
+  private Long zeebeCommandKey;
+  private String username;
+  private String modifyInstructions;
+  private String migrationPlan;
 
-  @BeforeVersion880 private OffsetDateTime completedDate;
-
-  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long rootProcessInstanceKey;
+  private OffsetDateTime completedDate;
 
   public Long getItemKey() {
     return itemKey;
@@ -233,15 +227,6 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
     return this;
   }
 
-  public Long getRootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public OperationEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-    return this;
-  }
-
   public OperationEntity withGeneratedId() {
     // Operation reference has to be positive and `UUID.randomUUID().getMostSignificantBits()` can
     // generate negative values
@@ -305,8 +290,7 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
         && Objects.equals(zeebeCommandKey, that.zeebeCommandKey)
         && Objects.equals(username, that.username)
         && Objects.equals(modifyInstructions, that.modifyInstructions)
-        && Objects.equals(migrationPlan, that.migrationPlan)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(migrationPlan, that.migrationPlan);
   }
 
   @Override
@@ -359,8 +343,6 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
         + ", migrationPlan='"
         + migrationPlan
         + '\''
-        + ", rootProcessInstanceKey="
-        + rootProcessInstanceKey
         + '}';
   }
 }

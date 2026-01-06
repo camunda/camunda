@@ -8,13 +8,14 @@
 package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.Backup;
-import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 interface InProgressBackup {
 
-  BackupDescriptor backupDescriptor();
+  long checkpointId();
+
+  long checkpointPosition();
 
   BackupIdentifier id();
 

@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -27,48 +26,22 @@ import java.util.concurrent.ScheduledExecutorService;
  * the right one.
  */
 public class CamundaClientExecutorService {
+
   private final ScheduledExecutorService scheduledExecutorService;
-  private final boolean scheduledExecutorOwnedByCamundaClient;
+  private final boolean ownedByCamundaClient;
 
-  private final ExecutorService jobHandlingExecutor;
-  private final boolean jobHandlingExecutorOwnedByCamundaClient;
-
-  /** Sets a single executor service for both scheduled tasks and job handling. */
   public CamundaClientExecutorService(
       final ScheduledExecutorService scheduledExecutorService, final boolean ownedByCamundaClient) {
-    this(
-        scheduledExecutorService,
-        ownedByCamundaClient,
-        scheduledExecutorService,
-        ownedByCamundaClient);
-  }
-
-  /** Sets separate executor services for scheduled tasks and job handling. */
-  public CamundaClientExecutorService(
-      final ScheduledExecutorService scheduledExecutorService,
-      final boolean scheduledExecutorOwnedByCamundaClient,
-      final ExecutorService executorService,
-      final boolean jobHandlingExecutorOwnedByCamundaClient) {
     this.scheduledExecutorService = scheduledExecutorService;
-    this.scheduledExecutorOwnedByCamundaClient = scheduledExecutorOwnedByCamundaClient;
-    jobHandlingExecutor = executorService;
-    this.jobHandlingExecutorOwnedByCamundaClient = jobHandlingExecutorOwnedByCamundaClient;
+    this.ownedByCamundaClient = ownedByCamundaClient;
   }
 
-  public boolean isScheduledExecutorOwnedByCamundaClient() {
-    return scheduledExecutorOwnedByCamundaClient;
+  public boolean isOwnedByCamundaClient() {
+    return ownedByCamundaClient;
   }
 
-  public ScheduledExecutorService getScheduledExecutor() {
+  public ScheduledExecutorService get() {
     return scheduledExecutorService;
-  }
-
-  public boolean isJobHandlingExecutorOwnedByCamundaClient() {
-    return jobHandlingExecutorOwnedByCamundaClient;
-  }
-
-  public ExecutorService getJobHandlingExecutor() {
-    return jobHandlingExecutor;
   }
 
   public static CamundaClientExecutorService createDefault() {
@@ -77,6 +50,6 @@ public class CamundaClientExecutorService {
 
   public static CamundaClientExecutorService createDefault(final int threads) {
     final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(threads);
-    return new CamundaClientExecutorService(threadPool, true, threadPool, true);
+    return new CamundaClientExecutorService(threadPool, true);
   }
 }

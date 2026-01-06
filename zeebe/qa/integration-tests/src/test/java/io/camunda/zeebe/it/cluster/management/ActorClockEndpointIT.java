@@ -33,7 +33,9 @@ public class ActorClockEndpointIT {
             .withBrokersCount(1)
             .withPartitionsCount(1)
             .withReplicationFactor(1)
-            .withBrokerConfig(broker -> broker.unifiedConfig().getSystem().setClockControlled(true))
+            .withBrokerConfig(
+                testStandaloneBroker ->
+                    testStandaloneBroker.withProperty("zeebe.clock.controlled", true))
             .build();
   }
 

@@ -2,6 +2,7 @@ package processmanagement
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -49,14 +50,9 @@ func (p *ProcessHandler) cleanUp(pidPath string) {
 	if err != nil {
 		return
 	}
-	defer func() {
-		releaseLock(fileLock, lockPath)
-		if err := os.Remove(lockPath); err != nil && !os.IsNotExist(err) {
-			log.Err(err).Msgf("Failed to remove lock file: %s", lockPath)
-		}
-	}()
+	defer releaseLock(fileLock, lockPath)
 
-	if err := os.Remove(pidPath); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(pidPath); err != nil {
 		log.Err(err).Msgf("Failed to remove pid file: %s", pidPath)
 	}
 }
@@ -87,7 +83,7 @@ func (p *ProcessHandler) ReadPIDFromFile(pidfile string) (int, error) {
 	return pid, nil
 }
 
-func (p *ProcessHandler) GetProcessFromPid(pid int) []int {
+func (p *ProcessHandler) GetProcessFromPid(pid int) []*os.Process {
 	return p.C8.ProcessTree(pid)
 }
 
@@ -112,27 +108,27 @@ func (p *ProcessHandler) AttemptToStartProcess(pidPath string, processName strin
 		return
 	}
 
-	processPids := p.GetProcessFromPid(pid)
-	if len(processPids) == 0 {
+	procs := p.GetProcessFromPid(pid)
+	if len(procs) == 0 {
 		log.Info().Msgf("%s is not running, starting...", processName)
 		p.cleanUp(pidPath)
 		p.startAndCheck(processName, startProcess, healthCheck, stop)
 		return
 	}
 
-	for _, procPid := range processPids {
-		if procPid <= 0 {
-			log.Warn().Msgf("Encountered invalid PID in process list for %s; skipping entry.", processName)
+	for _, proc := range procs {
+		if proc == nil {
+			log.Warn().Msgf("Encountered nil process in process list for %s; skipping entry.", processName)
 			continue
 		}
-		if p.IsPidRunning(procPid) {
-			log.Debug().Int("pid", procPid).Msgf("%s is running", processName)
+		if p.IsPidRunning(proc.Pid) {
+			log.Debug().Int("pid", proc.Pid).Msgf("%s is running", processName)
 			if err := healthCheck(); err == nil {
 				log.Info().Msgf("%s is healthy, skipping...", processName)
 				return
 			} else {
 				log.Info().Msgf("%s is not healthy, killing and restarting...", processName)
-				if killErr := p.KillProcess(procPid); killErr != nil {
+				if killErr := p.KillProcess(proc); killErr != nil {
 					log.Err(killErr).Msgf("Failed to kill %s", processName)
 					stop()
 					return
@@ -184,4 +180,16 @@ func (p *ProcessHandler) WritePIDToFile(pidPath string, pid int) error {
 		return err
 	}
 	return nil
+}
+
+func (p *ProcessHandler) KillProcess(proc *os.Process) error {
+	var killErr error
+	log.Debug().Int("pid", proc.Pid).Msg("Sending SIGKILL to process")
+	if err := proc.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		log.Warn().Err(err).Int("pid", proc.Pid).Msg("Failed to kill process")
+		killErr = err
+	}
+	_, _ = proc.Wait()
+
+	return killErr
 }

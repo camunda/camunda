@@ -12,8 +12,6 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
-import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
-import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -36,66 +34,57 @@ public final class ExpressionProcessor {
   private static final List<ResultType> NULLABLE_DATE_TIME_RESULT_TYPES =
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
+  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> null;
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
-  private final ScopedEvaluationContext scopedEvaluationContext;
+  private final EvaluationContextLookup evaluationContextLookup;
 
   public ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage,
-      final ScopedEvaluationContext scopedEvaluationContext) {
+      final ExpressionLanguage expressionLanguage, final EvaluationContextLookup lookup) {
     this.expressionLanguage = expressionLanguage;
-    this.scopedEvaluationContext = scopedEvaluationContext;
+    evaluationContextLookup = lookup;
   }
 
   /**
-   * Creates a new {@code ExpressionProcessor} with an additional evaluation context placed in front
-   * of the current one.
+   * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
+   * primaryContext} for all lookups. Only if it doesn't find a variable in {@code primaryContext},
+   * it will lookup variables in the evaluation context of {@code this} evaluation processor
    *
-   * <p>The provided {@code scopedEvaluationContext} becomes the highest-priority lookup context.
-   * When resolving expressions, variable lookup proceeds in this order:
-   *
-   * <ol>
-   *   <li>the newly provided {@code scopedEvaluationContext} (top-level)
-   *   <li>the existing context associated with this processor
-   * </ol>
-   *
-   * <p>No mutation is done on the current processor — a new instance is returned.
-   *
-   * @param scopedEvaluationContext the evaluation context to prepend and give priority to
-   * @return a new {@code ExpressionProcessor} whose lookup order starts with the given context
+   * @param primaryContext new top level evaluation context
+   * @return new instance which uses {@code primaryContext} as new top level evaluation context
    */
-  public ExpressionProcessor prependContext(final ScopedEvaluationContext scopedEvaluationContext) {
-    return new ExpressionProcessor(
-        expressionLanguage,
-        CombinedEvaluationContext.withContexts(
-            scopedEvaluationContext, this.scopedEvaluationContext));
+  public ExpressionProcessor withPrimaryContext(final EvaluationContext primaryContext) {
+    final EvaluationContextLookup combinedLookup =
+        scopeKey -> primaryContext.combine(evaluationContextLookup.getContext(scopeKey));
+    return new ExpressionProcessor(expressionLanguage, combinedLookup);
   }
 
   /**
-   * Evaluates the given expression and attempts to return the result as a {@link String}.
+   * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
+   * secondaryContext} for all lookups which it cannot find in its primary evaluation context
    *
-   * <p>Expression resolution follows the provided {@code scopeKey} and {@code tenantId} when
-   * looking up variables:
-   *
-   * <ul>
-   *   <li>If {@code scopeKey} is negative, the evaluation is performed with an empty variable
-   *       context.
-   *   <li>Otherwise, variables are resolved using the context derived from the given scope and
-   *       tenant.
-   * </ul>
-   *
-   * <p>If the expression cannot be evaluated, or if the evaluation result is not a string, a {@code
-   * Failure} is returned instead of throwing an exception.
+   * @param secondaryContext fallback evaluation context
+   * @return new instance which uses {@code secondaryContext} as fallback
+   */
+  public ExpressionProcessor withSecondaryContext(final EvaluationContext secondaryContext) {
+    final EvaluationContextLookup combinedLookup =
+        scopeKey -> evaluationContextLookup.getContext(scopeKey).combine(secondaryContext);
+    return new ExpressionProcessor(expressionLanguage, combinedLookup);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as string. If the evaluation fails or the
+   * result is not a string then a failure is returned.
    *
    * @param expression the expression to evaluate
-   * @param scopeKey the scope from which variables should be loaded; negative implies no context
-   * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
-   * @return an {@code Either} containing either the evaluated string result, or a {@code Failure}
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as string, or a failure
    */
   public Either<Failure, String> evaluateStringExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, ResultType.STRING, scopeKey))
         .map(EvaluationResult::getString);
   }
@@ -111,8 +100,8 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as buffer, or a failure
    */
   public Either<Failure, DirectBuffer> evaluateStringExpressionAsDirectBuffer(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateStringExpression(expression, scopeKey, tenantId).map(this::wrapResult);
+      final Expression expression, final long scopeKey) {
+    return evaluateStringExpression(expression, scopeKey).map(this::wrapResult);
   }
 
   /**
@@ -125,8 +114,8 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as long, or a failure
    */
   public Either<Failure, Long> evaluateLongExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, ResultType.NUMBER, scopeKey))
         .map(EvaluationResult::getNumber)
         .map(Number::longValue);
@@ -142,17 +131,9 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as boolean, or a failure
    */
   public Either<Failure, Boolean> evaluateBooleanExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, scopeKey))
-        .map(EvaluationResult::getBoolean);
-  }
-
-  public Either<Failure, Boolean> evaluateBooleanExpression(
-      final Expression expression, final EvaluationContext context) {
-    return evaluateExpressionAsEither(expression, context)
-        // scopeKey is -1 because the context is already provided
-        .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, -1))
         .map(EvaluationResult::getBoolean);
   }
 
@@ -166,8 +147,8 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as interval or a failure
    */
   public Either<Failure, Interval> evaluateIntervalExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, INTERVAL_RESULT_TYPES, scopeKey))
         .flatMap(
             result ->
@@ -204,8 +185,8 @@ public final class ExpressionProcessor {
    * @throws EvaluationException if expression evaluation failed
    */
   public Either<Failure, ZonedDateTime> evaluateDateTimeExpression(
-      final Expression expression, final Long scopeKey, final String tenantId) {
-    return evaluateDateTimeExpression(expression, scopeKey, tenantId, false)
+      final Expression expression, final Long scopeKey) {
+    return evaluateDateTimeExpression(expression, scopeKey, false)
         .flatMap(optionalDateTime -> Either.right(optionalDateTime.get()));
   }
 
@@ -228,13 +209,10 @@ public final class ExpressionProcessor {
    * @throws EvaluationException if expression evaluation failed
    */
   public Either<Failure, Optional<ZonedDateTime>> evaluateDateTimeExpression(
-      final Expression expression,
-      final Long scopeKey,
-      final String tenantId,
-      final boolean isNullable) {
+      final Expression expression, final Long scopeKey, final boolean isNullable) {
     final var dateTimeResultTypes =
         isNullable ? NULLABLE_DATE_TIME_RESULT_TYPES : DATE_TIME_RESULT_TYPES;
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, dateTimeResultTypes, scopeKey))
         .flatMap(
             result ->
@@ -253,28 +231,10 @@ public final class ExpressionProcessor {
    *     empty variable context)
    * @return either the evaluation result as buffer, or a failure if the evaluation fails
    */
-  public Either<Failure, DirectBuffer> evaluateAnyExpressionToBuffer(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
+  public Either<Failure, DirectBuffer> evaluateAnyExpression(
+      final Expression expression, final long scopeKey) {
+    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey);
     return evaluationResult.map(EvaluationResult::toBuffer);
-  }
-
-  /**
-   * Evaluates the given expression and returns the raw {@link EvaluationResult}, regardless of its
-   * type.
-   *
-   * <p>This method is useful when the caller needs access to the full evaluation result, including
-   * type information and any warnings, rather than a specific typed value.
-   *
-   * @param expression the expression to evaluate
-   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
-   *     empty variable context)
-   * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
-   * @return either the evaluation result, or a failure if the evaluation fails
-   */
-  public Either<Failure, EvaluationResult> evaluateAnyExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId);
   }
 
   /**
@@ -287,8 +247,8 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as a list, or a failure if the evaluation fails
    */
   public Either<Failure, List<DirectBuffer>> evaluateArrayExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
+      final Expression expression, final long scopeKey) {
+    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey);
     return evaluationResult
         .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
         .map(EvaluationResult::getList);
@@ -304,8 +264,8 @@ public final class ExpressionProcessor {
    *     evaluation fails
    */
   public Either<Failure, List<String>> evaluateArrayOfStringsExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
+      final Expression expression, final long scopeKey) {
+    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey);
     return evaluationResult
         .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
         .map(EvaluationResult::getListOfStrings)
@@ -335,9 +295,9 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as String, or a failure if the evaluation fails
    */
   public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
+      final Expression expression, final long scopeKey) {
     final var expectedTypes = Set.of(ResultType.STRING, ResultType.NUMBER);
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheckCorrelationKey(scopeKey, expectedTypes, result, expression))
         .map(this::toStringFromStringOrNumber);
   }
@@ -352,8 +312,8 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as int, or a failure
    */
   public Either<Failure, Integer> evaluateIntegerExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, ResultType.NUMBER, scopeKey))
         .flatMap(
             result -> {
@@ -403,8 +363,8 @@ public final class ExpressionProcessor {
    * @return either the evaluation result as buffer, or a failure
    */
   public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, ResultType.OBJECT, scopeKey))
         .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey))
         .map(EvaluationResult::toBuffer);
@@ -442,76 +402,24 @@ public final class ExpressionProcessor {
                     scopeKey)));
   }
 
-  /**
-   * Evaluates an expression within the appropriate evaluation context based on the provided scope
-   * key and tenant identifier.
-   *
-   * <p>The evaluation context determines which variables are available during expression
-   * evaluation. The context is selected based on the following rules:
-   *
-   * <h3>Case 1: No scoping required ({@code variableScopeKey < 0} and tenant is null/empty)</h3>
-   *
-   * <p>When there is no variable scope key (indicated by a negative value, typically {@code -1})
-   * and no tenant identifier, the expression is evaluated against the base {@link
-   * ScopedEvaluationContext} without any additional scoping. This is used for evaluating
-   * expressions that don't require access to process instance variables or tenant-specific cluster
-   * variables (e.g., static expressions, globally scoped cluster variables or expressions using
-   * only literal values).
-   *
-   * <h3>Case 2: Tenant-scoped only ({@code variableScopeKey < 0} with a valid tenant)</h3>
-   *
-   * <p>When there is no variable scope key but a tenant identifier is provided, the context is
-   * scoped to the tenant via {@link ScopedEvaluationContext#tenantScoped(String)}. This allows
-   * access to tenant-specific cluster variables without binding to a specific process instance.
-   * This case is typically used when evaluating expressions outside of a process instance context
-   * but still within a tenant boundary.
-   *
-   * <h3>Case 3: Process and tenant scoped ({@code variableScopeKey >= 0})</h3>
-   *
-   * <p>When a valid variable scope key is provided (non-negative), the context must be scoped to
-   * both the process instance AND the tenant. The tenant identifier is always required in this
-   * case. The context is first scoped to the process via {@link
-   * ScopedEvaluationContext#processScoped(long)}, then to the tenant via {@link
-   * ScopedEvaluationContext#tenantScoped(String)}. This enables access to process instance
-   * variables as well as tenant-specific cluster variables.
-   *
-   * @param expression the FEEL expression to evaluate
-   * @param variableScopeKey the scope key for variable resolution (typically a process instance or
-   *     element instance key); use {@code -1} if no process scope is needed
-   * @param tenantId the tenant identifier for tenant-scoped variable resolution; may be {@code
-   *     null}, empty, or a specific tenant ID
-   * @return the result of evaluating the expression
-   * @see ScopedEvaluationContext#processScoped(long)
-   * @see ScopedEvaluationContext#tenantScoped(String)
-   */
   private EvaluationResult evaluateExpression(
-      final Expression expression, final long variableScopeKey, final String tenantId) {
+      final Expression expression, final long variableScopeKey) {
 
     final EvaluationContext context;
-    if (variableScopeKey < 0 && (tenantId == null || tenantId.isEmpty())) {
-      context = scopedEvaluationContext;
-    } else if (variableScopeKey < 0) {
-      context = scopedEvaluationContext.tenantScoped(tenantId);
+    if (variableScopeKey < 0) {
+      context = EMPTY_EVALUATION_CONTEXT;
     } else {
-      context = scopedEvaluationContext.processScoped(variableScopeKey).tenantScoped(tenantId);
+      context = evaluationContextLookup.getContext(variableScopeKey);
     }
 
     return expressionLanguage.evaluateExpression(expression, context);
   }
 
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
-      final Expression expression, final long variableScopeKey, final String tenantId) {
-    final var result = evaluateExpression(expression, variableScopeKey, tenantId);
+      final Expression expression, final long variableScopeKey) {
+    final var result = evaluateExpression(expression, variableScopeKey);
     return result.isFailure()
         ? Either.left(createFailureMessage(result, result.getFailureMessage(), variableScopeKey))
-        : Either.right(result);
-  }
-
-  private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
-      final Expression expression, final EvaluationContext context) {
-    final var result = expressionLanguage.evaluateExpression(expression, context);
-    return result.isFailure()
-        ? Either.left(createFailureMessage(result, result.getFailureMessage(), -1))
         : Either.right(result);
   }
 
@@ -563,5 +471,10 @@ public final class ExpressionProcessor {
     public EvaluationException(final String message) {
       super(message);
     }
+  }
+
+  @FunctionalInterface
+  public interface EvaluationContextLookup {
+    EvaluationContext getContext(final long scopeKey);
   }
 }

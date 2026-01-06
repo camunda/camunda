@@ -23,9 +23,6 @@ public class Metadata {
   private static final Set<String> LEGACY_GOSSIP_FANOUT_PROPERTIES =
       Set.of("zeebe.broker.cluster.configManager.gossip.gossipFanout");
 
-  private Duration syncInitializerDelay =
-      ClusterConfigurationGossiperConfig.DEFAULT_SYNC_INITIALIZER_DELAY;
-
   /**
    * The delay between two sync requests in the ClusterConfigurationManager. A sync request is sent
    * to another node to get the latest topology of the cluster.
@@ -72,13 +69,5 @@ public class Metadata {
 
   public void setGossipFanout(final Integer gossipFanout) {
     this.gossipFanout = gossipFanout;
-  }
-
-  public Duration getSyncInitializerDelay() {
-    return syncInitializerDelay;
-  }
-
-  public void setSyncInitializerDelay(final Duration delay) {
-    syncInitializerDelay = delay;
   }
 }

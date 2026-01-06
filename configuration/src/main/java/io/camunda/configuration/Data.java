@@ -22,14 +22,11 @@ public class Data {
   /** How often we take snapshots of streams (time unit) */
   private Duration snapshotPeriod = Duration.ofMinutes(5);
 
-  /** This section allows to configure the audit log setup. */
-  @NestedConfigurationProperty private AuditLog auditLog = new AuditLog();
-
-  /** This section allows to configure the history deletion setup. */
-  @NestedConfigurationProperty private HistoryDeletion historyDeletion = new HistoryDeletion();
-
   /** This section allows to configure primary Zeebe's data storage. */
   @NestedConfigurationProperty private PrimaryStorage primaryStorage = new PrimaryStorage();
+
+  /** This section allows configuring a backup store. */
+  @NestedConfigurationProperty private Backup backup = new Backup();
 
   /** This section allows configuring export. */
   @NestedConfigurationProperty private Export export = new Export();
@@ -39,22 +36,6 @@ public class Data {
 
   /** This section allows configuring exporters */
   private Map<String, Exporter> exporters = new HashMap<>();
-
-  public AuditLog getAuditLog() {
-    return auditLog;
-  }
-
-  public void setAuditLog(final AuditLog auditLog) {
-    this.auditLog = auditLog;
-  }
-
-  public HistoryDeletion getHistoryDeletion() {
-    return historyDeletion;
-  }
-
-  public void setHistoryDeletion(final HistoryDeletion historyDeletion) {
-    this.historyDeletion = historyDeletion;
-  }
 
   public Duration getSnapshotPeriod() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -75,6 +56,14 @@ public class Data {
 
   public void setPrimaryStorage(final PrimaryStorage primaryStorage) {
     this.primaryStorage = primaryStorage;
+  }
+
+  public Backup getBackup() {
+    return backup;
+  }
+
+  public void setBackup(final Backup backup) {
+    this.backup = backup;
   }
 
   public Export getExport() {

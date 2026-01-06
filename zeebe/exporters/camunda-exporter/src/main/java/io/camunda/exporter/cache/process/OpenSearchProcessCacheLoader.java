@@ -41,7 +41,6 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
               processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
       return new CachedProcessEntity(
           processEntity.getName(),
-          processEntity.getVersion(),
           processEntity.getVersionTag(),
           processDiagramData.callActivityIds(),
           processDiagramData.flowNodesMap());

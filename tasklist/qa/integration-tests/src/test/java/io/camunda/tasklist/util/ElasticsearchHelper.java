@@ -117,7 +117,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public boolean checkTaskVariableExists(final String taskId, final String varName) {
+  public boolean checkVariableExists(final String taskId, final String varName) {
     final TermQueryBuilder taskIdQ = termQuery(SnapshotTaskVariableTemplate.TASK_ID, taskId);
     final TermQueryBuilder varNameQ = termQuery(SnapshotTaskVariableTemplate.NAME, varName);
     final SearchRequest searchRequest =
@@ -136,14 +136,12 @@ public class ElasticsearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public boolean checkVariablesExist(final String processInstanceId, final String[] varNames) {
-    final TermQueryBuilder scopeQ = termQuery(VariableTemplate.SCOPE_KEY, processInstanceId);
-    final TermsQueryBuilder varNamesQ = termsQuery(VariableTemplate.NAME, varNames);
+  public boolean checkVariablesExist(final String[] varNames) {
     final SearchRequest searchRequest =
         new SearchRequest(variableIndex.getFullQualifiedName())
             .source(
                 new SearchSourceBuilder()
-                    .query(constantScoreQuery(joinWithAnd(scopeQ, varNamesQ))));
+                    .query(constantScoreQuery(termsQuery(VariableTemplate.NAME, varNames))));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value == varNames.length;

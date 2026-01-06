@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
-import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
@@ -22,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -499,7 +499,7 @@ public class JobBasedAdHocSubProcessTest {
                 .limit(r -> r.getIntent() == SignalIntent.BROADCASTED)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .filter(v -> !v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS)))
+                .filter(v -> !v.getValue().getName().equals("adHocSubProcessElements")))
         .extracting(
             r -> r.getValue().getName(),
             r -> r.getValue().getValue(),
@@ -1258,28 +1258,23 @@ public class JobBasedAdHocSubProcessTest {
 
     // when
 
-    // use max batch size 1 engine so that the commands are processed in order, because the
-    // activation command must be processed before the adhoc subprocess is completely terminated.
-    // Without this, the termination and it's follow-up commands would be processed completely
-    // before the activation command is processed. That would mean the ahsp would be completely
-    // terminated as well, and the rejection would be for a different reason (NOT_FOUND).
+    // use max batch size 1 engine so that the commands are executed in order, and the follow
+    // up commands from terminating the ahsp are not executed before the job completion command
     ENGINE_BATCH_COMMAND_1.writeRecords(
         RecordToWrite.command()
             .processInstance(ProcessInstanceIntent.TERMINATE_ELEMENT, ahspInstance.getValue())
             .key(ahspInstance.getKey()),
-        RecordToWrite.command()
-            .adHocSubProcessInstruction(
-                AdHocSubProcessInstructionIntent.ACTIVATE,
-                new AdHocSubProcessInstructionRecord()
-                    .setAdHocSubProcessInstanceKey(ahspInstance.getKey()))
-            .key(ahspInstance.getKey()));
+        RecordToWrite.command().job(JobIntent.COMPLETE, new JobRecord()).key(jobKey));
 
     // then
-    RecordAssert.assertThat(
-            RecordingExporter.adHocSubProcessInstructionRecords()
-                .onlyCommandRejections()
-                .withAdHocSubProcessInstanceKey(ahspInstance.getKey())
-                .getFirst())
+    final var rejection =
+        ENGINE_BATCH_COMMAND_1
+            .adHocSubProcessActivity()
+            .withAdHocSubProcessInstanceKey(ahspInstance.getKey())
+            .expectRejection()
+            .activate();
+
+    RecordAssert.assertThat(rejection)
         .describedAs("Expected rejection because ad-hoc sub-process is not active.")
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(

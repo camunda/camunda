@@ -12,32 +12,28 @@ import type {
   QueryElementInstancesRequestBody,
   ElementInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {queryKeys} from '../queryKeys';
 
-type UseElementInstancesSearchParams = {
-  elementId: string;
-  processInstanceKey: string;
-  elementType?: ElementInstance['type'];
-  enabled?: boolean;
-};
+const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 
-const useElementInstancesSearch = (params: UseElementInstancesSearchParams) => {
-  const {elementId, processInstanceKey, elementType, enabled = true} = params;
-
+const useElementInstancesSearch = (
+  elementId: string,
+  processInstanceKey: string,
+  elementType: ElementInstance['type'],
+  options: {enabled: boolean} = {enabled: true},
+) => {
   return useQuery({
     queryKey: [
-      queryKeys.elementInstances.search({
-        elementId,
-        processInstanceKey,
-        elementType,
-      }),
+      ELEMENT_INSTANCES_SEARCH_QUERY_KEY,
+      elementId,
+      processInstanceKey,
+      elementType,
     ],
     queryFn: async () => {
       const payload: QueryElementInstancesRequestBody = {
         filter: {
           elementId,
           processInstanceKey,
-          type: elementType,
+          type: elementType ?? undefined,
         },
         page: {limit: 1},
       };
@@ -47,7 +43,7 @@ const useElementInstancesSearch = (params: UseElementInstancesSearchParams) => {
       }
       throw error;
     },
-    enabled,
+    ...options,
   });
 };
 

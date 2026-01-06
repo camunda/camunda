@@ -8,13 +8,16 @@
 
 import {render, screen} from 'modules/testing-library';
 import {getWrapper} from './mocks';
+
 import {Filters} from '../index';
+
 import {
-  createProcessDefinition,
   createUser,
+  groupedProcessesMock,
   mockProcessXML,
-  searchResult,
 } from 'modules/testUtils';
+import {processesStore} from 'modules/stores/processes/processes.list';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {
   selectFlowNode,
   selectProcess,
@@ -23,21 +26,14 @@ import {
 import {ERRORS} from 'modules/validators';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('Interaction with other fields during validation', () => {
   beforeEach(async () => {
-    mockSearchProcessDefinitions().withSuccess(
-      searchResult([
-        createProcessDefinition({version: 2}),
-        createProcessDefinition({version: 1}),
-      ]),
-    );
-    mockSearchProcessDefinitions().withSuccess(
-      searchResult([createProcessDefinition({version: 2})]),
-    );
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(createUser());
+
+    processesStore.fetchProcesses();
 
     vi.useFakeTimers({shouldAdvanceTime: true});
   });
@@ -171,7 +167,7 @@ describe('Interaction with other fields during validation', () => {
 
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
-    await selectProcess({user, option: 'Big variable process'});
+    await selectProcess({user, option: 'eventBasedGatewayProcess'});
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeEnabled();

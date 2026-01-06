@@ -30,14 +30,14 @@ class UnassignUserFromTenantTest {
   private static final String USERNAME = "username";
 
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
 
     // Create Tenant
     client.newCreateTenantCommand().tenantId(TENANT_ID).name("Tenant Name").send().join();

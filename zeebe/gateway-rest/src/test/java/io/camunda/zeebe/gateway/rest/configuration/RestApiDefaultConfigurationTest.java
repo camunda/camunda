@@ -56,6 +56,6 @@ public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
         .expectStatus()
         .isOk();
 
-    verify(topologyServices).getTopology();
+    verify(topologyManager).getTopology();
   }
 }

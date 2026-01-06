@@ -8,8 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -91,12 +90,9 @@ public class MappingRuleUpdateProcessor
     }
 
     final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.MAPPING_RULE)
-            .permissionType(PermissionType.UPDATE)
-            .addResourceId(mappingRuleId)
-            .build();
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE)
+            .addResourceId(mappingRuleId);
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

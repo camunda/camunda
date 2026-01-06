@@ -19,16 +19,15 @@ import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/st
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
-import {handleOperationError} from 'modules/utils/notifications';
 
 type Props = {
-  decisionDefinitionKey: string;
+  decisionDefinitionId: string;
   decisionName: string;
-  decisionVersion: number;
+  decisionVersion: string;
 };
 
 const DecisionOperations: React.FC<Props> = ({
-  decisionDefinitionKey,
+  decisionDefinitionId,
   decisionName,
   decisionVersion,
 }) => {
@@ -52,7 +51,7 @@ const DecisionOperations: React.FC<Props> = ({
               tracking.track({
                 eventName: 'definition-deletion-button',
                 resource: 'decision',
-                version: decisionVersion.toString(),
+                version: decisionVersion,
               });
               setIsDeleteModalVisible(true);
             }}
@@ -116,11 +115,11 @@ const DecisionOperations: React.FC<Props> = ({
           tracking.track({
             eventName: 'definition-deletion-confirmation',
             resource: 'decision',
-            version: decisionVersion.toString(),
+            version: decisionVersion,
           });
 
           operationsStore.applyDeleteDecisionDefinitionOperation({
-            decisionDefinitionId: decisionDefinitionKey,
+            decisionDefinitionId,
             onSuccess: () => {
               setIsOperationRunning(false);
               panelStatesStore.expandOperationsPanel();
@@ -132,7 +131,14 @@ const DecisionOperations: React.FC<Props> = ({
             },
             onError: (statusCode: number) => {
               setIsOperationRunning(false);
-              handleOperationError(statusCode);
+
+              notificationsStore.displayNotification({
+                kind: 'error',
+                title: 'Operation could not be created',
+                subtitle:
+                  statusCode === 403 ? 'You do not have permission' : undefined,
+                isDismissable: true,
+              });
             },
           });
         }}

@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 
 const decisionDefinitionSchema = z.object({
 	decisionDefinitionId: z.string(),

@@ -8,11 +8,13 @@
 
 import {render, screen} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
+import {groupedDecisions} from 'modules/mocks/groupedDecisions';
+import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
-import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
-import {mockDecisionDefinitions} from 'modules/mocks/mockDecisionDefinitions';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser} from 'modules/testUtils';
 
 vi.mock('modules/feature-flags', () => ({
   IS_DECISION_DEFINITION_DELETION_ENABLED: true,
@@ -20,11 +22,9 @@ vi.mock('modules/feature-flags', () => ({
 
 describe('<Decision /> - operations', () => {
   beforeEach(() => {
-    const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
-    mockSearchDecisionDefinitions().withSuccess({
-      items: [selectedDecisionDefinition],
-      page: {totalItems: 1},
-    });
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
   });
 
@@ -35,7 +35,7 @@ describe('<Decision /> - operations', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: 'Delete Decision Definition "invoiceClassification - Version 1"',
+        name: /^delete decision definition "invoiceClassification - version 1"$/i,
       }),
     ).toBeInTheDocument();
   });
@@ -55,6 +55,25 @@ describe('<Decision /> - operations', () => {
   it('should not show delete button when no version is selected', () => {
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=invoiceClassification'),
+    });
+
+    expect(
+      screen.queryByRole('button', {
+        name: /delete decision definition/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not show delete button when user has no resource based permissions', async () => {
+    vi.stubGlobal('clientConfig', {
+      resourcePermissionsEnabled: true,
+    });
+    mockMe().withSuccess(createUser());
+
+    render(<Decision />, {
+      wrapper: createWrapper(
+        '/decisions?name=invoice-assign-approver&version=1',
+      ),
     });
 
     expect(

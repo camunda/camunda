@@ -42,12 +42,11 @@ public final class RoleRequestValidator {
       final String roleId,
       final String memberId,
       final EntityType memberType,
-      final Pattern roleIdentifierPattern,
-      final Pattern memberIdentifierPattern) {
+      final Pattern identifierPattern) {
     return validate(
         violations -> {
-          validateRoleId(roleId, violations, roleIdentifierPattern);
-          validateMemberId(memberId, memberType, violations, memberIdentifierPattern);
+          validateRoleId(roleId, violations, identifierPattern);
+          validateMemberId(memberId, memberType, violations, identifierPattern);
         });
   }
 

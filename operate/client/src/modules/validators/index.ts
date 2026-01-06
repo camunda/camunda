@@ -8,8 +8,11 @@
 
 import type {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
-import {parseIds, parseFilterTime} from 'modules/utils/filter';
-import type {DecisionsFilter} from 'modules/utils/filter/decisionsFilter';
+import {
+  parseIds,
+  type DecisionInstanceFilters,
+  parseFilterTime,
+} from 'modules/utils/filter';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
@@ -71,7 +74,7 @@ const validateIdsCharacters: FieldValidator<ProcessInstanceFilters['ids']> = (
 };
 
 const validateDecisionIdsCharacters: FieldValidator<
-  DecisionsFilter['decisionInstanceIds']
+  DecisionInstanceFilters['decisionInstanceIds']
 > = (value = '') => {
   if (
     value !== '' &&
@@ -90,7 +93,7 @@ const validateIdsLength: FieldValidator<ProcessInstanceFilters['ids']> = (
 };
 
 const validateDecisionIdsLength: FieldValidator<
-  DecisionsFilter['decisionInstanceIds']
+  DecisionInstanceFilters['decisionInstanceIds']
 > = (value = '') => {
   if (areDecisionIdsTooLong(value)) {
     return ERRORS.decisionsIds;
@@ -105,7 +108,7 @@ const validatesIdsComplete: FieldValidator<ProcessInstanceFilters['ids']> =
   }, VALIDATION_TIMEOUT);
 
 const validatesDecisionIdsComplete: FieldValidator<
-  DecisionsFilter['decisionInstanceIds']
+  DecisionInstanceFilters['decisionInstanceIds']
 > = promisifyValidator((value = '') => {
   if (!areDecisionIdsComplete(value)) {
     return ERRORS.decisionsIds;

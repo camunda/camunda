@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWN
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWNER_TYPE;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_ID;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_MATCHER;
-import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_PROPERTY_NAME;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_TYPE;
 
 public class AuthorizationFieldSortingTransformer implements FieldSortingTransformer {
@@ -25,7 +24,6 @@ public class AuthorizationFieldSortingTransformer implements FieldSortingTransfo
       case "resourceType" -> RESOURCE_TYPE;
       case "resourceMatcher" -> RESOURCE_MATCHER;
       case "resourceId" -> RESOURCE_ID;
-      case "resourcePropertyName" -> RESOURCE_PROPERTY_NAME;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }

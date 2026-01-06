@@ -55,9 +55,8 @@ public class TestContext<T extends TestContext<T>> {
     return databaseType;
   }
 
-  public T setDatabaseType(final String databaseType) {
+  public void setDatabaseType(final String databaseType) {
     this.databaseType = databaseType;
-    return (T) this;
   }
 
   public File getZeebeDataFolder() {

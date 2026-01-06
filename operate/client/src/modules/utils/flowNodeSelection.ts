@@ -15,11 +15,11 @@ import {
 } from 'modules/stores/flowNodeSelection';
 import {reaction, when} from 'mobx';
 import {modificationsStore} from 'modules/stores/modifications';
+import {
+  flowNodeInstanceStore,
+  type FlowNodeInstance,
+} from 'modules/stores/flowNodeInstance';
 
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
 const init = (
   rootNode: Selection | null,
   processInstanceKey?: string,
@@ -80,18 +80,10 @@ const init = (
   );
 };
 
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
 const clearSelection = (rootNode: Selection | null) => {
   flowNodeSelectionStore.setSelection(rootNode);
 };
 
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
 const selectFlowNode = (rootNode: Selection, selection: Selection) => {
   if (
     selection.flowNodeId === undefined ||
@@ -104,10 +96,54 @@ const selectFlowNode = (rootNode: Selection, selection: Selection) => {
   }
 };
 
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
+const selectAdHocSubProcessInnerInstance = (
+  rootNode: Selection,
+  flowNodeInstance: FlowNodeInstance,
+) => {
+  const children = flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance);
+
+  const applySelection = (
+    anchorChild: FlowNodeInstance | undefined,
+    {isAnchorUpdate} = {isAnchorUpdate: false},
+  ) => {
+    if (isAnchorUpdate) {
+      const current = flowNodeSelectionStore.state.selection;
+      if (current?.flowNodeInstanceId !== flowNodeInstance.id) {
+        return; // user changed selection
+      }
+      flowNodeSelectionStore.setSelection({
+        ...current,
+        anchorFlowNodeId: anchorChild?.flowNodeId,
+      });
+      return;
+    }
+
+    selectFlowNode(rootNode, {
+      flowNodeId: flowNodeInstance.flowNodeId,
+      flowNodeInstanceId: flowNodeInstance.id,
+      flowNodeType: flowNodeInstance.type,
+      anchorFlowNodeId: anchorChild?.flowNodeId,
+    });
+  };
+
+  if (children.length > 0) {
+    applySelection(children[0]);
+  } else {
+    // initial selection without anchor
+    applySelection(undefined);
+    const disposer = when(
+      () =>
+        flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance).length > 0,
+      () => {
+        const updatedChildren =
+          flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance);
+        applySelection(updatedChildren[0], {isAnchorUpdate: true});
+        disposer();
+      },
+    );
+  }
+};
+
 const getSelectedRunningInstanceCount = ({
   totalRunningInstancesForFlowNode,
   isRootNodeSelected,
@@ -136,10 +172,6 @@ const getSelectedRunningInstanceCount = ({
   return totalRunningInstancesForFlowNode;
 };
 
-/**
- * @deprecated
- * will be migrated to useProcessInstanceElementSelection
- */
 const getSelectedFlowNodeName = ({
   businessObjects,
   processDefinitionName,
@@ -174,6 +206,7 @@ export {
   init,
   clearSelection,
   selectFlowNode,
+  selectAdHocSubProcessInnerInstance,
   getSelectedRunningInstanceCount,
   getSelectedFlowNodeName,
 };

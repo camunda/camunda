@@ -20,14 +20,16 @@ import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClie
 import io.camunda.client.spring.event.CamundaLifecycleEventProducer;
 import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /** Enabled by META-INF of Spring Boot Starter to provide beans for Camunda Clients */
-@AutoConfiguration
+@Configuration
 @ConditionalOnCamundaClientEnabled
 @ImportAutoConfiguration({
   CamundaClientProdAutoConfiguration.class,
@@ -37,6 +39,7 @@ import org.springframework.context.annotation.Bean;
   JsonMapperConfiguration.class,
   ZeebeClientProdAutoConfiguration.class
 })
+@AutoConfigureAfter(JacksonAutoConfiguration.class)
 public class CamundaAutoConfiguration {
 
   @Bean

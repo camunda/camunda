@@ -149,9 +149,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
                       .document(entity));
 
       final IndexResponse response = openSearchClient.index(request);
-      final Result result = response.result();
-
-      return Result.Created.equals(result) || Result.Updated.equals(result);
+      return Result.Created.equals(response.result());
     } catch (final IOException | OpenSearchException e) {
       LOGGER.error(e.getMessage(), e);
       throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);

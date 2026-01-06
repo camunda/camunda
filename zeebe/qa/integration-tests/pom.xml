@@ -189,12 +189,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>dynamic-node-id-provider</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
       <scope>test</scope>
@@ -294,7 +288,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-toxiproxy</artifactId>
+      <artifactId>toxiproxy</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -342,7 +336,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -529,7 +523,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-elasticsearch</artifactId>
+      <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -542,6 +536,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
       <scope>test</scope>
     </dependency>
 

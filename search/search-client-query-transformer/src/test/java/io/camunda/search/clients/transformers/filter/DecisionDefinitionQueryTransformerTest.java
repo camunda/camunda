@@ -143,46 +143,6 @@ public final class DecisionDefinitionQueryTransformerTest extends AbstractTransf
   }
 
   @Test
-  public void shouldQueryByDecisionRequirementsName() {
-    // given
-    final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionRequirementsNames("drName"));
-
-    // when
-    final var searchRequest = transformQuery(decisionDefinitionFilter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("decisionRequirementsName");
-              assertThat(t.value().stringValue()).isEqualTo("drName");
-            });
-  }
-
-  @Test
-  public void shouldQueryByDecisionRequirementsVersion() {
-    // given
-    final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionRequirementsVersions(2));
-
-    // when
-    final var searchRequest = transformQuery(decisionDefinitionFilter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("decisionRequirementsVersion");
-              assertThat(t.value().intValue()).isEqualTo(2);
-            });
-  }
-
-  @Test
   public void shouldQueryByTenantId() {
     // given
     final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.tenantIds("foo"));

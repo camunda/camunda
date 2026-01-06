@@ -156,7 +156,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
@@ -202,7 +202,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
@@ -270,7 +270,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
@@ -333,8 +333,6 @@ jobs:
           --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
-          --set global.identity.auth.optimize.secret.existingSecret=camunda-credentials \
-          --set global.identity.auth.optimize.secret.existingSecretKey=identity-optimize-client-token \
           --version 13.x
       - name: Summarize deployment
         if: success()
@@ -363,7 +361,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}

@@ -470,26 +470,8 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         totalItemGreaterThan: 1,
       });
       const json = await res.json();
-
-      // Find our deployed decisions in the results
-      const def1Index = json.items.findIndex(
-        (item: {decisionDefinitionKey: string}) =>
-          item.decisionDefinitionKey ===
-          decisionDefinition1.decisionDefinitionKey,
-      );
-      const def2Index = json.items.findIndex(
-        (item: {decisionDefinitionKey: string}) =>
-          item.decisionDefinitionKey ===
-          decisionDefinition2.decisionDefinitionKey,
-      );
-
-      // Verify both exist
-      expect(def1Index).toBeGreaterThanOrEqual(0);
-      expect(def2Index).toBeGreaterThanOrEqual(0);
-
-      // Verify correct sort order: GenerationsDecision (def2) should come before SingleTableDecision (def1)
-      expect(def2Index).toBeLessThan(def1Index);
-
+      expect(json.items[0].name).toBe(decisionDefinition2.name);
+      expect(json.items[1].name).toBe(decisionDefinition1.name);
       assertDecisionDefinitionInResponse(
         json,
         expectedBody1,
@@ -524,26 +506,8 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         totalItemGreaterThan: 1,
       });
       const json = await res.json();
-
-      // Find our deployed decisions in the results
-      const def1Index = json.items.findIndex(
-        (item: {decisionDefinitionKey: string}) =>
-          item.decisionDefinitionKey ===
-          decisionDefinition1.decisionDefinitionKey,
-      );
-      const def2Index = json.items.findIndex(
-        (item: {decisionDefinitionKey: string}) =>
-          item.decisionDefinitionKey ===
-          decisionDefinition2.decisionDefinitionKey,
-      );
-
-      // Verify both exist
-      expect(def1Index).toBeGreaterThanOrEqual(0);
-      expect(def2Index).toBeGreaterThanOrEqual(0);
-
-      // Verify correct sort order: SingleTableDecision (def1) should come before GenerationsDecision (def2) in DESC
-      expect(def1Index).toBeLessThan(def2Index);
-
+      expect(json.items[0].name).toBe(decisionDefinition1.name);
+      expect(json.items[1].name).toBe(decisionDefinition2.name);
       assertDecisionDefinitionInResponse(
         json,
         expectedBody1,

@@ -18,7 +18,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,26 +48,16 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
-    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         VariableDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(dbPage));
+                    .page(convertPaging(dbSort, query.page())));
     LOG.trace("[RDBMS DB] Search for variables with filter {}", query);
     final var totalHits = variableMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = variableMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

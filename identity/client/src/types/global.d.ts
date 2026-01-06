@@ -13,7 +13,6 @@ export declare global {
     isTenantsApiEnabled?: string;
     organizationId?: string;
     clusterId?: string;
-    idPattern?: string;
   }
 
   interface Window {

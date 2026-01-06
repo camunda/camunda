@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
-import static io.camunda.security.configuration.SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -83,7 +82,6 @@ public class TenantControllerTest {
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
       when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
-      when(securityConfiguration.getCompiledGroupIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -626,63 +624,6 @@ public class TenantControllerTest {
 
       // then
       verifyNoInteractions(tenantServices);
-    }
-
-    /**
-     * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
-     */
-    @Test
-    void shouldAssignExternalGroupToTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
-      // given
-      final var tenantId = "some-tenant-id";
-      final var groupId = "group id";
-      final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
-
-      when(securityConfiguration.getCompiledGroupIdValidationPattern())
-          .thenReturn(DEFAULT_EXTERNAL_ID_REGEX);
-      when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
-
-      // when
-      webClient
-          .put()
-          .uri("%s/%s/groups/%s".formatted(TENANT_BASE_URL, tenantId, groupId))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isNoContent();
-
-      // then
-      verify(tenantServices, times(1)).addMember(request);
-    }
-
-    /**
-     * Test for the group ID that contains special characters to simulate external groups that does
-     * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
-     */
-    @Test
-    void shouldUnassignExternalGroupFromTenantAndReturnNoContentWhenGroupAreExternallyManaged() {
-      // given
-      final var tenantId = "some-tenant-id";
-      final var groupId = "group id";
-      final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
-
-      when(securityConfiguration.getCompiledGroupIdValidationPattern())
-          .thenReturn(DEFAULT_EXTERNAL_ID_REGEX);
-      when(tenantServices.removeMember(request))
-          .thenReturn(CompletableFuture.completedFuture(null));
-
-      // when
-      webClient
-          .delete()
-          .uri("%s/%s/groups/%s".formatted(TENANT_BASE_URL, tenantId, groupId))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isNoContent();
-
-      // then
-      verify(tenantServices, times(1)).removeMember(request);
     }
 
     private static Stream<Arguments> provideAddMemberByIdTestCases() {

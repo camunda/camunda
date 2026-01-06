@@ -73,12 +73,7 @@
 
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-codec-base</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-compression</artifactId>
+      <artifactId>netty-codec</artifactId>
     </dependency>
 
     <dependency>
@@ -285,18 +280,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>${project.basedir}/src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>${project.build.directory}/generated-sources</directory>
-        <includes>
-          <include>**/*.sbeir</include>
-          <include>**/*.xml</include>
-        </includes>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

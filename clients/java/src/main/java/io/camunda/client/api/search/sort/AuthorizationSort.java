@@ -26,6 +26,4 @@ public interface AuthorizationSort extends SearchRequestSort<AuthorizationSort> 
   AuthorizationSort resourceId();
 
   AuthorizationSort resourceType();
-
-  AuthorizationSort resourcePropertyName();
 }

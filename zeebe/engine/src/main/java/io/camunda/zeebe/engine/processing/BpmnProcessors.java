@@ -13,9 +13,8 @@ import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstruc
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
@@ -25,8 +24,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchAc
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -47,7 +45,6 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
-import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -104,7 +101,6 @@ public final class BpmnProcessors {
         transientProcessMessageSubscriptionState);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
-    addConditionalStreamProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
@@ -139,17 +135,6 @@ public final class BpmnProcessors {
         typedRecordProcessors, processingState, writers, authCheckBehavior, bpmnBehaviors);
 
     return bpmnStreamProcessor;
-  }
-
-  private static void addConditionalStreamProcessors(
-      final TypedRecordProcessors typedRecordProcessors,
-      final MutableProcessingState processingState,
-      final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
-    typedRecordProcessors.onCommand(
-        ValueType.CONDITIONAL_SUBSCRIPTION,
-        ConditionalSubscriptionIntent.TRIGGER,
-        new ConditionalSubscriptionTriggerProcessor(processingState, bpmnBehaviors, writers));
   }
 
   private static void addProcessInstanceCommandProcessor(
@@ -270,20 +255,22 @@ public final class BpmnProcessors {
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
-    final var processInstanceCreationHelper =
-        new ProcessInstanceCreationHelper(
-            processingState.getProcessState(), authCheckBehavior, bpmnBehaviors);
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper);
+            processingState.getProcessState(),
+            keyGenerator,
+            writers,
+            bpmnBehaviors,
+            metrics,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-        new ProcessInstanceCreationCreateWithAwaitingResultProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper, elementInstanceState));
+        new ProcessInstanceCreationCreateWithResultProcessor(
+            createProcessor, elementInstanceState));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(

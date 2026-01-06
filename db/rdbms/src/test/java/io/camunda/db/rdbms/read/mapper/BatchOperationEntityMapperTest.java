@@ -32,8 +32,6 @@ class BatchOperationEntityMapperTest {
             .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .startDate(OffsetDateTime.parse("2024-07-01T10:00:00Z"))
             .endDate(null)
-            .actorType(null)
-            .actorId(null)
             .operationsTotalCount(10)
             .operationsFailedCount(2)
             .operationsCompletedCount(8)
@@ -48,8 +46,6 @@ class BatchOperationEntityMapperTest {
     assertThat(entity.operationType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(entity.startDate()).isEqualTo(OffsetDateTime.parse("2024-07-01T10:00:00Z"));
     assertThat(entity.endDate()).isNull();
-    assertThat(entity.actorType()).isNull();
-    assertThat(entity.actorId()).isNull();
     assertThat(entity.operationsTotalCount()).isEqualTo(10);
     assertThat(entity.operationsFailedCount()).isEqualTo(2);
     assertThat(entity.operationsCompletedCount()).isEqualTo(8);
@@ -59,21 +55,6 @@ class BatchOperationEntityMapperTest {
     assertThat(errorEntity.partitionId()).isEqualTo(1);
     assertThat(errorEntity.type()).isEqualTo("ERROR_TYPE");
     assertThat(errorEntity.message()).isEqualTo("stacktrace");
-  }
-
-  @Test
-  void shouldMapDbModelToEntityWithActor() {
-    final var dbModel =
-        new BatchOperationDbModel.Builder()
-            .actorType(io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType.USER)
-            .actorId("user-123")
-            .build();
-
-    final var entity = BatchOperationEntityMapper.toEntity(dbModel);
-
-    assertThat(entity.actorType())
-        .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType.USER);
-    assertThat(entity.actorId()).isEqualTo("user-123");
   }
 
   @Test

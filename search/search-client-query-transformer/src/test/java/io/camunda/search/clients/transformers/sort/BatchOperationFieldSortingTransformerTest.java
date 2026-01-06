@@ -28,9 +28,7 @@ public class BatchOperationFieldSortingTransformerTest extends AbstractSortTrans
         new TestArguments("state", SortOrder.DESC, s -> s.state().desc()),
         new TestArguments("type", SortOrder.ASC, s -> s.operationType().asc()),
         new TestArguments("startDate", SortOrder.DESC, s -> s.startDate().desc()),
-        new TestArguments("endDate", SortOrder.ASC, s -> s.endDate().asc()),
-        new TestArguments("actorType", SortOrder.DESC, s -> s.actorType().desc()),
-        new TestArguments("actorId", SortOrder.ASC, s -> s.actorId().asc()));
+        new TestArguments("endDate", SortOrder.ASC, s -> s.endDate().asc()));
   }
 
   @ParameterizedTest

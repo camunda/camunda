@@ -11,7 +11,6 @@ import {defaultAssertionOptions, generateUniqueId} from '../constants';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
-  assertStatusCode,
   buildUrl,
   jsonHeaders,
 } from '../http';
@@ -130,7 +129,7 @@ export async function createGroupAndStoreResponseFields(
       headers: jsonHeaders(),
       data: requestBody,
     });
-    await assertStatusCode(res, 201);
+    expect(res.status()).toBe(201);
     const json = await res.json();
     assertRequiredFields(json, groupRequiredFields);
     const arrayKey = key ? `${key}${i}` : `${i}`;

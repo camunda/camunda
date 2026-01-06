@@ -21,15 +21,11 @@ import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.bean.BeanInfo;
-import io.camunda.client.bean.MethodInfo;
-import io.camunda.client.jobhandling.BeanJobHandlerFactory;
-import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
-import io.camunda.client.jobhandling.ManagedJobWorker;
-import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
-import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.spring.configuration.AnnotationProcessorConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -37,7 +33,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Triggered by {@link AbstractCamundaAnnotationProcessor#onStart(CamundaClient)} to add Handler
+ * Always created by {@link AnnotationProcessorConfiguration}
+ *
+ * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStart(CamundaClient)} to add Handler
  * subscriptions for {@link JobWorker} method-annotations.
  *
  * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStop(CamundaClient)} to remove all
@@ -48,23 +46,15 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerAnnotationProcessor.class);
 
   private final JobWorkerManager jobWorkerManager;
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
-  private final MetricsRecorder metricsRecorder;
-  private final ParameterResolverStrategy parameterResolverStrategy;
-  private final ResultProcessorStrategy resultProcessorStrategy;
-  private final List<ManagedJobWorker> managedJobWorkers = new ArrayList<>();
+
+  private final List<JobWorkerValue> jobWorkerValues = new ArrayList<>();
+  private final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers;
 
   public JobWorkerAnnotationProcessor(
-      final JobWorkerManager jobWorkerManager,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder,
-      final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
-    this.jobWorkerManager = jobWorkerManager;
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
-    this.metricsRecorder = metricsRecorder;
-    this.parameterResolverStrategy = parameterResolverStrategy;
-    this.resultProcessorStrategy = resultProcessorStrategy;
+      final JobWorkerManager jobWorkerFactory,
+      final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers) {
+    jobWorkerManager = jobWorkerFactory;
+    this.jobWorkerValueCustomizers = jobWorkerValueCustomizers;
   }
 
   @Override
@@ -74,46 +64,38 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
 
   @Override
   public void configureFor(final BeanInfo beanInfo) {
-    final List<ManagedJobWorker> newManagedJobWorkers = new ArrayList<>();
+    final List<JobWorkerValue> newJobWorkerValues = new ArrayList<>();
 
     doWithMethods(
         beanInfo.getTargetClass(),
-        method -> {
-          final MethodInfo methodInfo = beanInfo.toMethodInfo(method);
-          getJobWorkerValue(methodInfo)
-              .map(
-                  jobWorkerValue ->
-                      new ManagedJobWorker(
-                          jobWorkerValue,
-                          new BeanJobHandlerFactory(
-                              methodInfo,
-                              commandExceptionHandlingStrategy,
-                              parameterResolverStrategy,
-                              resultProcessorStrategy,
-                              metricsRecorder)))
-              .ifPresent(newManagedJobWorkers::add);
-        },
+        method ->
+            getJobWorkerValue(beanInfo.toMethodInfo(method)).ifPresent(newJobWorkerValues::add),
         ReflectionUtils.USER_DECLARED_METHODS);
 
-    LOGGER.debug(
+    LOGGER.info(
         "Configuring {} Job worker(s) of bean '{}': {}",
-        newManagedJobWorkers.size(),
+        newJobWorkerValues.size(),
         beanInfo.getBeanName(),
-        newManagedJobWorkers);
-    managedJobWorkers.addAll(newManagedJobWorkers);
+        newJobWorkerValues);
+    jobWorkerValues.addAll(newJobWorkerValues);
   }
 
   @Override
   public void start(final CamundaClient client) {
-    managedJobWorkers.forEach(
-        managedJobWorker -> {
-          jobWorkerManager.createJobWorker(client, managedJobWorker, this);
-        });
+    jobWorkerValues.stream()
+        .peek(
+            jobWorkerValue ->
+                jobWorkerValueCustomizers.forEach(
+                    customizer -> customizer.customize(jobWorkerValue)))
+        .filter(JobWorkerValue::getEnabled)
+        .forEach(
+            jobWorkerValue -> {
+              jobWorkerManager.openWorker(client, jobWorkerValue);
+            });
   }
 
   @Override
   public void stop(final CamundaClient camundaClient) {
-    jobWorkerManager.closeAllJobWorkers(this);
-    managedJobWorkers.clear();
+    jobWorkerManager.closeAllOpenWorkers();
   }
 }

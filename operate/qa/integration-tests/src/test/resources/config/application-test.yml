@@ -1,6 +1,6 @@
 testcontainers:
   elasticsearch: "docker.elastic.co/elasticsearch/elasticsearch:8.16.6"
-  opensearch: "opensearchproject/opensearch:2.17.0"
+  opensearch: "opensearchproject/opensearch:2.5.0"
 
 # Unified Configuration
 camunda:
@@ -18,7 +18,7 @@ camunda.operate:
   backup:
     repositoryName: repoName
   elasticsearch:
-    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     gatewayAddress: localhost:26500
     worker: operate
@@ -45,5 +45,5 @@ spring:
   thymeleaf:
     prefix: classpath:/static/
 ---
-spring.config.activate.on-profile: sso-auth
+spring.config.activate.on-profile: identity-auth, sso-auth
 camunda.webapps.login-delegated: true

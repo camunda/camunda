@@ -10,6 +10,10 @@ import {parse, isValid} from 'date-fns';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {getSearchString} from 'modules/utils/getSearchString';
 import type {Location} from 'react-router-dom';
+import {
+  generateDecisionKey,
+  groupedDecisionsStore,
+} from 'modules/stores/groupedDecisions';
 import {getValidVariableValues} from './getValidVariableValues';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {generateProcessKey} from '../generateProcessKey';
@@ -19,11 +23,29 @@ import {
   BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
   type ProcessInstanceFilters,
 } from './shared';
-import type z from 'zod';
-import {
-  querySortOrderSchema,
-  type QuerySortOrder,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+
+type DecisionInstanceFilterField =
+  | 'tenant'
+  | 'name'
+  | 'version'
+  | 'evaluated'
+  | 'failed'
+  | 'decisionInstanceIds'
+  | 'processInstanceId'
+  | 'evaluationDateBefore'
+  | 'evaluationDateAfter';
+
+type DecisionInstanceFilters = {
+  name?: string;
+  version?: string;
+  evaluated?: boolean;
+  failed?: boolean;
+  decisionInstanceIds?: string;
+  processInstanceId?: string;
+  evaluationDateBefore?: string;
+  evaluationDateAfter?: string;
+  tenant?: string;
+};
 
 type RequestFilters = {
   running?: boolean;
@@ -50,6 +72,71 @@ type RequestFilters = {
   tenantId?: string;
   retriesLeft?: boolean;
 };
+
+type DecisionRequestFilters = {
+  evaluated?: boolean;
+  failed?: boolean;
+  ids?: string[];
+  processInstanceId?: string;
+  evaluationDateAfter?: string;
+  evaluationDateBefore?: string;
+  decisionDefinitionIds?: string[];
+  tenantId?: string;
+};
+
+const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
+  'name',
+  'version',
+  'evaluated',
+  'failed',
+  'decisionInstanceIds',
+  'processInstanceId',
+  'evaluationDateAfter',
+  'evaluationDateBefore',
+  'tenant',
+];
+
+const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
+  'failed',
+  'evaluated',
+];
+
+function getFilters<Fields extends string, Filters>(
+  searchParams: string,
+  fields: Fields[],
+  booleanFields: string[],
+): Filters {
+  return Array.from(new URLSearchParams(searchParams)).reduce(
+    (accumulator, [param, value]) => {
+      if (booleanFields.includes(param)) {
+        return {
+          ...accumulator,
+          [param]: value === 'true',
+        };
+      }
+
+      if (fields.includes(param as Fields)) {
+        return {
+          ...accumulator,
+          [param]: value,
+        };
+      }
+
+      return accumulator;
+    },
+    {},
+  ) as Filters;
+}
+
+function getDecisionInstanceFilters(
+  searchParams: string,
+): DecisionInstanceFilters {
+  return getFilters<DecisionInstanceFilterField, DecisionInstanceFilters>(
+    searchParams,
+    DECISION_INSTANCE_FILTER_FIELDS,
+    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS,
+  );
+}
 
 function deleteSearchParams(location: Location, paramsToDelete: string[]) {
   const params = new URLSearchParams(location.search);
@@ -111,6 +198,28 @@ function getProcessIds({
     ]
       ?.filter(({version}) => version === parseInt(processVersion))
       ?.map(({id}) => id) ?? []
+  );
+}
+
+function getDecisionIds({
+  name,
+  decisionVersion,
+  tenant,
+}: {
+  name: string;
+  decisionVersion: string;
+  tenant?: string;
+}) {
+  return (
+    groupedDecisionsStore.decisionVersionsByKey[
+      generateDecisionKey(name, tenant)
+    ]
+      ?.filter(({version}) =>
+        decisionVersion === 'all'
+          ? true
+          : version === parseInt(decisionVersion),
+      )
+      .map(({id}) => id) ?? []
   );
 }
 
@@ -230,7 +339,8 @@ function getProcessInstancesRequestFilters(): RequestFilters {
             'startDateBefore',
             'endDateAfter',
             'endDateBefore',
-          ].includes(key)
+          ].includes(key) &&
+          value !== undefined
         ) {
           return {
             ...accumulator,
@@ -252,13 +362,85 @@ function getProcessInstancesRequestFilters(): RequestFilters {
   );
 }
 
+function getDecisionInstancesRequestFilters() {
+  const filters = getDecisionInstanceFilters(getSearchString());
+
+  return Object.entries(filters).reduce<DecisionRequestFilters>(
+    (accumulator, [key, value]) => {
+      if (value === undefined) {
+        return accumulator;
+      }
+
+      if (typeof value === 'boolean') {
+        if (['evaluated', 'failed'].includes(key)) {
+          return {
+            ...accumulator,
+            [key]: value,
+          };
+        }
+        if (key === 'failed') {
+          return {
+            ...accumulator,
+            [key]: value,
+          };
+        }
+      } else {
+        if (key === 'decisionInstanceIds') {
+          return {
+            ...accumulator,
+            ids: parseIds(value),
+          };
+        }
+        if (key === 'processInstanceId') {
+          return {...accumulator, processInstanceId: value};
+        }
+        if (
+          key === 'version' &&
+          filters.name !== undefined &&
+          value !== undefined
+        ) {
+          const decisionDefinitionIds = getDecisionIds({
+            name: filters.name,
+            decisionVersion: value,
+            tenant: filters.tenant,
+          });
+
+          if (decisionDefinitionIds.length > 0) {
+            return {
+              ...accumulator,
+              decisionDefinitionIds,
+            };
+          }
+        }
+
+        if (['evaluationDateAfter', 'evaluationDateBefore'].includes(key)) {
+          return {
+            ...accumulator,
+            [key]: value,
+          };
+        }
+
+        if (key === 'tenant' && value !== 'all') {
+          return {
+            ...accumulator,
+            tenantId: value,
+          };
+        }
+      }
+
+      return accumulator;
+    },
+    {},
+  );
+}
+
 function updateFiltersSearchString<Filters extends object>(
-  currentSearch: URLSearchParams,
+  currentSearch: string,
   newFilters: Filters,
   possibleFilters: Array<keyof Filters>,
   possibleBooleanFilters: Array<keyof Filters>,
 ) {
-  const oldParams = Object.fromEntries(currentSearch);
+  const oldParams = Object.fromEntries(new URLSearchParams(currentSearch));
   const fieldsToDelete = possibleFilters.filter(
     (field) => newFilters[field] === undefined,
   );
@@ -289,10 +471,22 @@ function updateProcessFiltersSearchString(
   newFilters: ProcessInstanceFilters,
 ) {
   return updateFiltersSearchString<ProcessInstanceFilters>(
-    new URLSearchParams(currentSearch),
+    currentSearch,
     newFilters,
     PROCESS_INSTANCE_FILTER_FIELDS,
     BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
+  );
+}
+
+function updateDecisionsFiltersSearchString(
+  currentSearch: string,
+  newFilters: DecisionInstanceFilters,
+) {
+  return updateFiltersSearchString<DecisionInstanceFilters>(
+    currentSearch,
+    newFilters,
+    DECISION_INSTANCE_FILTER_FIELDS,
+    BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS,
   );
 }
 
@@ -317,40 +511,21 @@ function getSortParams(search?: string): {
   return null;
 }
 
-type QuerySortItem<F extends string> = {field: F; order: QuerySortOrder};
-
-/**
- * Parses sort options from the given {@linkcode URLSearchParams} for
- * search APIs. The given {@linkcode fieldSchema} is used to validate the sort
- * field. If no sort param is found, the given {@linkcode fallback} is returned.
- */
-function parseSortParamsV2<F extends string>(
-  search: URLSearchParams,
-  fieldSchema: z.ZodEnum<Record<F, F>>,
-  fallback: QuerySortItem<F>,
-): QuerySortItem<F>[] {
-  const sortParam = search.get('sort');
-  if (sortParam === null || sortParam === '') {
-    return [fallback];
-  }
-  const [unsafeField, unsafeOrder] = sortParam.split('+');
-  const fieldResult = fieldSchema.safeParse(unsafeField);
-  const orderResult = querySortOrderSchema.safeParse(unsafeOrder);
-  if (!fieldResult.success || !orderResult.success) {
-    return [fallback];
-  }
-  return [{field: fieldResult.data, order: orderResult.data}];
-}
-
 export {
   getProcessInstanceFilters,
   parseIds,
   parseFilterTime,
   getProcessInstancesRequestFilters,
-  updateFiltersSearchString,
+  getDecisionInstancesRequestFilters,
   updateProcessFiltersSearchString,
+  updateDecisionsFiltersSearchString,
   deleteSearchParams,
   getSortParams,
-  parseSortParamsV2,
+  getDecisionInstanceFilters,
 };
-export type {RequestFilters};
+export type {
+  RequestFilters,
+  DecisionRequestFilters,
+  DecisionInstanceFilters,
+  DecisionInstanceFilterField,
+};

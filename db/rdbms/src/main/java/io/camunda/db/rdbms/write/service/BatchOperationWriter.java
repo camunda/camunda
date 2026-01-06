@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BatchOperationWriter implements RdbmsWriter {
+public class BatchOperationWriter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationWriter.class);
 

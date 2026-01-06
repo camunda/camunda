@@ -16,7 +16,6 @@ import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.transform.DataAggregator;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Batch operations")
 @RestController
 @RequestMapping(value = BATCH_OPERATIONS_URL)
-@ConditionalOnRdbmsDisabled
 public class BatchOperationRestService extends InternalAPIErrorController {
 
   public static final String BATCH_OPERATIONS_URL = "/api/batch-operations";

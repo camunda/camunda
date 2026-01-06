@@ -41,7 +41,6 @@ public abstract class AbstractProcessInstanceFromOperationItemHandler<
   @Override
   public boolean handlesRecord(final Record<R> record) {
     return record.getBatchOperationReference() != batchOperationReferenceNullValue()
-        && record.getValue().getProcessInstanceKey() > 0
         && (isCompleted(record) || isFailed(record))
         && isRelevantForBatchOperation(record);
   }

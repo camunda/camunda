@@ -16,7 +16,6 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -50,26 +49,16 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
 
     final var dbSort = convertSort(query.sort(), MappingRuleSearchColumn.MAPPING_RULE_ID);
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.MAPPING_RULE.name(), List.of());
-    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         MappingRuleDbQuery.of(
             b ->
                 b.filter(query.filter())
                     .sort(dbSort)
-                    .authorizedResourceIds(authorizedResourceIds)
-                    .page(dbPage));
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for mapping rule with filter {}", dbQuery);
     final var totalHits = mappingRuleMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = mappingRuleMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
@@ -95,6 +84,7 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
   private boolean shouldReturnEmptyResult(
       final MappingRuleFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.mappingRuleIds() != null && filter.mappingRuleIds().isEmpty())
-        || shouldReturnEmptyResult(resourceAccessChecks);
+        || (resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

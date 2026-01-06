@@ -17,15 +17,12 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
@@ -81,7 +78,6 @@ public class JunitExtensionTest {
   private CamundaClient client;
   private ZeebeClient zeebeClient;
   private CamundaProcessTestContext camundaProcessTestContext;
-  private TestScenarioRunner testScenarioRunner;
 
   @BeforeEach
   void configureMocks() {
@@ -95,7 +91,6 @@ public class JunitExtensionTest {
                     .grpcAddress(GRPC_API_ADDRESS)
                     .restAddress(REST_API_ADDRESS));
 
-    when(extensionContext.getTestClass()).thenReturn(Optional.of(MainProcessTest.class));
     when(extensionContext.getRequiredTestInstances()).thenReturn(testInstances);
     when(testInstances.getAllInstances()).thenReturn(Collections.singletonList(this));
     when(extensionContext.getStore(any())).thenReturn(store);
@@ -144,20 +139,6 @@ public class JunitExtensionTest {
     assertThat(camundaProcessTestContext.getCamundaRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(camundaProcessTestContext.getConnectorsAddress())
         .isEqualTo(connectorsRestApiAddress);
-  }
-
-  @Test
-  void shouldInjectTestScenarioRunner() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeEach(extensionContext);
-
-    // then
-    assertThat(testScenarioRunner).isNotNull();
   }
 
   @Test
@@ -255,27 +236,6 @@ public class JunitExtensionTest {
     // then
     verify(camundaContainerRuntime).start();
     verify(camundaContainerRuntime).close();
-  }
-
-  @Test
-  void shouldNotStartAndCloseRuntimeInNestedContext() throws Exception {
-    // given
-    final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    final ExtensionContext nestedContext = mock(ExtensionContext.class);
-    when(nestedContext.getTestClass())
-        .thenReturn(Optional.of(MainProcessTest.NestedProcessTest.class));
-
-    // when
-    extension.beforeAll(extensionContext);
-    extension.beforeAll(nestedContext);
-    extension.beforeEach(extensionContext);
-    extension.afterAll(nestedContext);
-
-    // then
-    verify(camundaContainerRuntime).start();
-    verify(camundaContainerRuntime, times(0)).close();
   }
 
   @Test
@@ -461,10 +421,5 @@ public class JunitExtensionTest {
     } catch (final Throwable t) {
       ExceptionUtils.throwAsUncheckedException(t);
     }
-  }
-
-  @CamundaProcessTest
-  private static final class MainProcessTest {
-    static class NestedProcessTest {}
   }
 }

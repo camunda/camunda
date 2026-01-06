@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"text/template"
 	"time"
 
@@ -21,39 +20,21 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	inboundConnectorsPort = 8086
-	zeebeGatewayAddress   = "localhost:26500"
-	zeebeAPIURL           = "http://localhost:26500"
-	camundaMetricsURL     = "http://localhost:9600/actuator/prometheus"
-	quickstartURL         = "https://docs.camunda.io/docs/next/guides/getting-started-example/"
-	javaSpringGuideURL    = "https://docs.camunda.io/docs/guides/getting-started-java-spring/"
-	agentGuideURL         = "https://docs.camunda.io/docs/next/guides/getting-started-agentic-orchestration/"
-)
-
 type opener interface {
 	OpenBrowser(ctx context.Context, url string) error
 }
 
-type StartupSummary struct {
-	OperateURL           string
-	TasklistURL          string
-	IdentityURL          string
-	Username             string
-	Password             string
-	OrchestrationAPI     string
-	InboundConnectorsAPI string
-	ZeebeAPI             string
-	CamundaMetrics       string
-	DesktopModelerTarget string
-	QuickstartURL        string
-	JavaDevelopersURL    string
-	AgentGuideURL        string
+type Ports struct {
+	OperatePort  int
+	TasklistPort int
+	IdentityPort int
+	CamundaPort  int
 }
 
 func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings, retries int) error {
 	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", settings.GetProtocol())
 	if isRunning(ctx, name, healthEndpoint, retries, 14*time.Second) {
+		log.Info().Str("name", name).Msg("has successfully been started.")
 		if err := c8.OpenBrowser(ctx, settings.StartupUrl); err != nil {
 			log.Err(err).Msg("Failed to open browser")
 			return nil
@@ -120,36 +101,17 @@ func PrintStatus(settings types.C8RunSettings) error {
 		}
 	}
 
-	username := settings.Username
-	if strings.TrimSpace(username) == "" {
-		username = "demo"
-	}
-	password := settings.Password
-	if strings.TrimSpace(password) == "" {
-		password = "demo"
-	}
-
-	protocol := settings.GetProtocol()
 	endpoints, _ := os.ReadFile("endpoints.txt")
 	t, err := template.New("endpoints").Parse(string(endpoints))
 	if err != nil {
 		return fmt.Errorf("failed to parse endpoints template: %s", err.Error())
 	}
 
-	data := StartupSummary{
-		OperateURL:           fmt.Sprintf("%s://localhost:%d/operate", protocol, operatePort),
-		TasklistURL:          fmt.Sprintf("%s://localhost:%d/tasklist", protocol, tasklistPort),
-		IdentityURL:          fmt.Sprintf("%s://localhost:%d/identity", protocol, identityPort),
-		Username:             username,
-		Password:             password,
-		OrchestrationAPI:     fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),
-		InboundConnectorsAPI: fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort),
-		ZeebeAPI:             zeebeAPIURL,
-		CamundaMetrics:       camundaMetricsURL,
-		DesktopModelerTarget: zeebeGatewayAddress,
-		QuickstartURL:        quickstartURL,
-		JavaDevelopersURL:    javaSpringGuideURL,
-		AgentGuideURL:        agentGuideURL,
+	data := Ports{
+		OperatePort:  operatePort,
+		TasklistPort: tasklistPort,
+		IdentityPort: identityPort,
+		CamundaPort:  camundaPort,
 	}
 
 	err = t.Execute(os.Stdout, data)

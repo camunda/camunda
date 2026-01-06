@@ -14,7 +14,7 @@ import org.springframework.util.unit.DataSize;
 
 public class Bulk {
 
-  private static final Duration DEFAULT_DELAY = Duration.ofSeconds(1);
+  private static final Duration DEFAULT_DELAY = Duration.ofSeconds(5);
   private static final int DEFAULT_SIZE = 1_000;
   private static final DataSize DEFAULT_MEMORY_LIMIT = DataSize.ofMegabytes(20);
 

@@ -12,10 +12,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -55,7 +54,6 @@ public final class VariableDocumentUpdateProcessor
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
   private final BpmnJobBehavior jobBehavior;
-  private final BpmnUserTaskBehavior userTaskBehavior;
   private final Writers writers;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -74,7 +72,6 @@ public final class VariableDocumentUpdateProcessor
     this.keyGenerator = keyGenerator;
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
-    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
@@ -93,13 +90,12 @@ public final class VariableDocumentUpdateProcessor
     }
 
     final var authRequest =
-        AuthorizationRequest.builder()
-            .command(record)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(scope.getValue().getTenantId())
-            .addResourceId(scope.getValue().getBpmnProcessId())
-            .build();
+        new AuthorizationRequest(
+                record,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                scope.getValue().getTenantId())
+            .addResourceId(scope.getValue().getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -145,13 +141,9 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getElementIdBuffer(),
               ExecutableUserTask.class);
 
-      final var firstTaskListener =
-          userTaskBehavior
-              .getTaskListeners(userTaskElement, userTaskKey, ZeebeTaskListenerEventType.updating)
-              .stream()
-              .findFirst();
-      if (firstTaskListener.isPresent()) {
-        final var listener = firstTaskListener.get();
+      if (userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
+        final var listener =
+            userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
         jobBehavior.createNewTaskListenerJob(
             buildContext(scope), userTaskRecord, listener, userTaskRecord.getChangedAttributes());
         return;

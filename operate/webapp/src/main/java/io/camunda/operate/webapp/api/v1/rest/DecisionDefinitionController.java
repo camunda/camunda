@@ -23,7 +23,6 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -45,7 +44,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(URI)
 @Tag(name = "DecisionDefinition", description = "Decision Definition API")
 @Validated
-@ConditionalOnRdbmsDisabled
 public class DecisionDefinitionController extends ErrorController
     implements SearchController<DecisionDefinition> {
 

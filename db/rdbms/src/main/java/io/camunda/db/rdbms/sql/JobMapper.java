@@ -11,8 +11,7 @@ import io.camunda.db.rdbms.read.domain.JobDbQuery;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import java.util.List;
 
-public interface JobMapper
-    extends ProcessBasedHistoryCleanupMapper, ProcessInstanceDependantMapper {
+public interface JobMapper extends ProcessBasedHistoryCleanupMapper {
 
   void insert(JobDbModel job);
 

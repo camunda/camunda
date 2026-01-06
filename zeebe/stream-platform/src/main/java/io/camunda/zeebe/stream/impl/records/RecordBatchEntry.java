@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.stream.impl.records;
 
+import static io.camunda.zeebe.stream.impl.TypedEventRegistry.EVENT_REGISTRY;
+
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -34,7 +37,7 @@ public record RecordBatchEntry(
     valueWriter.write(recordValueBuffer, 0);
 
     final UnifiedRecordValue unifiedRecordValue =
-        UnifiedRecordValue.fromValueType(metadata.getValueType());
+        ReflectUtil.newInstance(EVENT_REGISTRY.get(metadata.getValueType()));
     unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
 
     return new RecordBatchEntry(metadata, key, sourceIndex, unifiedRecordValue);

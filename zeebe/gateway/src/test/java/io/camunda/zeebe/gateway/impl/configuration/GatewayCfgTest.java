@@ -48,7 +48,7 @@ public final class GatewayCfgTest {
         .setConfigManager(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    Duration.ofSeconds(5), Duration.ofSeconds(30), 6, Duration.ofSeconds(1))));
+                    Duration.ofSeconds(5), Duration.ofSeconds(30), 6)));
     CUSTOM_CFG
         .getSecurity()
         .setEnabled(true)
@@ -198,7 +198,7 @@ public final class GatewayCfgTest {
         .setConfigManager(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    Duration.ofSeconds(5), Duration.ofSeconds(5), 4, Duration.ofSeconds(1))));
+                    Duration.ofSeconds(5), Duration.ofSeconds(5), 4)));
     expected.getThreads().setManagementThreads(32);
     expected
         .getSecurity()

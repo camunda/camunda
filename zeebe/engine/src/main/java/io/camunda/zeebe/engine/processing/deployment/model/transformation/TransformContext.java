@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformation;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
@@ -31,7 +30,6 @@ public final class TransformContext {
   private final Map<DirectBuffer, ExecutableEscalation> escalations = new HashMap<>();
   private final Map<DirectBuffer, ExecutableLink> links = new HashMap<>();
   private final Map<DirectBuffer, ExecutableSignal> signals = new HashMap<>();
-  private final Map<DirectBuffer, ExecutableConditional> conditionals = new HashMap<>();
 
   private ExpressionLanguage expressionLanguage;
 
@@ -106,13 +104,5 @@ public final class TransformContext {
 
   public void setExpressionLanguage(final ExpressionLanguage expressionLanguage) {
     this.expressionLanguage = expressionLanguage;
-  }
-
-  public void addConditional(final ExecutableConditional condition) {
-    conditionals.put(condition.getId(), condition);
-  }
-
-  public ExecutableConditional getConditional(final String id) {
-    return conditionals.get(wrapString(id));
   }
 }

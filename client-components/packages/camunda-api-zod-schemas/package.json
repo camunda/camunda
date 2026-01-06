@@ -1,6 +1,6 @@
 {
 	"name": "@camunda/camunda-api-zod-schemas",
-	"version": "0.0.27",
+	"version": "0.0.13",
 	"license": "LicenseRef-Camunda-1.0",
 	"description": "Zod schemas and TypeScript types for Camunda 8 unified API",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
@@ -198,32 +198,20 @@
 				"default": "./dist/8.8/variable.js"
 			}
 		},
-		"./8.9": {
-			"import": {
-				"types": "./dist/8.9.d.ts",
-				"default": "./dist/8.9.js"
-			}
-		},
-		"./8.9/audit-log": {
-			"import": {
-				"types": "./dist/8.9/audit-log.d.ts",
-				"default": "./dist/8.9/audit-log.js"
-			}
-		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@11.7.0",
+	"packageManager": "npm@11.6.0",
 	"devDependencies": {
-		"@types/node": "25.0.2",
+		"@types/node": "24.3.0",
 		"changelogen": "0.6.2",
-		"typescript": "5.9.3",
-		"vite": "7.3.0",
+		"typescript": "5.9.2",
+		"vite": "7.1.11",
 		"vite-plugin-circular-dependency": "0.5.0",
 		"vite-plugin-dts": "4.5.4",
-		"zod": "^4.2.0"
+		"zod": "^4.0.17"
 	},
 	"peerDependencies": {
 		"zod": "^3.25.0 || ^4.0.0"

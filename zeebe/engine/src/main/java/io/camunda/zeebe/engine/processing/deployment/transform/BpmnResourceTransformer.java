@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -60,19 +59,15 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final ExpressionProcessor expressionProcessor,
       final boolean enableStraightThroughProcessingLoopDetector,
       final EngineConfiguration config,
-      final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
-    bpmnTransformer = BpmnFactory.createTransformer(clock, expressionLanguageMetrics);
+      final InstantSource clock) {
+    bpmnTransformer = BpmnFactory.createTransformer(clock, config);
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
     validator =
         BpmnFactory.createValidator(
-            clock,
-            expressionProcessor,
-            config.getValidatorsResultsOutputMaxSize(),
-            expressionLanguageMetrics);
+            clock, expressionProcessor, config.getValidatorsResultsOutputMaxSize());
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 

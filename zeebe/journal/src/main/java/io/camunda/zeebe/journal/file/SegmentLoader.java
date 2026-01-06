@@ -10,9 +10,7 @@ package io.camunda.zeebe.journal.file;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
-import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -34,6 +32,10 @@ final class SegmentLoader {
   private final SegmentAllocator allocator;
   private final long minFreeDiskSpace;
   private final JournalMetrics metrics;
+
+  SegmentLoader(final int minFreeDiskSpace, final JournalMetrics metrics) {
+    this(minFreeDiskSpace, metrics, SegmentAllocator.fill());
+  }
 
   SegmentLoader(
       final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator) {
@@ -197,8 +199,14 @@ final class SegmentLoader {
 
     checkDiskSpace(segmentPath, maxSegmentSize);
 
-    try {
-      Files.createFile(segmentPath);
+    try (final var channel =
+        FileChannel.open(
+            segmentPath,
+            StandardOpenOption.READ,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE_NEW)) {
+      allocateSegment(maxSegmentSize, channel);
+      return mapSegment(channel, maxSegmentSize);
     } catch (final FileAlreadyExistsException e) {
       LOGGER.warn(
           "Failed to create segment {}: an unused file already existed, and will be replaced",
@@ -206,13 +214,6 @@ final class SegmentLoader {
           e);
       Files.delete(segmentPath);
       return mapNewSegment(segmentPath, descriptor);
-    }
-
-    try (final var raf = new RandomAccessFile(segmentPath.toFile(), "rw");
-        final var channel = raf.getChannel(); ) {
-      allocateSegment(maxSegmentSize, channel, raf.getFD());
-      raf.setLength(maxSegmentSize);
-      return mapSegment(channel, maxSegmentSize);
     }
   }
 
@@ -226,11 +227,10 @@ final class SegmentLoader {
     }
   }
 
-  private void allocateSegment(
-      final int maxSegmentSize, final FileChannel channel, final FileDescriptor fileDescriptor)
+  private void allocateSegment(final int maxSegmentSize, final FileChannel channel)
       throws IOException {
     try (final var ignored = metrics.observeSegmentAllocation()) {
-      allocator.allocate(channel, fileDescriptor, maxSegmentSize);
+      allocator.allocate(channel, maxSegmentSize);
     }
   }
 }

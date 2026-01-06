@@ -6,118 +6,45 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
-import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
-import {useSearchMessageSubscriptions} from 'modules/queries/messageSubscriptions/useSearchMessageSubscriptions';
-import {useDecisionDefinition} from 'modules/queries/decisionDefinitions/useDecisionDefinition';
-import {createMetadataJson} from './createMetadataJson';
-import type {
-  ElementInstance,
-  Job,
-  ProcessInstance,
-  DecisionInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
-import {getIncidentErrorName} from 'modules/utils/incidents';
+import {buildMetadata} from './buildMetadata';
+import type {InstanceMetadata} from '../types';
+import {resolveIncidentErrorType} from '../Incidents/resolveIncidentErrorType';
 
 type Props = {
-  elementInstance: ElementInstance;
-  job?: Job;
-  calledProcessInstance?: ProcessInstance;
-  calledDecisionInstance?: DecisionInstance;
+  elementName: string;
+  elementInstanceKey: string;
+  instanceMetadata: InstanceMetadata;
   isVisible: boolean;
   onClose: () => void;
 };
 
 const DetailsModal: React.FC<Props> = ({
-  elementInstance,
-  job,
-  calledProcessInstance,
-  calledDecisionInstance,
+  elementName,
+  elementInstanceKey,
+  instanceMetadata,
   isVisible,
   onClose,
 }) => {
-  const {type, elementInstanceKey, elementName} = elementInstance;
-
-  const {data: userTask} = useGetUserTaskByElementInstance(
-    elementInstanceKey ?? '',
-    {
-      enabled: isVisible && !!elementInstanceKey && type === 'USER_TASK',
-    },
-  );
-
-  const {data: messageSubscriptionSearchResult} = useSearchMessageSubscriptions(
-    {
-      filter: {
-        elementInstanceKey: elementInstanceKey ?? '',
-      },
-    },
-    {
-      enabled: isVisible && !!elementInstanceKey,
-    },
-  );
-
-  const calledDecisionDefinitionId =
-    calledDecisionInstance?.rootDecisionDefinitionKey;
-
-  const {data: calledDecisionDefinition} = useDecisionDefinition(
-    calledDecisionDefinitionId ?? '',
-    {
-      enabled: isVisible && !!calledDecisionDefinitionId,
-    },
-  );
-
-  const messageSubscription = messageSubscriptionSearchResult?.items?.[0];
-
-  const {data: incident} = useGetIncidentsByElementInstance(
-    elementInstanceKey,
-    {
-      enabled: isVisible && elementInstance.hasIncident,
-      select: (data) => {
-        const singleIncident = data.items.at(0) ?? null;
-        if (data.page.totalItems !== 1 || !singleIncident) {
-          return null;
-        }
-
-        return {
-          errorTypeName: getIncidentErrorName(singleIncident.errorType),
+  const {data} = useGetIncidentsByElementInstance(elementInstanceKey, {
+    enabled: isVisible && instanceMetadata.hasIncident,
+  });
+  const singleIncident = data?.page.totalItems === 1 ? data?.items[0] : null;
+  const incident =
+    singleIncident !== null
+      ? {
+          errorType: resolveIncidentErrorType(singleIncident.errorType),
           errorMessage: singleIncident.errorMessage,
-        };
-      },
-    },
-  );
-
-  const metadataJson = useMemo(
-    () =>
-      createMetadataJson(
-        elementInstance,
-        incident ?? null,
-        job,
-        calledProcessInstance,
-        messageSubscription,
-        calledDecisionDefinition,
-        calledDecisionInstance,
-        userTask ?? null,
-      ),
-    [
-      elementInstance,
-      incident,
-      job,
-      calledProcessInstance,
-      messageSubscription,
-      calledDecisionDefinition,
-      calledDecisionInstance,
-      userTask,
-    ],
-  );
+        }
+      : null;
 
   return (
     <JSONEditorModal
       isVisible={isVisible}
       onClose={onClose}
       title={`Element "${elementName}" ${elementInstanceKey} Metadata`}
-      value={metadataJson}
+      value={buildMetadata(instanceMetadata, incident)}
       readOnly
     />
   );

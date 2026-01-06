@@ -40,8 +40,7 @@ public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity,
         source.getExternalFormReference(),
         source.getProcessDefinitionVersion(),
         source.getCustomHeaders(),
-        source.getPriority(),
-        source.getTags());
+        source.getPriority());
   }
 
   private UserTaskState toUserTaskState(final TaskState source) {

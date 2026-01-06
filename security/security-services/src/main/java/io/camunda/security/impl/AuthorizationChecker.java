@@ -10,8 +10,8 @@ package io.camunda.security.impl;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -46,14 +46,14 @@ public class AuthorizationChecker {
    * specified in the SecurityContext, has access to based on the defined resource type and
    * permission type.
    *
-   * @param authentication the authentication information
-   * @param authorization the authorization information
+   * @param securityContext the context containing authorization and authentication information
    * @return a list of authorized authorization scopes for the user or group in the SecurityContext
    */
   public List<AuthorizationScope> retrieveAuthorizedAuthorizationScopes(
-      final CamundaAuthentication authentication, final Authorization<?> authorization) {
-    final var resourceType = authorization.resourceType();
-    final var permissionType = authorization.permissionType();
+      final SecurityContext securityContext) {
+    final var authentication = securityContext.authentication();
+    final var resourceType = securityContext.authorization().resourceType();
+    final var permissionType = securityContext.authorization().permissionType();
     return getOrElseDefaultResult(
         authentication,
         (ownerIds) -> {
@@ -80,16 +80,14 @@ public class AuthorizationChecker {
    * type and permission type in the SecurityContext.
    *
    * @param authorizationScope the authorization scope to check authorization for
-   * @param authentication the authentication information
-   * @param authorization the authorization information
+   * @param securityContext the context containing authorization and authentication information
    * @return true if the authorization scope is authorized, false otherwise
    */
   public boolean isAuthorized(
-      final AuthorizationScope authorizationScope,
-      final CamundaAuthentication authentication,
-      final Authorization<?> authorization) {
-    final var resourceType = authorization.resourceType();
-    final var permissionType = authorization.permissionType();
+      final AuthorizationScope authorizationScope, final SecurityContext securityContext) {
+    final var authentication = securityContext.authentication();
+    final var resourceType = securityContext.authorization().resourceType();
+    final var permissionType = securityContext.authorization().permissionType();
     return getOrElseDefaultResult(
         authentication,
         (ownerIds) -> {

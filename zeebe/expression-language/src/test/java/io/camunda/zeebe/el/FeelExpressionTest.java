@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
-import io.camunda.zeebe.util.Either;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -21,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 public class FeelExpressionTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = name -> Either.left(null);
+  private static final EvaluationContext EMPTY_CONTEXT = name -> null;
 
   private final TestFeelEngineClock clock = new TestFeelEngineClock();
 
@@ -70,7 +69,7 @@ public class FeelExpressionTest {
   @Test
   public void pathExpression() {
     final var context = Map.of("x", asMsgPack(Map.of("y", "z")));
-    final var evaluationResult = evaluateExpression("x.y", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("x.y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("z");
@@ -79,8 +78,7 @@ public class FeelExpressionTest {
   @Test
   public void comparison() {
     final var context = Map.of("x", asMsgPack("2"));
-    final var evaluationResult =
-        evaluateExpression("x < 4", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("x < 4", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -92,8 +90,7 @@ public class FeelExpressionTest {
         Map.of(
             "x", asMsgPack("true"),
             "y", asMsgPack("false"));
-    final var evaluationResult =
-        evaluateExpression("x and y", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("x and y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -105,8 +102,7 @@ public class FeelExpressionTest {
         Map.of(
             "x", asMsgPack("true"),
             "y", asMsgPack("false"));
-    final var evaluationResult =
-        evaluateExpression("x or y", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("x or y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -115,8 +111,7 @@ public class FeelExpressionTest {
   @Test
   public void someExpression() {
     final var context = Map.of("xs", asMsgPack("[1, 2, 3]"));
-    final var evaluationResult =
-        evaluateExpression("some x in xs satisfies x > 2", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("some x in xs satisfies x > 2", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -125,8 +120,7 @@ public class FeelExpressionTest {
   @Test
   public void everyExpression() {
     final var context = Map.of("xs", asMsgPack("[1, 2, 3]"));
-    final var evaluationResult =
-        evaluateExpression("every x in xs satisfies x > 2", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("every x in xs satisfies x > 2", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -135,8 +129,7 @@ public class FeelExpressionTest {
   @Test
   public void builtinFunctionInvocation() {
     final var context = Map.of("x", asMsgPack("\"foo\""));
-    final var evaluationResult =
-        evaluateExpression("upper case(x)", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("upper case(x)", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("FOO");
@@ -145,7 +138,7 @@ public class FeelExpressionTest {
   @Test
   public void accessListElement() {
     final var context = Map.of("x", asMsgPack("[\"a\",\"b\"]"));
-    final var evaluationResult = evaluateExpression("x[1]", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("x[1]", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("a");
@@ -154,8 +147,7 @@ public class FeelExpressionTest {
   @Test
   public void accessPropertyOfListElement() {
     final var context = Map.of("x", asMsgPack("[{\"y\":\"a\"},{\"y\":\"b\"}]"));
-    final var evaluationResult =
-        evaluateExpression("x[2].y", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("x[2].y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("b");
@@ -164,7 +156,7 @@ public class FeelExpressionTest {
   @Test
   public void listProjection() {
     final var context = Map.of("x", asMsgPack("[{\"y\":1},{\"y\":2}]"));
-    final var evaluationResult = evaluateExpression("x.y", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("x.y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.ARRAY);
     assertThat(evaluationResult.getList()).isEqualTo(List.of(asMsgPack("1"), asMsgPack("2")));
@@ -230,8 +222,7 @@ public class FeelExpressionTest {
   public void checkIfDefinedWithNullVariable() {
     final var context = Map.of("x", asMsgPack("null"));
 
-    final var evaluationResult =
-        evaluateExpression("is defined(x)", name -> Either.left(context.get(name)));
+    final var evaluationResult = evaluateExpression("is defined(x)", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isFalse();

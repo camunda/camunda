@@ -99,10 +99,9 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(UnexpectedManifestState.class)
         .withMessageContaining(
-            """
-                Cannot delete Backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}' \
-                while saving is in progress.""");
+            "Cannot delete Backup with id "
+                + "'BackupIdentifierImpl[nodeId=1, partitionId=2, checkpointId=3]' "
+                + "while saving is in progress.");
   }
 
   @ParameterizedTest
@@ -117,10 +116,9 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(UnexpectedManifestState.class)
         .withMessageContaining(
-            """
-                Expected to restore from completed backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}', \
-                but was in state 'IN_PROGRESS'""");
+            "Expected to restore from completed backup with id "
+                + "'BackupIdentifierImpl[nodeId=1, partitionId=2, checkpointId=3]', "
+                + "but was in state 'IN_PROGRESS'");
   }
 
   void uploadInProgressManifest(final Backup backup) {

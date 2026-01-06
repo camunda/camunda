@@ -16,8 +16,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
@@ -153,7 +153,7 @@ class BackupStoreTransitionStepTest {
   }
 
   private void configureStore(final BackupStoreType type, final S3BackupStoreConfig s3Config) {
-    final var backupCfg = new BackupCfg();
+    final var backupCfg = new BackupStoreCfg();
     backupCfg.setStore(type);
     backupCfg.setS3(s3Config);
     when(brokerCfg.getData()).thenReturn(dataCfg);

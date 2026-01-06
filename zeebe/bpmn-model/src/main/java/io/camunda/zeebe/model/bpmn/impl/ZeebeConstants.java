@@ -70,10 +70,6 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_RESOURCE_TYPE = "resourceType";
   public static final String ATTRIBUTE_LINK_NAME = "linkName";
 
-  public static final String ATTRIBUTE_VARIABLE_NAMES = "variableNames";
-  public static final String ATTRIBUTE_VARIABLE_EVENTS = "variableEvents";
-  public static final String ATTRIBUTE_CONDITION = "condition";
-
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -125,8 +121,6 @@ public class ZeebeConstants {
   public static final String ELEMENT_LINKED_RESOURCE = "linkedResource";
   public static final String ELEMENT_LINKED_RESOURCES = "linkedResources";
 
-  public static final String ELEMENT_CONDITIONAL_FILTER = "conditionalFilter";
-
   /** The property used for the example output JSON data. */
   public static final String PROPERTY_EXAMPLE_DATA = "camundaModeler:exampleOutputJson";
 
@@ -135,6 +129,4 @@ public class ZeebeConstants {
    * AD_HOC_SUB_PROCESS_ID#innerInstance)
    */
   public static final String AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX = "#innerInstance";
-
-  public static final String AD_HOC_SUB_PROCESS_ELEMENTS = "adHocSubProcessElements";
 }

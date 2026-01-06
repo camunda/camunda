@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -46,8 +45,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
       "io.camunda.zeebe.shared",
     })
 @Profile("broker")
-@DependsOn(
-    "dataDirectoryProvider") // ensure that the data directory is set up before starting the broker
 public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 

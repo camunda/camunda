@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -54,7 +54,6 @@ public final class JobEventProcessors {
             JobIntent.COMPLETE,
             new JobCompleteProcessor(
                 processingState,
-                writers,
                 jobMetrics,
                 eventHandle,
                 authCheckBehavior,
@@ -82,8 +81,7 @@ public final class JobEventProcessors {
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
                 jobMetrics,
-                authCheckBehavior,
-                writers))
+                authCheckBehavior))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
@@ -102,13 +100,11 @@ public final class JobEventProcessors {
             JobIntent.UPDATE,
             new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
-            ValueType.JOB,
-            JobIntent.CANCEL,
-            new JobCancelProcessor(processingState, jobMetrics, writers))
+            ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,
-            new JobRecurAfterBackoffProcessor(
+            new JobRecurProcessor(
                 processingState, writers, bpmnBehaviors.jobActivationBehavior(), clock))
         .onCommand(
             ValueType.JOB_BATCH,

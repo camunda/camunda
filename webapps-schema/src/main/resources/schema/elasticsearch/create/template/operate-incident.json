@@ -70,9 +70,6 @@
       },
       "position": {
         "type": "long"
-      },
-      "rootProcessInstanceKey": {
-        "type": "long"
       }
 		}
 	}

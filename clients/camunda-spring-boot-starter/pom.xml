@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>camunda-library-parent</artifactId>
+    <artifactId>zeebe-parent</artifactId>
     <version>8.9.0-SNAPSHOT</version>
-    <relativePath>../../library-parent/pom.xml</relativePath>
+    <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>camunda-spring-boot-starter</artifactId>
@@ -22,12 +22,18 @@
   <properties>
     <version.java>17</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
-    <version.roaster>2.30.3.Final</version.roaster>
-    <version.aspectjweaver>1.9.25</version.aspectjweaver>
+    <version.roaster>2.30.1.Final</version.roaster>
+    <version.aspectjweaver>1.9.24</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -51,12 +57,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-jackson2</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -119,11 +119,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-health</artifactId>
     </dependency>
 
     <dependency>
@@ -199,6 +194,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <usedDependencies>
+            <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
+          </usedDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dependency>commons-logging:commons-logging</dependency>
             <dependency>org.springframework:spring-jcl</dependency>
@@ -213,12 +211,6 @@
           <compilerArgs>
             <arg>-parameters</arg>
           </compilerArgs>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>org.springframework.boot</groupId>
-              <artifactId>spring-boot-configuration-processor</artifactId>
-            </path>
-          </annotationProcessorPaths>
         </configuration>
       </plugin>
 
@@ -301,5 +293,4 @@
 
     </plugins>
   </build>
-
 </project>

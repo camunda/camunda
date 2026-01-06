@@ -36,7 +36,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
       new EnumProperty<>("resourceMatcher", AuthorizationResourceMatcher.class);
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final StringProperty resourcePropertyNameProp =
-      new StringProperty("resourcePropertyName", "");
+      new StringProperty("resourcePropertyName");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
   private final ArrayProperty<StringValue> permissionTypesProp =

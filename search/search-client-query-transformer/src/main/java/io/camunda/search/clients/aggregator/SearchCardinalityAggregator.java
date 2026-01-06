@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record SearchCardinalityAggregator(
-    String name, String field, String script, String lang, List<SearchAggregator> aggregations)
-    implements SearchAggregator {
+    String name, String field, List<SearchAggregator> aggregations) implements SearchAggregator {
 
   @Override
   public String getName() {
@@ -26,8 +25,6 @@ public record SearchCardinalityAggregator(
 
   public static final class Builder extends SearchAggregator.AbstractBuilder<Builder> {
     private String field;
-    private String script;
-    private String lang;
 
     @Override
     protected Builder self() {
@@ -39,23 +36,9 @@ public record SearchCardinalityAggregator(
       return this;
     }
 
-    public Builder script(final String value) {
-      script = value;
-      return this;
-    }
-
-    public Builder lang(final String value) {
-      lang = value;
-      return this;
-    }
-
     public SearchCardinalityAggregator build() {
       return new SearchCardinalityAggregator(
-          Objects.requireNonNull(name, "Expected non-null field for name."),
-          field,
-          script,
-          lang,
-          aggregations);
+          Objects.requireNonNull(name, "Expected non-null field for name."), field, aggregations);
     }
   }
 }

@@ -8,7 +8,6 @@
 package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.ExporterMetadata;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
@@ -48,7 +47,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final Logger logger;
   private final Duration waitForRefreshInterval;
   private final IncidentNotifier incidentNotifier;
-  private final CamundaExporterMetrics metrics;
 
   public IncidentUpdateTask(
       final ExporterMetadata metadata,
@@ -57,7 +55,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final int batchSize,
       final ScheduledExecutorService executor,
       @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
-      final CamundaExporterMetrics metrics,
       final Logger logger) {
     this(
         metadata,
@@ -66,7 +63,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
         batchSize,
         executor,
         incidentNotifier,
-        metrics,
         logger,
         Duration.ofSeconds(5));
   }
@@ -79,7 +75,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final int batchSize,
       final ScheduledExecutorService executor,
       @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
-      final CamundaExporterMetrics metrics,
       final Logger logger,
       final Duration waitForRefreshInterval) {
     this.metadata = metadata;
@@ -87,7 +82,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
     this.ignoreMissingData = ignoreMissingData;
     this.batchSize = batchSize;
     this.executor = executor;
-    this.metrics = metrics;
     this.logger = logger;
     this.waitForRefreshInterval = waitForRefreshInterval;
     this.incidentNotifier = incidentNotifier;
@@ -142,24 +136,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       return CompletableFuture.completedFuture(0);
     }
     logger.trace("Applying the following pending incident updates: {}", batch.newIncidentStates());
-    final var check = searchForInstances(data);
-    final int incidentCount = batch.newIncidentStates().size();
-    if (check != InstancesCheck.OK) {
-      // there was missing data, but this is often transient, so we just skip this batch for now.
-      // we return the batch size so it's clear that we want to try again soon (as there was work
-      // to do, but we just can't do it ATM)
-      metrics.recordIncidentUpdatesRetriesNeeded(incidentCount);
-      return CompletableFuture.completedFuture(incidentCount);
-    }
-
-    data.incidents()
-        .forEach(
-            (key, incidentDocument) -> {
-              if (incidentDocument.incident().getTreePath() == null) {
-                final var treePath = data.incidentTreePaths().get(key);
-                incidentDocument.incident().setTreePath(treePath);
-              }
-            });
+    searchForInstances(data);
     return CompletableFuture.completedFuture(processIncidents(data, batch))
         .thenComposeAsync(
             documentsUpdated -> {
@@ -167,32 +144,31 @@ public final class IncidentUpdateTask implements BackgroundTask {
                   """
         Finished applying {} pending incident updates ({} documents updated), updating last \
         incident update position to {}""",
-                  incidentCount,
+                  batch.newIncidentStates().size(),
                   documentsUpdated,
                   batch.highestPosition());
 
-              metadata.setLastIncidentUpdatePosition(batch.highestPosition());
+              if (documentsUpdated > 0) {
+                metadata.setLastIncidentUpdatePosition(batch.highestPosition());
+              }
 
-              metrics.recordIncidentUpdatesProcessed(incidentCount);
-              metrics.recordIncidentUpdatesDocumentsUpdated(documentsUpdated);
               return CompletableFuture.completedFuture(documentsUpdated);
             },
             executor);
   }
 
-  private InstancesCheck searchForInstances(final AdditionalData data) {
+  private void searchForInstances(final AdditionalData data) {
     final var incidents = data.incidents().values();
 
-    queryData(incidents, data);
-    if (checkDataAndCollectParentTreePaths(incidents, data, false) != InstancesCheck.OK) {
+    try {
+      queryData(incidents, data);
+      checkDataAndCollectParentTreePaths(incidents, data, false);
+    } catch (final ExporterException ex) {
       // if it failed once we want to give it a chance and to import more data
       // next failure will fail in case ignoring of missing data is not configured
       uncheckedThreadSleep();
       queryData(incidents, data);
-      final var check = checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData);
-      if (check != InstancesCheck.OK) {
-        return check;
-      }
+      checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData);
     }
 
     final var flowNodeKeys =
@@ -206,15 +182,14 @@ public final class IncidentUpdateTask implements BackgroundTask {
         .toCompletableFuture()
         .join()
         .forEach(doc -> data.addFlowNodeInstanceInListView(doc.id(), doc.index()));
-
-    return InstancesCheck.OK;
   }
 
-  private InstancesCheck checkDataAndCollectParentTreePaths(
+  private void checkDataAndCollectParentTreePaths(
       final Collection<IncidentDocument> incidents,
       final AdditionalData data,
       final boolean forceIgnoreMissingData) {
 
+    int countMissingInstance = 0;
     final Set<Long> processInstanceKeys =
         incidents.stream()
             .map(IncidentDocument::incident)
@@ -241,15 +216,14 @@ public final class IncidentUpdateTask implements BackgroundTask {
           continue;
         }
         if (!forceIgnoreMissingData) {
-          logger.warn(
+          throw new ExporterException(
               """
-            Process instance {} is not yet imported for incident {}; the update cannot be \
-            correctly applied. Operation will be retried...
-            """,
-              incident.getProcessInstanceKey(),
-              incident.getId());
-          return InstancesCheck.MISSING_DATA;
+                Process instance %d is not yet imported for incident %s; the update cannot be \
+                correctly applied.
+                """
+                  .formatted(incident.getProcessInstanceKey(), incident.getId()));
         } else {
+          countMissingInstance++;
           logger.warn(
               """
                 Process instance {} is not yet imported for incident {}; the update cannot be \
@@ -273,7 +247,15 @@ public final class IncidentUpdateTask implements BackgroundTask {
                   .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey()))
                   .toString());
     }
-    return InstancesCheck.OK;
+
+    if (countMissingInstance > 0 && !ignoreMissingData) {
+      throw new ExporterException(
+          """
+        "%d process instances are not yet imported for incident post processing; operation will \
+        be retried...
+        """
+              .formatted(countMissingInstance));
+    }
   }
 
   private void queryData(final Collection<IncidentDocument> incidents, final AdditionalData data) {
@@ -670,10 +652,5 @@ public final class IncidentUpdateTask implements BackgroundTask {
       Thread.currentThread().interrupt();
       LangUtil.rethrowUnchecked(e);
     }
-  }
-
-  enum InstancesCheck {
-    OK,
-    MISSING_DATA
   }
 }

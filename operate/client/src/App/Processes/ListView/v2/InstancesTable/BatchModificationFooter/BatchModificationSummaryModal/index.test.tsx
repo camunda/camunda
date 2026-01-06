@@ -16,10 +16,11 @@ import {BatchModificationSummaryModal} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {
-  mockProcessDefinitions,
+  groupedProcessesMock,
   mockProcessStatisticsV2,
   mockProcessXML,
 } from 'modules/testUtils';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -30,7 +31,6 @@ import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/pro
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/tracking', () => ({
   tracking: {
@@ -82,7 +82,7 @@ describe('BatchModificationSummaryModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
     mockFetchProcessInstances().withSuccess({

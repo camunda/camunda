@@ -11,7 +11,6 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -96,25 +95,21 @@ public class CommonFixtures {
         TenantCheck.enabled(tenantIds));
   }
 
-  public static ResourceAccessChecks resourceAccessChecksFromResourceIds(
-      final AuthorizationResourceType resourceType, final String... resourceIds) {
-    return resourceAccessChecksFromResourceIds(resourceType, Arrays.asList(resourceIds));
+  public static ResourceAccessChecks resourceAccessChecksFromResourceIds(String... resourceIds) {
+    return resourceAccessChecksFromResourceIds(Arrays.asList(resourceIds));
   }
 
-  public static ResourceAccessChecks resourceAccessChecksFromResourceIds(
-      final AuthorizationResourceType resourceType, final List<String> resourceIds) {
+  public static ResourceAccessChecks resourceAccessChecksFromResourceIds(List<String> resourceIds) {
     return ResourceAccessChecks.of(
-        AuthorizationCheck.enabled(
-            Authorization.of(b -> b.resourceType(resourceType).resourceIds(resourceIds))),
+        AuthorizationCheck.enabled(Authorization.of(b -> b.resourceIds(resourceIds))),
         TenantCheck.disabled());
   }
 
-  public static ResourceAccessChecks resourceAccessChecksFromTenantIds(final String... tenantIds) {
+  public static ResourceAccessChecks resourceAccessChecksFromTenantIds(String... tenantIds) {
     return resourceAccessChecksFromTenantIds(Arrays.asList(tenantIds));
   }
 
-  public static ResourceAccessChecks resourceAccessChecksFromTenantIds(
-      final List<String> tenantIds) {
+  public static ResourceAccessChecks resourceAccessChecksFromTenantIds(List<String> tenantIds) {
     return ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(tenantIds));
   }
 }

@@ -8,7 +8,6 @@
 
 import {mockServer} from 'modules/mock-server/node';
 import {type DefaultBodyType, delay, http, HttpResponse} from 'msw';
-import {type MockedFunction} from 'vitest';
 
 const checkPollingHeader = ({
   req,
@@ -42,7 +41,7 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
       responseData: Type,
       options?: {
         expectPolling?: boolean;
-        mockResolverFn?: MockedFunction<() => void>;
+        mockResolverFn?: ReturnType<typeof vi.fn>;
       },
     ) => {
       mockServer.use(
@@ -111,7 +110,7 @@ const mockPutRequest = function <Type extends DefaultBodyType>(url: string) {
     withSuccess: (
       responseData: Type,
       options?: {
-        mockResolverFn?: MockedFunction<() => void>;
+        mockResolverFn?: ReturnType<typeof vi.fn>;
       },
     ) => {
       mockServer.use(
@@ -171,71 +170,6 @@ const mockPutRequest = function <Type extends DefaultBodyType>(url: string) {
   };
 };
 
-const mockPatchRequest = function <Type extends DefaultBodyType>(url: string) {
-  return {
-    withSuccess: (
-      responseData: Type,
-      options?: {
-        mockResolverFn?: MockedFunction<() => void>;
-      },
-    ) => {
-      mockServer.use(
-        http.patch(
-          url,
-          () => {
-            options?.mockResolverFn?.();
-            return HttpResponse.json(responseData);
-          },
-          {once: true},
-        ),
-      );
-    },
-    withServerError: (statusCode: number = 500) => {
-      mockServer.use(
-        http.patch(
-          url,
-          () =>
-            HttpResponse.json(
-              {error: 'an error occurred'},
-              {status: statusCode},
-            ),
-          {once: true},
-        ),
-      );
-    },
-    withDelayedServerError: (statusCode: number = 500) => {
-      mockServer.use(
-        http.patch(
-          url,
-          async () => {
-            await delay(100);
-            return HttpResponse.json(
-              {error: 'an error occurred'},
-              {status: statusCode},
-            );
-          },
-          {once: true},
-        ),
-      );
-    },
-    withNetworkError: () => {
-      mockServer.use(http.patch(url, () => HttpResponse.error()));
-    },
-    withDelay: (responseData: Type) => {
-      mockServer.use(
-        http.patch(
-          url,
-          async () => {
-            await delay(100);
-            return HttpResponse.json(responseData);
-          },
-          {once: true},
-        ),
-      );
-    },
-  };
-};
-
 const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
   return {
     /**
@@ -245,18 +179,11 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
      *
      * Otherwise an error will be thrown
      */
-    withSuccess: (
-      responseData: Type,
-      options?: {
-        expectPolling?: boolean;
-        mockResolverFn?: MockedFunction<() => void>;
-      },
-    ) => {
+    withSuccess: (responseData: Type, options?: {expectPolling?: boolean}) => {
       mockServer.use(
         http.get(
           url,
           ({request}) => {
-            options?.mockResolverFn?.();
             checkPollingHeader({
               req: request,
               expectPolling: options?.expectPolling,
@@ -391,6 +318,5 @@ export {
   mockXmlGetRequest,
   mockDeleteRequest,
   mockPutRequest,
-  mockPatchRequest,
   checkPollingHeader,
 };

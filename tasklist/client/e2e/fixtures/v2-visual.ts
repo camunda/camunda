@@ -173,7 +173,7 @@ const test = base.extend<PlaywrightFixtures>({
   mockQueryVariablesByUserTaskRequest: async ({page}, use) => {
     await use(async ({variables = [], userTaskKey}) => {
       await page.route(
-        `**/v2/user-tasks/${userTaskKey}/variables/search**`,
+        endpoints.queryVariablesByUserTask.getUrl({userTaskKey}),
         (route) =>
           route.fulfill({
             status: 200,

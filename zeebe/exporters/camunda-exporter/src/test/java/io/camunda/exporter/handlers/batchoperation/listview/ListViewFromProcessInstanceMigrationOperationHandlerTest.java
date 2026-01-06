@@ -8,11 +8,9 @@
 package io.camunda.exporter.handlers.batchoperation.listview;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 
 class ListViewFromProcessInstanceMigrationOperationHandlerTest
@@ -24,41 +22,18 @@ class ListViewFromProcessInstanceMigrationOperationHandlerTest
   }
 
   @Override
-  protected Record<ProcessInstanceMigrationRecordValue> createCompletedRecord(
-      final long processInstanceKey) {
-    final var value =
-        ImmutableProcessInstanceMigrationRecordValue.builder()
-            .from(factory.generateObject(ProcessInstanceMigrationRecordValue.class))
-            .withProcessInstanceKey(processInstanceKey)
-            .build();
+  protected Record<ProcessInstanceMigrationRecordValue> createCompletedRecord() {
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_MIGRATION,
-        b -> b.withIntent(ProcessInstanceMigrationIntent.MIGRATED).withValue(value));
+        b -> b.withIntent(ProcessInstanceMigrationIntent.MIGRATED));
   }
 
   @Override
   protected Record<ProcessInstanceMigrationRecordValue> createRejectedRecord() {
-    final var value =
-        ImmutableProcessInstanceMigrationRecordValue.builder()
-            .from(factory.generateObject(ProcessInstanceMigrationRecordValue.class))
-            .withProcessInstanceKey(123456789L)
-            .build();
     return factory.generateRecord(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         b ->
-            b.withRecordType(RecordType.COMMAND_REJECTION)
-                .withRejectionType(RejectionType.INVALID_STATE)
-                .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
-                .withValue(value));
-  }
-
-  @Override
-  protected Record<ProcessInstanceMigrationRecordValue> createNotFoundRejectedRecord() {
-    return factory.generateRecord(
-        ValueType.PROCESS_INSTANCE_MIGRATION,
-        b ->
-            b.withRecordType(RecordType.COMMAND_REJECTION)
-                .withRejectionType(RejectionType.NOT_FOUND)
+            b.withRejectionType(RejectionType.NOT_FOUND)
                 .withIntent(ProcessInstanceMigrationIntent.MIGRATE));
   }
 }

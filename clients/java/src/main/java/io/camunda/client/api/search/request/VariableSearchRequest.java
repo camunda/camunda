@@ -21,15 +21,4 @@ import io.camunda.client.api.search.sort.VariableSort;
 
 public interface VariableSearchRequest
     extends TypedSearchRequest<VariableFilter, VariableSort, VariableSearchRequest>,
-        FinalSearchRequestStep<Variable> {
-
-  /**
-   * <pre>
-   * Sets {@code truncateValues=false} in the search request to return full variable values. By
-   * default, truncated values are returned.
-   *
-   * @return the builder for the search request
-   * </pre>
-   */
-  VariableSearchRequest withFullValues();
-}
+        FinalSearchRequestStep<Variable> {}

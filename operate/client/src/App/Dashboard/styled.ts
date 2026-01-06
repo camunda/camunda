@@ -76,11 +76,6 @@ const Li = styled.li`
   }
 `;
 
-const ErrorText = styled.span`
-  ${styles.bodyCompact01};
-  color: var(--cds-text-error);
-`;
-
 export {
   Grid,
   ScrollableContent,
@@ -89,5 +84,4 @@ export {
   LinkWrapper,
   ErrorMessage,
   Li,
-  ErrorText,
 };

@@ -9,15 +9,16 @@ package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
-import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import java.util.ArrayList;
 import java.util.List;
 
 public class GlobalListenerCfg implements ConfigurationEntry {
 
+  private static final String DEFAULT_RETRIES = "3";
+
   private List<String> eventTypes = new ArrayList<>();
   private String type;
-  private String retries = String.valueOf(GlobalListenerRecord.DEFAULT_RETRIES);
+  private String retries = DEFAULT_RETRIES;
   private boolean afterNonGlobal = false;
 
   public List<String> getEventTypes() {

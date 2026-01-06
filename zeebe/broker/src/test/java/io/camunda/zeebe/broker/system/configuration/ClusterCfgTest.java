@@ -177,7 +177,7 @@ public final class ClusterCfgTest {
         .isEqualTo(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    Duration.ofSeconds(10), Duration.ofSeconds(30), 10, Duration.ofSeconds(1))));
+                    Duration.ofSeconds(10), Duration.ofSeconds(30), 10)));
   }
 
   @Test
@@ -199,7 +199,7 @@ public final class ClusterCfgTest {
         .isEqualTo(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    Duration.ofSeconds(5), Duration.ofSeconds(6), 6, Duration.ofSeconds(1))));
+                    Duration.ofSeconds(5), Duration.ofSeconds(6), 6)));
   }
 
   @Test
@@ -250,7 +250,7 @@ public final class ClusterCfgTest {
     // when - then
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("to java.lang.Integer"); // spring related exception
+        .hasMessageContaining("to int"); // spring related exception
   }
 
   @Test

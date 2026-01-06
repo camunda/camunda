@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -50,20 +50,20 @@ public class IncidentSpecificFilterIT {
 
   @Autowired private IncidentDbReader processDefinitionReader;
 
-  private RdbmsWriters rdbmsWriters;
+  private RdbmsWriter rdbmsWriter;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriters = rdbmsService.createWriter(0L);
+    rdbmsWriter = rdbmsService.createWriter(0L);
   }
 
   @ParameterizedTest
   @MethodSource("shouldFindIncidentWithSpecificFilterParameters")
   public void shouldFindIncidentWithSpecificFilter(final IncidentFilter filter) {
     createAndSaveRandomIncidents(
-        rdbmsWriters, b -> b.errorType(ErrorType.CONDITION_ERROR).state(IncidentState.RESOLVED));
+        rdbmsWriter, b -> b.errorType(ErrorType.CONDITION_ERROR).state(IncidentState.RESOLVED));
     createAndSaveIncident(
-        rdbmsWriters,
+        rdbmsWriter,
         IncidentFixtures.createRandomized(
             b ->
                 b.incidentKey(1337L)

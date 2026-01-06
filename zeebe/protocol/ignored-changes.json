@@ -284,49 +284,6 @@
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withPermissions(java.lang.Iterable<? extends io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue>)",
           "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue",
-          "justification": "Interface is generalized in and moved to the ProcessInstanceModificationRecordValue."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationProcessInstanceModificationPlanValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationProcessInstanceModificationPlanValue.Builder::addMoveInstruction(io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue)",
-          "justification": "Interface is generalized in and moved to the ProcessInstanceModificationRecordValue."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationProcessInstanceModificationPlanValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationProcessInstanceModificationPlanValue.Builder::addMoveInstructions(io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue[])",
-          "justification": "Interface is generalized in and moved to the ProcessInstanceModificationRecordValue."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationProcessInstanceModificationPlanValue io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationProcessInstanceModificationPlanValue::withMoveInstructions(io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue[])",
-          "justification": "Interface is generalized in and moved to the ProcessInstanceModificationRecordValue."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationMoveInstructionValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationMoveInstructionValue.Builder::from(io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue)",
-          "justification": "Interface is generalized in and moved to the ProcessInstanceModificationRecordValue."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationMoveInstructionValue io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationMoveInstructionValue::copyOf(io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue)",
-          "justification": "Interface is generalized in and moved to the ProcessInstanceModificationRecordValue."
-        },
-        {
-          "ignore": true,
-          "code": "java.class.noLongerImplementsInterface",
-          "old": "class io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationMoveInstructionValue",
-          "new": "class io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationMoveInstructionValue",
-          "justification": "Interface is generalized in and moved to the ProcessInstanceModificationRecordValue."
         }
       ]
     }

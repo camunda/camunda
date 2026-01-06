@@ -3,7 +3,6 @@
 paths:
   /tenants:
     post:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: createTenant
@@ -38,10 +37,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /tenants/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Tenant
       operationId: searchTenants
@@ -70,10 +69,10 @@ paths:
           description: Not found
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /tenants/{tenantId}:
     get:
-      x-eventually-consistent: true
       tags:
         - Tenant
       operationId: getTenant
@@ -107,9 +106,9 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
     put:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: updateTenant
@@ -149,9 +148,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: deleteTenant
@@ -181,10 +180,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /tenants/{tenantId}/users/{username}:
     put:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: assignUserToTenant
@@ -220,9 +219,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: unassignUserFromTenant
@@ -260,10 +259,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /tenants/{tenantId}/users/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Tenant
       operationId: searchUsersForTenant
@@ -289,10 +288,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantUserSearchResult'
+      x-eventually-consistent: true
 
   /tenants/{tenantId}/clients/{clientId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: assignClientToTenant
@@ -330,9 +329,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: unassignClientFromTenant
@@ -370,10 +369,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /tenants/{tenantId}/clients/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Tenant
       operationId: searchClientsForTenant
@@ -399,10 +398,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantClientSearchResult'
+      x-eventually-consistent: true
 
   /tenants/{tenantId}/groups/{groupId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: assignGroupToTenant
@@ -440,9 +439,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: unassignGroupFromTenant
@@ -480,10 +479,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /tenants/{tenantId}/groups/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Tenant
       operationId: searchGroupIdsForTenant
@@ -509,10 +508,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantGroupSearchResult'
+      x-eventually-consistent: true
 
   /tenants/{tenantId}/roles/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Tenant
       operationId: searchRolesForTenant
@@ -530,7 +529,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'roles.yaml#/components/schemas/RoleSearchQueryRequest'
+              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       responses:
         "200":
           description: The search result of roles for the tenant.
@@ -538,10 +537,10 @@ paths:
             application/json:
               schema:
                 $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      x-eventually-consistent: true
 
   /tenants/{tenantId}/roles/{roleId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: assignRoleToTenant
@@ -579,9 +578,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: unassignRoleFromTenant
@@ -620,10 +619,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: assignMappingRuleToTenant
@@ -659,9 +658,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Tenant
       operationId: unassignMappingRuleFromTenant
@@ -697,10 +696,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /tenants/{tenantId}/mapping-rules/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Tenant
       operationId: searchMappingRulesForTenant
@@ -718,7 +717,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleSearchQueryRequest'
+              $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
       responses:
         "200":
           description: The search result of MappingRules for the tenant.
@@ -726,6 +725,7 @@ paths:
             application/json:
               schema:
                 $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -760,11 +760,9 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         name:
           type: string
-          description: The name of the tenant.
           example: Customer Service Department
         description:
           type: string
-          description: The description of the tenant.
           example: Customer Service department business processes
 
     TenantUpdateRequest:
@@ -819,7 +817,7 @@ components:
             - name
             - tenantId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -901,7 +899,7 @@ components:
           enum:
             - username
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -944,7 +942,7 @@ components:
           enum:
             - clientId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -988,6 +986,6 @@ components:
           enum:
             - groupId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field

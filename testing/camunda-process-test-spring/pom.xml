@@ -26,11 +26,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-process-test-dsl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-starter</artifactId>
     </dependency>
 
@@ -114,6 +109,12 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
     <!--  test scope  -->
 
     <dependency>
@@ -131,12 +132,6 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -166,7 +161,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -202,29 +197,15 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <usedDependencies>
+            <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
+          </usedDependencies>
           <ignoredNonTestScopedDependencies>
             <dependency>org.springframework:spring-beans</dependency>
             <dependency>org.awaitility:awaitility</dependency>
             <dependency>org.apache.httpcomponents.client5:httpclient5</dependency>
             <dependency>org.apache.httpcomponents.core5:httpcore5</dependency>
-            <dependency>io.camunda:camunda-process-test-dsl</dependency>
           </ignoredNonTestScopedDependencies>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <compilerArgs>
-            <arg>-parameters</arg>
-          </compilerArgs>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>org.springframework.boot</groupId>
-              <artifactId>spring-boot-configuration-processor</artifactId>
-            </path>
-          </annotationProcessorPaths>
         </configuration>
       </plugin>
 

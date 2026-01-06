@@ -22,8 +22,6 @@ public record DecisionDefinitionFilter(
     List<Integer> versions,
     List<String> decisionRequirementsIds,
     List<Long> decisionRequirementsKeys,
-    List<String> decisionRequirementsNames,
-    List<Integer> decisionRequirementsVersions,
     List<String> tenantIds)
     implements FilterBase {
 
@@ -35,8 +33,6 @@ public record DecisionDefinitionFilter(
     private List<Integer> versions;
     private List<String> decisionRequirementsIds;
     private List<Long> decisionRequirementsKeys;
-    private List<String> decisionRequirementsNames;
-    private List<Integer> decisionRequirementsVersions;
     private List<String> tenantIds;
 
     public Builder decisionDefinitionKeys(final List<Long> values) {
@@ -93,24 +89,6 @@ public record DecisionDefinitionFilter(
       return decisionRequirementsKeys(collectValuesAsList(values));
     }
 
-    public Builder decisionRequirementsNames(final List<String> values) {
-      decisionRequirementsNames = addValuesToList(decisionRequirementsNames, values);
-      return this;
-    }
-
-    public Builder decisionRequirementsNames(final String... values) {
-      return decisionRequirementsNames(collectValuesAsList(values));
-    }
-
-    public Builder decisionRequirementsVersions(final List<Integer> values) {
-      decisionRequirementsVersions = addValuesToList(decisionRequirementsVersions, values);
-      return this;
-    }
-
-    public Builder decisionRequirementsVersions(final Integer... values) {
-      return decisionRequirementsVersions(collectValuesAsList(values));
-    }
-
     public Builder tenantIds(final List<String> values) {
       tenantIds = addValuesToList(tenantIds, values);
       return this;
@@ -129,8 +107,6 @@ public record DecisionDefinitionFilter(
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsIds, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionRequirementsNames, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionRequirementsVersions, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

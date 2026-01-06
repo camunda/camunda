@@ -1,0 +1,183 @@
+# Workflow: Generate SBOM
+# This workflow generates a Software Bill of Materials (SBOM) using the CycloneDX Maven plugin.
+# The SBOM provides a list of dependencies and helps track potential security risks.
+# The workflow runs on a schedule for testing purposes and can be manually triggered.
+# The generated SBOM is uploaded as an artifact for further analysis or distribution.
+# type: Release
+
+name: Generate and Attach SBOM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to attach SBOMs"
+        required: true
+  release:
+    types: [published,created]
+  schedule:
+    - cron: "0 9 * * MON"
+
+jobs:
+  frontend_sbom:
+    runs-on: ubuntu-latest
+    name: Generate frontend SBOM
+    strategy:
+      matrix:
+        include:
+          - component: "tasklist"
+            folder: "build"
+            package_manager: "npm"
+          - component: "operate"
+            folder: "build"
+            package_manager: "npm"
+          - component: "identity"
+            folder: "dist"
+            package_manager: "npm"
+          - component: "optimize"
+            folder: "dist"
+            package_manager: "yarn"
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.component }}/client
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: ${{ matrix.package_manager }}
+          cache-dependency-path: ${{ matrix.component }}/client/${{ matrix.package_manager == 'npm' && 'package-lock.json' || 'yarn.lock' }}
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        if: matrix.package_manager == 'yarn'
+        with:
+          directory: ${{ matrix.component }}/client
+      - name: Install node dependencies
+        run: ${{ matrix.package_manager == 'npm' && 'npm ci' || 'yarn' }}
+      - name: Extract SBOM
+        run: |
+          ${{ matrix.package_manager }} run extract-sbom
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.component }}-fe-sbom
+          path: ${{ matrix.component }}/client/${{ matrix.folder }}/cyclonedx/bom.json
+
+  generate_backend_sbom:
+    runs-on: ubuntu-latest
+    needs: frontend_sbom
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven-dist
+        with:
+          maven-version: 3.8.8
+          set-mvnw: true
+
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: sbom
+
+      - name: Generate Backend SBOM
+        run: ./mvnw org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom -Dcyclonedx.includeTestScope=false
+
+      - name: Upload Backend SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-sbom
+          path: target/bom.json
+
+  attach_artifacts_to_release:
+    runs-on: ubuntu-latest
+    needs: [ frontend_sbom, generate_backend_sbom ]
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Download Backend SBOM Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-sbom
+          path: ./sboms/backend
+
+      - name: Download Tasklist SBOM Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tasklist-fe-sbom
+          path: ./sboms/tasklist
+
+      - name: Download Operate SBOM Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: operate-fe-sbom
+          path: ./sboms/operate
+
+      - name: Download Identity SBOM Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: identity-fe-sbom
+          path: ./sboms/identity
+
+      - name: Download Optimize SBOM Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: optimize-fe-sbom
+          path: ./sboms/optimize
+
+      - name: Determine Release Tag
+        id: get_release_tag
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> "$GITHUB_ENV"
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.release_tag }}" >> "$GITHUB_ENV"
+          else
+            latest_release=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/releases?per_page=1" | jq -r '.[0].tag_name')
+            echo "RELEASE_TAG=$latest_release" >> "$GITHUB_ENV"
+          fi
+
+      - name: Attach SBOMs to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for artifact in ./sboms/*/*; do
+            # Extract the file and directory names
+            base_name=$(basename "$artifact")
+            dir_name=$(basename "$(dirname "$artifact")")
+            unique_name="${dir_name}-${base_name}-${RELEASE_TAG}"
+
+            # Temporarily rename the artifact with the unique name
+            mv "$artifact" "./sboms/$unique_name"
+            echo "Renamed $artifact to ./sboms/$unique_name"
+
+            # Upload the artifact
+            echo "Uploading ./sboms/$unique_name to release $RELEASE_TAG"
+            if gh release upload "$RELEASE_TAG" "./sboms/$unique_name" \
+               --repo "camunda/camunda" \
+               --clobber; then
+              echo "Successfully uploaded: $unique_name"
+            else
+              echo "Failed to upload: $unique_name"
+              exit 1
+            fi
+
+            # Restore the original artifact name
+            mv "./sboms/$unique_name" "$artifact"
+            echo "Restored ./sboms/$unique_name back to $artifact"
+          done

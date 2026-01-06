@@ -3,7 +3,6 @@
 paths:
   /documents:
     post:
-      x-eventually-consistent: false
       tags:
         - Document
       operationId: createDocument
@@ -56,10 +55,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "415":
           $ref: 'common-responses.yaml#/components/responses/UnsupportedMediaType'
+      x-eventually-consistent: false
 
   /documents/batch:
     post:
-      x-eventually-consistent: false
       tags:
         - Document
       operationId: createDocuments
@@ -135,10 +134,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "415":
           $ref: 'common-responses.yaml#/components/responses/UnsupportedMediaType'
+      x-eventually-consistent: false
 
   /documents/{documentId}:
     get:
-      x-eventually-consistent: false
       tags:
         - Document
       operationId: getDocument
@@ -185,9 +184,9 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Document
       operationId: deleteDocument
@@ -220,10 +219,10 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: false
 
   /documents/{documentId}/links:
     post:
-      x-eventually-consistent: false
       tags:
         - Document
       operationId: createDocumentLink
@@ -269,6 +268,7 @@ paths:
                 $ref: '#/components/schemas/DocumentLink'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
+      x-eventually-consistent: false
 
 ## Schema definitions
 

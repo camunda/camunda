@@ -92,10 +92,7 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
 
-    userTaskBehavior
-        .getTaskListeners(
-            element, userTaskRecord.getUserTaskKey(), ZeebeTaskListenerEventType.assigning)
-        .stream()
+    element.getTaskListeners(ZeebeTaskListenerEventType.assigning).stream()
         .findFirst()
         .ifPresentOrElse(
             listener ->

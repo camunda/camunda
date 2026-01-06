@@ -25,14 +25,7 @@ import type {
   BatchOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-type OperationLabelType =
-  | 'Retry'
-  | 'Cancel'
-  | 'Modify'
-  | 'Migrate'
-  | 'Delete'
-  | 'Add variable'
-  | 'Update variable';
+type OperationLabelType = 'Retry' | 'Cancel' | 'Modify' | 'Migrate' | 'Delete';
 
 const TYPE_LABELS: Readonly<Record<BatchOperationType, OperationLabelType>> = {
   RESOLVE_INCIDENT: 'Retry',
@@ -42,8 +35,6 @@ const TYPE_LABELS: Readonly<Record<BatchOperationType, OperationLabelType>> = {
   DELETE_PROCESS_INSTANCE: 'Delete',
   DELETE_PROCESS_DEFINITION: 'Delete',
   DELETE_DECISION_DEFINITION: 'Delete',
-  ADD_VARIABLE: 'Add variable',
-  UPDATE_VARIABLE: 'Update variable',
 };
 
 type Props = {

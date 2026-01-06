@@ -66,37 +66,32 @@ const runningOrderProcessInstance: InstanceMock = {
       },
     ],
   },
-  elementInstances: {
-    items: [
-      {
-        elementInstanceKey: '2251799813687146',
-        processInstanceKey: '225179981395430',
-        processDefinitionKey: '2251799813694848',
-        processDefinitionId: 'orderProcess',
-        elementId: 'StartEvent_1',
-        elementName: 'Order received',
-        type: 'START_EVENT',
-        state: 'COMPLETED',
-        hasIncident: false,
-        startDate: '2023-08-14T05:45:17.331+0000',
-        endDate: '2023-08-14T05:45:17.331+0000',
-        tenantId: '<default>',
-      },
-      {
-        elementInstanceKey: '2251799813687150',
-        processInstanceKey: '225179981395430',
-        processDefinitionKey: '2251799813694848',
-        processDefinitionId: 'orderProcess',
-        elementId: 'checkPayment',
-        elementName: 'Check payment',
-        type: 'SERVICE_TASK',
-        state: 'ACTIVE',
-        hasIncident: false,
-        startDate: '2023-08-14T05:45:17.331+0000',
-        tenantId: '<default>',
-      },
-    ],
-    page: {totalItems: 2},
+  flowNodeInstances: {
+    '225179981395430': {
+      children: [
+        {
+          id: '2251799813687146',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'StartEvent_1',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: '2023-08-14T05:45:17.331+0000',
+          treePath: '225179981395430/2251799813687146',
+          sortValues: ['', ''],
+        },
+        {
+          id: '2251799813687150',
+          type: 'SERVICE_TASK',
+          state: 'ACTIVE',
+          flowNodeId: 'checkPayment',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: null,
+          treePath: '225179981395430/2251799813687150',
+          sortValues: ['', ''],
+        },
+      ],
+      running: null,
+    },
   },
 };
 

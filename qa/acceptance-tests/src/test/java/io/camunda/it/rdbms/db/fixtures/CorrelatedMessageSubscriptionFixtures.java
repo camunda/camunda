@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -41,46 +41,46 @@ public final class CorrelatedMessageSubscriptionFixtures extends CommonFixtures 
   }
 
   public static void createAndSaveRandomCorrelatedMessageSubscriptions(
-      final RdbmsWriters rdbmsWriters) {
-    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriters, b -> b);
+      final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomCorrelatedMessageSubscriptions(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<
               CorrelatedMessageSubscriptionDbModel.Builder,
               CorrelatedMessageSubscriptionDbModel.Builder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters
+      rdbmsWriter
           .getCorrelatedMessageSubscriptionWriter()
           .create(createRandomized(builderFunction));
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static CorrelatedMessageSubscriptionDbModel createAndSaveCorrelatedMessageSubscription(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<
               CorrelatedMessageSubscriptionDbModel.Builder,
               CorrelatedMessageSubscriptionDbModel.Builder>
           builderFunction) {
     final CorrelatedMessageSubscriptionDbModel randomized = createRandomized(builderFunction);
-    createAndSaveCorrelatedMessageSubscriptions(rdbmsWriters, List.of(randomized));
+    createAndSaveCorrelatedMessageSubscriptions(rdbmsWriter, List.of(randomized));
     return randomized;
   }
 
   public static void createAndSaveCorrelatedMessageSubscription(
-      final RdbmsWriters rdbmsWriters, final CorrelatedMessageSubscriptionDbModel model) {
-    createAndSaveCorrelatedMessageSubscriptions(rdbmsWriters, List.of(model));
+      final RdbmsWriter rdbmsWriter, final CorrelatedMessageSubscriptionDbModel model) {
+    createAndSaveCorrelatedMessageSubscriptions(rdbmsWriter, List.of(model));
   }
 
   public static void createAndSaveCorrelatedMessageSubscriptions(
-      final RdbmsWriters rdbmsWriters, final List<CorrelatedMessageSubscriptionDbModel> list) {
+      final RdbmsWriter rdbmsWriter, final List<CorrelatedMessageSubscriptionDbModel> list) {
     for (final CorrelatedMessageSubscriptionDbModel model : list) {
-      rdbmsWriters.getCorrelatedMessageSubscriptionWriter().create(model);
+      rdbmsWriter.getCorrelatedMessageSubscriptionWriter().create(model);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static String nextStringId() {

@@ -40,8 +40,6 @@ public class JobEntityTransformer
         .elementId(value.getFlowNodeId())
         .elementInstanceKey(value.getFlowNodeInstanceId())
         .tenantId(value.getTenantId())
-        .creationTime(value.getCreationTime())
-        .lastUpdateTime(value.getLastUpdateTime())
         .build();
   }
 

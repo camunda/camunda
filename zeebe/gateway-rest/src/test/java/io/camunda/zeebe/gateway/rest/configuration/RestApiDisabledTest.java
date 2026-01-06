@@ -44,6 +44,6 @@ public class RestApiDisabledTest extends RestApiConfigurationTest {
         .expectStatus()
         .isNotFound();
 
-    verifyNoInteractions(topologyServices);
+    verifyNoInteractions(topologyManager);
   }
 }

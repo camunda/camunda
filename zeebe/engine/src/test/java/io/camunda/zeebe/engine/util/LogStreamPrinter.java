@@ -7,13 +7,16 @@
  */
 package io.camunda.zeebe.engine.util;
 
+import static io.camunda.zeebe.stream.impl.TypedEventRegistry.EVENT_REGISTRY;
+
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.ReflectUtil;
+import java.util.EnumMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +34,8 @@ public final class LogStreamPrinter {
     sb.append(logStream.getPartitionId());
     sb.append(":\n");
 
-    final Map<ValueType, UnifiedRecordValue> eventCache = UnifiedRecordValue.allRecordsMap();
+    final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
+    EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
 
     try (final LogStreamReader streamReader = logStream.newLogStreamReader()) {
       streamReader.seekToFirstEvent();
@@ -47,7 +51,7 @@ public final class LogStreamPrinter {
   }
 
   private static void writeRecord(
-      final Map<ValueType, UnifiedRecordValue> eventCache,
+      final Map<ValueType, UnpackedObject> eventCache,
       final LoggedEvent event,
       final StringBuilder sb) {
     sb.append(HEADER_INDENTATION);

@@ -28,8 +28,6 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   // Static StringValue keys to avoid memory waste
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
   private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
   private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
@@ -40,8 +38,6 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1);
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
   private final StringProperty messageNameProp = new StringProperty(MESSAGE_NAME_KEY, "");
@@ -53,10 +49,9 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageSubscriptionRecord() {
-    super(10);
+    super(9);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(processDefinitionKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
@@ -69,7 +64,6 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   public void wrap(final MessageSubscriptionRecord record) {
     setProcessInstanceKey(record.getProcessInstanceKey());
     setElementInstanceKey(record.getElementInstanceKey());
-    setProcessDefinitionKey(record.getProcessDefinitionKey());
     setMessageKey(record.getMessageKey());
     setMessageName(record.getMessageNameBuffer());
     setCorrelationKey(record.getCorrelationKeyBuffer());
@@ -99,9 +93,9 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return elementInstanceKeyProp.getValue();
   }
 
-  @Override
-  public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+  public MessageSubscriptionRecord setElementInstanceKey(final long key) {
+    elementInstanceKeyProp.setValue(key);
+    return this;
   }
 
   @Override
@@ -151,16 +145,6 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   public MessageSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProp.setValue(key);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setElementInstanceKey(final long key) {
-    elementInstanceKeyProp.setValue(key);
     return this;
   }
 

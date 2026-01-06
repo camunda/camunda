@@ -59,7 +59,7 @@ public class FeelToMessagePackTransformer {
       case final ValString string -> writeStringValue(string.value());
       case final ValList list -> {
         writer.writeArrayHeader(list.items().size());
-        list.itemsAsSeq()
+        list.items()
             .foreach(
                 item -> {
                   writeValue(item);

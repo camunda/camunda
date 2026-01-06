@@ -59,14 +59,7 @@ public final class NettySslClient {
   public static NettySslClient ofSelfSigned(final SelfSignedCertificate certificate) {
     try {
       return new NettySslClient(
-          SslContextBuilder.forClient()
-              .trustManager(certificate.certificate())
-              // Netty 4.2 changed the default for endpoint identification (hostname verification).
-              // Most tests using this helper are only interested in verifying that TLS is enabled
-              // and
-              // that the peer presents the expected certificate; they don't validate hostnames.
-              .endpointIdentificationAlgorithm(null)
-              .build());
+          SslContextBuilder.forClient().trustManager(certificate.certificate()).build());
     } catch (final SSLException e) {
       throw new UncheckedIOException(e);
     }

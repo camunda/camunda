@@ -24,7 +24,6 @@ public final class EngineConfiguration {
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY = 1000;
-  public static final Duration DEFAULT_AUTHORIZATIONS_CACHE_TTL = Duration.ofSeconds(30);
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
@@ -61,7 +60,6 @@ public final class EngineConfiguration {
   private int resourceCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
-  private Duration authorizationsCacheTtl = DEFAULT_AUTHORIZATIONS_CACHE_TTL;
 
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
@@ -92,7 +90,7 @@ public final class EngineConfiguration {
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
 
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
-  private GlobalListenersConfiguration globalListeners = GlobalListenersConfiguration.empty();
+  private GlobalListenersConfiguration listeners = GlobalListenersConfiguration.empty();
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -156,15 +154,6 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setAuthorizationsCacheCapacity(final int authorizationsCacheCapacity) {
     this.authorizationsCacheCapacity = authorizationsCacheCapacity;
-    return this;
-  }
-
-  public Duration getAuthorizationsCacheTtl() {
-    return authorizationsCacheTtl;
-  }
-
-  public EngineConfiguration setAuthorizationsCacheTtl(final Duration authorizationsCacheTtl) {
-    this.authorizationsCacheTtl = authorizationsCacheTtl;
     return this;
   }
 
@@ -349,13 +338,12 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public GlobalListenersConfiguration getGlobalListeners() {
-    return globalListeners;
+  public GlobalListenersConfiguration getListeners() {
+    return listeners;
   }
 
-  public EngineConfiguration setGlobalListeners(
-      final GlobalListenersConfiguration globalListeners) {
-    this.globalListeners = globalListeners;
+  public EngineConfiguration setListeners(final GlobalListenersConfiguration listeners) {
+    this.listeners = listeners;
     return this;
   }
 }

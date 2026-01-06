@@ -3,13 +3,13 @@
 paths:
   /jobs/activation:
     post:
-      x-eventually-consistent: false
       tags:
         - Job
       operationId: activateJobs
       summary: Activate jobs
       description: |
         Iterate through all known partitions and activate jobs up to the requested maximum.
+      x-eventually-consistent: false
       requestBody:
         required: true
         content:
@@ -34,7 +34,6 @@ paths:
 
   /jobs/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Job
       operationId: searchJobs
@@ -61,10 +60,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /jobs/{jobKey}/failure:
     post:
-      x-eventually-consistent: false
       tags:
         - Job
       operationId: failJob
@@ -110,10 +109,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /jobs/{jobKey}/error:
     post:
-      x-eventually-consistent: false
       tags:
         - Job
       operationId: throwJobError
@@ -157,10 +156,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /jobs/{jobKey}/completion:
     post:
-      x-eventually-consistent: false
       tags:
         - Job
       operationId: completeJob
@@ -203,10 +202,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /jobs/{jobKey}:
     patch:
-      x-eventually-consistent: false
       tags:
         - Job
       operationId: updateJob
@@ -248,6 +247,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
 ## Schema definitions
 
@@ -280,10 +280,6 @@ components:
         fetchVariable:
           description: A list of variables to fetch as the job variables; if empty, all visible variables at the time of activation for the scope of the job will be returned.
           type: array
-          example:
-            - firstName
-            - lastName
-            - email
           items:
             type: string
         requestTimeout:
@@ -421,17 +417,14 @@ components:
           type: string
           nullable: true
         candidateGroups:
-          description: The groups eligible to claim the task.
           type: array
           items:
             type: string
         candidateUsers:
-          description: The users eligible to claim the task.
           type: array
           items:
             type: string
         changedAttributes:
-          description: The attributes that were changed in the task.
           type: array
           items:
             type: string
@@ -455,7 +448,6 @@ components:
           maximum: 100
           nullable: true
         userTaskKey:
-          description: The unique key identifying the user task.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
           nullable: true
@@ -505,7 +497,7 @@ components:
             - type
             - worker
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -529,7 +521,7 @@ components:
         elementInstanceKey:
           description: The element instance key associated with the job.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
         endTime:
           description: When the job ended.
           allOf:
@@ -552,7 +544,7 @@ components:
         jobKey:
           description: The key, a unique identifier for the job.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/JobKeyFilterProperty'
         kind:
           description: The kind of the job.
           allOf:
@@ -568,11 +560,11 @@ components:
         processDefinitionKey:
           description: The process definition key associated with the job.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
         processInstanceKey:
           description: The process instance key associated with the job.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
         retries:
           description: The number of retries left.
           allOf:
@@ -593,14 +585,6 @@ components:
           description: The name of the worker for this job.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
-        creationTime:
-          description: When the job was created. Field is present for jobs created after 8.9.
-          allOf:
-            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
-        lastUpdateTime:
-          description: When the job was last updated. Field is present for jobs created after 8.9.
-          allOf:
-            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
 
     JobSearchQueryResult:
       description: Job search response.
@@ -708,14 +692,6 @@ components:
         worker:
           description: The name of the worker of this job.
           type: string
-        creationTime:
-          description: When the job was created. Field is present for jobs created after 8.9.
-          type: string
-          format: date-time
-        lastUpdateTime:
-          description: When the job was last updated. Field is present for jobs created after 8.9.
-          type: string
-          format: date-time
 
     JobFailRequest:
       type: object
@@ -735,9 +711,6 @@ components:
           format: int64
           default: 0
         variables:
-          description: >
-            JSON object that will instantiate the variables at the local scope of the job's
-            associated task.
           type: object
           additionalProperties: true
 
@@ -925,12 +898,10 @@ components:
           type: integer
           format: int32
           description: The new number of retries for the job.
-          nullable: true
         timeout:
           type: integer
           format: int64
           description: The new timeout for the job in milliseconds.
-          nullable: true
 
     ## Enums
 

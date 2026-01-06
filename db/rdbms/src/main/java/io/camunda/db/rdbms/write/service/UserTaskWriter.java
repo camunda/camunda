@@ -20,13 +20,12 @@ import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
-public class UserTaskWriter extends ProcessInstanceDependant implements RdbmsWriter {
+public class UserTaskWriter {
 
   private final ExecutionQueue executionQueue;
   private final UserTaskMapper mapper;
 
   public UserTaskWriter(final ExecutionQueue executionQueue, final UserTaskMapper mapper) {
-    super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
   }
@@ -55,15 +54,6 @@ public class UserTaskWriter extends ProcessInstanceDependant implements RdbmsWri
               WriteStatementType.INSERT,
               userTaskDbModel.userTaskKey(),
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
-              userTaskDbModel));
-    }
-    if (userTaskDbModel.tags() != null && !userTaskDbModel.tags().isEmpty()) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.USER_TASK,
-              WriteStatementType.INSERT,
-              userTaskDbModel.userTaskKey(),
-              "io.camunda.db.rdbms.sql.UserTaskMapper.insertTags",
               userTaskDbModel));
     }
   }
@@ -108,7 +98,6 @@ public class UserTaskWriter extends ProcessInstanceDependant implements RdbmsWri
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
               userTaskDbModel));
     }
-    // Tags are immutable and set only at creation time, so we don't update them
   }
 
   public void updateState(final long userTaskKey, final UserTaskState state) {

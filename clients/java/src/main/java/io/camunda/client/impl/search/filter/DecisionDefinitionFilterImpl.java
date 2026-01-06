@@ -67,18 +67,6 @@ public class DecisionDefinitionFilterImpl
   }
 
   @Override
-  public DecisionDefinitionFilter decisionRequirementsName(final String value) {
-    filter.setDecisionRequirementsName(value);
-    return this;
-  }
-
-  @Override
-  public DecisionDefinitionFilter decisionRequirementsVersion(final int value) {
-    filter.setDecisionRequirementsVersion(value);
-    return this;
-  }
-
-  @Override
   public DecisionDefinitionFilter tenantId(final String value) {
     filter.setTenantId(value);
     return this;

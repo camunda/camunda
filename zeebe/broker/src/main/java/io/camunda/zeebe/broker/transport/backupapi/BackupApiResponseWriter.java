@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.transport.backupapi;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import java.util.function.BiConsumer;
@@ -40,12 +39,6 @@ public final class BackupApiResponseWriter implements ResponseWriter {
   BackupApiResponseWriter noResponse() {
     hasResponse = false;
     lengthSupplier = () -> 0;
-    return this;
-  }
-
-  BackupApiResponseWriter withCheckpointState(final CheckpointStateResponse response) {
-    responseWriter = response::write;
-    lengthSupplier = response::getLength;
     return this;
   }
 

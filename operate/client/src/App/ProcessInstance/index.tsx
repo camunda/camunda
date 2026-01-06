@@ -14,13 +14,15 @@ import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
+import {incidentsStore} from 'modules/stores/incidents';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
-import {ElementInstanceLog} from './ElementInstanceLog';
+import {FlowNodeInstanceLog} from './FlowNodeInstanceLog/v2';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
@@ -35,7 +37,13 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {startPolling as startPollingIncidents} from 'modules/utils/incidents';
+import {
+  init as initFlowNodeInstance,
+  startPolling as startPollingFlowNodeInstance,
+} from 'modules/utils/flowNodeInstance';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
+import {type ProcessInstance as ProcessInstanceType} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   useIsRootNodeSelected,
   useRootNode,
@@ -43,6 +51,18 @@ import {
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
+
+const startPolling = (processInstance?: ProcessInstanceType) => {
+  startPollingIncidents(processInstance, {
+    runImmediately: true,
+  });
+  startPollingFlowNodeInstance(processInstance, {runImmediately: true});
+};
+
+const stopPolling = () => {
+  incidentsStore.stopPolling();
+  flowNodeInstanceStore.stopPolling();
+};
 
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
@@ -60,7 +80,6 @@ const ProcessInstance: React.FC = observer(() => {
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
       shouldInterrupt: modificationsStore.isModificationModeEnabled,
-      ignoreSearchParams: true,
     });
 
   useEffect(() => {
@@ -84,14 +103,28 @@ const ProcessInstance: React.FC = observer(() => {
     const disposer = reaction(
       () => modificationsStore.isModificationModeEnabled,
       (isModificationModeEnabled) => {
-        if (!isModificationModeEnabled) {
+        if (isModificationModeEnabled) {
+          stopPolling();
+        } else {
           instanceHistoryModificationStore.reset();
+          startPolling(processInstance);
         }
       },
     );
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        startPolling(processInstance);
+      } else {
+        stopPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       disposer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [processInstance]);
 
@@ -103,6 +136,7 @@ const ProcessInstance: React.FC = observer(() => {
       rootNode
     ) {
       initFlowNodeSelection(rootNode, processInstanceId, isRootNodeSelected);
+      initFlowNodeInstance(processInstance);
       isInitialized.current = true;
     }
   }, [processInstance, rootNode, processInstanceId, isRootNodeSelected]);
@@ -110,6 +144,7 @@ const ProcessInstance: React.FC = observer(() => {
   useEffect(() => {
     return () => {
       instanceHistoryModificationStore.reset();
+      flowNodeInstanceStore.reset();
       flowNodeTimeStampStore.reset();
       flowNodeSelectionStore.reset();
       modificationsStore.reset();
@@ -176,7 +211,7 @@ const ProcessInstance: React.FC = observer(() => {
             topPanel={<TopPanel />}
             bottomPanel={
               <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
-                <ElementInstanceLog />
+                <FlowNodeInstanceLog />
                 <VariablePanel
                   setListenerTabVisibility={setListenerTabVisibility}
                 />

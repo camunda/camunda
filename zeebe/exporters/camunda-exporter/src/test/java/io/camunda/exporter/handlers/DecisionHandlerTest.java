@@ -10,10 +10,8 @@ package io.camunda.exporter.handlers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-import io.camunda.exporter.cache.TestDecisionRequirementsCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -29,10 +27,7 @@ final class DecisionHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-decision";
-  private final TestDecisionRequirementsCache decisionRequirementsCache =
-      new TestDecisionRequirementsCache();
-  private final DecisionHandler underTest =
-      new DecisionHandler(indexName, decisionRequirementsCache);
+  private final DecisionHandler underTest = new DecisionHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -153,45 +148,5 @@ final class DecisionHandlerTest {
         .isEqualTo("decisionRequirementsId");
     assertThat(decisionDefinitionEntity.getDecisionRequirementsKey()).isEqualTo(222L);
     assertThat(decisionDefinitionEntity.getTenantId()).isEqualTo("tenantId");
-  }
-
-  @Test
-  void shouldUpdateEntityFromCache() {
-    // given
-    final long decisionKey = 123;
-    final long decisionRequirementsKey = 222;
-    final String decisionRequirementsName = "decisionRequirementsName";
-    final int decisionRequirementsVersion = 4;
-
-    final DecisionRecordValue decisionRecordValue =
-        ImmutableDecisionRecordValue.builder()
-            .from(factory.generateObject(DecisionRecordValue.class))
-            .withDecisionKey(decisionKey)
-            .withDecisionRequirementsId("decisionRequirementsId")
-            .withDecisionRequirementsKey(decisionRequirementsKey)
-            .build();
-
-    final Record<DecisionRecordValue> decisionRecord =
-        factory.generateRecord(
-            ValueType.DECISION,
-            r -> r.withIntent(DecisionIntent.CREATED).withValue(decisionRecordValue));
-
-    final CachedDecisionRequirementsEntity cachedDRD =
-        new CachedDecisionRequirementsEntity(
-            decisionRequirementsKey, decisionRequirementsName, decisionRequirementsVersion);
-    decisionRequirementsCache.put(decisionRequirementsKey, cachedDRD);
-
-    // when
-    final DecisionDefinitionEntity decisionDefinitionEntity = new DecisionDefinitionEntity();
-    underTest.updateEntity(decisionRecord, decisionDefinitionEntity);
-
-    // then
-    assertThat(decisionDefinitionEntity.getKey()).isEqualTo(decisionKey);
-    assertThat(decisionDefinitionEntity.getDecisionRequirementsKey())
-        .isEqualTo(decisionRequirementsKey);
-    assertThat(decisionDefinitionEntity.getDecisionRequirementsName())
-        .isEqualTo(decisionRequirementsName);
-    assertThat(decisionDefinitionEntity.getDecisionRequirementsVersion())
-        .isEqualTo(decisionRequirementsVersion);
   }
 }

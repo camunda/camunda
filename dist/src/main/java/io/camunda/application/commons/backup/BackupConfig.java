@@ -10,9 +10,8 @@ package io.camunda.application.commons.backup;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
+import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
-import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
@@ -27,8 +26,7 @@ public class BackupConfig {
 
   @Bean
   public BackupRepositoryProps backupRepositoryProps(final Camunda camunda) {
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    return props(VersionUtil.getVersion(), backupConfig(secondaryStorage));
+    return props(VersionUtil.getVersion(), camunda.getData().getBackup());
   }
 
   @Bean("backupThreadPoolExecutor")
@@ -44,19 +42,11 @@ public class BackupConfig {
     return executor;
   }
 
-  public static BackupRepositoryProps props(
-      final String version, final DocumentBasedSecondaryStorageBackup backupConfig) {
+  public static BackupRepositoryProps props(final String version, final Backup backupConfig) {
     return new BackupRepositoryPropsRecord(
         version,
         backupConfig.getRepositoryName(),
         backupConfig.getSnapshotTimeout(),
         backupConfig.getIncompleteCheckTimeout().getSeconds());
-  }
-
-  private DocumentBasedSecondaryStorageBackup backupConfig(
-      final SecondaryStorage secondaryStorage) {
-    return elasticsearch.equals(secondaryStorage.getType())
-        ? secondaryStorage.getElasticsearch().getBackup()
-        : secondaryStorage.getOpensearch().getBackup();
   }
 }

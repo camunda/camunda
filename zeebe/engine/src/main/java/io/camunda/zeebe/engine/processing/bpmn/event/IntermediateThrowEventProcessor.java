@@ -55,7 +55,7 @@ public class IntermediateThrowEventProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
-    expressionProcessor = bpmnBehaviors.expressionProcessor();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     signalBehavior = bpmnBehaviors.signalBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
@@ -345,9 +345,7 @@ public class IntermediateThrowEventProcessor
       }
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-          escalation.getEscalationCodeExpression(),
-          context.getElementInstanceKey(),
-          context.getTenantId());
+          escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
     }
   }
 

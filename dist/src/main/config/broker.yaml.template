@@ -835,8 +835,6 @@
         #     variableDocument: true
         #     clusterVariable: true
         #     adHocSubProcessInstruction: true
-        #     conditionalEventSubscription: true
-        #     conditionalEvaluation: true
         #
         #   retention:
         #     enabled: false
@@ -922,8 +920,6 @@
         #     variableDocument: true
         #     clusterVariable: true
         #     adHocSubProcessInstruction: true
-        #     conditionalEventSubscription: true
-        #     conditionalEvaluation: true
 
       # Camunda Exporter ----------
       # An example configuration for the camunda exporter:
@@ -981,9 +977,6 @@
         #   createSchema: true
         #
         #   processCache:
-        #     maxCacheSize: 10000
-        #
-        #   decisionRequirementsCache:
         #     maxCacheSize: 10000
         #
         #   formCache:

@@ -53,8 +53,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       "camunda.security.authentication.oidc.client-secret=" + OidcFlowTest.CLIENT_SECRET,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
-      "camunda.security.authentication.oidc.clock-skew=45s",
-      //       uncomment to debug the filter chain
+      // uncomment to debug the filter chain
       //      "logging.level.org.springframework.security=TRACE",
     })
 @ActiveProfiles("consolidated-auth")

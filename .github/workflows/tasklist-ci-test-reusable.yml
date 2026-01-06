@@ -54,12 +54,16 @@ jobs:
         database: [ elasticsearch, opensearch ]
         include:
           - database: elasticsearch
+            capitalizedDatabase: Elasticsearch
             testProfile: docker-es
+            url: http://localhost:9200
           - database: opensearch
+            capitalizedDatabase: Opensearch
             testProfile: docker-os
+            url: http://localhost:9200
     env:
-      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+      ZEEBE_TEST_DOCKER_IMAGE_TAG: current-test
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
@@ -69,7 +73,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -84,11 +88,19 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          # we use a local registry for pushing
+          repository: ${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          version: ${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }}
+          # push is needed to make accessible for integration tests
+          push: true
 
       # Run integration tests in parallel
       - name: Run Integration Tests
@@ -100,8 +112,17 @@ jobs:
             -B --fail-at-end \
             -Dfailsafe.rerunFailingTestsCount=2 \
             -Dcamunda.data.secondary-storage.type=${{ matrix.database }} \
-            -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
-            -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+            -Dcamunda.database.type=${{ matrix.database }} \
+            -Dcamunda.tasklist.database=${{ matrix.database }} \
+            -Dcamunda.operate.database=${{ matrix.database }} \
+            -Dcamunda.data.secondary-storage.${{ matrix.database }}.url=${{ matrix.url }} \
+            -Dcamunda.database.url=${{ matrix.url }} \
+            -Dcamunda.operate.${{ matrix.database }}.url=${{ matrix.url }} \
+            -Dcamunda.tasklist.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
+            -Dcamunda.tasklist.${{ matrix.database }}.url=${{ matrix.url }} \
+            -Dcamunda.operate.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
+            -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
+            -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize

@@ -28,8 +28,6 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
-import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -37,11 +35,8 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
-import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
-import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -153,32 +148,7 @@ public final class EventAppliers implements EventApplier {
     registerUsageMetricsAppliers(state);
     registerMultiInstanceAppliers(state);
     registerClusterVariableEventAppliers(state);
-    registerHistoryDeletionAppliers();
-    registerConditionalSubscriptionAppliers(state);
-    registerConditionalEvaluationAppliers();
-    registerExpressionEvaluationEventAppliers();
-    registerGlobalListenersEventAppliers(state);
     return this;
-  }
-
-  private void registerExpressionEvaluationEventAppliers() {
-    register(ExpressionIntent.EVALUATED, NOOP_EVENT_APPLIER);
-  }
-
-  private void registerConditionalSubscriptionAppliers(final MutableProcessingState state) {
-    register(
-        ConditionalSubscriptionIntent.CREATED,
-        new ConditionalSubscriptionCreatedApplier(state.getConditionalSubscriptionState()));
-    register(
-        ConditionalSubscriptionIntent.TRIGGERED,
-        new ConditionalSubscriptionTriggeredApplier(state.getConditionalSubscriptionState()));
-    register(
-        ConditionalSubscriptionIntent.DELETED,
-        new ConditionalSubscriptionDeletedApplier(state.getConditionalSubscriptionState()));
-  }
-
-  private void registerGlobalListenersEventAppliers(final MutableProcessingState state) {
-    register(GlobalListenerBatchIntent.CONFIGURED, new GlobalListenerBatchConfiguredApplier(state));
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
@@ -316,7 +286,6 @@ public final class EventAppliers implements EventApplier {
     register(
         RuntimeInstructionIntent.INTERRUPTED,
         new RuntimeInstructionInterruptedApplier(elementInstanceState));
-    register(ProcessInstanceIntent.CANCELING, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
@@ -358,8 +327,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
     register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
-    register(JobIntent.UPDATED, 1, new JobUpdatedApplier(state));
-    register(JobIntent.UPDATED, 2, NOOP_EVENT_APPLIER);
+    register(JobIntent.UPDATED, new JobUpdatedApplier(state));
     register(JobIntent.MIGRATED, new JobMigratedApplier(state));
   }
 
@@ -403,10 +371,6 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.MIGRATED,
         new MessageSubscriptionMigratedApplier(state.getMessageSubscriptionState()));
-  }
-
-  private void registerConditionalEvaluationAppliers() {
-    register(ConditionalEvaluationIntent.EVALUATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerMessageStartEventSubscriptionAppliers(final MutableProcessingState state) {
@@ -533,35 +497,25 @@ public final class EventAppliers implements EventApplier {
   private void registerUserTaskAppliers(final MutableProcessingState state) {
     register(UserTaskIntent.CREATING, new UserTaskCreatingApplier(state));
     register(UserTaskIntent.CREATING, 2, new UserTaskCreatingV2Applier(state));
-    register(UserTaskIntent.CREATING, 3, new UserTaskCreatingV3Applier(state));
     register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
     register(UserTaskIntent.CREATED, 2, new UserTaskCreatedV2Applier(state));
-    register(UserTaskIntent.CREATED, 3, new UserTaskCreatedV3Applier(state));
     register(UserTaskIntent.CANCELING, 1, new UserTaskCancelingV1Applier(state));
     register(UserTaskIntent.CANCELING, 2, new UserTaskCancelingV2Applier(state));
-    register(UserTaskIntent.CANCELING, 3, new UserTaskCancelingV3Applier(state));
     register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
-    register(UserTaskIntent.CANCELED, 2, new UserTaskCanceledV2Applier(state));
     register(UserTaskIntent.COMPLETING, 1, new UserTaskCompletingV1Applier(state));
     register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));
-    register(UserTaskIntent.COMPLETING, 3, new UserTaskCompletingV3Applier(state));
     register(UserTaskIntent.COMPLETED, 1, new UserTaskCompletedV1Applier(state));
     register(UserTaskIntent.COMPLETED, 2, new UserTaskCompletedV2Applier(state));
-    register(UserTaskIntent.COMPLETED, 3, new UserTaskCompletedV3Applier(state));
     register(UserTaskIntent.ASSIGNING, 1, new UserTaskAssigningV1Applier(state));
     register(UserTaskIntent.ASSIGNING, 2, new UserTaskAssigningV2Applier(state));
-    register(UserTaskIntent.ASSIGNING, 3, new UserTaskAssigningV3Applier(state));
     register(UserTaskIntent.ASSIGNED, 1, new UserTaskAssignedV1Applier(state));
     register(UserTaskIntent.ASSIGNED, 2, new UserTaskAssignedV2Applier(state));
     register(UserTaskIntent.ASSIGNED, 3, new UserTaskAssignedV3Applier(state));
-    register(UserTaskIntent.ASSIGNED, 4, new UserTaskAssignedV4Applier(state));
     register(UserTaskIntent.CLAIMING, new UserTaskClaimingApplier(state));
     register(UserTaskIntent.UPDATING, 1, new UserTaskUpdatingV1Applier(state));
     register(UserTaskIntent.UPDATING, 2, new UserTaskUpdatingV2Applier(state));
-    register(UserTaskIntent.UPDATING, 3, new UserTaskUpdatingV3Applier(state));
     register(UserTaskIntent.UPDATED, 1, new UserTaskUpdatedV1Applier(state));
     register(UserTaskIntent.UPDATED, 2, new UserTaskUpdatedV2Applier(state));
-    register(UserTaskIntent.UPDATED, 3, new UserTaskUpdatedV3Applier(state));
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));
     register(UserTaskIntent.CORRECTED, new UserTaskCorrectedApplier(state));
     register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
@@ -692,12 +646,7 @@ public final class EventAppliers implements EventApplier {
   private void registerBatchOperationAppliers(final MutableProcessingState state) {
     register(
         BatchOperationIntent.CREATED,
-        1,
-        new BatchOperationCreatedV1Applier(state.getBatchOperationState()));
-    register(
-        BatchOperationIntent.CREATED,
-        2,
-        new BatchOperationCreatedV2Applier(state.getBatchOperationState()));
+        new BatchOperationCreatedApplier(state.getBatchOperationState()));
     register(
         BatchOperationIntent.INITIALIZING,
         new BatchOperationInitializingApplier(state.getBatchOperationState()));
@@ -745,10 +694,6 @@ public final class EventAppliers implements EventApplier {
     final var asyncRequestState = state.getAsyncRequestState();
     register(AsyncRequestIntent.RECEIVED, new AsyncRequestReceivedApplier(asyncRequestState));
     register(AsyncRequestIntent.PROCESSED, new AsyncRequestProcessedApplier(asyncRequestState));
-  }
-
-  private void registerHistoryDeletionAppliers() {
-    register(HistoryDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

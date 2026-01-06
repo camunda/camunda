@@ -50,11 +50,13 @@ public interface ClusterVariableRecordValue extends RecordValue, TenantOwned {
   /**
    * Returns the current value of the variable.
    *
-   * <p>The returned object is deserialized based on the stored format.
+   * <p>The returned object is deserialized based on the stored format. It may be a {@link String},
+   * {@link Number}, {@link Boolean}, {@link java.util.Map}, {@link java.util.List}, or another
+   * serializable type.
    *
-   * @return the variable value as String (never {@code null})
+   * @return the variable value
    */
-  String getValue();
+  Object getValue();
 
   /**
    * Returns the scope in which this variable is defined.

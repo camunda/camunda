@@ -8,13 +8,13 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformation;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.AdHocSubProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BoundaryEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BusinessRuleTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.CallActivityTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.CatchEventTransformer;
-import io.camunda.zeebe.engine.processing.deployment.model.transformer.ConditionalTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ContextProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.EndEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ErrorTransformer;
@@ -72,7 +72,9 @@ public final class BpmnTransformer {
 
   private final ExpressionLanguage expressionLanguage;
 
-  public BpmnTransformer(final ExpressionLanguage expressionLanguage) {
+  public BpmnTransformer(
+      final ExpressionLanguage expressionLanguage,
+      final GlobalListenersConfiguration globalListenersConfiguration) {
     this.expressionLanguage = expressionLanguage;
 
     step1Visitor = new TransformationVisitor();
@@ -81,7 +83,6 @@ public final class BpmnTransformer {
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
     step1Visitor.registerHandler(new SignalTransformer());
-    step1Visitor.registerHandler(new ConditionalTransformer());
     step1Visitor.registerHandler(new ProcessTransformer());
 
     step2Visitor = new TransformationVisitor();
@@ -98,7 +99,8 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new ScriptTaskTransformer());
     step2Visitor.registerHandler(new SequenceFlowTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
-    step2Visitor.registerHandler(new UserTaskTransformer(expressionLanguage));
+    step2Visitor.registerHandler(
+        new UserTaskTransformer(expressionLanguage, globalListenersConfiguration));
 
     step3Visitor = new TransformationVisitor();
     step3Visitor.registerHandler(new ContextProcessTransformer());

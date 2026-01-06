@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -53,22 +53,22 @@ public class DecisionInstanceSpecificFilterIT {
 
   @Autowired private DecisionInstanceDbReader decisionInstanceReader;
 
-  private RdbmsWriters rdbmsWriters;
+  private RdbmsWriter rdbmsWriter;
 
   @BeforeEach
   public void beforeAll() {
-    rdbmsWriters = rdbmsService.createWriter(0L);
+    rdbmsWriter = rdbmsService.createWriter(0L);
 
     final var decisionDefinitionKey = nextKey();
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveDecisionDefinition(
-            rdbmsWriters,
+            rdbmsWriter,
             b ->
                 b.decisionDefinitionKey(decisionDefinitionKey)
                     .decisionDefinitionId("decision" + decisionDefinitionKey)
                     .name("Decision " + decisionDefinitionKey));
     createAndSaveRandomDecisionInstances(
-        rdbmsWriters,
+        rdbmsWriter,
         b ->
             b.state(DecisionInstanceState.FAILED)
                 .decisionType(DecisionDefinitionType.LITERAL_EXPRESSION)
@@ -84,13 +84,13 @@ public class DecisionInstanceSpecificFilterIT {
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveDecisionDefinition(
-            rdbmsWriters,
+            rdbmsWriter,
             b ->
                 b.decisionDefinitionKey(decisionDefinitionKey)
                     .decisionDefinitionId("decision-" + decisionDefinitionKey)
                     .name("Decision " + decisionDefinitionKey));
     createAndSaveDecisionInstance(
-        rdbmsWriters,
+        rdbmsWriter,
         DecisionInstanceFixtures.createRandomized(
             b ->
                 b.decisionInstanceId("42-1")
@@ -126,9 +126,6 @@ public class DecisionInstanceSpecificFilterIT {
   static List<DecisionInstanceFilter> shouldFindDecisionInstanceWithSpecificFilterParameters() {
     return List.of(
         DecisionInstanceFilter.of(b -> b.decisionInstanceIds("42-1")),
-        DecisionInstanceFilter.of(b -> b.decisionInstanceIdOperations(Operation.eq("42-1"))),
-        DecisionInstanceFilter.of(
-            b -> b.decisionInstanceIdOperations(Operation.in("42-1", "other-id"))),
         DecisionInstanceFilter.of(b -> b.decisionInstanceKeys(42L)),
         DecisionInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         DecisionInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
@@ -136,8 +133,6 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.flowNodeInstanceKeys(126L)),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionIds("decision-100")),
         DecisionInstanceFilter.of(b -> b.states(DecisionInstanceState.EVALUATED)),
-        DecisionInstanceFilter.of(b -> b.stateOperations(Operation.eq("EVALUATED"))),
-        DecisionInstanceFilter.of(b -> b.stateOperations(Operation.in("EVALUATED"))),
         DecisionInstanceFilter.of(b -> b.decisionTypes(DecisionDefinitionType.DECISION_TABLE)),
         DecisionInstanceFilter.of(b -> b.evaluationFailures("failure-42")),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionNames("Decision 100")),

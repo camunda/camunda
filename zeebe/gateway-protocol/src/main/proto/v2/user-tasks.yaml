@@ -3,7 +3,6 @@
 paths:
   /user-tasks/{userTaskKey}/completion:
     post:
-      x-eventually-consistent: false
       tags:
         - User task
       operationId: completeUserTask
@@ -45,10 +44,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
 
   /user-tasks/{userTaskKey}/assignment:
     post:
-      x-eventually-consistent: false
       tags:
         - User task
       operationId: assignUserTask
@@ -90,6 +89,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
 
   /user-tasks/{userTaskKey}:
     get:
@@ -129,7 +129,6 @@ paths:
             $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
     patch:
-      x-eventually-consistent: false
       tags:
         - User task
       operationId: updateUserTask
@@ -171,6 +170,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
 
   /user-tasks/{userTaskKey}/form:
     get:
@@ -215,7 +215,6 @@ paths:
 
   /user-tasks/{userTaskKey}/assignee:
     delete:
-      x-eventually-consistent: false
       tags:
         - User task
       operationId: unassignUserTask
@@ -251,10 +250,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        x-eventually-consistent: false
 
   /user-tasks/search:
     post:
-      x-eventually-consistent: true
       tags:
         - User task
       operationId: searchUserTasks
@@ -281,6 +280,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        x-eventually-consistent: true
 
   /user-tasks/{userTaskKey}/variables/search:
     post:
@@ -289,7 +289,7 @@ paths:
         - User task
       operationId: searchUserTaskVariables
       summary: Search user task variables
-      description: Search for user task variables based on given criteria. By default, long variable values in the response are truncated.
+      description: Search for user task variables based on given criteria.
       parameters:
         - name: userTaskKey
           in: path
@@ -297,12 +297,6 @@ paths:
           description: The key of the user task.
           schema:
             $ref: 'keys.yaml#/components/schemas/UserTaskKey'
-        - name: truncateValues
-          in: query
-          required: false
-          description: When true (default), long variable values in the response are truncated. When false, full variable values are returned.
-          schema:
-            type: boolean
       requestBody:
         required: false
         content:
@@ -339,7 +333,7 @@ components:
             - priority
             - name
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -441,8 +435,6 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The key of the element instance.
-        tags:
-          $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
     UserTaskSearchQueryResult:
       description: User task search query response.
@@ -544,8 +536,6 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
           description: The key of the form.
-        tags:
-          $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
     UserTaskCompletionRequest:
       type: object
@@ -593,9 +583,7 @@ components:
         changeset:
           $ref: '#/components/schemas/Changeset'
         action:
-          description: >
-            A custom action value that will be accessible from user task events resulting
-            from this endpoint invocation. If not provided, it will default to "update".
+          description: The action performed.
           type: string
           nullable: true
 
@@ -666,7 +654,7 @@ components:
             - scopeKey
             - processInstanceKey
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 

@@ -21,18 +21,13 @@ public record ProcessDefinitionInstanceStatisticsAggregation(
   public static final int AGGREGATION_TERMS_SIZE = 10000;
   public static final String AGGREGATION_NAME_BY_PROCESS_ID = "by_process_id";
   public static final String AGGREGATION_NAME_PAGE = "page";
-  public static final String AGGREGATION_NAME_TOTAL_WITH_INCIDENT =
-      "activeInstancesWithIncidentCount";
+  public static final String AGGREGATION_NAME_TOTAL_WITH_INCIDENT = "activeInstancesWithIncident";
   public static final String AGGREGATION_NAME_TOTAL_WITHOUT_INCIDENT =
-      "activeInstancesWithoutIncidentCount";
+      "activeInstancesWithoutIncident";
   public static final String AGGREGATION_NAME_LATEST_PROCESS_DEFINITION = "latestProcessDefinition";
   public static final String AGGREGATION_NAME_VERSION_COUNT = "versionCount";
   public static final String AGGREGATION_FIELD_KEY = "_key";
   public static final String AGGREGATION_FIELD_PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String AGGREGATION_NAME_PROCESS_DEFINITION_KEY_CARDINALITY =
       "processDefinitionKeyCardinality";
-  public static final String PROCESS_DEFINITION_AND_TENANT_KEY =
-      "doc['bpmnProcessId'].value + '::' + doc['tenantId'].value";
-
-  public static final String SCRIPT_LANGUAGE = "painless";
 }

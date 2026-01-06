@@ -53,7 +53,7 @@ const incidentFlowNodeMetaData = {
   },
   incident: {
     id: '4503599627375678',
-    errorType: {id: 'JOB_NO_RETRIES', name: 'Job: No retries left.'},
+    errorType: {id: 'JOB_NO_RETRIES', name: 'No more retries left.'},
     errorMessage: 'There are no more retries left.',
     rootCauseInstance: {
       instanceId: '00000000000000',

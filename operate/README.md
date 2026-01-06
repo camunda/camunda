@@ -14,7 +14,7 @@ To run the application locally you can use `docker`, `docker-compose` and
 locally: you should be able to run these commands on your shell without
 `sudo`.
 
-Windows users need to install `make` manually in their shell. You can find
+Windows users need to install `make` manually on their shell. You can find
 instructions on how to do it
 [here](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
@@ -70,13 +70,13 @@ daemon.
 
 ### "max virtual memory" error on Mac/Linux
 
-Sometimes Elasticsearch will not run, reporting the error in the log:
+Sometimes Elasticsearch will not run reporting the error in log:
 
 ```
 max virtual memory areas vm.max_map_count [65530] likely too low, increase to at least [262144]
 ```
 
-In this case, the following command might fix the issue:
+In this case following command might fix the issue:
 
 ```
 sudo sysctl -w vm.max_map_count=262144
@@ -84,13 +84,10 @@ sudo sysctl -w vm.max_map_count=262144
 
 To set this value permanently, update the `vm.max_map_count` setting in /etc/sysctl.conf. For more info see here: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
 
-## Preview environment
+## Testing environments
 
-- You can deploy a preview of the self managed environment from a PR. To do this, add the `deploy-preview` label to the PR.
-- Preview environments can also be deployed programmatically via the `preview-env-build-and-deploy.yml` workflow, which accepts:
-  - `app-name`: The ArgoCD application name (max 15 chars)
-  - `labels`: Additional ArgoCD app labels (comma or newline-separated key=value pairs)
-- A weekly smoke test runs automatically to verify preview environment functionality.
+- The **staging** environment is available here: https://stage.operate.camunda.cloud/ . Every commit to master (successfully built) will be published to stage automatically.
+- Moreover, to deploy a PR at $branch_name.operate.camunda.cloud (e.s. `amazing-feature.operate.camunda.cloud`) please add the `deploy-preview` label to the PR.
 
 ## Branch name flags
 
@@ -109,11 +106,11 @@ To run these locally you can follow the steps below:
 
 After the tests run, test report is saved locally in operate/client/playwright-report. In case step 4 fails with `Failed to open browser on ...` , run the following command inside client folder to see the test results: `npx @playwright/test show-report playwright-report/`
 
-### Updating visual regression screenshots
+#### Updating screenshots
 
-If you made feature changes and intentionally want to update the UI baseline, follow the steps above, but in step 4 run `npm run test:visual -- --update-snapshots`. Be aware that this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `npm run test:visual -- --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
 
-### Inspecting failures in the CI
+#### Inspecting failures in the CI
 
 Sometimes the visual regression tests might fail in the CI and you want to check why. To achieve that you can download the Playwright report assets (like in the image below), unzip the folder and then run `npx @playwright/test show-report folder-with-unzipped-assets/`.
 
@@ -147,7 +144,7 @@ To rerun (and clean up data), press Ctrl+C and run the same command again.
 npm run test:e2e
 ```
 
-## Starting up Operate for updating the docs screenshots
+## Running Operate Update screenshots automation
 
 ### Run Operate backend
 
@@ -162,7 +159,7 @@ cd client
 npm run start
 ```
 
-### Run the docs screenshots generation (in client directory)
+### Run Operate Update screenshots automation locally (in client directory)
 
 ```
 npm run generate-screenshots

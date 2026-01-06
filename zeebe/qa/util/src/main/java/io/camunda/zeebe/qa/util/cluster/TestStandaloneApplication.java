@@ -13,13 +13,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
-import io.camunda.configuration.Api;
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Cluster;
-import io.camunda.configuration.Data;
-import io.camunda.configuration.Monitoring;
-import io.camunda.configuration.Processing;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;
@@ -44,36 +38,21 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
   T withExporter(final String id, final Consumer<ExporterCfg> modifier);
 
   /**
-   * Sets the secondary storage type to use.
-   *
-   * @param type the secondary storage type
-   * @return itself for chaining
+   * Modifies the broker configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
    */
-  T withSecondaryStorageType(SecondaryStorageType type);
+  T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
 
   /**
-   * Modifies the unified configuration (camunda.* properties). This is the recommended way to
-   * configure test brokers going forward.
-   *
-   * @param modifier a configuration function that accepts the Camunda configuration object
-   * @return itself for chaining
+   * Modifies the security configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
    */
-  @Override
-  default T withUnifiedConfig(final Consumer<Camunda> modifier) {
-    throw new UnsupportedOperationException(
-        "Unified configuration is not supported by this implementation");
-  }
+  T withSecurityConfig(final Consumer<CamundaSecurityProperties> modifier);
 
-  /**
-   * Returns the unified configuration object. This provides access to the camunda.* configuration
-   * structure.
-   *
-   * @return the Camunda unified configuration object
-   */
-  @Override
-  default Camunda unifiedConfig() {
-    throw new UnsupportedOperationException(
-        "Unified configuration is not supported by this implementation");
+  BrokerBasedProperties brokerConfig();
+
+  default Optional<AuthenticationMethod> clientAuthenticationMethod() {
+    return Optional.empty();
   }
 
   @Override
@@ -98,65 +77,5 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
             });
 
     return camundaClientBuilder;
-  }
-
-  /**
-   * Convenience method to modify cluster configuration using the unified configuration API.
-   *
-   * @param modifier a configuration function for cluster settings
-   * @return itself for chaining
-   */
-  default T withClusterConfig(final Consumer<Cluster> modifier) {
-    return withUnifiedConfig(c -> modifier.accept(c.getCluster()));
-  }
-
-  /**
-   * Convenience method to modify data configuration using the unified configuration API.
-   *
-   * @param modifier a configuration function for data settings
-   * @return itself for chaining
-   */
-  default T withDataConfig(final Consumer<Data> modifier) {
-    return withUnifiedConfig(c -> modifier.accept(c.getData()));
-  }
-
-  /**
-   * Convenience method to modify API configuration using the unified configuration API.
-   *
-   * @param modifier a configuration function for API settings
-   * @return itself for chaining
-   */
-  default T withApiConfig(final Consumer<Api> modifier) {
-    return withUnifiedConfig(c -> modifier.accept(c.getApi()));
-  }
-
-  /**
-   * Convenience method to modify processing configuration using the unified configuration API.
-   *
-   * @param modifier a configuration function for processing settings
-   * @return itself for chaining
-   */
-  default T withProcessingConfig(final Consumer<Processing> modifier) {
-    return withUnifiedConfig(c -> modifier.accept(c.getProcessing()));
-  }
-
-  /**
-   * Convenience method to modify monitoring configuration using the unified configuration API.
-   *
-   * @param modifier a configuration function for monitoring settings
-   * @return itself for chaining
-   */
-  default T withMonitoringConfig(final Consumer<Monitoring> modifier) {
-    return withUnifiedConfig(c -> modifier.accept(c.getMonitoring()));
-  }
-
-  /**
-   * Modifies the security configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
-   */
-  T withSecurityConfig(final Consumer<CamundaSecurityProperties> modifier);
-
-  default Optional<AuthenticationMethod> clientAuthenticationMethod() {
-    return Optional.empty();
   }
 }

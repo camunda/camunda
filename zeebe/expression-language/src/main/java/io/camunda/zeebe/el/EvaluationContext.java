@@ -7,61 +7,32 @@
  */
 package io.camunda.zeebe.el;
 
-import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-/**
- * A read-only view over a variable context, typically backed by a large JSON-like buffer.
- *
- * <p>Variable resolution proceeds one segment at a time. Calling {@link #getVariable(String)}
- * returns either:
- *
- * <ul>
- *   <li><b>Left(DirectBuffer)</b> is a terminal value (e.g., a primitive, string) associated with
- *       the provided variable name in this context, or {@code Left(null)} to signal that no value
- *       exists for the provided name in this context
- *   <li><b>Right(EvaluationContext)</b> is a nested context representing an object/node which can
- *       be queried further for deeper segments.
- * </ul>
- *
- * <h3>Resolution semantics</h3>
- *
- * <pre>{@code
- * // Example path resolution for "camunda.vars.cluster.key":
- * Either<DirectBuffer, EvaluationContext> step1 = root.getVariable("camunda");
- * // if Right(ctx1), then:
- * Either<DirectBuffer, EvaluationContext> step2 = ctx1.getVariable("vars");
- * // if Right(ctx2), then:
- * Either<DirectBuffer, EvaluationContext> step3 = ctx2.getVariable("cluster");
- * // if Right(ctx3), then:
- * Either<DirectBuffer, EvaluationContext> step4 = ctx3.getVariable("key");
- * // step4 is expected to be Left(value) or Left(null) if not found
- * }</pre>
- *
- * <h3>Null and absence</h3>
- *
- * Returning {@code Left(null)} indicates <em>absence</em> (variable not present).
- *
- * <h3>Buffer lifetime</h3>
- *
- * Unless otherwise documented by a given implementation, the {@link DirectBuffer} returned in
- * {@code Left} is considered valid only until the next call into the same implementation.
- */
-@FunctionalInterface
+/** The context for evaluating an expression. */
 public interface EvaluationContext {
+  /**
+   * Returns the value of the variable with the given name.
+   *
+   * @param variableName the name of the variable
+   * @return the variable value as MessagePack encoded buffer, or {@code null} if the variable is
+   *     not present
+   */
+  DirectBuffer getVariable(String variableName);
 
   /**
-   * Looks up a variable in the current context by its immediate name (one path segment).
+   * Combines two evaluation contexts. The combined evaluation context will first search for the
+   * variable in {@code this} evaluation context. If the variable is not found, it will attempt the
+   * lookup in {@code secondaryEvaluationContext}.
    *
-   * @param variableName the single-segment variable name to resolve in this context
-   * @return an {@link Either} containing:
-   *     <ul>
-   *       <li><b>Left(valueBuffer)</b> when the name maps to a terminal value; or {@code
-   *           Left(null)} when the name is absent in this context; or
-   *       <li><b>Right(nestedContext)</b> when the name maps to an object/structure that can be
-   *           queried further for deeper segments.
-   *     </ul>
-   *     Implementations should never return {@code Right(null)}.
+   * @param secondaryEvaluationContext secondary evaluation context; this will be used to lookup
+   *     variables which are not found in {@code this} evaluation context
+   * @return combined evaluation context
    */
-  Either<DirectBuffer, EvaluationContext> getVariable(String variableName);
+  default EvaluationContext combine(final EvaluationContext secondaryEvaluationContext) {
+    return variable ->
+        Optional.ofNullable(getVariable(variable))
+            .orElseGet(() -> secondaryEvaluationContext.getVariable(variable));
+  }
 }

@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
@@ -96,13 +95,9 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-          .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
-          .withUnifiedConfig(
-              cfg ->
-                  cfg.getData()
-                      .getSecondaryStorage()
-                      .getElasticsearch()
-                      .setUrl("http://" + CONTAINER.getHttpHostAddress()))
+          .withProperty(
+              "camunda.data.secondary-storage.elasticsearch.url",
+              "http://" + CONTAINER.getHttpHostAddress())
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);

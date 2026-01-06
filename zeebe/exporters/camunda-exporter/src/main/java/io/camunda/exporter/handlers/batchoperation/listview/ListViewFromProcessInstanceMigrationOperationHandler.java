@@ -11,7 +11,6 @@ import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -34,9 +33,7 @@ public class ListViewFromProcessInstanceMigrationOperationHandler
   @Override
   protected boolean isFailed(final Record<ProcessInstanceMigrationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceMigrationIntent.MIGRATE)
-        && record.getRecordType() == RecordType.COMMAND_REJECTION
-        && record.getRejectionType() != RejectionType.NULL_VAL
-        && record.getRejectionType() != RejectionType.NOT_FOUND;
+        && record.getRejectionType() != RejectionType.NULL_VAL;
   }
 
   @Override

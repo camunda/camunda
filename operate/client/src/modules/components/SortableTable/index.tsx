@@ -57,14 +57,12 @@ type Props = {
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
   batchOperationId?: string;
-  size?: React.ComponentProps<typeof Table>['size'];
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
 >;
 
 const SortableTable: React.FC<Props> = ({
-  size = 'sm',
   state,
   selectionType = 'none',
   headerColumns,
@@ -116,7 +114,7 @@ const SortableTable: React.FC<Props> = ({
       <DataTable
         rows={rows}
         headers={headerColumns}
-        size={size}
+        size="sm"
         render={({
           rows,
           headers,

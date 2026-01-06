@@ -24,11 +24,10 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.AtomicKeyGenerator;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -45,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
@@ -59,11 +59,10 @@ import org.junit.Test;
 
 public final class MessageStreamProcessorTest {
 
-  private static final int PARTITION_ID = 1;
   private static final EngineConfiguration DEFAULT_ENGINE_CONFIGURATION = new EngineConfiguration();
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
-  @Rule public final StreamProcessorRule rule = new StreamProcessorRule(PARTITION_ID);
+  @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 
   private SubscriptionCommandSender spySubscriptionCommandSender;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
@@ -72,14 +71,13 @@ public final class MessageStreamProcessorTest {
   @Before
   public void setup() {
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
-    final var keyGenerator = new AtomicKeyGenerator(PARTITION_ID);
+    final var mockKeyGenerator = mock(KeyGenerator.class);
     final var mockDistributionState = mock(DistributionState.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
     final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
-    writers.setKeyValidator(keyGenerator);
     spySubscriptionCommandSender =
-        spy(new SubscriptionCommandSender(PARTITION_ID, mockInterpartitionCommandSender));
+        spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
     final var routingInfo = RoutingInfo.forStaticPartitions(1);
     spyCommandDistributionBehavior =
@@ -87,7 +85,7 @@ public final class MessageStreamProcessorTest {
             new CommandDistributionBehavior(
                 mockDistributionState,
                 writers,
-                PARTITION_ID,
+                1,
                 routingInfo,
                 mockInterpartitionCommandSender,
                 mock(DistributionMetrics.class)));
@@ -100,7 +98,7 @@ public final class MessageStreamProcessorTest {
           when(mockAuthCheckBehavior.isAuthorizedOrInternalCommand(any(AuthorizationRequest.class)))
               .thenReturn(Either.right(null));
           MessageEventProcessors.addMessageProcessors(
-              PARTITION_ID,
+              1,
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
               processingState,
@@ -139,7 +137,6 @@ public final class MessageStreamProcessorTest {
         .openProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getProcessDefinitionKey()),
             any(),
             anyBoolean(),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
@@ -273,7 +270,6 @@ public final class MessageStreamProcessorTest {
         .closeProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getProcessDefinitionKey()),
             any(DirectBuffer.class),
             eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
@@ -299,7 +295,6 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getProcessDefinitionKey()),
             any(),
             any(),
             eq(messageKey),
@@ -345,7 +340,6 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             any(),
             eq(firstMessage.getKey()),
@@ -357,7 +351,6 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             any(),
             eq(lastMessageKey),
@@ -460,7 +453,6 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(firstSubscription.getProcessInstanceKey()),
             eq(firstSubscription.getElementInstanceKey()),
-            eq(firstSubscription.getProcessDefinitionKey()),
             eq(firstSubscription.getBpmnProcessIdBuffer()),
             any(DirectBuffer.class),
             eq(messageKey),
@@ -472,7 +464,6 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(secondSubscription.getProcessInstanceKey()),
             eq(secondSubscription.getElementInstanceKey()),
-            eq(secondSubscription.getProcessDefinitionKey()),
             eq(secondSubscription.getBpmnProcessIdBuffer()),
             any(DirectBuffer.class),
             eq(messageKey),
@@ -500,7 +491,6 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             eq(subscription.getMessageNameBuffer()),
             eq(firstMessageKey),
@@ -512,7 +502,6 @@ public final class MessageStreamProcessorTest {
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getProcessDefinitionKey()),
             eq(subscription.getBpmnProcessIdBuffer()),
             eq(subscription.getMessageNameBuffer()),
             eq(lastMessageKey),
@@ -526,7 +515,6 @@ public final class MessageStreamProcessorTest {
     subscription
         .setProcessInstanceKey(1L)
         .setElementInstanceKey(2L)
-        .setProcessDefinitionKey(3L)
         .setBpmnProcessId(wrapString("process"))
         .setMessageKey(-1L)
         .setMessageName(wrapString("order canceled"))

@@ -501,8 +501,8 @@ export function validateResponseShape<
 }
 export function validateResponse<
   P extends RoutePath = RoutePath,
-  M extends MethodFor<P> = MethodFor<P>,
-  S extends StatusFor<P, M> = StatusFor<P, M>,
+  M extends MethodFor<P>,
+  S extends StatusFor<P, M>,
 >(
   spec: {path: P; method: M; status: S},
   response: PlaywrightAPIResponse,

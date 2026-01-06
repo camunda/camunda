@@ -14,7 +14,6 @@ export class LoginPage {
   readonly passwordInput: Locator;
   readonly loginButton: Locator;
   readonly errorMessage: Locator;
-  readonly invalidCredentialsError: Locator;
   readonly tasklistHeading: Locator;
   readonly operateHeading: Locator;
   readonly identityHeading: Locator;
@@ -25,9 +24,6 @@ export class LoginPage {
     this.passwordInput = page.getByRole('textbox', {name: 'password'});
     this.loginButton = page.getByRole('button', {name: 'Login'});
     this.errorMessage = page.locator('.cds--inline-notification__title');
-    this.invalidCredentialsError = page
-      .getByRole('alert')
-      .getByText(/Username and [Pp]assword do(?: not|n't) match/);
     this.tasklistHeading = page.getByRole('heading', {name: 'Tasklist'});
     this.operateHeading = page.getByRole('heading', {name: 'Operate'});
     this.identityHeading = page.getByRole('heading', {name: 'Identity'});

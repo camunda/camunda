@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
-import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
-
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
@@ -42,7 +40,7 @@ public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
 
   private static final DirectBuffer AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE_NAME =
-      BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS);
+      BufferUtil.wrapString("adHocSubProcessElements");
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -71,7 +69,7 @@ public class AdHocSubProcessProcessor
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    expressionProcessor = bpmnBehaviors.expressionProcessor();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     this.stateTransitionBehavior = stateTransitionBehavior;
     adHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
@@ -201,7 +199,7 @@ public class AdHocSubProcessProcessor
     } else {
       return expressionProcessor
           .evaluateArrayOfStringsExpression(
-              activeElementsCollection, context.getElementInstanceKey(), context.getTenantId())
+              activeElementsCollection, context.getElementInstanceKey())
           .mapLeft(
               failure ->
                   new Failure(
@@ -297,10 +295,7 @@ public class AdHocSubProcessProcessor
 
     final Expression outputElementExpression = outputElementOptional.get();
     return expressionProcessor
-        .evaluateAnyExpressionToBuffer(
-            outputElementExpression,
-            childContext.getElementInstanceKey(),
-            childContext.getTenantId())
+        .evaluateAnyExpression(outputElementExpression, childContext.getElementInstanceKey())
         .flatMap(
             outputElementValue -> {
               final DirectBuffer outputCollectionValue =
@@ -365,9 +360,7 @@ public class AdHocSubProcessProcessor
 
       return expressionProcessor
           .evaluateBooleanExpression(
-              completionConditionExpression,
-              adHocSubProcessContext.getElementInstanceKey(),
-              adHocSubProcessContext.getTenantId())
+              completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
           .mapLeft(
               failure ->
                   new Failure(

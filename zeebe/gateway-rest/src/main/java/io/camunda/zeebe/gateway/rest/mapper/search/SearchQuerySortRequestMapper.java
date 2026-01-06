@@ -13,21 +13,17 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
-import io.camunda.search.sort.ClusterVariableSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
-import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
-import io.camunda.search.sort.IncidentProcessInstanceStatisticsByErrorSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionInstanceStatisticsSort;
-import io.camunda.search.sort.ProcessDefinitionInstanceVersionStatisticsSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleMemberSort;
@@ -171,12 +167,6 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  static List<SearchQuerySortRequest<ClusterVariableSearchQuerySortRequest.FieldEnum>>
-      fromClusterVariableSearchQuerySortRequest(
-          final List<ClusterVariableSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
-  }
-
   static List<SearchQuerySortRequest<UserSearchQuerySortRequest.FieldEnum>>
       fromUserSearchQuerySortRequest(final List<UserSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
@@ -190,11 +180,6 @@ public class SearchQuerySortRequestMapper {
   static List<SearchQuerySortRequest<AuthorizationSearchQuerySortRequest.FieldEnum>>
       fromAuthorizationSearchQuerySortRequest(
           final List<AuthorizationSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
-  }
-
-  static List<SearchQuerySortRequest<AuditLogSearchQuerySortRequest.FieldEnum>>
-      fromAuditLogSearchQuerySortRequest(final List<AuditLogSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -226,30 +211,6 @@ public class SearchQuerySortRequestMapper {
           SearchQuerySortRequest<ProcessDefinitionInstanceStatisticsQuerySortRequest.FieldEnum>>
       fromProcessDefinitionInstanceStatisticsQuerySortRequest(
           final List<ProcessDefinitionInstanceStatisticsQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
-  }
-
-  public static List<
-          SearchQuerySortRequest<
-              ProcessDefinitionInstanceVersionStatisticsQuerySortRequest.FieldEnum>>
-      fromProcessDefinitionInstanceVersionStatisticsQuerySortRequest(
-          final List<ProcessDefinitionInstanceVersionStatisticsQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
-  }
-
-  public static List<
-          SearchQuerySortRequest<
-              IncidentProcessInstanceStatisticsByErrorQuerySortRequest.FieldEnum>>
-      fromIncidentProcessInstanceStatisticsByErrorQuerySortRequest(
-          final List<IncidentProcessInstanceStatisticsByErrorQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
-  }
-
-  public static List<
-          SearchQuerySortRequest<
-              IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest.FieldEnum>>
-      fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
-          final List<IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -295,13 +256,10 @@ public class SearchQuerySortRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case BATCH_OPERATION_KEY -> builder.batchOperationKey();
         case STATE -> builder.state();
         case OPERATION_TYPE -> builder.operationType();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
-        case ACTOR_TYPE -> builder.actorType();
-        case ACTOR_ID -> builder.actorId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -320,7 +278,6 @@ public class SearchQuerySortRequestMapper {
         case BATCH_OPERATION_KEY -> builder.batchOperationKey();
         case ITEM_KEY -> builder.itemKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
-        case PROCESSED_DATE -> builder.processedDate();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -579,8 +536,6 @@ public class SearchQuerySortRequestMapper {
         case VERSION -> builder.version();
         case DECISION_REQUIREMENTS_ID -> builder.decisionRequirementsId();
         case DECISION_REQUIREMENTS_KEY -> builder.decisionRequirementsKey();
-        case DECISION_REQUIREMENTS_NAME -> builder.decisionRequirementsName();
-        case DECISION_REQUIREMENTS_VERSION -> builder.decisionRequirementsVersion();
         case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
@@ -696,24 +651,6 @@ public class SearchQuerySortRequestMapper {
     return validationErrors;
   }
 
-  static List<String> applyClusterVariableSortField(
-      final ClusterVariableSearchQuerySortRequest.FieldEnum field,
-      final ClusterVariableSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case VALUE -> builder.value();
-        case NAME -> builder.name();
-        case TENANT_ID -> builder.tenantId();
-        case SCOPE -> builder.scope();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
   static List<String> applyUserTaskVariableSortField(
       final UserTaskVariableSearchQuerySortRequest.FieldEnum field,
       final VariableSort.Builder builder) {
@@ -785,46 +722,7 @@ public class SearchQuerySortRequestMapper {
         case OWNER_ID -> builder.ownerId();
         case OWNER_TYPE -> builder.ownerType();
         case RESOURCE_ID -> builder.resourceId();
-        case RESOURCE_PROPERTY_NAME -> builder.resourcePropertyName();
         case RESOURCE_TYPE -> builder.resourceType();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
-  static List<String> applyAuditLogSortField(
-      final AuditLogSearchQuerySortRequest.FieldEnum field,
-      final io.camunda.search.sort.AuditLogSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case ACTOR_ID -> builder.actorId();
-        case ACTOR_TYPE -> builder.actorType();
-        case ANNOTATION -> builder.annotation();
-        case AUDIT_LOG_KEY -> builder.auditLogKey();
-        case BATCH_OPERATION_KEY -> builder.batchOperationKey();
-        case BATCH_OPERATION_TYPE -> builder.batchOperationType();
-        case CATEGORY -> builder.category();
-        case DECISION_DEFINITION_ID -> builder.decisionDefinitionId();
-        case DECISION_DEFINITION_KEY -> builder.decisionDefinitionKey();
-        case DECISION_EVALUATION_KEY -> builder.decisionEvaluationKey();
-        case DECISION_REQUIREMENTS_ID -> builder.decisionRequirementsId();
-        case DECISION_REQUIREMENTS_KEY -> builder.decisionRequirementsKey();
-        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
-        case ENTITY_KEY -> builder.entityKey();
-        case ENTITY_TYPE -> builder.entityType();
-        case JOB_KEY -> builder.jobKey();
-        case OPERATION_TYPE -> builder.operationType();
-        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
-        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
-        case RESULT -> builder.result();
-        case TENANT_ID -> builder.tenantId();
-        case TIMESTAMP -> builder.timestamp();
-        case USER_TASK_KEY -> builder.userTaskKey();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -866,66 +764,8 @@ public class SearchQuerySortRequestMapper {
     } else {
       switch (field) {
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case ACTIVE_INSTANCES_WITH_INCIDENT_COUNT -> builder.activeInstancesWithIncidentCount();
-        case ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT ->
-            builder.activeInstancesWithoutIncidentCount();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
-  public static List<String> applyProcessDefinitionInstanceVersionStatisticsSortField(
-      final ProcessDefinitionInstanceVersionStatisticsQuerySortRequest.FieldEnum field,
-      final ProcessDefinitionInstanceVersionStatisticsSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
-        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
-        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
-        case ACTIVE_INSTANCES_WITH_INCIDENT_COUNT -> builder.activeInstancesWithIncidentCount();
-        case ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT ->
-            builder.activeInstancesWithoutIncidentCount();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
-  public static List<String> applyIncidentProcessInstanceStatisticsByErrorSortField(
-      final IncidentProcessInstanceStatisticsByErrorQuerySortRequest.FieldEnum field,
-      final IncidentProcessInstanceStatisticsByErrorSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case ERROR_MESSAGE -> builder.errorMessage();
-        case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
-  public static List<String> applyIncidentProcessInstanceStatisticsByDefinitionSortField(
-      final IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest.FieldEnum field,
-      final IncidentProcessInstanceStatisticsByDefinitionSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
-        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
-        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
-        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
-        case TENANT_ID -> builder.tenantId();
-        case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
+        case ACTIVE_INSTANCES_WITH_INCIDENT -> builder.activeInstancesWithIncident();
+        case ACTIVE_INSTANCES_WITHOUT_INCIDENT -> builder.activeInstancesWithoutIncident();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

@@ -540,9 +540,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
   });
 
-  // TODO issue #41614
-  // eslint-disable-next-line playwright/no-skipped-test
-  test.skip('task completion with large variable form', async ({
+  test('task completion with large variable form', async ({
     taskPanelPage,
     page,
   }) => {

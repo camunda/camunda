@@ -60,9 +60,6 @@ public class Processing {
    */
   @NestedConfigurationProperty FlowControl flowControl = new FlowControl();
 
-  /** Configuration properties for the engine. */
-  @NestedConfigurationProperty Engine engine = new Engine();
-
   /**
    * Sets the maximum number of commands that processed within one batch. The processor will process
    * until no more follow up commands are created by the initial command or the configured limit is
@@ -217,14 +214,6 @@ public class Processing {
 
   public void setSkipPositions(final Set<Long> skipPositions) {
     this.skipPositions = skipPositions;
-  }
-
-  public Engine getEngine() {
-    return engine;
-  }
-
-  public void setEngine(final Engine engine) {
-    this.engine = engine;
   }
 
   public boolean isEnablePreconditionsCheck() {

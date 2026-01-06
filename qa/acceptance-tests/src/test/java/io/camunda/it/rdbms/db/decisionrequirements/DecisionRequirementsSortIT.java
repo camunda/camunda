@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -107,11 +107,11 @@ public class DecisionRequirementsSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<DecisionRequirementsSort>> sortBuilder,
       final Comparator<DecisionRequirementsEntity> comparator) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsDbReader reader = rdbmsService.getDecisionRequirementsReader();
 
     final var tenantId = nextStringId();
-    createAndSaveRandomDecisionRequirements(rdbmsWriters, b -> b.tenantId(tenantId));
+    createAndSaveRandomDecisionRequirements(rdbmsWriter, b -> b.tenantId(tenantId));
 
     final var searchResult =
         reader

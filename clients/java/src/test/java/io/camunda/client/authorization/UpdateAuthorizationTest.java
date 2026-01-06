@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 public class UpdateAuthorizationTest extends ClientRestTest {
 
   @Test
-  void shouldSendCommandForIdBasedAuthorization() {
+  void shouldSendCommand() {
     // when
     client
         .newUpdateAuthorizationCommand(1L)
@@ -46,35 +46,6 @@ public class UpdateAuthorizationTest extends ClientRestTest {
     assertThat(request.getOwnerType())
         .isEqualTo(io.camunda.client.protocol.rest.OwnerTypeEnum.USER);
     assertThat(request.getResourceId()).isEqualTo("resourceId");
-    assertThat(request.getResourcePropertyName()).isNull();
-    assertThat(request.getResourceType())
-        .isEqualTo(io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE);
-    assertThat(request.getPermissionTypes())
-        .containsExactly(
-            io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE,
-            io.camunda.client.protocol.rest.PermissionTypeEnum.READ);
-  }
-
-  @Test
-  void shouldSendCommandForPropertyBasedAuthorization() {
-    // when
-    client
-        .newUpdateAuthorizationCommand(1L)
-        .ownerId("ownerId")
-        .ownerType(OwnerType.USER)
-        .resourcePropertyName("resourcePropertyName")
-        .resourceType(ResourceType.RESOURCE)
-        .permissionTypes(PermissionType.CREATE, PermissionType.READ)
-        .send()
-        .join();
-
-    // then
-    final AuthorizationRequest request = gatewayService.getLastRequest(AuthorizationRequest.class);
-    assertThat(request.getOwnerId()).isEqualTo("ownerId");
-    assertThat(request.getOwnerType())
-        .isEqualTo(io.camunda.client.protocol.rest.OwnerTypeEnum.USER);
-    assertThat(request.getResourceId()).isNull();
-    assertThat(request.getResourcePropertyName()).isEqualTo("resourcePropertyName");
     assertThat(request.getResourceType())
         .isEqualTo(io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE);
     assertThat(request.getPermissionTypes())
@@ -171,42 +142,6 @@ public class UpdateAuthorizationTest extends ClientRestTest {
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("resourceId must not be empty");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnNullResourcePropertyName() {
-    // when then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAuthorizationCommand(1L)
-                    .ownerId("ownerId")
-                    .ownerType(OwnerType.USER)
-                    .resourcePropertyName(null)
-                    .resourceType(ResourceType.RESOURCE)
-                    .permissionTypes(PermissionType.CREATE, PermissionType.READ)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("resourcePropertyName must not be null");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnEmptyResourcePropertyName() {
-    // when then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUpdateAuthorizationCommand(1L)
-                    .ownerId("ownerId")
-                    .ownerType(OwnerType.USER)
-                    .resourcePropertyName("")
-                    .resourceType(ResourceType.RESOURCE)
-                    .permissionTypes(PermissionType.CREATE, PermissionType.READ)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("resourcePropertyName must not be empty");
   }
 
   @Test

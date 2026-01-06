@@ -9,14 +9,14 @@
 import React from 'react';
 import {Field, useForm} from 'react-final-form';
 import {Checkbox as CarbonCheckbox, Stack} from '@carbon/react';
-import type {CarbonIconType} from '@carbon/react/icons';
+import {type Icon} from '@carbon/react/icons';
 import {Checkbox} from 'modules/components/Checkbox';
 import {Group} from './styled';
 
 type GroupItem = {
   label: string;
   name: string;
-  Icon: CarbonIconType;
+  Icon: Icon;
 };
 
 type Props = {

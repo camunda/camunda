@@ -1,5 +1,5 @@
 # description: Workflow for Front-End end to end tests for Operate only. Tests will use a running instance of Operate for the API
-# test location: qa/c8-orchestration-cluster-e2e-test-suite
+# test location: operate/client/e2e-playwright/tests
 # type: CI
 # owner: @camunda/core-features
 name: "[Legacy] Operate / E2E Tests"
@@ -20,7 +20,6 @@ on:
       - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
-
   pull_request:
     paths:
       - ".ci/**"
@@ -42,6 +41,8 @@ concurrency:
 
 jobs:
   test:
+    # Temporarily disabled E2E tests while we fix them
+    if: false
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
@@ -69,30 +70,14 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install node dependencies
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-        run: npm ci
-
-      - name: Install frontend dependencies
-        working-directory: ./operate/client
-        run: npm ci
-
-      - name: Install Playwright
-        run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
       - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - name: Install Playwright
+        run: npx playwright install -- --with-deps chromium
         working-directory: ./operate/client
-        run: npm run build
-        env:
-          NODE_OPTIONS: --max_old_space_size=4096
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -133,29 +118,17 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
-
-      - name: Python setup
-        if: always()
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
       - name: Run tests
-        shell: bash
+        working-directory: ./operate/client
+        run: npm run test:e2e:ci
         env:
-          LOCAL_TEST: "false"
-          CORE_APPLICATION_URL: http://localhost:8080
-          CAMUNDA_AUTH_STRATEGY: "BASIC"
-          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
-          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          ZEEBE_REST_ADDRESS: "http://localhost:8080"
-        run: npm run test -- --project=operate-e2e
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+          ZEEBE_GATEWAY_ADDRESS: localhost:26500
+          ZEEBE_REST_GATEWAY_ADDRESS: http://localhost:8080
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: C8 Orchestration Cluster E2E Test Result (operate)
-          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          name: Playwright report
+          path: operate/client/playwright-report/
           retention-days: 30
 
       - name: Collect docker logs on failure

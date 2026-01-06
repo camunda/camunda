@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.backup.api;
 
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-
 /** Can be used by InterPartitionCommand Sender/Receiver to get the latest checkpointId. */
 public interface CheckpointListener {
 
@@ -21,5 +19,5 @@ public interface CheckpointListener {
    * <li>When CHECKPOINT:CREATED record is replayed
    * <li>If there is a valid checkpoint, when the listener is registered
    */
-  void onNewCheckpointCreated(long checkpointId, CheckpointType checkpointType);
+  void onNewCheckpointCreated(long checkpointId);
 }

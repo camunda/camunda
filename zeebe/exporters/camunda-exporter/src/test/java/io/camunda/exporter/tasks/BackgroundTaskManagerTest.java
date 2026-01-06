@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
-import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository.NoopHistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import java.time.Duration;
 import java.util.List;
@@ -39,7 +38,6 @@ final class BackgroundTaskManagerTest {
             new NoopArchiverRepository(),
             new NoopIncidentUpdateRepository(),
             new NoopBatchOperationUpdateRepository(),
-            new NoopHistoryDeletionRepository(),
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
             // return unfinished futures to have a deterministic count of submitted tasks
@@ -99,8 +97,6 @@ final class BackgroundTaskManagerTest {
         new CloseableIncidentRepository();
     private final CloseableBatchOperationUpdateRepository batchOperationUpdateRepository =
         new CloseableBatchOperationUpdateRepository();
-    private final CloseableHistoryDeletionRepository historyDeletionRepository =
-        new CloseableHistoryDeletionRepository();
     private volatile boolean taskClosed = false;
     private volatile boolean keepRunningEvenIfClosed = false;
     private final RunnableTask task =
@@ -128,7 +124,6 @@ final class BackgroundTaskManagerTest {
             archiverRepository,
             incidentRepository,
             batchOperationUpdateRepository,
-            historyDeletionRepository,
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
             tasks,
@@ -175,7 +170,6 @@ final class BackgroundTaskManagerTest {
       assertThat(archiverRepository.isClosed).isTrue();
       assertThat(incidentRepository.isClosed).isTrue();
       assertThat(batchOperationUpdateRepository.isClosed).isTrue();
-      assertThat(historyDeletionRepository.isClosed).isTrue();
     }
 
     @Test
@@ -200,15 +194,6 @@ final class BackgroundTaskManagerTest {
     void shouldNotThrowOnBatchOperationUpdateRepositoryCloseError() {
       // given
       batchOperationUpdateRepository.exception = new RuntimeException("foo");
-
-      // when
-      assertThatCode(taskManager::close).doesNotThrowAnyException();
-    }
-
-    @Test
-    void shouldNotThrowOnHistoryDeletionRepositoryCloseError() {
-      // given
-      historyDeletionRepository.exception = new RuntimeException("foo");
 
       // when
       assertThatCode(taskManager::close).doesNotThrowAnyException();
@@ -244,21 +229,6 @@ final class BackgroundTaskManagerTest {
 
     private static final class CloseableBatchOperationUpdateRepository
         extends NoopBatchOperationUpdateRepository {
-      private boolean isClosed;
-      private Exception exception;
-
-      @Override
-      public void close() throws Exception {
-        if (exception != null) {
-          throw exception;
-        }
-
-        isClosed = true;
-      }
-    }
-
-    private static final class CloseableHistoryDeletionRepository
-        extends NoopHistoryDeletionRepository {
       private boolean isClosed;
       private Exception exception;
 

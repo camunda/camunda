@@ -13,7 +13,7 @@ import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createUser } from "src/utility/api/users";
-import { isValidEmail, isValidId, getIdPattern } from "src/utility/validate";
+import { isValidEmail, isValidId } from "src/utility/validate";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("users");
@@ -84,10 +84,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         rules={{
           required: t("usernameRequired"),
           validate: (value) =>
-            isValidId(value) ||
-            t("pleaseEnterValidUsername", {
-              pattern: getIdPattern(),
-            }),
+            isValidId(value) || t("pleaseEnterValidUsername"),
         }}
         render={({ field, fieldState }) => (
           <TextField

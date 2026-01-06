@@ -42,9 +42,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
   @Autowired private SecurityConfiguration securityConfiguration;
   private boolean shutdown = false;
-
-  @Autowired(required = false)
-  private ProcessStore processStore;
+  @Autowired private ProcessStore processStore;
 
   @PostConstruct
   private void startDataGenerator() {
@@ -107,10 +105,6 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   public boolean shouldCreateData(final boolean manuallyCalled) {
-    if (processStore == null) {
-      LOGGER.warn("ProcessStore is null. Assuming no data exists and it should be created...");
-      return true;
-    }
     if (!manuallyCalled) { // when called manually, always create the data
       final boolean exists;
       try {

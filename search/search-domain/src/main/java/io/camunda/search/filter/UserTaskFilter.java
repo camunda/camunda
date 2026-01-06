@@ -11,14 +11,12 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public record UserTaskFilter(
     List<Long> userTaskKeys,
@@ -40,7 +38,6 @@ public record UserTaskFilter(
     List<Operation<OffsetDateTime>> completionDateOperations,
     List<Operation<OffsetDateTime>> followUpDateOperations,
     List<Operation<OffsetDateTime>> dueDateOperations,
-    Set<String> tags,
     String type)
     implements FilterBase {
 
@@ -65,7 +62,6 @@ public record UserTaskFilter(
     private List<Operation<OffsetDateTime>> completionDateOperations;
     private List<Operation<OffsetDateTime>> followUpDateOperations;
     private List<Operation<OffsetDateTime>> dueDateOperations;
-    private Set<String> tags;
     private String type;
 
     public Builder userTaskKeys(final Long... values) {
@@ -279,11 +275,6 @@ public record UserTaskFilter(
       return dueDateOperations(collectValues(operation, operations));
     }
 
-    public Builder tags(final Set<String> value) {
-      tags = value;
-      return this;
-    }
-
     public Builder type(final String value) {
       type = value;
       return this;
@@ -311,7 +302,6 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(completionDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(followUpDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dueDateOperations, Collections.emptyList()),
-          tags,
           type);
     }
   }

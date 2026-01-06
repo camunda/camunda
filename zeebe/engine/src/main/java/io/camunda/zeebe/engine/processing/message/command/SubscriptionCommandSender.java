@@ -55,7 +55,6 @@ public class SubscriptionCommandSender {
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
@@ -68,7 +67,6 @@ public class SubscriptionCommandSender {
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(-1)
             .setMessageName(messageName)
@@ -95,7 +93,6 @@ public class SubscriptionCommandSender {
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
@@ -108,7 +105,6 @@ public class SubscriptionCommandSender {
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(-1)
             .setMessageName(messageName)
@@ -120,7 +116,6 @@ public class SubscriptionCommandSender {
   public boolean openProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer messageName,
       final boolean closeOnCorrelate,
       final String tenantId) {
@@ -132,7 +127,6 @@ public class SubscriptionCommandSender {
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1)
             .setMessageName(messageName)
             .setInterrupting(closeOnCorrelate)
@@ -142,7 +136,6 @@ public class SubscriptionCommandSender {
   public boolean correlateProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final long messageKey,
@@ -157,7 +150,6 @@ public class SubscriptionCommandSender {
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(messageKey)
             .setMessageName(messageName)
@@ -183,7 +175,6 @@ public class SubscriptionCommandSender {
   public void sendDirectCorrelateProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final long messageKey,
@@ -198,7 +189,6 @@ public class SubscriptionCommandSender {
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(messageKey)
             .setMessageName(messageName)
@@ -212,7 +202,6 @@ public class SubscriptionCommandSender {
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final String tenantId) {
@@ -223,7 +212,6 @@ public class SubscriptionCommandSender {
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(messageKey)
             .setMessageName(messageName)
@@ -234,7 +222,6 @@ public class SubscriptionCommandSender {
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer messageName,
       final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
@@ -244,7 +231,6 @@ public class SubscriptionCommandSender {
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1L)
             .setMessageName(messageName)
             .setTenantId(tenantId));
@@ -265,7 +251,6 @@ public class SubscriptionCommandSender {
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer messageName,
       final String tenantId) {
     interPartitionCommandSender.sendCommand(
@@ -275,7 +260,6 @@ public class SubscriptionCommandSender {
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1L)
             .setMessageName(messageName)
             .setTenantId(tenantId));
@@ -284,7 +268,6 @@ public class SubscriptionCommandSender {
   public boolean closeProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer messageName,
       final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
@@ -295,7 +278,6 @@ public class SubscriptionCommandSender {
             .setSubscriptionPartitionId(senderPartition)
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setMessageKey(-1)
             .setMessageName(messageName)
             .setTenantId(tenantId));
@@ -305,7 +287,6 @@ public class SubscriptionCommandSender {
       final int subscriptionPartitionId,
       final long processInstanceKey,
       final long elementInstanceKey,
-      final long processDefinitionKey,
       final DirectBuffer bpmnProcessId,
       final long messageKey,
       final DirectBuffer messageName,
@@ -318,7 +299,6 @@ public class SubscriptionCommandSender {
         new MessageSubscriptionRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
-            .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)

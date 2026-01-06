@@ -29,15 +29,15 @@ public class CreateMappingTest {
   public static final String NAME = "Map Name";
   public static final String ID = "mappingRuleId";
 
-  @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
-
   @AutoClose CamundaClient client;
+
+  @TestZeebe
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
   }
 
   @Test

@@ -76,40 +76,6 @@ public class ModifyProcessInstanceVariablesTest {
   }
 
   @Test
-  public void shouldCreateGlobalVariablesForMove() {
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .userTask("A")
-                    .userTask("B")
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .moveElements("A", "B")
-        .withGlobalVariables(Map.of("x", "variable"))
-        .modify();
-
-    // then
-    assertThatVariableCreatedInScope(
-        processInstanceKey,
-        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
-        processInstanceKey,
-        "x",
-        "\"variable\"");
-  }
-
-  @Test
   public void shouldUpdateGlobalVariablesIfTheyAlreadyExist() {
     final var deployment =
         ENGINE
@@ -255,48 +221,6 @@ public class ModifyProcessInstanceVariablesTest {
         .withInstanceKey(processInstanceKey)
         .modification()
         .activateElement("B")
-        .withVariables("B", Map.of("x", "variable"))
-        .modify();
-
-    final Record<ProcessInstanceRecordValue> activatedElement =
-        RecordingExporter.processInstanceRecords()
-            .onlyEvents()
-            .withElementId("B")
-            .withProcessInstanceKey(processInstanceKey)
-            .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .getFirst();
-
-    // then
-    assertThatVariableCreatedInScope(
-        processInstanceKey,
-        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
-        activatedElement.getKey(),
-        "x",
-        "\"variable\"");
-  }
-
-  @Test
-  public void shouldCreateLocalVariablesWithMove() {
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .userTask("A")
-                    .userTask("B")
-                    .endEvent()
-                    .done())
-            .deploy();
-
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .moveElements("A", "B")
         .withVariables("B", Map.of("x", "variable"))
         .modify();
 

@@ -16,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.operate.EnvironmentService;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -62,7 +61,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class ClientConfigRestServiceIT extends OperateAbstractIT {
 
   @MockitoBean private OperateProfileService operateProfileService;
-  @MockitoBean private EnvironmentService environmentService;
   @MockitoBean private SecurityConfiguration securityConfiguration;
   @MockitoBean private AuthorizationsConfiguration authorizationsConfiguration;
   @MockitoBean private AuthenticationConfiguration authenticationConfiguration;
@@ -79,7 +77,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     given(securityConfiguration.getMultiTenancy()).willReturn(multiTenancyConfiguration);
     given(authenticationConfiguration.getOidc()).willReturn(oidcAuthenticationConfiguration);
     given(operateProfileService.isLoginDelegated()).willReturn(true);
-    given(environmentService.getDatabaseType()).willReturn("document-store");
   }
 
   @Test
@@ -112,8 +109,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":\"https://tasklist.camunda.io/tl\","
                 + "\"resourcePermissionsEnabled\":true,"
-                + "\"multiTenancyEnabled\":false,"
-                + "\"databaseType\":\"document-store\""
+                + "\"multiTenancyEnabled\":false"
                 + "};");
   }
 
@@ -147,8 +143,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":true,"
-                + "\"multiTenancyEnabled\":false,"
-                + "\"databaseType\":\"document-store\""
+                + "\"multiTenancyEnabled\":false"
                 + "};");
   }
 
@@ -184,8 +179,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":true,"
-                + "\"multiTenancyEnabled\":false,"
-                + "\"databaseType\":\"document-store\""
+                + "\"multiTenancyEnabled\":false"
                 + "};");
   }
 }

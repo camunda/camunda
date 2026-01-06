@@ -16,14 +16,13 @@ import type {
   CreateModificationBatchOperationRequestBody,
   CreateModificationBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import type {RequestError} from 'modules/request';
-import {queryKeys} from 'modules/queries/queryKeys';
+import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
 
 const useModifyProcessInstancesBatchOperation = (
   options?: Partial<
     UseMutationOptions<
       CreateModificationBatchOperationResponseBody,
-      RequestError,
+      Error,
       CreateModificationBatchOperationRequestBody
     >
   >,
@@ -40,7 +39,7 @@ const useModifyProcessInstancesBatchOperation = (
 
       if (response !== null) {
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.batchOperations.query(),
+          queryKey: [BATCH_OPERATIONS_QUERY_KEY],
         });
 
         return response;

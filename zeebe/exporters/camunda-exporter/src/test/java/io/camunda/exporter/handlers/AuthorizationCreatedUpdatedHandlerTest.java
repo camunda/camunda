@@ -133,8 +133,6 @@ public class AuthorizationCreatedUpdatedHandlerTest {
         .isEqualTo(authorizationRecordValue.getResourceMatcher().value());
     assertThat(authorizationEntity.getResourceId())
         .isEqualTo(authorizationRecordValue.getResourceId());
-    assertThat(authorizationEntity.getResourcePropertyName())
-        .isEqualTo(authorizationRecordValue.getResourcePropertyName());
     assertThat(authorizationEntity.getPermissionTypes())
         .isEqualTo(authorizationRecordValue.getPermissionTypes());
   }

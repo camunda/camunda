@@ -7,30 +7,21 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
-import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.Either.Left;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+@ExcludeAuthorizationCheck
 public class ClusterVariableCreateProcessor
     implements DistributedTypedRecordProcessor<ClusterVariableRecord> {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ClusterVariableCreateProcessor.class);
   private final KeyGenerator keyGenerator;
   private final Writers writers;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -53,10 +44,10 @@ public class ClusterVariableCreateProcessor
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
+
     clusterVariableRecordValidator
         .validateName(clusterVariableRecord)
         .flatMap(clusterVariableRecordValidator::ensureValidScope)
-        .flatMap(record -> isAuthorized(record, command))
         .flatMap(clusterVariableRecordValidator::validateUniqueness)
         .ifRightOrLeft(
             record -> {
@@ -95,48 +86,5 @@ public class ClusterVariableCreateProcessor
                 writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
-  }
-
-  private Either<Rejection, ClusterVariableRecord> isAuthorized(
-      final ClusterVariableRecord record, final TypedRecord<ClusterVariableRecord> command) {
-    return switch (record.getScope()) {
-      case GLOBAL -> checkAuthorizationForGlobalScope(command).map(unused -> record);
-      case TENANT -> checkAuthorizationForTenantScope(command).map(unused -> record);
-      default ->
-      // should never happen as scope is validated earlier
-      {
-        LOGGER.warn(
-            "The scope validation has not been performed correctly. A ticket should be created.");
-        yield new Left<>(
-            new Rejection(RejectionType.UNAUTHORIZED, "An unknown authorization issue occurred."));
-      }
-    };
-  }
-
-  private Either<Rejection, Void> checkAuthorizationForTenantScope(
-      final TypedRecord<ClusterVariableRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
-            .permissionType(PermissionType.CREATE)
-            .tenantId(command.getValue().getTenantId())
-            .newResource()
-            .addResourceId(command.getValue().getName())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-  }
-
-  private Either<Rejection, Void> checkAuthorizationForGlobalScope(
-      final TypedRecord<ClusterVariableRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
-            .permissionType(PermissionType.CREATE)
-            .newResource()
-            .addResourceId(command.getValue().getName())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

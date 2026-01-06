@@ -108,10 +108,10 @@ public interface TypedEventWriter {
    * @throws ExceededBatchRecordSizeException if the event exceeds batch size
    */
   default void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final Consumer<FollowUpEventMetadata.Builder> builderConsumer) {
+      long key,
+      Intent intent,
+      RecordValue value,
+      Consumer<FollowUpEventMetadata.Builder> builderConsumer) {
     final var builder = FollowUpEventMetadata.builder();
     builderConsumer.accept(builder);
     appendFollowUpEvent(key, intent, value, builder.build());

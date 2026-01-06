@@ -10,7 +10,6 @@ package io.camunda.operate.qa.backup;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.client.CamundaClient;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -153,11 +151,18 @@ public class DataGenerator {
 
   private void waitTillSomeInstancesAreArchived() {
     waitUntilAllDataAreImported();
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(1))
-        .ignoreExceptions()
-        .until(this::someInstancesAreArchived);
+
+    int count = 0;
+    final int maxWait = 30;
+    LOGGER.info("Waiting for archived data (max: {} sec)", maxWait * 10);
+    while (!someInstancesAreArchived() && count < maxWait) {
+      ThreadUtil.sleepFor(10 * 1000L);
+      count++;
+    }
+    if (count == maxWait) {
+      LOGGER.error("There must be some archived instances");
+      throw new RuntimeException("Data generation was not full: no archived instances");
+    }
   }
 
   private void waitUntilAllDataAreImported() {

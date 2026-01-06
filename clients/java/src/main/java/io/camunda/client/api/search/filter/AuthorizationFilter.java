@@ -18,7 +18,7 @@ package io.camunda.client.api.search.filter;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
-import java.util.Collection;
+import java.util.List;
 
 public interface AuthorizationFilter extends SearchRequestFilter {
 
@@ -52,23 +52,7 @@ public interface AuthorizationFilter extends SearchRequestFilter {
    * @param resourceIds the IDs of the resource
    * @return the updated filter
    */
-  AuthorizationFilter resourceIds(final Collection<String> resourceIds);
-
-  /**
-   * Filter authorizations by the specified resource property names.
-   *
-   * @param resourcePropertyNames the names of the resource properties
-   * @return the updated filter
-   */
-  AuthorizationFilter resourcePropertyNames(final String... resourcePropertyNames);
-
-  /**
-   * Filter authorizations by the specified resource property names.
-   *
-   * @param resourcePropertyNames the names of the resource properties
-   * @return the updated filter
-   */
-  AuthorizationFilter resourcePropertyNames(final Collection<String> resourcePropertyNames);
+  AuthorizationFilter resourceIds(final List<String> resourceIds);
 
   /**
    * Filter authorizations by the specified resource type.

@@ -18,7 +18,6 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,7 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Flow node instances")
 @RestController
 @RequestMapping(value = FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL)
-@ConditionalOnRdbmsDisabled
 public class FlowNodeInstanceRestService extends InternalAPIErrorController {
 
   public static final String FLOW_NODE_INSTANCE_URL = "/api/flow-node-instances";

@@ -3,7 +3,6 @@
 paths:
   /roles:
     post:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: createRole
@@ -31,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /roles/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Role
       operationId: searchRoles
@@ -61,10 +60,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           description: An internal error occurred while processing the request.
+      x-eventually-consistent: true
 
   /roles/{roleId}:
     get:
-      x-eventually-consistent: true
       tags:
         - Role
       operationId: getRole
@@ -96,9 +95,9 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
     put:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: updateRole
@@ -138,9 +137,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: deleteRole
@@ -168,10 +167,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /roles/{roleId}/users/{username}:
     put:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: assignRoleToUser
@@ -213,9 +212,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromUser
@@ -251,10 +250,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /roles/{roleId}/users/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Role
       operationId: searchUsersForRole
@@ -294,10 +293,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /roles/{roleId}/clients/{clientId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: assignRoleToClient
@@ -339,9 +338,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromClient
@@ -377,10 +376,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /roles/{roleId}/clients/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Role
       operationId: searchClientsForRole
@@ -420,10 +419,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /roles/{roleId}/groups/{groupId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: assignRoleToGroup
@@ -465,9 +464,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromGroup
@@ -503,10 +502,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /roles/{roleId}/groups/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Role
       operationId: searchGroupsForRole
@@ -546,10 +545,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /roles/{roleId}/mapping-rules/{mappingRuleId}:
     put:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: assignRoleToMappingRule
@@ -591,9 +590,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Role
       operationId: unassignRoleFromMappingRule
@@ -629,10 +628,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /roles/{roleId}/mapping-rules/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Role
       operationId: searchMappingRulesForRole
@@ -672,6 +671,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -757,7 +757,7 @@ components:
             - name
             - roleId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -838,7 +838,7 @@ components:
           enum:
             - username
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -880,7 +880,7 @@ components:
           enum:
             - clientId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -922,6 +922,6 @@ components:
           enum:
             - groupId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field

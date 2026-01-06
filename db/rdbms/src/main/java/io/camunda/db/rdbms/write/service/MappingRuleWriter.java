@@ -13,7 +13,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class MappingRuleWriter implements RdbmsWriter {
+public class MappingRuleWriter {
 
   private final ExecutionQueue executionQueue;
 

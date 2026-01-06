@@ -15,8 +15,6 @@ import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_ID;
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_KEY;
-import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_NAME;
-import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_VERSION;
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.VERSION;
@@ -47,8 +45,6 @@ public final class DecisionDefinitionFilterTransformer
         intTerms(VERSION, filter.versions()),
         stringTerms(DECISION_REQUIREMENTS_ID, filter.decisionRequirementsIds()),
         longTerms(DECISION_REQUIREMENTS_KEY, filter.decisionRequirementsKeys()),
-        stringTerms(DECISION_REQUIREMENTS_NAME, filter.decisionRequirementsNames()),
-        intTerms(DECISION_REQUIREMENTS_VERSION, filter.decisionRequirementsVersions()),
         stringTerms(TENANT_ID, filter.tenantIds()));
   }
 }

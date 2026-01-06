@@ -203,9 +203,6 @@ public class UserTaskIT {
 
   @Test
   void shouldExportUserTaskVariable() {
-    // oracles limit of 4000 minus 2 for the ""
-    final int bigVariableSize = 3998;
-
     // when
     createAndDeployUserTaskProcess(
         client, "test-process-id", "zeebe-task", AbstractUserTaskBuilder::zeebeUserTask);
@@ -222,7 +219,7 @@ public class UserTaskIT {
                 "boolVariable",
                 true,
                 "bigVariable",
-                "a".repeat(bigVariableSize)));
+                "a".repeat(8188)));
 
     waitForProcessTasks(client, processInstanceId);
 
@@ -263,7 +260,7 @@ public class UserTaskIT {
             .filter(
                 f ->
                     f.processInstanceVariables(
-                        Map.of("bigVariable", "\"" + "a".repeat(bigVariableSize) + "\"")))
+                        Map.of("bigVariable", "\"" + "a".repeat(8188) + "\"")))
             .send()
             .join()
             .items();

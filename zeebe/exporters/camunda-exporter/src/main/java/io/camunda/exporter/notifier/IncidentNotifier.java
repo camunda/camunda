@@ -51,7 +51,6 @@ public class IncidentNotifier implements CloseableSilently {
   protected static final String FIELD_NAME_BPMN_PROCESS_ID = "bpmnProcessId";
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
-  protected static final String FIELD_NAME_PROCESS_VERSION_TAG = "processVersionTag";
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentNotifier.class);
 
   private final M2mTokenManager m2mTokenManager;
@@ -178,8 +177,11 @@ public class IncidentNotifier implements CloseableSilently {
               cachedProcess -> {
                 incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, inc.getBpmnProcessId());
                 incidentFields.put(FIELD_NAME_PROCESS_NAME, cachedProcess.name());
-                incidentFields.put(FIELD_NAME_PROCESS_VERSION, cachedProcess.version());
-                incidentFields.put(FIELD_NAME_PROCESS_VERSION_TAG, cachedProcess.versionTag());
+                final var processVersionField =
+                    cachedProcess.versionTag() != null
+                        ? cachedProcess.versionTag()
+                        : cachedProcess.version();
+                incidentFields.put(FIELD_NAME_PROCESS_VERSION, processVersionField);
               });
       incidentList.add(incidentFields);
     }

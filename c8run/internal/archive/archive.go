@@ -80,7 +80,7 @@ func DownloadFile(filepath string, url string, authToken string) error {
 	return nil
 }
 
-func CreateTarGzArchive(files []string, buf io.Writer, sourceRoot, targetRoot string) error {
+func CreateTarGzArchive(files []string, buf io.Writer) error {
 	gw := gzip.NewWriter(buf)
 	defer func() {
 		if closeErr := gw.Close(); closeErr != nil {
@@ -93,37 +93,20 @@ func CreateTarGzArchive(files []string, buf io.Writer, sourceRoot, targetRoot st
 			log.Error().Err(err).Msg("failed to close tar writer")
 		}
 	}()
-	sourceRoot = filepath.Clean(sourceRoot)
-	targetRoot = filepath.Clean(targetRoot)
 
 	for _, file := range files {
 		err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return fmt.Errorf("CreateTarGzArchive: failed to open file %s\n%w\n%s", path, err, debug.Stack())
 			}
-			relPath, err := filepath.Rel(sourceRoot, path)
-			if err != nil {
-				return fmt.Errorf("CreateTarGzArchive: failed to determine relative path for %s within %s\n%w\n%s", path, sourceRoot, err, debug.Stack())
-			}
-			if strings.HasPrefix(relPath, "..") {
-				return fmt.Errorf("CreateTarGzArchive: path %s is outside of source root %s", path, sourceRoot)
-			}
-			targetPath := filepath.Join(targetRoot, relPath)
-			targetPath = filepath.ToSlash(targetPath)
 			if !info.IsDir() {
-				return addToArchive(tw, path, sourceRoot, targetRoot)
+				return addToArchive(tw, path)
 			} else {
-				header, err := tar.FileInfoHeader(info, "")
+				header, err := tar.FileInfoHeader(info, path)
 				if err != nil {
 					return fmt.Errorf("CreateTarGzArchive: failed to get file info for %s\n%w\n%s", path, err, debug.Stack())
 				}
-				if relPath == "." {
-					targetPath = filepath.ToSlash(targetRoot)
-				}
-				if !strings.HasSuffix(targetPath, "/") {
-					targetPath += "/"
-				}
-				header.Name = targetPath
+				header.Name = path + "/"
 				if err := tw.WriteHeader(header); err != nil {
 					return fmt.Errorf("CreateTarGzArchive: failed to write file header for %s\n%w\n%s", path, err, debug.Stack())
 				}
@@ -222,7 +205,7 @@ func ExtractTarGzArchive(filename string, xpath string) error {
 	return nil
 }
 
-func addToArchive(tw *tar.Writer, filename string, sourceRoot, targetRoot string) error {
+func addToArchive(tw *tar.Writer, filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("addToArchive: failed to open file %s\n%w\n%s", filename, err, debug.Stack())
@@ -238,20 +221,12 @@ func addToArchive(tw *tar.Writer, filename string, sourceRoot, targetRoot string
 		return fmt.Errorf("addToArchive: failed to stat file %s\n%w\n%s", filename, err, debug.Stack())
 	}
 
-	header, err := tar.FileInfoHeader(info, "")
+	header, err := tar.FileInfoHeader(info, info.Name())
 	if err != nil {
 		return fmt.Errorf("addToArchive: failed to read file info header for file %s\n%w\n%s", filename, err, debug.Stack())
 	}
 
-	relPath, err := filepath.Rel(sourceRoot, filename)
-	if err != nil {
-		return fmt.Errorf("addToArchive: failed to determine relative path for %s within %s\n%w\n%s", filename, sourceRoot, err, debug.Stack())
-	}
-	if strings.HasPrefix(relPath, "..") {
-		return fmt.Errorf("addToArchive: file %s is outside of source root %s", filename, sourceRoot)
-	}
-	targetPath := filepath.Join(targetRoot, relPath)
-	header.Name = filepath.ToSlash(targetPath)
+	header.Name = filename
 
 	err = tw.WriteHeader(header)
 	if err != nil {
@@ -266,7 +241,7 @@ func addToArchive(tw *tar.Writer, filename string, sourceRoot, targetRoot string
 	return nil
 }
 
-func ZipSource(sources []string, target, sourceRoot, targetRoot string) error {
+func ZipSource(sources []string, target string) error {
 	f, err := os.Create(target)
 	if err != nil {
 		return fmt.Errorf("ZipSource: failed to open file %s\n%w\n%s", target, err, debug.Stack())
@@ -283,8 +258,6 @@ func ZipSource(sources []string, target, sourceRoot, targetRoot string) error {
 			log.Error().Err(err).Msg("failed to close zip writer")
 		}
 	}()
-	sourceRoot = filepath.Clean(sourceRoot)
-	targetRoot = filepath.Clean(targetRoot)
 
 	for _, source := range sources {
 		err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
@@ -299,25 +272,11 @@ func ZipSource(sources []string, target, sourceRoot, targetRoot string) error {
 
 			header.Method = zip.Deflate
 
-			relPath, err := filepath.Rel(sourceRoot, path)
-			if err != nil {
-				return fmt.Errorf("ZipSource: failed to determine relative path for %s within %s\n%w\n%s", path, sourceRoot, err, debug.Stack())
-			}
-			if strings.HasPrefix(relPath, "..") {
-				return fmt.Errorf("ZipSource: path %s is outside of source root %s", path, sourceRoot)
-			}
-			targetPath := filepath.Join(targetRoot, relPath)
-			targetPath = filepath.ToSlash(targetPath)
+			header.Name = path
+			header.Name = strings.ReplaceAll(header.Name, "\\", "/")
 			if info.IsDir() {
-				if relPath == "." {
-					targetPath = filepath.ToSlash(targetRoot)
-				}
-				if !strings.HasSuffix(targetPath, "/") {
-					targetPath += "/"
-				}
-				header.Name = targetPath
-			} else {
-				header.Name = targetPath
+				header.Name = strings.ReplaceAll(header.Name, "\\", "/")
+				header.Name += "/"
 			}
 
 			headerWriter, err := writer.CreateHeader(header)

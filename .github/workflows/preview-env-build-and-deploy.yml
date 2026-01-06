@@ -6,44 +6,31 @@ name: Preview Environment Build and Deploy
 on:
   pull_request:
     types: [labeled, synchronize]
-  workflow_call:
-    inputs:
-      app-name:
-        description: |
-          Full ArgoCD app name (max 15 chars).
-        required: true
-        type: string
-      labels:
-        description: |
-          Additional ArgoCD app labels (comma or newline-separated key=value pairs).
-          Values must be valid Kubernetes labels: alphanumeric, '-', '_', '.' only (no '/').
-          e.g., "preview=smoke-test,repo=camunda_camunda"
-        required: false
-        type: string
-        default: ''
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 concurrency:
   cancel-in-progress: true
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}-${{ inputs.app-name }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
 
 jobs:
   build-camunda:
-    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
-    # For pull_request: check label conditions
     if: >
-      inputs.app-name != '' || (
-        github.event.pull_request.state != 'closed' && (
-          contains(github.event.label.name, 'deploy-preview') ||
-          contains(github.event.pull_request.labels.*.name, 'deploy-preview')
-        )
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
       )
     name: Build Camunda
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     steps:
     - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - uses: ./.github/actions/setup-build
       with:
@@ -67,46 +54,26 @@ jobs:
         platforms: linux/amd64
         dockerfile: camunda.Dockerfile
         push: true
-        version: pr-${{ github.event.pull_request.head.sha || github.sha }}
-
-    - name: Observe build status
-      if: always()
-      continue-on-error: true
-      uses: ./.github/actions/observe-build-status
-      with:
-        build_status: ${{ job.status }}
-        job_name: preview-env-build-camunda
-        secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        version: pr-${{ github.event.pull_request.head.sha }}
 
   build-optimize:
-    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
-    # For pull_request: check label conditions
     if: >
-      inputs.app-name != '' || (
-        github.event.pull_request.state != 'closed' && (
-          contains(github.event.label.name, 'deploy-preview') ||
-          contains(github.event.pull_request.labels.*.name, 'deploy-preview')
-        )
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
       )
     name: Build Optimize
     uses: ./.github/workflows/optimize-ci-build-reusable.yml
     secrets: inherit
     with:
-      branch: ${{ github.head_ref || github.ref_name }}
+      branch: ${{ github.head_ref }}
       pushDocker: true
-      version: pr-${{ github.event.pull_request.head.sha || github.sha }}
 
   deploy-preview:
-    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
-    # For pull_request: check label conditions
     if: >
-      inputs.app-name != '' || (
-        github.event.pull_request.state != 'closed' && (
-          contains(github.event.label.name, 'deploy-preview') ||
-          contains(github.event.pull_request.labels.*.name, 'deploy-preview')
-        )
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
       )
     name: Deploy Preview Environment C8SM
     needs:
@@ -122,33 +89,12 @@ jobs:
     timeout-minutes: 40
     steps:
     #########################################################################
-    # Validate app-name length (only for workflow_call input)
-    - name: Validate app-name length
-      if: inputs.app-name != ''
-      env:
-        APP_NAME: ${{ inputs.app-name }}
-      run: |
-        if (( ${#APP_NAME} > 15 )); then
-          echo "::error::app-name '$APP_NAME' exceeds 15 chars (${#APP_NAME})"
-          exit 1
-        fi
-
-    #########################################################################
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
-      if: inputs.app-name == ''
       uses: camunda/infra-global-github-actions/sanitize-branch-name@main
       with:
         branch: ${{ github.head_ref }}
         max_length: '15'
-
-    #########################################################################
-    # Set the app name to use
-    - id: set-app-name
-      env:
-        APP_NAME: ${{ inputs.app-name || steps.sanitize.outputs.branch_name }}
-      run: |
-        echo "app-name=${APP_NAME}" >> "$GITHUB_OUTPUT"
 
     #########################################################################
     # Setup: import secrets from vault
@@ -167,15 +113,13 @@ jobs:
     # Setup: checkout code. This is required because we are using
     # composite actions and deployment manifests.
     - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
     - name: Determine Argocd Arguments for c8sm
       shell: bash
       run: |
-        # Convert comma/newline-separated labels to multiple --label arguments
-        label_args=$(echo "${labels}" | tr ',' '\n' | sed '/^$/d; s/^/--label /' | tr '\n' ' ')
         echo "argocd_arguments=--dest-namespace ${app_name} \
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
@@ -185,75 +129,40 @@ jobs:
           --name ${app_name} \
           --revision ${revision} \
           --helm-set git.branch=${revision} \
-          --upsert ${label_args}" >> "$GITHUB_ENV"
+          --upsert" >> "$GITHUB_ENV"
       env:
-        docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
-        labels: ${{ inputs.labels }}
-        revision: ${{ github.head_ref || github.ref_name }}
-        app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
+        docker_tag: "pr-${{ github.event.pull_request.head.sha }}"
+        revision: ${{ github.head_ref }}
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name}}
 
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment for c8sm
       uses: camunda/infra-global-github-actions/preview-env/create@main
       with:
-        revision: ${{ github.head_ref || github.ref_name }}
+        revision: ${{ github.head_ref }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
-        app_url: https://${{ steps.set-app-name.outputs.app-name }}.camunda.camunda.cloud
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
+        app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
         argocd_server: argocd.int.camunda.com
         argocd_wait_for_sync_timeout: "1800" # waits up to 30 minutes
         github_token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Observe build status
-      if: always()
-      continue-on-error: true
-      uses: ./.github/actions/observe-build-status
-      with:
-        build_status: ${{ job.status }}
-        job_name: preview-env-deploy-preview
-        secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   conflicts:
     if: >
-      github.event_name == 'pull_request' && (
-        github.event.pull_request.state != 'closed' && (
-          contains(github.event.label.name, 'deploy-preview') ||
-          contains(github.event.pull_request.labels.*.name, 'deploy-preview')
-        )
+      github.event.pull_request.state != 'closed' && (
+        contains(github.event.label.name, 'deploy-preview') ||
+        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
     - name: Check PR for merge conflicts
-      if: github.event_name == 'pull_request'
       uses: camunda/infra-global-github-actions/preview-env/conflicts@main
       with:
         pull-request-id: ${{ github.event.pull_request.number }}
 
-    - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
-    - name: Observe build status
-      if: always()
-      continue-on-error: true
-      uses: ./.github/actions/observe-build-status
-      with:
-        build_status: ${{ job.status }}
-        job_name: preview-env-conflicts
-        secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   clean:
-    if: >
-      always() &&
-      needs.deploy-preview.result != 'skipped' &&
-      needs.deploy-preview.result != 'cancelled' &&
-      github.event_name == 'pull_request'
+    if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'
     name: Clean Preview Environment
     needs: [deploy-preview]
     uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
@@ -262,28 +171,9 @@ jobs:
       pull-request: ${{ github.event.pull_request.number }}
 
   comment:
-    if: >
-      always() &&
-      needs.deploy-preview.result != 'skipped' &&
-      needs.deploy-preview.result != 'cancelled' &&
-      github.event_name == 'pull_request'
+    if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'
     name: Create Deployment Result Summary
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     needs: [deploy-preview]
     steps:
     - uses: camunda/infra-global-github-actions/preview-env/comment@main
-
-    - name: Checkout
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-
-    - name: Observe build status
-      if: always()
-      continue-on-error: true
-      uses: ./.github/actions/observe-build-status
-      with:
-        build_status: ${{ job.status }}
-        job_name: preview-env-comment
-        secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

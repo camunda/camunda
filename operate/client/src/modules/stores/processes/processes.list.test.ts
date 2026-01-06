@@ -8,10 +8,9 @@
 
 import {processesStore} from './processes.list';
 import {waitFor} from 'modules/testing-library';
-import {mockProcessDefinitions, searchResult} from 'modules/testUtils';
+import {groupedProcessesMock} from 'modules/testUtils';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
-import {mapProcessDefinitionsToProcessesV1} from 'modules/api/processes/fetchGroupedProcesses';
 
 describe('stores/processes/processes.list', () => {
   afterEach(() => {
@@ -26,7 +25,7 @@ describe('stores/processes/processes.list', () => {
       },
     );
 
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions, {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock, {
       expectPolling: false,
     });
 
@@ -38,17 +37,15 @@ describe('stores/processes/processes.list', () => {
           const {key, ...processDto} = process;
           return processDto;
         }),
-      ).toEqual(
-        mapProcessDefinitionsToProcessesV1(mockProcessDefinitions.items),
-      ),
+      ).toEqual(groupedProcessesMock),
     );
 
-    const firstGroupedProcesses = mockProcessDefinitions.items.slice(0, 3);
+    const firstGroupedProcess = groupedProcessesMock[0]!;
+    const newGroupedProcessesResponse = [firstGroupedProcess];
 
-    mockSearchProcessDefinitions().withSuccess(
-      searchResult(firstGroupedProcesses),
-      {expectPolling: false},
-    );
+    mockFetchGroupedProcesses().withSuccess(newGroupedProcessesResponse, {
+      expectPolling: false,
+    });
 
     eventListeners.online();
 
@@ -58,19 +55,18 @@ describe('stores/processes/processes.list', () => {
           const {key, ...processDto} = process;
           return processDto;
         }),
-      ).toEqual(mapProcessDefinitionsToProcessesV1(firstGroupedProcesses)),
+      ).toEqual(newGroupedProcessesResponse),
     );
 
-    mockSearchProcessDefinitions().withSuccess(
-      searchResult(firstGroupedProcesses),
-      {expectPolling: false},
-    );
+    mockFetchGroupedProcesses().withSuccess(newGroupedProcessesResponse, {
+      expectPolling: false,
+    });
 
     eventListeners.online();
   });
 
   it('should get process id', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     processesStore.fetchProcesses();
 
@@ -108,7 +104,7 @@ describe('stores/processes/processes.list', () => {
   });
 
   it('should get versions by process and tenant', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     processesStore.fetchProcesses();
 
@@ -118,9 +114,7 @@ describe('stores/processes/processes.list', () => {
           const {key, ...processDto} = process;
           return processDto;
         }),
-      ).toEqual(
-        mapProcessDefinitionsToProcessesV1(mockProcessDefinitions.items),
-      ),
+      ).toEqual(groupedProcessesMock),
     );
 
     expect(
@@ -173,7 +167,7 @@ describe('stores/processes/processes.list', () => {
   });
 
   it('should get process', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     processesStore.fetchProcesses();
 

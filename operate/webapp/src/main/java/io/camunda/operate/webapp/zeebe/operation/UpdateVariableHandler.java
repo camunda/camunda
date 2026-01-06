@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Component;
 
 /** Update the variable. */
 @Component
-@ConditionalOnRdbmsDisabled
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
 
   private final ObjectMapper objectMapper = new ObjectMapper();

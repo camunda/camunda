@@ -92,7 +92,7 @@ public class VariableService {
       }
 
       final Map<String, VariableEntity> currentOriginalVariables = new HashMap<>();
-      getTaskRuntimeVariables(task)
+      getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task))
           .forEach(originalVar -> currentOriginalVariables.put(originalVar.getName(), originalVar));
 
       final int variableSizeThreshold = tasklistProperties.getImporter().getVariableSizeThreshold();
@@ -154,13 +154,16 @@ public class VariableService {
   public void persistTaskVariables(
       final String taskId,
       final List<VariableInputDTO> changedVariables,
-      final List<VariableEntity> runtimeVariables,
       final boolean withDraftVariableValues) {
     // take current runtime variables values and
     final TaskEntity task = taskStore.getTask(taskId);
     final var processInstanceKey = Long.parseLong(task.getProcessInstanceId());
+
+    final List<VariableEntity> taskVariables =
+        getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task));
+
     final Map<String, SnapshotTaskVariableEntity> finalVariablesMap = new HashMap<>();
-    runtimeVariables.forEach(
+    taskVariables.forEach(
         variable ->
             finalVariablesMap.put(
                 variable.getName(), createSnapshotVariableFrom(taskId, variable)));
@@ -196,9 +199,11 @@ public class VariableService {
     draftVariableStore.deleteAllByTaskId(taskId);
   }
 
-  public List<VariableEntity> getTaskRuntimeVariables(final TaskEntity task) {
+  private List<VariableEntity> getRuntimeVariablesByRequest(
+      final GetVariablesRequest getVariablesRequest) {
+    final List<GetVariablesRequest> requests = Collections.singletonList(getVariablesRequest);
     final Map<String, List<VariableEntity>> runtimeVariablesPerTaskId =
-        getRuntimeVariablesPerTaskId(List.of(GetVariablesRequest.createFrom(task)));
+        getRuntimeVariablesPerTaskId(requests);
     if (runtimeVariablesPerTaskId.size() > 0) {
       return runtimeVariablesPerTaskId.values().iterator().next();
     } else {

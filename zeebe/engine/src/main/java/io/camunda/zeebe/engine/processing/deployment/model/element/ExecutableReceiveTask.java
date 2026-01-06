@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.function.TriFunction;
+import java.util.function.BiFunction;
 
 public class ExecutableReceiveTask extends ExecutableActivity implements ExecutableCatchEvent {
 
@@ -59,18 +59,13 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
-  public boolean isConditional() {
-    return false;
-  }
-
-  @Override
   public ExecutableMessage getMessage() {
     return message;
   }
 
   @Override
-  public TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> getTimerFactory() {
-    return (expressionProcessor, scopeKey, tenantId) -> null;
+  public BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> getTimerFactory() {
+    return (expressionProcessor, context) -> null;
   }
 
   @Override
@@ -85,11 +80,6 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
 
   @Override
   public ExecutableSignal getSignal() {
-    return null;
-  }
-
-  @Override
-  public ExecutableConditional getConditional() {
     return null;
   }
 

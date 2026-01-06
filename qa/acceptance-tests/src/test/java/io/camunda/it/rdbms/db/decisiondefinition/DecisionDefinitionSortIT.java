@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -120,40 +120,6 @@ public class DecisionDefinitionSortIT {
   }
 
   @TestTemplate
-  public void shouldSortByRequirementsNameAsc(final CamundaRdbmsTestApplication testApplication) {
-    testSorting(
-        testApplication.getRdbmsService(),
-        b -> b.decisionRequirementsName().asc(),
-        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsName));
-  }
-
-  @TestTemplate
-  public void shouldSortByRequirementsNameDesc(final CamundaRdbmsTestApplication testApplication) {
-    testSorting(
-        testApplication.getRdbmsService(),
-        b -> b.decisionRequirementsName().desc(),
-        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsName).reversed());
-  }
-
-  @TestTemplate
-  public void shouldSortByRequirementsVersionAsc(
-      final CamundaRdbmsTestApplication testApplication) {
-    testSorting(
-        testApplication.getRdbmsService(),
-        b -> b.decisionRequirementsVersion().asc(),
-        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsVersion));
-  }
-
-  @TestTemplate
-  public void shouldSortByRequirementsVersionDesc(
-      final CamundaRdbmsTestApplication testApplication) {
-    testSorting(
-        testApplication.getRdbmsService(),
-        b -> b.decisionRequirementsVersion().desc(),
-        Comparator.comparing(DecisionDefinitionEntity::decisionRequirementsVersion).reversed());
-  }
-
-  @TestTemplate
   public void shouldSortByTenantIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -173,12 +139,12 @@ public class DecisionDefinitionSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<DecisionDefinitionSort>> sortBuilder,
       final Comparator<DecisionDefinitionEntity> comparator) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionDefinitionDbReader reader = rdbmsService.getDecisionDefinitionReader();
 
     final var requirementsKey = nextKey();
     createAndSaveRandomDecisionDefinitions(
-        rdbmsWriters, b -> b.decisionRequirementsKey(requirementsKey));
+        rdbmsWriter, b -> b.decisionRequirementsKey(requirementsKey));
 
     final var searchResult =
         reader

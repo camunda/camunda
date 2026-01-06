@@ -34,8 +34,6 @@ import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -48,7 +46,6 @@ public class VariableSearchRequestImpl
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private boolean withFullValues = false;
 
   public VariableSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new VariableSearchQuery();
@@ -66,13 +63,8 @@ public class VariableSearchRequestImpl
   @Override
   public CamundaFuture<SearchResponse<Variable>> send() {
     final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
-    final Map<String, String> queryParams = new HashMap<>();
-    if (withFullValues) {
-      queryParams.put("truncateValues", String.valueOf(false));
-    }
     httpClient.post(
         "/variables/search",
-        queryParams,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResult.class,
@@ -114,12 +106,6 @@ public class VariableSearchRequestImpl
   @Override
   public VariableSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
-  }
-
-  @Override
-  public VariableSearchRequest withFullValues() {
-    withFullValues = true;
-    return this;
   }
 
   @Override

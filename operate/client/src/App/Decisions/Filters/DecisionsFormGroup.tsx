@@ -8,35 +8,25 @@
 
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {ComboBox} from 'modules/components/ComboBox';
 import {Dropdown, Stack} from '@carbon/react';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
-import {
-  getDefinitionIdFromIdentifier,
-  useDecisionDefinitions,
-  useDecisionDefinitionVersions,
-} from 'modules/hooks/decisionDefinition';
 
 const DecisionsFormGroup: React.FC = observer(() => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
-  const tenantsById = useAvailableTenants();
+  const {getVersions, getDefaultVersion, decisions} = groupedDecisionsStore;
 
   const form = useForm();
-  const nameValue = useField('name').input.value;
-  const tenantValue = useField('tenant').input.value;
-
-  const definitionId = getDefinitionIdFromIdentifier(nameValue);
-  const specificTenantId =
-    isMultiTenancyEnabled && tenantValue !== '' && tenantValue !== 'all'
-      ? tenantValue
-      : undefined;
-
-  const {data: definitions = []} = useDecisionDefinitions(specificTenantId);
-  const {data: versions = []} = useDecisionDefinitionVersions(
-    definitionId,
-    specificTenantId,
-  );
+  const selectedDecisionKey = useField('name').input.value;
+  const selectedTenant = useField('tenant').input.value;
+  const versions = getVersions(selectedDecisionKey);
+  const initialItems = versions.length > 1 ? ['all'] : [];
+  const items = [...initialItems, ...versions.sort((a, b) => b - a)];
+  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isSpecificTenantSelected =
+    selectedTenant !== '' && selectedTenant !== 'all';
+  const tenantsById = useAvailableTenants();
 
   return (
     <div>
@@ -48,27 +38,38 @@ const DecisionsFormGroup: React.FC = observer(() => {
               <ComboBox
                 id="decisionName"
                 aria-label="Select a Decision"
-                items={definitions.map((definition) => ({
-                  id: definition.identifier,
+                items={decisions.map(({id, label, tenantId}) => ({
                   label:
-                    isMultiTenancyEnabled && !specificTenantId
-                      ? `${definition.name} - ${tenantsById[definition.tenantId]}`
-                      : definition.name,
+                    isMultiTenancyEnabled && !isSpecificTenantSelected
+                      ? `${label} - ${tenantsById[tenantId]}`
+                      : label,
+                  id,
                 }))}
                 onChange={({selectedItem}) => {
-                  const matchingDecision = definitions.find(
-                    (d) => d.identifier === selectedItem?.id,
+                  const decisionKey = selectedItem?.id;
+
+                  input.onChange(decisionKey);
+                  form.change(
+                    'version',
+                    decisionKey === undefined
+                      ? ''
+                      : getDefaultVersion(decisionKey),
                   );
-                  input.onChange(selectedItem?.id);
-                  form.change('version', matchingDecision?.version ?? '');
-                  if (isMultiTenancyEnabled && matchingDecision) {
-                    form.change('tenant', matchingDecision.tenantId);
+
+                  if (isMultiTenancyEnabled) {
+                    const tenantId = decisions.find(
+                      ({id}) => id === decisionKey,
+                    )?.tenantId;
+
+                    if (tenantId !== undefined) {
+                      form.change('tenant', tenantId);
+                    }
                   }
                 }}
                 titleText="Name"
                 value={input.value}
                 placeholder="Search by Decision Name"
-                disabled={isMultiTenancyEnabled && tenantValue === ''}
+                disabled={isMultiTenancyEnabled && selectedTenant === ''}
               />
             );
           }}
@@ -84,7 +85,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
                 input.onChange(selectedItem);
               }}
               disabled={versions.length === 0}
-              items={versions}
+              items={items}
               itemToString={(item) =>
                 item === 'all' ? 'All versions' : item.toString()
               }

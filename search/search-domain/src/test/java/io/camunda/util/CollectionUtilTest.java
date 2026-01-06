@@ -38,7 +38,7 @@ public class CollectionUtilTest {
 
   @ParameterizedTest
   @MethodSource("provideParams")
-  void shouldAddValuesToList(
+  public void shouldAddValuesToList(
       final List<String> list, final List<String> values, final List<String> expected) {
     // given
 
@@ -47,15 +47,6 @@ public class CollectionUtilTest {
 
     // then
     assertThat(result).isEqualTo(expected);
-  }
-
-  @Test
-  void shouldConvertValuesAndAddThemToList() {
-    // when
-    final var result = CollectionUtil.collectValues(Enum::name, TestEnum.FOO, TestEnum.BAR);
-
-    // then
-    assertThat(result).containsExactly("FOO", "BAR");
   }
 
   private static Stream<Arguments> provideArrayParams() {
@@ -67,7 +58,7 @@ public class CollectionUtilTest {
 
   @ParameterizedTest
   @MethodSource("provideArrayParams")
-  void shouldCollectValuesAsList(final String[] values, final List<String> expected) {
+  public void shouldCollectValuesAsList(final String[] values, final List<String> expected) {
     // given
 
     // when
@@ -78,7 +69,7 @@ public class CollectionUtilTest {
   }
 
   @Test
-  void shouldRemoveNullValuesFromStringArray() {
+  public void shouldRemoveNullValuesFromStringArray() {
     // given
     final String[] values = new String[] {"foo", null, "bar"};
 
@@ -90,7 +81,7 @@ public class CollectionUtilTest {
   }
 
   @Test
-  void shouldRemoveNullValuesFromCollection() {
+  public void shouldRemoveNullValuesFromCollection() {
     // given
     final var values = new ArrayList<String>();
     values.add("foo");
@@ -102,10 +93,5 @@ public class CollectionUtilTest {
 
     // then
     assertThat(result).hasSize(2);
-  }
-
-  private enum TestEnum {
-    FOO,
-    BAR
   }
 }

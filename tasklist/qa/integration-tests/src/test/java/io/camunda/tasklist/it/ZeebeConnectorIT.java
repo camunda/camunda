@@ -19,8 +19,6 @@ import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TasklistZeebeExtension;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.zeebe.ZeebeConnector;
-import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
-import java.time.Duration;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -75,12 +73,9 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     startZeebe();
 
     camundaClient =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(zeebeExtension.getZeebeBroker().grpcAddress())
-            .restAddress(zeebeExtension.getZeebeBroker().restAddress())
-            .defaultRequestTimeout(Duration.ofSeconds(15))
-            .build();
+        zeebeConnector.newCamundaClient(
+            new ZeebeProperties()
+                .setGatewayAddress(zeebeExtension.getZeebeContainer().getExternalGatewayAddress()));
 
     // then 2
     assertThat(camundaClient.newTopologyRequest().send().join().getBrokers()).isNotEmpty();
@@ -105,7 +100,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     camundaClient =
         zeebeConnector.newCamundaClient(
             new ZeebeProperties()
-                .setGatewayAddress(zeebeExtension.getZeebeBroker().address(TestZeebePort.GATEWAY)));
+                .setGatewayAddress(zeebeExtension.getZeebeContainer().getExternalGatewayAddress()));
 
     // then 1
     assertThat(camundaClient.newTopologyRequest().send().join().getBrokers()).isNotEmpty();
@@ -118,12 +113,9 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     zeebeExtension.beforeEach(null);
 
     camundaClient =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .grpcAddress(zeebeExtension.getZeebeBroker().grpcAddress())
-            .restAddress(zeebeExtension.getZeebeBroker().restAddress())
-            .defaultRequestTimeout(Duration.ofSeconds(15))
-            .build();
+        zeebeConnector.newCamundaClient(
+            new ZeebeProperties()
+                .setGatewayAddress(zeebeExtension.getZeebeContainer().getExternalGatewayAddress()));
 
     // then 2
     assertThat(camundaClient.newTopologyRequest().send().join().getBrokers()).isNotEmpty();

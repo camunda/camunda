@@ -12,5 +12,9 @@ import java.util.Set;
 
 public interface FlowNodeStore {
 
+  String getFlowNodeIdByFlowNodeInstanceId(String flowNodeInstanceId);
+
   Map<String, String> getFlowNodeIdsForFlowNodeInstances(Set<String> flowNodeInstances);
+
+  String findParentTreePathFor(final long parentFlowNodeInstanceKey);
 }

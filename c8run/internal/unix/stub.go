@@ -4,6 +4,7 @@ package unix
 
 import (
 	"context"
+	"os"
 	"os/exec"
 )
 
@@ -11,7 +12,7 @@ func (w *UnixC8Run) OpenBrowser(ctx context.Context, url string) error {
 	panic("Platform was not built for unix")
 }
 
-func (w *UnixC8Run) ProcessTree(commandPid int) []int {
+func (w *UnixC8Run) ProcessTree(commandPid int) []*os.Process {
 	panic("Platform was not built for unix")
 }
 

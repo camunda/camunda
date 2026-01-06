@@ -88,11 +88,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-expression-language</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-grpc</artifactId>
     </dependency>
 
@@ -228,11 +223,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-validation</artifactId>
     </dependency>
 
     <dependency>

@@ -10,7 +10,6 @@ package io.camunda.it.rdbms.db.batchoperation;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
-import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -29,9 +28,8 @@ public class BatchOperationHistoryCleanupIT {
   public void shouldCleanupBatchOperations(final CamundaRdbmsTestApplication testApplication) {
     // GIVEN
     final var rdbmsService = testApplication.getRdbmsService();
-    final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
-    final var rdbmsWriter = rdbmsService.createWriter(config);
-    final var historyCleanupService = new HistoryCleanupService(config, rdbmsWriter);
+    final var rdbmsWriter = rdbmsService.createWriter(0);
+    final var historyCleanupService = rdbmsWriter.getHistoryCleanupService();
     final var batchOperationReader = rdbmsService.getBatchOperationReader();
     final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
 
@@ -66,9 +64,8 @@ public class BatchOperationHistoryCleanupIT {
   public void shouldNOTCleanupBatchOperations(final CamundaRdbmsTestApplication testApplication) {
     // GIVEN
     final var rdbmsService = testApplication.getRdbmsService();
-    final var config = new RdbmsWriterConfig.Builder().partitionId(0).build();
-    final var rdbmsWriter = rdbmsService.createWriter(config);
-    final var historyCleanupService = new HistoryCleanupService(config, rdbmsWriter);
+    final var rdbmsWriter = rdbmsService.createWriter(0);
+    final var historyCleanupService = rdbmsWriter.getHistoryCleanupService();
     final var batchOperationReader = rdbmsService.getBatchOperationReader();
     final var batchOperationItemReader = rdbmsService.getBatchOperationItemReader();
 

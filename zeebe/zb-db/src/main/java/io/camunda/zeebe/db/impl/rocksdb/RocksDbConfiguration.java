@@ -42,19 +42,19 @@ public final class RocksDbConfiguration {
   public static final boolean DEFAULT_SST_PARTITIONING_ENABLED = true;
 
   public static final int DEFAULT_IO_RATE_BYTES_PER_SECOND = 0;
-  public static final MemoryAllocationStrategy DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY =
-      MemoryAllocationStrategy.AUTO;
+
   private Properties columnFamilyOptions = new Properties();
   private boolean statisticsEnabled = DEFAULT_STATISTICS_ENABLED;
   private long memoryLimit = DEFAULT_MEMORY_LIMIT;
   private int maxWriteBufferNumber = DEFAULT_MAX_WRITE_BUFFER_NUMBER;
   private int minWriteBufferNumberToMerge = DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE;
   private boolean walDisabled = DEFAULT_WAL_DISABLED;
+
   private boolean sstPartitioningEnabled = DEFAULT_SST_PARTITIONING_ENABLED;
 
   /**
    * Defines how many files are kept open by RocksDB, per default it is unlimited (-1). This is done
-   * for performance reasons, if we set a value higher than zero it needs to keep track of open
+   * for performance reasons, if we set a value higher then zero it needs to keep track of open
    * files in the TableCache and look up on accessing them.
    *
    * <p>https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide#general-options
@@ -71,9 +71,6 @@ public final class RocksDbConfiguration {
    * <p>https://github.com/facebook/rocksdb/wiki/Rate-Limiter
    */
   private int ioRateBytesPerSecond = DEFAULT_IO_RATE_BYTES_PER_SECOND;
-
-  private MemoryAllocationStrategy memoryAllocationStrategy =
-      DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
 
   public RocksDbConfiguration() {}
 
@@ -157,21 +154,5 @@ public final class RocksDbConfiguration {
   public RocksDbConfiguration setSstPartitioningEnabled(final boolean sstPartitioningEnabled) {
     this.sstPartitioningEnabled = sstPartitioningEnabled;
     return this;
-  }
-
-  public MemoryAllocationStrategy getMemoryAllocationStrategy() {
-    return memoryAllocationStrategy;
-  }
-
-  public RocksDbConfiguration setMemoryAllocationStrategy(
-      final MemoryAllocationStrategy memoryAllocationStrategy) {
-    this.memoryAllocationStrategy = memoryAllocationStrategy;
-    return this;
-  }
-
-  public enum MemoryAllocationStrategy {
-    PARTITION,
-    BROKER,
-    AUTO
   }
 }

@@ -15,7 +15,7 @@ import io.camunda.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
-import io.camunda.configuration.Interceptor;
+import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.it.engine.queryapi.util.TestAuthorizationClientInterceptor;
 import io.camunda.zeebe.it.engine.queryapi.util.TestAuthorizationListener;
 import io.camunda.zeebe.it.engine.queryapi.util.TestAuthorizationServerInterceptor;
@@ -49,7 +49,7 @@ final class QueryApiIT {
           .endEvent()
           .done();
 
-  @TestZeebe(initMethod = "initTestStandaloneBroker", purgeAfterEach = false)
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
   private static TestStandaloneBroker broker;
 
   private static long processDefinitionKey;
@@ -58,15 +58,14 @@ final class QueryApiIT {
   static void initTestStandaloneBroker() {
     broker =
         new TestStandaloneBroker()
-            // set queryApi via properties because it is not yet supported in unified config
-            .withProperty("zeebe.broker.experimental.queryApi.enabled", true)
-            .withUnifiedConfig(
+            .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
+            .withBrokerConfig(
                 cfg -> {
-                  final var config = new Interceptor();
+                  final var config = new InterceptorCfg();
                   config.setId("auth");
                   config.setClassName(TestAuthorizationServerInterceptor.class.getName());
                   config.setJarPath(createInterceptorJar().getAbsolutePath());
-                  cfg.getApi().getGrpc().getInterceptors().add(config);
+                  cfg.getGateway().getInterceptors().add(config);
                 });
   }
 

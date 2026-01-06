@@ -210,7 +210,8 @@ public class GatewayHealthProbeIntegrationTest {
   @Nested
   final class WithAuthenticationIdentityTest {
     @TestZeebe(awaitReady = false, awaitCompleteTopology = false) // since there's no broker
-    private final TestStandaloneGateway gateway = new TestStandaloneGateway();
+    private final TestStandaloneGateway gateway =
+        new TestStandaloneGateway().withAdditionalProfile("identity-auth");
 
     @Test
     void shouldReportReadinessUpWithoutAuthentication() {

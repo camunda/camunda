@@ -18,14 +18,12 @@ import io.camunda.tasklist.qa.util.TestOpenSearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
-import java.io.IOException;
-import org.junit.jupiter.api.AfterAll;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.HealthStatus;
-import org.opensearch.testcontainers.OpenSearchContainer;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -52,27 +50,37 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ContextConfiguration(initializers = {OpenSearchConnectorBasicAuthIT.OpenSearchStarter.class})
 public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
-  private static final OpenSearchContainer OPENSEARCH_CONTAINER =
-      new OpenSearchContainer("opensearchproject/opensearch:2.17.0");
+  static OpensearchContainer opensearch =
+      (OpensearchContainer)
+          new OpensearchContainer("opensearchproject/opensearch:2.17.0")
+              .withEnv(
+                  Map.of(
+                      // "plugins.security.disabled", "false",
+                      "OPENSEARCH_PASSWORD", "changeme",
+                      "plugins.security.allow_unsafe_democertificates", "true"
+                      //        "xpack.security.transport.ssl.enabled","true",
+                      //        "xpack.security.http.ssl.enabled", "true",
+                      //
+                      // "xpack.security.transport.ssl.verification_mode","none",//"certificate",
+                      //        "xpack.security.transport.ssl.keystore.path",
+                      // "elastic-certificates.p12",
+                      //        "xpack.security.transport.ssl.truststore.path",
+                      // "elastic-certificates.p12"
+                      ))
+              .withExposedPorts(9200, 9200);
 
   @Autowired
   @Qualifier("tasklistOsClient")
   OpenSearchClient openSearchClient;
 
   @BeforeAll
-  static void beforeAll() {
+  public static void beforeClass() {
     assumeTrue(TestUtil.isOpenSearch());
   }
 
-  @AfterAll
-  static void afterAll() {
-    OPENSEARCH_CONTAINER.stop();
-  }
-
   @Test
-  public void canConnect() throws IOException {
+  public void canConnect() {
     assertThat(openSearchClient).isNotNull();
-    assertThat(openSearchClient.cluster().health().status()).isSameAs(HealthStatus.Green);
   }
 
   static class OpenSearchStarter
@@ -80,26 +88,30 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      OPENSEARCH_CONTAINER.start();
+      opensearch.start();
 
       final String osUrl =
-          String.format(
-              "http://%s:%s",
-              OPENSEARCH_CONTAINER.getHost(), OPENSEARCH_CONTAINER.getMappedPort(9200));
-
+          String.format("http://%s:%s", opensearch.getHost(), opensearch.getMappedPort(9200));
       TestPropertyValues.of(
-              "camunda.database.type=opensearch",
+              // Unified Configuration
               "camunda.data.secondary-storage.type=opensearch",
-              "camunda.operate.database=opensearch",
-              "camunda.tasklist.database=opensearch",
-              "zeebe.broker.exporters.camundaexporter.args.connect.type=opensearch",
-              "camunda.database.url=" + osUrl,
               "camunda.data.secondary-storage.opensearch.url=" + osUrl,
-              "camunda.operate.opensearch.url=" + osUrl,
+              "camunda.data.secondary-storage.opensearch.cluster-name=docker-cluster",
+
+              // TODO: The following legacy values are set somewhere equal to http://localhost:9200.
+              //  We should find them and unset them, so that they don't cause conflicts. In the
+              //  meantime, this test can run in double configuration mode.
+              "camunda.database.url=" + osUrl,
               "camunda.tasklist.opensearch.url=" + osUrl,
-              "camunda.database.opensearch.username=" + OPENSEARCH_CONTAINER.getUsername(),
-              "camunda.database.opensearch.password=" + OPENSEARCH_CONTAINER.getPassword(),
-              "camunda.data.secondary-storage.opensearch.cluster-name=docker-cluster")
+              "camunda.operate.opensearch.url=" + osUrl,
+              // Unified config
+              "camunda.data.secondary-storage.opensearch.username=opensearch",
+              "camunda.data.secondary-storage.opensearch.password=changeme",
+
+              // ---
+
+              "camunda.tasklist.opensearch.username=opensearch",
+              "camunda.tasklist.opensearch.password=changeme")
           .applyTo(applicationContext.getEnvironment());
     }
   }

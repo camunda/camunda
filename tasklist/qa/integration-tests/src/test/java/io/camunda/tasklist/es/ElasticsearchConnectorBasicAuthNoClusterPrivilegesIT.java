@@ -68,15 +68,13 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
 
   private static final String ES_ADMIN_USER = "elastic";
   private static final String ES_ADMIN_PASSWORD = "changeme";
-  private static final String TASKLIST_ES_USER = "tasklist_user";
-  private static final String TASKLIST_ES_PASSWORD = "tasklist_pwd";
-
-  private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
+  static ElasticsearchContainer elasticsearch =
       new ElasticsearchContainer(
               "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
           .withExposedPorts(9200);
-
+  private static final String TASKLIST_ES_USER = "tasklist_user";
+  private static final String TASKLIST_ES_PASSWORD = "tasklist_pwd";
   @Autowired RestHighLevelClient tasklistEsClient;
 
   @Autowired private TestRestTemplate testRestTemplate;
@@ -84,7 +82,7 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
   @LocalManagementPort private int managementPort;
 
   @BeforeAll
-  static void beforeAll() {
+  public static void beforeClass() {
     assumeTrue(TestUtil.isElasticSearch());
   }
 
@@ -103,24 +101,27 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      ELASTICSEARCH_CONTAINER.start();
+      elasticsearch.start();
 
       createElasticsearchRoleAndUser();
 
-      final String elsUrl =
-          String.format("http://%s", ELASTICSEARCH_CONTAINER.getHttpHostAddress());
-
+      final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
       TestPropertyValues.of(
-              "camunda.database.type=elasticsearch",
-              "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "zeebe.broker.exporters.camundaexporter.args.connect.type=elasticsearch",
-              "camunda.database.url=" + elsUrl,
+              "camunda.tasklist.elasticsearch.username=" + TASKLIST_ES_USER,
+              "camunda.tasklist.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
+              "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
+              // DB url
               "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
+              "camunda.database.url=" + elsUrl,
               "camunda.operate.elasticsearch.url=" + elsUrl,
+              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
-              "zeebe.broker.exporters.camundaexporter.args.connect.url=" + elsUrl,
+              // DB type
+              "camunda.data.secondary-storage.type=elasticsearch",
+              "camunda.database.type=elasticsearch",
+              "camunda.tasklist.database=elasticsearch",
+              "camunda.operate.database=elasticsearch",
+              // Unified config
               "camunda.data.secondary-storage.elasticsearch.username=" + TASKLIST_ES_USER,
               "camunda.data.secondary-storage.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
               // Disable health check as tasklist ES client has no cluster privileges
@@ -168,7 +169,7 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
       final var credentialProvider = new BasicCredentialsProvider();
       credentialProvider.setCredentials(
           AuthScope.ANY, new UsernamePasswordCredentials(ES_ADMIN_USER, ES_ADMIN_PASSWORD));
-      final URI uri = new URI("http://" + ELASTICSEARCH_CONTAINER.getHttpHostAddress());
+      final URI uri = new URI("http://" + elasticsearch.getHttpHostAddress());
       return new ElasticsearchClient(
           new RestClientTransport(
               RestClient.builder(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme()))

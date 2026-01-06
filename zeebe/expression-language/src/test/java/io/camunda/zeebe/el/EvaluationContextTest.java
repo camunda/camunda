@@ -11,7 +11,6 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
-import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Test;
@@ -108,8 +107,7 @@ public class EvaluationContextTest {
   private EvaluationResult evaluateExpressionWithContext(final DirectBuffer variable) {
     final var parseExpression = expressionLanguage.parseExpression("=x");
     final var evaluationResult =
-        expressionLanguage.evaluateExpression(
-            parseExpression, name -> Either.left(Map.of("x", variable).get(name)));
+        expressionLanguage.evaluateExpression(parseExpression, Map.of("x", variable)::get);
 
     assertThat(evaluationResult.isFailure())
         .describedAs(evaluationResult.getFailureMessage())

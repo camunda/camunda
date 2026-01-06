@@ -20,13 +20,9 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.Empty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotation;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.GeneratedFromMethodInfo;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.spring.bean.SpringBeanInfoTest;
-import io.camunda.client.spring.bean.SpringBeanInfoTest.NoPropertiesSet;
 import io.camunda.client.spring.bean.SpringBeanInfoTest.WithJobWorker;
 import io.camunda.client.spring.bean.SpringBeanInfoTest.WithJobWorkerAllValues;
 import java.lang.reflect.Method;
@@ -48,16 +44,16 @@ public class ReadJobWorkerValueTest {
 
     // then
     assertThat(jobWorkerValue.isPresent()).isTrue();
-    assertThat(jobWorkerValue.get().getType()).isEqualTo(new FromAnnotation<>("bar"));
-    assertThat(jobWorkerValue.get().getName()).isEqualTo(new FromAnnotation<>("kermit"));
-    assertThat(jobWorkerValue.get().getTimeout())
-        .isEqualTo(new FromAnnotation<>(Duration.ofMillis(100)));
-    assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new FromAnnotation<>(false));
+    assertThat(jobWorkerValue.get().getType()).isEqualTo("bar");
+    assertThat(jobWorkerValue.get().getName()).isEqualTo("kermit");
+    assertThat(jobWorkerValue.get().getTimeout()).isEqualTo(Duration.ofMillis(100));
+    assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(-1);
+    assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(Duration.ofSeconds(-1));
+    assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(Duration.ofMillis(-1));
+    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(false);
     assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of());
-    assertThat(jobWorkerValue.get().getStreamTimeout()).isEqualTo(new Empty<>());
+    assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
+    assertThat(jobWorkerValue.get().getStreamTimeout()).isEqualTo(Duration.ofHours(1));
   }
 
   @Test
@@ -70,7 +66,7 @@ public class ReadJobWorkerValueTest {
 
     // then
     assertThat(jobWorkerValue.isPresent()).isTrue();
-    assertThat(jobWorkerValue.get().getTenantIds()).containsOnly(new FromAnnotation<>("tenant-1"));
+    assertThat(jobWorkerValue.get().getTenantIds()).containsOnly("tenant-1");
   }
 
   @Test
@@ -83,38 +79,15 @@ public class ReadJobWorkerValueTest {
 
     // then
     assertThat(jobWorkerValue.isPresent()).isTrue();
-    assertThat(jobWorkerValue.get().getType()).isEqualTo(new FromAnnotation<>("bar"));
-    assertThat(jobWorkerValue.get().getName()).isEqualTo(new FromAnnotation<>("kermit"));
-    assertThat(jobWorkerValue.get().getTimeout())
-        .isEqualTo(new FromAnnotation<>(Duration.ofMillis(100L)));
-    assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(new FromAnnotation<>(3));
-    assertThat(jobWorkerValue.get().getRequestTimeout())
-        .isEqualTo(new FromAnnotation<>(Duration.ofSeconds(500L)));
-    assertThat(jobWorkerValue.get().getPollInterval())
-        .isEqualTo(new FromAnnotation<>(Duration.ofSeconds(1L)));
-    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new FromAnnotation<>(true));
-    assertThat(jobWorkerValue.get().getFetchVariables())
-        .isEqualTo(List.of(new FromAnnotation<>("foo")));
-  }
-
-  @Test
-  void applyOnEmptyAnnotation() {
-    // given
-    final MethodInfo methodInfo = extract(NoPropertiesSet.class);
-    // when
-    final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
-    // then
-    assertThat(jobWorkerValue.isPresent()).isTrue();
-    assertThat(jobWorkerValue.get().getType()).isEqualTo(new GeneratedFromMethodInfo<>("handle"));
-    assertThat(jobWorkerValue.get().getName())
-        .isEqualTo(new GeneratedFromMethodInfo<>("noPropertiesSet#handle"));
-    assertThat(jobWorkerValue.get().getTimeout()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(new Empty<>());
-    assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of());
-    assertThat(jobWorkerValue.get().getStreamTimeout()).isEqualTo(new Empty<>());
+    assertThat(jobWorkerValue.get().getType()).isEqualTo("bar");
+    assertThat(jobWorkerValue.get().getName()).isEqualTo("kermit");
+    assertThat(jobWorkerValue.get().getTimeout()).isEqualTo(Duration.ofMillis(100L));
+    assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(3);
+    assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(Duration.ofSeconds(500L));
+    assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(Duration.ofSeconds(1L));
+    assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(true);
+    assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of("foo"));
+    assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
   }
 
   private MethodInfo extract(final Class<?> clazz) {

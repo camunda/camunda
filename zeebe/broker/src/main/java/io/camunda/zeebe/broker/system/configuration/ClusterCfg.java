@@ -22,6 +22,7 @@ import java.util.stream.IntStream;
 public final class ClusterCfg implements ConfigurationEntry {
 
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
+  public static final int DEFAULT_NODE_ID = 0;
   public static final int DEFAULT_PARTITIONS_COUNT = 1;
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
@@ -45,9 +46,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
   private List<Integer> partitionIds;
-  private Integer nodeId = 0;
-  // TODO add javaDoc
-  private Long nodeVersion = 0L;
+  private int nodeId = DEFAULT_NODE_ID;
   private String clusterId;
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
@@ -112,11 +111,11 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
   }
 
-  public Integer getNodeId() {
+  public int getNodeId() {
     return nodeId;
   }
 
-  public void setNodeId(final Integer nodeId) {
+  public void setNodeId(final int nodeId) {
     this.nodeId = nodeId;
   }
 
@@ -239,7 +238,7 @@ public final class ClusterCfg implements ConfigurationEntry {
       return false;
     }
     final ClusterCfg that = (ClusterCfg) o;
-    return Objects.equals(nodeId, that.nodeId)
+    return nodeId == that.nodeId
         && partitionsCount == that.partitionsCount
         && replicationFactor == that.replicationFactor
         && clusterSize == that.clusterSize
@@ -285,13 +284,5 @@ public final class ClusterCfg implements ConfigurationEntry {
         + ", configManagerCfg="
         + configManager
         + '}';
-  }
-
-  public Long getNodeVersion() {
-    return nodeVersion;
-  }
-
-  public void setNodeVersion(final Long nodeVersion) {
-    this.nodeVersion = nodeVersion;
   }
 }

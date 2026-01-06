@@ -74,7 +74,7 @@ public final class MultiInstanceBodyProcessor
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
-    expressionBehavior = bpmnBehaviors.expressionProcessor();
+    expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     multiInstanceInputCollectionBehavior = bpmnBehaviors.inputCollectionBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
@@ -408,11 +408,11 @@ public final class MultiInstanceBodyProcessor
         element.getLoopCharacteristics().getCompletionCondition();
 
     final ExpressionProcessor primaryContextExpressionProcessor =
-        expressionBehavior.prependContext(
-            (variableName -> Either.left(getVariable(context.getFlowScopeKey(), variableName))));
+        expressionBehavior.withPrimaryContext(
+            (variableName -> getVariable(context.getFlowScopeKey(), variableName)));
     if (completionCondition.isPresent()) {
       return primaryContextExpressionProcessor.evaluateBooleanExpression(
-          completionCondition.get(), context.getElementInstanceKey(), context.getTenantId());
+          completionCondition.get(), context.getElementInstanceKey());
     }
     return Either.right(false);
   }

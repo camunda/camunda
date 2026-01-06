@@ -84,7 +84,6 @@ public final class MessageSubscriptionDeleteProcessor
     return commandSender.closeProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getProcessDefinitionKey(),
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getTenantId());
   }

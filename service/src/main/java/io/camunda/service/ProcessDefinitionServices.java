@@ -8,7 +8,6 @@
 package io.camunda.service;
 
 import static io.camunda.security.auth.Authorization.withAuthorization;
-import static io.camunda.service.authorization.Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
@@ -16,13 +15,9 @@ import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
-import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
-import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
-import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
-import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -116,26 +111,6 @@ public class ProcessDefinitionServices
                 .processDefinitionInstanceStatistics(query));
   }
 
-  public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
-      searchProcessDefinitionInstanceVersionStatistics(
-          final String processDefinitionId,
-          final ProcessDefinitionInstanceVersionStatisticsQuery query) {
-    final var updatedQuery =
-        ProcessDefinitionInstanceVersionStatisticsQuery.of(
-            b ->
-                b.filter(
-                        query.filter().toBuilder().processDefinitionId(processDefinitionId).build())
-                    .sort(query.sort())
-                    .page(query.page()));
-    return executeSearchRequest(
-        () ->
-            processDefinitionSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
-                .processDefinitionInstanceVersionStatistics(updatedQuery));
-  }
-
   public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {
     return Optional.ofNullable(getByKey(processDefinitionKey))
         .filter(p -> p.formId() != null && !p.formId().isEmpty())
@@ -151,17 +126,5 @@ public class ProcessDefinitionServices
     return Optional.ofNullable(processDefinition)
         .map(ProcessDefinitionEntity::bpmnXml)
         .filter(xml -> !xml.isEmpty());
-  }
-
-  public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity>
-      getProcessDefinitionMessageSubscriptionStatistics(
-          final ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
-    return executeSearchRequest(
-        () ->
-            processDefinitionSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
-                .getProcessDefinitionMessageSubscriptionStatistics(query));
   }
 }

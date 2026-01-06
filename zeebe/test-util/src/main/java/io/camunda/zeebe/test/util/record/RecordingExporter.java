@@ -14,18 +14,13 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
-import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
-import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
-import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -67,17 +62,12 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
-import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
-import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
-import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -117,7 +107,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -125,9 +114,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionFactory;
-import org.awaitility.core.ThrowingRunnable;
 
 public final class RecordingExporter implements Exporter {
   public static final long DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(5).toMillis();
@@ -139,7 +125,6 @@ public final class RecordingExporter implements Exporter {
 
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
-  private static boolean overrideMaximumWaitTime = false;
 
   private Controller controller;
 
@@ -198,7 +183,6 @@ public final class RecordingExporter implements Exporter {
       maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
       RECORDS.clear();
       autoAcknowledge = true;
-      overrideMaximumWaitTime = false;
     } finally {
       LOCK.unlock();
     }
@@ -393,10 +377,6 @@ public final class RecordingExporter implements Exporter {
         records(ValueType.CLUSTER_VARIABLE, ClusterVariableRecordValue.class));
   }
 
-  public static ExpressionRecordStream expressionRecords() {
-    return new ExpressionRecordStream(records(ValueType.EXPRESSION, ExpressionRecordValue.class));
-  }
-
   public static VariableRecordStream variableRecords(final VariableIntent intent) {
     return variableRecords().withIntent(intent);
   }
@@ -477,26 +457,6 @@ public final class RecordingExporter implements Exporter {
 
   public static SignalRecordStream signalRecords(final SignalIntent intent) {
     return signalRecords().withIntent(intent);
-  }
-
-  public static ConditionalSubscriptionRecordStream conditionalSubscriptionRecords() {
-    return new ConditionalSubscriptionRecordStream(
-        records(ValueType.CONDITIONAL_SUBSCRIPTION, ConditionalSubscriptionRecordValue.class));
-  }
-
-  public static ConditionalSubscriptionRecordStream conditionalSubscriptionRecords(
-      final ConditionalSubscriptionIntent intent) {
-    return conditionalSubscriptionRecords().withIntent(intent);
-  }
-
-  public static ConditionalEvaluationRecordStream conditionalEvaluationRecords() {
-    return new ConditionalEvaluationRecordStream(
-        records(ValueType.CONDITIONAL_EVALUATION, ConditionalEvaluationRecordValue.class));
-  }
-
-  public static ConditionalEvaluationRecordStream conditionalEvaluationRecords(
-      final ConditionalEvaluationIntent intent) {
-    return conditionalEvaluationRecords().withIntent(intent);
   }
 
   public static ResourceDeletionRecordStream resourceDeletionRecords() {
@@ -641,7 +601,7 @@ public final class RecordingExporter implements Exporter {
   }
 
   public static BatchOperationExecutionRecordStream batchOperationExecutionRecords(
-      final BatchOperationExecutionIntent intent) {
+      final BatchOperationIntent intent) {
     return batchOperationExecutionRecords().withIntent(intent);
   }
 
@@ -682,56 +642,13 @@ public final class RecordingExporter implements Exporter {
         records(ValueType.ASYNC_REQUEST, AsyncRequestRecordValue.class));
   }
 
-  public static HistoryDeletionRecordStream historyDeletionRecords(
-      final HistoryDeletionIntent intent) {
-    return historyDeletionRecords().withIntent(intent);
-  }
-
-  public static HistoryDeletionRecordStream historyDeletionRecords() {
-    return new HistoryDeletionRecordStream(
-        records(ValueType.HISTORY_DELETION, HistoryDeletionRecordValue.class));
-  }
-
   public static BatchOperationPartitionLifecycleRecordStream
       batchOperationPartitionLifecycleRecords(final BatchOperationIntent intent) {
     return batchOperationPartitionLifecycleRecords().withIntent(intent);
   }
 
-  public static GlobalListenerBatchRecordStream globalListenerBatchRecords() {
-    return new GlobalListenerBatchRecordStream(
-        records(ValueType.GLOBAL_LISTENER_BATCH, GlobalListenerBatchRecordValue.class));
-  }
-
-  public static GlobalListenerBatchRecordStream globalListenerBatchRecords(
-      final GlobalListenerBatchIntent intent) {
-    return globalListenerBatchRecords().withIntent(intent);
-  }
-
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
     autoAcknowledge = shouldAcknowledgeRecords;
-  }
-
-  /**
-   * Creates an Awaitility wrapper that short-circuits the RecordingExporter's wait time during
-   * assertion polling. This prevents the exporter from waiting for records during each poll,
-   * allowing Awaitility to control the polling behavior instead.
-   *
-   * @return an AwaitilityWrapper with the default maximum wait time of 5 seconds
-   */
-  public static AwaitilityWrapper await() {
-    return await(Duration.ofMillis(maximumWaitTime));
-  }
-
-  /**
-   * Creates an Awaitility wrapper that short-circuits the RecordingExporter's wait time during
-   * assertion polling. This prevents the exporter from waiting for records during each poll,
-   * allowing Awaitility to control the polling behavior instead.
-   *
-   * @return an AwaitilityWrapper with the provided maximum wait time
-   */
-  public static AwaitilityWrapper await(final Duration timeout) {
-    final var conditionFactory = Awaitility.await().atMost(timeout);
-    return new AwaitilityWrapper(conditionFactory);
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {
@@ -746,10 +663,6 @@ public final class RecordingExporter implements Exporter {
     public boolean hasNext() {
       LOCK.lock();
       try {
-        if (overrideMaximumWaitTime) {
-          return !isEmpty();
-        }
-
         long now = System.currentTimeMillis();
         final long endTime = now + maximumWaitTime;
         while (isEmpty() && endTime > now) {
@@ -770,27 +683,6 @@ public final class RecordingExporter implements Exporter {
     @Override
     public Record<?> next() {
       return RECORDS.get(nextIndex++);
-    }
-  }
-
-  public record AwaitilityWrapper(ConditionFactory conditionFactory) {
-
-    public void untilAsserted(final ThrowingRunnable throwingRunnable) {
-      try {
-        overrideMaximumWaitTime = true;
-        conditionFactory.untilAsserted(throwingRunnable);
-      } finally {
-        overrideMaximumWaitTime = false;
-      }
-    }
-
-    public void until(final Callable<Boolean> callable) {
-      try {
-        overrideMaximumWaitTime = true;
-        conditionFactory.until(callable);
-      } finally {
-        overrideMaximumWaitTime = false;
-      }
     }
   }
 }

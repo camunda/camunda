@@ -23,14 +23,10 @@ public record SearchClientReaders(
     JobReader jobReader,
     MappingRuleReader mappingRuleReader,
     MessageSubscriptionReader messageSubscriptionReader,
-    ProcessDefinitionMessageSubscriptionStatisticsReader
-        processDefinitionMessageSubscriptionStatisticsReader,
     ProcessDefinitionReader processDefinitionReader,
     ProcessDefinitionStatisticsReader processDefinitionStatisticsReader,
     ProcessInstanceReader processInstanceReader,
     ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader,
-    ProcessDefinitionInstanceVersionStatisticsReader
-        processDefinitionInstanceVersionStatisticsReader,
     ProcessInstanceStatisticsReader processInstanceStatisticsReader,
     RoleReader roleReader,
     RoleMemberReader roleMemberReader,
@@ -41,8 +37,4 @@ public record SearchClientReaders(
     UsageMetricsTUReader usageMetricsTUReader,
     UserReader userReader,
     UserTaskReader userTaskReader,
-    VariableReader variableReader,
-    ClusterVariableReader clusterVariableReader,
-    AuditLogReader auditLogReader,
-    IncidentProcessInstanceStatisticsByErrorReader
-        incidentProcessInstanceStatisticsByErrorReader) {}
+    VariableReader variableReader) {}

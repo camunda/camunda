@@ -10114,15 +10114,6 @@ components:
           description: The name of the worker for this job.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-        creationTime:
-          description: When the job was created. Field is present for jobs created after 8.9.
-          allOf:
-            - $ref: "#/components/schemas/DateTimeFilterProperty"
-        lastUpdateTime:
-          description: When the job was last updated. Field is present for jobs created after 8.9.
-          allOf:
-            - $ref: "#/components/schemas/DateTimeFilterProperty"
-
     JobSearchQueryResult:
       description: Job search response.
       type: object
@@ -10228,14 +10219,6 @@ components:
         worker:
           description: The name of the worker of this job.
           type: string
-        creationTime:
-          description: When the job was created. Field is present for jobs created after 8.9.
-          type: string
-          format: date-time
-        lastUpdateTime:
-          description: When the job was last updated. Field is present for jobs created after 8.9.
-          type: string
-          format: date-time
     JobStateEnum:
       description: The state of the job.
       type: string

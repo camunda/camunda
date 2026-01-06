@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperat
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -31,7 +30,6 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
@@ -47,21 +45,18 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final long operationReference;
   private boolean processInASeparateBatch = false;
   private final long batchOperationReference;
-  private final Map<String, Object> authorizationClaims;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
-    this(predicate, operationReferenceNullValue(), batchOperationReferenceNullValue(), Map.of());
+    this(predicate, operationReferenceNullValue(), batchOperationReferenceNullValue());
   }
 
   BufferedProcessingResultBuilder(
       final RecordBatchSizePredicate predicate,
       final long operationReference,
-      final long batchOperationReference,
-      final Map<String, Object> authorizationClaims) {
+      final long batchOperationReference) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.operationReference = operationReference;
     this.batchOperationReference = batchOperationReference;
-    this.authorizationClaims = authorizationClaims;
   }
 
   @Override
@@ -79,17 +74,13 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       metadata.batchOperationReference(batchOperationReference);
     }
 
-    if (authorizationClaims != null && !authorizationClaims.isEmpty()) {
-      metadata.authorization(new AuthInfo().setClaims(authorizationClaims));
+    final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
+    if (valueType == null) {
+      // usually happens when the record is not registered at the TypedStreamEnvironment
+      throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
     if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
-      final var valueType = unifiedRecordValue.valueType();
-      if (valueType == null) {
-        // usually happens when the record is not registered at the TypedStreamEnvironment
-        throw new IllegalStateException(
-            "Missing value type mapping for record: " + value.getClass());
-      }
       final var metadataWithValueType = metadata.valueType(valueType);
       final var either =
           mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);

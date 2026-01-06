@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 
@@ -32,8 +31,8 @@ public final class InterPartitionCommandSenderService extends Actor
   }
 
   @Override
-  public void onNewCheckpointCreated(final long checkpointId, final CheckpointType checkpointType) {
-    actor.submit(() -> commandSender.setCheckpointInfo(checkpointId, checkpointType));
+  public void onNewCheckpointCreated(final long checkpointId) {
+    actor.submit(() -> commandSender.setCheckpointId(checkpointId));
   }
 
   @Override

@@ -22,18 +22,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
-import io.camunda.client.api.response.Decision;
-import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.api.response.Form;
-import io.camunda.client.api.response.Process;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.event.CamundaPostDeploymentSpringEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,7 +60,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   public void configureFor(final BeanInfo beanInfo) {
     final List<DeploymentValue> zeebeDeploymentValue = getDeploymentValues(beanInfo);
     if (!zeebeDeploymentValue.isEmpty()) {
-      LOGGER.debug("Configuring deployments: {}", zeebeDeploymentValue);
+      LOGGER.info("Configuring deployments: {}", zeebeDeploymentValue);
       deploymentValues.addAll(zeebeDeploymentValue);
     }
   }
@@ -112,44 +108,18 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
       commandStep2.tenantId(tenantId);
     }
     final DeploymentEvent deploymentEvent = commandStep2.execute();
-    logDeployment(
-        "Processes",
-        deploymentEvent.getProcesses(),
-        Process::getBpmnProcessId,
-        Process::getVersion);
-    logDeployment(
-        "Decision Requirements",
-        deploymentEvent.getDecisionRequirements(),
-        DecisionRequirements::getDmnDecisionRequirementsId,
-        DecisionRequirements::getVersion);
-    logDeployment(
-        "Decisions",
-        deploymentEvent.getDecisions(),
-        Decision::getDmnDecisionId,
-        Decision::getVersion);
-    logDeployment("Forms", deploymentEvent.getForm(), Form::getFormId, Form::getVersion);
-    logDeployment(
-        "Resources",
-        deploymentEvent.getResource(),
-        io.camunda.client.api.response.Resource::getResourceId,
-        io.camunda.client.api.response.Resource::getVersion);
-    return deploymentEvent;
-  }
-
-  private <T> void logDeployment(
-      final String resourceName,
-      final List<T> deployed,
-      final Function<T, String> idRef,
-      final Function<T, Integer> versionRef) {
-    if (deployed == null || deployed.isEmpty()) {
-      return;
-    }
     LOGGER.info(
-        "Deployed {}: {}",
-        resourceName,
-        deployed.stream()
-            .map(d -> String.format("<%s:%d>", idRef.apply(d), versionRef.apply(d)))
+        "Deployed: {}",
+        Stream.concat(
+                deploymentEvent.getDecisionRequirements().stream()
+                    .map(
+                        wf ->
+                            String.format(
+                                "<%s:%d>", wf.getDmnDecisionRequirementsId(), wf.getVersion())),
+                deploymentEvent.getProcesses().stream()
+                    .map(wf -> String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
             .collect(Collectors.joining(",")));
+    return deploymentEvent;
   }
 
   public Resource[] getResources(final String resources) {

@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader.OpenApiLoadingException;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.tags.Tag;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -262,53 +261,5 @@ class OpenApiYamlLoaderTest {
 
     assertThat(exceptionWithoutCause.getMessage()).isEqualTo(message);
     assertThat(exceptionWithoutCause.getCause()).isNull();
-  }
-
-  @Test
-  void shouldResolveRelativeRefsWhenLoadingFromFilesystem() throws IOException {
-    // given
-    final Path specDir = tempDir.resolve("config/openapi/v2");
-    Files.createDirectories(specDir);
-
-    final String referencedYaml =
-        """
-        components:
-          schemas:
-            AuditLog:
-              type: object
-              properties:
-                id:
-                  type: string
-        """;
-    Files.writeString(specDir.resolve("audit-logs.yaml"), referencedYaml);
-
-    final String rootYaml =
-        """
-        openapi: 3.0.3
-        info:
-          title: Test API
-          version: "1.0"
-        paths: {}
-        components:
-          schemas:
-            AuditLog:
-              $ref: "./audit-logs.yaml#/components/schemas/AuditLog"
-        """;
-
-    final Path rootSpec = specDir.resolve("rest-api.yaml");
-    Files.writeString(rootSpec, rootYaml);
-
-    // when
-    final OpenAPI result = OpenApiYamlLoader.loadOpenApiFromYaml(rootSpec.toString());
-
-    // then
-    assertThat(result.getComponents()).isNotNull();
-    assertThat(result.getComponents().getSchemas()).containsKey("AuditLog");
-
-    final Schema<?> auditLog = result.getComponents().getSchemas().get("AuditLog");
-    assertThat(auditLog.get$ref()).isNull();
-    assertThat(auditLog.getType()).isEqualTo("object");
-    assertThat(auditLog.getProperties()).containsKey("id");
-    assertThat(((Schema<?>) auditLog.getProperties().get("id")).getType()).isEqualTo("string");
   }
 }

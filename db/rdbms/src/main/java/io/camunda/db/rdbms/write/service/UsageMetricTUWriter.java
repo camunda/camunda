@@ -16,7 +16,7 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
-public class UsageMetricTUWriter implements RdbmsWriter {
+public class UsageMetricTUWriter {
 
   private final ExecutionQueue executionQueue;
   private final UsageMetricTUMapper mapper;

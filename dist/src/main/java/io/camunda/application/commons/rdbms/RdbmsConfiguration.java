@@ -7,16 +7,13 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
-import io.camunda.db.rdbms.read.service.ClusterVariableDbReader;
 import io.camunda.db.rdbms.read.service.CorrelatedMessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
@@ -25,20 +22,15 @@ import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
-import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
-import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceStatisticsDbReader;
-import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowDbReader;
@@ -49,10 +41,8 @@ import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
-import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
-import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
@@ -61,7 +51,6 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
-import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
@@ -71,7 +60,6 @@ import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
-import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
@@ -80,7 +68,7 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
-import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -89,8 +77,6 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.actuate.health.HealthContributor;
-import org.springframework.boot.actuate.jdbc.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -108,19 +94,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ClusterVariableDbReader clusterVariableRdbmsReader(
-      final ClusterVariableMapper clusterVariableMapper) {
-    return new ClusterVariableDbReader(clusterVariableMapper);
-  }
-
-  @Bean
   public AuthorizationDbReader authorizationReader(final AuthorizationMapper authorizationMapper) {
     return new AuthorizationDbReader(authorizationMapper);
-  }
-
-  @Bean
-  public AuditLogDbReader auditLogReader(final AuditLogMapper auditLogMapper) {
-    return new AuditLogDbReader(auditLogMapper);
   }
 
   @Bean
@@ -233,13 +208,6 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionMessageSubscriptionStatisticsDbReader
-      processDefinitionMessageSubscriptionStatisticsDbReader(
-          final MessageSubscriptionMapper messageSubscriptionMapper) {
-    return new ProcessDefinitionMessageSubscriptionStatisticsDbReader(messageSubscriptionMapper);
-  }
-
-  @Bean
   public BatchOperationDbReader batchOperationReader(
       final BatchOperationMapper batchOperationMapper) {
     return new BatchOperationDbReader(batchOperationMapper);
@@ -272,48 +240,13 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader(
-      final ProcessDefinitionMapper processDefinitionMapper) {
-    return new ProcessDefinitionInstanceStatisticsDbReader(processDefinitionMapper);
-  }
-
-  @Bean
-  public ProcessDefinitionMessageSubscriptionStatisticsReader
-      processDefinitionMessageSubscriptionStatisticsReader(
-          final MessageSubscriptionMapper messageSubscriptionMapper) {
-    return new ProcessDefinitionMessageSubscriptionStatisticsDbReader(messageSubscriptionMapper);
-  }
-
-  @Bean
-  public ProcessDefinitionInstanceVersionStatisticsDbReader
-      processDefinitionInstanceVersionStatisticsReader(
-          final ProcessDefinitionMapper processDefinitionMapper) {
-    return new ProcessDefinitionInstanceVersionStatisticsDbReader(processDefinitionMapper);
-  }
-
-  @Bean
-  public HistoryDeletionDbReader historyDeletionDbReader(
-      final HistoryDeletionMapper historyDeletionMapper) {
-    return new HistoryDeletionDbReader(historyDeletionMapper);
-  }
-
-  @Bean
-  public IncidentProcessInstanceStatisticsByErrorDbReader
-      incidentProcessInstanceStatisticsByErrorReader(final IncidentMapper incidentMapper) {
-    return new IncidentProcessInstanceStatisticsByErrorDbReader(incidentMapper);
+  public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader() {
+    return new ProcessDefinitionInstanceStatisticsDbReader();
   }
 
   @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
-  }
-
-  @Bean
-  public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
-      final TableMetricsMapper tableMetricsMapper, final Camunda configuration) {
-    final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
-    return new RdbmsTableRowCountMetrics(
-        tableMetricsMapper, metricsConfig.getTableRowCountCacheDuration());
   }
 
   @Bean
@@ -327,7 +260,6 @@ public class RdbmsConfiguration {
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
@@ -343,14 +275,11 @@ public class RdbmsConfiguration {
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
         vendorDatabaseProperties,
-        auditLogMapper,
         decisionInstanceMapper,
         flowNodeInstanceMapper,
         incidentMapper,
@@ -366,17 +295,13 @@ public class RdbmsConfiguration {
         usageMetricTUMapper,
         batchOperationMapper,
         messageSubscriptionMapper,
-        correlatedMessageSubscriptionMapper,
-        clusterVariableMapper,
-        historyDeletionMapper);
+        correlatedMessageSubscriptionMapper);
   }
 
   @Bean
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableDbReader variableReader,
-      final ClusterVariableDbReader clusterVariableDbReader,
-      final AuditLogDbReader auditLogReader,
       final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionDbReader decisionDefinitionReader,
       final DecisionInstanceDbReader decisionInstanceReader,
@@ -402,16 +327,9 @@ public class RdbmsConfiguration {
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
-      final ProcessDefinitionMessageSubscriptionStatisticsDbReader
-          processDefinitionMessageSubscriptionStatisticsReader,
-      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader,
-      final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader,
-      final ProcessDefinitionInstanceVersionStatisticsDbReader
-          processDefinitionInstanceVersionStatisticsReader,
-      final HistoryDeletionDbReader historyDeletionDbReader) {
+      final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
-        auditLogReader,
         authorizationReader,
         decisionDefinitionReader,
         decisionInstanceReader,
@@ -423,7 +341,6 @@ public class RdbmsConfiguration {
         processDefinitionReader,
         processInstanceReader,
         variableReader,
-        clusterVariableDbReader,
         roleReader,
         roleMemberReader,
         tenantReader,
@@ -439,11 +356,7 @@ public class RdbmsConfiguration {
         usageMetricReader,
         usageMetricTUDbReader,
         messageSubscriptionReader,
-        processDefinitionMessageSubscriptionStatisticsReader,
-        correlatedMessageSubscriptionReader,
-        processDefinitionInstanceStatisticsReader,
-        processDefinitionInstanceVersionStatisticsReader,
-        historyDeletionDbReader);
+        correlatedMessageSubscriptionReader);
   }
 
   @Bean
@@ -455,11 +368,5 @@ public class RdbmsConfiguration {
         LOG.debug("JDBC Spec: {}.{}", meta.getJDBCMajorVersion(), meta.getJDBCMinorVersion());
       }
     };
-  }
-
-  @Bean
-  HealthContributor rdbmsStatusHealthIndicator(final DataSource dataSource) {
-    // Equivalent to what Boot would normally wire for "db"
-    return new DataSourceHealthIndicator(dataSource);
   }
 }

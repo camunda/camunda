@@ -115,9 +115,6 @@ class RequestMapperTest {
             instruction -> {
               assertThat(instruction.getSourceElementId()).isEqualTo("source1");
               assertThat(instruction.getTargetElementId()).isEqualTo("target1");
-              assertThat(instruction.getAncestorScopeKey()).isEqualTo(-1L);
-              assertThat(instruction.isInferAncestorScopeFromSourceHierarchy()).isTrue();
-              assertThat(instruction.getVariableInstructions()).isEmpty();
             });
   }
 

@@ -29,7 +29,6 @@ public final class StatefulMember extends Member {
   public StatefulMember(final Member member, final Version version) {
     super(
         member.id(),
-        member.nodeVersion(),
         member.address(),
         member.zone(),
         member.rack(),

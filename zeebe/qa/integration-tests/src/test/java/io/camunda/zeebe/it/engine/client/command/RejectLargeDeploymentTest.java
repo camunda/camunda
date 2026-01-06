@@ -23,7 +23,7 @@ import java.util.concurrent.Future;
 @ZeebeIntegration
 public class RejectLargeDeploymentTest {
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @RegressionTest("https://github.com/camunda/camunda/issues/15989")
@@ -39,17 +39,14 @@ public class RejectLargeDeploymentTest {
             .done();
 
     // when -- deploying the process
-    try (final var client = ZEEBE.newClientBuilder().build()) {
+    try (final var client = zeebe.newClientBuilder().build()) {
       final var response =
           client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send();
       assertThat((Future<DeploymentEvent>) response).failsWithin(Duration.ofSeconds(5));
     }
 
     // then -- The rejection can be exported
-    assertThat(
-            RecordingExporter.deploymentRecords()
-                .withRecordType(RecordType.COMMAND_REJECTION)
-                .exists())
-        .isTrue();
+    assertThat(RecordingExporter.deploymentRecords().withRecordType(RecordType.COMMAND_REJECTION))
+        .isNotEmpty();
   }
 }

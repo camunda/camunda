@@ -17,7 +17,5 @@ public record DecisionDefinitionEntity(
     Integer version,
     String decisionRequirementsId,
     Long decisionRequirementsKey,
-    String decisionRequirementsName,
-    Integer decisionRequirementsVersion,
     String tenantId)
     implements TenantOwnedEntity {}

@@ -51,7 +51,6 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
         .resourceType(authorization.getResourceType().name())
         .resourceMatcher(authorization.getResourceMatcher().value())
         .resourceId(authorization.getResourceId())
-        .resourcePropertyName(authorization.getResourcePropertyName())
         .permissionTypes(authorization.getPermissionTypes())
         .build();
   }

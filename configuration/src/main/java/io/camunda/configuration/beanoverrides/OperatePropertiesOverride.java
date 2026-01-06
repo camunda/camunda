@@ -7,7 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
+import io.camunda.configuration.Backup;
 import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -55,27 +55,27 @@ public class OperatePropertiesOverride {
     final OperateProperties override = new OperateProperties();
     BeanUtils.copyProperties(legacyOperateProperties, override);
 
+    populateFromBackup(override);
+
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
     if (SecondaryStorageType.elasticsearch.equals(database.getType())) {
       populateFromElasticsearch(override, database);
-      populateFromBackup(override, database.getElasticsearch().getBackup());
     } else if (SecondaryStorageType.opensearch == database.getType()) {
       populateFromOpensearch(override, database);
-      populateFromBackup(override, database.getOpensearch().getBackup());
     }
 
     return override;
   }
 
-  private void populateFromBackup(
-      final OperateProperties override, final DocumentBasedSecondaryStorageBackup backup) {
+  private void populateFromBackup(final OperateProperties override) {
+    final Backup operateBackup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupProperties backupProperties = override.getBackup();
-    backupProperties.setRepositoryName(backup.getRepositoryName());
-    backupProperties.setSnapshotTimeout(backup.getSnapshotTimeout());
+    backupProperties.setRepositoryName(operateBackup.getRepositoryName());
+    backupProperties.setSnapshotTimeout(operateBackup.getSnapshotTimeout());
     backupProperties.setIncompleteCheckTimeoutInSeconds(
-        backup.getIncompleteCheckTimeout().getSeconds());
+        operateBackup.getIncompleteCheckTimeout().getSeconds());
   }
 
   private void populateFromElasticsearch(
@@ -86,15 +86,6 @@ public class OperatePropertiesOverride {
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
-    override.getElasticsearch().setDateFormat(database.getElasticsearch().getDateFormat());
-    final var socketTimeout = database.getElasticsearch().getSocketTimeout();
-    if (socketTimeout != null) {
-      override.getElasticsearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
-    }
-    final var connectionTimeout = database.getElasticsearch().getConnectionTimeout();
-    if (connectionTimeout != null) {
-      override.getElasticsearch().setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
-    }
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -116,15 +107,6 @@ public class OperatePropertiesOverride {
     override.getOpensearch().setPassword(database.getOpensearch().getPassword());
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpensearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
-    override.getOpensearch().setDateFormat(database.getOpensearch().getDateFormat());
-    final var socketTimeout = database.getOpensearch().getSocketTimeout();
-    if (socketTimeout != null) {
-      override.getOpensearch().setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
-    }
-    final var connectionTimeout = database.getOpensearch().getConnectionTimeout();
-    if (connectionTimeout != null) {
-      override.getOpensearch().setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
-    }
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),

@@ -42,7 +42,6 @@ function useSelectedVariables(params: Params, options: Options = {}) {
       const {response, error} = await request(
         api.queryVariablesByUserTask({
           userTaskKey,
-          truncateValues: false,
           filter: {
             name: {
               $in: variableNames,

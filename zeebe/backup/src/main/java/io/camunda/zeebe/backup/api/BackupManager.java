@@ -21,11 +21,12 @@ public interface BackupManager {
    *
    * <p>The implementation of this method should be non-blocking to not block the caller.
    *
-   * @param checkpointId id of the backup to take
-   * @param backupDescriptor descriptor of the checkpoint triggering the backup
+   * @param checkpointId id of the backup
+   * @param checkpointPosition position of the record until which must be included in the backup.
+   * @param partitionCount the current number of partitions to store in the backup
    * @return an ActorFuture with the result of the backup
    */
-  ActorFuture<Void> takeBackup(final long checkpointId, BackupDescriptor backupDescriptor);
+  ActorFuture<Void> takeBackup(long checkpointId, long checkpointPosition, int partitionCount);
 
   /**
    * Get the status of the backup
@@ -61,10 +62,10 @@ public interface BackupManager {
    * Creates a backup with failed status. This is used when a backup cannot be taken due to system
    * constraints (e.g., scaling in progress) but the backup entry needs to be recorded.
    *
-   * @param checkpointId id of the backup to create
-   * @param backupDescriptor descriptor of the checkpoint triggering the backup
+   * @param checkpointId id of the backup
+   * @param checkpointPosition position of the record until which would have been included in the
+   *     backup
    * @param failureReason reason why the backup failed
    */
-  void createFailedBackup(
-      final long checkpointId, BackupDescriptor backupDescriptor, String failureReason);
+  void createFailedBackup(long checkpointId, long checkpointPosition, String failureReason);
 }

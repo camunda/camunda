@@ -20,13 +20,11 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
-import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -84,11 +82,8 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected SearchRequest.Builder buildSearchRequest(
-      final Query<DecisionInstance> query,
-      final org.opensearch.client.opensearch._types.query_dsl.Query filtering,
-      final ArrayList<SortOptions> sortOptions) {
-    return super.buildSearchRequest(query, filtering, sortOptions)
+  protected SearchRequest.Builder buildSearchRequest(final Query<DecisionInstance> query) {
+    return super.buildSearchRequest(query)
         .source(
             queryDSLWrapper.sourceExclude(
                 DecisionInstanceTemplate.EVALUATED_INPUTS,
@@ -111,8 +106,8 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
-      final Query<DecisionInstance> query) {
+  protected void buildFiltering(
+      final Query<DecisionInstance> query, final SearchRequest.Builder request) {
     final DecisionInstance filter = query.getFilter();
 
     if (filter != null) {
@@ -151,10 +146,9 @@ public class OpensearchDecisionInstanceDao
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        return queryDSLWrapper.and(queryTerms);
+        request.query(queryDSLWrapper.and(queryTerms));
       }
     }
-    return queryDSLWrapper.matchAll();
   }
 
   @Override

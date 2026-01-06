@@ -85,10 +85,6 @@ public class TasklistTester {
   private TestCheck processIsDeletedCheck;
 
   @Autowired
-  @Qualifier(FORM_EXISTS_CHECK)
-  private TestCheck formExistsCheck;
-
-  @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
 
@@ -359,15 +355,6 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester formExists(final String formId) {
-    return formExists(formId, null);
-  }
-
-  public TasklistTester formExists(final String formId, final Long versionId) {
-    databaseTestExtension.waitFor(formExistsCheck, processDefinitionKey, formId, versionId);
-    return this;
-  }
-
   public TasklistTester taskIsCreated(final String flowNodeBpmnId) {
     databaseTestExtension.waitFor(taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
@@ -435,8 +422,8 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester variablesExist(final String... varNames) {
-    databaseTestExtension.waitFor(variablesExist, processInstanceId, varNames);
+  public TasklistTester variablesExist(final String[] varNames) {
+    databaseTestExtension.waitFor(variablesExist, varNames);
     return this;
   }
 

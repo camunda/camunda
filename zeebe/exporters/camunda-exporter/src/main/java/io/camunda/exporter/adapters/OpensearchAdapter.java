@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.batchoperation.OpenSearchBatchOperationCacheLoader;
-import io.camunda.exporter.cache.decision.OpenSearchDecisionRequirementsCacheLoader;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
@@ -23,7 +22,6 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
-import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -82,12 +80,6 @@ class OpensearchAdapter implements ClientAdapter {
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
         final String processIndexName) {
       return new OpenSearchProcessCacheLoader(client, processIndexName);
-    }
-
-    @Override
-    public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
-        final String decisionRequirementsIndexName) {
-      return new OpenSearchDecisionRequirementsCacheLoader(client, decisionRequirementsIndexName);
     }
 
     @Override

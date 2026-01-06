@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UserDbModel;
 import io.camunda.db.rdbms.write.domain.UserDbModel.Builder;
 import java.util.List;
@@ -30,43 +30,43 @@ public final class UserFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomUsers(final RdbmsWriters rdbmsWriters) {
-    createAndSaveRandomUsers(rdbmsWriters, b -> b);
+  public static void createAndSaveRandomUsers(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomUsers(rdbmsWriter, b -> b);
   }
 
   public static UserDbModel createAndSaveRandomUser(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = UserFixtures.createRandomized(builderFunction);
-    rdbmsWriters.getUserWriter().create(definition);
-    rdbmsWriters.flush();
+    rdbmsWriter.getUserWriter().create(definition);
+    rdbmsWriter.flush();
     return definition;
   }
 
   public static void createAndSaveRandomUsers(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters.getUserWriter().create(UserFixtures.createRandomized(builderFunction));
+      rdbmsWriter.getUserWriter().create(UserFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static UserDbModel createAndSaveUser(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveUsers(rdbmsWriters, List.of(definition));
+    createAndSaveUsers(rdbmsWriter, List.of(definition));
     return definition;
   }
 
-  public static void createAndSaveUser(final RdbmsWriters rdbmsWriters, final UserDbModel user) {
-    createAndSaveUsers(rdbmsWriters, List.of(user));
+  public static void createAndSaveUser(final RdbmsWriter rdbmsWriter, final UserDbModel user) {
+    createAndSaveUsers(rdbmsWriter, List.of(user));
   }
 
   public static void createAndSaveUsers(
-      final RdbmsWriters rdbmsWriters, final List<UserDbModel> userList) {
+      final RdbmsWriter rdbmsWriter, final List<UserDbModel> userList) {
     for (final UserDbModel user : userList) {
-      rdbmsWriters.getUserWriter().create(user);
+      rdbmsWriter.getUserWriter().create(user);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 }

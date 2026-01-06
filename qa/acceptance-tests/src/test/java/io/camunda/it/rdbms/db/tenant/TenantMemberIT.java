@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantMemberDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -39,13 +39,13 @@ public class TenantMemberIT {
   @TestTemplate
   public void shouldFindTenantMember(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantMemberDbReader reader = rdbmsService.getTenantMemberReader();
 
-    createAndSaveRandomTenants(rdbmsWriters, b -> b);
-    final var tenant = createAndSaveTenant(rdbmsWriters, b -> b);
-    addUserToTenant(rdbmsWriters, tenant.tenantId(), "user-1");
-    addUserToTenant(rdbmsWriters, tenant.tenantId(), "user-2");
+    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+    final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
+    addUserToTenant(rdbmsWriter, tenant.tenantId(), "user-1");
+    addUserToTenant(rdbmsWriter, tenant.tenantId(), "user-2");
 
     final var searchResult =
         reader.search(
@@ -63,8 +63,8 @@ public class TenantMemberIT {
   }
 
   private void addUserToTenant(
-      final RdbmsWriters rdbmsWriters, final String tenantId, final String entityId) {
-    rdbmsWriters.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
-    rdbmsWriters.flush();
+      final RdbmsWriter rdbmsWriter, final String tenantId, final String entityId) {
+    rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
+    rdbmsWriter.flush();
   }
 }

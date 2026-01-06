@@ -26,14 +26,21 @@ test.describe('variables and incidents', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: [
+        groupedProcesses: [
           {
-            processDefinitionId: 'order-process',
-            version: 1,
-            name: 'order-process',
-            processDefinitionKey: '2251799813686456',
+            bpmnProcessId: 'order-process',
+            name: null,
+            permissions: [],
+            processes: [
+              {
+                id: '2251799813686456',
+                name: 'order-process',
+                version: 1,
+                bpmnProcessId: 'order-process',
+                versionTag: null,
+              },
+            ],
             tenantId: '<default>',
-            hasStartForm: false,
           },
         ],
         batchOperations: {items: [], page: {totalItems: 0}},
@@ -54,6 +61,7 @@ test.describe('variables and incidents', () => {
               rootInstanceId: null,
               callHierarchy: [],
               sortValues: [],
+              permissions: [],
               tenantId: '<default>',
             },
           ],
@@ -99,13 +107,12 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
-        elementInstances: orderProcessInstance.incidentState.elementInstances,
+        flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
         statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
-        incidentsV2: orderProcessInstance.incidentState.incidentsV2,
         xml: orderProcessInstance.incidentState.xml,
       }),
     );
@@ -126,6 +133,11 @@ test.describe('variables and incidents', () => {
       })
       .click();
 
+    await expect(
+      page.getByRole('combobox', {
+        name: /filter by flow node/i,
+      }),
+    ).toBeInViewport();
     await expect(
       page.getByRole('combobox', {
         name: /filter by incident type/i,
@@ -176,13 +188,12 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
-        elementInstances: orderProcessInstance.incidentState.elementInstances,
+        flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
         statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentResolvedState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
-        incidentsV2: orderProcessInstance.incidentState.incidentsV2,
         xml: orderProcessInstance.incidentState.xml,
       }),
     );
@@ -203,6 +214,11 @@ test.describe('variables and incidents', () => {
       })
       .click();
 
+    await expect(
+      page.getByRole('combobox', {
+        name: /filter by flow node/i,
+      }),
+    ).toBeInViewport();
     await expect(
       page.getByRole('combobox', {
         name: /filter by incident type/i,
@@ -235,8 +251,8 @@ test.describe('variables and incidents', () => {
         processInstanceDetailV2:
           orderProcessInstance.incidentResolvedState.detailV2,
         callHierarchy: orderProcessInstance.incidentResolvedState.callHierarchy,
-        elementInstances:
-          orderProcessInstance.incidentResolvedState.elementInstances,
+        flowNodeInstances:
+          orderProcessInstance.incidentResolvedState.flowNodeInstances,
         statisticsV2: orderProcessInstance.incidentResolvedState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentResolvedState.sequenceFlows,
         sequenceFlowsV2:
@@ -262,7 +278,8 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.completedState.detail,
         processInstanceDetailV2: orderProcessInstance.completedState.detailV2,
         callHierarchy: orderProcessInstance.completedState.callHierarchy,
-        elementInstances: orderProcessInstance.completedState.elementInstances,
+        flowNodeInstances:
+          orderProcessInstance.completedState.flowNodeInstances,
         statisticsV2: orderProcessInstance.completedState.statisticsV2,
         sequenceFlows: orderProcessInstance.completedState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.completedState.sequenceFlowsV2,

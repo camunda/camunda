@@ -20,7 +20,8 @@
   </modules>
 
   <properties>
-    <version.tasklist.docker.current>SNAPSHOT</version.tasklist.docker.current>
-    <version.tasklist.docker.repo>camunda/tasklist</version.tasklist.docker.repo>
+    <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
+    <version.zeebe.docker.repo>camunda/zeebe</version.zeebe.docker.repo>
+    <version.identity.docker.current>SNAPSHOT</version.identity.docker.current>
   </properties>
 </project>

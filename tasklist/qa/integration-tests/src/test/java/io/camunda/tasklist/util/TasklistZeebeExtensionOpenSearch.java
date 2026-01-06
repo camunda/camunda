@@ -9,10 +9,8 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.qa.util.TestUtil;
+import java.util.Map;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,17 +37,36 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
   }
 
   @Override
-  protected DatabaseType getDatabaseType() {
-    return DatabaseType.OPENSEARCH;
+  protected String getZeebeExporterIndexPrefixConfigParameterName() {
+    return "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX";
   }
 
   @Override
-  protected void setSecondaryStorageConfig(final Camunda camunda, final String indexPrefix) {
+  protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
     final String dbUrl = "http://host.testcontainers.internal:9200";
+    final String dbType = "opensearch";
 
-    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.opensearch);
-    camunda.getData().getSecondaryStorage().getOpensearch().setUrl(dbUrl);
-    camunda.getData().getSecondaryStorage().getOpensearch().setIndexPrefix(indexPrefix);
+    return Map.ofEntries(
+        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1"),
+        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX", indexPrefix),
+        Map.entry(
+            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
+            "io.camunda.exporter.CamundaExporter"),
+        // Unified Config: db type + compatibility vars
+        Map.entry("CAMUNDA_DATABASE_TYPE", dbType),
+        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType),
+        Map.entry("CAMUNDA_OPERATE_DATABASE", dbType),
+        Map.entry("CAMUNDA_TASKLIST_DATABASE", dbType),
+        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", dbType),
+        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_INDEXPREFIX", indexPrefix),
+        // Unified Config: db url + compatibility vars
+        Map.entry("CAMUNDA_DATABASE_URL", dbUrl),
+        Map.entry("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", dbUrl),
+        Map.entry("CAMUNDA_OPERATE_OPENSEARCH_URL", dbUrl),
+        Map.entry("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl),
+        Map.entry("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", dbUrl),
+        // ---
+        Map.entry("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix));
   }
 
   @Override

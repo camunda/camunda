@@ -7,7 +7,7 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import type {FlowNodeInstance} from 'modules/types/operate';
+import type {FlowNodeInstance} from './flowNodeInstance';
 import type {FlowNodeModification} from './modifications';
 
 type ModificationPlaceholder = {

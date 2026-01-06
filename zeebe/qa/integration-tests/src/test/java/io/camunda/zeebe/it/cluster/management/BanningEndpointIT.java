@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class BanningEndpointIT {
 
-  @TestZeebe(initMethod = "initTestCluster", purgeAfterEach = false)
+  @TestZeebe(initMethod = "initTestCluster")
   private static TestCluster cluster;
 
   @SuppressWarnings("unused")

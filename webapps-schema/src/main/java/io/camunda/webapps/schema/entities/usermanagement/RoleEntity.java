@@ -8,15 +8,14 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 
 public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
-  @BeforeVersion880 private Long key;
-  @BeforeVersion880 private String roleId;
-  @BeforeVersion880 private String name;
-  @BeforeVersion880 private String description;
-  @BeforeVersion880 private EntityJoinRelation join;
+  private Long key;
+  private String roleId;
+  private String name;
+  private String description;
+  private EntityJoinRelation join;
 
   public Long getKey() {
     return key;

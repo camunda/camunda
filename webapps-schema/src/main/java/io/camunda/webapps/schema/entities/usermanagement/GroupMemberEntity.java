@@ -8,15 +8,14 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class GroupMemberEntity extends AbstractExporterEntity<GroupMemberEntity> {
 
-  @BeforeVersion880 private String memberId;
-  @BeforeVersion880 private EntityType memberType;
+  private String memberId;
+  private EntityType memberType;
 
-  @BeforeVersion880 private EntityJoinRelation join;
+  private EntityJoinRelation join;
 
   public String getMemberId() {
     return memberId;

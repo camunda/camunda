@@ -158,12 +158,6 @@
         OR VAR_FULL_VALUE LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
           ESCAPE ${escapeChar}
       </when>
-      <when test="operation.operator.name().equals('EXISTS')">
-        VAR_VALUE IS NOT NULL
-      </when>
-      <when test="operation.operator.name().equals('NOT_EXISTS')">
-        VAR_VALUE IS NULL
-      </when>
     </choose>
   </sql>
 
@@ -201,46 +195,6 @@
                    FROM ${prefix}${tableName}
                    WHERE PARTITION_ID = #{partitionId}
                      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
-                   LIMIT #{limit})
-  </sql>
-
-  <sql id="historyDeletion">
-    DELETE
-    FROM ${prefix}${tableName}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-      #{key}
-    </foreach>
-    LIMIT #{limit}
-  </sql>
-  <sql id="historyDeletion" databaseId="mssql">
-    DELETE TOP (#{limit})
-    FROM ${prefix}${tableName}
-    WHERE PROCESS_INSTANCE_KEY IN
-    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-      #{key}
-    </foreach>
-  </sql>
-  <sql id="historyDeletion" databaseId="oracle">
-    DELETE
-    FROM ${prefix}${tableName}
-    WHERE rowid IN (SELECT rowid
-                    FROM ${prefix}${tableName}
-                    WHERE PROCESS_INSTANCE_KEY IN
-                    <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-                      #{key}
-                    </foreach>
-                    AND ROWNUM &lt;= #{limit})
-  </sql>
-  <sql id="historyDeletion" databaseId="postgresql">
-    DELETE
-    FROM ${prefix}${tableName}
-    WHERE ctid IN (SELECT ctid
-                   FROM ${prefix}${tableName}
-                   WHERE PROCESS_INSTANCE_KEY IN
-                   <foreach collection="processInstanceKeys" item="key" open="(" separator=", " close=")">
-                     #{key}
-                   </foreach>
                    LIMIT #{limit})
   </sql>
 

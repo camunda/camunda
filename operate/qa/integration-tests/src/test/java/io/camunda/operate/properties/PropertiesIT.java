@@ -59,8 +59,7 @@ public class PropertiesIT {
     assertThat(operateProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
     assertThat(operateProperties.getElasticsearch().getHost()).isEqualTo("someHost");
     assertThat(operateProperties.getElasticsearch().getPort()).isEqualTo(12345);
-    assertThat(operateProperties.getElasticsearch().getDateFormat())
-        .isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+    assertThat(operateProperties.getElasticsearch().getDateFormat()).isEqualTo("yyyy-MM-dd");
     assertThat(operateProperties.getElasticsearch().getBatchSize()).isEqualTo(111);
     assertThat(operateProperties.getZeebe().getGatewayAddress()).isEqualTo("someZeebeHost:999");
     assertThat(operateProperties.getOperationExecutor().getBatchSize()).isEqualTo(555);

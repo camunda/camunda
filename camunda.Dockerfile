@@ -3,11 +3,8 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 
-ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base:21-dev"
-ARG BASE_DIGEST="sha256:02c2cf18eccbdc6db778c4e3f1cad080e52e6aa31282cb7e98628c4051c80f64"
-ARG JATTACH_VERSION="v2.2"
-ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee98f06e5cfe02f"
-ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
+ARG BASE_IMAGE="reg.mini.dev/openjre:21-dev"
+ARG BASE_DIGEST="sha256:fb5dc6ad558a42ad31117ce698f440862ff78dd3dcb3d94f59e3293ec038ff47"
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk:
@@ -18,7 +15,7 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 ARG DIST="distball"
 
 ### Build camunda from scratch ###
-FROM reg.mini.dev/openjdk:21.0.9-dev AS build
+FROM reg.mini.dev/openjdk:21.0.8-dev AS build
 
 # hadolint ignore=DL3002
 USER root
@@ -28,30 +25,6 @@ COPY --link . ./
 RUN --mount=type=cache,target=/root/.m2,rw \
     ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
     mv dist/target/camunda-zeebe .
-
-### jattach download stage ###
-# hadolint ignore=DL3006,DL3007
-FROM alpine AS jattach
-ARG TARGETARCH
-ARG JATTACH_VERSION
-ARG JATTACH_CHECKSUM_AMD64
-ARG JATTACH_CHECKSUM_ARM64
-
-# hadolint ignore=DL4006,DL3018
-RUN --mount=type=cache,target=/root/.jattach,rw \
-    apk add -q --no-cache curl 2>/dev/null && \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
-      BINARY="linux-x64"; \
-      CHECKSUM="${JATTACH_CHECKSUM_AMD64}"; \
-    else  \
-      BINARY="linux-arm64"; \
-      CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
-    fi && \
-    curl -sL "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" -o jattach.tgz && \
-    echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
-    tar -xzf "jattach.tgz" && \
-    chmod +x jattach && \
-    mv jattach /jattach
 
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006,DL3007
@@ -119,7 +92,6 @@ EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
-VOLUME ${CAMUNDA_HOME}/documents
 VOLUME /driver-lib
 
 # Switch to root to allow setting up our own user
@@ -131,11 +103,9 @@ RUN addgroup --gid 1001 camunda && \
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${CAMUNDA_HOME}/data && \
     mkdir ${CAMUNDA_HOME}/logs && \
-    mkdir ${CAMUNDA_HOME}/documents && \
     chown -R 1001:0 ${CAMUNDA_HOME} && \
     chmod -R 0775 ${CAMUNDA_HOME}
 
-COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
 RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib

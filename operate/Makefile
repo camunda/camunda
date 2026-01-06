@@ -1,23 +1,5 @@
 ## Environment
 
-.PHONY: env-h2-up
-env-h2-up:
-	mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
-    && CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
-	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \
-	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
-	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
-	CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
-	CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
-	CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
-	CAMUNDA_BACKUP_WEBAPPS_ENABLED=false \
-	CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda \
-	CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms \
-	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
-	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,identity,consolidated-auth
-
 .PHONY: env-up
 env-up:
 	docker compose -f docker-compose.yml up -d elasticsearch \

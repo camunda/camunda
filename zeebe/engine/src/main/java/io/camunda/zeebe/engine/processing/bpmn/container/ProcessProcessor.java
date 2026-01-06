@@ -134,8 +134,7 @@ public final class ProcessProcessor
       final ExecutableFlowElementContainer element, final BpmnElementContext activated) {
     if (element.hasMessageStartEvent()
         || element.hasTimerStartEvent()
-        || element.hasSignalStartEvent()
-        || element.hasConditionalStartEvent()) {
+        || element.hasSignalStartEvent()) {
       eventSubscriptionBehavior
           .findEventTriggerForStartEvent(
               activated.getProcessDefinitionKey(), activated.getProcessInstanceKey())

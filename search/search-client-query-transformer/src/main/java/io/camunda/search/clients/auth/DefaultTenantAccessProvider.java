@@ -27,8 +27,7 @@ public class DefaultTenantAccessProvider implements TenantAccessProvider {
   @Override
   public <T> TenantAccess hasTenantAccess(
       final CamundaAuthentication authentication, final T resource) {
-    if (resource instanceof final TenantOwnedEntity tenantOwnedEntity
-        && tenantOwnedEntity.hasTenantScope()) {
+    if (resource instanceof final TenantOwnedEntity tenantOwnedEntity) {
       return hasTenantAccessByTenantId(authentication, tenantOwnedEntity.tenantId());
     }
     // if not tenant-owned, no tenant check needed => access granted

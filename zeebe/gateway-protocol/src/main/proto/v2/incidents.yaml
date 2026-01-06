@@ -3,7 +3,6 @@
 paths:
   /incidents/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Incident
       operationId: searchIncidents
@@ -31,10 +30,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /incidents/{incidentKey}:
     get:
-      x-eventually-consistent: true
       tags:
         - Incident
       operationId: getIncident
@@ -69,10 +68,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /incidents/{incidentKey}/resolution:
     post:
-      x-eventually-consistent: false
       tags:
         - Incident
       operationId: resolveIncident
@@ -108,75 +107,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
-
-  /incidents/statistics/process-instances-by-error:
-    post:
-      x-eventually-consistent: true
-      tags:
-        - Incident
-      operationId: getProcessInstanceStatisticsByError
-      summary: Get process instance statistics by error
-      description: |
-        Returns statistics for active process instances that currently have active incidents,
-        grouped by incident error hash code.
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQuery'
-      responses:
-        "200":
-          description: |
-            The statistics about process instances with incident, grouped by error hash code are
-            successfully returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQueryResult'
-        "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
-        "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-        "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
-        "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
-
-  /incidents/statistics/process-instances-by-definition:
-    post:
-      x-eventually-consistent: true
-      tags:
-        - Incident
-      operationId: getProcessInstanceStatisticsByDefinition
-      summary: Get process instance statistics by definition
-      description: |
-        Returns statistics for active process instances with incidents, grouped by process
-        definition. The result set is scoped to a specific incident error hash code, which must be
-        provided as a filter in the request body.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByDefinitionQuery'
-      responses:
-        "200":
-          description: |
-            The process instance incident statistics grouped by process definition are successfully
-            returned.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByDefinitionQueryResult'
-        "400":
-          $ref: 'common-responses.yaml#/components/responses/InvalidData'
-        "401":
-          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
-        "403":
-          $ref: 'common-responses.yaml#/components/responses/Forbidden'
-        "500":
-          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: false
 
 ## Schema definitions
 
@@ -235,19 +166,19 @@ components:
           description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ProcessDefinitionKeyFilterProperty'
           description: The process definition key associated to this incident.
         processInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
           description: The process instance key associated to this incident.
         elementInstanceKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
           description: The element instance key associated to this incident.
         jobKey:
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/JobKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/JobKeyFilterProperty'
           description: The job key, if exists, associated with this incident.
 
     IncidentErrorTypeFilterProperty:
@@ -258,68 +189,8 @@ components:
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
         - $ref: '#/components/schemas/AdvancedIncidentErrorTypeFilter'
-
-    AdvancedIncidentErrorTypeFilter:
-      title: Advanced filter
-      description: Advanced IncidentErrorTypeEnum filter
-      type: object
-      properties:
-        $eq:
-          description: Checks for equality with the provided value.
-          allOf:
-            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
-        $neq:
-          description: Checks for inequality with the provided value.
-          allOf:
-            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
-        $exists:
-          description: Checks if the current property exists.
-          type: boolean
-        $in:
-          description: Checks if the property matches any of the provided values.
-          type: array
-          items:
-            $ref: "#/components/schemas/IncidentErrorTypeEnum"
-        $notIn:
-          description: Checks if the property does not match any of the provided values.
-          type: array
-          items:
-            $ref: "#/components/schemas/IncidentErrorTypeEnum"
-        $like:
-          $ref: "filters.yaml#/components/schemas/LikeFilter"
-
-    IncidentErrorTypeEnum:
-      description: Incident error type with a defined set of values.
-      enum:
-        - AD_HOC_SUB_PROCESS_NO_RETRIES
-        - CALLED_DECISION_ERROR
-        - CALLED_ELEMENT_ERROR
-        - CONDITION_ERROR
-        - DECISION_EVALUATION_ERROR
-        - EXECUTION_LISTENER_NO_RETRIES
-        - EXTRACT_VALUE_ERROR
-        - FORM_NOT_FOUND
-        - IO_MAPPING_ERROR
-        - JOB_NO_RETRIES
-        - MESSAGE_SIZE_EXCEEDED
-        - RESOURCE_NOT_FOUND
-        - TASK_LISTENER_NO_RETRIES
-        - UNHANDLED_ERROR_EVENT
-        - UNKNOWN
-        - UNSPECIFIED
-
-    IncidentStateFilterProperty:
-      description: IncidentStateEnum with full advanced search capabilities.
-      type: object
-      oneOf:
-        - type: string
-          title: Exact match
-          description: Matches the value exactly.
-          allOf:
-            - $ref: "#/components/schemas/IncidentStateEnum"
-        - $ref: '#/components/schemas/AdvancedIncidentStateFilter'
 
     AdvancedIncidentStateFilter:
       title: Advanced filter
@@ -329,11 +200,11 @@ components:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/IncidentStateEnum"
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/IncidentStateEnum"
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -341,22 +212,54 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "#/components/schemas/IncidentStateEnum"
+            $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
         $notIn:
           description: Checks if the property does not match any of the provided values.
           type: array
           items:
-            $ref: "#/components/schemas/IncidentStateEnum"
+            $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
 
-    IncidentStateEnum:
-      description: Incident states with a defined set of values.
-      enum:
-        - ACTIVE
-        - MIGRATED
-        - PENDING
-        - RESOLVED
+    AdvancedIncidentErrorTypeFilter:
+      title: Advanced filter
+      description: Advanced IncidentErrorTypeEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $notIn:
+          description: Checks if the property does not match any of the provided values.
+          type: array
+          items:
+            $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    IncidentStateFilterProperty:
+      description: IncidentStateEnum with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
+        - $ref: '#/components/schemas/AdvancedIncidentStateFilter'
 
     IncidentSearchQuerySortRequest:
       type: object
@@ -378,7 +281,7 @@ components:
             - jobKey
             - tenantId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -402,7 +305,7 @@ components:
           description: The process definition ID associated to this incident.
         errorType:
           allOf:
-            - $ref: "#/components/schemas/IncidentErrorTypeEnum"
+            - $ref: "enums.yaml#/components/schemas/IncidentErrorTypeEnum"
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
@@ -415,7 +318,7 @@ components:
           format: date-time
         state:
           allOf:
-            - $ref: "#/components/schemas/IncidentStateEnum"
+            - $ref: "enums.yaml#/components/schemas/IncidentStateEnum"
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -447,146 +350,3 @@ components:
       properties:
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
-
-    IncidentProcessInstanceStatisticsByErrorQuery:
-      type: object
-      additionalProperties: false
-      properties:
-        page:
-          description: |
-            Pagination parameters for process instance statistics grouped by incident error.
-          allOf:
-            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
-        sort:
-          description: Sorting criteria for process instance statistics grouped by incident error.
-          type: array
-          items:
-            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQuerySortRequest'
-
-    IncidentProcessInstanceStatisticsByErrorQueryResult:
-      type: object
-      allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
-      properties:
-        items:
-          description: |
-            Statistics of active process instances grouped by incident error.
-          type: array
-          items:
-            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorResult'
-
-    IncidentProcessInstanceStatisticsByErrorResult:
-      type: object
-      properties:
-        errorHashCode:
-          type: integer
-          format: int32
-          description: The hash code identifying a specific incident error..
-        errorMessage:
-          type: string
-          description: The error message associated with the incident error hash code.
-        activeInstancesWithErrorCount:
-          type: integer
-          format: int64
-          description: |
-            The number of active process instances that currently have an active incident with this error.
-
-    IncidentProcessInstanceStatisticsByErrorQuerySortRequest:
-      type: object
-      properties:
-        field:
-          description: The field to sort the incident error statistics by.
-          type: string
-          enum:
-            - errorMessage
-            - activeInstancesWithErrorCount
-        order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
-      required:
-        - field
-
-    IncidentProcessInstanceStatisticsByDefinitionQuery:
-      type: object
-      properties:
-        filter:
-          description: Filter criteria for the aggregated process instance statistics.
-          allOf:
-            - $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByDefinitionFilter'
-        page:
-          description: Pagination parameters for the aggregated process instance statistics.
-          allOf:
-            - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
-        sort:
-          description: Sorting criteria for process instance statistics grouped by process definition.
-          type: array
-          items:
-            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest'
-      required:
-        - filter
-
-    IncidentProcessInstanceStatisticsByDefinitionQueryResult:
-      type: object
-      allOf:
-        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
-      properties:
-        items:
-          description: |
-            Statistics of active process instances with incidents, grouped by process
-            definition for the specified error hash code.
-          type: array
-          items:
-            $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByDefinitionResult'
-
-    IncidentProcessInstanceStatisticsByDefinitionResult:
-      type: object
-      properties:
-        processDefinitionId:
-          $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
-        processDefinitionKey:
-          $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
-        processDefinitionName:
-          type: string
-          description: The name of the process definition.
-        processDefinitionVersion:
-          type: integer
-          description: The version of the process definition.
-        tenantId:
-          $ref: 'identifiers.yaml#/components/schemas/TenantId'
-        activeInstancesWithErrorCount:
-          type: integer
-          format: int64
-          description: |
-            The number of active process instances that currently have an incident
-            with the specified error hash code.
-
-    IncidentProcessInstanceStatisticsByDefinitionFilter:
-      description: Filter for the incident process instance statistics by definition query.
-      type: object
-      properties:
-        errorHashCode:
-          type: integer
-          format: int32
-          description: |
-            The error hash code of the incidents to filter the process instance statistics by.
-      required:
-        - errorHashCode
-
-    IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest:
-      type: object
-      properties:
-        field:
-          description: The aggregated field by which the process instance statistics are sorted.
-          type: string
-          enum:
-              - activeInstancesWithErrorCount
-              - processDefinitionId
-              - processDefinitionKey
-              - processDefinitionName
-              - processDefinitionVersion
-              - tenantId
-        order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
-      required:
-        - field
-
-

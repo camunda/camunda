@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -21,10 +22,11 @@ import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.function.Function;
 
-public class ProcessInstanceWriter implements RdbmsWriter {
+public class ProcessInstanceWriter {
+
+  private static final int PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE = 10000;
 
   private final ProcessInstanceMapper mapper;
   private final ExecutionQueue executionQueue;
@@ -43,15 +45,6 @@ public class ProcessInstanceWriter implements RdbmsWriter {
             processInstance.processInstanceKey(),
             "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insert",
             processInstance));
-    if (processInstance.tags() != null && !processInstance.tags().isEmpty()) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.PROCESS_INSTANCE,
-              WriteStatementType.INSERT,
-              processInstance.processInstanceKey(),
-              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insertTags",
-              processInstance));
-    }
   }
 
   public void update(final ProcessInstanceDbModel processInstance) {
@@ -108,6 +101,23 @@ public class ProcessInstanceWriter implements RdbmsWriter {
     }
   }
 
+  public void createTags(final ProcessInstanceTagsDto tagList) {
+    for (int i = 0; i < tagList.tags().size(); i += PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE) {
+      final var block =
+          tagList
+              .tags()
+              .subList(
+                  i, Math.min(i + PROCESS_INSTANCE_TAG_INSERT_BLOCK_SIZE, tagList.tags().size()));
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.INSERT,
+              tagList.processInstanceKey(),
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insertTags",
+              new ProcessInstanceTagsDto(tagList.processInstanceKey(), block)));
+    }
+  }
+
   private boolean mergeToQueue(
       final long key,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder> mergeFunction) {
@@ -145,9 +155,5 @@ public class ProcessInstanceWriter implements RdbmsWriter {
             .cleanupDate(cleanupDate)
             .limit(rowsToRemove)
             .build());
-  }
-
-  public void deleteByKeys(final List<Long> processInstanceKeys) {
-    mapper.deleteByKeys(processInstanceKeys);
   }
 }

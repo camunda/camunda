@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.db.fixtures;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -75,16 +75,16 @@ public final class VariableFixtures extends CommonFixtures {
   public static List<VariableDbModel> createAndSaveRandomVariables(
       final RdbmsService rdbmsService,
       final Function<VariableDbModelBuilder, VariableDbModelBuilder> builderFunction) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
 
     final List<VariableDbModel> models = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       final VariableDbModel randomized = createRandomized(builderFunction);
       models.add(randomized);
-      rdbmsWriters.getVariableWriter().create(randomized);
+      rdbmsWriter.getVariableWriter().create(randomized);
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
 
     return models;
   }
@@ -104,11 +104,11 @@ public final class VariableFixtures extends CommonFixtures {
 
   public static void createAndSaveVariables(
       final RdbmsService rdbmsService, final List<VariableDbModel> variableList) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
     for (final VariableDbModel variable : variableList) {
-      rdbmsWriters.getVariableWriter().create(variable);
+      rdbmsWriter.getVariableWriter().create(variable);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static void prepareRandomVariables(final CamundaRdbmsTestApplication testApplication) {

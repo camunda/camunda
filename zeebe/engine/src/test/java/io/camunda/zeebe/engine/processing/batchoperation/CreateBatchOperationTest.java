@@ -292,13 +292,6 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
         PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT);
   }
 
-  @Test
-  public void shouldBeAuthorizedToCreateWithSpecificPermissionDeleteProcessInstance() {
-    checkAuthorized(
-        BatchOperationType.DELETE_PROCESS_INSTANCE,
-        PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE);
-  }
-
   public void checkAuthorized(
       final BatchOperationType batchOperationType, final PermissionType permissionType) {
     // given

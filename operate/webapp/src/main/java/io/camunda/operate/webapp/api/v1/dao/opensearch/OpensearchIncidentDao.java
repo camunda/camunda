@@ -24,6 +24,7 @@ import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -89,8 +90,7 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   }
 
   @Override
-  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
-      final Query<Incident> query) {
+  protected void buildFiltering(final Query<Incident> query, final SearchRequest.Builder request) {
     final Incident filter = query.getFilter();
     if (filter != null) {
       final var queryTerms =
@@ -113,10 +113,9 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
               .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
-        return queryDSLWrapper.and(queryTerms);
+        request.query(queryDSLWrapper.and(queryTerms));
       }
     }
-    return queryDSLWrapper.matchAll();
   }
 
   @Override

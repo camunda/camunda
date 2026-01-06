@@ -14,8 +14,6 @@ import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
-import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -33,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 public final class GcsBackupStore implements BackupStore {
   public static final String ERROR_MSG_BACKUP_NOT_FOUND =
@@ -47,7 +46,6 @@ public final class GcsBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
-  private final GcsIndexManager indexManager;
   private final Storage client;
 
   GcsBackupStore(final GcsBackupConfig config) {
@@ -61,11 +59,10 @@ public final class GcsBackupStore implements BackupStore {
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
     fileSetManager = new FileSetManager(client, bucketInfo, basePath);
-    indexManager = new GcsIndexManager(client, bucketInfo, basePath);
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
-    return new GcsBackupStore(config);
+    return new GcsBackupStore(config).logging(LOG, Level.INFO);
   }
 
   @Override
@@ -155,25 +152,6 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final GcsBackupIndexFile gcsBackupIndexFile)) {
-      throw new IllegalArgumentException(
-          "Expected index file of type %s but got %s: %s"
-              .formatted(
-                  GcsBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
-    }
-    return CompletableFuture.runAsync(() -> indexManager.upload(gcsBackupIndexFile), executor);
-  }
-
-  @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
-      final BackupIndexIdentifier id, final Path targetPath) {
-    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
-  }
-
-  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -210,8 +188,8 @@ public final class GcsBackupStore implements BackupStore {
         storage.list(config.bucketName(), BlobListOption.pageSize(1));
       } catch (final Exception e) {
         LOG.warn(
-            "Unable to verify that the bucket {} exists, initialization will continue as it can be a transient network issue",
-            config.bucketName(),
+            "Unable to verify that the bucket %s exists, initialization will continue as it can be a transient network issue"
+                .formatted(config.bucketName()),
             e);
       }
     } catch (final Exception e) {

@@ -35,7 +35,7 @@ import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -148,7 +148,7 @@ public final class CreateProcessInstanceCommandImpl
             .setTerminate(
                 TerminateProcessInstanceInstruction.newBuilder().setAfterElementId(elementId)));
     httpRequestObject.addRuntimeInstructionsItem(
-        new ProcessInstanceCreationTerminateInstruction()
+        new ProcessInstanceCreationRuntimeInstruction()
             .afterElementId(elementId)
             .type(TERMINATE_PROCESS_INSTANCE.name()));
     return this;

@@ -22,7 +22,6 @@ public class AuthorizationIndex extends AbstractIndexDescriptor implements Prio5
   public static final String PERMISSIONS_TYPES = "permissionTypes";
   public static final String RESOURCE_MATCHER = "resourceMatcher";
   public static final String RESOURCE_ID = "resourceId";
-  public static final String RESOURCE_PROPERTY_NAME = "resourcePropertyName";
 
   public AuthorizationIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

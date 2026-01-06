@@ -87,7 +87,6 @@ type State = {
     | 'enabled'
     | 'adding-token'
     | 'moving-token'
-    | 'requires-ancestor-selection'
     | 'disabled'
     | 'applying-modifications';
   modifications: Modification[];
@@ -216,19 +215,6 @@ class Modifications {
     this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
   };
 
-  setAncestorFlowNodeKeyForMoveOperation = (ancestorElement: {
-    instanceKey: string;
-    flowNodeId: string;
-  }) => {
-    const lastModification =
-      this.state.modifications[this.state.modifications.length - 1];
-
-    if (lastModification.payload.operation === 'MOVE_TOKEN') {
-      lastModification.payload.ancestorElement = ancestorElement;
-      modificationsStore.setStatus('enabled');
-    }
-  };
-
   setSourceFlowNodeInstanceKeyForMoveOperation = (
     sourceFlowNodeInstanceKey: string | null,
   ) => {
@@ -326,13 +312,6 @@ class Modifications {
 
   get isModificationModeEnabled() {
     return !['disabled', 'applying-modifications'].includes(this.state.status);
-  }
-
-  get isMoveAllOperation() {
-    return (
-      this.state.status === 'moving-token' &&
-      this.state.sourceFlowNodeInstanceKeyForMoveOperation === null
-    );
   }
 
   get lastModification() {
@@ -533,7 +512,6 @@ class Modifications {
             ...(payload.flowNodeInstanceKey === undefined
               ? {fromFlowNodeId: flowNode.id}
               : {fromFlowNodeInstanceKey: payload.flowNodeInstanceKey}),
-            ancestorElementInstanceKey: payload.ancestorElement?.instanceKey,
             toFlowNodeId: targetFlowNode.id,
             newTokensCount: scopeIds.length,
             variables:

@@ -87,8 +87,8 @@ public @interface JobWorker {
    */
   String[] fetchVariables() default {};
 
-  /** If set to true, all variables are fetched. Can only be used as a singleton. */
-  boolean[] fetchAllVariables() default {};
+  /** If set to true, all variables are fetched */
+  boolean fetchAllVariables() default false;
 
   /**
    * If set to true, the job is automatically completed after the worker code has finished. In this
@@ -96,28 +96,25 @@ public @interface JobWorker {
    *
    * <p>You can still throw exceptions if you want to raise a problem instead of job completion. To
    * control the retry behavior or submit variables, you can use the {@link JobError}. You could
-   * also raise a BPMN error throwing a {@link BpmnError}. Can only be used as a singleton.
+   * also raise a BPMN error throwing a {@link BpmnError}
    */
-  boolean[] autoComplete() default {};
+  boolean autoComplete() default true;
 
-  /** If set to true, the worker will actually be subscribing. Can only be used as a singleton. */
-  boolean[] enabled() default {};
+  /** If set to true, the worker will actually be subscribing. */
+  boolean enabled() default true;
 
   /** A list of tenants for this job will be worked on. */
   String[] tenantIds() default {};
 
   /**
    * Whether job streaming should be enabled for this job type. Useful in high-performance setups
-   * but can only be used with a gRPC connection. Can only be used as a singleton.
+   * but can only be used with a gRPC connection.
    */
-  boolean[] streamEnabled() default {};
+  boolean streamEnabled() default false;
 
   /** Stream timeout in ms */
-  long streamTimeout() default -1L;
+  long streamTimeout() default 3600000L;
 
   /** Set the max number of retries for a job */
   int maxRetries() default -1;
-
-  /** Set the retry backoff for a job (in milliseconds) */
-  long retryBackoff() default -1L;
 }

@@ -15,7 +15,6 @@ import {useBlocker, type Location} from 'react-router-dom';
 export function useCallbackPrompt({
   shouldInterrupt,
   onTransition,
-  ignoreSearchParams = false,
 }: {
   /**
    * Indicates if the navigation should be interrupted.
@@ -36,7 +35,6 @@ export function useCallbackPrompt({
     nextLocation: Location;
     historyAction: string;
   }) => boolean;
-  ignoreSearchParams?: boolean;
 }) {
   const shouldBlock = useCallback(
     ({
@@ -64,10 +62,10 @@ export function useCallbackPrompt({
 
       return (
         nextLocation.pathname !== currentLocation.pathname ||
-        (!ignoreSearchParams && nextLocation.search !== currentLocation.search)
+        nextLocation.search !== currentLocation.search
       );
     },
-    [shouldInterrupt, onTransition, ignoreSearchParams],
+    [shouldInterrupt, onTransition],
   );
 
   const blocker = useBlocker(shouldBlock);

@@ -72,8 +72,18 @@ public class SearchTermsAggregatorTransformerTest
     // given
 
     // when - throw
-    assertThatThrownBy(() -> SearchAggregatorBuilders.terms().field("testField").build())
+    assertThatThrownBy(() -> SearchAggregatorBuilders.terms().build())
         .hasMessageContaining("Expected non-null field for name.")
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  public void shouldThrowErrorOnNullField() {
+    // given
+
+    // when - throw
+    assertThatThrownBy(() -> SearchAggregatorBuilders.terms().name("name").size(10).build())
+        .hasMessageContaining("Expected non-null field for field.")
         .isInstanceOf(NullPointerException.class);
   }
 

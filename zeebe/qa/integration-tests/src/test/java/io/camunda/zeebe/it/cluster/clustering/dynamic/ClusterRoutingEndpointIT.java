@@ -23,7 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @ZeebeIntegration
 public class ClusterRoutingEndpointIT {
 
-  @TestZeebe(initMethod = "initTestStandaloneBroker", purgeAfterEach = false)
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
   static TestStandaloneBroker broker;
 
   @SuppressWarnings("unused")

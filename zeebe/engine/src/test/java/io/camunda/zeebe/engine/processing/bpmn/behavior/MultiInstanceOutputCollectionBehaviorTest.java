@@ -12,7 +12,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,22 +56,19 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     final var loopCharacteristics =
         createLoopCharacteristics(outputCollectionName, outputElementExpression);
     final var flowScopeContextKey = 12345L;
-    final var tenantId = "tenant-1";
 
     final var mockStateBehavior = mock(BpmnStateBehavior.class, Answers.RETURNS_DEEP_STUBS);
     when(mockStateBehavior.getLocalVariable(any(), eq(outputCollectionName)))
         .thenReturn(collectionWithSize1);
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
-    when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
-            eq(outputElementExpression), anyLong(), anyString()))
+    when(mockExpressionProcessor.evaluateAnyExpression(eq(outputElementExpression), anyLong()))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);
     when(mockElement.getLoopCharacteristics()).thenReturn(loopCharacteristics);
 
     final var mockChildContext = mock(BpmnElementContext.class);
-    when(mockChildContext.getTenantId()).thenReturn(tenantId);
     when(mockStateBehavior.getElementInstance(mockChildContext).getMultiInstanceLoopCounter())
         .thenReturn(indexThatIsOutOfBounds);
 
@@ -108,22 +104,19 @@ public class MultiInstanceOutputCollectionBehaviorTest {
     final var loopCharacteristics =
         createLoopCharacteristics(outputCollectionName, outputElementExpression);
     final var flowScopeContextKey = 12345L;
-    final var tenantId = "tenant-1";
 
     final var mockStateBehavior = mock(BpmnStateBehavior.class, Answers.RETURNS_DEEP_STUBS);
     when(mockStateBehavior.getLocalVariable(any(), eq(outputCollectionName)))
         .thenReturn(unexpectedValueType);
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
-    when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
-            eq(outputElementExpression), anyLong(), anyString()))
+    when(mockExpressionProcessor.evaluateAnyExpression(eq(outputElementExpression), anyLong()))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);
     when(mockElement.getLoopCharacteristics()).thenReturn(loopCharacteristics);
 
     final var mockChildContext = mock(BpmnElementContext.class);
-    when(mockChildContext.getTenantId()).thenReturn(tenantId);
     when(mockStateBehavior.getElementInstance(mockChildContext).getMultiInstanceLoopCounter())
         .thenReturn(index);
 

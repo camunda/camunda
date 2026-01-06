@@ -42,11 +42,6 @@ public class BatchOperationItemSortImpl extends SearchRequestSortBase<BatchOpera
   }
 
   @Override
-  public BatchOperationItemSort processedDate() {
-    return field("processedDate");
-  }
-
-  @Override
   protected BatchOperationItemSort self() {
     return this;
   }

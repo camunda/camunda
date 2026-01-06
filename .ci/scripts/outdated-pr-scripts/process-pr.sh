@@ -45,7 +45,7 @@ while IFS=' ' read -r pr_number branch_name base_branch repo_owner; do
   # Check branch staleness - only for internal branches that exist
   latest_age_days=0
   if [[ "$repo_owner" == "${GITHUB_REPOSITORY_OWNER}" ]] && git rev-parse --verify "origin/$branch_name" >/dev/null 2>&1; then
-    latest_commit_date=$(git log origin/"$base_branch"..origin/"$branch_name" --pretty=format:"%ci" | head -1 2>/dev/null || echo "")
+    latest_commit_date=$(git log origin/"$base_branch"..origin/"$branch_name" --pretty=format:"%ai" | head -1 2>/dev/null || echo "")
     latest_commit_timestamp=$("$DATE_PROGRAM" -d "$latest_commit_date" +%s 2>/dev/null || echo "0")
     current_timestamp=$("$DATE_PROGRAM" +%s)
     latest_age_days=$(( (current_timestamp - latest_commit_timestamp) / 86400 ))

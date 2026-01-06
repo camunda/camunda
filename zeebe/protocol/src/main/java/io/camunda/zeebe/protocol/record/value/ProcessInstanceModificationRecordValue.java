@@ -33,9 +33,6 @@ public interface ProcessInstanceModificationRecordValue
   /** Returns a list of activate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationActivateInstructionValue> getActivateInstructions();
 
-  /** Returns a list of move instructions (if available), or an empty list. */
-  List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions();
-
   /**
    * Returns a list of all ancestor keys of all activate instructions. The property is set in the
    * event only after the modification is applied.
@@ -53,9 +50,6 @@ public interface ProcessInstanceModificationRecordValue
 
     /** Returns the key of element instance to terminate. */
     long getElementInstanceKey();
-
-    /** Returns the id of the elements to terminate. */
-    String getElementId();
   }
 
   @Value.Immutable
@@ -111,32 +105,5 @@ public interface ProcessInstanceModificationRecordValue
      * string if the variables are global for the process instance.
      */
     String getElementId();
-  }
-
-  @Value.Immutable
-  @ImmutableProtocol(
-      builder = ImmutableProcessInstanceModificationMoveInstructionValue.Builder.class)
-  interface ProcessInstanceModificationMoveInstructionValue {
-
-    /** Returns the id of the element to terminate element instances at. */
-    String getSourceElementId();
-
-    /** Returns the key of element instance to terminate. */
-    long getSourceElementInstanceKey();
-
-    /** Returns the id of the element to create a new element instance at. */
-    String getTargetElementId();
-
-    /** Returns a list of variable instructions (if available), or an empty list. */
-    List<ProcessInstanceModificationVariableInstructionValue> getVariableInstructions();
-
-    /** Returns the key of the ancestor scope to use. */
-    long getAncestorScopeKey();
-
-    /**
-     * Indicates whether the ancestor scope key should be inferred from the source element's
-     * hierarchy.
-     */
-    boolean isInferAncestorScopeFromSourceHierarchy();
   }
 }

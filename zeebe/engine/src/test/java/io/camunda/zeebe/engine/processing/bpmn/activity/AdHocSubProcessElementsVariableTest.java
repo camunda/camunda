@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
-import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,6 +45,7 @@ public final class AdHocSubProcessElementsVariableTest {
 
   private static final String PROCESS_ID = "process";
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
+  private static final String AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE = "adHocSubProcessElements";
 
   private static final AdHocSubProcessElementTestFixture SIMPLE_TASK =
       testFixture(
@@ -388,7 +388,7 @@ public final class AdHocSubProcessElementsVariableTest {
                 .filter(
                     v ->
                         v.getIntent() == VariableIntent.CREATED
-                            && v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS))
+                            && v.getValue().getName().equals(AD_HOC_SUB_PROCESS_ELEMENTS_VARIABLE))
                 .limit(1))
         .first()
         .describedAs(

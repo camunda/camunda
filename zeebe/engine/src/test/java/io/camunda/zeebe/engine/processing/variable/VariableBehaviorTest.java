@@ -9,12 +9,6 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -27,9 +21,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValueAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,12 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 final class VariableBehaviorTest {
-
-  private static final ExpressionLanguage EXPRESSION_LANGUAGE =
-      ExpressionLanguageFactory.createExpressionLanguage(
-          new ZeebeFeelEngineClock(InstantSource.system()));
-  private static final ScopedEvaluationContext DEFAULT_CONTEXT_LOOKUP =
-      variableName -> Either.left(null);
 
   private final RecordingTypedEventWriter eventWriter = new RecordingTypedEventWriter();
 
@@ -60,17 +46,9 @@ final class VariableBehaviorTest {
     final var eventAppliers = new EventAppliers();
     eventAppliers.registerEventAppliers(processingState);
     final var stateWriter = new EventApplyingStateWriter(eventWriter, eventAppliers);
-    final ExpressionProcessor expressionProcessor =
-        new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
-    // commandWriter is never called in tests, so we can pass null
-    final var conditionalBehavior =
-        new BpmnConditionalBehavior(
-            processingState, null, expressionProcessor, EXPRESSION_LANGUAGE);
 
     state = processingState.getVariableState();
-    behavior =
-        new VariableBehavior(
-            state, stateWriter, conditionalBehavior, processingState.getKeyGenerator());
+    behavior = new VariableBehavior(state, stateWriter, processingState.getKeyGenerator());
   }
 
   @Test

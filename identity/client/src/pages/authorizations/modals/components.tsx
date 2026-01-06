@@ -22,7 +22,7 @@ export const TextFieldContainer = styled.div`
   margin-top: 3px;
 `;
 
-export const Caption = styled.div`
+export const PermissionsSectionLabel = styled.div`
   font-size: 0.75rem;
   > a {
     font-size: 0.75rem;

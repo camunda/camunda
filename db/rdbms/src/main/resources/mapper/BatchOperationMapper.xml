@@ -14,9 +14,6 @@
       <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
       <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="ACTOR_TYPE"
-        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationActorType"/>
-      <arg column="ACTOR_ID" javaType="java.lang.String"/>
       <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
       <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
       <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
@@ -49,8 +46,6 @@
     OPERATION_TYPE,
     START_DATE,
     END_DATE,
-    ACTOR_TYPE,
-    ACTOR_ID,
     OPERATIONS_TOTAL_COUNT,
     OPERATIONS_FAILED_COUNT,
     OPERATIONS_COMPLETED_COUNT)
@@ -59,8 +54,6 @@
     #{operationType},
     #{startDate, jdbcType=TIMESTAMP},
     #{endDate, jdbcType=TIMESTAMP},
-    #{actorType},
-    #{actorId},
     #{operationsTotalCount},
     #{operationsFailedCount},
     #{operationsCompletedCount})
@@ -253,8 +246,6 @@
     bof.OPERATION_TYPE,
     bof.START_DATE,
     bof.END_DATE,
-    bof.ACTOR_TYPE,
-    bof.ACTOR_ID,
     bof.OPERATIONS_TOTAL_COUNT,
     bof.OPERATIONS_FAILED_COUNT,
     bof.OPERATIONS_COMPLETED_COUNT,
@@ -269,8 +260,6 @@
     bo.OPERATION_TYPE,
     bo.START_DATE,
     bo.END_DATE,
-    bo.ACTOR_TYPE,
-    bo.ACTOR_ID,
     bo.OPERATIONS_TOTAL_COUNT,
     bo.OPERATIONS_FAILED_COUNT,
     bo.OPERATIONS_COMPLETED_COUNT
@@ -316,24 +305,11 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.actorTypeOperations != null and !filter.actorTypeOperations.isEmpty()">
-      <foreach collection="filter.actorTypeOperations" item="operation">
-        AND ACTOR_TYPE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if test="filter.actorIdOperations != null and !filter.actorIdOperations.isEmpty()">
-      <foreach collection="filter.actorIdOperations" item="operation">
-        AND ACTOR_ID
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
   </sql>
 
   <select id="countItems" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}BATCH_OPERATION_ITEM bi
-    JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
   </select>
 
@@ -386,13 +362,6 @@
       test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
       <foreach collection="filter.stateOperations" item="operation">
         AND bi.STATE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if
-      test="filter.operationTypeOperations != null and !filter.operationTypeOperations.isEmpty()">
-      <foreach collection="filter.operationTypeOperations" item="operation">
-        AND bo.OPERATION_TYPE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>

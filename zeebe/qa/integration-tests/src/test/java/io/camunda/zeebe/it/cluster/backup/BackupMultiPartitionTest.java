@@ -10,15 +10,17 @@ package io.camunda.zeebe.it.cluster.backup;
 import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.configuration.Backup;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.system.configuration.ConfigurationUtil;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatusRequest;
@@ -28,14 +30,11 @@ import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -48,8 +47,6 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -96,12 +93,12 @@ class BackupMultiPartitionTest {
           .withBrokersCount(2)
           .withPartitionsCount(2)
           .withReplicationFactor(1)
-          .withBrokerConfig(b -> b.withUnifiedConfig(this::configureBackupStore))
+          .withBrokerConfig(b -> b.withBrokerConfig(this::configureBackupStore))
           .build();
 
-  private void configureBackupStore(final Camunda config) {
+  private void configureBackupStore(final BrokerCfg config) {
 
-    final var backupConfig = config.getData().getPrimaryStorage().getBackup();
+    final var backupConfig = config.getData().getBackup();
     backupConfig.setStore(BackupStoreType.S3);
 
     final var s3Config = backupConfig.getS3();
@@ -236,26 +233,22 @@ class BackupMultiPartitionTest {
   }
 
   private void deleteAndRestore(final TestStandaloneBroker broker, final int backupId) {
-    final var workingDirectory = broker.getWorkingDirectory();
-
     final var unifiedRestoreConfig = new Camunda();
-    unifiedRestoreConfig.getCluster().setNodeId(broker.unifiedConfig().getCluster().getNodeId());
+    unifiedRestoreConfig.getCluster().setNodeId(broker.brokerConfig().getCluster().getNodeId());
     unifiedRestoreConfig
         .getCluster()
-        .setPartitionCount(broker.unifiedConfig().getCluster().getPartitionCount());
-    final var dataDirectory =
-        ConfigurationUtil.toAbsolutePath(
-            broker.unifiedConfig().getData().getPrimaryStorage().getDirectory(),
-            workingDirectory.toString());
-    unifiedRestoreConfig.getData().getPrimaryStorage().setDirectory(dataDirectory);
-    unifiedRestoreConfig.getCluster().setSize(broker.unifiedConfig().getCluster().getSize());
+        .setPartitionCount(broker.brokerConfig().getCluster().getPartitionsCount());
+    unifiedRestoreConfig
+        .getData()
+        .getPrimaryStorage()
+        .setDirectory(broker.brokerConfig().getData().getDirectory());
+    unifiedRestoreConfig.getCluster().setSize(broker.brokerConfig().getCluster().getClusterSize());
 
     // backup config s3
-    final var backupConfig = unifiedRestoreConfig.getData().getPrimaryStorage().getBackup();
-    backupConfig.setStore(BackupStoreType.S3);
+    final var backupConfig = unifiedRestoreConfig.getData().getBackup();
+    backupConfig.setStore(Backup.BackupStoreType.S3);
     final var s3Config = backupConfig.getS3();
-    final var legacyBackupConfig =
-        broker.unifiedConfig().getData().getPrimaryStorage().getBackup().getS3();
+    final var legacyBackupConfig = broker.brokerConfig().getData().getBackup().getS3();
     s3Config.setBucketName(legacyBackupConfig.getBucketName());
     s3Config.setEndpoint(legacyBackupConfig.getEndpoint());
     s3Config.setRegion(legacyBackupConfig.getRegion());
@@ -264,7 +257,7 @@ class BackupMultiPartitionTest {
     s3Config.setForcePathStyleAccess(legacyBackupConfig.isForcePathStyleAccess());
 
     try (final var restore = new TestRestoreApp(unifiedRestoreConfig).withBackupId(backupId)) {
-      FileUtil.deleteFolderIfExists(workingDirectory);
+      FileUtil.deleteFolderIfExists(broker.bean(WorkingDirectory.class).path());
       restore.start();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
@@ -287,105 +280,6 @@ class BackupMultiPartitionTest {
         .timeout(Duration.ofSeconds(30))
         .ignoreExceptions()
         .until(() -> getBackupStatus(backupId).status(), isEqual(State.DOES_NOT_EXIST));
-  }
-
-  @Test
-  @Timeout(value = 120)
-  void canRetrieveCheckpointStateFromMultiplePartitions()
-      throws ExecutionException, InterruptedException, TimeoutException {
-    // given
-    final long processKey = client.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
-    createProcessInstanceOnPartitionOne(processKey);
-
-    final long backupId = 3;
-    // trigger backup only on partition 2
-    takeBackupOnPartition(backupId, 2);
-
-    // when
-    publishMessageAndWaitUntilCorrelated();
-
-    // then
-    waitUntilBackupIsCompleted(backupId);
-
-    final var state = getCheckpointState();
-    assertThat(state).isNotNull();
-    assertThat(state.getCheckpointStates()).hasSize(2);
-    assertThat(state.getBackupStates()).hasSize(2);
-
-    final var checkpointStates =
-        state.getCheckpointStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    assertThat(checkpointStates.get(0).checkpointId())
-        .isEqualTo(checkpointStates.get(1).checkpointId())
-        .isEqualTo(backupId);
-
-    assertThat(checkpointStates.get(0).checkpointType())
-        .isEqualTo(checkpointStates.get(1).checkpointType())
-        .isEqualTo(CheckpointType.MANUAL_BACKUP);
-
-    assertThat(Instant.ofEpochMilli(checkpointStates.get(0).checkpointTimestamp()))
-        .isAfter(Instant.ofEpochMilli(checkpointStates.get(1).checkpointTimestamp()));
-
-    assertThat(checkpointStates.get(0).checkpointPosition()).isGreaterThan(0);
-    assertThat(checkpointStates.get(1).checkpointPosition()).isGreaterThan(0);
-
-    final var backupStates =
-        state.getBackupStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    assertThat(backupStates.get(0).checkpointId())
-        .isEqualTo(backupStates.get(1).checkpointId())
-        .isEqualTo(backupId);
-
-    assertThat(backupStates.get(0).checkpointType())
-        .isEqualTo(backupStates.get(1).checkpointType())
-        .isEqualTo(CheckpointType.MANUAL_BACKUP);
-
-    assertThat(Instant.ofEpochMilli(backupStates.get(0).checkpointTimestamp()))
-        .isAfter(Instant.ofEpochMilli(backupStates.get(1).checkpointTimestamp()));
-
-    assertThat(backupStates.get(0).checkpointPosition()).isGreaterThan(0);
-    assertThat(backupStates.get(1).checkpointPosition()).isGreaterThan(0);
-  }
-
-  @Test
-  @Timeout(value = 120)
-  void canRetrieveCheckpointStateFromPartialPartitions()
-      throws ExecutionException, InterruptedException, TimeoutException {
-    // given
-    final long processKey = client.deployProcess(PROCESS_WITH_MESSAGE_EVENT);
-    createProcessInstanceOnPartitionOne(processKey);
-
-    final long backupId = 3;
-    // trigger backup only on partition 2
-    takeBackupOnPartition(backupId, 2);
-
-    // then
-    waitUntilBackupCompletedOnPartition(backupId, 2);
-
-    final var state = getCheckpointState();
-    assertThat(state).isNotNull();
-    assertThat(state.getCheckpointStates()).hasSize(1);
-    assertThat(state.getBackupStates()).hasSize(1);
-
-    final var checkpointStates =
-        state.getCheckpointStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    final var backupStates =
-        state.getBackupStates().stream()
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::partitionId))
-            .toList();
-
-    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
-    assertThat(backupStates.stream().filter(f -> f.partitionId() == 2)).isNotEmpty();
-
-    assertThat(checkpointStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
-    assertThat(backupStates.stream().filter(f -> f.partitionId() == 1)).isEmpty();
   }
 
   private Set<Long> createJobsOnAllPartitions() {
@@ -423,19 +317,10 @@ class BackupMultiPartitionTest {
     return backupRequestHandler.getStatus(backupId).toCompletableFuture().get(30, TimeUnit.SECONDS);
   }
 
-  private CheckpointStateResponse getCheckpointState()
-      throws InterruptedException, ExecutionException, TimeoutException {
-    return backupRequestHandler
-        .getCheckpointState()
-        .toCompletableFuture()
-        .get(30, TimeUnit.SECONDS);
-  }
-
   private void takeBackupOnPartition(final long backupId, final int partitionId) {
     final BrokerBackupRequest backupRequest = new BrokerBackupRequest();
     backupRequest.setBackupId(backupId);
     backupRequest.setPartitionId(partitionId);
-    backupRequest.setCheckpointType(CheckpointType.MANUAL_BACKUP);
     final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     brokerClient.sendRequest(backupRequest).orTimeout(30, TimeUnit.SECONDS).join();
 

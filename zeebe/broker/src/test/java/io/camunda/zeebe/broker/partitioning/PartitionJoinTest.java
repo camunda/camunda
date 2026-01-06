@@ -47,7 +47,7 @@ final class PartitionJoinTest {
               clusterCfg.setClusterSize(1);
               clusterCfg.setNodeId(0);
               clusterCfg.setPartitionsCount(2);
-              clusterCfg.setReplicationFactor(1);
+              clusterCfg.setReplicationFactor(3);
             });
 
     final var initialContactPoint =
@@ -102,8 +102,8 @@ final class PartitionJoinTest {
   Broker buildBroker(final Path tmp, final Consumer<BrokerCfg> configure) {
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
-    configure.accept(brokerCfg);
     brokerCfg.init(tmp.toAbsolutePath().toString());
+    configure.accept(brokerCfg);
     final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, meterRegistry);
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var brokerClient =

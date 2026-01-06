@@ -10,7 +10,6 @@ package io.camunda.webapps.schema.entities.listview;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -24,38 +23,37 @@ public class ProcessInstanceForListViewEntity
         PartitionedEntity<ProcessInstanceForListViewEntity>,
         TenantOwned {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private long key;
-  @BeforeVersion880 private int partitionId;
-  @BeforeVersion880 private Long processDefinitionKey;
-  @BeforeVersion880 private String processName;
-  @BeforeVersion880 private Integer processVersion;
-  @BeforeVersion880 private String processVersionTag;
-  @BeforeVersion880 private String bpmnProcessId;
+  private String id;
+  private long key;
+  private int partitionId;
+  private Long processDefinitionKey;
+  private String processName;
+  private Integer processVersion;
+  private String processVersionTag;
+  private String bpmnProcessId;
 
-  @BeforeVersion880 private OffsetDateTime startDate;
-  @BeforeVersion880 private OffsetDateTime endDate;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
 
-  @BeforeVersion880 private ProcessInstanceState state;
+  private ProcessInstanceState state;
 
-  @BeforeVersion880 private List<String> batchOperationIds;
+  private List<String> batchOperationIds;
 
-  @BeforeVersion880 private Long parentProcessInstanceKey;
+  private Long parentProcessInstanceKey;
 
-  @BeforeVersion880 private Long parentFlowNodeInstanceKey;
+  private Long parentFlowNodeInstanceKey;
 
-  @BeforeVersion880 private String treePath;
+  private String treePath;
 
-  @BeforeVersion880 private boolean incident;
+  private boolean incident;
 
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  @BeforeVersion880
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);
 
-  @BeforeVersion880 private Long position;
-  @BeforeVersion880 private Set<String> tags;
+  private Long position;
+  private Set<String> tags;
 
   @JsonIgnore private Object[] sortValues;
 

@@ -7,7 +7,7 @@
  */
 
 import {fetchFlowNodeMetaData} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import type {FlowNodeInstance} from 'modules/types/operate';
+import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {modificationsStore} from 'modules/stores/modifications';
 import {formatDate} from './date';

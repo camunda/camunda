@@ -61,9 +61,7 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.SEND_TASK,
           BpmnElementType.MULTI_INSTANCE_BODY,
           BpmnElementType.PARALLEL_GATEWAY,
-          BpmnElementType.INCLUSIVE_GATEWAY,
-          BpmnElementType.AD_HOC_SUB_PROCESS,
-          BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE);
+          BpmnElementType.INCLUSIVE_GATEWAY);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
   private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
@@ -133,11 +131,12 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' and type '%s' is mapped to \
       an element with id '%s' and different type '%s'. \
       Elements must be mapped to elements of the same type.""";
-  private static final String ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION =
+  private static final String ERROR_USER_TASK_IMPLEMENTATION_CHANGED =
       """
       Expected to migrate process instance '%s' \
       but active user task with id '%s' and implementation '%s' is mapped to \
-      a user task with id '%s' and deprecated implementation '%s'.""";
+      an user task with id '%s' and different implementation '%s'. \
+      Elements must be mapped to elements of the same implementation.""";
   private static final String ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED =
       """
       Expected to migrate process instance '%s' \
@@ -565,17 +564,17 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether the given user task implementations are supported for migration. Throws an
-   * exception if a zeebe user task is migrated to the deprecated job worker user task type.
+   * Since we introduce zeebe user tasks and job worker tasks has the same bpmn element type, we
+   * need to check whether the given element instance and target element has the same user task
+   * type. Throws an exception if they have different types.
    *
    * @param sourceProcessDefinition source process definition to retrieve the source element type
    * @param targetProcessDefinition target process definition to retrieve the target element type
    * @param targetElementId target element id
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
-   * @return whether the migration is to a different user task implementation
    */
-  public static boolean requireSupportedUserTaskImplementation(
+  public static void requireSameUserTaskImplementation(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
@@ -583,17 +582,14 @@ public final class ProcessInstanceMigrationPreconditions {
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
     if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
-      return false;
+      return;
     }
 
     final AbstractFlowElement targetElement =
         targetProcessDefinition.getProcess().getElementById(targetElementId);
     final BpmnElementType targetElementType = targetElement.getElementType();
-
-    if (targetElementType != BpmnElementType.USER_TASK
-        && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
-            && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
-      return false;
+    if (targetElementType != BpmnElementType.USER_TASK) {
+      return;
     }
 
     final ExecutableUserTask targetUserTask =
@@ -614,11 +610,10 @@ public final class ProcessInstanceMigrationPreconditions {
             ? ZEEBE_USER_TASK_IMPLEMENTATION
             : JOB_WORKER_IMPLEMENTATION;
 
-    if (!sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)) {
+    if (!targetUserTaskType.equals(sourceUserTaskType)) {
       final String reason =
           String.format(
-              ERROR_DEPRECATED_USER_TASK_IMPLEMENTATION,
+              ERROR_USER_TASK_IMPLEMENTATION_CHANGED,
               processInstanceKey,
               elementInstanceRecord.getElementId(),
               sourceUserTaskType,
@@ -627,8 +622,6 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
-    return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
-        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
   }
 
   /**
@@ -1234,20 +1227,6 @@ public final class ProcessInstanceMigrationPreconditions {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_ARGUMENT);
     }
-  }
-
-  public static boolean isAdHocRelatedProcess(
-      final DeployedProcess processDefinition, final String elementId) {
-    final var element = processDefinition.getProcess().getElementById(elementId);
-    final var elementType = element.getElementType();
-
-    return isAdHocSubProcess(elementType)
-        || (element instanceof final ExecutableMultiInstanceBody mi
-            && isAdHocSubProcess(mi.getInnerActivity().getElementType()));
-  }
-
-  public static boolean isAdHocSubProcess(final BpmnElementType elementType) {
-    return BpmnElementType.AD_HOC_SUB_PROCESS == elementType;
   }
 
   /**

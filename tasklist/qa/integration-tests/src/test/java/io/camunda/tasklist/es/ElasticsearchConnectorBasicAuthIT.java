@@ -21,7 +21,6 @@ import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,23 +50,28 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 @ContextConfiguration(initializers = {ElasticsearchConnectorBasicAuthIT.ElasticsearchStarter.class})
 public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
-  private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
+  static ElasticsearchContainer elasticsearch =
       new ElasticsearchContainer(
               "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
-          .withEnv(Map.of("xpack.security.enabled", "true"))
-          .withPassword("elastic")
+          .withEnv(
+              Map.of(
+                  "xpack.security.enabled", "true",
+                  "ELASTIC_PASSWORD", "changeme"
+                  //        "xpack.security.transport.ssl.enabled","true",
+                  //        "xpack.security.http.ssl.enabled", "true",
+                  //        "xpack.security.transport.ssl.verification_mode","none",//"certificate",
+                  //        "xpack.security.transport.ssl.keystore.path",
+                  // "elastic-certificates.p12",
+                  //        "xpack.security.transport.ssl.truststore.path",
+                  // "elastic-certificates.p12"
+                  ))
           .withExposedPorts(9200);
 
   @Autowired RestHighLevelClient tasklistEsClient;
 
   @BeforeAll
-  static void beforeAll() {
+  public static void beforeClass() {
     assumeTrue(TestUtil.isElasticSearch());
-  }
-
-  @AfterAll
-  static void afterAll() {
-    ELASTICSEARCH_CONTAINER.stop();
   }
 
   @Test
@@ -80,24 +84,28 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      ELASTICSEARCH_CONTAINER.start();
-
-      final String elsUrl =
-          String.format("http://%s", ELASTICSEARCH_CONTAINER.getHttpHostAddress());
-
+      elasticsearch.start();
+      final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
       TestPropertyValues.of(
-              "camunda.database.type=elasticsearch",
-              "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "zeebe.broker.exporters.camundaexporter.args.connect.type=elasticsearch",
+              // "camunda.tasklist.elasticsearch.host="+elasticsearch.getHost(),
+              // "camunda.tasklist.elasticsearch.port="+elasticsearch.getFirstMappedPort(),
+              "camunda.tasklist.elasticsearch.username=elastic",
+              "camunda.tasklist.elasticsearch.password=changeme",
+              "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
+              // DB url
               "camunda.data.secondary-storage.elasticsearch.url=" + elsUrl,
               "camunda.database.url=" + elsUrl,
               "camunda.operate.elasticsearch.url=" + elsUrl,
+              "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
-              "zeebe.broker.exporters.camundaexporter.args.connect.url=" + elsUrl,
+              // DB type
+              "camunda.data.secondary-storage.type=elasticsearch",
+              "camunda.database.type=elasticsearch",
+              "camunda.tasklist.database=elasticsearch",
+              "camunda.operate.database=elasticsearch",
+              // Unified config
               "camunda.data.secondary-storage.elasticsearch.username=elastic",
-              "camunda.data.secondary-storage.elasticsearch.password=elastic")
+              "camunda.data.secondary-storage.elasticsearch.password=changeme")
           .applyTo(applicationContext.getEnvironment());
     }
   }

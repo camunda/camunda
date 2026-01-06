@@ -8,11 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.search.query.JobQuery;
@@ -47,20 +43,5 @@ class JobDbReaderTest {
 
     final var items = jobDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
-  }
-
-  @Test
-  void shouldReturnEmptyPageWhenPageSizeIsZero() {
-    when(jobMapper.count(any())).thenReturn(21L);
-
-    final JobQuery query = JobQuery.of(b -> b.page(p -> p.size(0)));
-    final ResourceAccessChecks resourceAccessChecks =
-        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
-
-    final var result = jobDbReader.search(query, resourceAccessChecks);
-
-    assertThat(result.total()).isEqualTo(21L);
-    assertThat(result.items()).isEmpty();
-    verify(jobMapper, times(0)).search(any());
   }
 }

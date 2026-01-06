@@ -108,7 +108,7 @@ test.describe.serial('groups CRUD', () => {
         await page.goto(relativizePath(Paths.groups()));
         await Promise.race([
           identityGroupsPage.groupsList.waitFor({timeout: 15000}),
-          identityGroupsPage.emptyStateLocator.waitFor({timeout: 20000}),
+          identityGroupsPage.emptyStateLocator.waitFor({timeout: 15000}),
         ]);
       },
     });
@@ -184,18 +184,18 @@ test.describe('Groups functionalities', () => {
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
         ownerId: TEST_GROUP.name,
-        resourceType: 'AUDIT_LOG',
+        resourceType: 'Authorization',
         resourceId: '*',
-        accessPermissions: ['Read'],
+        accessPermissions: ['Update', 'Read', 'Create', 'Delete'],
       });
     });
 
     await test.step('Verify authorization was created', async () => {
-      await identityAuthorizationsPage.clickResourceType('AUDIT_LOG');
+      await identityAuthorizationsPage.clickResourceType('Authorization');
       await identityAuthorizationsPage.assertAuthorizationExists(
         TEST_GROUP.groupId,
         'Group',
-        ['Read'],
+        ['Update', 'Read', 'Create', 'Delete'],
       );
     });
   });

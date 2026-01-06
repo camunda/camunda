@@ -7,9 +7,12 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceTagDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceTagDbModel.ProcessInstanceTagDbModelBuilder;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -39,47 +42,68 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomProcessInstances(final RdbmsWriters rdbmsWriters) {
-    createAndSaveRandomProcessInstances(rdbmsWriters, b -> b);
+  public static void createAndSaveRandomProcessInstances(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomProcessInstances(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomProcessInstances(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters
+      rdbmsWriter
           .getProcessInstanceWriter()
           .create(ProcessInstanceFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static ProcessInstanceDbModel createAndSaveRandomProcessInstance(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
 
     final ProcessInstanceDbModel processInstance =
         ProcessInstanceFixtures.createRandomized(builderFunction);
-    rdbmsWriters.getProcessInstanceWriter().create(processInstance);
+    rdbmsWriter.getProcessInstanceWriter().create(processInstance);
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
 
     return processInstance;
   }
 
   public static void createAndSaveProcessInstance(
-      final RdbmsWriters rdbmsWriters, final ProcessInstanceDbModel processInstance) {
-    createAndSaveProcessInstances(rdbmsWriters, List.of(processInstance));
+      final RdbmsWriter rdbmsWriter, final ProcessInstanceDbModel processInstance) {
+    createAndSaveProcessInstances(rdbmsWriter, List.of(processInstance));
   }
 
   public static void createAndSaveProcessInstances(
-      final RdbmsWriters rdbmsWriters, final List<ProcessInstanceDbModel> processInstanceList) {
+      final RdbmsWriter rdbmsWriter, final List<ProcessInstanceDbModel> processInstanceList) {
     for (final ProcessInstanceDbModel processInstance : processInstanceList) {
-      rdbmsWriters.getProcessInstanceWriter().create(processInstance);
+      rdbmsWriter.getProcessInstanceWriter().create(processInstance);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
+  }
+
+  public static ProcessInstanceTagDbModel createRandomizedTag(
+      final Function<ProcessInstanceTagDbModelBuilder, ProcessInstanceTagDbModelBuilder>
+          builderFunction) {
+    final var builder =
+        new ProcessInstanceTagDbModelBuilder()
+            .processInstanceKey(nextKey())
+            .tagValue("tag-" + RANDOM.nextInt(10000));
+
+    return builderFunction.apply(builder).build();
+  }
+
+  public static void addProcessInstanceTags(
+      final RdbmsWriter rdbmsWriter,
+      final Long processInstanceKey,
+      final List<ProcessInstanceTagDbModel> processInstanceTags) {
+    rdbmsWriter
+        .getProcessInstanceWriter()
+        .createTags(new ProcessInstanceTagsDto(processInstanceKey, processInstanceTags));
+    rdbmsWriter.flush();
   }
 }

@@ -8,17 +8,16 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 
 public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private Long key;
-  @BeforeVersion880 private String username;
-  @BeforeVersion880 private String name;
-  @BeforeVersion880 private String email;
-  @BeforeVersion880 private String password;
+  private String id;
+  private Long key;
+  private String username;
+  private String name;
+  private String email;
+  private String password;
 
   @Override
   public String getId() {

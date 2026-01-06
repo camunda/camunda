@@ -108,9 +108,6 @@ public class OpensearchExporterConfiguration {
       case ASYNC_REQUEST -> index.asyncRequest;
       case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
       case CLUSTER_VARIABLE -> index.clusterVariable;
-      case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
-      case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
-      case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
       default -> false;
     };
   }
@@ -221,10 +218,6 @@ public class OpensearchExporterConfiguration {
 
     public boolean usageMetrics = false;
     public boolean clusterVariable = true;
-    public boolean conditionalSubscription = false;
-    public boolean conditionalEvaluation = false;
-
-    public boolean globalListenerBatch = false;
 
     // index settings
     private Integer numberOfShards = null;
@@ -343,10 +336,6 @@ public class OpensearchExporterConfiguration {
           + authorization
           + ", asyncRequest="
           + asyncRequest
-          + ", conditionalSubscription="
-          + conditionalSubscription
-          + ", conditionalEvaluation="
-          + conditionalEvaluation
           + '}';
     }
   }

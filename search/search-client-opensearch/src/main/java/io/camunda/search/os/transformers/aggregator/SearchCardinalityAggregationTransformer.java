@@ -10,7 +10,6 @@ package io.camunda.search.os.transformers.aggregator;
 import io.camunda.search.clients.aggregator.SearchCardinalityAggregator;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.util.Optional;
-import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
 import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregation;
@@ -26,21 +25,6 @@ public final class SearchCardinalityAggregationTransformer
   public Aggregation apply(final SearchCardinalityAggregator value) {
     // Create the CardinalityAggregation
     final CardinalityAggregation.Builder cardinalityBuilder = AggregationBuilders.cardinality();
-
-    Optional.ofNullable(value.script())
-        .ifPresent(
-            script ->
-                cardinalityBuilder.script(
-                    Script.of(
-                        b -> {
-                          b.inline(
-                              f -> {
-                                f.source(script);
-                                Optional.ofNullable(value.lang()).ifPresent(f::lang);
-                                return f;
-                              });
-                          return b;
-                        })));
     Optional.ofNullable(value.field()).ifPresent(cardinalityBuilder::field);
     final var builder = new Aggregation.Builder().cardinality(cardinalityBuilder.build());
     applySubAggregations(builder, value);

@@ -17,8 +17,7 @@ import java.util.function.Function;
 
 public record UserTaskDbQuery(
     UserTaskFilter filter,
-    List<String> authorizedProcessDefinitionIds,
-    List<Long> authorizedUserTaskKeys,
+    List<String> authorizedResourceIds,
     List<String> authorizedTenantIds,
     DbQuerySorting<UserTaskEntity> sort,
     DbQueryPage page) {
@@ -33,8 +32,7 @@ public record UserTaskDbQuery(
     private static final UserTaskFilter EMPTY_FILTER = FilterBuilders.userTask().build();
 
     private UserTaskFilter filter;
-    private List<String> authorizedProcessDefinitionIds = java.util.Collections.emptyList();
-    private List<Long> authorizedUserTaskKeys = java.util.Collections.emptyList();
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
     private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<UserTaskEntity> sort;
     private DbQueryPage page;
@@ -54,14 +52,8 @@ public record UserTaskDbQuery(
       return this;
     }
 
-    public UserTaskDbQuery.Builder authorizedProcessDefinitionIds(
-        final List<String> authorizedProcessDefinitionIds) {
-      this.authorizedProcessDefinitionIds = authorizedProcessDefinitionIds;
-      return this;
-    }
-
-    public UserTaskDbQuery.Builder authorizedUserTaskKeys(final List<Long> authorizedUserTaskKeys) {
-      this.authorizedUserTaskKeys = authorizedUserTaskKeys;
+    public UserTaskDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
@@ -87,17 +79,9 @@ public record UserTaskDbQuery(
     public UserTaskDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      authorizedProcessDefinitionIds =
-          Objects.requireNonNullElse(authorizedProcessDefinitionIds, List.of());
-      authorizedUserTaskKeys = Objects.requireNonNullElse(authorizedUserTaskKeys, List.of());
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
       authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
-      return new UserTaskDbQuery(
-          filter,
-          authorizedProcessDefinitionIds,
-          authorizedUserTaskKeys,
-          authorizedTenantIds,
-          sort,
-          page);
+      return new UserTaskDbQuery(filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

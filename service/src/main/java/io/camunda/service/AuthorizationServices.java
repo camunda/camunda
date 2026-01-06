@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -80,9 +81,8 @@ public class AuthorizationServices
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
             .setResourceType(request.resourceType())
-            .setResourceMatcher(request.resourceMatcher())
+            .setResourceMatcher(getResourceMatcher(request.resourceId()))
             .setResourceId(request.resourceId())
-            .setResourcePropertyName(request.resourcePropertyName())
             .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
   }
@@ -111,20 +111,23 @@ public class AuthorizationServices
             .setAuthorizationKey(request.authorizationKey())
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
-            .setResourceMatcher(request.resourceMatcher())
+            .setResourceMatcher(getResourceMatcher(request.resourceId()))
             .setResourceId(request.resourceId())
-            .setResourcePropertyName(request.resourcePropertyName())
             .setResourceType(request.resourceType())
             .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
   }
 
+  private AuthorizationResourceMatcher getResourceMatcher(final String resourceId) {
+    return AuthorizationScope.WILDCARD.getResourceId().equals(resourceId)
+        ? AuthorizationResourceMatcher.ANY
+        : AuthorizationResourceMatcher.ID;
+  }
+
   public record CreateAuthorizationRequest(
       String ownerId,
       AuthorizationOwnerType ownerType,
-      AuthorizationResourceMatcher resourceMatcher,
       String resourceId,
-      String resourcePropertyName,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionTypes) {}
 
@@ -132,9 +135,7 @@ public class AuthorizationServices
       long authorizationKey,
       String ownerId,
       AuthorizationOwnerType ownerType,
-      AuthorizationResourceMatcher resourceMatcher,
       String resourceId,
-      String resourcePropertyName,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionTypes) {}
 }

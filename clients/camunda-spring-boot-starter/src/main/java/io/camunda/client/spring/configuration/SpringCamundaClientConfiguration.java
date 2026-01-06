@@ -18,16 +18,13 @@ package io.camunda.client.spring.configuration;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
-import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
@@ -42,7 +39,6 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   private final List<AsyncExecChainHandler> chainHandlers;
   private final CamundaClientExecutorService zeebeClientExecutorService;
   private final CredentialsProvider credentialsProvider;
-  private final JobExceptionHandlerSupplier jobExceptionHandlerSupplier;
 
   public SpringCamundaClientConfiguration(
       final CamundaClientProperties camundaClientProperties,
@@ -50,15 +46,13 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final CamundaClientExecutorService zeebeClientExecutorService,
-      final CredentialsProvider credentialsProvider,
-      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
+      final CredentialsProvider credentialsProvider) {
     this.camundaClientProperties = camundaClientProperties;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
     this.chainHandlers = chainHandlers;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
     this.credentialsProvider = credentialsProvider;
-    this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
   }
 
   @Override
@@ -168,32 +162,12 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
 
   @Override
   public ScheduledExecutorService jobWorkerExecutor() {
-    return zeebeClientExecutorService.getScheduledExecutor();
+    return zeebeClientExecutorService.get();
   }
 
   @Override
   public boolean ownsJobWorkerExecutor() {
-    return zeebeClientExecutorService.isScheduledExecutorOwnedByCamundaClient();
-  }
-
-  @Override
-  public ScheduledExecutorService jobWorkerSchedulingExecutor() {
-    return zeebeClientExecutorService.getScheduledExecutor();
-  }
-
-  @Override
-  public boolean ownsJobWorkerSchedulingExecutor() {
-    return zeebeClientExecutorService.isScheduledExecutorOwnedByCamundaClient();
-  }
-
-  @Override
-  public ExecutorService jobHandlingExecutor() {
-    return zeebeClientExecutorService.getJobHandlingExecutor();
-  }
-
-  @Override
-  public boolean ownsJobHandlingExecutor() {
-    return zeebeClientExecutorService.isJobHandlingExecutorOwnedByCamundaClient();
+    return zeebeClientExecutorService.isOwnedByCamundaClient();
   }
 
   @Override
@@ -207,14 +181,6 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
-  public JobExceptionHandler getDefaultJobWorkerExceptionHandler() {
-    return jobExceptionHandlerSupplier.getJobExceptionHandler(
-        new JobExceptionHandlerSupplierContext(
-            camundaClientProperties.getWorker().getDefaults().getRetryBackoff(),
-            camundaClientProperties.getWorker().getDefaults().getMaxRetries()));
-  }
-
-  @Override
   public boolean preferRestOverGrpc() {
     return camundaClientProperties.getPreferRestOverGrpc();
   }
@@ -224,9 +190,55 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
     return camundaClientProperties.getMaxHttpConnections();
   }
 
+  private String composeGatewayAddress() {
+    final URI gatewayUrl = getGrpcAddress();
+    final int port = gatewayUrl.getPort();
+    final String host = gatewayUrl.getHost();
+
+    // port is set
+    if (port != -1) {
+      return composeAddressWithPort(host, port, "Gateway port is set");
+    }
+
+    // port is not set, attempting to use default
+    int defaultPort;
+    try {
+      defaultPort = gatewayUrl.toURL().getDefaultPort();
+    } catch (final MalformedURLException e) {
+      LOG.warn("Invalid gateway url: {}", gatewayUrl);
+      // could not get a default port, setting it to -1 and moving to the next statement
+      defaultPort = -1;
+    }
+    if (defaultPort != -1) {
+      return composeAddressWithPort(host, defaultPort, "Gateway port has default");
+    }
+
+    // do not use any port
+    LOG.debug("Gateway cannot be determined, address will be '{}'", host);
+    return host;
+  }
+
+  private String composeAddressWithPort(
+      final String host, final int port, final String debugMessage) {
+    final String gatewayAddress = host + ":" + port;
+    LOG.debug("{}, address will be '{}'", debugMessage, gatewayAddress);
+    return gatewayAddress;
+  }
+
+  private boolean composePlaintext() {
+    final String protocol = getGrpcAddress().getScheme();
+    return switch (protocol) {
+      case "http", "grpc" -> true;
+      case "https", "grpcs" -> false;
+      default ->
+          throw new IllegalStateException(
+              String.format("Unrecognized zeebe protocol '%s'", protocol));
+    };
+  }
+
   @Override
   public String toString() {
-    return "SpringCamundaClientConfiguration{"
+    return "CamundaClientConfigurationImpl{"
         + "camundaClientProperties="
         + camundaClientProperties
         + ", jsonMapper="

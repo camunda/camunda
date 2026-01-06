@@ -117,7 +117,6 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
       'bpmn:ServiceTask',
       'bpmn:UserTask',
       'bpmn:SubProcess',
-      'bpmn:AdHocSubProcess',
       'bpmn:CallActivity',
       'bpmn:ReceiveTask',
       'bpmn:BusinessRuleTask',

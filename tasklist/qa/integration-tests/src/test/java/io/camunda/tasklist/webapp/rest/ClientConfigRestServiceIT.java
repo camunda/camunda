@@ -19,7 +19,6 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import io.camunda.tasklist.webapp.service.EnvironmentService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +37,6 @@ import org.springframework.web.context.WebApplicationContext;
     classes = {
       TestApplicationWithNoBeans.class,
       TasklistProfileService.class,
-      EnvironmentService.class,
       ClientConfig.class,
       ClientConfigRestService.class,
       SecurityConfiguration.class,
@@ -92,7 +90,6 @@ public class ClientConfigRestServiceIT {
                 + "\"contextPath\":\"\","
                 + "\"baseName\":\"/tasklist\","
                 + "\"clientMode\":\"v2\","
-                + "\"databaseType\":\"document-store\","
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","

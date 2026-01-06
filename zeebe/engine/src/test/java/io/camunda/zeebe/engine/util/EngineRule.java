@@ -30,13 +30,9 @@ import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.ClusterVariableClient;
-import io.camunda.zeebe.engine.util.client.ConditionalEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
-import io.camunda.zeebe.engine.util.client.ExpressionClient;
-import io.camunda.zeebe.engine.util.client.GlobalListenerBatchClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
-import io.camunda.zeebe.engine.util.client.HistoryDeletionClient;
 import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
@@ -67,6 +63,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -496,10 +493,6 @@ public final class EngineRule extends ExternalResource {
     return new ClusterVariableClient(environmentRule);
   }
 
-  public ExpressionClient expression() {
-    return new ExpressionClient(environmentRule);
-  }
-
   public JobActivationClient jobs() {
     return new JobActivationClient(environmentRule);
   }
@@ -526,10 +519,6 @@ public final class EngineRule extends ExternalResource {
 
   public SignalClient signal() {
     return new SignalClient(environmentRule);
-  }
-
-  public ConditionalEvaluationClient conditionalEvaluation() {
-    return new ConditionalEvaluationClient(environmentRule);
   }
 
   public UserTaskClient userTask() {
@@ -658,23 +647,17 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void awaitIdentitySetup() {
-    final var identitySetup =
-        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).getFirst();
+    final var totalAmountOfAuthorizationsCreated =
+        AuthorizationResourceType.getUserProvidedResourceTypes().size();
 
-    /*
-     * We'll need to await for the identity setup to be completed before proceeding, but it's not
-     * easy to know what to wait for. The INITIALIZED event is written before all the follow-up
-     * commands are processed, so we can't wait just for that. Instead, we need to wait for all the
-     * authorizations to be created on all partitions as well.
-     */
-    final int totalAmountOfAuthorizationsCreated =
-        identitySetup.getValue().getAuthorizations().size();
     if (partitionCount > 1) {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
           .withDistributionIntent(AuthorizationIntent.CREATE)
           .skip(totalAmountOfAuthorizationsCreated - 1)
           .await();
     } else {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
       RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
           .skip(totalAmountOfAuthorizationsCreated - 1)
           .await();
@@ -738,16 +721,8 @@ public final class EngineRule extends ExternalResource {
     return new ScaleClient(environmentRule);
   }
 
-  public HistoryDeletionClient historyDeletion() {
-    return new HistoryDeletionClient(environmentRule);
-  }
-
   public ActorScheduler actorScheduler() {
     return environmentRule.getActorScheduler();
-  }
-
-  public GlobalListenerBatchClient globalListenerBatch() {
-    return new GlobalListenerBatchClient(environmentRule);
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

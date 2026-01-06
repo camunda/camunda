@@ -66,8 +66,10 @@ public class SearchEngineConnectPropertiesOverride {
       case elasticsearch:
         {
           database = secondaryStorage.getElasticsearch();
-          populateFromDocumentBasedSecondaryStorageDatabase(
-              (DocumentBasedSecondaryStorageDatabase) database, override);
+          override.setClusterName(
+              ((DocumentBasedSecondaryStorageDatabase) database).getClusterName());
+          override.setIndexPrefix(
+              ((DocumentBasedSecondaryStorageDatabase) database).getIndexPrefix());
           break;
         }
       case rdbms:
@@ -78,8 +80,10 @@ public class SearchEngineConnectPropertiesOverride {
       default:
         {
           database = secondaryStorage.getOpensearch();
-          populateFromDocumentBasedSecondaryStorageDatabase(
-              (DocumentBasedSecondaryStorageDatabase) database, override);
+          override.setClusterName(
+              ((DocumentBasedSecondaryStorageDatabase) database).getClusterName());
+          override.setIndexPrefix(
+              ((DocumentBasedSecondaryStorageDatabase) database).getIndexPrefix());
           break;
         }
     }
@@ -94,22 +98,6 @@ public class SearchEngineConnectPropertiesOverride {
     override.setPassword(database.getPassword());
 
     return override;
-  }
-
-  private void populateFromDocumentBasedSecondaryStorageDatabase(
-      final DocumentBasedSecondaryStorageDatabase database,
-      final SearchEngineConnectProperties override) {
-    override.setClusterName(database.getClusterName());
-    override.setDateFormat(database.getDateFormat());
-    final var socketTimeout = database.getSocketTimeout();
-    if (socketTimeout != null) {
-      override.setSocketTimeout(Math.toIntExact(socketTimeout.toMillis()));
-    }
-    final var connectionTimeout = database.getConnectionTimeout();
-    if (connectionTimeout != null) {
-      override.setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
-    }
-    override.setIndexPrefix(database.getIndexPrefix());
   }
 
   private void populateFromSecurity(final SearchEngineConnectProperties override) {

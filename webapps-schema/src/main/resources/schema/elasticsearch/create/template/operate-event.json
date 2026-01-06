@@ -90,9 +90,6 @@
       "positionJob": {
         "type": "long",
         "index": false
-      },
-      "rootProcessInstanceKey": {
-        "type": "long"
       }
 		}
 	}

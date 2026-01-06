@@ -25,7 +25,7 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWriter {
+public class IncidentWriter {
 
   private static final Logger LOG = LoggerFactory.getLogger(IncidentWriter.class);
 
@@ -37,7 +37,6 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
       final ExecutionQueue executionQueue,
       final IncidentMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties) {
-    super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;

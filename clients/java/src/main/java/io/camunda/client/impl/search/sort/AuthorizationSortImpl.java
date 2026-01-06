@@ -42,11 +42,6 @@ public class AuthorizationSortImpl extends SearchRequestSortBase<AuthorizationSo
   }
 
   @Override
-  public AuthorizationSort resourcePropertyName() {
-    return field("resourcePropertyName");
-  }
-
-  @Override
   protected AuthorizationSort self() {
     return this;
   }

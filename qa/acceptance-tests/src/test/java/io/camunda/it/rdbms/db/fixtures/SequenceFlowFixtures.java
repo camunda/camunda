@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel;
 import io.camunda.db.rdbms.write.domain.SequenceFlowDbModel.Builder;
 import java.util.List;
@@ -33,42 +33,42 @@ public final class SequenceFlowFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomSequenceFlows(final RdbmsWriters rdbmsWriters) {
-    createAndSaveRandomSequenceFlows(rdbmsWriters, b -> b);
+  public static void createAndSaveRandomSequenceFlows(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomSequenceFlows(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomSequenceFlows(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters
+      rdbmsWriter
           .getSequenceFlowWriter()
           .create(SequenceFlowFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static SequenceFlowDbModel createAndSaveRandomSequenceFlow(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
 
     final SequenceFlowDbModel sequenceFlow = SequenceFlowFixtures.createRandomized(builderFunction);
-    rdbmsWriters.getSequenceFlowWriter().create(sequenceFlow);
+    rdbmsWriter.getSequenceFlowWriter().create(sequenceFlow);
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
 
     return sequenceFlow;
   }
 
   public static void createAndSaveSequenceFlow(
-      final RdbmsWriters rdbmsWriters, final SequenceFlowDbModel sequenceFlow) {
-    createAndSaveSequenceFlows(rdbmsWriters, List.of(sequenceFlow));
+      final RdbmsWriter rdbmsWriter, final SequenceFlowDbModel sequenceFlow) {
+    createAndSaveSequenceFlows(rdbmsWriter, List.of(sequenceFlow));
   }
 
   public static void createAndSaveSequenceFlows(
-      final RdbmsWriters rdbmsWriters, final List<SequenceFlowDbModel> sequenceFlowList) {
+      final RdbmsWriter rdbmsWriter, final List<SequenceFlowDbModel> sequenceFlowList) {
     for (final SequenceFlowDbModel sequenceFlow : sequenceFlowList) {
-      rdbmsWriters.getSequenceFlowWriter().create(sequenceFlow);
+      rdbmsWriter.getSequenceFlowWriter().create(sequenceFlow);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 }

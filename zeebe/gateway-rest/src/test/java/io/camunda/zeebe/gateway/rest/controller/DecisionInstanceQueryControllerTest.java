@@ -29,7 +29,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -431,32 +430,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         "rootDecisionDefinitionKey",
         ops ->
             new DecisionInstanceFilter.Builder().rootDecisionDefinitionKeyOperations(ops).build());
-    basicStringOperationTestCases(
-        streamBuilder,
-        "decisionEvaluationInstanceKey",
-        ops -> new DecisionInstanceFilter.Builder().decisionInstanceIdOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",
         ops -> new DecisionInstanceFilter.Builder().evaluationDateOperations(ops).build());
-    customOperationTestCases(
-        streamBuilder,
-        "state",
-        ops -> new DecisionInstanceFilter.Builder().stateOperations(ops).build(),
-        List.of(
-            List.of(Operation.eq(String.valueOf(DecisionInstanceStateEnum.EVALUATED))),
-            List.of(Operation.neq(String.valueOf(DecisionInstanceStateEnum.EVALUATED))),
-            List.of(
-                Operation.in(
-                    String.valueOf(DecisionInstanceStateEnum.EVALUATED),
-                    String.valueOf(DecisionInstanceStateEnum.FAILED)),
-                Operation.like("EVALUATED")),
-            List.of(
-                Operation.notIn(
-                    String.valueOf(DecisionInstanceStateEnum.EVALUATED),
-                    String.valueOf(DecisionInstanceStateEnum.FAILED)),
-                Operation.like("EVALUATED"))),
-        true);
 
     return streamBuilder.build();
   }

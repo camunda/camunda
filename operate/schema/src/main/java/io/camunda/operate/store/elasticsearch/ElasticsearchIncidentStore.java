@@ -10,13 +10,10 @@ package io.camunda.operate.store.elasticsearch;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
-import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -25,7 +22,6 @@ import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
@@ -36,8 +32,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -59,12 +57,8 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   public static final QueryBuilder ACTIVE_INCIDENT_QUERY =
       termQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
-  public static final Query ACTIVE_INCIDENT_QUERY_ES8 =
-      ElasticsearchUtil.termsQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
   @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private ElasticsearchClient es8Client;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -76,27 +70,22 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ElasticsearchTenantHelper tenantHelper;
-
   @Override
   public IncidentEntity getIncidentById(final Long incidentKey) {
-    final var idQuery = ElasticsearchUtil.idsQuery(incidentKey.toString());
-
-    final var queryEs8 =
-        ElasticsearchUtil.constantScoreQuery(joinWithAnd(idQuery, ACTIVE_INCIDENT_QUERY_ES8));
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(queryEs8);
-
-    final var searchRequestEs8 =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-            .index(whereToSearch(incidentTemplate, ONLY_RUNTIME))
-            .query(tenantAwareQuery)
-            .build();
-
+    final IdsQueryBuilder idsQ = idsQuery().addIds(incidentKey.toString());
+    final ConstantScoreQueryBuilder query =
+        constantScoreQuery(joinWithAnd(idsQ, ACTIVE_INCIDENT_QUERY));
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
+            .source(new SearchSourceBuilder().query(query));
     try {
-      final var res = es8Client.search(searchRequestEs8, IncidentEntity.class);
-      if (res.hits().hits().size() == 1) {
-        return res.hits().hits().getFirst().source();
-      } else if (res.hits().hits().size() > 1) {
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      if (response.getHits().getTotalHits().value == 1) {
+        return ElasticsearchUtil.fromSearchHit(
+            response.getHits().getHits()[0].getSourceAsString(),
+            objectMapper,
+            IncidentEntity.class);
+      } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(
             String.format("Could not find unique incident with key '%s'.", incidentKey));
       } else {

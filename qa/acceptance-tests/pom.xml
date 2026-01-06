@@ -21,18 +21,13 @@
 
   <name>Camunda QA Acceptance Tests</name>
   <properties>
-    <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
+    <version.maven-surefire-junit5-tree-reporter>1.4.0</version.maven-surefire-junit5-tree-reporter>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-validation</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -72,11 +67,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>dynamic-node-id-provider</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -98,11 +88,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-schema-manager</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -130,31 +115,6 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.ibm.icu</groupId>
-      <artifactId>icu4j</artifactId>
-      <version>78.1</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>s3</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>sdk-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>regions</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -315,38 +275,38 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-postgresql</artifactId>
-      <version>2.0.3</version>
+      <artifactId>postgresql</artifactId>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-mssqlserver</artifactId>
-      <version>2.0.3</version>
+      <artifactId>mssqlserver</artifactId>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-mysql</artifactId>
-      <version>2.0.3</version>
+      <artifactId>mysql</artifactId>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-mariadb</artifactId>
-      <version>2.0.3</version>
+      <artifactId>mariadb</artifactId>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-oracle-free</artifactId>
-      <version>2.0.3</version>
+      <artifactId>oracle-free</artifactId>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-elasticsearch</artifactId>
+      <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -368,7 +328,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-jdbc</artifactId>
+      <artifactId>jdbc</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -453,7 +413,7 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -503,8 +463,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -543,21 +513,6 @@
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-localstack</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>eu.rekawek.toxiproxy</groupId>
-      <artifactId>toxiproxy-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-toxiproxy</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

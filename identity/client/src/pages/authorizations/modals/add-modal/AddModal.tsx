@@ -6,45 +6,38 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
+import { FC } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { Dropdown, CheckboxGroup, Checkbox } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import {
-  isOIDC,
-  isTenantsApiEnabled,
-  isUserTaskAuthorizationEnabled,
-} from "src/configuration";
+import { isOIDC, isTenantsApiEnabled } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   Authorization,
   createAuthorization,
-  NewAuthorization,
   OwnerType,
   PermissionType,
-  ResourcePropertyName,
   ResourceType,
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
 import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
-import { Caption, Row, TextFieldContainer } from "../components";
+import {
+  Row,
+  TextFieldContainer,
+  PermissionsSectionLabel,
+} from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
-import {
-  isValidId,
-  isValidResourceId,
-  getIdPattern,
-} from "src/utility/validate";
+import { isValidId, isValidResourceId } from "src/utility/validate";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
 };
 
 const resourcePermissions: ResourcePermissionsType = {
-  AUDIT_LOG: [PermissionType.READ],
   AUTHORIZATION: [
     PermissionType.CREATE,
     PermissionType.DELETE,
@@ -71,11 +64,13 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ_DECISION_DEFINITION,
     PermissionType.READ_DECISION_INSTANCE,
   ],
-  DECISION_REQUIREMENTS_DEFINITION: [PermissionType.READ],
-  EXPRESSION: [PermissionType.EVALUATE],
+  DECISION_REQUIREMENTS_DEFINITION: [
+    PermissionType.DELETE,
+    PermissionType.READ,
+    PermissionType.UPDATE,
+  ],
   RESOURCE: [
     PermissionType.CREATE,
-    PermissionType.READ,
     PermissionType.DELETE_DRD,
     PermissionType.DELETE_FORM,
     PermissionType.DELETE_PROCESS,
@@ -105,12 +100,6 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.UPDATE_PROCESS_INSTANCE,
     PermissionType.UPDATE_USER_TASK,
   ],
-  USER_TASK: [
-    PermissionType.READ,
-    PermissionType.UPDATE,
-    PermissionType.CLAIM,
-    PermissionType.COMPLETE,
-  ],
   ROLE: [
     PermissionType.CREATE,
     PermissionType.DELETE,
@@ -134,12 +123,15 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ,
     PermissionType.UPDATE,
   ],
-  CLUSTER_VARIABLE: [
-    PermissionType.CREATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-  ],
   DOCUMENT: [PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE],
+};
+
+type FormData = {
+  ownerType: OwnerType;
+  ownerId: string;
+  resourceId: string;
+  resourceType: ResourceType;
+  permissionTypes: Authorization["permissionTypes"];
 };
 
 export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
@@ -150,64 +142,52 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 }) => {
   const { t, Translate } = useTranslate("authorizations");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, error }] = useApiCall<undefined, NewAuthorization>(
-    createAuthorization,
-    {
-      suppressErrorNotification: true,
-    },
-  );
+  const [apiCall, { loading, error }] = useApiCall(createAuthorization, {
+    suppressErrorNotification: true,
+  });
 
   const { DropdownAutoFocus } = useDropdownAutoFocus(open);
 
   const ownerTypeItems = Object.values(OwnerType);
   const allResourceTypes = Object.values(ResourceType);
-  const userTaskResourcePropertyNames = Object.values(ResourcePropertyName);
+  const resourceTypeItems = isTenantsApiEnabled
+    ? allResourceTypes
+    : allResourceTypes.filter((type) => type !== ResourceType.TENANT);
 
-  let resourceTypeItems = allResourceTypes;
-
-  if (!isTenantsApiEnabled) {
-    resourceTypeItems = resourceTypeItems.filter(
-      (type) => type !== ResourceType.TENANT,
-    );
-  }
-
-  if (!isUserTaskAuthorizationEnabled) {
-    resourceTypeItems = resourceTypeItems.filter(
-      (type) => type !== ResourceType.USER_TASK,
-    );
-  }
-
-  const { control, handleSubmit, watch, setValue } = useForm<NewAuthorization>({
-    defaultValues: createEmptyAuthorization(defaultResourceType),
+  const { control, handleSubmit, watch, setValue } = useForm<FormData>({
+    defaultValues: {
+      ownerType: OwnerType.USER,
+      ownerId: "",
+      resourceId: "",
+      resourceType: defaultResourceType,
+      permissionTypes: [],
+    },
     mode: "all",
   });
 
   const watchedOwnerType = watch("ownerType");
   const watchedResourceType = watch("resourceType");
 
-  const onSubmit = async (data: NewAuthorization) => {
-    const { success } = await apiCall(data);
+  const onSubmit = async (data: FormData) => {
+    const { success } = await apiCall({
+      ownerType: data.ownerType,
+      ownerId: data.ownerId,
+      resourceId: data.resourceId,
+      resourceType: data.resourceType,
+      permissionTypes: data.permissionTypes,
+    });
 
     if (success) {
       enqueueNotification({
         kind: "success",
         title: t("authorizationCreated"),
         subtitle: t("authorizationCreatedSuccess", {
-          resourceType: data.resourceType,
+          resourceId: data.resourceId,
         }),
       });
       onSuccess();
     }
   };
-
-  useEffect(() => {
-    setValue("permissionTypes", []);
-    if (watchedResourceType !== ResourceType.USER_TASK) {
-      setValue("resourceId", "");
-    } else {
-      setValue("resourcePropertyName", ResourcePropertyName.assignee);
-    }
-  }, [watchedResourceType, setValue]);
 
   return (
     <FormModal
@@ -292,6 +272,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               titleText={t("resourceType")}
               items={resourceTypeItems}
               onChange={(item: { selectedItem: ResourceType }) => {
+                setValue("permissionTypes", []);
                 field.onChange(item.selectedItem);
               }}
               itemToString={(item: string) => (item ? t(item) : "")}
@@ -302,50 +283,23 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           )}
         />
         <TextFieldContainer>
-          {watchedResourceType === ResourceType.USER_TASK ? (
-            <Controller
-              name="resourcePropertyName"
-              control={control}
-              render={({ field, fieldState }) => {
-                return (
-                  <Dropdown
-                    id="property-name-dropdown"
-                    label={t("selectResourcePropertyName")}
-                    titleText={t("resourcePropertyName")}
-                    items={userTaskResourcePropertyNames}
-                    onChange={(item: { selectedItem: string }) => {
-                      field.onChange(item.selectedItem);
-                    }}
-                    itemToString={(item: string) => item || ""}
-                    selectedItem={field.value}
-                    invalid={!!fieldState.error}
-                    invalidText={fieldState.error?.message}
-                  />
-                );
-              }}
-            />
-          ) : (
-            <Controller
-              name="resourceId"
-              control={control}
-              rules={{
-                required: t("resourceIdRequired"),
-                validate: (value) =>
-                  isValidResourceId(value) ||
-                  t("pleaseEnterValidResourceId", {
-                    pattern: getIdPattern(),
-                  }),
-              }}
-              render={({ field, fieldState }) => (
-                <TextField
-                  {...field}
-                  label={t("resourceId")}
-                  placeholder={t("enterId")}
-                  errors={fieldState.error?.message}
-                />
-              )}
-            />
-          )}
+          <Controller
+            name="resourceId"
+            control={control}
+            rules={{
+              required: t("resourceIdRequired"),
+              validate: (value) =>
+                isValidResourceId(value) || t("pleaseEnterValidResourceId"),
+            }}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                label={t("resourceId")}
+                placeholder={t("enterId")}
+                errors={fieldState.error?.message}
+              />
+            )}
+          />
         </TextFieldContainer>
       </Row>
       <Divider />
@@ -358,7 +312,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
         render={({ field, fieldState }) => (
           <CheckboxGroup
             legendText={
-              <Caption>
+              <PermissionsSectionLabel>
                 <Translate i18nKey="selectPermission">
                   Select at least one permission. All available resource
                   permissions can be found{" "}
@@ -370,7 +324,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                   </DocumentationLink>{" "}
                   .
                 </Translate>
-              </Caption>
+              </PermissionsSectionLabel>
             }
             invalid={!!fieldState.error}
             invalidText={fieldState.error?.message}
@@ -397,25 +351,3 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
     </FormModal>
   );
 };
-
-function createEmptyAuthorization(
-  resourceType: ResourceType,
-): NewAuthorization {
-  if (resourceType === ResourceType.USER_TASK) {
-    return {
-      ownerType: OwnerType.USER,
-      ownerId: "",
-      resourceType: ResourceType.USER_TASK,
-      resourcePropertyName: ResourcePropertyName.assignee,
-      permissionTypes: [],
-    };
-  } else {
-    return {
-      ownerType: OwnerType.USER,
-      ownerId: "",
-      resourceType: ResourceType.USER,
-      resourceId: "",
-      permissionTypes: [],
-    };
-  }
-}

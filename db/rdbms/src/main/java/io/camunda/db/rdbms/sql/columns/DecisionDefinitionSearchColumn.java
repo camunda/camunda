@@ -16,9 +16,7 @@ public enum DecisionDefinitionSearchColumn implements SearchColumn<DecisionDefin
   VERSION("version"),
   TENANT_ID("tenantId"),
   DECISION_REQUIREMENTS_KEY("decisionRequirementsKey"),
-  DECISION_REQUIREMENTS_ID("decisionRequirementsId"),
-  DECISION_REQUIREMENTS_NAME("decisionRequirementsName"),
-  DECISION_REQUIREMENTS_VERSION("decisionRequirementsVersion");
+  DECISION_REQUIREMENTS_ID("decisionRequirementsId");
 
   private final String property;
 

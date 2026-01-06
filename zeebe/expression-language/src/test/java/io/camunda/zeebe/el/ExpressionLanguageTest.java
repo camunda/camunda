@@ -13,13 +13,12 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.el.util.TestFeelEngineClock;
-import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class ExpressionLanguageTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = name -> Either.left(null);
+  private static final EvaluationContext EMPTY_CONTEXT = name -> null;
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(new TestFeelEngineClock());
@@ -160,8 +159,7 @@ public class ExpressionLanguageTest {
   public void shouldEvaluateExpression() {
     final var expression = expressionLanguage.parseExpression("=x");
     final var evaluationResult =
-        expressionLanguage.evaluateExpression(
-            expression, name -> Either.left(Map.of("x", asMsgPack("\"x\"")).get(name)));
+        expressionLanguage.evaluateExpression(expression, Map.of("x", asMsgPack("\"x\""))::get);
 
     assertThat(evaluationResult).isNotNull();
     assertThat(evaluationResult.isFailure()).isFalse();

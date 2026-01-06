@@ -1,12 +1,12 @@
-# description: Deploys new Camunda load tests weekly. Multiple kinds of load tests are created - typical, realistic, latency
+# description: Deploys new zeebe benchmarks weekly. Old benchmarks are removed. Multiple kinds of benchmarks are created - Data, Normal, Mixed, Latency
 # type: CI
-# owner: @camunda/reliability-testing
-name: Camunda weekly medic load test
+# owner @camunda/core-features
+name: Zeebe Weekly medic benchmark
 on:
   workflow_dispatch:
      inputs:
       reuse-tag:
-        description: 'Docker image tag, that should be reused for the weekly load tests. Allows to skip the docker image build step, can be used for recreating previous weekly tests.'
+        description: 'Docker image tag, that should be reused for the medic benchmarks. Allows to skip the docker image build step, can be used for recreating previous weekly benchmarks.'
         type: string
         default: ""
         required: false
@@ -15,68 +15,110 @@ on:
     - cron: 0 1 * * 1
 
 jobs:
-  test-data:
-    name: Collect test data
+  delete-old-benchmarks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
+      - name: Collect benchmark data
+        id: data
+        run: |
+          # Count normal weekly namespaces
+          echo "count=$(kubectl get ns -o name | grep -c -E "namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$")" >> "$GITHUB_OUTPUT"
+          # Get all namespaces, filter for medic benchmarks and select the oldest one
+          echo "normal=$(kubectl get ns -o name | grep -E "namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$" | sort -V | head -n1)" >> "$GITHUB_OUTPUT"
+      - name: Delete benchmarks
+        run: |
+          COUNT="${{ steps.data.outputs.count }}"
+          if [[  $COUNT -ge 4 ]];
+          then
+            # We want to have always at least 4 benchmarks running
+            echo "Delete namespaces for ${{ steps.data.outputs.normal }}"
+            kubectl delete ${{ steps.data.outputs.normal }}
+            kubectl delete ${{ steps.data.outputs.normal }}-mixed
+            kubectl delete ${{ steps.data.outputs.normal }}-latency
+          else
+            echo "Detected only ${{ steps.data.outputs.count }} benchmarks. Do not delete the oldest."
+          fi
+  benchmark-data:
+    name: Collect benchmark data
     runs-on: ubuntu-latest
     outputs:
-      test: ${{ steps.data.outputs.test }}
+      full-ref: ${{ steps.data.outputs.full-ref }}
+      benchmark: ${{ steps.data.outputs.benchmark }}
       operate: ${{ steps.data.outputs.operate }}
     steps:
       - uses: actions/checkout@v4
-      - name: Collect test data
+      - name: Collect benchmark data
         id: data
         run: |
           var=${{ inputs.reuse-tag || '' }}
           # ${#var} will return the length of the string
           if [[ ${#var} -eq 0 ]]; then
-            echo "Creating new weekly test tag"
-            echo "test=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-test" >> "$GITHUB_OUTPUT"
+            echo "Creating new weekly benchmark"
+            echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> "$GITHUB_OUTPUT"
           else
             # Example:
             # $ echo ${var%?}
-            # medic-y-2025-cw-18-b1bd4006-test-b1bd400
+            # medic-y-2025-cw-18-b1bd4006-benchmark-b1bd400
             # $ echo ${var%-*}
-            # medic-y-2025-cw-18-b1bd4006-test
+            # medic-y-2025-cw-18-b1bd4006-benchmark
             tag=${{ inputs.reuse-tag }}
             var=${tag%-*}
-            echo "Re-creating weekly test, with name: $var and tag: $tag"
-            echo "test=$var" >> "$GITHUB_OUTPUT"
+            echo "Re-creating weekly benchmark, with name: $var and tag: $tag"
+            echo "benchmark=$var" >> "$GITHUB_OUTPUT"
           fi
           echo "full-ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  setup-typical-load-test:
-    name: Typical load test
+  setup-normal-benchmark:
+    name: Normal Benchmark
     needs:
-      - test-data
+      - benchmark-data
+      - delete-old-benchmarks
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.test-data.outputs.test }}-typical
-      ttl: 28
+      name: ${{ needs.benchmark-data.outputs.benchmark }}
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      load-test-load: >
-        --set starter.rate=50
-        --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
-  setup-realistic-test:
-    name: Realistic load test
+      publish: "slack"
+  setup-mixed-benchmark:
+    name: Mixed Benchmark
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
-      - test-data
+      - benchmark-data
+      - delete-old-benchmarks
     with:
-      name: ${{ needs.test-data.outputs.test }}-mixed
-      ttl: 28
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-mixed
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       realistic: true
-  setup-latency-test:
-    name: Latency test
+  setup-latency-benchmark:
+    name: Latency Benchmark
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
-      - test-data
+      - benchmark-data
+      - delete-old-benchmarks
     with:
-      name: ${{ needs.test-data.outputs.test }}-latency
-      ttl: 28
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-latency
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       load-test-load: >
         --set starter.rate=1
@@ -85,7 +127,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-typical-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ delete-old-benchmarks, setup-normal-benchmark, setup-mixed-benchmark, setup-latency-benchmark ]
     if: failure()
     steps:
       - uses: actions/checkout@v4
@@ -101,7 +143,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":warning: *Medic load test creation failed:*"
+                    "text": ":warning: *Medic benchmark creation failed:*"
                   }
                 },
                 {

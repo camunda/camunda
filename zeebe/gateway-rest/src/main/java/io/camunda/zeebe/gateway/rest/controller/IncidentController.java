@@ -12,10 +12,6 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
@@ -88,29 +84,6 @@ public class IncidentController {
     }
   }
 
-  @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/statistics/process-instances-by-error")
-  public ResponseEntity<IncidentProcessInstanceStatisticsByErrorQueryResult>
-      processInstanceStatisticsByError(
-          @RequestBody(required = false)
-              final IncidentProcessInstanceStatisticsByErrorQuery query) {
-    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByErrorQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            this::getIncidentProcessInstanceStatisticsByError);
-  }
-
-  @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/statistics/process-instances-by-definition")
-  public ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
-      incidentProcessInstanceStatisticsByDefinition(
-          @RequestBody() final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
-    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            this::searchIncidentProcessInstanceStatisticsByDefinition);
-  }
-
   private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
     try {
       final var result =
@@ -124,51 +97,6 @@ public class IncidentController {
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Validation failed for Incident Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
-  private ResponseEntity<IncidentProcessInstanceStatisticsByErrorQueryResult>
-      getIncidentProcessInstanceStatisticsByError(
-          final io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery query) {
-    try {
-      final var result =
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .incidentProcessInstanceStatisticsByError(query);
-      return ResponseEntity.ok(
-          SearchQueryResponseMapper.toIncidentProcessInstanceStatisticsByErrorResult(result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for Incident Statistics Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
-  private ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
-      searchIncidentProcessInstanceStatisticsByDefinition(
-          final io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery query) {
-    try {
-      final var result =
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchIncidentProcessInstanceStatisticsByDefinition(query);
-      return ResponseEntity.ok(
-          SearchQueryResponseMapper.toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
-              result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for Incident Process Instance Statistics By Definition Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
       return mapErrorToResponse(e);

@@ -8,8 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -48,11 +47,7 @@ public class PermissionsBehavior {
   public Either<Rejection, AuthorizationRecord> isAuthorized(
       final TypedRecord<AuthorizationRecord> command, final PermissionType permissionType) {
     final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.AUTHORIZATION)
-            .permissionType(permissionType)
-            .build();
+        new AuthorizationRequest(command, AuthorizationResourceType.AUTHORIZATION, permissionType);
     return authCheckBehavior
         .isAuthorizedOrInternalCommand(authorizationRequest)
         .map(unused -> command.getValue());

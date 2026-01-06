@@ -69,11 +69,11 @@ import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplate
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
-  public static final String ISM_POLICIES_ENDPOINT = "/_plugins/_ism/policies";
   private static final SuppressLogger LOG =
       new SuppressLogger(LoggerFactory.getLogger(OpensearchEngineClient.class));
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
+  private static final String ISM_POLICIES_ENDPOINT = "_plugins/_ism/policies";
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
   private final ObjectReader objectReader;
   private final ObjectWriter objectWriter;

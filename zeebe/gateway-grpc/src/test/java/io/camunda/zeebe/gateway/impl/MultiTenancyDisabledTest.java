@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import com.google.protobuf.ByteString;
-import io.camunda.zeebe.gateway.api.conditional.EvaluateConditionalStub;
 import io.camunda.zeebe.gateway.api.decision.EvaluateDecisionStub;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
@@ -33,7 +32,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsM
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
@@ -61,7 +59,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     new CreateProcessInstanceStub().registerWith(brokerClient);
     new EvaluateDecisionStub().registerWith(brokerClient);
     new BroadcastSignalStub().registerWith(brokerClient);
-    new EvaluateConditionalStub().registerWith(brokerClient);
     activateJobsStub.registerWith(brokerClient);
   }
 
@@ -306,28 +303,5 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
     // then
     assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  @Test
-  public void evaluateConditionalShouldUseDefaultTenant() {
-    // when
-    client.evaluateConditional(
-        EvaluateConditionalRequest.newBuilder().setVariables("{\"x\": 1}").build());
-
-    // then
-    assertThatDefaultTenantIdSet();
-  }
-
-  @Test
-  public void evaluateConditionalRequestRejectsNonDefaultTenantIdWhenMultiTenancyDisabled() {
-    // given
-    final var request =
-        EvaluateConditionalRequest.newBuilder()
-            .setTenantId("tenant-a")
-            .setVariables("{\"x\": 1}")
-            .build();
-
-    // when/then
-    assertThatRejectsRequest(() -> client.evaluateConditional(request), "EvaluateConditional");
   }
 }

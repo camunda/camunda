@@ -8,21 +8,19 @@
 package io.camunda.tasklist.os;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
-import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
+import java.io.File;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpenSearchContainer;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +30,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
 
 @ExtendWith(SpringExtension.class)
@@ -48,40 +47,28 @@ import org.testcontainers.utility.MountableFile;
 @Disabled
 public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
-  private static final String CERTIFICATE_RESOURCE_PATH = "certs/elastic-stack-ca.p12";
+  static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
-  static OpenSearchContainer opensearch =
-      (OpenSearchContainer)
-          new OpenSearchContainer("opensearchproject/opensearch:2.17.0")
-              // .withSecurityEnabled() // this should be uncommented to test SSL
+  static OpensearchContainer opensearch =
+      (OpensearchContainer)
+          new OpensearchContainer("opensearchproject/opensearch:2.17.0")
               .withCopyFileToContainer(
-                  MountableFile.forClasspathResource(CERTIFICATE_RESOURCE_PATH),
-                  "/usr/share/opensearch/config/certs/opensearch-ca.p12")
+                  MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
+                  "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
+              // .withCopyFileToContainer(MountableFile.forClasspathResource("/certs/elastic-stack-ca.p12"),"/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
+              // .withPassword("elastic")
               .withEnv(
                   Map.of(
-                      "plugins.security.allow_unsafe_democertificates",
-                      "true",
-                      "plugins.security.ssl.http.enabled",
-                      "true",
-                      "plugins.security.ssl.http.keystore_type",
-                      "PKCS12",
-                      "plugins.security.ssl.http.keystore_filepath",
-                      "opensearch.keystore",
-                      "plugins.security.ssl.transport.keystore_type",
-                      "PKCS12",
-                      "plugins.security.ssl.transport.keystore_filepath",
-                      "opensearch.keystore"));
+                      "xpack.security.http.ssl.keystore.path",
+                      "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12"))
+              .withExposedPorts(9200)
+              .waitingFor(Wait.forHttps("/").withBasicCredentials("elastic", "elastic"));
 
   @Autowired
   @Qualifier("tasklistOsClient")
-  private OpenSearchClient openSearchClient;
+  OpenSearchClient openSearchClient;
 
-  @BeforeAll
-  static void beforeAll() {
-    assumeTrue(TestUtil.isOpenSearch());
-  }
-
-  @Disabled("SSL configuration not working - need investigation")
+  @Disabled("Can be tested manually")
   @Test
   public void canConnect() {
     assertThat(openSearchClient).isNotNull();
@@ -93,26 +80,16 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
       opensearch.start();
-      final boolean isSecurityEnabled = opensearch.isSecurityEnabled();
-      final String protocol = isSecurityEnabled ? "https" : "http";
-      final String osUrl =
-          String.format(
-              "%s://%s:%d/", protocol, opensearch.getHost(), opensearch.getFirstMappedPort());
 
+      final String elsUrl =
+          String.format("https://%s:%d/", opensearch.getHost(), opensearch.getFirstMappedPort());
       TestPropertyValues.of(
-              "camunda.data.secondary-storage.type=opensearch",
-              "camunda.database.url=" + osUrl,
-              "camunda.data.secondary-storage.opensearch.url=" + osUrl,
-              "camunda.database.opensearch.username=" + opensearch.getUsername(),
-              "camunda.database.opensearch.password=" + opensearch.getPassword(),
-              "camunda.data.secondary-storage.opensearch.ssl.enabled=" + isSecurityEnabled,
-              "camunda.data.secondary-storage.opensearch.ssl.self-signed=true",
-              "camunda.data.secondary-storage.opensearch.ssl.verify-hostname=false",
-              "camunda.database.opensearch.ssl.enabled=" + isSecurityEnabled,
-              "camunda.database.opensearch.ssl.self-signed=true",
-              "camunda.database.opensearch.ssl.verify-hostname=false",
-              "camunda.data.secondary-storage.opensearch.security.certificate-path="
-                  + getClass().getClassLoader().getResource(CERTIFICATE_RESOURCE_PATH).getPath())
+              "camunda.tasklist.opensearch.url=" + elsUrl,
+              "camunda.tasklist.opensearch.username=elastic",
+              "camunda.tasklist.opensearch.password=elastic",
+              "camunda.tasklist.opensearch.clusterName=docker-cluster",
+              "camunda.data.secondary-storage.opensearch.username=elastic",
+              "camunda.data.secondary-storage.opensearch.password=elastic")
           .applyTo(applicationContext.getEnvironment());
     }
   }

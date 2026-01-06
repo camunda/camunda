@@ -15,9 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.Backup;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -29,9 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -57,15 +53,13 @@ class InProgressBackupImplTest {
   @BeforeEach
   void setup() throws IOException {
     metadataProvider = mock();
-    final var checkpointDescriptor =
-        new BackupDescriptorImpl(
-            Optional.empty(), 10L, 1, "8.1.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
 
     inProgressBackup =
         new InProgressBackupImpl(
             snapshotStore,
             new BackupIdentifierImpl(1, 1, 1),
-            checkpointDescriptor,
+            10,
+            1,
             concurrencyControl,
             segmentsDirectory,
             metadataProvider);

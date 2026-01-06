@@ -59,9 +59,13 @@ public class UsageMetricAuthorizationIT {
           .withBasicAuth()
           .withMultiTenancyEnabled()
           .withAuthorizationsEnabled()
-          // set exportInterval via properties because it is not yet supported in unified config
-          .withProperty(
-              "zeebe.broker.experimental.engine.usageMetrics.exportInterval", EXPORT_INTERVAL);
+          .withBrokerConfig(
+              brokerBasedProperties ->
+                  brokerBasedProperties
+                      .getExperimental()
+                      .getEngine()
+                      .getUsageMetrics()
+                      .setExportInterval(EXPORT_INTERVAL));
 
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";

@@ -90,8 +90,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-testkit</artifactId>
-      <classifier>tests</classifier>
-      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
@@ -115,7 +113,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -134,12 +132,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

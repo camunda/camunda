@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
@@ -22,15 +21,12 @@ import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
-import io.camunda.zeebe.engine.state.conditional.DbConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.deployment.DbResourceState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
-import io.camunda.zeebe.engine.state.globallistener.DbGlobalListenersState;
-import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
@@ -56,7 +52,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableClockState;
 import io.camunda.zeebe.engine.state.mutable.MutableClusterVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
@@ -140,8 +135,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableAsyncRequestState asyncRequestState;
   private final MutableMultiInstanceState multiInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
-  private final MutableConditionalSubscriptionState conditionalSubscriptionState;
-  private final MutableGlobalListenersState globalListenersState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -152,16 +145,14 @@ public class ProcessingDbState implements MutableProcessingState {
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final EngineConfiguration config,
-      final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
-    processState =
-        new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
+    processState = new DbProcessState(zeebeDb, transactionContext, config, clock);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
@@ -202,9 +193,7 @@ public class ProcessingDbState implements MutableProcessingState {
     usageMetricState = new DbUsageMetricState(zeebeDb, transactionContext);
     multiInstanceState = new DbMultiInstanceState(zeebeDb, transactionContext);
     asyncRequestState = new DbAsyncRequestState(zeebeDb, transactionContext);
-    conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
-    globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -393,16 +382,6 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableMultiInstanceState getMultiInstanceState() {
     return multiInstanceState;
-  }
-
-  @Override
-  public MutableConditionalSubscriptionState getConditionalSubscriptionState() {
-    return conditionalSubscriptionState;
-  }
-
-  @Override
-  public MutableGlobalListenersState getGlobalListenersState() {
-    return globalListenersState;
   }
 
   @Override

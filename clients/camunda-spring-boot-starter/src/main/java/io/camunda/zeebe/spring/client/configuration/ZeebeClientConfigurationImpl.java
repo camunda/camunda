@@ -181,14 +181,6 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
     return camundaClientConfiguration.preferRestOverGrpc();
   }
 
-  @Override
-  public String toString() {
-    return "ZeebeClientConfigurationImpl{"
-        + "camundaClientConfiguration="
-        + camundaClientConfiguration
-        + '}';
-  }
-
   private static class CredentialsProviderCompat implements CredentialsProvider {
     private final io.camunda.client.CredentialsProvider credentialsProvider;
 

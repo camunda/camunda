@@ -14,7 +14,7 @@ import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -82,7 +82,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
   private static void installS3Store(
       final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
+      final BackupStoreCfg backupCfg,
       final ActorFuture<Void> installed) {
     try {
       final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
@@ -96,7 +96,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
   private static void installGcsStore(
       final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
+      final BackupStoreCfg backupCfg,
       final ActorFuture<Void> installed) {
     try {
       final var brokerGcsConfig = backupCfg.getGcs();
@@ -111,7 +111,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
   private static void installAzureStore(
       final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
+      final BackupStoreCfg backupCfg,
       final ActorFuture<Void> installed) {
     try {
       final var brokerAzureConfig = backupCfg.getAzure();
@@ -126,7 +126,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
   private static void installFilesystemStore(
       final PartitionTransitionContext context,
-      final BackupCfg backupCfg,
+      final BackupStoreCfg backupCfg,
       final ActorFuture<Void> installed) {
     try {
       final var brokerFilesystemConfig = backupCfg.getFilesystem();

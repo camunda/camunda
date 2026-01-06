@@ -14,13 +14,10 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -69,40 +66,11 @@ public class OpenApiResourceConfig {
 
   private void loadBaseOpenApiSpec(final OpenAPI openApi) {
     try {
-      OpenApiYamlLoader.customizeOpenApiFromYaml(openApi, resolveSpecPath());
+      OpenApiYamlLoader.customizeOpenApiFromYaml(openApi, "v2/rest-api.yaml");
     } catch (final OpenApiLoadingException e) {
       LOGGER.warn(
-          "Could not load OpenAPI spec, using controller-based organization: {}", e.getMessage());
+          "Could not load OpenAPI from rest-api.yaml, using controller-based organization: {}",
+          e.getMessage());
     }
-  }
-
-  private static String resolveSpecPath() {
-    final Path specPath = Path.of(OpenApiYamlLoader.DEFAULT_SPEC_PATH);
-    if (Files.isRegularFile(specPath)) {
-      return specPath.toString();
-    }
-
-    final Path appDir = new ApplicationHome(OpenApiResourceConfig.class).getDir().toPath();
-    return resolveSpecPath(appDir);
-  }
-
-  static String resolveSpecPath(final Path appDir) {
-    // When running as a packaged app, resolve relative to the installation directory.
-    // e.g. app JAR lives in $CAMUNDA_HOME/lib -> spec lives in $CAMUNDA_HOME/config/openapi/v2
-    final Path installedSpecFromAppDir = appDir.resolve(OpenApiYamlLoader.DEFAULT_SPEC_PATH);
-    if (Files.isRegularFile(installedSpecFromAppDir)) {
-      return installedSpecFromAppDir.toString();
-    }
-
-    final Path parentDir = appDir.getParent();
-    if (parentDir != null) {
-      final Path installedSpecFromParent = parentDir.resolve(OpenApiYamlLoader.DEFAULT_SPEC_PATH);
-      if (Files.isRegularFile(installedSpecFromParent)) {
-        return installedSpecFromParent.toString();
-      }
-    }
-
-    // Development fallback (e.g. running tests/IDE)
-    return OpenApiYamlLoader.DEFAULT_CLASSPATH_SPEC_PATH;
   }
 }

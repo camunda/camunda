@@ -101,6 +101,13 @@ class Processes extends ProcessesBase {
 
     return this.state.processes.reduce<Process[]>(
       (selectableTargetProcesses, process) => {
+        if (
+          window?.clientConfig?.resourcePermissionsEnabled &&
+          !process.permissions?.includes('UPDATE_PROCESS_INSTANCE')
+        ) {
+          return selectableTargetProcesses;
+        }
+
         if (process.key === sourceProcessKey) {
           const filteredVersions = process.processes.filter(
             ({version}) => version.toString() !== sourceProcessVersion,

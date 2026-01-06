@@ -8,14 +8,11 @@
 package io.camunda.zeebe.engine.processing.job.behaviour;
 
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -35,17 +32,14 @@ public class JobUpdateBehaviour {
 
   private final JobState jobState;
   private final InstantSource clock;
-  private final StateWriter stateWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public JobUpdateBehaviour(
       final JobState jobState,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final Writers writers) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.jobState = jobState;
     this.clock = clock;
-    stateWriter = writers.state();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -64,13 +58,12 @@ public class JobUpdateBehaviour {
   public Either<Rejection, JobRecord> isAuthorized(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(job.getTenantId())
-            .addResourceId(job.getBpmnProcessId())
-            .build();
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                job.getTenantId())
+            .addResourceId(job.getBpmnProcessId());
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> job);
   }
 
@@ -81,7 +74,6 @@ public class JobUpdateBehaviour {
     }
     // update retries for response sent to client
     jobRecord.setRetries(retries);
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
     return Optional.empty();
   }
 
@@ -94,7 +86,6 @@ public class JobUpdateBehaviour {
     }
     final long newDeadline = clock.millis() + timeout;
     jobRecord.setDeadline(newDeadline);
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
     return Optional.empty();
   }
 }

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
@@ -52,8 +51,7 @@ public final class ProcessingStateRule extends ExternalResource {
             new TransientPendingSubscriptionState(),
             new TransientPendingSubscriptionState(),
             new EngineConfiguration(),
-            InstantSource.system(),
-            ExpressionLanguageMetrics.noop());
+            InstantSource.system());
   }
 
   @Override

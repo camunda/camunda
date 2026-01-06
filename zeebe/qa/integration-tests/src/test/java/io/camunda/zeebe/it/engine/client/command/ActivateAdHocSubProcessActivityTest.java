@@ -41,18 +41,19 @@ public class ActivateAdHocSubProcessActivityTest {
 
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
 
+  @AutoClose CamundaClient client;
+
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-  @AutoClose CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
   private String processId;
   private ProcessInstanceEvent processInstance;
 
   @BeforeEach
   public void init() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 

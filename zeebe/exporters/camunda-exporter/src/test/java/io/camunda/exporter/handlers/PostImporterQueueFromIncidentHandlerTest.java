@@ -22,8 +22,6 @@ import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 public class PostImporterQueueFromIncidentHandlerTest {
 
@@ -42,14 +40,11 @@ public class PostImporterQueueFromIncidentHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(PostImporterQueueEntity.class);
   }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = IncidentIntent.class,
-      names = {"CREATED", "MIGRATED", "RESOLVED"})
-  void shouldHandleRecordWithSupportedIntent(final IncidentIntent intent) {
+  @Test
+  void shouldHandleRecord() {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isTrue();

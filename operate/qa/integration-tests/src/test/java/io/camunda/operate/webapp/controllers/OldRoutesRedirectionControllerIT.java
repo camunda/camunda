@@ -11,7 +11,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.webapps.WebappsModuleConfiguration;
-import io.camunda.webapps.controllers.BackupController;
 import io.camunda.webapps.controllers.IndexController;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,7 +22,6 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     classes = {
@@ -34,8 +32,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class OldRoutesRedirectionControllerIT {
-
-  @MockitoBean private BackupController backupController;
 
   @LocalServerPort private int port;
 

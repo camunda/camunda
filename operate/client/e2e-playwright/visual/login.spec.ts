@@ -24,7 +24,6 @@ test.beforeEach(async ({context}) => {
 
 test.describe('login page', () => {
   test('empty page', async ({page, loginPage}) => {
-    await page.clock.setFixedTime('2026-02-26');
     await loginPage.gotoLoginPage();
 
     await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();

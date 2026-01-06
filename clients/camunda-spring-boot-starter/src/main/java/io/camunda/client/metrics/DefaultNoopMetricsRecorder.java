@@ -15,8 +15,6 @@
  */
 package io.camunda.client.metrics;
 
-import java.util.concurrent.Callable;
-
 /**
  * Default implementation for MetricsRecorder simply ignoring the counts. Typically, you will
  * replace this by a proper Micrometer implementation as you can find in the starter module
@@ -25,28 +23,14 @@ import java.util.concurrent.Callable;
 public class DefaultNoopMetricsRecorder implements MetricsRecorder {
 
   @Override
-  public void increaseActivated(final CounterMetricsContext context) {
+  public void increase(
+      final String metricName, final String action, final String type, final int count) {
     // ignore
   }
 
   @Override
-  public void increaseCompleted(final CounterMetricsContext context) {
-    // ignore
-  }
-
-  @Override
-  public void increaseFailed(final CounterMetricsContext context) {
-    // ignore
-  }
-
-  @Override
-  public void increaseBpmnError(final CounterMetricsContext context) {
-    // ignore
-  }
-
-  @Override
-  public <T> T executeWithTimer(
-      final TimerMetricsContext context, final Callable<T> methodToExecute) throws Exception {
-    return methodToExecute.call();
+  public void executeWithTimer(
+      final String metricName, final String jobType, final Runnable methodToExecute) {
+    methodToExecute.run();
   }
 }

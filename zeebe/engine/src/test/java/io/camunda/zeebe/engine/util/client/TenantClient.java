@@ -140,11 +140,6 @@ public class TenantClient {
       return expectation.apply(position);
     }
 
-    public Record<TenantRecordValue> create(final String username) {
-      final long position = writer.writeCommand(TenantIntent.CREATE, username, tenantRecord);
-      return expectation.apply(position);
-    }
-
     /**
      * Expects the tenant creation to be rejected.
      *
@@ -215,11 +210,6 @@ public class TenantClient {
       return expectation.apply(position);
     }
 
-    public Record<TenantRecordValue> update(final String username) {
-      final long position = writer.writeCommand(TenantIntent.UPDATE, username, tenantRecord);
-      return expectation.apply(position);
-    }
-
     /**
      * Expects the tenant update to be rejected.
      *
@@ -270,11 +260,6 @@ public class TenantClient {
 
     public Record<TenantRecordValue> add() {
       final long position = writer.writeCommand(TenantIntent.ADD_ENTITY, tenantRecord);
-      return expectation.apply(position);
-    }
-
-    public Record<TenantRecordValue> add(final String username) {
-      final long position = writer.writeCommand(TenantIntent.ADD_ENTITY, username, tenantRecord);
       return expectation.apply(position);
     }
 
@@ -329,11 +314,6 @@ public class TenantClient {
 
     public Record<TenantRecordValue> remove() {
       final long position = writer.writeCommand(TenantIntent.REMOVE_ENTITY, tenantRecord);
-      return expectation.apply(position);
-    }
-
-    public Record<TenantRecordValue> remove(final String username) {
-      final long position = writer.writeCommand(TenantIntent.REMOVE_ENTITY, username, tenantRecord);
       return expectation.apply(position);
     }
 

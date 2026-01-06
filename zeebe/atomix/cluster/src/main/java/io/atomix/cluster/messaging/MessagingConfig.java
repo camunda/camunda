@@ -30,14 +30,6 @@ public class MessagingConfig implements Config {
   private Duration shutdownQuietPeriod = Duration.ofMillis(20);
   private Duration shutdownTimeout = Duration.ofSeconds(1);
   private boolean tlsEnabled = false;
-
-  /**
-   * Enables TLS endpoint identification (aka hostname verification) for client connections.
-   *
-   * <p>When enabled, the client verifies that the server certificate matches the peer's hostname.
-   */
-  private boolean tlsEndpointIdentificationEnabled = false;
-
   private File certificateChain;
   private File privateKey;
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
@@ -140,27 +132,6 @@ public class MessagingConfig implements Config {
    */
   public MessagingConfig setTlsEnabled(final boolean tlsEnabled) {
     this.tlsEnabled = tlsEnabled;
-    return this;
-  }
-
-  /**
-   * @return true if TLS client endpoint identification (hostname verification) is enabled
-   */
-  public boolean isTlsEndpointIdentificationEnabled() {
-    return tlsEndpointIdentificationEnabled;
-  }
-
-  /**
-   * Enables/disables TLS client endpoint identification (hostname verification).
-   *
-   * <p>Disabling this weakens the TLS security guarantees and should only be used for compatibility
-   * with deployments where peer hostnames cannot be validated against certificates.
-   *
-   * @param enabled true to enable endpoint identification
-   * @return this config for chaining
-   */
-  public MessagingConfig setTlsEndpointIdentificationEnabled(final boolean enabled) {
-    tlsEndpointIdentificationEnabled = enabled;
     return this;
   }
 

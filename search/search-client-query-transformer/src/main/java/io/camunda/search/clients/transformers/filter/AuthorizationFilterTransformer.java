@@ -18,7 +18,6 @@ import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWN
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.PERMISSIONS_TYPES;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_ID;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_MATCHER;
-import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_PROPERTY_NAME;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_TYPE;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -72,7 +71,6 @@ public final class AuthorizationFilterTransformer
     return and(
         filter.authorizationKey() == null ? null : term(ID, filter.authorizationKey()),
         stringTerms(RESOURCE_ID, filter.resourceIds()),
-        stringTerms(RESOURCE_PROPERTY_NAME, filter.resourcePropertyNames()),
         filter.resourceMatcher() == null ? null : term(RESOURCE_MATCHER, filter.resourceMatcher()),
         filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
         filter.permissionTypes() == null

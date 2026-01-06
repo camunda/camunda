@@ -71,4 +71,3 @@ c8run/camunda-db*
 /camunda.trace.db
 
 cmd/renovate/renovate*/
-.cache/

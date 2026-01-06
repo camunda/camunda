@@ -3,7 +3,6 @@
 paths:
   /decision-instances/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Decision instance
       operationId: searchDecisionInstances
@@ -30,10 +29,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /decision-instances/{decisionEvaluationInstanceKey}:
     get:
-      x-eventually-consistent: true
       tags:
         - Decision instance
       operationId: getDecisionInstance
@@ -69,6 +68,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -97,7 +97,7 @@ components:
             - state
             - tenantId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -122,13 +122,9 @@ components:
       type: object
       properties:
         decisionEvaluationInstanceKey:
-          description: The key of the decision evaluation instance.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKeyFilterProperty'
+          $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
         state:
-          description: The state of the decision instance.
-          allOf:
-            - $ref: '#/components/schemas/DecisionInstanceStateFilterProperty'
+          $ref: '#/components/schemas/DecisionInstanceStateEnum'
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
@@ -171,15 +167,15 @@ components:
         decisionDefinitionKey:
           description: The key of the decision.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+            - $ref: '#/components/schemas/DecisionDefinitionKeyFilterProperty'
         elementInstanceKey:
           description: The key of the element instance this decision instance is linked to.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
+            - $ref: 'filters.yaml#/components/schemas/ElementInstanceKeyFilterProperty'
         rootDecisionDefinitionKey:
           description: The key of the root decision definition.
           allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+            - $ref: '#/components/schemas/DecisionDefinitionKeyFilterProperty'
 
     DecisionInstanceSearchQueryResult:
       type: object
@@ -333,19 +329,19 @@ components:
 
     ## Filters
 
-    AdvancedDecisionInstanceStateFilter:
+    AdvancedDecisionDefinitionKeyFilter:
       title: Advanced filter
-      description: Advanced DecisionInstanceStateEnum filter.
+      description: Advanced DecisionDefinitionKey filter.
       type: object
       properties:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/DecisionInstanceStateEnum"
+            - $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/DecisionInstanceStateEnum"
+            - $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -353,22 +349,20 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionInstanceStateEnum"
+            $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
         $notIn:
           description: Checks if the property matches none of the provided values.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionInstanceStateEnum"
-        $like:
-          $ref: 'filters.yaml#/components/schemas/LikeFilter'
+            $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
 
-    DecisionInstanceStateFilterProperty:
-      description: DecisionInstanceStateEnum property with full advanced search capabilities.
+    DecisionDefinitionKeyFilterProperty:
+      description: DecisionDefinitionKey property with full advanced search capabilities.
       type: object
       oneOf:
         - type: string
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "#/components/schemas/DecisionInstanceStateEnum"
-        - $ref: '#/components/schemas/AdvancedDecisionInstanceStateFilter'
+            - $ref: "keys.yaml#/components/schemas/DecisionDefinitionKey"
+        - $ref: '#/components/schemas/AdvancedDecisionDefinitionKeyFilter'

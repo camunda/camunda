@@ -195,7 +195,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getSubscriptionPartitionId(),
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
-        subscription.getProcessDefinitionKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageNameBuffer(),
         subscription.getTenantId());
@@ -206,7 +205,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getSubscriptionPartitionId(),
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
-        subscription.getProcessDefinitionKey(),
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageKey(),
         subscription.getMessageNameBuffer(),

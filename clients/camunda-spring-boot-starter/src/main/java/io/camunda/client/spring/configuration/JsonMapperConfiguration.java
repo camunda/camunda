@@ -19,19 +19,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@AutoConfiguration
-@AutoConfigureAfter(
-    name = {
-      "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration",
-      "org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration"
-    })
+@Configuration
 public class JsonMapperConfiguration {
-  final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public JsonMapperConfiguration(@Autowired(required = false) final ObjectMapper objectMapper) {

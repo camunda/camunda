@@ -37,7 +37,7 @@ public class CheckpointConfirmBackupProcessor {
     final var latestBackupId = checkpointState.getLatestBackupId();
     if (latestBackupId < checkpointId) {
       LOG.debug("Confirming backup for checkpoint {}", checkpointId);
-      backupConfirmedApplier.apply(checkpointRecord, record.getTimestamp());
+      backupConfirmedApplier.apply(checkpointRecord);
       resultBuilder.appendRecord(
           record.getKey(),
           checkpointRecord,

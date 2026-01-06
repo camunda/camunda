@@ -7,11 +7,6 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
-import io.camunda.zeebe.msgpack.value.BooleanValue;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
@@ -33,7 +28,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -244,35 +238,7 @@ public final class ProtocolFactory {
    */
   public <T extends RecordValue> Record<T> generateRecord(
       final ValueType valueType, final UnaryOperator<Builder<T>> modifier) {
-    return generateImmutableRecord(valueType, this::generateImmutableRecordValue, modifier, null);
-  }
-
-  /**
-   * Generates a record with the given {@code valueType} using the implementation class value
-   * instead of the immutable value. The value and intent properties will be picked from the
-   * appropriate types based on the given {@code valueType}. This means, if you pass {@link
-   * ValueType#JOB}, the value will be of type {@link
-   * io.camunda.zeebe.protocol.impl.record.value.job.JobRecord}, and the intent of type {@link
-   * io.camunda.zeebe.protocol.record.intent.JobIntent}. Each of these will, of course, be randomly
-   * generated as well.
-   *
-   * <p>The given modifier is applied to the final builder as the last step of the generation.
-   *
-   * <p>This method differs from {@link #generateRecord(ValueType, UnaryOperator)} in that it uses
-   * the protocol-impl record value classes instead of the immutable protocol value classes. This is
-   * useful for testing scenarios that require msgpack serialization or protocol-impl specific
-   * behavior.
-   *
-   * @param valueType the expected value type of the record
-   * @param modifier applied to the builder after all the properties have been filled as the last
-   *     step; cannot be null
-   * @return a randomized record with the given value type, with the value and intent being of the
-   *     expected types
-   * @throws NullPointerException if {@code modifier} is null or if {@code valueType} is null
-   */
-  public <T extends RecordValue> Record<T> generateRecordWithImplValue(
-      final ValueType valueType, final UnaryOperator<Builder<T>> modifier) {
-    return generateImmutableRecord(valueType, this::generateImplRecordValue, modifier, null);
+    return generateImmutableRecord(valueType, modifier, null);
   }
 
   /**
@@ -295,7 +261,7 @@ public final class ProtocolFactory {
    */
   public <T extends RecordValue> Record<T> generateRecord(
       final ValueType valueType, final UnaryOperator<Builder<T>> modifier, final Intent intent) {
-    return generateImmutableRecord(valueType, this::generateImmutableRecordValue, modifier, intent);
+    return generateImmutableRecord(valueType, modifier, intent);
   }
 
   /**
@@ -310,32 +276,6 @@ public final class ProtocolFactory {
    */
   public <T> T generateObject(final Class<T> objectClass) {
     return random.nextObject(objectClass);
-  }
-
-  /**
-   * Generates a record value using the implementation class from protocol-impl instead of the
-   * interface. This is useful for tests that need to work with the concrete implementation classes.
-   *
-   * <p>This method creates an implementation instance and populates ALL available properties with
-   * random values. This ensures complete field initialization for all fields, including those that
-   * may not have corresponding interface getters.
-   *
-   * @param valueType the value type to generate
-   * @return a randomized implementation record value with all fields populated
-   * @throws NullPointerException if {@code valueType} is null
-   */
-  public RecordValue generateImplRecordValue(final ValueType valueType) {
-    final var implClass = getRecordValueImplClass(valueType);
-    return random.nextObject(implClass);
-  }
-
-  private Class<? extends RecordValue> getRecordValueImplClass(final ValueType valueType) {
-    final var newInstance = UnifiedRecordValue.fromValueType(valueType);
-    if (newInstance == null) {
-      throw new IllegalArgumentException(
-          "No implementation class found for value type: " + valueType);
-    }
-    return newInstance.getClass();
   }
 
   /**
@@ -366,12 +306,6 @@ public final class ProtocolFactory {
     final var recordTypes = EnumSet.complementOf(excludedRecordTypes);
     randomizerRegistry.registerRandomizer(
         RecordType.class, new EnumRandomizer<>(getSeed(), recordTypes.toArray(RecordType[]::new)));
-
-    // Register randomizers for all implementation classes
-    registerImplClassRandomizers();
-
-    // Register randomizers for msgpack value classes
-    registerMsgPackValueRandomizers();
 
     randomizerRegistry.registerRandomizer(
         ImmutableCommandDistributionRecordValue.class,
@@ -414,53 +348,6 @@ public final class ProtocolFactory {
           return OffsetDateTime.ofInstant(Instant.ofEpochSecond(randomEpoch), now.getOffset())
               .format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
         });
-  }
-
-  /**
-   * Registers randomizers for all implementation classes from protocol-impl. This ensures that when
-   * EasyRandom encounters an implementation class, it will use ImplRecordValuePopulator to properly
-   * populate all msgpack properties, including complex types like ArrayProperty.
-   */
-  private void registerImplClassRandomizers() {
-    try (final var scanResult =
-        new ClassGraph()
-            .enableClassInfo()
-            .acceptPackages("io.camunda.zeebe.protocol.impl")
-            .scan()) {
-      scanResult
-          .getAllClasses()
-          .loadClasses()
-          .forEach(
-              implClass ->
-                  randomizerRegistry.registerRandomizer(
-                      implClass, () -> generateProtocolImplRecord(implClass)));
-    }
-  }
-
-  private Object generateProtocolImplRecord(final Class<?> implClass) {
-    final Object implInstance;
-    try {
-      implInstance = implClass.getDeclaredConstructor().newInstance();
-    } catch (final NoSuchMethodException e) {
-      throw new IllegalArgumentException(
-          "Implementation class does not have a no-arg constructor: " + implClass, e);
-    } catch (final Exception e) {
-      throw new RuntimeException(
-          "Failed to create and populate implementation record for type: " + implClass, e);
-    }
-    ImplRecordValuePopulator.populate(implInstance, random);
-    return implInstance;
-  }
-
-  private void registerMsgPackValueRandomizers() {
-    randomizerRegistry.registerRandomizer(
-        StringValue.class, () -> new StringValue(random.nextObject(String.class)));
-    randomizerRegistry.registerRandomizer(
-        IntegerValue.class, () -> new IntegerValue(random.nextInt()));
-    randomizerRegistry.registerRandomizer(
-        LongValue.class, () -> new LongValue(Math.abs(random.nextLong())));
-    randomizerRegistry.registerRandomizer(
-        BooleanValue.class, () -> new BooleanValue(random.nextBoolean()));
   }
 
   private void registerProtocolType(final ClassInfo abstractType) {
@@ -515,20 +402,20 @@ public final class ProtocolFactory {
 
   private <T extends RecordValue> Record<T> generateImmutableRecord(
       final ValueType valueType,
-      final Function<ValueType, RecordValue> recordValueGenerator,
       final UnaryOperator<Builder<T>> modifier,
       final Intent fixedIntent) {
     Objects.requireNonNull(valueType, "must specify a value type");
     Objects.requireNonNull(modifier, "must specify a builder modifier");
 
+    final var typeInfo = ValueTypeMapping.get(valueType);
     final Intent intent;
     if (fixedIntent == null) {
-      intent = random.nextObject(ValueTypeMapping.get(valueType).getIntentClass());
+      intent = random.nextObject(typeInfo.getIntentClass());
     } else {
       intent = fixedIntent;
     }
 
-    final var value = recordValueGenerator.apply(valueType);
+    final var value = generateObject(typeInfo.getValueClass());
     final var seedRecord = random.nextObject(Record.class);
 
     //noinspection unchecked
@@ -543,10 +430,6 @@ public final class ProtocolFactory {
 
     return Objects.requireNonNull(modifier.apply(builder), "must return a non null builder")
         .build();
-  }
-
-  private RecordValue generateImmutableRecordValue(final ValueType valueType) {
-    return generateObject(ValueTypeMapping.get(valueType).getValueClass());
   }
 
   // visible for testing

@@ -16,7 +16,6 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
-import io.camunda.operate.EnvironmentService;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -35,7 +34,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     classes = {
       TestApplicationWithNoBeans.class,
       OperateProfileService.class,
-      EnvironmentService.class,
       ClientConfig.class,
       ClientConfigRestService.class,
       JacksonConfig.class,
@@ -83,8 +81,7 @@ public class ClientConfigRestServiceEnterpriseIT extends OperateAbstractIT {
                 + "\"isLoginDelegated\":false,"
                 + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":false,"
-                + "\"multiTenancyEnabled\":true,"
-                + "\"databaseType\":\"document-store\""
+                + "\"multiTenancyEnabled\":true"
                 + "};");
   }
 }

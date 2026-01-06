@@ -7,21 +7,16 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.TopologyServices;
-import io.camunda.service.TopologyServices.Broker;
-import io.camunda.service.TopologyServices.Health;
-import io.camunda.service.TopologyServices.Partition;
-import io.camunda.service.TopologyServices.Role;
-import io.camunda.service.TopologyServices.Topology;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -34,15 +29,12 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(TopologyController.class)
 public class TopologyControllerTest extends RestControllerTest {
 
-  @MockitoBean TopologyServices topologyServices;
-  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean BrokerClient brokerClient;
+  @MockitoBean BrokerTopologyManager topologyManager;
 
   @BeforeEach
   void setUp() {
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(topologyServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(topologyServices);
+    Mockito.when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
   }
 
   @ParameterizedTest
@@ -104,36 +96,10 @@ public class TopologyControllerTest extends RestControllerTest {
         }
         """
             .formatted(version, version, version, version);
-
-    final var topology =
-        new Topology(
-            List.of(
-                new Broker(
-                    0,
-                    "localhost",
-                    26501,
-                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
-                    version),
-                new Broker(
-                    1,
-                    "localhost",
-                    26502,
-                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
-                    version),
-                new Broker(
-                    2,
-                    "localhost",
-                    26503,
-                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
-                    version)),
-            "cluster-id",
-            3,
-            1,
-            3,
-            version,
-            1L);
-    Mockito.when(topologyServices.getTopology())
-        .thenReturn(CompletableFuture.completedFuture(topology));
+    final var brokerClusterState = new TestBrokerClusterState(version, clusterId);
+    final ClusterConfiguration clusterConfiguration = Mockito.mock(ClusterConfiguration.class);
+    Mockito.when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
+    Mockito.when(topologyManager.getTopology()).thenReturn(brokerClusterState);
 
     // when / then
     webClient
@@ -162,10 +128,7 @@ public class TopologyControllerTest extends RestControllerTest {
         }
         """
             .formatted(version);
-    Mockito.when(topologyServices.getTopology())
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                new Topology(List.of(), null, null, null, null, version, null)));
+    Mockito.when(topologyManager.getTopology()).thenReturn(null);
 
     // when / then
     webClient
@@ -179,5 +142,96 @@ public class TopologyControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  /**
+   * Topology stub which returns a static topology with 3 brokers, 1 partition, replication factor
+   * 3, where 0 is the leader (healthy), 1 is the follower (healthy), and 2 is inactive (unhealthy).
+   */
+  private record TestBrokerClusterState(String version, String clusterId)
+      implements BrokerClusterState {
+
+    @Override
+    public boolean isInitialized() {
+      return true;
+    }
+
+    @Override
+    public int getClusterSize() {
+      return 3;
+    }
+
+    @Override
+    public int getPartitionsCount() {
+      return 1;
+    }
+
+    @Override
+    public int getReplicationFactor() {
+      return 3;
+    }
+
+    @Override
+    public int getLeaderForPartition(final int partition) {
+      return 0;
+    }
+
+    @Override
+    public Set<Integer> getFollowersForPartition(final int partition) {
+      return Set.of(1);
+    }
+
+    @Override
+    public Set<Integer> getInactiveNodesForPartition(final int partition) {
+      return Set.of(2);
+    }
+
+    @Override
+    public int getRandomBroker() {
+      return ThreadLocalRandom.current().nextInt(0, 3);
+    }
+
+    @Override
+    public List<Integer> getPartitions() {
+      return List.of(1);
+    }
+
+    @Override
+    public List<Integer> getBrokers() {
+      return List.of(0, 1, 2);
+    }
+
+    @Override
+    public String getBrokerAddress(final int brokerId) {
+      return "localhost:" + (26501 + brokerId);
+    }
+
+    @Override
+    public String getBrokerVersion(final int brokerId) {
+      return version;
+    }
+
+    @Override
+    public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
+      if (partition != 1) {
+        return PartitionHealthStatus.NULL_VAL;
+      }
+
+      return switch (brokerId) {
+        case 0, 1 -> PartitionHealthStatus.HEALTHY;
+        case 2 -> PartitionHealthStatus.UNHEALTHY;
+        default -> PartitionHealthStatus.NULL_VAL;
+      };
+    }
+
+    @Override
+    public long getLastCompletedChangeId() {
+      return 1;
+    }
+
+    @Override
+    public String getClusterId() {
+      return clusterId;
+    }
   }
 }

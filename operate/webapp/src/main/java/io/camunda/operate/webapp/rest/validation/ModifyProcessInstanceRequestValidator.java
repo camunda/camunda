@@ -13,13 +13,11 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
-@ConditionalOnRdbmsDisabled
 public class ModifyProcessInstanceRequestValidator {
 
   private final ProcessInstanceReader processInstanceReader;

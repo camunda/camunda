@@ -12,7 +12,15 @@ import java.util.Map;
 
 public record CachedProcessEntity(
     String name,
-    int version,
     String versionTag,
+    String version,
     List<String> callElementIds,
-    Map<String, String> flowNodesMap) {}
+    Map<String, String> flowNodesMap) {
+  public CachedProcessEntity(
+      final String name,
+      final String versionTag,
+      final List<String> callElementIds,
+      final Map<String, String> flowNodesMap) {
+    this(name, versionTag, null, callElementIds, flowNodesMap);
+  }
+}

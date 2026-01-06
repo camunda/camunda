@@ -45,7 +45,7 @@ class DefaultExecutionQueueTest {
             ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED))
         .thenReturn(session);
 
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 10, 0, metrics);
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 10, metrics);
   }
 
   @Test
@@ -57,7 +57,7 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenElementIsAddedNoFlushHappens() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, metrics);
 
     executionQueue.executeInQueue(mock(QueueItem.class));
 
@@ -65,48 +65,8 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
-  public void whenFlushLimitIsZeroFlushShouldNotHappenAfterCheck() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
-    final var item1 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE,
-            WriteStatementType.INSERT,
-            1L,
-            "statement1",
-            "parameter1");
-    executionQueue.executeInQueue(item1);
-
-    verifyNoInteractions(sqlSessionFactory);
-
-    final var result = executionQueue.checkQueueForFlush();
-    assertThat(result).isFalse();
-
-    verifyNoInteractions(sqlSessionFactory);
-  }
-
-  @Test
-  public void whenFlushLimitIsNotActivatedFlushShouldNotHappenAfterCheck() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, 0, metrics);
-    final var item1 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE,
-            WriteStatementType.INSERT,
-            1L,
-            "statement1",
-            "parameter1");
-    executionQueue.executeInQueue(item1);
-
-    verifyNoInteractions(sqlSessionFactory);
-
-    final var result = executionQueue.checkQueueForFlush();
-    assertThat(result).isFalse();
-
-    verifyNoInteractions(sqlSessionFactory);
-  }
-
-  @Test
-  public void whenFlushLimitIsActivatedFlushShouldHappenAfterCheck() {
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, 0, metrics);
+  public void whenFlushLimitIsActivatedFlushShouldHappen() {
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, metrics);
     final var item1 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
@@ -131,11 +91,6 @@ class DefaultExecutionQueueTest {
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
     executionQueue.executeInQueue(item3);
-
-    verifyNoInteractions(sqlSessionFactory);
-
-    final var result = executionQueue.checkQueueForFlush();
-    assertThat(result).isTrue();
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
@@ -382,126 +337,5 @@ class DefaultExecutionQueueTest {
       final String statementId, final boolean expected) {
     assertThat(DefaultExecutionQueue.shouldIgnoreWhenNoRowsAffected(statementId))
         .isEqualTo(expected);
-  }
-
-  @Test
-  public void whenMemoryLimitIsReachedFlushShouldHappen() {
-    // Set a small memory limit (1 MB)
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 1, metrics);
-
-    // Create items with large parameters to exceed 1 MB memory limit
-    // Each large param is ~600KB, so 2 items should exceed 1 MB
-    final var largeParam = "x".repeat(600_000); // ~600 KB each
-    final var item1 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
-    final var item2 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
-
-    executionQueue.executeInQueue(item1);
-    verifyNoInteractions(sqlSessionFactory);
-
-    executionQueue.executeInQueue(item2);
-    verifyNoInteractions(sqlSessionFactory);
-
-    // Check should trigger flush due to memory limit
-    final var result = executionQueue.checkQueueForFlush();
-    assertThat(result).isTrue();
-
-    verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
-    verify(session).update("statement1", largeParam);
-    verify(session).update("statement2", largeParam);
-    verify(session).flushStatements();
-    verify(session).commit();
-  }
-
-  @Test
-  public void whenMemoryLimitIsNotReachedNoFlushShouldHappen() {
-    // Set a large memory limit (10 MB)
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 10, metrics);
-
-    final var item1 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE,
-            WriteStatementType.INSERT,
-            1L,
-            "statement1",
-            "parameter1");
-
-    executionQueue.executeInQueue(item1);
-    verifyNoInteractions(sqlSessionFactory);
-
-    final var result = executionQueue.checkQueueForFlush();
-    assertThat(result).isFalse();
-
-    verifyNoInteractions(sqlSessionFactory);
-  }
-
-  @Test
-  public void whenEitherCountOrMemoryLimitIsReachedFlushShouldHappen() {
-    // Set both count and memory limits (2 items count, 10 MB memory)
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 2, 10, metrics);
-
-    final var item1 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE,
-            WriteStatementType.INSERT,
-            1L,
-            "statement1",
-            "parameter1");
-    final var item2 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE,
-            WriteStatementType.INSERT,
-            2L,
-            "statement2",
-            "parameter2");
-    final var item3 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE,
-            WriteStatementType.INSERT,
-            3L,
-            "statement3",
-            "parameter3");
-
-    executionQueue.executeInQueue(item1);
-    executionQueue.executeInQueue(item2);
-    verifyNoInteractions(sqlSessionFactory);
-
-    // Adding third item should trigger count-based flush
-    executionQueue.executeInQueue(item3);
-    verifyNoInteractions(sqlSessionFactory);
-
-    final var result = executionQueue.checkQueueForFlush();
-    assertThat(result).isTrue();
-
-    verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
-  }
-
-  @Test
-  public void whenOnlyMemoryLimitIsConfiguredItShouldWork() {
-    // Set only memory limit (1 MB), no count limit
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 1, metrics);
-
-    // Create items with large parameters to exceed 1 MB memory limit
-    final var largeParam = "x".repeat(600_000); // ~600 KB each
-    final var item1 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
-    final var item2 =
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
-
-    executionQueue.executeInQueue(item1);
-    executionQueue.executeInQueue(item2);
-
-    final var result = executionQueue.checkQueueForFlush();
-    assertThat(result).isTrue();
-
-    verify(sqlSessionFactory)
-        .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
   }
 }

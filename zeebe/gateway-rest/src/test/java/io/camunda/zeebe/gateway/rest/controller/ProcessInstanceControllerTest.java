@@ -31,23 +31,16 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -75,7 +68,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
-  static final String DELETE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/deletion";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
   static final String MODIFY_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/modification";
 
@@ -916,215 +908,24 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
 
-    final var variables = new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("foo", "bar")));
-    final var expectedMappedRequest =
-        new ProcessInstanceModifyRequest(
-            1L,
-            List.of(
-                new ProcessInstanceModificationActivateInstruction()
-                    .setElementId("elementId")
-                    .setAncestorScopeKey(123456L)
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables)
-                            .setElementId("variableScopeId"))
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables)),
-                new ProcessInstanceModificationActivateInstruction()
-                    .setElementId("elementId2")
-                    .setAncestorScopeKey(654321L),
-                new ProcessInstanceModificationActivateInstruction()
-                    .setElementId("elementId3")
-                    .setAncestorScopeKey(-1L)
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables)
-                            .setElementId("variableScopeId"))
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables)),
-                new ProcessInstanceModificationActivateInstruction()
-                    .setElementId("elementId4")
-                    .setAncestorScopeKey(-1L)),
-            List.of(
-                new ProcessInstanceModificationMoveInstruction()
-                    .setSourceElementId("sourceElementId")
-                    .setTargetElementId("targetElementId")
-                    .setAncestorScopeKey(123456L)
-                    .setInferAncestorScopeFromSourceHierarchy(false)
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables)
-                            .setElementId("variableScopeId"))
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables)),
-                new ProcessInstanceModificationMoveInstruction()
-                    .setSourceElementId("sourceElementId2")
-                    .setTargetElementId("targetElementId2")
-                    .setAncestorScopeKey(654321L)
-                    .setInferAncestorScopeFromSourceHierarchy(false),
-                new ProcessInstanceModificationMoveInstruction()
-                    .setSourceElementId("sourceElementId3")
-                    .setTargetElementId("targetElementId3")
-                    .setAncestorScopeKey(-1L)
-                    .setInferAncestorScopeFromSourceHierarchy(false),
-                new ProcessInstanceModificationMoveInstruction()
-                    .setSourceElementId("sourceElementId4")
-                    .setTargetElementId("targetElementId4")
-                    .setAncestorScopeKey(-1L)
-                    .setInferAncestorScopeFromSourceHierarchy(true),
-                new ProcessInstanceModificationMoveInstruction()
-                    .setSourceElementId("sourceElementId5")
-                    .setTargetElementId("targetElementId5")
-                    .setAncestorScopeKey(-1L)
-                    .setInferAncestorScopeFromSourceHierarchy(false),
-                new ProcessInstanceModificationMoveInstruction()
-                    .setSourceElementId("sourceElementId6")
-                    .setTargetElementId("targetElementId6")
-                    .setAncestorScopeKey(-1L)
-                    .setInferAncestorScopeFromSourceHierarchy(false)
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables)
-                            .setElementId("variableScopeId"))
-                    .addVariableInstruction(
-                        new ProcessInstanceModificationVariableInstruction()
-                            .setVariables(variables))),
-            List.of(
-                new ProcessInstanceModificationTerminateInstruction()
-                    .setElementInstanceKey(123456L),
-                new ProcessInstanceModificationTerminateInstruction().setElementId("elementId")),
-            123L);
-
     final var request =
         """
             {
               "activateInstructions": [
                 {
                   "elementId": "elementId",
-                  "ancestorElementInstanceKey": "123456",
                   "variableInstructions": [
-                    {
-                      "variables": {
-                        "foo": "bar"
-                      },
-                      "scopeId": "variableScopeId"
-                    },
                     {
                       "variables": {
                         "foo": "bar"
                       }
                     }
-                  ]
+                  ],
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
                   "ancestorElementInstanceKey": "654321"
-                },
-                {
-                  "elementId": "elementId3",
-                  "variableInstructions": [
-                    {
-                      "variables": {
-                        "foo": "bar"
-                      },
-                      "scopeId": "variableScopeId"
-                    },
-                    {
-                      "variables": {
-                        "foo": "bar"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "elementId": "elementId4"
-                }
-              ],
-              "moveInstructions": [
-                {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "sourceElementId"
-                  },
-                  "targetElementId": "targetElementId",
-                  "ancestorScopeInstruction": {
-                    "ancestorScopeType": "direct",
-                    "ancestorElementInstanceKey": "123456"
-                  },
-                  "variableInstructions": [
-                    {
-                      "variables": {
-                        "foo": "bar"
-                      },
-                      "scopeId": "variableScopeId"
-                    },
-                    {
-                      "variables": {
-                        "foo": "bar"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "sourceElementId2"
-                  },
-                  "targetElementId": "targetElementId2",
-                  "ancestorScopeInstruction": {
-                    "ancestorScopeType": "direct",
-                    "ancestorElementInstanceKey": "654321"
-                  }
-                },
-                {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "sourceElementId3"
-                  },
-                  "targetElementId": "targetElementId3",
-                  "ancestorScopeInstruction": {
-                    "ancestorScopeType": "direct"
-                  }
-                },
-                {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "sourceElementId4"
-                  },
-                  "targetElementId": "targetElementId4",
-                  "ancestorScopeInstruction": {
-                    "ancestorScopeType": "inferred"
-                  }
-                },
-                {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "sourceElementId5"
-                  },
-                  "targetElementId": "targetElementId5"
-                },
-                {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "sourceElementId6"
-                  },
-                  "targetElementId": "targetElementId6",
-                  "variableInstructions": [
-                    {
-                      "variables": {
-                        "foo": "bar"
-                      },
-                      "scopeId": "variableScopeId"
-                    },
-                    {
-                      "variables": {
-                        "foo": "bar"
-                      }
-                    }
-                  ]
                 }
               ],
               "terminateInstructions": [
@@ -1132,7 +933,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   "elementInstanceKey": "123456"
                 },
                 {
-                  "elementId": "elementId"
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1150,11 +951,17 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
-    assertThat(modifyRequestCaptor.getValue()).isEqualTo(expectedMappedRequest);
+    final var capturedRequest = modifyRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.activateInstructions()).isNotEmpty();
+    assertThat(capturedRequest.activateInstructions().size()).isEqualTo(2);
+    assertThat(capturedRequest.terminateInstructions()).isNotEmpty();
+    assertThat(capturedRequest.terminateInstructions().size()).isEqualTo(2);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
   @Test
-  void shouldModifyProcessInstanceWithOnlyTerminateInstructions() {
+  void shouldModifyProcessInstanceWithoutActivateInstructions() {
     // given
     when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
@@ -1167,7 +974,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                   "elementInstanceKey": "123456"
                 },
                 {
-                  "elementId": "elementId"
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1188,13 +995,12 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.activateInstructions()).isEmpty();
-    assertThat(capturedRequest.moveInstructions()).isEmpty();
     assertThat(capturedRequest.terminateInstructions()).hasSize(2);
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
   @Test
-  void shouldModifyProcessInstanceWithOnlyActivateInstructions() {
+  void shouldModifyProcessInstanceWithoutTerminateInstructions() {
     // given
     when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
@@ -1205,6 +1011,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "activateInstructions": [
                 {
                   "elementId": "elementId",
+                  "variableInstructions": [
+                    {
+                      "variables": {
+                        "foo": "bar"
+                      }
+                    }
+                  ],
                   "ancestorElementInstanceKey": "123456"
                 },
                 {
@@ -1230,13 +1043,12 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.activateInstructions()).hasSize(2);
-    assertThat(capturedRequest.moveInstructions()).isEmpty();
     assertThat(capturedRequest.terminateInstructions()).isEmpty();
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
   @Test
-  void shouldModifyProcessInstanceWithOnlyMoveInstructions() {
+  void shouldModifyProcessInstanceWithActivateInstructionsNoAncestorKey() {
     // given
     when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
@@ -1244,13 +1056,20 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "moveInstructions": [
+              "activateInstructions": [
                 {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "elementId"
-                  },
-                  "targetElementId": "elementId2"
+                  "elementId": "elementId"
+                },
+                {
+                  "elementId": "elementId2"
+                }
+              ],
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": "123456"
+                },
+                {
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1270,9 +1089,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
-    assertThat(capturedRequest.activateInstructions()).isEmpty();
-    assertThat(capturedRequest.moveInstructions()).hasSize(1);
-    assertThat(capturedRequest.terminateInstructions()).isEmpty();
+    assertThat(capturedRequest.activateInstructions()).hasSize(2);
+    assertThat(capturedRequest.terminateInstructions()).hasSize(2);
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
@@ -1285,6 +1103,18 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "activateInstructions": [
                 {
                   "ancestorElementInstanceKey": "123456"
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": "654321"
+                }
+              ],
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": "123456"
+                },
+                {
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1329,56 +1159,20 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                     {
                       "scopeId": "scopeId"
                     }
-                  ]
-                }
-              ],
-              "operationReference": 123
-            }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
-                "status":400,
-                "detail":"No variables provided.",
-                "instance":"/v2/process-instances/1/modification"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(MODIFY_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectModifyProcessInstanceWithVariableInstructionsElementNullOnMove() {
-    // given
-    final var request =
-        """
-            {
-              "moveInstructions": [
+                  ],
+                  "ancestorElementInstanceKey": "123456"
+                },
                 {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "elementId"
-                  },
-                  "targetElementId": "elementId2",
-                  "variableInstructions": [
-                    {
-                      "scopeId": "scopeId"
-                    }
-                  ]
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": "654321"
+                }
+              ],
+              "terminateInstructions": [
+                {
+                  "elementInstanceKey": "123456"
+                },
+                {
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1411,144 +1205,25 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectModifyProcessInstanceWithTerminateInstructionsNoElement() {
+  void shouldRejectModifyProcessInstanceWithTerminateInstructionsElementNull() {
     // given
     final var request =
         """
             {
-              "terminateInstructions": [
-                {}
-              ],
-              "operationReference": 123
-            }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"Bad Request",
-                "status":400,
-                "detail":"At least one of [elementId, elementInstanceKey] is required.",
-                "instance":"/v2/process-instances/1/modification"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(MODIFY_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectModifyProcessInstanceWithTerminateInstructionsTooManyElements() {
-    // given
-    final var request =
-        """
-            {
-              "terminateInstructions": [
+              "activateInstructions": [
                 {
                   "elementId": "elementId",
-                  "elementInstanceKey": "123456"
+                  "ancestorElementInstanceKey": "123456"
+                },
+                {
+                  "elementId": "elementId2",
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
-              "operationReference": 123
-            }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"Bad Request",
-                "status":400,
-                "detail":"Only one of [elementId, elementInstanceKey] is allowed.",
-                "instance":"/v2/process-instances/1/modification"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(MODIFY_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectModifyProcessInstanceWithMoveInstructionsUnexpectedAncestorScopeType() {
-    // given
-    final var request =
-        """
-            {
-              "moveInstructions": [
+              "terminateInstructions": [
+                {},
                 {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "elementId"
-                  },
-                  "targetElementId": "elementId2",
-                  "ancestorScopeInstruction": {
-                    "ancestorScopeType": "unknown"
-                  }
-                }
-              ],
-              "operationReference": 123
-            }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"Bad Request",
-                "status":400,
-                "detail": "Cannot map value 'unknown' for type 'ancestorScopeInstruction'. \
-            Use any of the following values: [direct, inferred]",
-                "instance":"/v2/process-instances/1/modification"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(MODIFY_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectModifyProcessInstanceWithMoveInstructionsTargetElementNull() {
-    // given
-    final var request =
-        """
-            {
-              "moveInstructions": [
-                {
-                  "sourceElementInstruction": {
-                    "sourceType": "byId",
-                    "sourceElementId": "elementId"
-                  }
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1560,47 +1235,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail": "No targetElementId provided.",
-                "instance":"/v2/process-instances/1/modification"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(MODIFY_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectModifyProcessInstanceWithMoveInstructionsSourceElementNull() {
-    // given
-    final var request =
-        """
-            {
-              "moveInstructions": [
-                {
-                  "targetElementId": "elementId"
-                }
-              ],
-              "operationReference": 123
-            }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
-                "status":400,
-                "detail": "No sourceElementInstruction provided.",
+                "detail":"No elementInstanceKey provided.",
                 "instance":"/v2/process-instances/1/modification"
              }""";
 
@@ -2527,276 +2162,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldDeleteProcessInstanceBatchOperation() {
-    // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
-
-    when(processInstanceServices.deleteProcessInstancesBatchOperation(
-            any(ProcessInstanceFilter.class)))
-        .thenReturn(CompletableFuture.completedFuture(record));
-
-    final var request =
-        """
-            {
-              "filter":
-               {
-                  "processDefinitionId": "test-process-definition-id"
-                }
-            }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri("/v2/process-instances/deletion")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
-
-    verify(processInstanceServices)
-        .deleteProcessInstancesBatchOperation(any(ProcessInstanceFilter.class));
-  }
-
-  @Test
-  void shouldRejectDeleteProcessInstanceBatchOperationWithNoRequestBody() {
-    // given
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"Bad Request",
-                "status":400,
-                "detail":"Required request body is missing",
-                "instance":"/v2/process-instances/deletion"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri("/v2/process-instances/deletion")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectDeleteProcessInstanceBatchOperationWithEmptyRequestBody() {
-    // given
-    final var request = "{}";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
-                "status":400,
-                "detail":"No filter provided.",
-                "instance":"/v2/process-instances/deletion"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri("/v2/process-instances/deletion")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectDeleteProcessInstanceBatchOperationWithEmptyFilter() {
-    // given
-    final var request =
-        """
-        {
-          "filter": {}
-        }""";
-
-    final var expectedBody =
-        """
-            {
-                "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
-                "status":400,
-                "detail":"At least one of filter criteria is required.",
-                "instance":"/v2/process-instances/deletion"
-             }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri("/v2/process-instances/deletion")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody, JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldDeleteProcessInstance() {
-    // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
-
-    when(processInstanceServices.deleteProcessInstance(1L, 123L))
-        .thenReturn(CompletableFuture.completedFuture(record));
-
-    final var request =
-        """
-            {
-              "operationReference": 123
-            }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(DELETE_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldDeleteProcessInstanceWithNoBody() {
-    // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
-
-    when(processInstanceServices.deleteProcessInstance(1L, null))
-        .thenReturn(CompletableFuture.completedFuture(record));
-
-    // when / then
-    webClient
-        .post()
-        .uri(DELETE_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldDeleteProcessInstanceWithEmptyBody() {
-    // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
-
-    when(processInstanceServices.deleteProcessInstance(1L, null))
-        .thenReturn(CompletableFuture.completedFuture(record));
-
-    final var request =
-        """
-        {}""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(DELETE_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
-  }
-
-  @Test
-  void shouldRejectDeleteProcessInstanceOnProcessInstanceNotFound() {
-    // given
-    when(processInstanceServices.deleteProcessInstance(1L, null))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new io.camunda.service.exception.ServiceException(
-                    "Process Instance with key '1' not found",
-                    io.camunda.service.exception.ServiceException.Status.NOT_FOUND)));
-
-    final var expectedBody =
-        """
-            {
-                "type": "about:blank",
-                "title": "NOT_FOUND",
-                "status": 404,
-                "detail": "Process Instance with key '1' not found",
-                "instance": "/v2/process-instances/1/deletion"
-            }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(DELETE_PROCESS_URL.formatted("1"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNotFound()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.configuration;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -16,11 +17,11 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.TopologyServices;
-import io.camunda.service.TopologyServices.Topology;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -29,21 +30,21 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
   static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
   static final String TOPOLOGY_URL = "/v2/topology";
 
-  @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
   @MockitoBean ProcessInstanceServices processInstanceServices;
-  @MockitoBean TopologyServices topologyServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyConfiguration;
+  @MockitoBean BrokerClient brokerClient;
+  @MockitoBean BrokerTopologyManager topologyManager;
+  @MockitoBean ClusterConfiguration clusterConfiguration;
 
   @BeforeEach
   void setupServices() {
     when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(processInstanceServices);
+    when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
     when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
         .thenReturn(new Builder<ProcessInstanceEntity>().build());
-    when(topologyServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(topologyServices);
-    when(topologyServices.getTopology())
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                new Topology(List.of(), "cluster-id", null, null, null, null, null)));
+    when(topologyManager.getTopology()).thenReturn(mock(BrokerClusterState.class));
+    when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
+    when(clusterConfiguration.clusterId()).thenReturn(java.util.Optional.of("cluster-id"));
   }
 }

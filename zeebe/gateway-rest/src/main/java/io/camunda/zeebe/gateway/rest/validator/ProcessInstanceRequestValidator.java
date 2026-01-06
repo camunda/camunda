@@ -15,7 +15,6 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateK
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DirectAncestorKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
@@ -27,12 +26,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivat
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.SourceElementIdInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.SourceElementInstanceKeyInstruction;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper;
 import java.util.List;
 import java.util.Optional;
@@ -156,7 +150,6 @@ public class ProcessInstanceRequestValidator {
         violations -> {
           validateActivateInstructions(request.getActivateInstructions(), violations);
           validateTerminateInstructions(request.getTerminateInstructions(), violations);
-          validateMoveInstructions(request.getMoveInstructions(), violations);
           validateOperationReference(request.getOperationReference(), violations);
         });
   }
@@ -198,12 +191,6 @@ public class ProcessInstanceRequestValidator {
         (instruction) -> instruction.getElementId() != null,
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
-    instructions.forEach(
-        instruction ->
-            validateKeyFormat(
-                instruction.getAncestorElementInstanceKey(),
-                "ancestorElementInstanceKey",
-                violations));
     final var variableInstructions =
         instructions.stream()
             .flatMap(instruction -> instruction.getVariableInstructions().stream())
@@ -218,72 +205,18 @@ public class ProcessInstanceRequestValidator {
   private static void validateTerminateInstructions(
       final List<ProcessInstanceModificationTerminateInstruction> instructions,
       final List<String> violations) {
-    instructions.forEach(
-        instruction -> {
-          if (instruction
-              instanceof final ProcessInstanceModificationTerminateByKeyInstruction byKey) {
-            if (byKey.getElementInstanceKey() == null) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
-            } else {
-              validateKeyFormat(byKey.getElementInstanceKey(), "elementInstanceKey", violations);
-            }
-          } else {
-            final String elementId =
-                ((ProcessInstanceModificationTerminateByIdInstruction) instruction).getElementId();
-            if (elementId == null || elementId.isBlank()) {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementId"));
-            }
-          }
-        });
-  }
-
-  private static void validateMoveInstructions(
-      final List<ProcessInstanceModificationMoveInstruction> instructions,
-      final List<String> violations) {
-    instructions.forEach(
-        instruction -> {
-          switch (instruction.getSourceElementInstruction()) {
-            case final SourceElementIdInstruction byId -> {
-              if (byId.getSourceElementId() == null || byId.getSourceElementId().isBlank()) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
-              }
-            }
-            case final SourceElementInstanceKeyInstruction byKey -> {
-              validateKeyFormat(
-                  byKey.getSourceElementInstanceKey(), "sourceElementInstanceKey", violations);
-            }
-            case null -> {
-              violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementInstruction"));
-            }
-            default -> {
-              // no-op for forward compatibility
-            }
-          }
-        });
-
     validateInstructions(
         instructions,
-        instruction ->
-            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
+        (instruction) -> instruction.getElementInstanceKey() != null,
         violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
-    instructions.forEach(
-        instruction -> {
-          if (instruction.getAncestorScopeInstruction()
-              instanceof final DirectAncestorKeyInstruction direct) {
-            validateKeyFormat(
-                direct.getAncestorElementInstanceKey(), "ancestorElementInstanceKey", violations);
-          }
-        });
-    final var variableInstructions =
-        instructions.stream()
-            .flatMap(instruction -> instruction.getVariableInstructions().stream())
-            .toList();
-    validateInstructions(
-        variableInstructions,
-        (variableInstruction) -> !variableInstruction.getVariables().isEmpty(),
-        violations,
-        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
+        ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elementInstanceKey"));
+    // Also validate the format of elementInstanceKey values
+    instructions.stream()
+        .filter(instruction -> instruction.getElementInstanceKey() != null)
+        .forEach(
+            instruction ->
+                validateKeyFormat(
+                    instruction.getElementInstanceKey(), "elementInstanceKey", violations));
   }
 
   private static void validateMoveBatchInstructions(
@@ -291,14 +224,14 @@ public class ProcessInstanceRequestValidator {
       final List<String> violations) {
     validateInstructions(
         instructions,
-        instruction ->
-            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isBlank(),
+        (instruction) ->
+            instruction.getSourceElementId() != null && !instruction.getSourceElementId().isEmpty(),
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("sourceElementId"));
     validateInstructions(
         instructions,
-        instruction ->
-            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isBlank(),
+        (instruction) ->
+            instruction.getTargetElementId() != null && !instruction.getTargetElementId().isEmpty(),
         violations,
         ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetElementId"));
   }

@@ -16,9 +16,14 @@
 package io.camunda.client.spring.configuration;
 
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.metrics.MeteredCamundaClientExecutorService;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.binder.MeterBinder;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import java.util.Collections;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,9 +40,18 @@ public class ExecutorServiceConfiguration {
   }
 
   @Bean
-  public CamundaClientExecutorService meteredCamundaClientThreadPool(
+  public CamundaClientExecutorService camundaClientThreadPool(
       @Autowired(required = false) final MeterRegistry meterRegistry) {
-    return MeteredCamundaClientExecutorService.createDefault(
-        camundaClientProperties.getExecutionThreads(), meterRegistry);
+    final int executionThreads = camundaClientProperties.getExecutionThreads();
+    final ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(executionThreads);
+    if (meterRegistry != null) {
+      final MeterBinder threadPoolMetrics =
+          new ExecutorServiceMetrics(
+              threadPool,
+              "camundaClientExecutor",
+              Collections.singleton(Tag.of("name", "zeebe_client_thread_pool")));
+      threadPoolMetrics.bindTo(meterRegistry);
+    }
+    return new CamundaClientExecutorService(threadPool, true);
   }
 }

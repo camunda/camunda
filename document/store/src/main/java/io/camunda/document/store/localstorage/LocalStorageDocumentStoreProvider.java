@@ -10,7 +10,6 @@ package io.camunda.document.store.localstorage;
 import static io.camunda.zeebe.util.VersionUtil.LOG;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
@@ -28,8 +27,7 @@ public class LocalStorageDocumentStoreProvider implements DocumentStoreProvider 
 
     LOG.info("Storage path created at {}", storagePath);
 
-    return new LocalStorageDocumentStore(
-        storagePath, new ObjectMapper().registerModule(new JavaTimeModule()), executor);
+    return new LocalStorageDocumentStore(storagePath, new ObjectMapper(), executor);
   }
 
   private Path getStoragePath(final DocumentStoreConfigurationRecord configuration) {

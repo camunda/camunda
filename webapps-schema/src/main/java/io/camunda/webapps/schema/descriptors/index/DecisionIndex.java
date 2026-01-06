@@ -23,8 +23,6 @@ public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backu
   public static final String VERSION = "version";
   public static final String DECISION_REQUIREMENTS_ID = "decisionRequirementsId";
   public static final String DECISION_REQUIREMENTS_KEY = "decisionRequirementsKey";
-  public static final String DECISION_REQUIREMENTS_NAME = "decisionRequirementsName";
-  public static final String DECISION_REQUIREMENTS_VERSION = "decisionRequirementsVersion";
 
   public DecisionIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

@@ -7,12 +7,13 @@
  */
 package io.camunda.operate.qa.backup;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.webapps.backup.BackupStateDto.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -65,7 +66,7 @@ public class BackupRestoreTest {
   @Before
   public void setup() {
     testContext = new BackupRestoreTestContext().setIndexPrefix(INDEX_PREFIX);
-    testContext.setDatabaseType(ConnectionTypes.ELASTICSEARCH.getType());
+    testContext.setConnectionType("elasticsearch");
   }
 
   @Test
@@ -137,7 +138,9 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(testContext);
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+    testContainerUtil.startZeebe(zeebeVersion, testContext);
 
     operateContainer =
         testContainerUtil

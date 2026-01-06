@@ -222,7 +222,7 @@ describe('VariablePanel', () => {
     });
   });
 
-  it('should display warning notification if add variable operation could not be created because of authorization error', async () => {
+  it('should display error notification if add variable operation could not be created because of auth error', async () => {
     const statistics = [
       {
         elementId: 'TEST_FLOW_NODE',
@@ -312,9 +312,9 @@ describe('VariablePanel', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,
-      kind: 'warning',
-      title: "You don't have permission to perform this operation",
-      subtitle: 'Please contact the administrator if you need access.',
+      kind: 'error',
+      title: 'Variable could not be saved',
+      subtitle: 'Forbidden',
     });
   });
 });

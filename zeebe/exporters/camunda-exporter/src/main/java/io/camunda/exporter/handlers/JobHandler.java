@@ -18,7 +18,6 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_DEN
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
-import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
@@ -86,8 +85,6 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
   public void updateEntity(final Record<JobRecordValue> record, final JobEntity entity) {
 
     final JobRecordValue recordValue = record.getValue();
-    final var recordTimestampAsOffsetDateTime =
-        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     entity.setKey(record.getKey());
     entity
         .setPartitionId(record.getPartitionId())
@@ -106,14 +103,9 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setJobKind(recordValue.getJobKind().name())
         .setFlowNodeId(recordValue.getElementId());
 
-    if (record.getIntent().equals(JobIntent.CREATED)) {
-      entity.setCreationTime(recordTimestampAsOffsetDateTime);
-    }
-    entity.setLastUpdateTime(recordTimestampAsOffsetDateTime);
-
     if (record.getIntent().equals(JobIntent.COMPLETED)
         || record.getIntent().equals(JobIntent.CANCELED)) {
-      entity.setEndTime(recordTimestampAsOffsetDateTime);
+      entity.setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     }
 
     if (record.getIntent().equals(JobIntent.COMPLETED)) {
@@ -163,7 +155,6 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     updateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     updateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     updateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
-    updateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
     if (FAILED_JOB_EVENTS.stream().anyMatch(i -> jobEntity.getState().equals(i.name()))) {
       updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, jobEntity.isJobFailedWithRetriesLeft());
     }

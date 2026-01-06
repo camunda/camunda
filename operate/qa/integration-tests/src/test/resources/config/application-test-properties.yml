@@ -11,7 +11,7 @@ camunda:
   operate:
     batchOperationMaxSize: 500
     elasticsearch:
-      dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+      dateFormat: yyyy-MM-dd
       batchSize: 111
     zeebe:
       gatewayAddress: someZeebeHost:999

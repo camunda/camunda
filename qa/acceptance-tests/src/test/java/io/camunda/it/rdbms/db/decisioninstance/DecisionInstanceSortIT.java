@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -188,14 +188,14 @@ public class DecisionInstanceSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<DecisionInstanceSort>> sortBuilder,
       final Comparator<DecisionInstanceEntity> comparator) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader();
 
     final var decisionDefinition =
-        DecisionDefinitionFixtures.createAndSaveDecisionDefinition(rdbmsWriters, b -> b);
+        DecisionDefinitionFixtures.createAndSaveDecisionDefinition(rdbmsWriter, b -> b);
     final var processDefinitionKey = nextKey();
     createAndSaveRandomDecisionInstances(
-        rdbmsWriters,
+        rdbmsWriter,
         b ->
             b.processDefinitionKey(processDefinitionKey)
                 .decisionDefinitionId(decisionDefinition.decisionDefinitionId())

@@ -17,7 +17,6 @@ public class DocumentBasedHistory {
   public static final Duration DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS = Duration.ofMillis(60000);
   private static final Duration DEFAULT_HISTORY_DELAY_BETWEEN_RUNS = Duration.ofMillis(2000);
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
-  private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
   private static final String DEFAULT_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "date";
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
@@ -62,9 +61,6 @@ public class DocumentBasedHistory {
 
   /** Maximum millisecond interval between archiver runs due to failure backoffs */
   private Duration maxDelayBetweenRuns = DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS;
-
-  /** Defines the name of the created and applied ILM policy. */
-  private String policyName = DEFAULT_HISTORY_POLICY_NAME;
 
   public DocumentBasedHistory(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.history".formatted(databaseName);
@@ -163,24 +159,5 @@ public class DocumentBasedHistory {
 
   public void setMaxDelayBetweenRuns(final Duration maxDelayBetweenRuns) {
     this.maxDelayBetweenRuns = maxDelayBetweenRuns;
-  }
-
-  public String getPolicyName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix + ".policy-name",
-        policyName,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyPolicyNameProperties());
-  }
-
-  public void setPolicyName(final String policyName) {
-    this.policyName = policyName;
-  }
-
-  private Set<String> legacyPolicyNameProperties() {
-    return Set.of(
-        "camunda.database.retention.policyName",
-        "zeebe.broker.exporters.camundaexporter.args.history.retention.policyName");
   }
 }

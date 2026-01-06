@@ -17,7 +17,6 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
@@ -41,8 +40,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
           MessageEventDefinition.class,
           ErrorEventDefinition.class,
           SignalEventDefinition.class,
-          EscalationEventDefinition.class,
-          ConditionalEventDefinition.class);
+          EscalationEventDefinition.class);
 
   @Override
   public Class<SubProcess> getElementType() {
@@ -91,7 +89,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
     if (eventDefinitions.isEmpty()) {
       validationResultCollector.addError(
           0,
-          "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or conditional");
+          "Start events in event subprocesses must be one of: message, timer, error, signal or escalation");
     }
 
     if (eventDefinitions.stream().anyMatch(CompensateEventDefinition.class::isInstance)
@@ -105,7 +103,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
           if (SUPPORTED_START_TYPES.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
                 0,
-                "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or conditional");
+                "Start events in event subprocesses must be one of: message, timer, error, signal or escalation");
           }
         });
 

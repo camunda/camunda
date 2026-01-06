@@ -147,7 +147,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   // flag for passing heartbeats down the pipeline
   private boolean forwardHeartbeats = false;
-  private boolean sendHeartbeatPayload = true;
   private boolean heartbeatsEnabled = true;
 
   public NettyMessagingService(
@@ -526,12 +525,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
       } else {
         sslContextBuilder.trustManager(config.getCertificateChain());
       }
-      if (config.isTlsEndpointIdentificationEnabled()) {
-        sslContextBuilder.endpointIdentificationAlgorithm("HTTPS");
-      } else {
-        sslContextBuilder.endpointIdentificationAlgorithm(null);
-      }
-
       clientSslContext =
           sslContextBuilder.sslProvider(SslProvider.OPENSSL_REFCNT).protocols(TLS_PROTOCOL).build();
       return CompletableFuture.completedFuture(null);
@@ -841,7 +834,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.channel(clientChannelClass);
     bootstrap.resolver(dnsResolverGroup);
     bootstrap.remoteAddress(socketAddress);
-    bootstrap.handler(new BasicClientChannelInitializer(future, address));
+    bootstrap.handler(new BasicClientChannelInitializer(future));
 
     final Channel channel =
         bootstrap
@@ -962,29 +955,19 @@ public final class NettyMessagingService implements ManagedMessagingService {
     heartbeatsEnabled = false;
   }
 
-  @VisibleForTesting
-  void noHeartbeatPayload() {
-    sendHeartbeatPayload = false;
-  }
-
   /** Channel initializer for basic connections. */
   private class BasicClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final CompletableFuture<Channel> future;
-    private final Address remoteAddress;
 
-    BasicClientChannelInitializer(
-        final CompletableFuture<Channel> future, final Address remoteAddress) {
+    BasicClientChannelInitializer(final CompletableFuture<Channel> future) {
       this.future = future;
-      this.remoteAddress = remoteAddress;
     }
 
     @Override
     protected void initChannel(final SocketChannel channel) {
       if (config.isTlsEnabled()) {
-        final var sslHandler =
-            clientSslContext.newHandler(
-                channel.alloc(), remoteAddress.host(), remoteAddress.port());
+        final var sslHandler = clientSslContext.newHandler(channel.alloc());
         channel.pipeline().addLast("tls", sslHandler);
       }
 
@@ -1169,12 +1152,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 "heartbeat-setup",
                 new HeartbeatSetupHandler.Client(
                     "decoder",
+                    log,
                     messageIdGenerator,
                     advertisedAddress,
                     config.getHeartbeatTimeout(),
                     config.getHeartbeatInterval(),
-                    forwardHeartbeats,
-                    sendHeartbeatPayload));
+                    forwardHeartbeats));
       }
       future.complete(context.channel());
     }
@@ -1223,8 +1206,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
             .addBefore(
                 MESSAGE_DISPATCHER_NAME,
                 "heartbeat-setup",
-                new HeartbeatSetupHandler.Server(
-                    "decoder", forwardHeartbeats, sendHeartbeatPayload));
+                new HeartbeatSetupHandler.Server("decoder", log, forwardHeartbeats));
       }
     }
   }

@@ -7,79 +7,32 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import org.agrona.IoUtil;
 
 /** Defines the strategy when it comes to pre-allocating segment files. */
 @FunctionalInterface
-public interface SegmentAllocator {
+interface SegmentAllocator {
 
   /**
    * Pre-allocates {@code segmentSize} disk space for file corresponding to the given descriptor and
    * channel.
    *
    * @param channel an open channel to the file to pre-allocate
-   * @param fileDescriptor the file descriptor of the opened file
    * @param segmentSize the desired size of the segment on disk, in bytes
    * @throws IOException if any error occur during pre-allocation; if this is thrown, no guarantees
    *     are made about the state of the file on disk, and no resources are closed
    */
-  void allocate(FileChannel channel, FileDescriptor fileDescriptor, final long segmentSize)
-      throws IOException;
-
-  /** Returns the default allocator */
-  static SegmentAllocator defaultAllocator() {
-    return posixOrFill();
-  }
+  void allocate(FileChannel channel, final long segmentSize) throws IOException;
 
   /** Returns an allocator which does nothing, i.e. does not allocate disk space. */
   static SegmentAllocator noop() {
-    return Defaults.NOOP;
+    return (c, s) -> {};
   }
 
   /** Returns an allocator which fills the file by writing chunks of zeros to disk. */
   static SegmentAllocator fill() {
-    return Defaults.FILL;
-  }
-
-  /**
-   * Returns an allocator which will try to use the POSIX system call {@code posix_fallocate}, and
-   * fallback to {@param fallback} if it isn't available.
-   */
-  static SegmentAllocator posix(final SegmentAllocator fallback) {
-    return new PosixSegmentAllocator(fallback);
-  }
-
-  /**
-   * Returns an allocator which will try to use the POSIX system call {@code posix_fallocate}, and
-   * fallback to {@link #fill()} if it isn't available.
-   */
-  static SegmentAllocator posixOrFill() {
-    return new PosixSegmentAllocator(Defaults.FILL);
-  }
-
-  class Defaults {
-    private static final SegmentAllocator NOOP = new Noop();
-    private static final SegmentAllocator FILL = new Fill();
-  }
-
-  class Noop implements SegmentAllocator {
-
-    @Override
-    public void allocate(
-        final FileChannel channel, final FileDescriptor fileDescriptor, final long segmentSize)
-        throws IOException {}
-  }
-
-  class Fill implements SegmentAllocator {
-    @Override
-    public void allocate(
-        final FileChannel channel, final FileDescriptor fileDescriptor, final long segmentSize)
-        throws IOException {
-      IoUtil.fill(channel, 0, segmentSize, (byte) 0);
-      channel.force(true);
-    }
+    return (channel, size) -> IoUtil.fill(channel, 0, size, (byte) 0);
   }
 }

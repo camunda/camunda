@@ -12,8 +12,8 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -137,9 +137,9 @@ public class AdHocSubProcessInstructionActivateProcessor
                 adHocSubProcessElementInstance.getValue().getTenantId())
             .getProcess();
     final var adHocSubProcessElement =
-        adHocSubProcessDefinition.getElementById(
-            adHocSubProcessElementInstance.getValue().getElementId(),
-            ExecutableAdHocSubProcess.class);
+        (ExecutableAdHocSubProcess)
+            adHocSubProcessDefinition.getElementById(
+                adHocSubProcessElementInstance.getValue().getElementId());
 
     // check that the given elements exist within the ad-hoc sub-process
     final var activateElementsAreInProcess =
@@ -189,13 +189,13 @@ public class AdHocSubProcessInstructionActivateProcessor
       final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final ElementInstance adHocSubProcessElementInstance) {
     final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(adHocSubProcessElementInstance.getValue().getTenantId())
-            .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId())
-            .build();
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                adHocSubProcessElementInstance.getValue().getTenantId())
+            .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId());
+
     return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
   }
 }

@@ -33,7 +33,8 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 2. Create an enum implementing [`Intent`](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/Intent.java) to reflect the possible commands and events:
 
-   - It should also be added to the `computeValueTypeToIntentMap` method defined in Intent, mapping it from the new `ValueType`
+   - It should also be added to the `INTENT_CLASSES` defined in Intent
+   - Make sure to add the new intent as a case to `Intent.fromProtocolValue`
 3. Create an interface for the record value itself.
    - It should extend the [`RecordValue`](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/RecordValue.java) interface
    - Add methods for each of the properties that you want to expose
@@ -57,10 +58,7 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 2. Add new cases to [JsonSerializableToJsonTest](/zeebe/protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java):
    - one case that provides a value for each property (as far nested as possible)
    - one case that has as few properties as possible (i.e. an empty record)
-3. Add a mapping to [`UnifiedRecordValue`](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/UnifiedRecordValue.java) making sure that the new `ValueType` is included in the method `fromValueType` and in the map in class `ClassToValueType`
-4. If the valueType can represent a user command that is received by [`CommandApiRequestHandler`](zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestHandler.java):
-   - Include the valueType in [`ValueTypes.USER_COMMANDS](/zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypes.java).
-5. (only if command distribution is needed) Add the new `Record` to the [`CommandDistributionRecord`](/zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/value/distribution/CommandDistributionRecord.java)'s `RECORDS_BY_TYPE` mapping.
+3. Add the new `Record` to the broker's [CommandApiRequestReader](/zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestReader.java)'s `RECORDS_BY_TYPE` mapping.
 
 ### Support a RecordValue in Exporters and test setups
 
@@ -76,7 +74,7 @@ tests will fail if this support is missing. Note that in the exporter configurat
 
 1. Add a record template to the elastic search exporter's [resources](/zeebe/exporters/elasticsearch-exporter/src/main/resources).
    - Tip: start by copying an existing template and change the relevant properties.
-2. Add a call to `createValueIndexTemplate` for the `ValueType` in [ElasticsearchExporterSchemaManager](/zeebe/exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/ElasticsearchExporterSchemaManager.java).
+2. Add a call to `createValueIndexTemplate` for the `ValueType` in [ElasticsearchExporter](/zeebe/exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/ElasticsearchExporter.java).
 3. Allow the record to be filtered through the [configuration](/zeebe/exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/ElasticsearchExporterConfiguration.java).
 4. Document this new filter option in the dist folder's [broker config templates](/dist/src/main/config).
 5. Add a mapping for the ValueType to the [TestSupport](/zeebe/exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
@@ -85,10 +83,19 @@ tests will fail if this support is missing. Note that in the exporter configurat
 
 1. Add a record template to the exporter's [resources](/zeebe/exporters/opensearch-exporter/src/main/resources).
    - Tip: start by copying an existing template and change the relevant properties.
-2. Add a call to `createValueIndexTemplate` for the `ValueType` in [OpensearchExporterSchemaManager](/zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporterSchemaManager.java).
+2. Add a call to `createValueIndexTemplate` for the `ValueType` in [OpensearchExporter](/zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporter.java).
 3. Allow the record to be filtered through the [configuration](/zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporterConfiguration.java).
 4. Document this new filter option in the dist folder's [broker config templates](/dist/src/main/config).
 5. Add a mapping for the ValueType to the [TestSupport](/zeebe/exporters/opensearch-exporter/src/test/java/io/camunda/zeebe/exporter/opensearch/TestSupport.java).
+
+#### Operate and Tasklist test setup
+
+To avoid test failures, register the new `ValueType` in the `TestSupport` classes used by Operate and Tasklist:
+
+- [`operate/.../TestSupport`](../../operate/qa/integration-tests/src/test/java/io/camunda/operate/util/TestSupport.java)
+- [`tasklist/.../TestSupport`](../../tasklist/qa/integration-tests/src/test/java/io/camunda/tasklist/util/TestSupport.java)
+
+Update both `setIndexingForValueType(...)` methods—one for Elasticsearch, one for Opensearch.
 
 ### Extend official documentation
 

@@ -9,20 +9,15 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
-import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
-import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
-import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -89,7 +84,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final EventScopeInstanceState eventScopeInstanceState;
   private final MessageState messageState;
   private final AuthorizationCheckBehavior authCheckBehavior;
-  private final BpmnBehaviors bpmnBehaviors;
   private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
   private final KeyGenerator keyGenerator;
 
@@ -114,7 +108,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
     this.authCheckBehavior = authCheckBehavior;
-    this.bpmnBehaviors = bpmnBehaviors;
     this.keyGenerator = keyGenerator;
 
     migrationCatchEventBehaviour =
@@ -141,13 +134,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
 
     final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstance.getValue().getTenantId())
-            .addResourceId(processInstance.getValue().getBpmnProcessId())
-            .build();
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                processInstance.getValue().getTenantId())
+            .addResourceId(processInstance.getValue().getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -180,8 +172,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
 
     final Map<String, String> mappedElementIds =
-        mapElementIds(
-            mappingInstructions, processInstance, sourceProcessDefinition, targetProcessDefinition);
+        mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
@@ -194,7 +185,6 @@ public class ProcessInstanceMigrationMigrateProcessor
       elementInstances.addAll(children);
     }
 
-    value.setTenantId(processInstance.getValue().getTenantId());
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
     responseWriter.writeEventOnCommand(
@@ -224,7 +214,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private Map<String, String> mapElementIds(
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
       final ElementInstance processInstance,
-      final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition) {
     final Map<String, String> mappedElementIds =
         mappingInstructions.stream()
@@ -232,18 +221,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                 Collectors.toMap(
                     ProcessInstanceMigrationMappingInstructionValue::getSourceElementId,
                     ProcessInstanceMigrationMappingInstructionValue::getTargetElementId));
-
-    mappingInstructions.stream()
-        .filter(
-            instruction ->
-                isAdHocRelatedProcess(sourceProcessDefinition, instruction.getSourceElementId()))
-        .forEach(
-            instruction ->
-                mappedElementIds.putIfAbsent(
-                    instruction.getSourceElementId() + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX,
-                    instruction.getTargetElementId()
-                        + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX));
-
     // users don't provide a mapping instruction for the bpmn process id
     mappedElementIds.put(
         processInstance.getValue().getBpmnProcessId(),
@@ -267,13 +244,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    final boolean isUserTaskConversion =
-        requireSupportedUserTaskImplementation(
-            sourceProcessDefinition,
-            targetProcessDefinition,
-            targetElementId,
-            elementInstance,
-            processInstanceKey);
+    requireSameUserTaskImplementation(
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        targetElementId,
+        elementInstance,
+        processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
@@ -375,7 +351,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               targetSequenceFlowId);
         });
 
-    if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
+    if (elementInstance.getJobKey() > 0) {
       final var job = jobState.getJob(elementInstance.getJobKey());
       if (job == null) {
         throw new SafetyCheckFailedException(
@@ -409,21 +385,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
           jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
-    }
-
-    if (isUserTaskConversion) {
-      final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehavior =
-          new ProcessInstanceMigrationUserTaskBehavior(
-              processInstanceKey,
-              elementInstance,
-              sourceProcessDefinition,
-              targetProcessDefinition,
-              bpmnBehaviors,
-              targetElementId,
-              updatedElementInstanceRecord,
-              stateWriter,
-              jobState);
-      migrationUserTaskBehavior.tryMigrateJobWorkerToCamundaUserTask();
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
@@ -462,9 +423,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
-
-    handleAdHocSubProcess(
-        elementInstance, elementInstanceRecord, targetProcessDefinition, targetElementId);
 
     if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
       // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
@@ -547,9 +505,6 @@ public class ProcessInstanceMigrationMigrateProcessor
    */
   private void migrateCalledSubProcessElements(final long calledChildInstanceKey) {
     final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
-    if (calledInstance == null) {
-      return;
-    }
     final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
     while (!elementInstances.isEmpty()) {
       final var instance = elementInstances.poll();
@@ -589,13 +544,11 @@ public class ProcessInstanceMigrationMigrateProcessor
         instance.getKey(), ProcessInstanceIntent.ANCESTOR_MIGRATED, elementInstanceRecord);
 
     if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
-      // found more call activities? add the called child instance to the queue if present
-      // to continue going deeper the tree
+      // found more call activities? add the called child instance to the queue to continue going
+      // deeper the tree
       final ElementInstance calledInstance =
           elementInstanceState.getInstance(instance.getCalledChildInstanceKey());
-      if (calledInstance != null) {
-        elementInstances.add(calledInstance);
-      }
+      elementInstances.add(calledInstance);
     }
   }
 
@@ -721,63 +674,6 @@ public class ProcessInstanceMigrationMigrateProcessor
         .resetProcessDefinitionPath();
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), intent, sequenceFlowRecord);
-  }
-
-  /**
-   * Handles ad-hoc subprocess migration by updating the {@code adHocSubProcessElements} variable,
-   * defined in {@link io.camunda.zeebe.model.bpmn.impl.ZeebeConstants#AD_HOC_SUB_PROCESS_ELEMENTS},
-   * to reflect the target process definition.
-   *
-   * <p>When an ad-hoc subprocess is migrated to a different process definition version, the {@code
-   * adHocSubProcessElements} variable, which contains metadata about available ad-hoc activities,
-   * must be updated to match the target definition.
-   *
-   * <p>This ensures that the metadata accurately reflects the available activities in the target
-   * process definition, preventing stale references to activities that may have been added,
-   * removed, or modified in the new version.
-   *
-   * @param elementInstance the ad-hoc subprocess element instance being migrated
-   * @param elementInstanceRecord the process instance record of the ad-hoc subprocess
-   * @param targetProcessDefinition the target process definition to migrate to
-   * @param targetElementId the ID of the ad-hoc subprocess element in the target process definition
-   */
-  private void handleAdHocSubProcess(
-      final ElementInstance elementInstance,
-      final ProcessInstanceRecord elementInstanceRecord,
-      final DeployedProcess targetProcessDefinition,
-      final String targetElementId) {
-
-    if (isAdHocSubProcess(elementInstanceRecord.getBpmnElementType())) {
-      final AbstractFlowElement element =
-          targetProcessDefinition.getProcess().getElementById(targetElementId);
-
-      final ExecutableAdHocSubProcess targetAhsp;
-      if (element instanceof final ExecutableMultiInstanceBody mi) {
-        targetAhsp = (ExecutableAdHocSubProcess) mi.getInnerActivity();
-      } else {
-        targetAhsp = (ExecutableAdHocSubProcess) element;
-      }
-
-      variableState.getVariablesLocal(elementInstance.getKey()).stream()
-          .filter(
-              variable ->
-                  BufferUtil.equals(
-                      variable.name(), BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS)))
-          .findFirst()
-          .ifPresent(
-              variable ->
-                  stateWriter.appendFollowUpEvent(
-                      variable.key(),
-                      VariableIntent.UPDATED,
-                      variableRecord
-                          .setScopeKey(elementInstance.getKey())
-                          .setName(variable.name())
-                          .setValue(targetAhsp.getAdHocActivitiesMetadata())
-                          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
-                          .setProcessDefinitionKey(targetProcessDefinition.getKey())
-                          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                          .setTenantId(elementInstance.getValue().getTenantId())));
-    }
   }
 
   /**

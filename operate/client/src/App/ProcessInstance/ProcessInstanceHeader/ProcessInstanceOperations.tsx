@@ -6,26 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
-import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
-import {useHasActiveOperationItems} from 'modules/queries/batch-operations/useHasActiveOperationItems';
-import {queryKeys} from 'modules/queries/queryKeys';
+import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
+import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
-import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
-import {operationsStore} from 'modules/stores/operations';
+import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
 import {type OperationEntityType} from 'modules/types/operate';
 import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
+import {processInstancesStore} from 'modules/stores/processInstances';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import {logger} from 'modules/logger';
+import {useOperations} from 'modules/queries/operations/useOperations';
+import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -39,15 +40,30 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     setIsModificationModeHelperModalVisible,
   ] = useState(false);
 
-  const {data: hasActiveOperationItems} = useHasActiveOperationItems({
-    processInstance,
-  });
+  const {data: hasActiveOperationLegacy} = useHasActiveOperations();
+  const [isV1ResolveIncidentPending, setIsV1ResolveIncidentPending] =
+    useState(false);
+
+  const {data: operationsData} = useOperations();
+
+  // TODO: Remove this effect and use mutation state instead
+  // https://github.com/camunda/camunda/issues/38411
+  useEffect(() => {
+    if (
+      !operationsData?.some(
+        (operation) =>
+          operation.type === 'RESOLVE_INCIDENT' &&
+          ACTIVE_OPERATION_STATES.includes(operation.state),
+      )
+    ) {
+      setIsV1ResolveIncidentPending(false);
+    }
+  }, [operationsData]);
 
   const {
     mutate: cancelProcessInstance,
     isPending: isCancelProcessInstancePending,
   } = useCancelProcessInstance(processInstance.processInstanceKey, {
-    onSuccess: () => handleOperationSuccess('CANCEL_PROCESS_INSTANCE'),
     onError: (error) => {
       notificationsStore.displayNotification({
         kind: 'error',
@@ -58,29 +74,21 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     },
   });
 
-  const {
-    mutate: resolveProcessInstanceIncidents,
-    isPending: isResolveIncidentsPending,
-  } = useResolveProcessInstanceIncidents(processInstance.processInstanceKey, {
-    onSuccess: () => {
-      handleOperationSuccess('RESOLVE_INCIDENT');
-    },
-    onError: ({status}) => {
-      handleOperationError(status);
-    },
-  });
-
   const invalidateQueries = () => {
     queryClient.invalidateQueries({
-      queryKey: queryKeys.batchOperationItems.searchByProcessInstanceKey(
-        processInstance.processInstanceKey,
-      ),
+      queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
     });
   };
 
-  const handleOperationError = (statusCode?: number) => {
+  const handleOperationError: ErrorHandler = ({statusCode}) => {
     invalidateQueries();
-    handleOperationErrorUtil(statusCode);
+
+    notificationsStore.displayNotification({
+      kind: 'error',
+      title: 'Operation could not be created',
+      subtitle: statusCode === 403 ? 'You do not have permission' : undefined,
+      isDismissable: true,
+    });
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {
@@ -109,19 +117,23 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     }
   };
 
-  const handleDelete = async () => {
+  const applyOperation = async (operationType: OperationEntityType) => {
     try {
       await operationsStore.applyOperation({
         instanceId: processInstance.processInstanceKey,
         payload: {
-          operationType: 'DELETE_PROCESS_INSTANCE',
+          operationType,
         },
-        onError: ({statusCode}) => handleOperationError(statusCode),
-        onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
+        onError: handleOperationError,
+        onSuccess: handleOperationSuccess,
       });
     } catch (error) {
       logger.error(error);
     }
+  };
+
+  const handleDelete = () => {
+    applyOperation('DELETE_PROCESS_INSTANCE');
   };
 
   const handleEnterModificationMode = () => {
@@ -163,9 +175,10 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     operations.push({
       type: 'RESOLVE_INCIDENT',
       onExecute: () => {
-        resolveProcessInstanceIncidents();
+        setIsV1ResolveIncidentPending(true);
+        applyOperation('RESOLVE_INCIDENT');
       },
-      disabled: isResolveIncidentsPending,
+      disabled: isV1ResolveIncidentPending,
     });
   }
 
@@ -192,9 +205,12 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   }
 
   const isLoading =
-    hasActiveOperationItems ||
+    hasActiveOperationLegacy ||
+    processInstancesStore.processInstanceIdsWithActiveOperations.includes(
+      processInstance.processInstanceKey,
+    ) ||
     isCancelProcessInstancePending ||
-    isResolveIncidentsPending;
+    isV1ResolveIncidentPending;
 
   return (
     <>

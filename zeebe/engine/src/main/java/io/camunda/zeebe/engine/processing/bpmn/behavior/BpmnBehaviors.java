@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 
 public interface BpmnBehaviors {
 
-  ExpressionProcessor expressionProcessor();
+  ExpressionProcessor expressionBehavior();
 
   BpmnDecisionBehavior bpmnDecisionBehavior();
 

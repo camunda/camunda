@@ -9,16 +9,15 @@
 import {test} from '../visual-fixtures';
 
 import {
+  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockDeleteProcess,
-  mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {
   mockDecisionXml,
   mockResponses as mockDecisionsResponses,
   mockDeleteDecision,
-  mockEmptyDecisionInstances,
-  mockedDecisionDefinitions,
+  mockGroupedDecisions,
 } from '../mocks/decisions.mocks';
 import {openFile} from '@/utils/openFile';
 import {expect} from '@playwright/test';
@@ -37,7 +36,7 @@ test.describe.skip('delete resource definitions', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockProcessDefinitions,
+        groupedProcesses: mockGroupedProcesses,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: {
           totalCount: 0,
@@ -123,9 +122,9 @@ test.describe.skip('delete resource definitions', () => {
     await page.route(
       URL_API_PATTERN,
       mockDecisionsResponses({
-        decisionDefinitions: mockedDecisionDefinitions,
+        groupedDecisions: mockGroupedDecisions,
         batchOperations: {items: [], page: {totalItems: 0}},
-        decisionInstances: mockEmptyDecisionInstances,
+        decisionInstances: {totalCount: 0, decisionInstances: []},
         decisionXml: mockDecisionXml,
         deleteDecision: mockDeleteDecision,
       }),

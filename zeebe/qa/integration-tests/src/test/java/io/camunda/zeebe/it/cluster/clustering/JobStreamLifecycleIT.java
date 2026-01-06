@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 final class JobStreamLifecycleIT {
-  @TestZeebe(initMethod = "initTestCluster", purgeAfterEach = false)
+  @TestZeebe(initMethod = "initTestCluster")
   private static TestCluster cluster;
 
   private final TestGateway<?> gateway = cluster.availableGateway();

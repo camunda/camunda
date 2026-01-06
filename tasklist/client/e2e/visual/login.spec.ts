@@ -11,7 +11,6 @@ import {test} from '@/fixtures/v1-visual';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {
-    await page.clock.setFixedTime('2026-02-26');
     await page.goto('/login', {
       waitUntil: 'networkidle',
     });
@@ -20,7 +19,6 @@ test.describe('login page', () => {
   });
 
   test('field level error', async ({page}) => {
-    await page.clock.setFixedTime('2026-02-26');
     await page.goto('/login', {
       waitUntil: 'networkidle',
     });
@@ -31,7 +29,6 @@ test.describe('login page', () => {
   });
 
   test('form level error', async ({page}) => {
-    await page.clock.setFixedTime('2026-02-26');
     await page.goto('/login', {
       waitUntil: 'networkidle',
     });

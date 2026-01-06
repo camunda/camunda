@@ -10,6 +10,6 @@ package io.camunda.search.exception;
 public class TenantAccessDeniedException extends CamundaSearchException {
 
   public TenantAccessDeniedException(final String message) {
-    super(message, Reason.FORBIDDEN);
+    super(message);
   }
 }

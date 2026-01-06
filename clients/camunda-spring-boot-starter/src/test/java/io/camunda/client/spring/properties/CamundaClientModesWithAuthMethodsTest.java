@@ -108,8 +108,10 @@ public class CamundaClientModesWithAuthMethodsTest {
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
       assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
-      assertThat(properties.getAuth().getIssuerUrl())
-          .isEqualTo(URI.create("http://localhost:18080/auth/realms/camunda-platform"));
+      assertThat(properties.getAuth().getTokenUrl())
+          .isEqualTo(
+              URI.create(
+                  "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
       assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe-api");
       assertThat(properties.getAuth().getClientId()).isEqualTo("basic");
     }
@@ -128,8 +130,10 @@ public class CamundaClientModesWithAuthMethodsTest {
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
       assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
-      assertThat(properties.getAuth().getIssuerUrl())
-          .isEqualTo(URI.create("http://localhost:18080/auth/realms/camunda-platform"));
+      assertThat(properties.getAuth().getTokenUrl())
+          .isEqualTo(
+              URI.create(
+                  "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
       assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe-api");
     }
   }

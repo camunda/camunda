@@ -11,10 +11,10 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.function.TriFunction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
 
 public class ExecutableCatchEventElement extends ExecutableFlowNode
@@ -26,9 +26,8 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private ExecutableEscalation escalation;
   private ExecutableSignal signal;
   private ExecutableCompensation compensation;
-  private ExecutableConditional conditional;
   private boolean interrupting;
-  private TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> timerFactory;
+  private BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory;
 
   private boolean isConnectedToEventBasedGateway;
 
@@ -76,11 +75,6 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
-  public boolean isConditional() {
-    return conditional != null;
-  }
-
-  @Override
   public ExecutableMessage getMessage() {
     return message;
   }
@@ -90,12 +84,12 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
-  public TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> getTimerFactory() {
+  public BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> getTimerFactory() {
     return timerFactory;
   }
 
   public void setTimerFactory(
-      final TriFunction<ExpressionProcessor, Long, String, Either<Failure, Timer>> timerFactory) {
+      final BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory) {
     this.timerFactory = timerFactory;
   }
 
@@ -120,15 +114,6 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public ExecutableSignal getSignal() {
     return signal;
-  }
-
-  @Override
-  public ExecutableConditional getConditional() {
-    return conditional;
-  }
-
-  public void setConditional(final ExecutableConditional conditional) {
-    this.conditional = conditional;
   }
 
   public void setSignal(final ExecutableSignal signal) {

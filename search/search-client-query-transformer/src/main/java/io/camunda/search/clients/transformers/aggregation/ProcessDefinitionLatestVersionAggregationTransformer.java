@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.aggregation;
 
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_GROUP_BPMN_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_GROUP_TENANT_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_MAX_VERSION;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_BY_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_LATEST_DEFINITION;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_SOURCE_NAME_BPMN_PROCESS_ID;
@@ -26,10 +27,12 @@ import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessDefinitionSort;
+import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class ProcessDefinitionLatestVersionAggregationTransformer
     implements AggregationTransformer<ProcessDefinitionLatestVersionAggregation> {
@@ -47,7 +50,7 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
     final SearchTopHitsAggregator<ProcessEntity> maxVersionsAgg =
         topHits
             .name(AGGREGATION_NAME_LATEST_DEFINITION)
-            .sortOption(new ProcessDefinitionSort.Builder().version().desc().build())
+            .field(AGGREGATION_MAX_VERSION)
             .documentClass(ProcessEntity.class)
             .build();
 
@@ -57,14 +60,16 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
             .name(AGGREGATION_SOURCE_NAME_BPMN_PROCESS_ID)
             .field(AGGREGATION_GROUP_BPMN_PROCESS_ID);
     Optional.ofNullable(sort)
-        .map(findSortOptionFor(AGGREGATION_GROUP_BPMN_PROCESS_ID, transformers))
+        .map(ProcessDefinitionSort::orderings)
+        .map(getSortOptionFor(AGGREGATION_GROUP_BPMN_PROCESS_ID, transformers))
         .ifPresent(byProcessIdAggSourceBuilder::sorting);
 
     // aggregate terms by tenant id
     final SearchTermsAggregator.Builder byTenantIdAggSourceBuilder =
         terms().name(AGGREGATION_SOURCE_NAME_TENANT_ID).field(AGGREGATION_GROUP_TENANT_ID);
     Optional.ofNullable(sort)
-        .map(findSortOptionFor(AGGREGATION_GROUP_TENANT_ID, transformers))
+        .map(ProcessDefinitionSort::orderings)
+        .map(getSortOptionFor(AGGREGATION_GROUP_TENANT_ID, transformers))
         .ifPresent(byTenantIdAggSourceBuilder::sorting);
 
     final var finalAggregation =
@@ -79,5 +84,20 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
             .build();
 
     return List.of(finalAggregation);
+  }
+
+  private Function<List<FieldSorting>, List<FieldSorting>> getSortOptionFor(
+      final String aggregationField, final ServiceTransformers transformers) {
+    return orderings ->
+        orderings.stream()
+            .map(
+                ordering ->
+                    new FieldSorting(
+                        transformers
+                            .getFieldSortingTransformer(ProcessDefinitionSort.class)
+                            .apply(ordering.field()),
+                        ordering.order()))
+            .filter(fs -> fs.field().equals(aggregationField))
+            .toList();
   }
 }

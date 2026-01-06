@@ -7,13 +7,17 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
@@ -21,14 +25,19 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverRepositoryTest {
+@SuppressWarnings("resource")
+final class ElasticsearchArchiverRepositoryTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
 
   private final RestClientTransport transport = Mockito.spy(createRestClient());
+  private final RetentionConfiguration retention = new RetentionConfiguration();
 
   @Test
   void shouldCloseTransportOnClose() throws Exception {
+    // given
+    final var repository = createRepository();
+
     // when
     repository.close();
 
@@ -36,8 +45,22 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
     Mockito.verify(transport, Mockito.times(1)).close();
   }
 
-  @Override
-  ElasticsearchArchiverRepository createRepository() {
+  @Test
+  void shouldNotSetLifecycleIfRetentionIsDisabled() {
+    // given
+    final var repository = createRepository();
+    retention.setEnabled(false);
+
+    // when
+    final var result = repository.setIndexLifeCycle("whatever");
+
+    // then - would normally fail if tried to access ES, since there is no backing Elastic
+    assertThat(result)
+        .as("did not try connecting to non existent ES")
+        .succeedsWithin(Duration.ofSeconds(5));
+  }
+
+  private ElasticsearchArchiverRepository createRepository() {
     final var client = new ElasticsearchAsyncClient(transport);
     final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
     final var config = new HistoryConfiguration();

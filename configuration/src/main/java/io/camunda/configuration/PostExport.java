@@ -16,7 +16,7 @@ public class PostExport {
 
   private static final int DEFAULT_BATCH_SIZE = 100;
   private static final Duration DEFAULT_DELAY_BETWEEN_RUNS = Duration.ofSeconds(2);
-  private static final Duration DEFAULT_MAX_DELAY_BETWEEN_RUNS = Duration.ofSeconds(5);
+  private static final Duration DEFAULT_MAX_DELAY_BETWEEN_RUNS = Duration.ofSeconds(60);
   private static final boolean DEFAULT_IGNORE_MISSING_DATA = false;
 
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =

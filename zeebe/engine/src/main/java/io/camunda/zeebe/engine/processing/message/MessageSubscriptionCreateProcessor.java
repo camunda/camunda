@@ -102,7 +102,6 @@ public final class MessageSubscriptionCreateProcessor
     return commandSender.openProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getProcessDefinitionKey(),
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.isInterrupting(),
         subscriptionRecord.getTenantId());

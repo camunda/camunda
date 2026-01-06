@@ -8,16 +8,14 @@
 package main
 
 import (
-	"context"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
+
+	"context"
 
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
@@ -118,72 +116,4 @@ func TestCamundaCmdPassword(t *testing.T) {
 		}
 	}
 	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].password=changeme")
-}
-
-func TestApplySecondaryStorageDefaultsDisablesElasticsearchForRdbms(t *testing.T) {
-	t.Helper()
-
-	tempDir := t.TempDir()
-	configDir := filepath.Join(tempDir, "configuration")
-	require.NoError(t, os.MkdirAll(configDir, 0o755))
-
-	config := `
-camunda:
-  data:
-    secondary-storage:
-      type: rdbms
-`
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "application.yaml"), []byte(config), 0o644))
-
-	settings := types.C8RunSettings{DisableElasticsearch: false}
-	applySecondaryStorageDefaults(tempDir, &settings)
-
-	assert.Equal(t, "rdbms", settings.SecondaryStorageType)
-	assert.True(t, settings.DisableElasticsearch)
-}
-
-func TestApplySecondaryStorageDefaultsKeepsFlagWhenElasticsearchRequested(t *testing.T) {
-	tempDir := t.TempDir()
-	configDir := filepath.Join(tempDir, "configuration")
-	require.NoError(t, os.MkdirAll(configDir, 0o755))
-
-	config := `
-camunda:
-  data:
-    secondary-storage:
-      type: elasticsearch
-`
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "application.yaml"), []byte(config), 0o644))
-
-	settings := types.C8RunSettings{DisableElasticsearch: false}
-	applySecondaryStorageDefaults(tempDir, &settings)
-
-	assert.Equal(t, "elasticsearch", settings.SecondaryStorageType)
-	assert.False(t, settings.DisableElasticsearch)
-}
-
-func TestValidatePort(t *testing.T) {
-	tests := []struct {
-		name    string
-		port    int
-		wantErr bool
-	}{
-		{name: "valid lower bound", port: 1},
-		{name: "valid upper bound", port: 65535},
-		{name: "zero", port: 0, wantErr: true},
-		{name: "negative", port: -1, wantErr: true},
-		{name: "too large", port: 70000, wantErr: true},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			err := validatePort(tt.port)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }

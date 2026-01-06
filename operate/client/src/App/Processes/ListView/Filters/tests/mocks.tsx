@@ -8,12 +8,20 @@
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {useEffect} from 'react';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {Paths} from 'modules/Routes';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
 function getWrapper(initialPath: string = Paths.dashboard()) {
   const MockApp: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        processesStore.reset();
+      };
+    }, []);
+
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
         <QueryClientProvider client={new QueryClient()}>

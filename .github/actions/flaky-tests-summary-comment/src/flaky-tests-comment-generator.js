@@ -9,7 +9,7 @@ async function createOrUpdateComment(context, github, currentData, prNumber, bra
   // Step 1: Fetch any existing flaky test comment
   const existingComment = await githubApi.getExistingComment(github, owner, repo, prNumber);
 
-  // Step 2: Parse existing comment to extract historical data (including URLs)
+  // Step 2: Parse existing comment to extract historical data
   const historicalData = existingComment ? helpers.parseComment(existingComment.body) : null;
   console.log('Historical data:', historicalData);
 
@@ -17,7 +17,7 @@ async function createOrUpdateComment(context, github, currentData, prNumber, bra
   const mergedData = (!historicalData || historicalData.length === 0) ? helpers.prepareFirstRunData(currentData) : helpers.mergeFlakyData(currentData, historicalData);
   console.log('Merged data:', JSON.stringify(mergedData, null, 2));
 
-  // Step 4: Generate comment content (URLs from historical data will be reused)
+  // Step 4: Generate comment content
   const comment = await buildComment(mergedData, github, branchName);
 
   // Step 5: Create or update comment
@@ -42,13 +42,7 @@ async function buildComment(mergedData, github, branchName) {
   mergedData.sort((a, b) => b.overallRetries - a.overallRetries);
 
   for (const test of mergedData) {
-    // Reuse URL from previous comment if available, otherwise search GitHub
-    let url = test.url || '';
-    if (!url) {
-      url = await generateTestSourceUrl(test, github, branchName);
-    } else {
-      console.log(`[flaky-tests] Reusing URL from previous comment for test: ${test.methodName || test.fullName}`);
-    }
+    const url = await generateTestSourceUrl(test, github, branchName);
 
     const testName = test.methodName || test.fullName;
     const formattedName = url ? `[**${testName}**](${url})` : `**${testName}**`;
@@ -72,30 +66,16 @@ async function buildComment(mergedData, github, branchName) {
 }
 
 async function generateTestSourceUrl(test, github, branchName) {
-    try {
-        const originalUrl = await githubApi.getTestSourceUrl(test, github);
-        const testName = test.methodName || test.fullName;
-        console.log(`[flaky-tests] Original URL for test ${testName}: ${originalUrl}`);
+    const originalUrl = await githubApi.getTestSourceUrl(test, github);
+    const testName = test.methodName || test.fullName;
+    console.log(`[flaky-tests] Original URL for test ${testName}: ${originalUrl}`);
 
-        if (!originalUrl || typeof originalUrl !== 'string') {
-            console.warn(`[flaky-tests] No valid source URL found for test: ${testName}`);
-            return '';
-        }
-
-        // Safely encode branch name and ensure URL replacement works
-        const encodedBranch = encodeURIComponent(branchName);
-        if (originalUrl.includes('/blob/')) {
-            return originalUrl.replace(/\/blob\/[^/]+/, `/tree/${encodedBranch}`);
-        } else {
-            // Fallback: return original URL if pattern doesn't match expected format
-            console.warn(`[flaky-tests] Unexpected URL format, returning original: ${originalUrl}`);
-            return originalUrl;
-        }
-    } catch (error) {
-        const testName = test.methodName || test.fullName;
-        console.error(`[flaky-tests] Failed to generate URL for test ${testName}:`, error.message);
+    if (!originalUrl || typeof originalUrl !== 'string') {
+        console.warn(`[flaky-tests] No valid source URL found for test: ${testName}`);
         return '';
     }
+
+    return originalUrl.replace(/blob\/[^/]+/, `tree/${branchName}`);
 }
 
 module.exports = { createOrUpdateComment };

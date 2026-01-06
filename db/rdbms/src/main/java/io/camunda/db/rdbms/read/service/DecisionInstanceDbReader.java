@@ -20,7 +20,6 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,27 +55,17 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.DECISION_DEFINITION.name(), List.of());
-    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         DecisionInstanceDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
                     .sort(dbSort)
-                    .page(dbPage));
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = decisionInstanceMapper.count(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = enhanceEntities(decisionInstanceMapper.search(dbQuery), query.resultConfig());
 
     return buildSearchQueryResult(totalHits, hits, dbSort);

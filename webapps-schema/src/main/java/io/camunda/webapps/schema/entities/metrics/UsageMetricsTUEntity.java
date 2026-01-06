@@ -7,7 +7,6 @@
  */
 package io.camunda.webapps.schema.entities.metrics;
 
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -19,12 +18,12 @@ public class UsageMetricsTUEntity
         PartitionedEntity<UsageMetricsTUEntity>,
         TenantOwned {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private OffsetDateTime startTime;
-  @BeforeVersion880 private OffsetDateTime endTime;
-  @BeforeVersion880 private Long assigneeHash;
-  @BeforeVersion880 private String tenantId;
-  @BeforeVersion880 private int partitionId;
+  private String id;
+  private OffsetDateTime startTime;
+  private OffsetDateTime endTime;
+  private Long assigneeHash;
+  private String tenantId;
+  private int partitionId;
 
   @Override
   public int hashCode() {

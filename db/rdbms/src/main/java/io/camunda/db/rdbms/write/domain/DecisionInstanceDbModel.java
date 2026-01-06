@@ -91,33 +91,6 @@ public record DecisionInstanceDbModel(
         historyCleanupDate);
   }
 
-  public Builder toBuilder() {
-    return new Builder()
-        .decisionInstanceId(decisionInstanceId)
-        .decisionInstanceKey(decisionInstanceKey)
-        .state(state)
-        .evaluationDate(evaluationDate)
-        .evaluationFailure(evaluationFailure)
-        .evaluationFailureMessage(evaluationFailureMessage)
-        .result(result)
-        .flowNodeInstanceKey(flowNodeInstanceKey)
-        .flowNodeId(flowNodeId)
-        .processInstanceKey(processInstanceKey)
-        .processDefinitionKey(processDefinitionKey)
-        .processDefinitionId(processDefinitionId)
-        .decisionDefinitionKey(decisionDefinitionKey)
-        .decisionDefinitionId(decisionDefinitionId)
-        .decisionRequirementsKey(decisionRequirementsKey)
-        .decisionRequirementsId(decisionRequirementsId)
-        .rootDecisionDefinitionKey(rootDecisionDefinitionKey)
-        .decisionType(decisionType)
-        .tenantId(tenantId)
-        .partitionId(partitionId)
-        .evaluatedInputs(evaluatedInputs)
-        .evaluatedOutputs(evaluatedOutputs)
-        .historyCleanupDate(historyCleanupDate);
-  }
-
   public static final class Builder implements ObjectBuilder<DecisionInstanceDbModel> {
 
     private String decisionInstanceId;

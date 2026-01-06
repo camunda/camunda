@@ -95,17 +95,17 @@ public final class MessageSubscriptionStateTest {
 
     // then
     assertThat(subscriptions).hasSize(1);
-    final var expectedSubscription = subscriptions.getFirst().getRecord();
-    assertThat(expectedSubscription.getProcessInstanceKey())
+    assertThat(subscriptions.get(0).getRecord().getProcessInstanceKey())
         .isEqualTo(subscription.getProcessInstanceKey());
-    assertThat(expectedSubscription.getElementInstanceKey())
+    assertThat(subscriptions.get(0).getRecord().getElementInstanceKey())
         .isEqualTo(subscription.getElementInstanceKey());
-    assertThat(expectedSubscription.getProcessDefinitionKey())
-        .isEqualTo(subscription.getProcessDefinitionKey());
-    assertThat(expectedSubscription.getMessageName()).isEqualTo(subscription.getMessageName());
-    assertThat(expectedSubscription.getCorrelationKey())
+    assertThat(subscriptions.get(0).getRecord().getMessageName())
+        .isEqualTo(subscription.getMessageName());
+    assertThat(subscriptions.get(0).getRecord().getCorrelationKey())
         .isEqualTo(subscription.getCorrelationKey());
-    assertThat(expectedSubscription.getVariables()).isEqualTo(subscription.getVariables());
+    assertThat(subscriptions.get(0).getRecord().getVariables())
+        .isEqualTo(subscription.getVariables());
+    assertThat(subscriptions.get(0).isCorrelating()).isFalse();
   }
 
   @Test
@@ -194,7 +194,6 @@ public final class MessageSubscriptionStateTest {
     return new MessageSubscriptionRecord()
         .setProcessInstanceKey(1L)
         .setElementInstanceKey(elementInstanceKey)
-        .setProcessDefinitionKey(2L)
         .setBpmnProcessId(wrapString("process"))
         .setMessageName(wrapString(name))
         .setCorrelationKey(wrapString(correlationKey))

@@ -16,7 +16,6 @@ import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -82,8 +81,8 @@ public final class InterPartitionCommandReceiverActor extends Actor
   }
 
   @Override
-  public void onNewCheckpointCreated(final long checkpointId, final CheckpointType checkpointType) {
-    actor.run(() -> receiver.setCheckpointInfo(checkpointId, checkpointType));
+  public void onNewCheckpointCreated(final long checkpointId) {
+    actor.run(() -> receiver.setCheckpointId(checkpointId));
   }
 
   private void tryHandleMessage(final MemberId memberId, final byte[] message) {

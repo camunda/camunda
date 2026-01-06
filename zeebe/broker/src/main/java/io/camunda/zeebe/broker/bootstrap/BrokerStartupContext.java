@@ -25,7 +25,6 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
-import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
@@ -144,8 +143,4 @@ public interface BrokerStartupContext {
   void setSnapshotApiRequestHandler(SnapshotApiRequestHandler snapshotApiRequestHandler);
 
   BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter();
-
-  CheckpointSchedulingService getCheckpointSchedulingService();
-
-  void setCheckpointSchedulingService(CheckpointSchedulingService checkpointSchedulingService);
 }

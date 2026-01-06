@@ -15,10 +15,10 @@ import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -106,7 +106,7 @@ public class ResourceDeletionDeleteProcessor
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     startEventSubscriptions =
         new StartEventSubscriptions(
-            bpmnBehaviors.expressionProcessor(), catchEventBehavior, startEventSubscriptionManager);
+            bpmnBehaviors.expressionBehavior(), catchEventBehavior, startEventSubscriptionManager);
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
@@ -445,13 +445,9 @@ public class ResourceDeletionDeleteProcessor
       final String resourceId,
       final String tenantId) {
     final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(resourceType)
-            .permissionType(permissionType)
-            .tenantId(tenantId)
-            .addResourceId(resourceId)
-            .build();
+        new AuthorizationRequest(command, resourceType, permissionType, tenantId)
+            .addResourceId(resourceId);
+
     if (authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);
     }

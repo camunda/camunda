@@ -43,11 +43,11 @@ public class SegmentedJournalBuilder {
 
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
+  private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
   private int partitionId = DEFAULT_PARTITION_ID;
 
   private JournalMetaStore journalMetaStore;
   private final MeterRegistry meterRegistry;
-  private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
 
   SegmentedJournalBuilder(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -136,11 +136,12 @@ public class SegmentedJournalBuilder {
    * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
    * before any writes happen.
    *
-   * @param segmentAllocator to use to preallocate files
+   * @param preallocateSegmentFiles true to preallocate files, false otherwise
    * @return this builder for chaining
    */
-  public SegmentedJournalBuilder withSegmentAllocator(final SegmentAllocator segmentAllocator) {
-    this.segmentAllocator = segmentAllocator;
+  public SegmentedJournalBuilder withPreallocateSegmentFiles(
+      final boolean preallocateSegmentFiles) {
+    this.preallocateSegmentFiles = preallocateSegmentFiles;
     return this;
   }
 
@@ -168,6 +169,8 @@ public class SegmentedJournalBuilder {
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
+    final var segmentAllocator =
+        preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
     final var segmentsManager =
         new SegmentsManager(

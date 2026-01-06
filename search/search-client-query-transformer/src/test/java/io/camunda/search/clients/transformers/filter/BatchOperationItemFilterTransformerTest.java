@@ -14,7 +14,6 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
-import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
@@ -194,8 +193,7 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
                 f.batchOperationKeys("123")
                     .states("ACTIVE")
                     .itemKeys(123L)
-                    .processInstanceKeys(456L)
-                    .operationTypes(BatchOperationType.CANCEL_PROCESS_INSTANCE.name()));
+                    .processInstanceKeys(456L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -203,7 +201,7 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
     // then
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(5);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(4);
 
     assertThat(((SearchBoolQuery) queryVariant).must().get(0).queryOption())
         .isInstanceOfSatisfying(
@@ -235,97 +233,6 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
             t -> {
               assertThat(t.field()).isEqualTo("processInstanceKey");
               assertThat(t.value().longValue()).isEqualTo(456L);
-            });
-
-    assertThat(((SearchBoolQuery) queryVariant).must().get(4).queryOption())
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("type");
-              assertThat(t.value().stringValue())
-                  .isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE.name());
-            });
-  }
-
-  @Test
-  void shouldQueryByOperationType() {
-    // given
-    final var filter =
-        FilterBuilders.batchOperationItem(
-            f -> f.operationTypes(BatchOperationType.CANCEL_PROCESS_INSTANCE.name()));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("type");
-              assertThat(t.value().stringValue())
-                  .isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE.name());
-            });
-  }
-
-  @Test
-  void shouldQueryByMultipleOperationTypes() {
-    // given
-    final var filter =
-        FilterBuilders.batchOperationItem(
-            f ->
-                f.operationTypes(
-                    BatchOperationType.CANCEL_PROCESS_INSTANCE.name(),
-                    BatchOperationType.RESOLVE_INCIDENT.name(),
-                    BatchOperationType.DELETE_PROCESS_INSTANCE.name()));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermsQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("type");
-              assertThat(t.values())
-                  .containsExactlyInAnyOrder(
-                      TypedValue.of(BatchOperationType.CANCEL_PROCESS_INSTANCE.name()),
-                      TypedValue.of(BatchOperationType.RESOLVE_INCIDENT.name()),
-                      TypedValue.of(BatchOperationType.DELETE_PROCESS_INSTANCE.name()));
-            });
-  }
-
-  @Test
-  void shouldQueryByOperationTypeNegate() {
-    // given
-    final var filter =
-        FilterBuilders.batchOperationItem(
-            f ->
-                f.operationTypeOperations(
-                    Operation.neq(BatchOperationType.CANCEL_PROCESS_INSTANCE.name())));
-
-    // when
-    final var searchRequest = transformQuery(filter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            t -> {
-              assertThat(t.mustNot()).isNotEmpty();
-            });
-    final var mustNotQuery = ((SearchBoolQuery) queryVariant).mustNot().get(0).queryOption();
-    assertThat(mustNotQuery)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("type");
-              assertThat(t.value().stringValue())
-                  .isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE.name());
             });
   }
 

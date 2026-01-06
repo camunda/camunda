@@ -27,7 +27,6 @@ public class HealthConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
   private static final String INDICATOR_BROKER_READY = "brokerReady";
-  private static final String INDICATOR_NODE_ID_PROVIDER_READY = "nodeIdProviderReady";
   private static final String INDICATOR_GATEWAY_STARTED = "gatewayStarted";
   private static final String INDICATOR_OPERATE_INDICES_CHECK = "indicesCheck";
   private static final String INDICATOR_SPRING_READINESS_STATE = "readinessState";
@@ -93,7 +92,6 @@ public class HealthConfigurationInitializer
 
     if (activeProfiles.contains(Profile.BROKER.getId())) {
       healthIndicators.add(INDICATOR_BROKER_READY);
-      healthIndicators.add(INDICATOR_NODE_ID_PROVIDER_READY);
     }
 
     if (activeProfiles.contains(Profile.GATEWAY.getId())) {
@@ -101,10 +99,8 @@ public class HealthConfigurationInitializer
     }
 
     if (secondaryStorageEnabled && activeProfiles.contains(Profile.OPERATE.getId())) {
+      healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
-      if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
-        healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
-      }
     }
 
     if (secondaryStorageEnabled

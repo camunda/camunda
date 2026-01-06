@@ -2,7 +2,6 @@
 paths:
   /authorizations:
     post:
-      x-eventually-consistent: false
       tags:
         - Authorization
       operationId: createAuthorization
@@ -12,7 +11,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthorizationRequest'
+              $ref: '#/components/schemas/AuthorizationCreateResult'
         required: true
       responses:
         "201":
@@ -20,7 +19,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthorizationCreateResult'
+                $ref: '#/components/schemas/AuthorizationResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -37,10 +36,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /authorizations/{authorizationKey}:
     put:
-      x-eventually-consistent: false
       tags:
         - Authorization
       operationId: updateAuthorization
@@ -74,9 +73,9 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
     get:
-      x-eventually-consistent: true
       tags:
         - Authorization
       operationId: getAuthorization
@@ -108,9 +107,9 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
     delete:
-      x-eventually-consistent: false
       tags:
         - Authorization
       operationId: deleteAuthorization
@@ -138,10 +137,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /authorizations/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Authorization
       summary: Search authorizations
@@ -167,12 +166,13 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
 components:
   schemas:
-    AuthorizationIdBasedRequest:
+    AuthorizationRequest:
       type: object
       additionalProperties: false
       properties:
@@ -185,62 +185,17 @@ components:
           description: The ID of the resource to add permissions to.
           type: string
         resourceType:
-          description: The type of resource to add permissions to.
-          type: string
-          allOf:
-            - $ref: '#/components/schemas/ResourceTypeEnum'
+          $ref: '#/components/schemas/ResourceTypeEnum'
         permissionTypes:
           type: array
-          description: The permission types to add.
           items:
-            allOf:
-              - $ref: '#/components/schemas/PermissionTypeEnum'
+            $ref: '#/components/schemas/PermissionTypeEnum'
       required:
         - ownerId
         - ownerType
         - resourceId
         - resourceType
         - permissionTypes
-
-    AuthorizationPropertyBasedRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        ownerId:
-          description: The ID of the owner of the permissions.
-          type: string
-        ownerType:
-          $ref: '#/components/schemas/OwnerTypeEnum'
-        resourcePropertyName:
-          description: The name of the resource property on which this authorization is based.
-          type: string
-        resourceType:
-          description: The type of resource to add permissions to.
-          type: string
-          allOf:
-            - $ref: '#/components/schemas/ResourceTypeEnum'
-        permissionTypes:
-          type: array
-          description: The permission types to add.
-          items:
-            allOf:
-              - $ref: '#/components/schemas/PermissionTypeEnum'
-      required:
-        - ownerId
-        - ownerType
-        - resourcePropertyName
-        - resourceType
-        - permissionTypes
-
-    AuthorizationRequest:
-      x-polymorphic-schema: true
-      type: object
-      oneOf:
-        - $ref: '#/components/schemas/AuthorizationIdBasedRequest'
-        - $ref: '#/components/schemas/AuthorizationPropertyBasedRequest'
-      description: |
-        Defines an authorization request.
-        Either an id-based or a property-based authorization can be provided.
 
     AuthorizationSearchQuerySortRequest:
       type: object
@@ -252,10 +207,9 @@ components:
             - ownerId
             - ownerType
             - resourceId
-            - resourcePropertyName
             - resourceType
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -289,16 +243,8 @@ components:
           type: array
           items:
             type: string
-        resourcePropertyNames:
-          description: The names of the resource properties to search permissions for.
-          type: array
-          items:
-            type: string
         resourceType:
-          description: The type of resource to search permissions for.
-          type: string
-          allOf:
-            - $ref: '#/components/schemas/ResourceTypeEnum'
+          $ref: '#/components/schemas/ResourceTypeEnum'
 
     AuthorizationResult:
       type: object
@@ -309,15 +255,9 @@ components:
         ownerType:
           $ref: '#/components/schemas/OwnerTypeEnum'
         resourceType:
-          description: The type of resource that the permissions relate to.
-          type: string
-          allOf:
-            - $ref: '#/components/schemas/ResourceTypeEnum'
+          $ref: '#/components/schemas/ResourceTypeEnum'
         resourceId:
-          description: ID of the resource the permission relates to (mutually exclusive with `resourcePropertyName`).
-          type: string
-        resourcePropertyName:
-          description: The name of the resource property the permission relates to (mutually exclusive with `resourceId`).
+          description: ID of the resource the permission relates to.
           type: string
         permissionTypes:
           description: Specifies the types of the permissions.
@@ -376,7 +316,6 @@ components:
         - DELETE_PROCESS
         - DELETE_PROCESS_INSTANCE
         - DELETE_RESOURCE
-        - EVALUATE
         - MODIFY_PROCESS_INSTANCE
         - READ
         - READ_DECISION_DEFINITION
@@ -393,15 +332,12 @@ components:
       description: The type of resource to add/remove permissions to/from.
       type: string
       enum:
-        - AUDIT_LOG
         - AUTHORIZATION
         - BATCH
-        - CLUSTER_VARIABLE
         - COMPONENT
         - DECISION_DEFINITION
         - DECISION_REQUIREMENTS_DEFINITION
         - DOCUMENT
-        - EXPRESSION
         - GROUP
         - MAPPING_RULE
         - MESSAGE

@@ -11,12 +11,12 @@ import {expect} from '@playwright/test';
 
 import {
   mockBatchOperations,
+  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockNewDeleteOperation,
   mockProcessInstances,
   mockFinishedOrderProcessInstances,
   mockStatisticsV2,
-  mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {
   mockResponses as mockProcessDetailResponses,
@@ -40,7 +40,7 @@ test.describe('delete finished instances', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockProcessDefinitions,
+        groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
@@ -103,7 +103,7 @@ test.describe('delete finished instances', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockProcessDefinitions,
+        groupedProcesses: mockGroupedProcesses,
         batchOperations: {
           ...mockBatchOperations,
           items: [mockNewDeleteOperation, ...mockBatchOperations.items],
@@ -169,7 +169,7 @@ test.describe('delete finished instances', () => {
         processInstanceDetail: completedOrderProcessInstance.detail,
         processInstanceDetailV2: completedOrderProcessInstance.detailV2,
         callHierarchy: completedOrderProcessInstance.callHierarchy,
-        elementInstances: completedOrderProcessInstance.elementInstances,
+        flowNodeInstances: completedOrderProcessInstance.flowNodeInstances,
         statisticsV2: completedOrderProcessInstance.statisticsV2,
         sequenceFlows: completedOrderProcessInstance.sequenceFlows,
         sequenceFlowsV2: completedOrderProcessInstance.sequenceFlowsV2,
@@ -246,10 +246,10 @@ test.describe('delete finished instances', () => {
         });
       }
 
-      if (route.request().url().includes('/v2/process-definitions/search')) {
+      if (route.request().url().includes('/api/processes/grouped')) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify(mockProcessDefinitions),
+          body: JSON.stringify(mockGroupedProcesses),
           headers: {
             'content-type': 'application/json',
           },

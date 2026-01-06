@@ -15,8 +15,6 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
-import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.Duration;
@@ -125,41 +123,6 @@ public interface BackupAcceptance {
                     .asInstanceOf(InstanceOfAssertFactories.type(FeignException.class))
                     .extracting(FeignException::status)
                     .isEqualTo(404));
-  }
-
-  @Test
-  default void shouldRetrieveState() {
-    // given
-    final TestCluster cluster = getTestCluster();
-    final var actuator = BackupActuator.of(cluster.availableGateway());
-    final long backupId = 1;
-    actuator.take(backupId);
-    waitUntilBackupIsCompleted(actuator, backupId);
-
-    // when
-    final var response = actuator.state();
-
-    // then
-    assertThat(response.getBackupStates()).hasSize(cluster.partitionsCount());
-    assertThat(response.getCheckpointStates()).hasSize(cluster.partitionsCount());
-
-    assertThat(response.getBackupStates())
-        .allSatisfy(
-            state ->
-                assertThat(state)
-                    .extracting(
-                        PartitionCheckpointState::checkpointId,
-                        PartitionCheckpointState::checkpointType)
-                    .containsExactly(backupId, CheckpointType.MANUAL_BACKUP));
-
-    assertThat(response.getCheckpointStates())
-        .allSatisfy(
-            state ->
-                assertThat(state)
-                    .extracting(
-                        PartitionCheckpointState::checkpointId,
-                        PartitionCheckpointState::checkpointType)
-                    .containsExactly(backupId, CheckpointType.MANUAL_BACKUP));
   }
 
   private static void waitUntilBackupIsCompleted(

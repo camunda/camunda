@@ -39,7 +39,7 @@ final class BannedInstanceIT {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withUnifiedConfig(cfg -> cfg.getSystem().setClockControlled(true));
+          .withProperty("zeebe.clock.controlled", true);
 
   private final BanningActuator actuator = BanningActuator.of(ZEEBE);
   private final ActorClockActuator clock = ActorClockActuator.of(ZEEBE);

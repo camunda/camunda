@@ -9,14 +9,15 @@
 import {useQuery} from '@tanstack/react-query';
 import {searchDecisionInstances} from 'modules/api/v2/decisionInstances/searchDecisionInstances';
 import type {QueryDecisionInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
-import {queryKeys} from '../queryKeys';
+
+const DECISION_INSTANCES_SEARCH_QUERY_KEY = 'decisionInstancesSearch';
 
 const useDecisionInstancesSearch = (
   payload: QueryDecisionInstancesRequestBody,
   {enabled} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: queryKeys.decisionInstances.search(payload),
+    queryKey: [DECISION_INSTANCES_SEARCH_QUERY_KEY, payload],
     queryFn: () =>
       searchDecisionInstances(payload).then(({response, error}) => {
         if (response !== null) {

@@ -27,7 +27,6 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class TimerCatchEventExpressionValidator implements ModelElementValidator<CatchEvent> {
 
   private static final long NO_VARIABLE_SCOPE = -1L;
-  private static final String NO_TENANT_SCOPE = "";
 
   private final ExpressionLanguage expressionLanguage;
   private final ExpressionProcessor expressionProcessor;
@@ -46,6 +45,7 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
   @Override
   public void validate(
       final CatchEvent element, final ValidationResultCollector validationResultCollector) {
+
     // verify static expressions only because other expression may requires a variable context
     // - except for process start events because they don't have any variable context
     final var isTimerStartEventOfProcess =
@@ -78,7 +78,7 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
 
       if (expressionFilter.test(expression)) {
         return expressionProcessor
-            .evaluateIntervalExpression(expression, NO_VARIABLE_SCOPE, NO_TENANT_SCOPE)
+            .evaluateIntervalExpression(expression, NO_VARIABLE_SCOPE)
             .mapLeft(wrapFailure("duration"));
       }
 
@@ -89,7 +89,7 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
       if (expressionFilter.test(expression)) {
         try {
           return expressionProcessor
-              .evaluateStringExpression(expression, NO_VARIABLE_SCOPE, NO_TENANT_SCOPE)
+              .evaluateStringExpression(expression, NO_VARIABLE_SCOPE)
               .map(
                   text -> {
                     if (text.startsWith("R")) {
@@ -110,7 +110,7 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
 
       if (expressionFilter.test(expression)) {
         return expressionProcessor
-            .evaluateDateTimeExpression(expression, NO_VARIABLE_SCOPE, NO_TENANT_SCOPE)
+            .evaluateDateTimeExpression(expression, NO_VARIABLE_SCOPE)
             .mapLeft(wrapFailure("date"));
       }
     }

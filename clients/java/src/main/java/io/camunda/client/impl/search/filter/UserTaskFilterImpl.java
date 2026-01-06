@@ -28,13 +28,9 @@ import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.UserTaskStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.impl.util.TagUtil;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public class UserTaskFilterImpl
@@ -104,18 +100,6 @@ public class UserTaskFilterImpl
   public UserTaskFilter name(final String name) {
     filter.setName(name);
     return this;
-  }
-
-  @Override
-  public UserTaskFilter tags(final Set<String> tags) {
-    TagUtil.ensureValidTags("tags", tags);
-    filter.setTags(tags);
-    return this;
-  }
-
-  @Override
-  public UserTaskFilter tags(final String... tags) {
-    return tags(new HashSet<>(Arrays.asList(tags)));
   }
 
   @Override

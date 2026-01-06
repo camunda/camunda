@@ -10,14 +10,13 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
+import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.time.InstantSource;
 
 public class MigrationTransitionStep implements PartitionTransitionStep {
@@ -40,18 +39,16 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
     final var transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
     final var zeebeDb = context.getZeebeDb();
     final var zeebeDbContext = zeebeDb.createContext();
-
     final var processingState =
         new ProcessingDbState(
             context.getPartitionId(),
             zeebeDb,
             zeebeDbContext,
-            KeyGenerator.immutable(context.getPartitionId()),
+            new DbKeyGenerator(context.getPartitionId(), zeebeDb, zeebeDbContext),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
-            InstantSource.system(),
-            ExpressionLanguageMetrics.noop());
+            InstantSource.system());
 
     final var dbMigrator =
         new DbMigratorImpl(

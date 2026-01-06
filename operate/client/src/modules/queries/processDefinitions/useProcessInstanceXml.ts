@@ -23,7 +23,9 @@ function processInstanceXmlParser({
   selectableFlowNodes,
 }: ParsedXmlData) {
   const businessObjects = businessObjectsParser({
+    xml,
     diagramModel,
+    selectableFlowNodes,
   });
 
   return {

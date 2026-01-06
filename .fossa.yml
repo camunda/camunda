@@ -18,7 +18,6 @@ paths:
     - optimize
     - qa/c8-orchestration-cluster-e2e-test-suite
     - tasklist/qa/backup-restore-tests
-    - testing/camunda-process-test-coverage-frontend
 
 maven:
   scope-exclude:

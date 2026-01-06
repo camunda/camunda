@@ -38,8 +38,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     | 'LinkEventDefinition'
     | 'EscalationEventDefinition'
     | 'SignalEventDefinition'
-    | 'CompensateEventDefinition'
-    | 'ConditionalEventDefinition'}`;
+    | 'CompensateEventDefinition'}`;
 
   export type FlowNodeType = `bpmn:${
     | 'StartEvent'
@@ -80,7 +79,6 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     extensionElements?: {
       values: {
         $type: string;
-        type?: string;
         $children?: {
           $type: string;
           source: string;

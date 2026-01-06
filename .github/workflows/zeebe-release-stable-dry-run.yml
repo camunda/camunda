@@ -11,8 +11,35 @@ on:
     - cron: '0 2 * * 1-5'
 
 jobs:
+  create-fake-tag:
+    name: "Create fake tag for dry runs"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Git User Setup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Create fake tag locally
+        run: |
+          git fetch origin tag 0.0.0-dryrun-86 --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-86 -m "Dummy tag for dry run 8.6"
+          git fetch origin tag 0.0.0-dryrun-87 --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-87 -m "Dummy tag for dry run 8.7"  
+          git fetch origin tag 0.0.0-dryrun-88 --no-tags 2>/dev/null || git tag -a 0.0.0-dryrun-88 -m "Dummy tag for dry run 8.8"
+          echo "Created fake tags for all dry runs locally (not pushed)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: create-fake-tag
+          path: .git
+
   dry-run-release-88:
     name: "Release from stable/8.8"
+    needs: create-fake-tag
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.8
     secrets: inherit
     strategy:
@@ -26,6 +53,7 @@ jobs:
       dryRun: true
   dry-run-release-87:
     name: "Release from stable/8.7"
+    needs: create-fake-tag
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.7
     secrets: inherit
     strategy:
@@ -39,6 +67,7 @@ jobs:
       dryRun: true
   dry-run-release-86:
     name: "Release from stable/8.6"
+    needs: create-fake-tag
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.6
     secrets: inherit
     strategy:
@@ -54,7 +83,7 @@ jobs:
   notify-camunda:
     name: Send Slack notification for 8.6+
     runs-on: ubuntu-latest
-    needs: [dry-run-release-86, dry-run-release-87, dry-run-release-88]
+    needs: [create-fake-tag, dry-run-release-86, dry-run-release-87, dry-run-release-88]
     if: always()
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -73,7 +102,7 @@ jobs:
 
       - name: Send failure Slack notification
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-        if: ${{ (needs.dry-run-release-86.result != 'success' || needs.dry-run-release-87.result != 'success' || needs.dry-run-release-88.result != 'success') && github.event_name == 'schedule' }}
+        if: ${{ always() && (needs.dry-run-release-86.result != 'success' || needs.dry-run-release-87.result != 'success' || needs.dry-run-release-88.result != 'success') && github.event_name == 'schedule' }}
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook

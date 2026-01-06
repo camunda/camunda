@@ -7,17 +7,17 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import static io.camunda.operate.qa.util.TestContainerUtil.ELS_PORT;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.Topology;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.operate.qa.util.TestContext;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 
 public abstract class ZeebeContainerManager {
@@ -26,7 +26,7 @@ public abstract class ZeebeContainerManager {
   protected final OperateProperties operateProperties;
   protected final TestContainerUtil testContainerUtil;
   protected String prefix;
-  protected TestStandaloneBroker zeebeBroker;
+  protected ZeebeContainer zeebeContainer;
   protected CamundaClient client;
   private final SecurityConfiguration securityConfiguration;
 
@@ -47,24 +47,20 @@ public abstract class ZeebeContainerManager {
 
   public void startContainer() {
     // Start zeebe
-    final TestContext testContext =
-        new TestContext()
-            .setInternalElsHost("localhost")
-            .setExternalElsHost("localhost")
-            .setInternalElsPort(ELS_PORT)
-            .setExternalElsPort(ELS_PORT)
-            .setIndexPrefix(prefix)
-            .setDatabaseType(ConnectionTypes.ELASTICSEARCH.getType())
-            .setPartitionCount(2)
-            .setMultitenancyEnabled(securityConfiguration.getMultiTenancy().isChecksEnabled());
-
-    zeebeBroker = testContainerUtil.startZeebe(testContext);
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
+    zeebeContainer =
+        testContainerUtil.startZeebe(
+            zeebeVersion,
+            prefix,
+            2,
+            securityConfiguration.getMultiTenancy().isChecksEnabled(),
+            ConnectionTypes.ELASTICSEARCH.getType());
 
     client =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .restAddress(zeebeBroker.restAddress())
-            .grpcAddress(zeebeBroker.grpcAddress())
+            .grpcAddress(zeebeContainer.getGrpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 

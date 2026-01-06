@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -96,11 +96,10 @@ final class JobBatchCollector {
     // here and only check if the requester has the correct permissions to access the jobs
     final var authorizedProcessIds =
         authCheckBehavior.getAllAuthorizedScopes(
-            AuthorizationRequest.builder()
-                .command(record)
-                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                .build());
+            new AuthorizationRequest(
+                record,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE));
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),

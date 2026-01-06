@@ -54,11 +54,6 @@ public class BrokerAuthorizationRequest extends BrokerExecuteCommand<Authorizati
     return this;
   }
 
-  public BrokerAuthorizationRequest setResourcePropertyName(final String resourcePropertyName) {
-    requestDto.setResourcePropertyName(resourcePropertyName);
-    return this;
-  }
-
   public BrokerAuthorizationRequest setResourceType(final AuthorizationResourceType resourceType) {
     requestDto.setResourceType(resourceType);
     return this;

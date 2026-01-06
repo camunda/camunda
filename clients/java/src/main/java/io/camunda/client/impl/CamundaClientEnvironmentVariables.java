@@ -39,9 +39,6 @@ public final class CamundaClientEnvironmentVariables {
   public static final String OAUTH_ENV_TOKEN_SCOPE = "CAMUNDA_TOKEN_SCOPE";
   public static final String OAUTH_ENV_TOKEN_RESOURCE = "CAMUNDA_TOKEN_RESOURCE";
   public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "CAMUNDA_AUTHORIZATION_SERVER_URL";
-  public static final String OAUTH_ENV_WELL_KNOWN_CONFIGURATION_URL =
-      "CAMUNDA_WELL_KNOWN_CONFIGURATION_URL";
-  public static final String OAUTH_ENV_ISSUER_URL = "CAMUNDA_ISSUER_URL";
   public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH =
       "CAMUNDA_SSL_CLIENT_KEYSTORE_PATH";
   public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET =

@@ -22,16 +22,13 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
-import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,11 +61,8 @@ final class CamundaExporterTest {
     mockedClientAdapterFactory
         .when(() -> ClientAdapter.of(configuration.getConnect()))
         .thenReturn(stubbedClientAdapterInUse);
-    doReturn(List.of(new HistoryDeletionIndex("", true)))
-        .when(resourceProvider)
-        .getIndexDescriptors();
+    doReturn(emptyList()).when(resourceProvider).getIndexDescriptors();
     doReturn(emptyList()).when(resourceProvider).getIndexTemplateDescriptors();
-    configuration.setCreateSchema(false);
   }
 
   @AfterEach
@@ -88,12 +82,6 @@ final class CamundaExporterTest {
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
         final String processIndexName) {
-      return k -> null;
-    }
-
-    @Override
-    public CacheLoader<Long, CachedDecisionRequirementsEntity> getDecisionRequirementsCacheLoader(
-        final String decisionIndexName) {
       return k -> null;
     }
 

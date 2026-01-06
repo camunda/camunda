@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -139,11 +139,11 @@ public class ProcessDefinitionSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<ProcessDefinitionSort>> sortBuilder,
       final Comparator<ProcessDefinitionEntity> comparator) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final ProcessDefinitionDbReader reader = rdbmsService.getProcessDefinitionReader();
 
     final var versionTag = nextStringId();
-    createAndSaveRandomProcessDefinitions(rdbmsWriters, b -> b.versionTag(versionTag));
+    createAndSaveRandomProcessDefinitions(rdbmsWriter, b -> b.versionTag(versionTag));
 
     final var searchResult =
         reader

@@ -28,7 +28,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsM
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateConditionalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionInput;
@@ -38,7 +37,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FormMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MatchedDecisionRule;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceReference;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
@@ -50,7 +48,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UserTaskProperties;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -506,23 +503,6 @@ public final class ResponseMapper {
         .setKey(key)
         .setTenantId(brokerResponse.getTenantId())
         .build();
-  }
-
-  public static EvaluateConditionalResponse toEvaluateConditionalResponse(
-      final long key, final ConditionalEvaluationRecord brokerResponse) {
-    final EvaluateConditionalResponse.Builder responseBuilder =
-        EvaluateConditionalResponse.newBuilder();
-
-    brokerResponse.getStartedProcessInstances().stream()
-        .map(
-            instance ->
-                ProcessInstanceReference.newBuilder()
-                    .setProcessDefinitionKey(instance.getProcessDefinitionKey())
-                    .setProcessInstanceKey(instance.getProcessInstanceKey())
-                    .build())
-        .forEach(responseBuilder::addProcessInstances);
-
-    return responseBuilder.build();
   }
 
   private static String bufferAsJson(final DirectBuffer customHeaders) {

@@ -51,7 +51,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   public EndEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
-    expressionProcessor = bpmnBehaviors.expressionProcessor();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
@@ -223,7 +223,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       }
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-          error.getErrorCodeExpression(), context.getElementInstanceKey(), context.getTenantId());
+          error.getErrorCodeExpression(), context.getElementInstanceKey());
     }
   }
 
@@ -366,9 +366,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       }
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-          escalation.getEscalationCodeExpression(),
-          context.getElementInstanceKey(),
-          context.getTenantId());
+          escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
     }
   }
 

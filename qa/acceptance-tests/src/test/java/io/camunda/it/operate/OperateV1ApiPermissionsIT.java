@@ -28,11 +28,8 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Decision;
-import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
@@ -44,11 +41,9 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -59,7 +54,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateV1ApiPermissionsIT {
 
@@ -99,8 +94,6 @@ public class OperateV1ApiPermissionsIT {
       DECISION_REQUIREMENTS_ENDPOINT + "/%s";
   private static final String DECISION_REQUIREMENTS_GET_XML_ENDPOINT_PATTERN =
       DECISION_REQUIREMENTS_ENDPOINT + "/%s/xml";
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   // searchable keys
   private static final String PROCESS_ID = "processId";
@@ -197,7 +190,6 @@ public class OperateV1ApiPermissionsIT {
         .send()
         .join();
     await()
-        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 assertThat(adminClient.newVariableSearchRequest().send().join().items())
@@ -207,7 +199,6 @@ public class OperateV1ApiPermissionsIT {
         adminClient.newVariableSearchRequest().send().join().items().getFirst().getVariableKey();
     // create incident
     await()
-        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 assertThat(adminClient.newJobSearchRequest().send().join().items())
@@ -235,9 +226,6 @@ public class OperateV1ApiPermissionsIT {
             .items()
             .getFirst()
             .getDecisionInstanceId();
-
-    // Wait for Operate to import and index all data
-    waitForOperateToImportData();
   }
 
   @ParameterizedTest
@@ -273,9 +261,6 @@ public class OperateV1ApiPermissionsIT {
         adminClient, f -> f.processInstanceKey(processInstanceToDeleteKey), 1);
     adminClient.newCancelInstanceCommand(processInstanceToDeleteKey).send().join();
     waitForProcessInstanceToBeTerminated(adminClient, processInstanceToDeleteKey);
-
-    // Wait for Operate to import the canceled instance before attempting deletion
-    waitForOperateToSyncProcessInstanceCanceled(processInstanceToDeleteKey);
 
     try (final var client = STANDALONE_CAMUNDA.newOperateClient(user, user)) {
       final int statusCode =
@@ -556,108 +541,5 @@ public class OperateV1ApiPermissionsIT {
         Arguments.of(ROLE_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(GROUP_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(UNAUTHORIZED_USERNAME, HttpStatus.FORBIDDEN.value()));
-  }
-
-  /**
-   * Wait for Operate's importer to catch up with the engine state. This ensures all entities
-   * (process instances, variables, incidents, decision instances) are visible via Operate's v1 API
-   * before running the permission tests.
-   */
-  private static void waitForOperateToImportData() {
-    try (final var operateClient =
-        STANDALONE_CAMUNDA.newOperateClient(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME)) {
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          PROCESS_INSTANCE_GET_ENDPOINT_PATTERN,
-          String.valueOf(processInstanceKey),
-          "Process instance should be visible in Operate");
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          PROCESS_DEFINITION_GET_ENDPOINT_PATTERN,
-          String.valueOf(processDefinitionKey),
-          "Process definition should be visible in Operate");
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          FLOWNODE_INSTANCES_GET_ENDPOINT_PATTERN,
-          String.valueOf(flowNodeInstanceKey),
-          "Flownode instance should be visible in Operate");
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          VARIABLES_GET_ENDPOINT_PATTERN,
-          String.valueOf(variableKey),
-          "Variable should be visible in Operate");
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          INCIDENT_GET_ENDPOINT_PATTERN,
-          String.valueOf(incidentKey),
-          "Incident should be visible in Operate");
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          DECISION_DEFINITIONS_GET_ENDPOINT_PATTERN,
-          String.valueOf(decisionDefinitionKey),
-          "Decision definition should be visible in Operate");
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          DECISION_INSTANCES_GET_ENDPOINT_PATTERN,
-          String.valueOf(decisionInstanceId),
-          "Decision instance should be visible in Operate");
-
-      waitForOperateToSyncEntityVisible(
-          operateClient::sendGetRequest,
-          DECISION_REQUIREMENTS_GET_ENDPOINT_PATTERN,
-          String.valueOf(decisionRequirementsKey),
-          "Decision requirements should be visible in Operate");
-    }
-  }
-
-  private static void waitForOperateToSyncEntityVisible(
-      final ThrowingBiFunction<String, String, java.net.http.HttpResponse<String>> sendGetRequest,
-      final String endpointPattern,
-      final String entityId,
-      final String description) {
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              final var response = sendGetRequest.apply(endpointPattern, entityId);
-              assertThat(response.statusCode()).describedAs(description).isEqualTo(200);
-            });
-  }
-
-  private static void waitForOperateToSyncProcessInstanceCanceled(
-      final long processInstanceToDeleteKey) {
-    try (final var operateClient =
-        STANDALONE_CAMUNDA.newOperateClient(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME)) {
-      await()
-          .atMost(Duration.ofSeconds(30))
-          .untilAsserted(
-              () -> {
-                final var response =
-                    operateClient.sendGetRequest(
-                        PROCESS_INSTANCE_GET_ENDPOINT_PATTERN,
-                        String.valueOf(processInstanceToDeleteKey));
-                assertThat(response.statusCode())
-                    .describedAs(
-                        "Canceled process instance should be visible in Operate before deletion")
-                    .isEqualTo(200);
-                final ProcessInstance processInstance =
-                    OBJECT_MAPPER.readValue(response.body(), ProcessInstance.class);
-                assertThat(ProcessInstanceState.valueOf(processInstance.getState()))
-                    .describedAs("Process instance should be in CANCELED state before deletion")
-                    .isEqualTo(ProcessInstanceState.CANCELED);
-              });
-    }
-  }
-
-  @FunctionalInterface
-  interface ThrowingBiFunction<T, U, R> {
-    R apply(T t, U u) throws Exception;
   }
 }

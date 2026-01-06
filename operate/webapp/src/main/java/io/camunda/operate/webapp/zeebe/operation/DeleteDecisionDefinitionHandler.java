@@ -11,7 +11,6 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.writer.DecisionWriter;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 /** Operation handler to delete decision definitions and related data */
 @Component
-@ConditionalOnRdbmsDisabled
 public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
     implements OperationHandler {
 

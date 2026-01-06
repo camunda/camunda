@@ -133,7 +133,7 @@ abstract class App implements Runnable {
             .getBrokers()
             .forEach(
                 b -> {
-                  LOG.info("Broker {} - {} ({})", b.getNodeId(), b.getAddress(), b.getVersion());
+                  LOG.info("Broker {} - {}", b.getNodeId(), b.getAddress());
                   b.getPartitions()
                       .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                 });

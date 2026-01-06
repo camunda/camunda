@@ -30,7 +30,8 @@ final class TestClusterBuilderTest {
 
     // then
     assertThat(cluster.brokers())
-        .allSatisfy(haveProperty("cluster size", b -> b.unifiedConfig().getCluster().getSize(), 2));
+        .allSatisfy(
+            haveProperty("cluster size", b -> b.brokerConfig().getCluster().getClusterSize(), 2));
   }
 
   @Test
@@ -47,7 +48,7 @@ final class TestClusterBuilderTest {
     assertThat(brokers)
         .allSatisfy(
             haveProperty(
-                "partition count", b -> b.unifiedConfig().getCluster().getPartitionCount(), 2));
+                "partition count", b -> b.brokerConfig().getCluster().getPartitionsCount(), 2));
   }
 
   @Test
@@ -65,7 +66,7 @@ final class TestClusterBuilderTest {
         .allSatisfy(
             haveProperty(
                 "replication factor",
-                b -> b.unifiedConfig().getCluster().getReplicationFactor(),
+                b -> b.brokerConfig().getCluster().getReplicationFactor(),
                 2));
   }
 
@@ -86,11 +87,15 @@ final class TestClusterBuilderTest {
     assertThat(cluster.brokers())
         .allSatisfy(
             haveProperty(
-                "cluster name", b -> b.unifiedConfig().getCluster().getName(), "test-cluster"));
+                "cluster name",
+                b -> b.brokerConfig().getCluster().getClusterName(),
+                "test-cluster"));
     assertThat(cluster.gateways())
         .allSatisfy(
             haveProperty(
-                "cluster name", g -> g.unifiedConfig().getCluster().getName(), "test-cluster"));
+                "cluster name",
+                g -> g.gatewayConfig().getCluster().getClusterName(),
+                "test-cluster"));
   }
 
   @Test
@@ -147,13 +152,13 @@ final class TestClusterBuilderTest {
         .allSatisfy(
             haveProperty(
                 "initial contact points",
-                b -> b.unifiedConfig().getCluster().getInitialContactPoints(),
+                b -> b.brokerConfig().getCluster().getInitialContactPoints(),
                 expectedValue));
     assertThat(cluster.gateways())
         .allSatisfy(
             haveProperty(
                 "initial contact points",
-                g -> g.unifiedConfig().getCluster().getInitialContactPoints(),
+                g -> g.gatewayConfig().getCluster().getInitialContactPoints(),
                 expectedValue));
   }
 
@@ -172,7 +177,7 @@ final class TestClusterBuilderTest {
         .has(
             hasProperty(
                 "initial contact point",
-                g -> g.unifiedConfig().getCluster().getInitialContactPoints(),
+                g -> g.gatewayConfig().getCluster().getInitialContactPoints(),
                 Collections.emptyList()));
   }
 
@@ -189,7 +194,9 @@ final class TestClusterBuilderTest {
     final var brokerId = MemberId.from("0");
     final var broker = cluster.brokers().get(brokerId);
     assertThat(broker)
-        .has(hasProperty("embedded gateway enabled", TestStandaloneBroker::isGateway, true));
+        .has(
+            hasProperty(
+                "embedded gateway enabled", b -> b.brokerConfig().getGateway().isEnable(), true));
     assertThat(broker.isGateway()).isTrue();
   }
 
@@ -206,7 +213,11 @@ final class TestClusterBuilderTest {
     final var brokerId = MemberId.from("0");
     final var broker = cluster.brokers().get(brokerId);
     assertThat(broker)
-        .has(hasProperty("embedded gateway not enabled", TestStandaloneBroker::isGateway, false));
+        .has(
+            hasProperty(
+                "embedded gateway not enabled",
+                b -> b.brokerConfig().getGateway().isEnable(),
+                false));
     assertThat(broker.isGateway()).isFalse();
   }
 

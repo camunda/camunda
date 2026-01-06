@@ -79,8 +79,8 @@ public class OpensearchProcessInstanceDao
   }
 
   @Override
-  protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
-      final Query<ProcessInstance> query) {
+  protected void buildFiltering(
+      final Query<ProcessInstance> query, final SearchRequest.Builder request) {
     final List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms =
         new LinkedList<>();
     queryTerms.add(
@@ -121,7 +121,7 @@ public class OpensearchProcessInstanceDao
 
     final var nonNullQueryTerms = queryTerms.stream().filter(Objects::nonNull).toList();
 
-    return queryDSLWrapper.and(nonNullQueryTerms);
+    request.query(queryDSLWrapper.and(nonNullQueryTerms));
   }
 
   @Override

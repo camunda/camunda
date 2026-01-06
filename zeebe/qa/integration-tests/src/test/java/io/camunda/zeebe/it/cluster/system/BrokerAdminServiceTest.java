@@ -43,8 +43,7 @@ public class BrokerAdminServiceTest {
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withUnifiedConfig(
-              cfg -> cfg.getData().getPrimaryStorage().getLogStream().setLogIndexDensity(1));
+          .withBrokerConfig(cfg -> cfg.getData().setLogIndexDensity(1));
 
   @AutoClose private ZeebeResourcesHelper resourcesHelper;
   private PartitionsActuator partitions;

@@ -38,8 +38,6 @@ public class JobEntityMapper {
         .elementId(jobDbModel.elementId())
         .elementInstanceKey(jobDbModel.elementInstanceKey())
         .tenantId(jobDbModel.tenantId())
-        .creationTime(jobDbModel.creationTime())
-        .lastUpdateTime(jobDbModel.lastUpdateTime())
         .build();
   }
 }

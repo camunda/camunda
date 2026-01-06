@@ -12,7 +12,6 @@ import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorit
 import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
 import io.camunda.security.configuration.AssertionConfiguration.KidSource;
 import jakarta.annotation.PostConstruct;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -28,13 +27,11 @@ public class OidcAuthenticationConfiguration {
       List.of(
           CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC,
           CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT);
-  public static final Duration DEFAULT_CLOCK_SKEW = Duration.ofSeconds(60);
 
   private String issuerUri;
   private String clientName;
   private String clientId;
   private String clientSecret;
-  private String idTokenAlgorithm = "RS256";
   private String grantType = "authorization_code";
   private String redirectUri;
   private List<String> scope = Arrays.asList("openid", "profile");
@@ -52,7 +49,6 @@ public class OidcAuthenticationConfiguration {
   private List<String> resource;
   private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
   private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
-  private Duration clockSkew = DEFAULT_CLOCK_SKEW;
 
   @PostConstruct
   public void validate() {
@@ -73,14 +69,6 @@ public class OidcAuthenticationConfiguration {
 
   public void setIssuerUri(final String issuerUri) {
     this.issuerUri = issuerUri;
-  }
-
-  public String getIdTokenAlgorithm() {
-    return idTokenAlgorithm;
-  }
-
-  public void setIdTokenAlgorithm(final String idTokenAlgorithm) {
-    this.idTokenAlgorithm = idTokenAlgorithm;
   }
 
   public String getClientName() {
@@ -233,20 +221,11 @@ public class OidcAuthenticationConfiguration {
     this.assertionConfiguration = assertionConfiguration;
   }
 
-  public Duration getClockSkew() {
-    return clockSkew;
-  }
-
-  public void setClockSkew(final Duration clockSkew) {
-    this.clockSkew = clockSkew;
-  }
-
   public boolean isSet() {
     return issuerUri != null
         || clientId != null
         || clientName != null
         || clientSecret != null
-        || !"RS256".equals(idTokenAlgorithm)
         || !"authorization_code".equals(grantType)
         || redirectUri != null
         || !Arrays.asList("openid", "profile").equals(scope)
@@ -269,8 +248,7 @@ public class OidcAuthenticationConfiguration {
         || assertionConfiguration.getKidSource() != KidSource.PUBLIC_KEY
         || assertionConfiguration.getKidDigestAlgorithm() != KidDigestAlgorithm.SHA256
         || assertionConfiguration.getKidEncoding() != KidEncoding.BASE64URL
-        || assertionConfiguration.getKidCase() != null
-        || !DEFAULT_CLOCK_SKEW.equals(clockSkew);
+        || assertionConfiguration.getKidCase() != null;
   }
 
   public static Builder builder() {
@@ -282,7 +260,6 @@ public class OidcAuthenticationConfiguration {
     private String clientId;
     private String clientName;
     private String clientSecret;
-    private String idTokenAlgorithm = "RS256";
     private String grantType = "authorization_code";
     private String redirectUri;
     private List<String> scope = Arrays.asList("openid", "profile");
@@ -299,7 +276,6 @@ public class OidcAuthenticationConfiguration {
     private String organizationId;
     private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
     private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
-    private Duration clockSkew = DEFAULT_CLOCK_SKEW;
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
@@ -318,11 +294,6 @@ public class OidcAuthenticationConfiguration {
 
     public Builder clientSecret(final String clientSecret) {
       this.clientSecret = clientSecret;
-      return this;
-    }
-
-    public Builder idTokenAlgorithm(final String idTokenAlgorithm) {
-      this.idTokenAlgorithm = idTokenAlgorithm;
       return this;
     }
 
@@ -403,18 +374,12 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
-    public Builder clockSkew(final Duration clockSkew) {
-      this.clockSkew = clockSkew;
-      return this;
-    }
-
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
       config.setClientId(clientId);
       config.setClientName(clientName);
       config.setClientSecret(clientSecret);
-      config.setIdTokenAlgorithm(idTokenAlgorithm);
       config.setGrantType(grantType);
       config.setRedirectUri(redirectUri);
       config.setScope(scope);
@@ -430,7 +395,6 @@ public class OidcAuthenticationConfiguration {
       config.setOrganizationId(organizationId);
       config.setClientAuthenticationMethod(clientAuthenticationMethod);
       config.setAssertion(assertionConfiguration);
-      config.setClockSkew(clockSkew);
       return config;
     }
   }

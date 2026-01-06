@@ -17,7 +17,6 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -106,8 +105,7 @@ public class SequenceFlowIT {
     final var searchResult =
         sequenceFlowReader.search(
             SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(42L))),
-            CommonFixtures.resourceAccessChecksFromResourceIds(
-                AuthorizationResourceType.PROCESS_DEFINITION, sequenceFlow.processDefinitionId()));
+            CommonFixtures.resourceAccessChecksFromResourceIds(sequenceFlow.processDefinitionId()));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);

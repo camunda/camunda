@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.EnvironmentService;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -32,9 +31,7 @@ public class ClientConfig {
   public String tasklistUrl;
   public boolean resourcePermissionsEnabled;
   public boolean multiTenancyEnabled;
-  public String databaseType;
   @Autowired private OperateProfileService profileService;
-  @Autowired private EnvironmentService environmentService;
   @Autowired private OperateProperties operateProperties;
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private ServletContext context;
@@ -53,7 +50,6 @@ public class ClientConfig {
     tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
-    databaseType = environmentService.getDatabaseType();
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));

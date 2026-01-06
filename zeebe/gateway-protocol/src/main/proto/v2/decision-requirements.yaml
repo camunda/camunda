@@ -3,7 +3,6 @@
 paths:
   /decision-requirements/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Decision requirements
       operationId: searchDecisionRequirements
@@ -30,10 +29,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /decision-requirements/{decisionRequirementsKey}:
     get:
-      x-eventually-consistent: true
       tags:
         - Decision requirements
       operationId: getDecisionRequirements
@@ -69,10 +68,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /decision-requirements/{decisionRequirementsKey}/xml:
     get:
-      x-eventually-consistent: true
       tags:
         - Decision requirements
       operationId: getDecisionRequirementsXML
@@ -108,6 +107,7 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
 ## Schema definitions
 
@@ -126,7 +126,7 @@ components:
             - decisionRequirementsId
             - tenantId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -163,9 +163,7 @@ components:
           format: int32
           description: The assigned version of the decision requirements.
         tenantId:
-          description: The tenant ID of the decision requirements.
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          $ref: 'identifiers.yaml#/components/schemas/TenantId'
         resourceName:
           type: string
           description: The name of the resource from which the decision requirements were parsed

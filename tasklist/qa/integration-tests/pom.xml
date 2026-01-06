@@ -75,8 +75,13 @@
 
     <!-- TEST CONTAINERS -->
     <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-container</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-elasticsearch</artifactId>
+      <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -110,12 +115,6 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-core</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -397,7 +396,7 @@
 
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -447,21 +446,6 @@
       <artifactId>configuration</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-qa-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -482,7 +466,9 @@
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
+            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
+            <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -495,7 +481,9 @@
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
+            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
+            <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>
       </plugin>

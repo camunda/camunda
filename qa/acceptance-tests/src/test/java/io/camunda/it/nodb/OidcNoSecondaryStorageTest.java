@@ -7,6 +7,8 @@
  */
 package io.camunda.it.nodb;
 
+import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
@@ -66,6 +68,7 @@ public class OidcNoSecondaryStorageTest {
       new TestStandaloneBroker()
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
+          .withProperty(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE)
           .withProperty("camunda.security.authentication.method", "oidc")
           .withSecurityConfig(
               c -> {

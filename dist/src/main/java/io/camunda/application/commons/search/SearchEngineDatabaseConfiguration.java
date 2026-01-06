@@ -7,14 +7,15 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
-import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.broker.Broker;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
   SecondaryStorageType.opensearch
 })
 @EnableConfigurationProperties({
+  SearchEngineRetentionProperties.class,
   SearchEngineSchemaManagerProperties.class,
 })
 public class SearchEngineDatabaseConfiguration {
@@ -58,7 +60,7 @@ public class SearchEngineDatabaseConfiguration {
 
     // Override schema creation if database type is "none"
     final DatabaseType databaseType = searchEngineConnectProperties.getTypeEnum();
-    if (DatabaseConfig.NONE.equalsIgnoreCase(databaseType.name())) {
+    if (DatabaseConfig.NONE.equals(databaseType.name())) {
       searchEngineSchemaManagerProperties.setCreateSchema(false);
     }
 
@@ -69,6 +71,9 @@ public class SearchEngineDatabaseConfiguration {
                 .retention(searchEngineRetentionProperties)
                 .schemaManager(searchEngineSchemaManagerProperties));
   }
+
+  @ConfigurationProperties("camunda.database.retention")
+  public static final class SearchEngineRetentionProperties extends RetentionConfiguration {}
 
   @ConfigurationProperties("camunda.database.schema-manager")
   public static final class SearchEngineSchemaManagerProperties extends SchemaManagerConfiguration {

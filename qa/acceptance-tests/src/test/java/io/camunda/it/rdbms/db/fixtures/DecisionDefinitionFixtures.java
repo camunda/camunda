@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel.DecisionDefinitionDbModelBuilder;
 import java.util.List;
@@ -23,7 +23,6 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
     final var decisionDefinitionKey = nextKey();
     final var decisionRequirementsKey = nextKey();
     final var version = RANDOM.nextInt(1000);
-    final var decisionRequirementsVersion = RANDOM.nextInt(1000);
     final var builder =
         new DecisionDefinitionDbModelBuilder()
             .decisionDefinitionKey(decisionDefinitionKey)
@@ -32,61 +31,58 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
             .version(version)
             .decisionRequirementsKey(decisionRequirementsKey)
             .decisionRequirementsId("decision-requirements-" + decisionRequirementsKey)
-            .decisionRequirementsName("decision-requirements-name-" + decisionRequirementsKey)
-            .decisionRequirementsVersion(decisionRequirementsVersion)
             .tenantId("tenant-" + decisionDefinitionKey);
 
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomDecisionDefinitions(final RdbmsWriters rdbmsWriters) {
+  public static void createAndSaveRandomDecisionDefinitions(final RdbmsWriter rdbmsWriter) {
     createAndSaveRandomDecisionDefinitions(
-        rdbmsWriters, b -> b.decisionDefinitionId(nextStringId()));
+        rdbmsWriter, b -> b.decisionDefinitionId(nextStringId()));
   }
 
   public static DecisionDefinitionDbModel createAndSaveRandomDecisionDefinition(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
           builderFunction) {
     final var definition = DecisionDefinitionFixtures.createRandomized(builderFunction);
-    rdbmsWriters.getDecisionDefinitionWriter().create(definition);
-    rdbmsWriters.flush();
+    rdbmsWriter.getDecisionDefinitionWriter().create(definition);
+    rdbmsWriter.flush();
     return definition;
   }
 
   public static void createAndSaveRandomDecisionDefinitions(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters
+      rdbmsWriter
           .getDecisionDefinitionWriter()
           .create(DecisionDefinitionFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static DecisionDefinitionDbModel createAndSaveDecisionDefinition(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
           builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveDecisionDefinitions(rdbmsWriters, List.of(definition));
+    createAndSaveDecisionDefinitions(rdbmsWriter, List.of(definition));
     return definition;
   }
 
   public static void createAndSaveDecisionDefinition(
-      final RdbmsWriters rdbmsWriters, final DecisionDefinitionDbModel decisionDefinition) {
-    createAndSaveDecisionDefinitions(rdbmsWriters, List.of(decisionDefinition));
+      final RdbmsWriter rdbmsWriter, final DecisionDefinitionDbModel decisionDefinition) {
+    createAndSaveDecisionDefinitions(rdbmsWriter, List.of(decisionDefinition));
   }
 
   public static void createAndSaveDecisionDefinitions(
-      final RdbmsWriters rdbmsWriters,
-      final List<DecisionDefinitionDbModel> decisionDefinitionList) {
+      final RdbmsWriter rdbmsWriter, final List<DecisionDefinitionDbModel> decisionDefinitionList) {
     for (final DecisionDefinitionDbModel decisionDefinition : decisionDefinitionList) {
-      rdbmsWriters.getDecisionDefinitionWriter().create(decisionDefinition);
+      rdbmsWriter.getDecisionDefinitionWriter().create(decisionDefinition);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 }

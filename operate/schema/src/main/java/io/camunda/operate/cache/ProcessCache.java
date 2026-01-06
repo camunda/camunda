@@ -10,7 +10,6 @@ package io.camunda.operate.cache;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.operate.store.ProcessStore;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import java.util.Iterator;
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
-@ConditionalOnRdbmsDisabled
 public class ProcessCache {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);

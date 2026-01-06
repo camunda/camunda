@@ -54,8 +54,7 @@ public class DynamicClusterServices {
     return new ClusterConfigurationGossiperConfig(
         gossiperConfig.getSyncDelay(),
         gossiperConfig.getSyncRequestTimeout(),
-        gossiperConfig.getGossipFanout(),
-        gossiperConfig.getSyncInitializerDelay());
+        gossiperConfig.getGossipFanout());
   }
 
   @Bean

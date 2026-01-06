@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
@@ -35,7 +34,6 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
 
   private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(-1);
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
-  private CheckpointType checkpointType = CheckpointType.MANUAL_BACKUP;
 
   public InterPartitionCommandSenderImpl(final ClusterCommunicationService communicationService) {
     this.communicationService = communicationService;
@@ -87,14 +85,7 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
 
     final var message =
         Encoder.encode(
-            checkpointId,
-            checkpointType,
-            receiverPartitionId,
-            valueType,
-            intent,
-            recordKey,
-            command,
-            authInfo);
+            checkpointId, receiverPartitionId, valueType, intent, recordKey, command, authInfo);
 
     communicationService.unicast(
         TOPIC_PREFIX + receiverPartitionId,
@@ -104,9 +95,8 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
         true);
   }
 
-  void setCheckpointInfo(final long checkpointId, final CheckpointType checkpointType) {
+  void setCheckpointId(final long checkpointId) {
     this.checkpointId = checkpointId;
-    this.checkpointType = checkpointType;
   }
 
   void setCurrentLeader(final int partitionId, final int currentLeader) {
@@ -117,7 +107,6 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
 
     private static byte[] encode(
         final long checkpointId,
-        final CheckpointType checkpointType,
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
@@ -142,7 +131,6 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
       bodyEncoder
           .wrapAndApplyHeader(messageBuffer, 0, headerEncoder)
           .checkpointId(checkpointId)
-          .checkpointType(checkpointType.getValue())
           .receiverPartitionId(receiverPartitionId)
           .valueType(valueType.value())
           .intent(intent.value())

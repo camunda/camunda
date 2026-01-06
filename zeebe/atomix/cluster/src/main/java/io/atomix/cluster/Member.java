@@ -33,7 +33,6 @@ public class Member extends Node {
   private final String rack;
   private final String host;
   private final Properties properties;
-  private final long nodeVersion;
 
   public Member(final MemberConfig config) {
     super(config);
@@ -41,18 +40,16 @@ public class Member extends Node {
     zone = config.getZoneId();
     rack = config.getRackId();
     host = config.getHostId();
-    nodeVersion = config.getNodeVersion();
     properties = new Properties();
     properties.putAll(config.getProperties());
   }
 
   protected Member(final MemberId id, final Address address) {
-    this(id, 0L, address, null, null, null, new Properties());
+    this(id, address, null, null, null, new Properties());
   }
 
   protected Member(
       final MemberId id,
-      final long nodeVersion,
       final Address address,
       final String zone,
       final String rack,
@@ -60,7 +57,6 @@ public class Member extends Node {
       final Properties properties) {
     super(id, address);
     this.id = checkNotNull(id, "id cannot be null");
-    this.nodeVersion = nodeVersion;
     this.zone = zone;
     this.rack = rack;
     this.host = host;
@@ -149,7 +145,6 @@ public class Member extends Node {
   public MemberConfig config() {
     return new MemberConfig()
         .setId(id())
-        .setNodeVersion(nodeVersion())
         .setAddress(address())
         .setZoneId(zone())
         .setRackId(rack())
@@ -159,7 +154,7 @@ public class Member extends Node {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), id, nodeVersion, zone, rack, host, properties);
+    return Objects.hash(super.hashCode(), id, zone, rack, host, properties);
   }
 
   @Override
@@ -178,7 +173,6 @@ public class Member extends Node {
 
     final Member member = (Member) o;
     return Objects.equals(id, member.id)
-        && Objects.equals(nodeVersion, member.nodeVersion)
         && Objects.equals(zone, member.zone)
         && Objects.equals(rack, member.rack)
         && Objects.equals(host, member.host)
@@ -187,30 +181,15 @@ public class Member extends Node {
 
   @Override
   public String toString() {
-    final var result = toStringHelper(Member.class).add("id", id());
-
-    if (nodeVersion > 0L) {
-      result.add("nodeVersion", nodeVersion);
-    }
-
-    result
+    return toStringHelper(Member.class)
+        .add("id", id())
         .add("address", address())
         .add("zone", zone())
         .add("rack", rack())
         .add("host", host())
-        .add("properties", properties());
-    return result.omitNullValues().toString();
-  }
-
-  /**
-   * The nodeVersion is > 0 only when the broker is deployed without a static node id, such as AWS
-   * ECS. It is used to differentiate different "incarnation" of a broker. It's a strictly
-   * increasing number.
-   *
-   * @return the nodeVersion
-   */
-  public long nodeVersion() {
-    return nodeVersion;
+        .add("properties", properties())
+        .omitNullValues()
+        .toString();
   }
 
   /**

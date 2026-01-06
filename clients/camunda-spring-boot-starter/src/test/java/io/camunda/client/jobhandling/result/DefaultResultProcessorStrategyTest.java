@@ -20,23 +20,20 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.MethodInfo;
-import io.camunda.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
 import org.junit.jupiter.api.Test;
 
 class DefaultResultProcessorStrategyTest {
 
   private final DefaultResultProcessorStrategy resultProcessorStrategy =
       new DefaultResultProcessorStrategy(
-          mock(DocumentResultProcessorFailureHandlingStrategy.class));
+          mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class));
 
   @Test
   void createProcessorShouldReturnDefaultProcessor() throws NoSuchMethodException {
     // Given
     final MethodInfo methodInfo = mock(MethodInfo.class);
     // When
-    final ResultProcessor resultProcessor =
-        resultProcessorStrategy.createProcessor(
-            new ResultProcessorStrategyContext(methodInfo, mock(CamundaClient.class)));
+    final ResultProcessor resultProcessor = resultProcessorStrategy.createProcessor(methodInfo);
     // Then
     assertThat((resultProcessor instanceof DefaultResultProcessor)).isTrue();
   }

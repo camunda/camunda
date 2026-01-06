@@ -7,7 +7,6 @@
  */
 package io.camunda.webapps.schema.entities.usertask;
 
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
@@ -16,13 +15,13 @@ import java.util.Objects;
 public class DraftTaskVariableEntity
     implements ExporterEntity<DraftTaskVariableEntity>, TenantOwned {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  @BeforeVersion880 private String taskId;
-  @BeforeVersion880 private String name;
-  @BeforeVersion880 private String value;
-  @BeforeVersion880 private String fullValue;
-  @BeforeVersion880 private boolean isPreview;
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String taskId;
+  private String name;
+  private String value;
+  private String fullValue;
+  private boolean isPreview;
 
   @Override
   public String getId() {

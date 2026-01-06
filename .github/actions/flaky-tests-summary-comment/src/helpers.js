@@ -36,25 +36,16 @@ function parseComment(body) {
     let currentTest = {};
 
     for (const line of lines) {
-      // Match method name and URL
-      const methodMatchWithUrl = line.match(/-\s\[\*\*(.+?)\*\*\]\((.+?)\)/);
-      const methodMatchPlain = line.match(/-\s\*\*(.+?)\*\*/);
-      
-      if ((methodMatchWithUrl || methodMatchPlain) && !line.includes('Overall retries:')) {
-        // Save previous test if any
+      //Match method name
+      const methodMatch = line.match(/-\s(?:\[\*\*(.+?)\*\*\]\(.+?\))/);
+      if (methodMatch) {
+        // If no hyperlink exists
         if (Object.keys(currentTest).length > 0) {
           flakyTests.push(currentTest);
           currentTest = {};
         }
-        
-        if (methodMatchWithUrl) {
-          // Test name with URL: [**testName**](url)
-          currentTest.methodName = methodMatchWithUrl[1];
-          currentTest.url = methodMatchWithUrl[2];
-        } else {
-          // Test name without URL: **testName**
-          currentTest.methodName = methodMatchPlain[1];
-        }
+        // methodMatch[1] is for the markdown link, methodMatch[2] for plain text
+        currentTest.methodName = methodMatch[1] || methodMatch[2];
       }
 
       // Match jobs
@@ -77,7 +68,7 @@ function parseComment(body) {
 
       // Match overall retries
       const overallMatch = line.match(/Overall retries:\s+(?:\*\*)?(\d+)(?:\*\*)?\s+\(per run:\s+\[([^\]]+)\]\)/);
-      if (overallMatch && (currentTest.methodName || currentTest.fullName)) {
+      if (overallMatch) {
         currentTest.overallRetries = parseInt(overallMatch[1], 10);
         currentTest.failuresHistory = overallMatch[2].split(',').map(n => parseInt(n.trim(), 10));
       }

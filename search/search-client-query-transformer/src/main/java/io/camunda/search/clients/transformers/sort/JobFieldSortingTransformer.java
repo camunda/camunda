@@ -8,7 +8,6 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.JobTemplate.CREATION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_CODE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.FLOW_NODE_ID;
@@ -22,7 +21,6 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_KIN
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
-import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LISTENER_EVENT_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_INSTANCE_KEY;
@@ -55,8 +53,6 @@ public class JobFieldSortingTransformer implements FieldSortingTransformer {
       case "errorMessage" -> ERROR_MESSAGE;
       case "deadline" -> JOB_DEADLINE;
       case "processDefinitionId" -> BPMN_PROCESS_ID;
-      case "creationTime" -> CREATION_TIME;
-      case "lastUpdateTime" -> LAST_UPDATE_TIME;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }

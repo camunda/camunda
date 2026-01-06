@@ -16,7 +16,6 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.slf4j.Logger;
@@ -41,27 +40,18 @@ public class GroupMemberDbReader extends AbstractEntityReader<GroupMemberEntity>
       return new SearchQueryResult.Builder<GroupMemberEntity>().total(0).items(List.of()).build();
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.GROUP.name(), List.of());
     final var dbSort = convertSort(query.sort(), GroupMemberSearchColumn.ENTITY_ID);
-    final var dbPage = convertPaging(dbSort, query.page());
+
     final var dbQuery =
         GroupMemberDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .sort(dbSort)
-                    .page(dbPage));
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for groups with filter {}", dbQuery);
     final var totalHits = groupMapper.countMembers(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = groupMapper.searchMembers(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

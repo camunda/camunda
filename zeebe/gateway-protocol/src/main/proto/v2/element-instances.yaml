@@ -3,7 +3,6 @@
 paths:
   /element-instances/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Element instance
       operationId: searchElementInstances
@@ -30,10 +29,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /element-instances/{elementInstanceKey}:
     get:
-      x-eventually-consistent: true
       tags:
         - Element instance
       operationId: getElementInstance
@@ -69,10 +68,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: true
 
   /element-instances/{elementInstanceKey}/variables:
     put:
-      x-eventually-consistent: false
       tags:
         - Element instance
       operationId: createElementInstanceVariables
@@ -105,10 +104,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
   /element-instances/{elementInstanceKey}/incidents/search:
     post:
-      x-eventually-consistent: true
       tags:
         - Element instance
       operationId: searchElementInstanceIncidents
@@ -133,7 +132,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'incidents.yaml#/components/schemas/IncidentSearchQuery'
+              $ref: '#/components/schemas/ElementInstanceIncidentSearchQuery'
       responses:
         "200":
           description: The element instance incident search result.
@@ -158,7 +157,6 @@ paths:
 
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
-      x-eventually-consistent: false
       tags:
         - Ad-hoc sub-process
       operationId: activateAdHocSubProcessActivities
@@ -200,6 +198,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-eventually-consistent: false
 
 ## Schema definitions
 
@@ -225,7 +224,7 @@ components:
             - incidentKey
             - tenantId
         order:
-          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+          $ref: 'enums.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
 
@@ -257,7 +256,7 @@ components:
         state:
           description: State of element instance as defined set of values.
           allOf:
-            - $ref: "#/components/schemas/ElementInstanceStateFilterProperty"
+            - $ref: "filters.yaml#/components/schemas/ElementInstanceStateFilterProperty"
         type:
           description: Type of element as defined set of values.
           type: string
@@ -338,41 +337,6 @@ components:
             - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
             - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
 
-    ElementInstanceStateFilterProperty:
-      description: ElementInstanceStateEnum property with full advanced search capabilities.
-      type: object
-      oneOf:
-        - type: string
-          title: Exact match
-          description: Matches the value exactly.
-          allOf:
-            - $ref: "#/components/schemas/ElementInstanceStateEnum"
-        - $ref: '#/components/schemas/AdvancedElementInstanceStateFilter'
-
-    AdvancedElementInstanceStateFilter:
-      title: Advanced filter
-      description: Advanced ElementInstanceStateEnum filter.
-      type: object
-      properties:
-        $eq:
-          description: Checks for equality with the provided value.
-          allOf:
-            - $ref: "#/components/schemas/ElementInstanceStateEnum"
-        $neq:
-          description: Checks for inequality with the provided value.
-          allOf:
-            - $ref: "#/components/schemas/ElementInstanceStateEnum"
-        $exists:
-          description: Checks if the current property exists.
-          type: boolean
-        $in:
-          description: Checks if the property matches any of the provided values.
-          type: array
-          items:
-            $ref: "#/components/schemas/ElementInstanceStateEnum"
-        $like:
-          $ref: 'filters.yaml#/components/schemas/LikeFilter'
-
     ElementInstanceSearchQueryResult:
       type: object
       allOf:
@@ -452,7 +416,7 @@ components:
         state:
           description: State of element instance as defined set of values.
           allOf:
-            - $ref: "#/components/schemas/ElementInstanceStateEnum"
+            - $ref: "enums.yaml#/components/schemas/ElementInstanceStateEnum"
         hasIncident:
           description: Shows whether this element instance has an incident. If true also an incidentKey is provided.
           type: boolean
@@ -477,13 +441,16 @@ components:
             - $ref: "keys.yaml#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
 
-    ElementInstanceStateEnum:
-      description: Element states
-      type: string
-      enum:
-        - ACTIVE
-        - COMPLETED
-        - TERMINATED
+    ElementInstanceIncidentSearchQuery:
+      type: object
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "incidents.yaml#/components/schemas/IncidentSearchQuerySortRequest"
 
     AdHocSubProcessActivateActivitiesInstruction:
       type: object

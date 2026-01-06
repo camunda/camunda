@@ -17,7 +17,5 @@
   "org.opencontainers.image.title": "Camunda Optimize",
   "org.opencontainers.image.url": "https://docs.camunda.io/docs/components/optimize/what-is-optimize/",
   "org.opencontainers.image.vendor": "Camunda Services GmbH",
-  "org.opencontainers.image.version": $VERSION,
-  "io.minimus.images.galleryURL": "https://images.minimus.io/gallery/images/1212/openjre-base",
-  "io.minimus.images.line": "21"
+  "org.opencontainers.image.version": $VERSION
 }

@@ -37,21 +37,21 @@ jobs:
 
     - name: Get Issues for camunda/camunda@single-app (all tracked branches)
       # Tracked branches are defiened in FOSSA UI
-      uses: camunda/infra-global-github-actions/fossa/get-issues@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
+      uses: camunda/infra-global-github-actions/fossa/get-issues@631423f4de7c6886352df8e4796bb5df19f4346f
       id: single-app
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@single-app
 
     - name: Get Issues for camunda/camunda@optimize (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
+      uses: camunda/infra-global-github-actions/fossa/get-issues@631423f4de7c6886352df8e4796bb5df19f4346f
       id: optimize
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         project-locator: custom+50756/camunda/camunda@optimize
 
     - name: Get Issues for camunda/camunda@c8run (all tracked branches)
-      uses: camunda/infra-global-github-actions/fossa/get-issues@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
+      uses: camunda/infra-global-github-actions/fossa/get-issues@631423f4de7c6886352df8e4796bb5df19f4346f
       id: c8run
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
@@ -129,7 +129,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "*${{ steps.check-issues.outputs.active-issues-found }}* active licensing issue(s) found across projects and tracked branches:\n\n${{ steps.check-issues.outputs.active-issues-list }}\n\nDRI: <!subteam^S07D6C6B18T|monorepo-ci-medic>\n<https://confluence.camunda.com/spaces/HAN/pages/245403757/C8+Monorepo+CI+Processes#C8MonorepoCIProcesses-Triageproblemsreportedin%23top-monorepo-ci|Triage Guide>"
+                  "text": "*${{ steps.check-issues.outputs.active-issues-found }}* active licensing issue(s) found across projects and tracked branches:\n\n${{ steps.check-issues.outputs.active-issues-list }}"
                 }
               }
             ]

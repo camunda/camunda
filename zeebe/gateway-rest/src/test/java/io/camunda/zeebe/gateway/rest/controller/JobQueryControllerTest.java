@@ -67,9 +67,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                     "processInstanceKey": "3",
                     "elementId": "elementId",
                     "elementInstanceKey": "4",
-                    "tenantId": "<default>",
-                    "creationTime": "2025-06-05T09:00:00.000Z",
-                    "lastUpdateTime": "2025-06-05T10:04:00.000Z"
+                    "tenantId": "<default>"
                 }
             ],
             "page": {
@@ -107,8 +105,6 @@ public class JobQueryControllerTest extends RestControllerTest {
                       .elementId("elementId")
                       .elementInstanceKey(4L)
                       .tenantId("<default>")
-                      .creationTime(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
-                      .lastUpdateTime(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
                       .build()))
           .startCursor("123base64")
           .endCursor("456base64")
@@ -174,9 +170,7 @@ public class JobQueryControllerTest extends RestControllerTest {
         "state": "COMPLETED",
         "tenantId": "<default>",
         "type": "testJob",
-        "worker": "testWorker",
-        "creationTime": "2025-06-05T09:00:00.000Z",
-        "lastUpdateTime": "2025-06-05T10:04:00.000Z"
+        "worker": "testWorker"
           }
         }
     """;
@@ -221,8 +215,6 @@ public class JobQueryControllerTest extends RestControllerTest {
                         .tenantIds("<default>")
                         .types("testJob")
                         .workers("testWorker")
-                        .creationTimes(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
-                        .lastUpdateTimes(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
                         .build())
                 .build());
   }

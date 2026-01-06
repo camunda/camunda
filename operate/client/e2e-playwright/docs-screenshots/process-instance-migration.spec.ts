@@ -10,13 +10,11 @@ import {test} from '../visual-fixtures';
 import * as path from 'path';
 
 import {
+  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockOrderProcessInstances,
   mockOrderProcessV2Instances,
   mockMigrationOperation,
-  mockAhspProcessInstances,
-  mockAhspProcessDefinitions,
-  mockOrderProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {openFile} from '@/utils/openFile';
 import {expect} from '@playwright/test';
@@ -41,7 +39,9 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockOrderProcessDefinitions,
+        groupedProcesses: mockGroupedProcesses.filter((process) => {
+          return process.bpmnProcessId === 'orderProcess';
+        }),
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: mockOrderProcessInstances,
         statisticsV2: {
@@ -125,7 +125,9 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        processDefinitions: mockOrderProcessDefinitions,
+        groupedProcesses: mockGroupedProcesses.filter((process) => {
+          return process.bpmnProcessId === 'orderProcess';
+        }),
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess_v2.bpmn',
         ),
@@ -206,7 +208,9 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockOrderProcessDefinitions,
+        groupedProcesses: mockGroupedProcesses.filter((process) => {
+          return process.bpmnProcessId === 'orderProcess';
+        }),
         batchOperations: {
           items: [
             {
@@ -251,222 +255,5 @@ test.describe('process instance migration', () => {
     await page.screenshot({
       path: path.join(baseDirectory, 'operations-panel.png'),
     });
-  });
-
-  test('migrate ad hoc subprocess process instances', async ({
-    page,
-    processesPage,
-    migrationView,
-  }) => {
-    await page.route(
-      URL_API_PATTERN,
-      mockProcessesResponses({
-        processDefinitions: mockAhspProcessDefinitions,
-        batchOperations: {items: [], page: {totalItems: 0}},
-        processInstances: mockAhspProcessInstances,
-        statisticsV2: {
-          items: [
-            {
-              elementId: 'AD_HOC_SUBPROCESS',
-              active: 3,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              elementId: 'A',
-              active: 3,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ],
-        },
-        processXml: openFile(
-          './e2e-playwright/mocks/resources/migration-ahsp-process_v1.bpmn',
-        ),
-      }),
-    );
-
-    await processesPage.gotoProcessesPage({
-      searchParams: {
-        active: 'true',
-        incidents: 'false',
-        canceled: 'false',
-        completed: 'false',
-      },
-    });
-
-    await processesPage.gotoProcessesPage({
-      searchParams: {
-        process: 'migration-ahsp-process_v1',
-        version: '1',
-        active: 'true',
-      },
-    });
-
-    // Select first instance for migration
-    await processesPage.getNthProcessInstanceCheckbox(0).click();
-    await processesPage.getNthProcessInstanceCheckbox(1).click();
-    await processesPage.getNthProcessInstanceCheckbox(2).click();
-
-    await processesPage.migrateButton.click();
-    await processesPage.migrationModal.confirmButton.click();
-
-    // Load target process v2 with statistics
-    await page.route(
-      URL_API_PATTERN,
-      mockProcessesResponses({
-        statisticsV2: {
-          items: [
-            {
-              elementId: 'AD_HOC_SUBPROCESS',
-              active: 3,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              elementId: 'D',
-              active: 3,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ],
-        },
-        processDefinitions: mockAhspProcessDefinitions,
-        processXml: openFile(
-          './e2e-playwright/mocks/resources/migration-ahsp-process_v2.bpmn',
-        ),
-      }),
-    );
-
-    await migrationView.selectTargetProcess('Ad Hoc Subprocess Target');
-    await migrationView.selectTargetVersion('2');
-
-    // Verify ad hoc subprocess element is shown
-    await expect(
-      page.getByText('Ad Hoc Subprocess', {exact: true}),
-    ).toHaveCount(4);
-
-    // Verify user task element is shown
-    await expect(page.getByText('A', {exact: true})).toHaveCount(2);
-
-    // Map the ad hoc subprocess
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Ad Hoc Subprocess',
-      targetFlowNodeName: 'Ad Hoc Subprocess',
-    });
-
-    // Map user task
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'A',
-      targetFlowNodeName: 'D',
-    });
-
-    await migrationView.nextButton.click();
-
-    // Wait for overlays to appear
-    await expect(
-      page.getByTestId('state-overlay-active').first(),
-    ).toBeVisible();
-    await expect(
-      page.getByTestId('modifications-overlay').first(),
-    ).toBeVisible();
-
-    // Mock the migration operation
-    await page.route(
-      URL_API_PATTERN,
-      mockProcessesResponses({
-        processDefinitions: mockAhspProcessDefinitions,
-        batchOperations: {
-          items: [mockMigrationOperation],
-          page: {totalItems: 1},
-        },
-      }),
-    );
-
-    // Confirm migration
-    await migrationView.confirmButton.click();
-
-    await migrationView.migrationConfirmationModal
-      .getByRole('textbox')
-      .fill('MIGRATE');
-
-    await migrationView.migrationConfirmationModal
-      .getByRole('button', {name: /confirm/i})
-      .click();
-
-    // Mock the migrated process instances
-    await page.route(
-      URL_API_PATTERN,
-      mockProcessesResponses({
-        processDefinitions: mockAhspProcessDefinitions,
-        batchOperations: {
-          items: [
-            {
-              ...mockMigrationOperation,
-              endDate: '2023-10-10T09:00:00.000+0000',
-              operationsCompletedCount: 3,
-            },
-          ],
-          page: {totalItems: 1},
-        },
-        processInstances: {
-          totalCount: 3,
-          processInstances: mockAhspProcessInstances.processInstances.map(
-            (instance) => ({
-              ...instance,
-              processId: '2251799813685250',
-              processVersion: 2,
-              bpmnProcessId: 'migration-ahsp-process_v2',
-              processName: 'Ad Hoc Subprocess Target',
-            }),
-          ),
-        },
-        statisticsV2: {
-          items: [
-            {
-              elementId: 'AD_HOC_SUBPROCESS',
-              active: 3,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              elementId: 'D',
-              active: 3,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ],
-        },
-        processXml: openFile(
-          './e2e-playwright/mocks/resources/migration-ahsp-process_v2.bpmn',
-        ),
-      }),
-    );
-
-    await processesPage.gotoProcessesPage({
-      searchParams: {
-        process: 'migration-ahsp-process_v2',
-        version: '2',
-        active: 'true',
-      },
-    });
-
-    // Wait for process instances table to have data
-    await expect(
-      processesPage.processInstancesTable.getByRole('row'),
-    ).not.toHaveCount(0);
-
-    await processesPage.diagram.moveCanvasHorizontally(-200);
-
-    // Verify success message
-    await expect(
-      page.getByText(mockMigrationOperation.batchOperationKey),
-    ).toHaveCount(1);
   });
 });

@@ -11,7 +11,10 @@ import {observer} from 'mobx-react';
 import {Modal} from '@carbon/react';
 import {useLocation} from 'react-router-dom';
 import {type StateProps} from 'modules/components/ModalStateManager';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {
+  getProcessInstanceFilters,
+  getProcessInstancesRequestFilters,
+} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Title, DataTable} from './styled';
@@ -21,15 +24,15 @@ import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useI
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
-import {handleOperationError} from 'modules/utils/notifications';
+import {notificationsStore} from 'modules/stores/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
-import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
+import {processInstancesStore} from 'modules/stores/processInstances';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
     const location = useLocation();
-    const batchOperationMutationRequestBody =
-      useBatchOperationMutationRequestBody();
 
     const processInstancesFilters = getProcessInstanceFilters(location.search);
     const {flowNodeId: sourceElementId, process: bpmnProcessId} =
@@ -37,6 +40,16 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const process = processesStore.getProcess({bpmnProcessId});
     const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
     const {selectedTargetElementId} = batchModificationStore.state;
+    const {selectedProcessInstanceIds, excludedProcessInstanceIds} =
+      processInstancesSelectionStore;
+
+    const query = getProcessInstancesRequestFilters();
+    const filterIds = query.ids || [];
+
+    const ids: string[] =
+      selectedProcessInstanceIds.length > 0
+        ? selectedProcessInstanceIds
+        : filterIds;
 
     const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processDefinitionData} = useListViewXml({
@@ -72,8 +85,20 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
             operationType: 'MODIFY_PROCESS_INSTANCE',
           });
         },
-        onError: (error) => {
-          handleOperationError(error.response?.status);
+        onError: ({message}) => {
+          processInstancesStore.unmarkProcessInstancesWithActiveOperations({
+            instanceIds: ids,
+            operationType: 'MODIFY_PROCESS_INSTANCE',
+            shouldPollAllVisibleIds: selectedProcessInstanceIds.length === 0,
+          });
+          notificationsStore.displayNotification({
+            kind: 'error',
+            title: 'Operation could not be created',
+            subtitle: message.includes('403')
+              ? 'You do not have permission'
+              : undefined,
+            isDismissable: true,
+          });
         },
       });
 
@@ -113,14 +138,35 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
           setOpen(false);
           batchModificationStore.reset();
 
+          if (selectedProcessInstanceIds.length > 0) {
+            processInstancesStore.markProcessInstancesWithActiveOperations({
+              ids: selectedProcessInstanceIds,
+              operationType: 'MODIFY_PROCESS_INSTANCE',
+            });
+          } else {
+            processInstancesStore.markProcessInstancesWithActiveOperations({
+              ids: excludedProcessInstanceIds,
+              operationType: 'MODIFY_PROCESS_INSTANCE',
+              shouldPollAllVisibleIds: true,
+            });
+          }
+
+          const keyCriterion = buildProcessInstanceKeyCriterion(
+            ids,
+            excludedProcessInstanceIds,
+          );
+
           batchModifyProcessInstances({
-            ...batchOperationMutationRequestBody,
             moveInstructions: [
               {
                 sourceElementId,
                 targetElementId: selectedTargetElementId,
               },
             ],
+            filter: {
+              processDefinitionKey,
+              processInstanceKey: keyCriterion,
+            },
           });
 
           setOpen(false);

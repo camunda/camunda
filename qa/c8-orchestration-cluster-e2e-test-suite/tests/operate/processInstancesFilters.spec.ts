@@ -83,13 +83,9 @@ test.describe('Process Instances Filters', () => {
               operateFiltersPanelPage.processVersionFilter.innerText(),
             )
             .toBe('2');
-          await expect(operateProcessesPage.resultsText).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.selectProcess(
-            'Process With Multiple Versions',
-          );
         },
       });
     });
@@ -112,14 +108,14 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Select another flow node from the diagram', async () => {
-      await operateProcessesPage.diagram.clickFlowNode('alwaysFails');
+      await operateProcessesPage.diagram.clickFlowNode('always fails');
 
       await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
         'Always fails',
       );
     });
     await test.step('Select same flow node again and see filter is removed', async () => {
-      await operateProcessesPage.diagram.clickFlowNode('alwaysFails');
+      await operateProcessesPage.diagram.clickFlowNode('always fails');
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,

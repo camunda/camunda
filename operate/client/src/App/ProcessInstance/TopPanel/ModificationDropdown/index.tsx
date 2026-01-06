@@ -11,7 +11,9 @@ import {Stack} from '@carbon/react';
 import {flip, offset} from '@floating-ui/react-dom';
 import {Add, ArrowRight, Error} from '@carbon/react/icons';
 import isNil from 'lodash/isNil';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {tracking} from 'modules/tracking';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {Popover} from 'modules/components/Popover';
@@ -22,6 +24,10 @@ import {
   Button,
   InlineLoading,
 } from './styled';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
@@ -41,8 +47,11 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -51,32 +60,27 @@ type Props = {
 
 const ModificationDropdown: React.FC<Props> = observer(
   ({selectedFlowNodeRef, diagramCanvasRef}) => {
-    const {
-      selectedElementId,
-      selectedElementInstanceKey,
-      isFetchingElement,
-      isSelectedInstanceMultiInstanceBody,
-      resolvedElementInstance,
-      clearSelection,
-    } = useProcessInstanceElementSelection();
+    const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+    const flowNodeInstanceId =
+      flowNodeSelectionStore.state.selection?.flowNodeInstanceId ??
+      flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
     const {data: businessObjects} = useBusinessObjects();
-    const {data: selectedElementRunningInstancesCount} =
-      useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
+    const {data: totalRunningInstances} =
+      useTotalRunningInstancesForFlowNode(flowNodeId);
     const {data: totalRunningInstancesVisible} =
-      useTotalRunningInstancesVisibleForFlowNode(
-        selectedElementId ?? undefined,
-      );
+      useTotalRunningInstancesVisibleForFlowNode(flowNodeId);
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
-
-    const availableModifications = useAvailableModifications({
-      runningElementInstanceCount: selectedElementRunningInstancesCount ?? 0,
-      elementId: selectedElementId ?? undefined,
-      elementInstanceKey: selectedElementInstanceKey ?? undefined,
-      isMultiInstanceBody: isSelectedInstanceMultiInstanceBody,
-      isElementInstanceResolved: resolvedElementInstance !== null,
+    const isRootNodeSelected = useIsRootNodeSelected();
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: totalRunningInstances || 0,
+      isRootNodeSelected,
     });
-    const canBeModified = useCanBeModified(selectedElementId ?? undefined);
+    const availableModifications = useAvailableModifications(
+      selectedRunningInstanceCount,
+    );
+    const canBeModified = useCanBeModified();
+    const rootNode = useRootNode();
     const {data: processInstance} = useProcessInstance();
 
     const processDefinitionKey = useProcessDefinitionKeyContext();
@@ -85,7 +89,7 @@ const ModificationDropdown: React.FC<Props> = observer(
     });
 
     if (
-      selectedElementId === null ||
+      flowNodeId === undefined ||
       modificationsStore.state.status === 'moving-token'
     ) {
       return null;
@@ -108,7 +112,7 @@ const ModificationDropdown: React.FC<Props> = observer(
           <Title>Flow Node Modifications</Title>
           <Stack gap={4}>
             {(() => {
-              if (isFetchingElement) {
+              if (flowNodeMetaDataStore.state.status === 'fetching') {
                 return <InlineLoading data-testid="dropdown-spinner" />;
               }
               if (!canBeModified) {
@@ -121,9 +125,9 @@ const ModificationDropdown: React.FC<Props> = observer(
 
               return (
                 <>
-                  {(selectedElementRunningInstancesCount ?? 0) > 0 && (
+                  {selectedRunningInstanceCount > 0 && (
                     <SelectedInstanceCount>
-                      {`Selected running instances: ${selectedElementRunningInstancesCount ?? 0}`}
+                      Selected running instances: {selectedRunningInstanceCount}
                     </SelectedInstanceCount>
                   )}
                   <Stack gap={2}>
@@ -138,7 +142,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                           onClick={() => {
                             const parentElement = getParentElement(
                               processDefinitionData?.businessObjects?.[
-                                selectedElementId
+                                flowNodeId
                               ],
                             );
                             if (
@@ -147,9 +151,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                                 totalRunningInstancesByFlowNode,
                               )
                             ) {
-                              modificationsStore.startAddingToken(
-                                selectedElementId,
-                              );
+                              modificationsStore.startAddingToken(flowNodeId);
                             } else {
                               tracking.track({
                                 eventName: 'add-token',
@@ -161,23 +163,24 @@ const ModificationDropdown: React.FC<Props> = observer(
                                   operation: 'ADD_TOKEN',
                                   scopeId: generateUniqueID(),
                                   flowNode: {
-                                    id: selectedElementId,
+                                    id: flowNodeId,
                                     name: getFlowNodeName({
                                       businessObjects,
-                                      flowNodeId: selectedElementId,
+                                      flowNodeId,
                                     }),
                                   },
                                   affectedTokenCount: 1,
                                   visibleAffectedTokenCount: 1,
                                   parentScopeIds: generateParentScopeIds(
                                     businessObjects,
-                                    selectedElementId,
+                                    flowNodeId,
                                     processInstance?.processDefinitionId,
                                   ),
                                 },
                               });
                             }
-                            clearSelection();
+
+                            clearSelection(rootNode);
                           }}
                         >
                           Add
@@ -185,7 +188,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       )}
 
                     {availableModifications.includes('cancel-instance') &&
-                      !isNil(selectedElementInstanceKey) &&
+                      !isNil(flowNodeInstanceId) &&
                       businessObjects && (
                         <Button
                           kind="ghost"
@@ -199,11 +202,11 @@ const ModificationDropdown: React.FC<Props> = observer(
                             });
 
                             modificationsStore.cancelToken(
-                              selectedElementId,
-                              selectedElementInstanceKey,
+                              flowNodeId,
+                              flowNodeInstanceId,
                               businessObjects,
                             );
-                            clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Cancel instance
@@ -224,12 +227,12 @@ const ModificationDropdown: React.FC<Props> = observer(
                             });
 
                             cancelAllTokens(
-                              selectedElementId,
-                              selectedElementRunningInstancesCount ?? 0,
+                              flowNodeId,
+                              totalRunningInstances ?? 0,
                               totalRunningInstancesVisible ?? 0,
                               businessObjects,
                             );
-                            clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Cancel all
@@ -237,7 +240,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       )}
 
                     {availableModifications.includes('move-instance') &&
-                      !isNil(selectedElementInstanceKey) && (
+                      !isNil(flowNodeInstanceId) && (
                         <Button
                           kind="ghost"
                           title="Move selected instance in this flow node to another target"
@@ -246,10 +249,10 @@ const ModificationDropdown: React.FC<Props> = observer(
                           renderIcon={ArrowRight}
                           onClick={() => {
                             modificationsStore.startMovingToken(
-                              selectedElementId,
-                              selectedElementInstanceKey,
+                              flowNodeId,
+                              flowNodeInstanceId,
                             );
-                            clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Move instance
@@ -262,10 +265,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                         size="sm"
                         renderIcon={ArrowRight}
                         onClick={() => {
-                          modificationsStore.startMovingToken(
-                            selectedElementId,
-                          );
-                          clearSelection();
+                          modificationsStore.startMovingToken(flowNodeId);
+                          clearSelection(rootNode);
                         }}
                       >
                         Move all

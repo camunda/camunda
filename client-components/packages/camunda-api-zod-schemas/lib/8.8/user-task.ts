@@ -16,7 +16,7 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
-} from '../common';
+} from './common';
 import {variableSchema} from './variable';
 
 const userTaskVariableFilterSchema = variableSchema.pick({
@@ -188,10 +188,9 @@ type QueryVariablesByUserTaskRequestBody = z.infer<typeof queryVariablesByUserTa
 const queryVariablesByUserTaskResponseBodySchema = getQueryResponseBodySchema(variableSchema);
 type QueryVariablesByUserTaskResponseBody = z.infer<typeof queryVariablesByUserTaskResponseBodySchema>;
 
-const queryVariablesByUserTask: Endpoint<Pick<UserTask, 'userTaskKey'> & {truncateValues?: boolean}> = {
+const queryVariablesByUserTask: Endpoint<Pick<UserTask, 'userTaskKey'>> = {
 	method: 'POST',
-	getUrl: ({userTaskKey, truncateValues}) =>
-		`/${API_VERSION}/user-tasks/${userTaskKey}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
+	getUrl: ({userTaskKey}) => `/${API_VERSION}/user-tasks/${userTaskKey}/variables/search`,
 };
 
 export {

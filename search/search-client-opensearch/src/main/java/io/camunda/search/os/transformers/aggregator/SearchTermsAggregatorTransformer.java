@@ -36,19 +36,6 @@ public final class SearchTermsAggregatorTransformer
     Optional.ofNullable(value.sorting())
         .ifPresent(sorting -> termsAggregation.order(toOrder(sorting)));
 
-    Optional.ofNullable(value.script())
-        .ifPresent(
-            script ->
-                termsAggregation.script(
-                    builder ->
-                        builder.inline(
-                            in -> {
-                              final var inline = in.source(script);
-                              return Optional.ofNullable(value.lang())
-                                  .map(inline::lang)
-                                  .orElse(inline);
-                            })));
-
     final var builder = new Aggregation.Builder().terms(termsAggregation.build());
     applySubAggregations(builder, value);
     return builder.build();

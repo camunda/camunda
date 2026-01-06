@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.db.rdbms.write.domain.RoleDbModel.Builder;
 import java.util.List;
@@ -30,58 +30,58 @@ public final class RoleFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomRoles(final RdbmsWriters rdbmsWriters) {
-    createAndSaveRandomRoles(rdbmsWriters, b -> b);
+  public static void createAndSaveRandomRoles(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomRoles(rdbmsWriter, b -> b);
   }
 
   public static RoleDbModel createAndSaveRandomRole(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = RoleFixtures.createRandomized(builderFunction);
-    rdbmsWriters.getRoleWriter().create(definition);
-    rdbmsWriters.flush();
+    rdbmsWriter.getRoleWriter().create(definition);
+    rdbmsWriter.flush();
     return definition;
   }
 
   public static void createAndSaveRandomRoles(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters.getRoleWriter().create(RoleFixtures.createRandomized(builderFunction));
+      rdbmsWriter.getRoleWriter().create(RoleFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
-  public static void createAndSaveRandomRolesWithMembers(final RdbmsWriters rdbmsWriters) {
-    createAndSaveRandomRolesWithMembers(rdbmsWriters, b -> b);
+  public static void createAndSaveRandomRolesWithMembers(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomRolesWithMembers(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomRolesWithMembers(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
       final var role = RoleFixtures.createRandomized(builderFunction);
-      rdbmsWriters.getRoleWriter().create(role);
-      RoleMemberFixtures.createAndSaveRandomRoleMembers(rdbmsWriters, b -> b.roleId(role.roleId()));
+      rdbmsWriter.getRoleWriter().create(role);
+      RoleMemberFixtures.createAndSaveRandomRoleMembers(rdbmsWriter, b -> b.roleId(role.roleId()));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static RoleDbModel createAndSaveRole(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveRoles(rdbmsWriters, List.of(definition));
+    createAndSaveRoles(rdbmsWriter, List.of(definition));
     return definition;
   }
 
-  public static void createAndSaveRole(final RdbmsWriters rdbmsWriters, final RoleDbModel user) {
-    createAndSaveRoles(rdbmsWriters, List.of(user));
+  public static void createAndSaveRole(final RdbmsWriter rdbmsWriter, final RoleDbModel user) {
+    createAndSaveRoles(rdbmsWriter, List.of(user));
   }
 
   public static void createAndSaveRoles(
-      final RdbmsWriters rdbmsWriters, final List<RoleDbModel> userList) {
+      final RdbmsWriter rdbmsWriter, final List<RoleDbModel> userList) {
     for (final RoleDbModel user : userList) {
-      rdbmsWriters.getRoleWriter().create(user);
+      rdbmsWriter.getRoleWriter().create(user);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 }

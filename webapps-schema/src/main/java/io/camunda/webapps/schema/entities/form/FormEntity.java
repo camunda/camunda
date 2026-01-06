@@ -8,27 +8,24 @@
 package io.camunda.webapps.schema.entities.form;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 public class FormEntity implements ExporterEntity<FormEntity>, TenantOwned {
 
-  @BeforeVersion880 private String name;
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
-  @BeforeVersion880 private long key;
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private long key;
 
-  @BeforeVersion880
   @JsonProperty("bpmnId")
   private String formId;
 
-  @BeforeVersion880 private String schema;
-  @BeforeVersion880 private Long version;
-  @BeforeVersion880 private Boolean isDeleted;
-  @BeforeVersion880 private String processDefinitionId;
-  @BeforeVersion880 private boolean embedded;
+  private String schema;
+  private Long version;
+  private Boolean isDeleted;
+  private String processDefinitionId;
+  private boolean embedded;
 
   @Override
   public String getId() {

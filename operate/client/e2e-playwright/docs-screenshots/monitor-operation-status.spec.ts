@@ -10,10 +10,10 @@ import {test} from '../visual-fixtures';
 import * as path from 'path';
 
 import {
+  mockGroupedProcesses,
   mockResponses as mockProcessesResponses,
   mockMigrationOperation,
   mockOrderProcessInstancesWithFailedOperations,
-  mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
@@ -36,9 +36,9 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        processDefinitions: mockProcessDefinitions.filter(
-          (d) => d.processDefinitionId === 'orderProcess',
-        ),
+        groupedProcesses: mockGroupedProcesses.filter((process) => {
+          return process.bpmnProcessId === 'orderProcess';
+        }),
         batchOperations: {
           items: [
             {

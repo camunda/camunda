@@ -11,13 +11,13 @@ import {
   type ElementInstance,
   type UpdateElementInstanceVariablesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {request} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
 const updateElementInstanceVariables = async (
   elementInstanceKey: ElementInstance['elementInstanceKey'],
   body: UpdateElementInstanceVariablesRequestBody,
 ) => {
-  return request({
+  return requestWithThrow<null>({
     url: endpoints.updateElementInstanceVariables.getUrl({elementInstanceKey}),
     method: endpoints.updateElementInstanceVariables.method,
     body,

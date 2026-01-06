@@ -23,8 +23,6 @@ import {
   useIsPlaceholderSelected,
   useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
@@ -43,26 +41,7 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
 
     const {isModificationModeEnabled} = modificationsStore;
 
-    const {selectedElementId, resolvedElementInstance} =
-      useProcessInstanceElementSelection();
-
     const isVariableModificationAllowed = computed(() => {
-      if (!isModificationModeEnabled || selectedElementId === null) {
-        return false;
-      }
-
-      if (isRootNodeSelected) {
-        return !willAllFlowNodesBeCanceled;
-      }
-
-      return (
-        isPlaceholderSelected ||
-        (resolvedElementInstance?.state === 'ACTIVE' &&
-          !hasPendingCancelOrMoveModification)
-      );
-    });
-
-    const isVariableModificationAllowedV1 = computed(() => {
       if (
         !isModificationModeEnabled ||
         flowNodeSelectionStore.state.selection === null
@@ -81,13 +60,9 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
       );
     });
 
-    const isModificationAllowed = IS_ELEMENT_SELECTION_V2
-      ? isVariableModificationAllowed.get()
-      : isVariableModificationAllowedV1.get();
-
     return (
       <Form onSubmit={handleSubmit}>
-        {isModificationAllowed && (
+        {isVariableModificationAllowed.get() && (
           <AddVariableButton
             onClick={() => {
               form.mutators.push?.('newVariables', {
@@ -103,7 +78,9 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
           />
         )}
         <VariablesContainer>
-          <Variables isVariableModificationAllowed={isModificationAllowed} />
+          <Variables
+            isVariableModificationAllowed={isVariableModificationAllowed.get()}
+          />
         </VariablesContainer>
       </Form>
     );

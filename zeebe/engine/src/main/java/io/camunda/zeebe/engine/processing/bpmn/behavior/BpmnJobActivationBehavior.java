@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -176,7 +176,7 @@ public class BpmnJobActivationBehavior {
                 .authorizationClaims(claims)
                 .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                 .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                .addResourceId(jobRecord.getBpmnProcessId())
+                .addAuthorizationScope(AuthorizationScope.id(jobRecord.getBpmnProcessId()))
                 .tenantId(ownerTenantId)
                 .build())
         .isRight(); // we only care if the job stream is authorized, not why it isn't

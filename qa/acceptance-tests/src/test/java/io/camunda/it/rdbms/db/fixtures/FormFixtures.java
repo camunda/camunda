@@ -8,7 +8,7 @@
 package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.FormDbModel;
 import io.camunda.db.rdbms.write.domain.FormDbModel.FormDbModelBuilder;
 import java.util.List;
@@ -45,11 +45,11 @@ public final class FormFixtures extends CommonFixtures {
   public static void createAndSaveRandomForms(
       final RdbmsService rdbmsService,
       final Function<FormDbModelBuilder, FormDbModelBuilder> builderFunction) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(1L);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(1L);
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters.getFormWriter().create(FormFixtures.createRandomized(builderFunction));
+      rdbmsWriter.getFormWriter().create(FormFixtures.createRandomized(builderFunction));
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static void createAndSaveForm(final RdbmsService rdbmsService, final FormDbModel form) {
@@ -58,10 +58,10 @@ public final class FormFixtures extends CommonFixtures {
 
   public static void createAndSaveForms(
       final RdbmsService rdbmsService, final List<FormDbModel> formList) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(1L);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(1L);
     for (final FormDbModel form : formList) {
-      rdbmsWriters.getFormWriter().create(form);
+      rdbmsWriter.getFormWriter().create(form);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 }

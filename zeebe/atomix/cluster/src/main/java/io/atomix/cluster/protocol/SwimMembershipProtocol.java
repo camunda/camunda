@@ -106,14 +106,14 @@ public class SwimMembershipProtocol
   private NodeDiscoveryService discoveryService;
   private BootstrapService bootstrapService;
   private SwimMember localMember;
-  private volatile Properties localProperties = new Properties();
-  private ScheduledFuture<?> gossipFuture;
-  private ScheduledFuture<?> probeFuture;
-  private ScheduledFuture<?> syncFuture;
   private final BiFunction<Address, byte[], CompletableFuture<byte[]>> probeRequestHandler =
       (address, payload) ->
           handleProbeRequest(SERIALIZER.decode(payload)).thenApply(SERIALIZER::encode);
   private final NodeDiscoveryEventListener discoveryEventListener = this::handleDiscoveryEvent;
+  private volatile Properties localProperties = new Properties();
+  private ScheduledFuture<?> gossipFuture;
+  private ScheduledFuture<?> probeFuture;
+  private ScheduledFuture<?> syncFuture;
   private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics;
   private final BiFunction<Address, byte[], byte[]> syncHandler =
       (address, payload) -> SERIALIZER.encode(handleSync(SERIALIZER.decode(payload)));
@@ -170,7 +170,6 @@ public class SwimMembershipProtocol
       localMember =
           new SwimMember(
               member.id(),
-              member.nodeVersion(),
               member.address(),
               member.zone(),
               member.rack(),
@@ -820,7 +819,6 @@ public class SwimMembershipProtocol
 
   /** Handles a node join event. */
   private void handleJoinEvent(final Node node) {
-    // just joined, there's no version yet: it will be sent afterward
     final SwimMember member = new SwimMember(MemberId.from(node.id().id()), node.address());
     if (!members.containsKey(member.id())) {
       probe(member.copy());
@@ -901,21 +899,7 @@ public class SwimMembershipProtocol
     }
   }
 
-  /**
-   * Immutable member.
-   *
-   * <p>This class is serialized with Kryo using {@code CompatibleFieldSerializer} with chunked
-   * encoding, which provides backward and forward compatibility for field changes.
-   *
-   * <h2>Serialization Revisions</h2>
-   *
-   * <ul>
-   *   <li><b>Revision 1:</b> Initial version with fields: id, address, zone, rack, host,
-   *       properties, version, timestamp, state, incarnationNumber
-   *   <li><b>Revision 2:</b> Added {@code nodeVersion} field. Defaults to 0L when deserializing
-   *       messages from older versions.
-   * </ul>
-   */
+  /** Immutable member. */
   static class ImmutableMember extends Member {
     private final Version version;
     private final long timestamp;
@@ -924,7 +908,6 @@ public class SwimMembershipProtocol
 
     ImmutableMember(
         final MemberId id,
-        final long nodeVersion,
         final Address address,
         final String zone,
         final String rack,
@@ -934,7 +917,7 @@ public class SwimMembershipProtocol
         final long timestamp,
         final State state,
         final long incarnationNumber) {
-      super(id, nodeVersion, address, zone, rack, host, properties);
+      super(id, address, zone, rack, host, properties);
       this.version = version;
       this.timestamp = timestamp;
       this.state = state;
@@ -943,19 +926,15 @@ public class SwimMembershipProtocol
 
     @Override
     public String toString() {
-      final var helper = toStringHelper(Member.class);
-      helper.add("id", id());
-      if (nodeVersion() > 0) {
-        helper.add("nodeVersion", nodeVersion());
-      }
-      helper
+      return toStringHelper(Member.class)
+          .add("id", id())
           .add("address", address())
           .add("properties", properties())
           .add("version", version())
           .add("timestamp", timestamp())
           .add("state", state())
-          .add("incarnationNumber", incarnationNumber());
-      return helper.toString();
+          .add("incarnationNumber", incarnationNumber())
+          .toString();
     }
 
     @Override
@@ -987,21 +966,7 @@ public class SwimMembershipProtocol
     }
   }
 
-  /**
-   * Swim member.
-   *
-   * <p>This class is serialized with Kryo using {@code CompatibleFieldSerializer} with chunked
-   * encoding, which provides backward and forward compatibility for field changes.
-   *
-   * <h2>Serialization Revisions</h2>
-   *
-   * <ul>
-   *   <li><b>Revision 1:</b> Initial version with fields: id, address, zone, rack, host,
-   *       properties, version, timestamp, state, incarnationNumber, updated
-   *   <li><b>Revision 2:</b> Added {@code nodeVersion} field. Defaults to 0L when deserializing
-   *       messages from older versions.
-   * </ul>
-   */
+  /** Swim member. */
   static class SwimMember extends Member {
     private final Version version;
     private final long timestamp;
@@ -1017,7 +982,6 @@ public class SwimMembershipProtocol
 
     SwimMember(
         final MemberId id,
-        final long nodeVersion,
         final Address address,
         final String zone,
         final String rack,
@@ -1025,7 +989,7 @@ public class SwimMembershipProtocol
         final Properties properties,
         final Version version,
         final long timestamp) {
-      super(id, nodeVersion, address, zone, rack, host, properties);
+      super(id, address, zone, rack, host, properties);
       this.version = version;
       this.timestamp = timestamp;
       incarnationNumber = System.currentTimeMillis();
@@ -1034,7 +998,6 @@ public class SwimMembershipProtocol
     SwimMember(final ImmutableMember member) {
       super(
           member.id(),
-          member.nodeVersion(),
           member.address(),
           member.zone(),
           member.rack(),
@@ -1065,6 +1028,26 @@ public class SwimMembershipProtocol
         this.state = state;
         setUpdated(System.currentTimeMillis());
       }
+    }
+
+    @Override
+    public boolean isActive() {
+      return state.isActive();
+    }
+
+    @Override
+    public boolean isReachable() {
+      return state.isReachable();
+    }
+
+    @Override
+    public Version version() {
+      return version;
+    }
+
+    @Override
+    public long timestamp() {
+      return timestamp;
     }
 
     /**
@@ -1111,7 +1094,6 @@ public class SwimMembershipProtocol
     ImmutableMember copy() {
       return new ImmutableMember(
           id(),
-          nodeVersion(),
           address(),
           zone(),
           rack(),
@@ -1121,26 +1103,6 @@ public class SwimMembershipProtocol
           timestamp(),
           state,
           incarnationNumber);
-    }
-
-    @Override
-    public boolean isActive() {
-      return state.isActive();
-    }
-
-    @Override
-    public boolean isReachable() {
-      return state.isReachable();
-    }
-
-    @Override
-    public Version version() {
-      return version;
-    }
-
-    @Override
-    public long timestamp() {
-      return timestamp;
     }
   }
 

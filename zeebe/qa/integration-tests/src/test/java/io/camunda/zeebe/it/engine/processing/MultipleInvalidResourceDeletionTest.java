@@ -28,7 +28,7 @@ public class MultipleInvalidResourceDeletionTest {
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           // disable long polling to increase the load in streamprocessor
-          .withUnifiedConfig(cfg -> cfg.getApi().getLongPolling().setEnabled(false))
+          .withGatewayConfig(cfg -> cfg.getLongPolling().setEnabled(false))
           .withRecordingExporter(true);
 
   private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);

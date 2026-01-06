@@ -32,10 +32,6 @@ on:
         description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven Central, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production. This flag acts separately to dryRun flag and should be used with dryRun=false. If both flags are active then dryRun takes precedence.'
         type: boolean
         default: false
-      includeOptimize:
-        description: 'Whether to include Optimize in the release process. When true, Optimize is included in Maven prepare/perform steps. Defaults to false for backward compatibility.'
-        type: boolean
-        default: false
   workflow_dispatch:
     inputs:
       releaseBranch:
@@ -64,10 +60,6 @@ on:
         description: 'Activates E2E testing mode for the release process. This mode creates real, temporary changes and artifacts in GitHub and Maven Central, which are left for manual inspection. A separate process (dryrun_cleanup.bpmn) is responsible for their final reversion, ensuring no lasting impact on production. This flag acts separately to dryRun flag and should be used with dryRun=false. If both flags are active then dryRun takes precedence.'
         type: boolean
         default: false
-      includeOptimize:
-        description: 'Whether to include Optimize in the release process. When true, Optimize is included in Maven prepare/perform steps. Defaults to false for backward compatibility.'
-        type: boolean
-        default: false
 defaults:
   run:
     shell: bash
@@ -77,7 +69,6 @@ env:
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   RELEASE_TAG: ${{ inputs.releaseProcessDryRun && format('dryrun-{0}', inputs.releaseVersion) || inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
-  PLATFORMS: "linux/amd64,linux/arm64"
 jobs:
   # Release job performs Maven prepare and perform release operations, managing release artifacts and repository changes.
   # Flags impact:
@@ -180,16 +171,6 @@ jobs:
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
-          
-          # Conditionally set profile flags based on includeOptimize input
-          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
-            PROFILE_FLAGS=""
-            ARGUMENTS_PROFILE=""
-          else
-            PROFILE_FLAGS="-P\!include-optimize"
-            ARGUMENTS_PROFILE="-P!include-optimize"
-          fi
-          
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag="${RELEASE_TAG}" \
@@ -200,8 +181,8 @@ jobs:
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
             -DpreparationGoals="" \
-            ${PROFILE_FLAGS} \
-            -Darguments="${ARGUMENTS_PROFILE}"
+            -P\!include-optimize \
+            -Darguments='-P!include-optimize'
 
       - name: Maven Perform Release
         id: maven-perform-release
@@ -217,15 +198,6 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
-          # Conditionally set profile flags based on includeOptimize input
-          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
-            PROFILE_FLAGS=""
-            ARGUMENTS_PROFILE=""
-          else
-            PROFILE_FLAGS="-P\!include-optimize"
-            ARGUMENTS_PROFILE="-P!include-optimize"
-          fi
-
           # shellcheck disable=SC2016
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -233,8 +205,8 @@ jobs:
             -DlocalCheckout="${{ inputs.dryRun }}" \
             -DskipQaBuild=true \
             -P-autoFormat \
-            ${PROFILE_FLAGS} \
-            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
+            -P\!include-optimize \
+            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -243,19 +215,6 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
-      - name: Debug Optimize Versions
-        if: ${{ inputs.includeOptimize && inputs.dryRun }}
-        run: |
-          echo "=== Optimize Version Information ==="
-          echo "Optimize project.version:"
-          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout || echo "Failed to get Optimize version"
-          echo ""
-          echo "Zeebe version:"
-          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=zeebe.version -q -DforceStdout || echo "Failed to get Zeebe version"
-          echo ""
-          echo "Identity version:"
-          ./mvnw help:effective-pom -pl optimize -DforceStdout | grep -oPm1 "(?<=<version.identity>)[^<]+" || echo "Failed to get Identity version"
-          echo ""
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
@@ -263,12 +222,6 @@ jobs:
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
           cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
           cp target/checkout/db/rdbms-schema/target/camunda-db-rdbms-schema-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
-          
-          # Include Optimize artifacts if Optimize is included in the release
-          if [[ "${{ inputs.includeOptimize }}" == "true" ]]; then
-            cp target/checkout/optimize-distro/target/camunda-optimize-"${RELEASE_VERSION}"-production.tar.gz "${ARTIFACT_DIR}/"
-          fi
-          
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
@@ -314,578 +267,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  # Docker image release jobs build and publish multi-platform Docker images for each Camunda component.
-  # All Docker jobs follow the same pattern: build locally, verify, then sync to DockerHub.
-  # Flags impact:
-  # - With dryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
-  # - With releaseProcessDryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
-  # - Uses local registry (localhost:5000) for verification before pushing to remote registry
-  zeebe-docker:
-    needs: release
-    name: Zeebe docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
-      DOCKER_IMAGE: camunda/zeebe
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Logs on to Minimus
-        uses: docker/login-action@v3
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Zeebe Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Zeebe Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-zeebe-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-      - name: Sync Zeebe Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-zeebe-docker.outputs.image }}
-      - name: Sync Zeebe Latest Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-zeebe-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  operate-docker:
-    needs: release
-    name: Operate Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
-      DOCKER_IMAGE: camunda/operate
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Login to Minimus
-        uses: docker/login-action@v3
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Operate Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-operate-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: operate.Dockerfile
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Operate Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-operate-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: operate.Dockerfile
-          goldenfile: operate-docker-labels.golden.json
-      - name: Sync Operate Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-operate-docker.outputs.image }}
-      - name: Sync Latest Operate Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-operate-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  tasklist-docker:
-    needs: release
-    name: Tasklist Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
-      DOCKER_IMAGE: camunda/tasklist
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Login to Minimus
-        uses: docker/login-action@v3
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Tasklist Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-tasklist-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Tasklist Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-tasklist-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: tasklist.Dockerfile
-          goldenfile: tasklist-docker-labels.golden.json
-      - name: Sync Tasklist Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-tasklist-docker.outputs.image }}
-      - name: Sync Latest Tasklist Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-tasklist-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  optimize-docker:
-    needs: release
-    name: Optimize Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: ${{ inputs.includeOptimize }}
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
-      DOCKER_IMAGE: camunda/optimize
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Login to Minimus
-        uses: docker/login-action@v3
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Optimize Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-optimize-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-optimize-${{ inputs.releaseVersion }}-production.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: optimize.Dockerfile
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Optimize Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-optimize-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: optimize.Dockerfile
-          goldenfile: optimize-docker-labels.golden.json
-      - name: Sync Optimize Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-optimize-docker.outputs.image }}
-      - name: Sync Latest Optimize Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-optimize-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  camunda-docker:
-    needs: release
-    name: Camunda Docker Image Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    services:
-      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
-      # registry. As we want to verify the images first before pushing them to dockerhub though,
-      # a local registry is used and if verification passes images are pushed to the remote registry.
-      registry:
-        image: registry:3
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      DOCKER_IMAGE: camunda/camunda
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Logs on to Minimus
-        uses: docker/login-action@v3
-        with:
-          registry: reg.mini.dev
-          username: minimus
-          password: ${{ steps.secrets.outputs.minimus-token }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Camunda Docker Image
-        uses: ./.github/actions/build-platform-docker
-        id: build-camunda-docker
-        with:
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          version: ${{ inputs.releaseVersion }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry for verification prior pushing to remote
-          push: true
-          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: camunda.Dockerfile
-          # turns on BuildKit debug logging
-          debug: 'true'
-      - name: Verify Camunda Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-camunda-docker.outputs.date }}
-          revision: ${{ needs.release.outputs.releaseTagRevision }}
-          version: ${{ inputs.releaseVersion }}
-          platforms: ${{ env.PLATFORMS }}
-          dockerfile: camunda.Dockerfile
-          goldenfile: camunda-docker-labels.golden.json
-      - name: Sync Camunda Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
-              ${{ steps.build-camunda-docker.outputs.image }}
-      - name: Sync Latest Camunda Docker Image to DockerHub
-        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && inputs.isLatest }}
-        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          retry_wait_seconds: 15
-          timeout_minutes: 10
-          command: |
-            docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-camunda-docker.outputs.image }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  # Snyk security monitoring job performs vulnerability scanning on Docker images and source code.
-  # Only runs for stable releases (not alpha, rc, SNAPSHOT).
-  # Flags impact:
-  # - With dryRun=true: Runs security tests instead of monitoring (no data sent to Snyk dashboard)
-  # - With releaseProcessDryRun=true: Runs security tests instead of monitoring (E2E testing mode)
-  # - When either flag is active: Builds Docker images locally since they won't be pushed to registry
-  # Uses concurrency control to prevent multiple Snyk jobs from running simultaneously for the same version
-  snyk:
-    name: Snyk Monitor
-    needs: [ zeebe-docker, release ]
-    # skip if the version contains a dash as a quick test for -alpha, -rc, -SNAPSHOT, etc.
-    if: ${{ !contains(inputs.releaseVersion, '-') }}
-    concurrency:
-      group: release-snyk-${{ inputs.releaseVersion }}
-      cancel-in-progress: false
-    uses: ./.github/workflows/zeebe-snyk.yml
-    with:
-      # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
-      ref: ${{ needs.release.outputs.releaseBranch }}
-      version: ${{ inputs.releaseVersion }}
-      useMinorVersion: true
-      # test instead of monitor during dry-runs
-      monitor: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-      # the docker image will not be pushed during a dry-run, so we need to build it locally
-      build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
-      dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
-    secrets: inherit
-
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
   # - With dryRun=true: Skips creating the actual GitHub release (only prepares artifacts and changelog)
@@ -893,18 +274,11 @@ jobs:
   # - Uses RELEASE_TAG for versioning (prefixed with 'dryrun-' when releaseProcessDryRun=true)
   # The job generates changelog, checksums artifacts, and determines pre-release status
   github:
-    needs: [release, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
+    needs: release
     name: Github Release
     runs-on: ubuntu-latest
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
-    if: ${{ always() && !cancelled() && 
-      needs.release.result == 'success' &&
-      needs.zeebe-docker.result == 'success' &&
-      needs.operate-docker.result == 'success' &&
-      needs.tasklist-docker.result == 'success' &&
-      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
-      needs.camunda-docker.result == 'success' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1021,6 +395,372 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Docker image release jobs build and publish multi-platform Docker images for each Camunda component.
+  # All Docker jobs follow the same pattern: build locally, verify, then sync to DockerHub.
+  # Flags impact:
+  # - With dryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
+  # - With releaseProcessDryRun=true: Skips pushing images to DockerHub (only builds and verifies locally)
+  # - Uses local registry (localhost:5000) for verification before pushing to remote registry
+  zeebe-docker:
+    needs: release
+    name: Zeebe docker Image Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    env:
+      PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+      DOCKER_IMAGE: camunda/zeebe
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Build Zeebe Docker Image
+        uses: ./.github/actions/build-platform-docker
+        id: build-zeebe-docker
+        with:
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          # pushes to local registry for verification prior pushing to remote
+          push: true
+          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+          platforms: ${{ env.PLATFORMS }}
+      - name: Verify Zeebe Docker image
+        uses: ./.github/actions/verify-platform-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-zeebe-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          platforms: ${{ env.PLATFORMS }}
+      - name: Sync Docker Image to DockerHub
+        id: push-docker
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-zeebe-docker.outputs.image }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  operate-docker:
+    needs: release
+    name: Operate Docker Image Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    env:
+      PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
+      DOCKER_IMAGE: camunda/operate
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Build Operate Docker Image
+        uses: ./.github/actions/build-platform-docker
+        id: build-operate-docker
+        with:
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          # pushes to local registry for verification prior pushing to remote
+          push: true
+          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: operate.Dockerfile
+      - name: Verify Operate Docker image
+        uses: ./.github/actions/verify-platform-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-operate-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: operate.Dockerfile
+          goldenfile: operate-docker-labels.golden.json
+      - name: Sync Operate Docker Image to DockerHub
+        id: push-docker
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-operate-docker.outputs.image }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  tasklist-docker:
+    needs: release
+    name: Tasklist Docker Image Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    env:
+      PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+      DOCKER_IMAGE: camunda/tasklist
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Build Tasklist Docker Image
+        uses: ./.github/actions/build-platform-docker
+        id: build-tasklist-docker
+        with:
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          # pushes to local registry for verification prior pushing to remote
+          push: true
+          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: tasklist.Dockerfile
+      - name: Verify Tasklist Docker image
+        uses: ./.github/actions/verify-platform-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-tasklist-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: tasklist.Dockerfile
+          goldenfile: tasklist-docker-labels.golden.json
+      - name: Sync Tasklist Docker Image to DockerHub
+        id: push-docker
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-tasklist-docker.outputs.image }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  camunda-docker:
+    needs: release
+    name: Camunda Docker Image Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    env:
+      PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
+      DOCKER_IMAGE: camunda/camunda
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Logs on to Minimus
+        uses: docker/login-action@v3
+        with:
+          registry: reg.mini.dev
+          username: minimus
+          password: ${{ steps.secrets.outputs.minimus-token }}
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Build Camunda Docker Image
+        uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          # pushes to local registry for verification prior pushing to remote
+          push: true
+          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: camunda.Dockerfile
+      - name: Verify Camunda Docker image
+        uses: ./.github/actions/verify-platform-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-camunda-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          platforms: ${{ env.PLATFORMS }}
+          dockerfile: camunda.Dockerfile
+          goldenfile: camunda-docker-labels.golden.json
+      - name: Sync Camunda Docker Image to DockerHub
+        id: push-docker
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-camunda-docker.outputs.image }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Snyk security monitoring job performs vulnerability scanning on Docker images and source code.
+  # Only runs for stable releases (not alpha, rc, SNAPSHOT).
+  # Flags impact:
+  # - With dryRun=true: Runs security tests instead of monitoring (no data sent to Snyk dashboard)
+  # - With releaseProcessDryRun=true: Runs security tests instead of monitoring (E2E testing mode)
+  # - When either flag is active: Builds Docker images locally since they won't be pushed to registry
+  # Uses concurrency control to prevent multiple Snyk jobs from running simultaneously for the same version
+  snyk:
+    name: Snyk Monitor
+    needs: [ zeebe-docker, release ]
+    # skip if the version contains a dash as a quick test for -alpha, -rc, -SNAPSHOT, etc.
+    if: ${{ !contains(inputs.releaseVersion, '-') }}
+    concurrency:
+      group: release-snyk-${{ inputs.releaseVersion }}
+      cancel-in-progress: false
+    uses: ./.github/workflows/zeebe-snyk.yml
+    with:
+      # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
+      ref: ${{ needs.release.outputs.releaseBranch }}
+      version: ${{ inputs.releaseVersion }}
+      useMinorVersion: true
+      # test instead of monitor during dry-runs
+      monitor: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+      # the docker image will not be pushed during a dry-run, so we need to build it locally
+      build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+      dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
+    secrets: inherit
+
   # This job waits for the existing FOSSA scan (triggered by check-licenses.yml on tag push)
   # then creates releases and generates attribution/SBOM reports for single-app only
   # Flags impact:
@@ -1028,15 +768,7 @@ jobs:
   fossa-release:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
-    if: ${{ always() && !cancelled() && 
-      needs.release.result == 'success' &&
-      needs.github.result == 'success' &&
-      needs.zeebe-docker.result == 'success' &&
-      needs.operate-docker.result == 'success' &&
-      needs.tasklist-docker.result == 'success' &&
-      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
-      needs.camunda-docker.result == 'success' }}
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -1054,9 +786,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
+        uses: camunda/infra-global-github-actions/fossa/info@3be9c0625ab9879b87b483d48d1bddfde496c70b
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@3be9c0625ab9879b87b483d48d1bddfde496c70b
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1064,7 +796,7 @@ jobs:
           revision-id: ${{ steps.fossa-context.outputs.head-revision }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
+        uses: camunda/infra-global-github-actions/fossa/release@3be9c0625ab9879b87b483d48d1bddfde496c70b
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1096,7 +828,7 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release succeeded
     if: ${{ always() && (
@@ -1105,7 +837,6 @@ jobs:
       needs.zeebe-docker.result == 'success' &&
       needs.operate-docker.result == 'success' &&
       needs.tasklist-docker.result == 'success' &&
-      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
       (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
@@ -1147,7 +878,7 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release failed
     if: ${{ always() && (
@@ -1156,7 +887,6 @@ jobs:
         needs.zeebe-docker.result == 'failure' ||
         needs.operate-docker.result == 'failure' ||
         needs.tasklist-docker.result == 'failure' ||
-        needs.optimize-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
         needs.fossa-release.result == 'failure'

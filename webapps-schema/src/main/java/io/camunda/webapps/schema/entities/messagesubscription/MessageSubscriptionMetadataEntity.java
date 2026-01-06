@@ -7,7 +7,6 @@
  */
 package io.camunda.webapps.schema.entities.messagesubscription;
 
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -16,49 +15,49 @@ import java.util.Objects;
 public class MessageSubscriptionMetadataEntity {
 
   /** Message data. */
-  @BeforeVersion880 private String messageName;
+  private String messageName;
 
-  @BeforeVersion880 private String correlationKey;
-
-  /**
-   * @deprecated since 8.9
-   */
-  @BeforeVersion880 @Deprecated private String jobType;
+  private String correlationKey;
 
   /**
    * @deprecated since 8.9
    */
-  @BeforeVersion880 @Deprecated private Integer jobRetries;
+  @Deprecated private String jobType;
 
   /**
    * @deprecated since 8.9
    */
-  @BeforeVersion880 @Deprecated private String jobWorker;
+  @Deprecated private Integer jobRetries;
 
   /**
    * @deprecated since 8.9
    */
-  @BeforeVersion880 @Deprecated private OffsetDateTime jobDeadline;
+  @Deprecated private String jobWorker;
 
   /**
    * @deprecated since 8.9
    */
-  @BeforeVersion880 @Deprecated private Map<String, String> jobCustomHeaders;
+  @Deprecated private OffsetDateTime jobDeadline;
 
   /**
    * @deprecated since 8.9
    */
-  @BeforeVersion880 @Deprecated private Long jobKey;
+  @Deprecated private Map<String, String> jobCustomHeaders;
 
   /**
    * @deprecated since 8.9
    */
-  @BeforeVersion880 @Deprecated private ErrorType incidentErrorType;
+  @Deprecated private Long jobKey;
 
   /**
    * @deprecated since 8.9
    */
-  @BeforeVersion880 @Deprecated private String incidentErrorMessage;
+  @Deprecated private ErrorType incidentErrorType;
+
+  /**
+   * @deprecated since 8.9
+   */
+  @Deprecated private String incidentErrorMessage;
 
   public String getMessageName() {
     return messageName;

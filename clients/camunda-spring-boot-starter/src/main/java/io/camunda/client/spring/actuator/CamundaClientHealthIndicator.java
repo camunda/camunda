@@ -16,8 +16,8 @@
 package io.camunda.client.spring.actuator;
 
 import io.camunda.client.health.HealthCheck;
-import org.springframework.boot.health.contributor.AbstractHealthIndicator;
-import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.actuate.health.AbstractHealthIndicator;
+import org.springframework.boot.actuate.health.Health;
 
 public class CamundaClientHealthIndicator extends AbstractHealthIndicator {
 

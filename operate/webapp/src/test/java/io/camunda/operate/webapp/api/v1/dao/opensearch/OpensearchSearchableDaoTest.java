@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -65,10 +64,7 @@ public class OpensearchSearchableDaoTest {
           }
 
           @Override
-          protected org.opensearch.client.opensearch._types.query_dsl.Query buildFiltering(
-              final Query query) {
-            return mockQueryWrapper.matchAll();
-          }
+          protected void buildFiltering(final Query query, final SearchRequest.Builder request) {}
 
           @Override
           protected Object convertInternalToApiResult(final Object internalResult) {
@@ -82,23 +78,18 @@ public class OpensearchSearchableDaoTest {
     final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
     final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    final var mockSortOptions = Mockito.mock(SortOptions.class);
-    final var sortOptions = new java.util.ArrayList<SortOptions>();
-    sortOptions.add(mockSortOptions);
 
     when(mockRequestWrapper.searchRequestBuilder("index")).thenReturn(mockRequestBuilder);
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
-    when(mockRequestBuilder.sort(sortOptions)).thenReturn(mockRequestBuilder);
 
-    final SearchRequest.Builder result =
-        underTest.buildSearchRequest(new Query<>(), mockOsQuery, sortOptions);
+    final SearchRequest.Builder result = underTest.buildSearchRequest(new Query<>());
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
     assertThat(result).isSameAs(mockRequestBuilder);
-    verify(mockQueryWrapper, times(1)).withTenantCheck(mockOsQuery);
+    verify(mockQueryWrapper, times(1)).matchAll();
+    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
     verify(mockRequestWrapper, times(1)).searchRequestBuilder("index");
-    verify(mockRequestBuilder, times(1)).sort(sortOptions);
   }
 
   @Test
@@ -168,7 +159,7 @@ public class OpensearchSearchableDaoTest {
     final String uniqueSortKey = "processId";
     final SearchRequest.Builder request = Mockito.mock(SearchRequest.Builder.class);
 
-    underTest.buildSorting(inputQuery, uniqueSortKey);
+    underTest.buildSorting(inputQuery, uniqueSortKey, request);
 
     verify(mockQueryWrapper, times(1)).sortOptions(any(), any());
     verify(mockQueryWrapper, times(1)).sortOptions(uniqueSortKey, SortOrder.Asc);
@@ -181,7 +172,7 @@ public class OpensearchSearchableDaoTest {
     final String uniqueSortKey = "processId";
     final SearchRequest.Builder request = Mockito.mock(SearchRequest.Builder.class);
 
-    underTest.buildSorting(inputQuery, uniqueSortKey);
+    underTest.buildSorting(inputQuery, uniqueSortKey, request);
 
     verify(mockQueryWrapper, times(2)).sortOptions(any(), any());
     verify(mockQueryWrapper, times(1)).sortOptions(uniqueSortKey, SortOrder.Asc);
@@ -195,7 +186,7 @@ public class OpensearchSearchableDaoTest {
     final String uniqueSortKey = "processId";
     final SearchRequest.Builder request = Mockito.mock(SearchRequest.Builder.class);
 
-    underTest.buildSorting(inputQuery, uniqueSortKey);
+    underTest.buildSorting(inputQuery, uniqueSortKey, request);
 
     verify(mockQueryWrapper, times(2)).sortOptions(any(), any());
     verify(mockQueryWrapper, times(1)).sortOptions(uniqueSortKey, SortOrder.Asc);

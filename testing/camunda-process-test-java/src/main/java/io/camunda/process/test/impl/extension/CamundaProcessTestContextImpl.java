@@ -21,8 +21,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.search.enums.UserTaskState;
-import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
@@ -45,7 +43,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -59,10 +56,6 @@ import org.slf4j.LoggerFactory;
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaProcessTestContextImpl.class);
-
-  // We can complete only created user tasks. Ignore other states.
-  private static final Consumer<UserTaskFilter> DEFAULT_USER_TASK_COMPLETION_FILTER =
-      filter -> filter.state(UserTaskState.CREATED);
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -293,24 +286,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
+    final UserTask userTask = awaitUserTask(userTaskSelector, client);
 
-    // completing the user task inside the await block to handle the eventual consistency of the API
-    awaitUserTask(
-        userTaskSelector,
-        client,
-        userTask -> {
-          LOGGER.debug(
-              "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
-              userTaskSelector.describe(),
-              userTask.getUserTaskKey(),
-              variables);
+    LOGGER.debug(
+        "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
+        userTaskSelector.describe(),
+        userTask.getUserTaskKey(),
+        variables);
 
-          client
-              .newCompleteUserTaskCommand(userTask.getUserTaskKey())
-              .variables(variables)
-              .send()
-              .join();
-        });
+    client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).variables(variables).send().join();
   }
 
   @Override
@@ -324,35 +308,30 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final BpmnExampleDataReader exampleDataReader =
         new BpmnExampleDataReader(client, awaitBehavior);
 
-    // completing the user task inside the await block to handle the eventual consistency of the API
-    awaitUserTask(
-        userTaskSelector,
-        client,
-        userTask -> {
-          final String logPrefix =
-              String.format(
-                  "Mock: Complete user task [%s, userTaskKey: '%s']",
-                  userTaskSelector.describe(), userTask.getUserTaskKey());
+    final UserTask userTask = awaitUserTask(userTaskSelector, client);
+    final String logPrefix =
+        String.format(
+            "Mock: Complete user task [%s, userTaskKey: '%s']",
+            userTaskSelector.describe(), userTask.getUserTaskKey());
 
-          try {
-            final String exampleData =
-                exampleDataReader.readExampleData(
-                    userTask.getProcessDefinitionKey(),
-                    userTask.getBpmnProcessId(),
-                    userTask.getElementId());
+    try {
+      final String exampleData =
+          exampleDataReader.readExampleData(
+              userTask.getProcessDefinitionKey(),
+              userTask.getBpmnProcessId(),
+              userTask.getElementId());
 
-            LOGGER.debug("{} with example data {}", logPrefix, exampleData);
-            client
-                .newCompleteUserTaskCommand(userTask.getUserTaskKey())
-                .variables(exampleData)
-                .send()
-                .join();
-          } catch (final BpmnExampleDataReaderException e) {
+      LOGGER.debug("{} with example data {}", logPrefix, exampleData);
+      client
+          .newCompleteUserTaskCommand(userTask.getUserTaskKey())
+          .variables(exampleData)
+          .send()
+          .join();
+    } catch (final BpmnExampleDataReaderException e) {
 
-            LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
-            client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
-          }
-        });
+      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
+      client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
+    }
   }
 
   @Override
@@ -395,39 +374,26 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .join();
   }
 
-  private void awaitUserTask(
-      final UserTaskSelector userTaskSelector,
-      final CamundaClient client,
-      final Consumer<UserTask> userTaskConsumer) {
-
-    awaitBehavior.untilAsserted(
-        () -> findUserTask(userTaskSelector, client),
-        userTask -> {
-          assertThat(userTask)
-              .withFailMessage(
-                  "Expected to complete user task [%s] but no user task is available.",
-                  userTaskSelector.describe())
-              .isPresent();
-
-          userTask.ifPresent(userTaskConsumer);
-        });
-  }
-
-  private Optional<UserTask> findUserTask(
+  private UserTask awaitUserTask(
       final UserTaskSelector userTaskSelector, final CamundaClient client) {
-    return client
-        .newUserTaskSearchRequest()
-        .filter(
-            filter ->
-                DEFAULT_USER_TASK_COMPLETION_FILTER
-                    .andThen(userTaskSelector::applyFilter)
-                    .accept(filter))
-        .send()
-        .join()
-        .items()
-        .stream()
-        .filter(userTaskSelector::test)
-        .findFirst();
+    return awaitBehavior.until(
+        () ->
+            client
+                .newUserTaskSearchRequest()
+                .filter(userTaskSelector::applyFilter)
+                .send()
+                .join()
+                .items()
+                .stream()
+                .filter(userTaskSelector::test)
+                .findFirst()
+                .orElse(null),
+        userTask ->
+            assertThat(userTask)
+                .withFailMessage(
+                    "Expected to complete user task [%s] but no user task is available.",
+                    userTaskSelector.describe())
+                .isNotNull());
   }
 
   private ActivatedJob getActivatedJob(final String jobType, final CamundaClient client) {

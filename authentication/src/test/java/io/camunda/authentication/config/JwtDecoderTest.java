@@ -8,7 +8,7 @@
 package io.camunda.authentication.config;
 
 import static com.nimbusds.jose.JOSEObjectType.JWT;
-import static io.camunda.authentication.config.OidcAccessTokenDecoderFactory.AT_JWT;
+import static io.camunda.authentication.config.WebSecurityConfig.AT_JWT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.fail;

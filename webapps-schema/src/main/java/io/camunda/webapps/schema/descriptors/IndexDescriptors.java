@@ -8,12 +8,10 @@
 package io.camunda.webapps.schema.descriptors;
 
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
@@ -23,7 +21,6 @@ import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
-import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -83,12 +80,9 @@ public class IndexDescriptors {
                 new TenantIndex(indexPrefix, isElasticsearch),
                 new UserIndex(indexPrefix, isElasticsearch),
                 new VariableTemplate(indexPrefix, isElasticsearch),
-                new ClusterVariableIndex(indexPrefix, isElasticsearch),
                 new MessageTemplate(indexPrefix, isElasticsearch),
                 new UsageMetricTemplate(indexPrefix, isElasticsearch),
-                new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
-                new AuditLogTemplate(indexPrefix, isElasticsearch),
-                new HistoryDeletionIndex(indexPrefix, isElasticsearch))
+                new UsageMetricTUTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

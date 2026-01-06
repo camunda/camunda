@@ -10,8 +10,11 @@ package io.camunda.it.network;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.zeebe.test.util.asserts.TopologyAssert.assertThat;
 
+import io.atomix.utils.net.Address;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Topology;
+import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -212,6 +215,13 @@ final class SecuredClusteredMessagingIT {
             container.getMappedPort(ZeebePort.INTERNAL.getPort()));
 
     assertAddressIsSecured(container.getNetworkAliases(), internalApiAddress);
+  }
+
+  private InetSocketAddress getGatewayAddress(final TestCluster cluster) {
+    final ClusterCfg clusterConfig = cluster.availableGateway().gatewayConfig().getCluster();
+    final var address =
+        Address.from(clusterConfig.getAdvertisedHost(), clusterConfig.getAdvertisedPort());
+    return address.socketAddress();
   }
 
   private void assertAddressIsSecured(final Object nodeId, final SocketAddress address) {

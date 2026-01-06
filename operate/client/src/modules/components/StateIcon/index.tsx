@@ -7,7 +7,7 @@
  */
 
 import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
-import {type CarbonIconType, Error} from '@carbon/react/icons';
+import {type Icon, Error} from '@carbon/react/icons';
 import type {InstanceEntityState} from 'modules/types/operate';
 import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -23,7 +23,7 @@ const stateIconsMap = {
 
 type Props = {
   state: InstanceEntityState | DecisionInstanceState;
-  size: React.ComponentProps<CarbonIconType>['size'];
+  size: React.ComponentProps<Icon>['size'];
 };
 
 const StateIcon: React.FC<Props> = ({state, ...props}) => {

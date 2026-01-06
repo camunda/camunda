@@ -184,7 +184,7 @@ runs:
       shell: bash
       working-directory: ./c8run
 
-    - if: ${{ inputs.os == 'macos-15-intel' }}
+    - if: ${{ inputs.os == 'macos-13' }}
       name: Set env
       shell: bash
       run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV

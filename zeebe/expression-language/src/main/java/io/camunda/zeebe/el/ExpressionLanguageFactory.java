@@ -14,20 +14,9 @@ import org.camunda.feel.FeelEngineClock;
 public class ExpressionLanguageFactory {
 
   /**
-   * @param feelEngineClock the clock to use for FEEL expressions
    * @return a new instance of the {@link ExpressionLanguage}
    */
   public static ExpressionLanguage createExpressionLanguage(final FeelEngineClock feelEngineClock) {
     return new FeelExpressionLanguage(feelEngineClock);
-  }
-
-  /**
-   * @param feelEngineClock the clock to use for FEEL expressions
-   * @param metrics the metrics to record expression evaluations
-   * @return a new instance of the {@link ExpressionLanguage} with metrics
-   */
-  public static ExpressionLanguage createExpressionLanguage(
-      final FeelEngineClock feelEngineClock, final ExpressionLanguageMetrics metrics) {
-    return new FeelExpressionLanguage(feelEngineClock, metrics);
   }
 }

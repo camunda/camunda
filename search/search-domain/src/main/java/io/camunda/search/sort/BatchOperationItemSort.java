@@ -46,11 +46,6 @@ public record BatchOperationItemSort(List<FieldSorting> orderings) implements So
       return this;
     }
 
-    public Builder processedDate() {
-      currentOrdering = new FieldSorting("processedDate", null);
-      return this;
-    }
-
     @Override
     protected Builder self() {
       return this;

@@ -15,8 +15,6 @@ import { User } from "src/utility/api/users";
 import FormModal from "src/components/modal/FormModal";
 import { Role } from "src/utility/api/roles";
 import TextField from "src/components/form/TextField";
-import { Caption } from "src/pages/authorizations/modals/components.tsx";
-import { DocumentationLink } from "src/components/documentation";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<
@@ -24,7 +22,7 @@ const AssignMemberModal: FC<
     { assignedUsers: User[] }
   >
 > = ({ entity: { roleId }, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate("roles");
+  const { t } = useTranslate("roles");
   const [username, setUsername] = useState("");
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
@@ -67,20 +65,6 @@ const AssignMemberModal: FC<
         label={t("username")}
         placeholder={t("typeUsername")}
         onChange={setUsername}
-        helperText={
-          <Caption>
-            <Translate i18nKey="usernameDescription">
-              Check the documentation for{" "}
-              <DocumentationLink
-                path="/docs/components/identity/role/#assign-users-to-a-role"
-                withIcon
-              >
-                how to reference users
-              </DocumentationLink>{" "}
-              .
-            </Translate>
-          </Caption>
-        }
         value={username}
         autoFocus
       />

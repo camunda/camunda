@@ -7,30 +7,21 @@
  */
 package io.camunda.webapps.schema.entities.dmn.definition;
 
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 public class DecisionDefinitionEntity
     implements ExporterEntity<DecisionDefinitionEntity>, TenantOwned {
 
-  @BeforeVersion880 private String id;
-  @BeforeVersion880 private long key;
-  @BeforeVersion880 private String decisionId;
-  @BeforeVersion880 private String name;
-  @BeforeVersion880 private int version;
-  @BeforeVersion880 private String decisionRequirementsId;
-  @BeforeVersion880 private long decisionRequirementsKey;
-
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String decisionRequirementsName;
-
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private int decisionRequirementsVersion;
-
-  @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String id;
+  private long key;
+  private String decisionId;
+  private String name;
+  private int version;
+  private String decisionRequirementsId;
+  private long decisionRequirementsKey;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Override
   public String getId() {
@@ -97,26 +88,6 @@ public class DecisionDefinitionEntity
     return this;
   }
 
-  public String getDecisionRequirementsName() {
-    return decisionRequirementsName;
-  }
-
-  public DecisionDefinitionEntity setDecisionRequirementsName(
-      final String decisionRequirementsName) {
-    this.decisionRequirementsName = decisionRequirementsName;
-    return this;
-  }
-
-  public int getDecisionRequirementsVersion() {
-    return decisionRequirementsVersion;
-  }
-
-  public DecisionDefinitionEntity setDecisionRequirementsVersion(
-      final int decisionRequirementsVersion) {
-    this.decisionRequirementsVersion = decisionRequirementsVersion;
-    return this;
-  }
-
   @Override
   public String getTenantId() {
     return tenantId;
@@ -137,8 +108,6 @@ public class DecisionDefinitionEntity
         version,
         decisionRequirementsId,
         decisionRequirementsKey,
-        decisionRequirementsName,
-        decisionRequirementsVersion,
         tenantId);
   }
 
@@ -158,8 +127,6 @@ public class DecisionDefinitionEntity
         && Objects.equals(decisionId, that.decisionId)
         && Objects.equals(name, that.name)
         && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
-        && Objects.equals(decisionRequirementsName, that.decisionRequirementsName)
-        && decisionRequirementsVersion == that.decisionRequirementsVersion
         && Objects.equals(tenantId, that.tenantId);
   }
 }

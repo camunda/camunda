@@ -12,7 +12,6 @@ import java.util.LinkedList;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 
 /**
@@ -70,10 +69,6 @@ public class TokenValidatorFactory {
             registrationId);
     final var validators = new LinkedList<OAuth2TokenValidator<Jwt>>();
 
-    validators.add(
-        new JwtTimestampValidator(
-            securityConfiguration.getAuthentication().getOidc().getClockSkew()));
-
     final var validAudiences = oidcAuthenticationConfiguration.getAudiences();
     if (validAudiences != null) {
       validators.add(new AudienceValidator(validAudiences));
@@ -85,6 +80,9 @@ public class TokenValidatorFactory {
       validators.add(new ClusterValidator(securityConfiguration.getSaas().getClusterId()));
     }
 
-    return JwtValidators.createDefaultWithValidators(validators);
+    if (!validators.isEmpty()) {
+      return JwtValidators.createDefaultWithValidators(validators);
+    }
+    return JwtValidators.createDefault();
   }
 }

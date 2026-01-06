@@ -31,19 +31,6 @@ export const Paths = {
   authorizations() {
     return '/identity/authorizations';
   },
-  operateDashboard() {
-    return '/operate';
-  },
-  operateProcesses(queryParams?: string) {
-    return queryParams
-      ? `/operate/processes?${queryParams}`
-      : '/operate/processes';
-  },
-  operateDecisions(queryParams?: string) {
-    return queryParams
-      ? `/operate/decisions?${queryParams}`
-      : '/operate/decisions';
-  },
 } as const;
 
 export const relativizePath = (path: string) => {

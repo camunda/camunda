@@ -220,7 +220,6 @@ import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeAdHocImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeAssignmentDefinitionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledDecisionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
-import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeConditionalFilterImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeExecutionListenerImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeExecutionListenersImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeFormDefinitionImpl;
@@ -679,7 +678,6 @@ public class Bpmn {
     ZeebeAdHocImpl.registerType(bpmnModelBuilder);
     ZeebeLinkedResourceImpl.registerType(bpmnModelBuilder);
     ZeebeLinkedResourcesImpl.registerType(bpmnModelBuilder);
-    ZeebeConditionalFilterImpl.registerType(bpmnModelBuilder);
   }
 
   /**

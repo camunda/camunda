@@ -11,22 +11,15 @@ import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {Button} from '@carbon/react';
 import {Popup} from '@carbon/react/icons';
 import {Operations} from '../Operations';
-import {useVariable} from 'modules/queries/variables/useVariable';
 
 type Props = {
+  onClick?: () => Promise<string | null>;
   variableName: string;
-  variableKey: string;
 };
 
-const ViewFullVariableButton: React.FC<Props> = ({
-  variableName,
-  variableKey,
-}) => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const {data, isLoading} = useVariable(variableKey, {
-    enabled: isModalVisible,
-  });
-  const variableValue = data?.value;
+const ViewFullVariableButton: React.FC<Props> = ({onClick, variableName}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [variableValue, setVariableValue] = useState<null | string>(null);
 
   return (
     <>
@@ -40,16 +33,21 @@ const ViewFullVariableButton: React.FC<Props> = ({
           iconDescription={`View full value of ${variableName}`}
           tooltipPosition="left"
           onClick={async () => {
-            setIsModalVisible(true);
+            setIsLoading(true);
+            const result = onClick ? await onClick() : null;
+            setVariableValue(result ?? null);
+            setIsLoading(false);
           }}
         />
       </Operations>
-      {variableValue !== undefined && (
+      {variableValue !== null && (
         <JSONEditorModal
-          value={variableValue}
-          isVisible={isModalVisible}
+          value={variableValue!}
+          isVisible={variableValue !== null}
           readOnly
-          onClose={() => setIsModalVisible(false)}
+          onClose={() => {
+            setVariableValue(null);
+          }}
           title={`Full value of ${variableName}`}
         />
       )}

@@ -86,12 +86,6 @@
           "code": "java.field.removed",
           "old": "field io.camunda.client.protocol.rest.DecisionInstanceStateEnum.UNSPECIFIED",
           "justification": "Removed impossible state from REST protocol enum - aligned with API response enum cleanup"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method io.camunda.client.api.search.filter.AuthorizationFilter io.camunda.client.api.search.filter.AuthorizationFilter::resourceIds(java.util.List<java.lang.String>)",
-          "justification": "Updated the parameter type from List to Collection to make API more flexible. This remains backward-compatible for users, as any List already implements Collection and callers can continue passing the same arguments."
         }
       ]
     }

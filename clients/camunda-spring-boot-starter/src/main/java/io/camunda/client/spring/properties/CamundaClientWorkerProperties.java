@@ -23,10 +23,7 @@ public class CamundaClientWorkerProperties {
   @NestedConfigurationProperty
   private CamundaClientJobWorkerProperties defaults = new CamundaClientJobWorkerProperties(true);
 
-  /**
-   * Properties for overriding settings of individual job workers registered to the Camunda client.
-   * The key of the override is the job type.
-   */
+  @NestedConfigurationProperty
   private Map<String, CamundaClientJobWorkerProperties> override = new HashMap<>();
 
   public CamundaClientJobWorkerProperties getDefaults() {

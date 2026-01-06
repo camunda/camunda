@@ -24,8 +24,6 @@ public class RdbmsWriterMetrics {
 
   private final MeterRegistry meterRegistry;
   private final Timer flushLatency;
-  private final Timer recordExportingLatency;
-  private final DistributionSummary queueMemoryDistribution;
   private Sample flushLatencyMeasurement;
 
   public RdbmsWriterMetrics(final MeterRegistry meterRegistry) {
@@ -36,29 +34,6 @@ public class RdbmsWriterMetrics {
             .description(
                 "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
             .publishPercentileHistogram()
-            .register(meterRegistry);
-
-    recordExportingLatency =
-        Timer.builder(meterName("record.exporting.latency"))
-            .description(
-                "Time from record creation to commit/flush to the database (end-to-end export latency)")
-            .publishPercentileHistogram()
-            .minimumExpectedValue(Duration.ofMillis(1))
-            .register(meterRegistry);
-
-    queueMemoryDistribution =
-        DistributionSummary.builder(meterName("queue.memory.bytes"))
-            .description("Estimated memory usage of the execution queue in bytes")
-            .baseUnit("bytes")
-            .serviceLevelObjectives(
-                1024, // 1KB
-                10240, // 10KB
-                102400, // 100KB
-                1048576, // 1MB
-                5242880, // 5MB
-                10485760, // 10MB
-                52428800, // 50MB
-                104857600) // 100MB
             .register(meterRegistry);
   }
 
@@ -99,7 +74,7 @@ public class RdbmsWriterMetrics {
         .minimumExpectedValue(Duration.ofMillis(10));
   }
 
-  public void recordHistoryCleanupEntities(final int bulkSize, final String entityName) {
+  public void recordHistoryCleanupBulkSize(final int bulkSize, final String entityName) {
     DistributionSummary.builder(meterName("historyCleanup.bulk.size"))
         .description("Exporter bulk size")
         .tag("entity", entityName)
@@ -108,12 +83,6 @@ public class RdbmsWriterMetrics {
             100_000)
         .register(meterRegistry)
         .record(bulkSize);
-
-    Counter.builder(meterName("historyCleanup.deletedEntities"))
-        .tags("entity", entityName)
-        .description("Number of removed rows of the given entity")
-        .register(meterRegistry)
-        .increment(bulkSize);
   }
 
   public void recordFailedFlush() {
@@ -171,20 +140,6 @@ public class RdbmsWriterMetrics {
     if (flushLatencyMeasurement != null) {
       flushLatencyMeasurement.stop(flushLatency);
     }
-  }
-
-  public void recordQueueMemoryUsage(final long memoryBytes) {
-    queueMemoryDistribution.record(memoryBytes);
-  }
-
-  /**
-   * Records the exporting latency - the time from when the oldest record in the batch was created
-   * to when it was committed/flushed to the database.
-   *
-   * @param latencyMs the latency in milliseconds
-   */
-  public void recordExportingLatency(final long latencyMs) {
-    recordExportingLatency.record(Duration.ofMillis(latencyMs));
   }
 
   private String meterName(final String name) {

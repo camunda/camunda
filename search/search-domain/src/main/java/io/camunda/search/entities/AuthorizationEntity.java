@@ -19,5 +19,4 @@ public record AuthorizationEntity(
     String resourceType,
     Short resourceMatcher,
     String resourceId,
-    String resourcePropertyName,
     Set<PermissionType> permissionTypes) {}

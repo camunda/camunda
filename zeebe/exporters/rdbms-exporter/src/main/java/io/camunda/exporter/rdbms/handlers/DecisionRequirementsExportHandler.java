@@ -10,8 +10,6 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
-import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -22,14 +20,10 @@ public class DecisionRequirementsExportHandler
     implements RdbmsExportHandler<DecisionRequirementsRecordValue> {
 
   private final DecisionRequirementsWriter decisionRequirementsWriter;
-  private final ExporterEntityCache<Long, CachedDecisionRequirementsEntity>
-      decisionRequirementsCache;
 
   public DecisionRequirementsExportHandler(
-      final DecisionRequirementsWriter decisionRequirementsWriter,
-      final ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache) {
+      final DecisionRequirementsWriter decisionRequirementsWriter) {
     this.decisionRequirementsWriter = decisionRequirementsWriter;
-    this.decisionRequirementsCache = decisionRequirementsCache;
   }
 
   @Override
@@ -42,14 +36,6 @@ public class DecisionRequirementsExportHandler
   @Override
   public void export(final Record<DecisionRequirementsRecordValue> record) {
     decisionRequirementsWriter.create(map(record));
-    final var value = record.getValue();
-    final var cachedDecisionRequirementsEntity =
-        new CachedDecisionRequirementsEntity(
-            value.getDecisionRequirementsKey(),
-            value.getDecisionRequirementsName(),
-            value.getDecisionRequirementsVersion());
-    decisionRequirementsCache.put(
-        value.getDecisionRequirementsKey(), cachedDecisionRequirementsEntity);
   }
 
   private DecisionRequirementsDbModel map(final Record<DecisionRequirementsRecordValue> record) {

@@ -15,13 +15,11 @@ import {requestWithThrow} from 'modules/request';
 
 const searchElementInstances = async (
   payload: QueryElementInstancesRequestBody,
-  signal?: AbortSignal,
 ) => {
   return requestWithThrow<QueryElementInstancesResponseBody>({
     url: endpoints.queryElementInstances.getUrl(),
     method: endpoints.queryElementInstances.method,
     body: payload,
-    signal,
   });
 };
 

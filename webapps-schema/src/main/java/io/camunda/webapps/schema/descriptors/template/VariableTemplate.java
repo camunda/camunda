@@ -29,7 +29,6 @@ public class VariableTemplate extends AbstractTemplateDescriptor
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
 
   public VariableTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

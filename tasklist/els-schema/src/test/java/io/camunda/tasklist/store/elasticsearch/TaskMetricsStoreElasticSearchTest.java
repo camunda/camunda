@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
-import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -43,6 +42,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
@@ -88,12 +88,12 @@ public class TaskMetricsStoreElasticSearchTest {
             .setTenantId("<default>")
             .setPartitionId(0);
     final var indexResponse = mock(IndexResponse.class);
+    when(indexResponse.status()).thenReturn(RestStatus.CREATED);
     final IndexRequest expectedIndexRequest =
         new IndexRequest(METRIC_INDEX_NAME)
             .id(expectedEntry.getId())
             .source(objectMapper.writeValueAsString(expectedEntry), XContentType.JSON);
     when(esClient.index(any(), eq(RequestOptions.DEFAULT))).thenReturn(indexResponse);
-    when(indexResponse.getResult()).thenReturn(Result.CREATED);
 
     // When
     instance.registerTaskAssigned(task);

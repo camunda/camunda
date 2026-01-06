@@ -7,33 +7,27 @@
  */
 package io.camunda.webapps.schema.entities.post;
 
-import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.webapps.schema.entities.SinceVersion;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class PostImporterQueueEntity implements ExporterEntity<PostImporterQueueEntity> {
 
-  @BeforeVersion880 private String id;
+  private String id;
 
-  @BeforeVersion880 private Long key;
+  private Long key;
 
-  @BeforeVersion880 private PostImporterActionType actionType;
+  private PostImporterActionType actionType;
 
-  @BeforeVersion880 private String intent;
+  private String intent;
 
-  @BeforeVersion880 private OffsetDateTime creationTime;
+  private OffsetDateTime creationTime;
 
-  @BeforeVersion880 private Integer partitionId;
+  private Integer partitionId;
 
-  @BeforeVersion880 private Long processInstanceKey;
+  private Long processInstanceKey;
 
-  @BeforeVersion880 private Long position;
-
-  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private Long rootProcessInstanceKey;
+  private Long position;
 
   @Override
   public String getId() {
@@ -109,27 +103,10 @@ public class PostImporterQueueEntity implements ExporterEntity<PostImporterQueue
     return this;
   }
 
-  public Long getRootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public PostImporterQueueEntity setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-    return this;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(
-        id,
-        key,
-        actionType,
-        intent,
-        creationTime,
-        partitionId,
-        processInstanceKey,
-        position,
-        rootProcessInstanceKey);
+        id, key, actionType, intent, creationTime, partitionId, processInstanceKey, position);
   }
 
   @Override
@@ -148,7 +125,6 @@ public class PostImporterQueueEntity implements ExporterEntity<PostImporterQueue
         && Objects.equals(creationTime, that.creationTime)
         && Objects.equals(partitionId, that.partitionId)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
-        && Objects.equals(position, that.position)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(position, that.position);
   }
 }

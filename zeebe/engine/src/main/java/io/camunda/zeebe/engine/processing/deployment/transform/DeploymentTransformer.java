@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.Map.entry;
 
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -51,8 +50,7 @@ public final class DeploymentTransformer {
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
       final EngineConfiguration config,
-      final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final InstantSource clock) {
 
     final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
@@ -63,8 +61,7 @@ public final class DeploymentTransformer {
             expressionProcessor,
             featureFlags.enableStraightThroughProcessingLoopDetector(),
             config,
-            clock,
-            expressionLanguageMetrics);
+            clock);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getDecisionState());

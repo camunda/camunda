@@ -12,6 +12,7 @@ import {observer} from 'mobx-react';
 import {reaction} from 'mobx';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useForm, useFormState} from 'react-final-form';
+import {Restricted} from 'modules/components/Restricted';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useFieldArray} from 'react-final-form-arrays';
 import {type VariableFormValues} from 'modules/types/variables';
@@ -20,13 +21,12 @@ import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
+import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
 import {useVariables} from 'modules/queries/variables/useVariables';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -41,6 +41,7 @@ const Variables: React.FC<Props> = observer(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+    const {data: permissions} = usePermissions();
     const isRootNodeSelected = useIsRootNodeSelected();
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
@@ -74,12 +75,9 @@ const Variables: React.FC<Props> = observer(
       : initialValues === undefined ||
         Object.values(initialValues).length === 0;
 
-    const {resolvedElementInstance} = useProcessInstanceElementSelection();
-
     useEffect(() => {
-      const isSelectedElementInstanceRunning = IS_ELEMENT_SELECTION_V2
-        ? resolvedElementInstance?.state === 'ACTIVE'
-        : flowNodeMetaDataStore.isSelectedInstanceRunning;
+      const isSelectedInstanceRunning =
+        flowNodeMetaDataStore.isSelectedInstanceRunning;
 
       if (!isProcessInstanceRunning) {
         setFooterVariant('disabled');
@@ -91,10 +89,7 @@ const Variables: React.FC<Props> = observer(
         return;
       }
 
-      if (
-        !isViewMode ||
-        (!isRootNodeSelected && !isSelectedElementInstanceRunning)
-      ) {
+      if (!isViewMode || (!isRootNodeSelected && !isSelectedInstanceRunning)) {
         setFooterVariant('disabled');
         return;
       }
@@ -105,7 +100,6 @@ const Variables: React.FC<Props> = observer(
       initialValues,
       isViewMode,
       isRootNodeSelected,
-      resolvedElementInstance?.state,
     ]);
 
     if (displayStatus === 'no-content') {
@@ -127,7 +121,16 @@ const Variables: React.FC<Props> = observer(
           />
         )}
 
-        {!isModificationModeEnabled && <Footer variant={footerVariant} />}
+        {!isModificationModeEnabled && (
+          <Restricted
+            resourceBasedRestrictions={{
+              scopes: ['UPDATE_PROCESS_INSTANCE'],
+              permissions: permissions,
+            }}
+          >
+            <Footer variant={footerVariant} />
+          </Restricted>
+        )}
       </VariablesContent>
     );
   },

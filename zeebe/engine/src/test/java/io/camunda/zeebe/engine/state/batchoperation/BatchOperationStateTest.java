@@ -23,9 +23,9 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
@@ -144,7 +144,7 @@ public class BatchOperationStateTest {
 
     final var modificationPlan = new BatchOperationProcessInstanceModificationPlan();
     final var mappingInstruction =
-        new ProcessInstanceModificationMoveInstruction()
+        new BatchOperationProcessInstanceModificationMoveInstruction()
             .setSourceElementId("source")
             .setTargetElementId("target");
     modificationPlan.addMoveInstruction(mappingInstruction);

@@ -18,6 +18,9 @@ import io.camunda.client.api.response.Process;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -33,19 +36,19 @@ import org.springframework.util.unit.DataSize;
 @ZeebeIntegration
 public final class CreateDeploymentTest {
 
+  CamundaClient client;
+
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
+  final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withUnifiedConfig(
-              b -> b.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
+          .withBrokerConfig(b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
 
-  CamundaClient client;
   ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -162,18 +165,25 @@ public final class CreateDeploymentTest {
             .startEvent()
             .documentation("x".repeat((1046900)))
             .done();
-    getCommand(client, false)
-        .addProcessModel(modelThatFitsJustWithinMaxMessageSize, "too_large_process.bpmn")
-        .send();
+    final var command =
+        getCommand(client, false)
+            .addProcessModel(modelThatFitsJustWithinMaxMessageSize, "too_large_process.bpmn")
+            .send();
 
     // then
-    assertThat(
-            RecordingExporter.deploymentRecords()
-                .onlyCommandRejections()
-                .getFirst()
-                .getValue()
-                .getResources())
-        .isEmpty();
+    final var rejectedRecords =
+        RecordingExporter.records()
+            .filter(record -> RecordType.COMMAND_REJECTION.equals(record.getRecordType()))
+            .toList();
+
+    rejectedRecords.stream()
+        .map(Record::getValue)
+        .forEach(
+            recordValue -> {
+              if (recordValue instanceof DeploymentRecord) {
+                assertThat(((DeploymentRecord) recordValue).getResources()).isEmpty();
+              }
+            });
   }
 
   @ParameterizedTest

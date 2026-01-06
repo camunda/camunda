@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 
 public class ZeebeResourcesHelper implements CloseableSilently {
 
@@ -49,7 +50,8 @@ public class ZeebeResourcesHelper implements CloseableSilently {
 
   public void waitUntilDeploymentIsDone(final long key) {
     if (getPartitions().size() > 1) {
-      RecordingExporter.await(Duration.ofSeconds(getPartitions().size() * 10L))
+      Awaitility.await("deployment is distributed")
+          .atMost(Duration.ofSeconds(getPartitions().size() * 10L))
           .until(
               () ->
                   RecordingExporter.commandDistributionRecords()
@@ -58,7 +60,7 @@ public class ZeebeResourcesHelper implements CloseableSilently {
                       .withIntent(CommandDistributionIntent.FINISHED)
                       .exists());
     } else {
-      RecordingExporter.await()
+      Awaitility.await("deployment is created")
           .until(
               () ->
                   RecordingExporter.deploymentRecords()

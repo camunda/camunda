@@ -7,7 +7,6 @@
  */
 package io.camunda.debug.cli;
 
-import io.camunda.debug.cli.state.StateCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -16,12 +15,7 @@ import picocli.CommandLine.Command;
     description = "Camunda Debug CLI - A tool for debugging and troubleshooting Camunda instances",
     mixinStandardHelpOptions = true,
     version = "1.0.0",
-    subcommands = {
-      CommandLine.HelpCommand.class,
-      TopologyMetaCommand.class,
-      RaftCommand.class,
-      StateCommand.class
-    })
+    subcommands = {CommandLine.HelpCommand.class, TopologyMetaCommand.class})
 public class Main {
 
   public static void main(final String[] args) {

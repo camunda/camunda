@@ -14,7 +14,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.*;
@@ -26,7 +25,6 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.util.NumberParsingUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -34,12 +32,8 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
-
-  private static final Logger LOG = LoggerFactory.getLogger(UserTaskFilterTransformer.class);
 
   private final ServiceTransformers transformers;
 
@@ -71,26 +65,12 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getFollowUpDateQuery(filter.followUpDateOperations()));
     queries.addAll(getDueDateQuery(filter.dueDateOperations()));
 
-    // Handle tags (AND logic like process instances)
-    // tags are stored as a keyword list, so we need to match all provided tags
-    // expression: tags: [A, B] -> tags:A AND tags:B means
-    // the tags list must contain a tag that is equal to A and a tag that is equal to B
-    if (filter.tags() != null && !filter.tags().isEmpty()) {
-      final List<SearchQuery> tagQueries =
-          filter.tags().stream()
-              .map(tag -> stringTerms(TAGS, java.util.List.of(tag)))
-              .collect(Collectors.toList());
-      queries.add(and(tagQueries));
-    }
-
-    // Process Instance Variable Query: Check if processVariable with specified
-    // varName and
+    // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists
     ofNullable(getProcessInstanceVariablesQuery(filter.processInstanceVariableFilter()))
         .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
 
-    // Local Variable Query: Check if localVariable with specified varName and
-    // varValue exists
+    // Local Variable Query: Check if localVariable with specified varName and varValue exists
     // No need validate parent as the localVariable is the only children from Task
     ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
@@ -102,17 +82,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return switch (authorization.resourceType()) {
-      case PROCESS_DEFINITION -> stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
-      case USER_TASK -> longTerms(KEY, NumberParsingUtil.parseLongs(authorization.resourceIds()));
-      default -> {
-        LOG.warn(
-            "Unsupported authorization resource type {} for user task search query authorization check; "
-                + "returning a match-none query. Supported types: PROCESS_DEFINITION, USER_TASK.",
-            authorization.resourceType());
-        yield matchNone();
-      }
-    };
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingRuleDbModelBuilder;
 import java.util.List;
@@ -37,27 +37,27 @@ public final class MappingRuleFixtures extends CommonFixtures {
   }
 
   public static void createAndSaveRandomMappingRules(
-      final RdbmsWriters rdbmsWriters,
+      final RdbmsWriter rdbmsWriter,
       final Function<MappingRuleDbModelBuilder, MappingRuleDbModelBuilder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters
+      rdbmsWriter
           .getMappingRuleWriter()
           .create(MappingRuleFixtures.createRandomized(builderFunction));
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static void createAndSaveMappingRule(
-      final RdbmsWriters rdbmsWriters, final MappingRuleDbModel mappingRule) {
-    createAndSaveMappingRules(rdbmsWriters, List.of(mappingRule));
+      final RdbmsWriter rdbmsWriter, final MappingRuleDbModel mappingRule) {
+    createAndSaveMappingRules(rdbmsWriter, List.of(mappingRule));
   }
 
   public static void createAndSaveMappingRules(
-      final RdbmsWriters rdbmsWriters, final List<MappingRuleDbModel> mappingRuleList) {
+      final RdbmsWriter rdbmsWriter, final List<MappingRuleDbModel> mappingRuleList) {
     for (final MappingRuleDbModel mappingRule : mappingRuleList) {
-      rdbmsWriters.getMappingRuleWriter().create(mappingRule);
+      rdbmsWriter.getMappingRuleWriter().create(mappingRule);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static String nextStringId() {

@@ -16,10 +16,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
 
@@ -29,13 +27,6 @@ class UnifiedConfigurationHelperTest {
   private static final Set<String> SINGLE_LEGACY_PROPERTY = Set.of("legacy.prop1");
   private static final Set<String> MULTIPLE_LEGACY_PROPERTIES =
       Set.of("legacy.prop1", "legacy.prop2");
-  private static final Set<Set<String>> LEGACY_ORDERED_PROPERTIES = new LinkedHashSet<>(3);
-
-  static {
-    LEGACY_ORDERED_PROPERTIES.add(Set.of("legacy.prop1"));
-    LEGACY_ORDERED_PROPERTIES.add(Set.of("legacy.prop21", "legacy.prop22"));
-    LEGACY_ORDERED_PROPERTIES.add(Set.of("legacy.prop3"));
-  }
 
   Environment mockEnvironment;
 
@@ -263,136 +254,5 @@ class UnifiedConfigurationHelperTest {
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             NEW_PROPERTY, defaultValue, String.class, mode, SINGLE_LEGACY_PROPERTY);
     assertThat(actual).isEqualTo(expected);
-  }
-
-  @Nested
-  class MultiLevelTest {
-
-    @Test
-    void multiLevelPropertyChainSetNew() {
-      // given
-      final String defaultValue = "newValue";
-      final BackwardsCompatibilityMode mode = SUPPORTED;
-
-      // when
-      setPropertyValues("legacy.prop1", "legacyValue");
-      setPropertyValues("legacy.prop21", "legacyValue2");
-      setPropertyValues("legacy.prop22", "legacyValue2");
-      setPropertyValues("legacy.prop3", "legacyValue3");
-      setPropertyValues(NEW_PROPERTY, defaultValue);
-
-      final String expected = "newValue";
-      final String actual =
-          UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-              NEW_PROPERTY, defaultValue, String.class, mode, LEGACY_ORDERED_PROPERTIES);
-      assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void multiLevelPropertyChainOneLevelLower() {
-      // given
-      final String defaultValue = "newValue";
-      final BackwardsCompatibilityMode mode = SUPPORTED;
-
-      // when
-      setPropertyValues("legacy.prop1", "legacyValue");
-      setPropertyValues("legacy.prop21", "legacyValue2");
-      setPropertyValues("legacy.prop22", "legacyValue2");
-      setPropertyValues("legacy.prop3", "legacyValue3");
-
-      final String expected = "legacyValue3";
-      final String actual =
-          UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-              NEW_PROPERTY, defaultValue, String.class, mode, LEGACY_ORDERED_PROPERTIES);
-      assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void multiLevelPropertyChainTwoLevelsLower() {
-      // given
-      final String defaultValue = "newValue";
-      final BackwardsCompatibilityMode mode = SUPPORTED;
-
-      // when
-      setPropertyValues("legacy.prop1", "legacyValue");
-      setPropertyValues("legacy.prop21", "legacyValue2");
-      setPropertyValues("legacy.prop22", "legacyValue2");
-
-      final String expected = "legacyValue2";
-      final String actual =
-          UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-              NEW_PROPERTY, defaultValue, String.class, mode, LEGACY_ORDERED_PROPERTIES);
-      assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void multiLevelPropertyChainThreeLevelsLower() {
-      // given
-      final String defaultValue = "newValue";
-      final BackwardsCompatibilityMode mode = SUPPORTED;
-
-      // when
-      setPropertyValues("legacy.prop1", "legacyValue");
-
-      final String expected = "legacyValue";
-      final String actual =
-          UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-              NEW_PROPERTY, defaultValue, String.class, mode, LEGACY_ORDERED_PROPERTIES);
-      assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void multiLevelPropertyChainWithMissingHigherOrdered() {
-      // given
-      final String defaultValue = "newValue";
-      final BackwardsCompatibilityMode mode = SUPPORTED;
-
-      // when
-      setPropertyValues("legacy.prop1", "legacyValue");
-      setPropertyValues("legacy.prop21", "legacyValue2");
-      setPropertyValues("legacy.prop22", "legacyValue2");
-      setPropertyValues(NEW_PROPERTY, defaultValue);
-
-      final String expected = "newValue";
-      final String actual =
-          UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-              NEW_PROPERTY, defaultValue, String.class, mode, LEGACY_ORDERED_PROPERTIES);
-      assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void multiLevelPropertyChainWithGap() {
-      // given
-      final String defaultValue = "newValue";
-      final BackwardsCompatibilityMode mode = SUPPORTED;
-
-      // when
-      setPropertyValues("legacy.prop1", "legacyValue");
-      setPropertyValues("legacy.prop3", "legacyValue3");
-      setPropertyValues(NEW_PROPERTY, defaultValue);
-
-      final String expected = "newValue";
-      final String actual =
-          UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-              NEW_PROPERTY, defaultValue, String.class, mode, LEGACY_ORDERED_PROPERTIES);
-      assertThat(actual).isEqualTo(expected);
-    }
-
-    @Test
-    void multiLevelPropertyChainWithGaps() {
-      // given
-      final String defaultValue = "newValue";
-      final BackwardsCompatibilityMode mode = SUPPORTED;
-
-      // when
-      setPropertyValues("legacy.prop1", "legacyValue");
-      setPropertyValues(NEW_PROPERTY, defaultValue);
-
-      final String expected = "newValue";
-      final String actual =
-          UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
-              NEW_PROPERTY, defaultValue, String.class, mode, LEGACY_ORDERED_PROPERTIES);
-      assertThat(actual).isEqualTo(expected);
-    }
   }
 }

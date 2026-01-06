@@ -17,8 +17,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @MultiDbTest
 public class VariableIT {
@@ -68,26 +66,7 @@ public class VariableIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(
-      named = "test.integration.camunda.database.type",
-      matches = "rdbms_oracle")
   void shouldTruncateVariable() {
-    shouldTruncateVariable(DEFAULT_VARIABLE_SIZE_THRESHOLD);
-  }
-
-  /**
-   * Oracle has different limits for VARCHAR2 fields depending on the database settings. In most
-   * common configurations, the limit is 4000 bytes for VARCHAR2 fields.
-   */
-  @Test
-  @EnabledIfSystemProperty(
-      named = "test.integration.camunda.database.type",
-      matches = "rdbms_oracle")
-  void shouldTruncateVariableOracle() {
-    shouldTruncateVariable(4000);
-  }
-
-  void shouldTruncateVariable(final int variableSizeThreshold) {
     // given
     final var deployment =
         client
@@ -96,7 +75,7 @@ public class VariableIT {
             .send()
             .join();
 
-    final String largeValue = "b".repeat(variableSizeThreshold + 1);
+    final String largeValue = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 1);
 
     final var processInstanceKey =
         client
@@ -131,7 +110,7 @@ public class VariableIT {
     assertThat(largeVariable).isPresent();
     assertThat(largeVariable.get().isTruncated()).isTrue();
     assertThat(largeVariable.get().getValue())
-        .isEqualTo("\"" + largeValue.substring(0, variableSizeThreshold - 1));
+        .isEqualTo("\"" + largeValue.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD - 1));
   }
 
   @Test

@@ -8,12 +8,8 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
-import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import java.util.List;
@@ -28,15 +24,4 @@ public interface ProcessDefinitionMapper {
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
       ProcessDefinitionStatisticsFilter filter);
-
-  Long processInstanceStatisticsCount(ProcessDefinitionInstanceStatisticsDbQuery filter);
-
-  List<ProcessDefinitionInstanceStatisticsEntity> processInstanceStatistics(
-      ProcessDefinitionInstanceStatisticsDbQuery query);
-
-  Long processInstanceVersionStatisticsCount(
-      ProcessDefinitionInstanceVersionStatisticsDbQuery filter);
-
-  List<ProcessDefinitionInstanceVersionStatisticsEntity> processInstanceVersionStatistics(
-      ProcessDefinitionInstanceVersionStatisticsDbQuery filter);
 }

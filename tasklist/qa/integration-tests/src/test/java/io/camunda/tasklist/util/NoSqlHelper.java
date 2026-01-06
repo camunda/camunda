@@ -18,9 +18,9 @@ public interface NoSqlHelper {
 
   List<TaskEntity> getTask(String processInstanceId, String flowNodeBpmnId);
 
-  boolean checkTaskVariableExists(final String taskId, final String varName);
+  boolean checkVariableExists(final String taskId, final String varName);
 
-  boolean checkVariablesExist(final String processInstanceId, final String[] varNames);
+  boolean checkVariablesExist(final String[] varNames);
 
   List<String> getIdsFromIndex(
       final String idFieldName, final String index, final List<String> ids);

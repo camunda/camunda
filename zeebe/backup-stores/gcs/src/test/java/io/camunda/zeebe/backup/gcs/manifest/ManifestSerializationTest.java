@@ -24,7 +24,6 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.ManifestImpl;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -72,13 +71,7 @@ final class ManifestSerializationTest {
     final var manifest =
         new ManifestImpl(
             new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(
-                Optional.empty(),
-                2345234L,
-                3,
-                "1.2.0-SNAPSHOT",
-                Instant.ofEpochMilli(1678790708000L),
-                CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
             IN_PROGRESS,
             null,
             null,
@@ -88,7 +81,7 @@ final class ManifestSerializationTest {
         """
         {
           "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT", "checkpointTimestamp": "2023-03-14T10:45:08Z", "checkpointType": "MANUAL_BACKUP" },
+          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
           "statusCode": "IN_PROGRESS",
           "createdAt": "2023-03-14T10:45:08Z",
           "modifiedAt": "2023-03-14T10:45:08Z"
@@ -113,13 +106,7 @@ final class ManifestSerializationTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.ofEpochMilli(1678790708000L),
-                    CheckpointType.MANUAL_BACKUP),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
                 null,
                 null));
     final var failed = created.fail("expected failure reason");
@@ -127,7 +114,7 @@ final class ManifestSerializationTest {
         """
         {
           "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT", "checkpointTimestamp": "2023-03-14T10:45:08Z", "checkpointType": "MANUAL_BACKUP"},
+          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
           "statusCode": "FAILED",
           "snapshot": { "files": [] },
           "segments": { "files": [] },
@@ -187,7 +174,7 @@ final class ManifestSerializationTest {
         """
         {
           "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT", "checkpointTimestamp": "2023-03-14T10:45:08Z", "checkpointType": "MANUAL_BACKUP"},
+          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
           "statusCode": "FAILED",
           "createdAt": "2023-03-14T10:45:08+00:00",
           "modifiedAt": "2023-03-14T10:45:08+00:00",
@@ -210,8 +197,6 @@ final class ManifestSerializationTest {
     assertThat(descriptor.checkpointPosition()).isEqualTo(2345234L);
     assertThat(descriptor.numberOfPartitions()).isEqualTo(3);
     assertThat(descriptor.snapshotId()).isNotPresent();
-    assertThat(descriptor.checkpointType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
-    assertThat(descriptor.checkpointTimestamp()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
 
     assertThat(manifest.statusCode()).isEqualTo(FAILED);
     assertThat(manifest.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
@@ -226,7 +211,7 @@ final class ManifestSerializationTest {
         """
         {
           "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT", "checkpointTimestamp": "2023-03-14T10:45:08+00:00", "checkpointType": "MANUAL_BACKUP"},
+          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
           "statusCode": "IN_PROGRESS",
           "createdAt": "2023-03-14T10:45:08+00:00",
           "modifiedAt": "2023-03-14T10:45:08+00:00"
@@ -248,8 +233,6 @@ final class ManifestSerializationTest {
     assertThat(descriptor.checkpointPosition()).isEqualTo(2345234L);
     assertThat(descriptor.numberOfPartitions()).isEqualTo(3);
     assertThat(descriptor.snapshotId()).isNotPresent();
-    assertThat(descriptor.checkpointType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
-    assertThat(descriptor.checkpointTimestamp()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
 
     assertThat(manifest.statusCode()).isEqualTo(IN_PROGRESS);
     assertThat(manifest.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
@@ -263,7 +246,7 @@ final class ManifestSerializationTest {
         """
         {
           "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT", "checkpointTimestamp": "2023-03-14T10:45:08+00:00", "checkpointType": "MANUAL_BACKUP"},
+          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
           "statusCode": "IN_PROGRESS",
           "createdAt": "2023-03-14T10:45:08+00:00",
           "modifiedAt": "2023-03-14T10:45:08+00:00"
@@ -286,8 +269,6 @@ final class ManifestSerializationTest {
     assertThat(descriptor.checkpointPosition()).isEqualTo(2345234L);
     assertThat(descriptor.numberOfPartitions()).isEqualTo(3);
     assertThat(descriptor.snapshotId()).isNotPresent();
-    assertThat(descriptor.checkpointType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
-    assertThat(descriptor.checkpointTimestamp()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
 
     assertThat(complete.statusCode()).isEqualTo(COMPLETED);
     assertThat(complete.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
@@ -301,7 +282,7 @@ final class ManifestSerializationTest {
         """
         {
           "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT", "checkpointTimestamp": "2023-03-14T10:45:08+00:00", "checkpointType": "MANUAL_BACKUP"},
+          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
           "statusCode": "COMPLETED",
           "createdAt": "2023-03-14T10:45:08+00:00",
           "modifiedAt": "2023-03-14T10:45:08+00:00"
@@ -323,8 +304,6 @@ final class ManifestSerializationTest {
     assertThat(descriptor.checkpointPosition()).isEqualTo(2345234L);
     assertThat(descriptor.numberOfPartitions()).isEqualTo(3);
     assertThat(descriptor.snapshotId()).isNotPresent();
-    assertThat(descriptor.checkpointType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
-    assertThat(descriptor.checkpointTimestamp()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
 
     assertThat(manifest.statusCode()).isEqualTo(COMPLETED);
     assertThat(manifest.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
@@ -337,13 +316,7 @@ final class ManifestSerializationTest {
     final var manifest =
         new ManifestImpl(
             new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(
-                Optional.empty(),
-                2345234L,
-                3,
-                "1.2.0-SNAPSHOT",
-                Instant.ofEpochMilli(1678790708000L),
-                CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
             IN_PROGRESS,
             new FileSet(List.of(new NamedFile("snapshotFile1"), new NamedFile("snapshotFile2"))),
             new FileSet(List.of(new NamedFile("segmentFile1"))),
@@ -354,7 +327,7 @@ final class ManifestSerializationTest {
         """
           {
             "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-            "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT", "checkpointTimestamp": "2023-03-14T10:45:08Z", "checkpointType": "MANUAL_BACKUP" },
+            "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT" },
             "statusCode": "IN_PROGRESS",
             "snapshot": { "files": [ { "name": "snapshotFile1" }, { "name": "snapshotFile2" } ] },
             "segments": { "files": [ { "name": "segmentFile1" } ] },
@@ -370,27 +343,5 @@ final class ManifestSerializationTest {
     final JsonNode actualJson = MAPPER.readTree(actualJsonString);
     final JsonNode expectedJson = MAPPER.readTree(expectedJsonString);
     assertThat(actualJson).isEqualTo(expectedJson);
-  }
-
-  @Test
-  void shouldDeserializeWithoutTypeAndTimestamp() throws JsonProcessingException {
-    final var json =
-        """
-        {
-          "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
-          "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
-          "statusCode": "COMPLETED",
-          "createdAt": "2023-03-14T10:45:08+00:00",
-          "modifiedAt": "2023-03-14T10:45:08+00:00"
-        }
-        """;
-
-    // when
-    final var manifest = MAPPER.readValue(json, Manifest.class);
-
-    // then
-    final BackupDescriptorImpl descriptor = manifest.descriptor();
-    assertThat(descriptor.checkpointType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
-    assertThat(descriptor.checkpointTimestamp()).isNull();
   }
 }

@@ -12,6 +12,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsA
 
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -21,9 +22,14 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 public class ProcessDefinitionInstanceStatisticsDocumentReader extends DocumentBasedReader
     implements ProcessDefinitionInstanceStatisticsReader {
 
+  private final IncidentErrorHashCodeNormalizer normalizer;
+
   public ProcessDefinitionInstanceStatisticsDocumentReader(
-      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
+      final IncidentErrorHashCodeNormalizer normalizer) {
     super(executor, indexDescriptor);
+    this.normalizer = normalizer;
   }
 
   @Override
@@ -31,9 +37,19 @@ public class ProcessDefinitionInstanceStatisticsDocumentReader extends DocumentB
       final ProcessDefinitionInstanceStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
 
+    final var filter =
+        normalizer.normalizeAndValidateProcessInstanceFilter(query.filter(), resourceAccessChecks);
+    if (filter.isEmpty()) {
+      return SearchQueryResult.empty();
+    }
+
+    // Update the query to use the normalized filter
+    final var normalizedQuery =
+        new ProcessDefinitionInstanceStatisticsQuery(filter.get(), query.sort(), query.page());
+
     // Convert sorting field if needed
     final var updatedQuery =
-        query.withConvertedSortingField(
+        normalizedQuery.withConvertedSortingField(
             AGGREGATION_FIELD_PROCESS_DEFINITION_ID, AGGREGATION_FIELD_KEY);
 
     // Run a single paginated query; total count is provided by the cardinality aggregation

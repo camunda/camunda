@@ -16,7 +16,7 @@ import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.function.Function;
 
-public class TenantWriter implements RdbmsWriter {
+public class TenantWriter {
 
   private final ExecutionQueue executionQueue;
 

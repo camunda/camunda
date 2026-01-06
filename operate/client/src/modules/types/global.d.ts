@@ -36,11 +36,6 @@ export declare global {
       mixpanelToken?: null | string;
       mixpanelAPIHost?: null | string;
       tasklistUrl?: null | string;
-      /**
-       * @deprecated The C8 API does not expose permissions with resources.
-       * Therefore, permissions should not be checked proactively on the client.
-       * Let users try the action and surface missing permissions errors instead.
-       */
       resourcePermissionsEnabled?: boolean;
       multiTenancyEnabled?: boolean;
     };

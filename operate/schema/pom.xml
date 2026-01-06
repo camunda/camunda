@@ -45,11 +45,6 @@
       <artifactId>camunda-search-client-connect</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-spring-utils</artifactId>
-    </dependency>
-
     <!-- SPRING -->
 
     <dependency>
@@ -96,6 +91,11 @@
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
     </dependency>
 
     <dependency>

@@ -10,6 +10,7 @@ package io.camunda.security.impl;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -38,8 +39,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class AuthorizationCheckerTest {
 
-  private static final String EMPTY_STRING = "";
-
   private AuthorizationChecker authorizationChecker;
 
   @BeforeEach
@@ -52,7 +51,7 @@ public class AuthorizationCheckerTest {
     // given
     final var result =
         authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            CamundaAuthentication.of(a -> a), Authorization.of(a -> a));
+            SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
 
     // then
     Assertions.assertThat(result).isEmpty();
@@ -77,7 +76,8 @@ public class AuthorizationCheckerTest {
     // when
     final var result =
         authorizationChecker.isAuthorized(
-            authScope, CamundaAuthentication.of(a -> a), Authorization.of(a -> a));
+            authScope,
+            SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
 
     // then
     Assertions.assertThat(result).isFalse();
@@ -109,7 +109,6 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ANY.value(),
               WILDCARD_RESOURCE_ID,
-              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       authorizationReader.create(
           new AuthorizationEntity(
@@ -119,7 +118,6 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ID.value(),
               RESOURCE_ID,
-              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       // client based authorizations
       authorizationReader.create(
@@ -130,7 +128,6 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ANY.value(),
               WILDCARD_RESOURCE_ID,
-              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       authorizationReader.create(
           new AuthorizationEntity(
@@ -140,7 +137,6 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ID.value(),
               RESOURCE_ID,
-              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       // mapping rule based authorizations
       authorizationReader.create(
@@ -151,7 +147,6 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ANY.value(),
               WILDCARD_RESOURCE_ID,
-              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
       authorizationReader.create(
           new AuthorizationEntity(
@@ -161,7 +156,6 @@ public class AuthorizationCheckerTest {
               AuthorizationResourceType.PROCESS_DEFINITION.name(),
               AuthorizationResourceMatcher.ID.value(),
               RESOURCE_ID,
-              EMPTY_STRING,
               Set.of(PermissionType.READ_PROCESS_INSTANCE)));
     }
 
@@ -178,9 +172,14 @@ public class AuthorizationCheckerTest {
         final Authorization<?> authorization,
         final AuthorizationScope attemptedScope,
         final Expected expected) {
+      // given
+      final var securityContext =
+          SecurityContext.of(
+              c -> c.withAuthentication(authentication).withAuthorization(authorization));
+
       // when
       final boolean isAuthorized =
-          authorizationChecker.isAuthorized(attemptedScope, authentication, authorization);
+          authorizationChecker.isAuthorized(attemptedScope, securityContext);
 
       // then
       Assertions.assertThat(isAuthorized)
@@ -244,9 +243,14 @@ public class AuthorizationCheckerTest {
         final Authorization<?> authorization,
         final AuthorizationScope attemptedScope,
         final Expected expected) {
+      // given
+      final var securityContext =
+          SecurityContext.of(
+              c -> c.withAuthentication(authentication).withAuthorization(authorization));
+
       // when
       final boolean isAuthorized =
-          authorizationChecker.isAuthorized(attemptedScope, authentication, authorization);
+          authorizationChecker.isAuthorized(attemptedScope, securityContext);
 
       // then
       Assertions.assertThat(isAuthorized)
@@ -670,19 +674,6 @@ public class AuthorizationCheckerTest {
               .thenResultContains(
                   PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE)
               .build(),
-          CollectPermissionScenario.displayName("hank AUDIT_LOG wildcard -> {READ}")
-              .given(
-                  authEntity(
-                      AuthorizationOwnerType.USER,
-                      "hank",
-                      AuthorizationResourceType.AUDIT_LOG,
-                      AuthorizationResourceMatcher.ANY,
-                      WILDCARD_RESOURCE_ID,
-                      Set.of(PermissionType.READ)))
-              .whenUser("hank")
-              .accessesResource(RESOURCE_ID, AuthorizationResourceType.AUDIT_LOG)
-              .thenResultContains(PermissionType.READ)
-              .build(),
           CollectPermissionScenario.displayName("gina PROCESS_DEFINITION mismatch -> empty")
               .given(
                   authEntity(
@@ -790,7 +781,6 @@ public class AuthorizationCheckerTest {
           resourceType.name(),
           matcher.value(),
           resourceId,
-          EMPTY_STRING,
           permissionTypes);
     }
 
@@ -947,16 +937,18 @@ public class AuthorizationCheckerTest {
           reader.create(entity);
         }
         final var checker = new AuthorizationChecker(reader);
+        final var securityContext =
+            SecurityContext.of(
+                c ->
+                    c.withAuthentication(scenario.authentication())
+                        .withAuthorization(
+                            a ->
+                                a.resourceType(scenario.resourceType())
+                                    .permissionType(scenario.permissionType())
+                                    .resourceId(WILDCARD_RESOURCE_ID)));
 
         // when
-        final var actual =
-            checker.retrieveAuthorizedAuthorizationScopes(
-                scenario.authentication(),
-                Authorization.of(
-                    a ->
-                        a.resourceType(scenario.resourceType())
-                            .permissionType(scenario.permissionType())
-                            .resourceId(WILDCARD_RESOURCE_ID)));
+        final var actual = checker.retrieveAuthorizedAuthorizationScopes(securityContext);
 
         // then
         Assertions.assertThat(actual)
@@ -1140,7 +1132,6 @@ public class AuthorizationCheckerTest {
           resourceType.name(),
           matcher.value(),
           resourceId,
-          EMPTY_STRING,
           permissionTypes);
     }
 

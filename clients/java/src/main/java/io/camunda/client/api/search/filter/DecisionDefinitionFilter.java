@@ -37,12 +37,6 @@ public interface DecisionDefinitionFilter extends SearchRequestFilter {
   /** Filter by decision requirements key. */
   DecisionDefinitionFilter decisionRequirementsKey(final long value);
 
-  /** Filter by dmn decision requirements name. */
-  DecisionDefinitionFilter decisionRequirementsName(final String value);
-
-  /** Filter by decision requirements version. */
-  DecisionDefinitionFilter decisionRequirementsVersion(final int value);
-
   /** Filter by tenant id. */
   DecisionDefinitionFilter tenantId(final String value);
 }

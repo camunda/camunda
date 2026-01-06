@@ -13,7 +13,6 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
-import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Component;
 
 /** Operation handler to delete process instances. */
 @Component
-@ConditionalOnRdbmsDisabled
 public class DeleteProcessInstanceHandler extends AbstractOperationHandler
     implements OperationHandler {
 

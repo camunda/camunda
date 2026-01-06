@@ -87,13 +87,6 @@ public class UpdateAuthorizationCommandImpl
   }
 
   @Override
-  public UpdateAuthorizationCommandStep4 resourcePropertyName(final String resourcePropertyName) {
-    ArgumentUtil.ensureNotNullNorEmpty("resourcePropertyName", resourcePropertyName);
-    request.setResourcePropertyName(resourcePropertyName);
-    return this;
-  }
-
-  @Override
   public UpdateAuthorizationCommandStep5 resourceType(final ResourceType resourceType) {
     ArgumentUtil.ensureNotNull("resourceType", resourceType);
     request.setResourceType(EnumUtil.convert(resourceType, ResourceTypeEnum.class));

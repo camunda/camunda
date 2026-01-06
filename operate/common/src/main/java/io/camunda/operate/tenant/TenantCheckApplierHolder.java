@@ -14,15 +14,12 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class TenantCheckApplierHolder
-    implements ApplicationContextAware, ApplicationListener<ContextClosedEvent> {
+public class TenantCheckApplierHolder implements ApplicationContextAware {
   private static ApplicationContext applicationContext;
   private static TenantCheckApplier<Query> tenantCheckApplier;
 
@@ -42,10 +39,5 @@ public class TenantCheckApplierHolder
   public void setApplicationContext(final ApplicationContext applicationContext)
       throws BeansException {
     this.applicationContext = applicationContext;
-  }
-
-  @Override
-  public void onApplicationEvent(final ContextClosedEvent ignored) {
-    tenantCheckApplier = null;
   }
 }

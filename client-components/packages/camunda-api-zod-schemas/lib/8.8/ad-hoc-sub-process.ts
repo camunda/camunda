@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getCollectionResponseBodySchema, type Endpoint} from '../common';
+import {API_VERSION, getCollectionResponseBodySchema, type Endpoint} from './common';
 
 const activityTypeSchema = z.enum([
 	'UNSPECIFIED',

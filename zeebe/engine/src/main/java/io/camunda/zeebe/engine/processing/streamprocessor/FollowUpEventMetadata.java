@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -20,10 +19,7 @@ import java.util.function.Consumer;
  * event).
  */
 public record FollowUpEventMetadata(
-    long operationReference,
-    long batchOperationReference,
-    int recordVersion,
-    Map<String, Object> claims) {
+    long operationReference, long batchOperationReference, int recordVersion) {
 
   public static final int VERSION_NOT_SET = -1;
 
@@ -49,10 +45,6 @@ public record FollowUpEventMetadata(
     return recordVersion;
   }
 
-  public Map<String, Object> getClaims() {
-    return claims;
-  }
-
   public static Builder builder() {
     return new Builder();
   }
@@ -62,7 +54,6 @@ public record FollowUpEventMetadata(
     private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
     private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
     private int recordVersion = VERSION_NOT_SET;
-    private Map<String, Object> claims = Map.of();
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;
@@ -79,14 +70,8 @@ public record FollowUpEventMetadata(
       return this;
     }
 
-    public Builder claims(final Map<String, Object> claims) {
-      this.claims = claims;
-      return this;
-    }
-
     public FollowUpEventMetadata build() {
-      return new FollowUpEventMetadata(
-          operationReference, batchOperationReference, recordVersion, claims);
+      return new FollowUpEventMetadata(operationReference, batchOperationReference, recordVersion);
     }
   }
 }

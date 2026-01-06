@@ -60,8 +60,8 @@ describe('<DecisionOperations />', () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
-        decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
       />,
       {wrapper: Wrapper},
     );
@@ -94,8 +94,8 @@ describe('<DecisionOperations />', () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
-        decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
       />,
       {wrapper: Wrapper},
     );
@@ -128,8 +128,8 @@ describe('<DecisionOperations />', () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
-        decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
       />,
       {wrapper: Wrapper},
     );
@@ -166,8 +166,8 @@ describe('<DecisionOperations />', () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
-        decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
       />,
       {wrapper: Wrapper},
     );
@@ -188,11 +188,13 @@ describe('<DecisionOperations />', () => {
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
-    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-      kind: 'warning',
-      title: "You don't have permission to perform this operation",
-      subtitle: 'Please contact the administrator if you need access.',
-      isDismissable: true,
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Operation could not be created',
+        subtitle: 'You do not have permission',
+        isDismissable: true,
+      });
     });
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
   });
@@ -203,8 +205,8 @@ describe('<DecisionOperations />', () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
-        decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
       />,
       {wrapper: Wrapper},
     );
@@ -255,8 +257,8 @@ describe('<DecisionOperations />', () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
-        decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
       />,
       {wrapper: Wrapper},
     );
@@ -300,8 +302,8 @@ describe('<DecisionOperations />', () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
-        decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
       />,
       {wrapper: Wrapper},
     );

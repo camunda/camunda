@@ -17,43 +17,6 @@ public interface MutableBatchOperationState extends BatchOperationState {
   /**
    * Stores the batch operation in the state.
    *
-   * <p><strong>Deprecation Reason:</strong>
-   *
-   * <p>This method is deprecated because the {@code BatchOperationIntent.CREATED} command could be
-   * processed multiple times for the same batch operation key. This probably occurred because the
-   * command was not acknowledged during {@link
-   * io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor#processDistributedCommand},
-   * leading to duplicate processing. This would cause a new {@link
-   * io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation} instance to be created
-   * and upserted in the state, overriding the previous instance via {@link
-   * io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState#deprecatedCreate}. This
-   * resulted in all {@link io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation}
-   * properties being reset.
-   *
-   * <p>The {@link
-   * io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationExecutionScheduler}
-   * retrieves pending batch operations from the state and attempts to create chunks for them. Due
-   * to the property reset described above, the {@code BatchOperationChunkIntent.CREATED} command
-   * would be generated multiple times for the same batch operation key, attempting to create the
-   * same batch operation chunk repeatedly.
-   *
-   * <p>Since the {@code chunkKeyProp} had been reset and was empty, {@link
-   * io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation#getMinChunkKey()} would
-   * return {@code -1} each time. Consequently, each new chunk would receive the key {@code 0} in
-   * {@link io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState}, resulting in a
-   * {@code ZeebeDbInconsistentException} when attempting to insert multiple batch operation chunks
-   * with the same key.
-   *
-   * @param record the batch operation creation record to create
-   * @deprecated Use {@link #create(long, BatchOperationCreationRecord)} instead to prevent
-   *     duplicate processing issues
-   */
-  @Deprecated()
-  void deprecatedCreate(final long batchOperationKey, final BatchOperationCreationRecord record);
-
-  /**
-   * Stores the batch operation in the state.
-   *
    * @param record the batch operation creation record to create
    */
   void create(final long batchOperationKey, final BatchOperationCreationRecord record);

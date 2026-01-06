@@ -9,7 +9,7 @@
 /// <reference types="vitest" />
 /// <reference types="vite/client" />
 
-import {defineConfig, type PluginOption, type UserConfig} from 'vite';
+import {defineConfig, type PluginOption} from 'vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
@@ -18,27 +18,9 @@ import license from 'rollup-plugin-license';
 import path from 'node:path';
 import sbom from 'rollup-plugin-sbom';
 import {configDefaults} from 'vitest/config';
-import {playwright} from '@vitest/browser-playwright';
 
 const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
 const outDir = 'build';
-
-function getReporters(): Pick<
-  NonNullable<UserConfig['test']>,
-  'reporters' | 'outputFile'
-> {
-  if (process.env.CI) {
-    return {
-      reporters: ['default', 'junit', 'github-actions'],
-      outputFile: {
-        junit: 'TEST-unit.xml',
-      },
-    };
-  }
-  return {
-    reporters: ['default'],
-  };
-}
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
@@ -102,7 +84,6 @@ export default defineConfig(({mode}) => ({
     clearMocks: true,
     resetMocks: true,
     unstubEnvs: true,
-    ...getReporters(),
     projects: [
       {
         extends: true,
@@ -125,7 +106,7 @@ export default defineConfig(({mode}) => ({
           setupFiles: ['./vitest.browser.setup.ts'],
           browser: {
             enabled: true,
-            provider: playwright(),
+            provider: 'playwright',
             instances: [
               {
                 browser: 'chromium',

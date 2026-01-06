@@ -8,11 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.search.query.AuthorizationQuery;
@@ -48,20 +44,5 @@ class AuthorizationDbReaderTest {
 
     final var items = authorizationDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
-  }
-
-  @Test
-  void shouldReturnEmptyPageWhenPageSizeIsZero() {
-    when(authorizationMapper.count(any())).thenReturn(21L);
-
-    final AuthorizationQuery query = AuthorizationQuery.of(b -> b.page(p -> p.size(0)));
-    final ResourceAccessChecks resourceAccessChecks =
-        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
-
-    final var result = authorizationDbReader.search(query, resourceAccessChecks);
-
-    assertThat(result.total()).isEqualTo(21L);
-    assertThat(result.items()).isEmpty();
-    verify(authorizationMapper, times(0)).search(any());
   }
 }

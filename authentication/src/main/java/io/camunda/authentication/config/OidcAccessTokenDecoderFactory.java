@@ -35,14 +35,15 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
  */
 public class OidcAccessTokenDecoderFactory {
 
-  // We explicitly support the "at+jwt" JWT 'typ' header defined in
-  // https://datatracker.ietf.org/doc/html/rfc9068#name-header
-  static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
   private static final Logger LOG = LoggerFactory.getLogger(OidcAccessTokenDecoderFactory.class);
   private static final String ERROR_MISSING_ISSUER =
       "The following OIDC Providers are missing 'issuerUri': %s";
   private static final String ERROR_MISSING_JWK =
       "OIDC Provider '%s' is missing a valid 'jwk-set-uri'. Issuer URI: %s";
+
+  // We explicitly support the "at+jwt" JWT 'typ' header defined in
+  // https://datatracker.ietf.org/doc/html/rfc9068#name-header
+  private static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
   private final JWSKeySelectorFactory jwsKeySelectorFactory;
   private final TokenValidatorFactory tokenValidatorFactory;
 

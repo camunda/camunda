@@ -21,12 +21,4 @@ public record TenantCheck(boolean enabled, List<String> tenantIds) {
   public static TenantCheck disabled() {
     return new TenantCheck(false, null);
   }
-
-  public boolean hasAnyTenantAccess() {
-    return !enabled || hasAnyTenantIdAccess();
-  }
-
-  private boolean hasAnyTenantIdAccess() {
-    return tenantIds != null && !tenantIds.isEmpty();
-  }
 }

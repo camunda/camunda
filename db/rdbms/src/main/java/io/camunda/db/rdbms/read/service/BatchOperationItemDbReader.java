@@ -15,7 +15,6 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,17 +42,12 @@ public class BatchOperationItemDbReader extends AbstractEntityReader<BatchOperat
             query.sort(),
             BatchOperationItemSearchColumn.BATCH_OPERATION_KEY,
             BatchOperationItemSearchColumn.ITEM_KEY);
-    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
-        BatchOperationItemDbQuery.of(b -> b.filter(query.filter()).sort(dbSort).page(dbPage));
+        BatchOperationItemDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for batch operation items with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.countItems(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = batchOperationMapper.searchItems(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

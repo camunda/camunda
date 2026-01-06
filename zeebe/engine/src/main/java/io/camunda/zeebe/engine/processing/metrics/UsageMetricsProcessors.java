@@ -29,7 +29,7 @@ public class UsageMetricsProcessors {
         .onCommand(
             ValueType.USAGE_METRIC,
             UsageMetricIntent.EXPORT,
-            new UsageMetricExportProcessor(
+            new UsageMetricsExportProcessor(
                 processingState.getUsageMetricState(), writers, keyGenerator, clock))
         .withListener(new UsageMetricsCheckerScheduler(config, clock));
   }

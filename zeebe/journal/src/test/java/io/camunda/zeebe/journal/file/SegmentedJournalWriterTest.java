@@ -44,8 +44,7 @@ final class SegmentedJournalWriterTest {
   private final SegmentDescriptorSerializer descriptorSerializer =
       new SegmentDescriptorSerializerSbe();
 
-  private void fillWithOnes(
-      final FileChannel channel, final java.io.FileDescriptor fileDescriptor, final long size) {
+  private void fillWithOnes(final FileChannel channel, final long size) {
     // Fill with ones to verify in tests that the append invalidates next entry by overwriting with
     // 0
     IoUtil.fill(channel, 0, size, (byte) 0xff);

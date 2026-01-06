@@ -8,47 +8,14 @@
 package io.camunda.zeebe.exporter.common.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
-import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class ProcessCacheUtilTest {
-
-  @Test
-  void shouldNotRaiseExceptionWhenGetCallActivityIdHasOutOfBoundsIndex() {
-    // given
-    final Long fakeProcessDefinitionKey = 123L;
-    final int outOfBoundsIndex = 10;
-    final ExporterEntityCache<Long, CachedProcessEntity> mockProcessCache =
-        mock(ExporterEntityCache.class);
-    final CachedProcessEntity mockCachedProcessEntity = mock(CachedProcessEntity.class);
-    final Optional<CachedProcessEntity> optionalCachedProcessEntity =
-        Optional.of(mockCachedProcessEntity);
-    final List<String> shortCallElementIds = List.of("callActivity_1", "callActivity_2");
-
-    // with
-    when(mockProcessCache.get(fakeProcessDefinitionKey)).thenReturn(optionalCachedProcessEntity);
-    when(mockCachedProcessEntity.callElementIds()).thenReturn(shortCallElementIds);
-
-    // when
-    final Optional<String> result =
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow(
-            () ->
-                ProcessCacheUtil.getCallActivityId(
-                    mockProcessCache, fakeProcessDefinitionKey, outOfBoundsIndex));
-
-    // then
-    assertThat(result).isNotNull();
-    assertThat(result.isEmpty()).isTrue();
-  }
 
   @Test
   void shouldExtractCallActivityIds() {

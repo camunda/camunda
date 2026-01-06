@@ -7,8 +7,10 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceTagDbModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +61,15 @@ public class ProcessInstanceExportHandler
     final var value = record.getValue();
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
       processInstanceWriter.create(map(record));
+
+      if (value.getTags() != null && !value.getTags().isEmpty()) {
+        processInstanceWriter.createTags(
+            new ProcessInstanceTagsDto(
+                value.getProcessInstanceKey(),
+                value.getTags().stream()
+                    .map(tag -> new ProcessInstanceTagDbModel(value.getProcessInstanceKey(), tag))
+                    .collect(Collectors.toList())));
+      }
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
       final OffsetDateTime endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
       processInstanceWriter.finish(
@@ -101,7 +113,6 @@ public class ProcessInstanceExportHandler
         .version(value.getVersion())
         .partitionId(record.getPartitionId())
         .treePath(createTreePath(record).toString())
-        .tags(value.getTags())
         .build();
   }
 

@@ -44,6 +44,6 @@ public class RestApiBrokerGatewayDisabledTest extends RestApiConfigurationTest {
         .expectStatus()
         .isNotFound();
 
-    verifyNoInteractions(topologyServices);
+    verifyNoInteractions(topologyManager);
   }
 }

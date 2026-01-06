@@ -58,7 +58,6 @@ public final class ClusterConfigurationManagerService
   private final ClusterConfigurationRequestServer configurationRequestServer;
   private final Actor gossipActor;
   private final Actor managerActor;
-  private final ClusterConfigurationGossiperConfig gossiperConfig;
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
@@ -70,7 +69,6 @@ public final class ClusterConfigurationManagerService
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
-    gossiperConfig = config;
     this.clusterChangeExecutor = clusterChangeExecutor;
     topologyMetrics = new TopologyMetrics(meterRegistry);
     topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
@@ -127,7 +125,6 @@ public final class ClusterConfigurationManagerService
         .recover(
             PersistedConfigurationIsBroken.class,
             new SyncInitializer(
-                gossiperConfig.syncInitializerDelay(),
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
@@ -157,7 +154,6 @@ public final class ClusterConfigurationManagerService
     return new FileInitializer(configurationFile, new ProtoBufSerializer())
         .orThen(
             new SyncInitializer(
-                gossiperConfig.syncInitializerDelay(),
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,

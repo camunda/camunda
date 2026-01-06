@@ -179,13 +179,10 @@ public final class PendingMessageSubscriptionStateTest {
         subscriptions::add);
 
     Assertions.assertThat(subscriptions).hasSize(1);
-    final var expectedSubscription = subscriptions.getFirst().getRecord();
-    assertThat(expectedSubscription.getVariables()).isEqualTo(subscription.getVariables());
-    assertThat(expectedSubscription.getMessageKey()).isEqualTo(subscription.getMessageKey());
-    assertThat(expectedSubscription.getCorrelationKey())
-        .isEqualTo(subscription.getCorrelationKey());
-    assertThat(expectedSubscription.getProcessDefinitionKey())
-        .isEqualTo(subscription.getProcessDefinitionKey());
+    assertThat(subscriptions.get(0).getRecord().getVariables())
+        .isEqualTo(subscription.getVariables());
+    assertThat(subscriptions.get(0).getRecord().getMessageKey())
+        .isEqualTo(subscription.getMessageKey());
 
     // and
     final List<Long> keys = new ArrayList<>();
@@ -237,7 +234,6 @@ public final class PendingMessageSubscriptionStateTest {
     return new MessageSubscriptionRecord()
         .setProcessInstanceKey(1L)
         .setElementInstanceKey(elementInstanceKey)
-        .setProcessDefinitionKey(2L)
         .setBpmnProcessId(wrapString("process"))
         .setMessageName(wrapString(name))
         .setCorrelationKey(wrapString(correlationKey))

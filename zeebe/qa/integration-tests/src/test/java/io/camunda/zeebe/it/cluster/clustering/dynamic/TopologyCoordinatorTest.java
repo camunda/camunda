@@ -39,14 +39,15 @@ final class TopologyCoordinatorTest {
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
           .withGatewayConfig(
-              g -> {
-                final var membership = g.unifiedConfig().getCluster().getMembership();
-                // Decrease the timeouts for fast convergence of gateway topology. When the
-                // broker is shutdown, the topology update takes at least 10 seconds with the
-                // default values.
-                membership.setSyncInterval(Duration.ofSeconds(1));
-                membership.setFailureTimeout(Duration.ofSeconds(2));
-              })
+              g ->
+                  g.gatewayConfig()
+                      .getCluster()
+                      .getMembership()
+                      // Decrease the timeouts for fast convergence of gateway topology. When the
+                      // broker is shutdown, the topology update takes at least 10 seconds with the
+                      // default values.
+                      .setSyncInterval(Duration.ofSeconds(1))
+                      .setFailureTimeout(Duration.ofSeconds(2)))
           .build();
 
   @Test

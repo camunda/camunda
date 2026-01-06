@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -22,8 +21,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -100,8 +99,7 @@ public final class DeploymentCreateProcessor
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
@@ -113,7 +111,7 @@ public final class DeploymentCreateProcessor
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
-    expressionProcessor = bpmnBehaviors.expressionProcessor();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     deploymentTransformer =
@@ -124,22 +122,21 @@ public final class DeploymentCreateProcessor
             keyGenerator,
             featureFlags,
             config,
-            clock,
-            expressionLanguageMetrics);
+            clock);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
+    final var newResourceAuthorization = true;
     final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(PermissionType.CREATE)
-            .tenantId(command.getValue().getTenantId())
-            .newResource()
-            .build();
+        new AuthorizationRequest(
+            command,
+            AuthorizationResourceType.RESOURCE,
+            PermissionType.CREATE,
+            command.getValue().getTenantId(),
+            newResourceAuthorization);
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -350,9 +347,7 @@ public final class DeploymentCreateProcessor
         // we use a negative scope key to indicate this
         final long scopeKey = -1L;
         final Either<Failure, Timer> timerOrError =
-            startEvent
-                .getTimerFactory()
-                .apply(expressionProcessor, scopeKey, processMetadata.getTenantId());
+            startEvent.getTimerFactory().apply(expressionProcessor, scopeKey);
         if (timerOrError.isLeft()) {
           // todo(#4323): deal with this exceptional case without throwing an exception
           throw new EvaluationException(timerOrError.getLeft().getMessage());

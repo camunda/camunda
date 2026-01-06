@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryResponseBodySchema, getQueryRequestBodySchema, type Endpoint} from '../common';
+import {API_VERSION, getQueryResponseBodySchema, getQueryRequestBodySchema, type Endpoint} from './common';
 
 const permissionTypeSchema = z.enum([
 	'ACCESS',

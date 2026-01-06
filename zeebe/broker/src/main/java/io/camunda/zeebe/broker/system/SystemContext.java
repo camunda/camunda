@@ -14,27 +14,22 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.validation.AuthorizationValidator;
-import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
-import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.RocksDbSharedCache;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -45,10 +40,7 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
-import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -61,7 +53,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -185,8 +176,6 @@ public final class SystemContext {
     if (security.isEnabled()) {
       validateNetworkSecurityConfig(security);
     }
-
-    validateInitializationConfig();
   }
 
   private void validClusterConfigs(final ClusterCfg cluster) {
@@ -262,10 +251,6 @@ public final class SystemContext {
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getGlobalListeners)
         .ifPresent(c -> validateListenersConfig(c));
-
-    Optional.of(experimental)
-        .map(ExperimentalCfg::getRocksdb)
-        .ifPresent(c -> validateRocksDbConfig(c, cluster.getPartitionsCount()));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -379,7 +364,7 @@ public final class SystemContext {
     }
   }
 
-  private void validateBackupCfg(final BackupCfg backup) {
+  private void validateBackupCfg(final BackupStoreCfg backup) {
     try {
       switch (backup.getStore()) {
         case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
@@ -401,8 +386,6 @@ public final class SystemContext {
       throw new InvalidConfigurationException(
           "Failed configuring backup store %s".formatted(backup.getStore()), e);
     }
-
-    validateBackupSchedulerConfig(backup);
   }
 
   private void validateFixedPartitioningScheme(
@@ -472,27 +455,6 @@ public final class SystemContext {
     }
 
     return members;
-  }
-
-  // actually initializing the entities will be done in IdentitySetupInitializer.
-  // Validation is done here, only to be able to stop the application on error.
-  private void validateInitializationConfig() {
-    final AuthorizationConfigurer authorizationConfigurer =
-        new AuthorizationConfigurer(
-            new AuthorizationValidator(securityConfiguration.getCompiledIdValidationPattern()));
-
-    final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
-        authorizationConfigurer.configureEntities(
-            securityConfiguration.getInitialization().getAuthorizations());
-
-    // TODO: after adding more entity types, change this, so it accounts for all violations all
-    //   together.
-    configuredAuthorizations.ifLeft(
-        (violations) -> {
-          throw new IdentityInitializationException(
-              "Cannot initialize configured entities: %n- %s"
-                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
-        });
   }
 
   private void validateNetworkSecurityConfig(final SecurityCfg security) {
@@ -599,28 +561,6 @@ public final class SystemContext {
     }
 
     listeners.setUserTask(validListeners);
-  }
-
-  private void validateRocksDbConfig(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    RocksDbSharedCache.validateRocksDbMemory(rocksdbCfg, partitionsCount);
-  }
-
-  private void validateBackupSchedulerConfig(final BackupCfg backupSchedulerCfg) {
-    if (!backupSchedulerCfg.isContinuous() || !backupSchedulerCfg.isRequired()) {
-      return;
-    }
-
-    // will throw IllegalArgumentException if schedule is invalid
-    final var schedule = backupSchedulerCfg.getSchedule();
-    if (backupSchedulerCfg.isRequired() && schedule instanceof NoneSchedule) {
-      throw new IllegalArgumentException("Backup schedule is mandatory, none provided.");
-    }
-    // will throw IllegalArgumentException if schedule is invalid
-    Objects.requireNonNull(backupSchedulerCfg.getRetention().getCleanupSchedule());
-    final var retentionSchedule = backupSchedulerCfg.getRetention().getCleanupSchedule();
-    if (backupSchedulerCfg.isRequired() && retentionSchedule instanceof NoneSchedule) {
-      throw new IllegalArgumentException("Backup retention schedule is mandatory, none provided.");
-    }
   }
 
   public ActorScheduler getScheduler() {

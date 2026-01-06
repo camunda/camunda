@@ -9,36 +9,45 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.throwAwayNullElements;
+import static java.util.Arrays.asList;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.Refresh;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.util.MissingRequiredPropertyException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.*;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -58,8 +67,6 @@ public abstract class ElasticsearchUtil {
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
   public static RequestOptions requestOptions = RequestOptions.DEFAULT;
-  public static final Class<Map<String, Object>> MAP_CLASS =
-      (Class<Map<String, Object>>) (Class<?>) Map.class;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static void setRequestOptions(final RequestOptions newRequestOptions) {
@@ -78,7 +85,7 @@ public abstract class ElasticsearchUtil {
     return searchRequest;
   }
 
-  public static String whereToSearch(
+  private static String whereToSearch(
       final IndexTemplateDescriptor template, final QueryType queryType) {
     switch (queryType) {
       case ONLY_RUNTIME:
@@ -150,102 +157,150 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  /**
-   * Join queries with AND clause. If 0 queries are passed for wrapping, then null is returned. If 1
-   * parameter is passed, it will be returned back as is. Otherwise, a new BoolQuery will be created
-   * and returned.
-   *
-   * @param queries Variable number of Query objects to join
-   * @return A single Query combining all inputs with AND logic, or null if no queries provided
-   */
-  public static Query joinWithAnd(final Query... queries) {
-    final List<Query> notNullQueries = throwAwayNullElements(queries);
-
-    return switch (notNullQueries.size()) {
-      case 0 -> null;
-      case 1 -> notNullQueries.get(0);
-      default -> Query.of(q -> q.bool(b -> b.must(notNullQueries)));
-    };
-  }
-
   public static BoolQueryBuilder createMatchNoneQuery() {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }
 
-  public static BoolQuery.Builder createMatchNoneQueryEs8() {
-    return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.bool()
-        .must(m -> m.matchNone(mn -> mn));
-  }
-
   public static void processBulkRequest(
-      final ElasticsearchClient esClient,
-      final BulkRequest.Builder bulkRequestBuilder,
-      final long maxBulkRequestSizeInBytes) {
-    processBulkRequest(esClient, bulkRequestBuilder, false, maxBulkRequestSizeInBytes);
-  }
-
-  public static String getFieldFromResponseObject(
-      final co.elastic.clients.elasticsearch.core.SearchResponse<Map<String, Object>> response,
-      final String fieldName) {
-    if (response.hits().hits().size() != 1) {
-      throw new IllegalArgumentException(
-          "Expected exactly one document in response object " + response);
-    }
-
-    return String.valueOf(response.hits().hits().getFirst().source().get(fieldName));
-  }
-
-  public static Query idsQuery(final String... ids) {
-    return Query.of(q -> q.ids(i -> i.values(Arrays.asList(ids))));
-  }
-
-  /**
-   * A query that wraps another query and simply returns a constant score equal to the query boost
-   * for every document in the query.
-   *
-   * @param query The query to wrap in a constant score query
-   */
-  public static Query constantScoreQuery(final Query query) {
-    return Query.of(q -> q.constantScore(cs -> cs.filter(query)));
+      final RestHighLevelClient esClient,
+      final BulkRequest bulkRequest,
+      final long maxBulkRequestSizeInBytes)
+      throws PersistenceException {
+    processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
   }
 
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
-      final ElasticsearchClient esClient,
-      final BulkRequest.Builder bulkRequestBuilder,
+      final RestHighLevelClient esClient,
+      final BulkRequest bulkRequest,
       final boolean refreshImmediately,
-      final long maxBulkRequestSizeInBytes) {
-    try {
-      final var bulkRequest = bulkRequestBuilder.build();
-      LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.operations().size());
-
-      try (final var bulkIngester =
-          createBulkIngester(esClient, maxBulkRequestSizeInBytes, refreshImmediately)) {
-        bulkRequest.operations().forEach(bulkIngester::add);
-      }
-    } catch (final MissingRequiredPropertyException ignored) {
-      // if bulk request has no operations calling .build() will throw an exception, we suppress
-      // this as it is a no op.
+      final long maxBulkRequestSizeInBytes)
+      throws PersistenceException {
+    if (bulkRequest.estimatedSizeInBytes() > maxBulkRequestSizeInBytes) {
+      divideLargeBulkRequestAndProcess(
+          esClient, bulkRequest, refreshImmediately, maxBulkRequestSizeInBytes);
+    } else {
+      processLimitedBulkRequest(esClient, bulkRequest, refreshImmediately);
     }
   }
 
-  private static BulkIngester<Void> createBulkIngester(
-      final ElasticsearchClient esClient,
-      final long maxBulkRequestSizeInBytes,
-      final boolean refreshImmediately) {
-    final Refresh refreshVal;
-    if (refreshImmediately) {
-      refreshVal = Refresh.True;
-    } else {
-      refreshVal = Refresh.False;
+  private static void divideLargeBulkRequestAndProcess(
+      final RestHighLevelClient esClient,
+      final BulkRequest bulkRequest,
+      final boolean refreshImmediately,
+      final long maxBulkRequestSizeInBytes)
+      throws PersistenceException {
+    LOGGER.debug(
+        "Bulk request has {} bytes > {} max bytes ({} requests). Will divide it into smaller bulk requests.",
+        bulkRequest.estimatedSizeInBytes(),
+        maxBulkRequestSizeInBytes,
+        bulkRequest.requests().size());
+
+    int requestCount = 0;
+    final List<DocWriteRequest<?>> requests = bulkRequest.requests();
+
+    BulkRequest limitedBulkRequest = new BulkRequest();
+    while (requestCount < requests.size()) {
+      final DocWriteRequest<?> nextRequest = requests.get(requestCount);
+      if (nextRequest.ramBytesUsed() > maxBulkRequestSizeInBytes) {
+        throw new PersistenceException(
+            String.format(
+                "One of the request with size of %d bytes is greater than max allowed %d bytes",
+                nextRequest.ramBytesUsed(), maxBulkRequestSizeInBytes));
+      }
+
+      final long wholeSize = limitedBulkRequest.estimatedSizeInBytes() + nextRequest.ramBytesUsed();
+      if (wholeSize < maxBulkRequestSizeInBytes) {
+        limitedBulkRequest.add(nextRequest);
+      } else {
+        LOGGER.debug(
+            "Submit bulk of {} requests, size {} bytes.",
+            limitedBulkRequest.requests().size(),
+            limitedBulkRequest.estimatedSizeInBytes());
+        processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
+        limitedBulkRequest = new BulkRequest();
+        limitedBulkRequest.add(nextRequest);
+      }
+      requestCount++;
     }
-    return BulkIngester.of(
-        b ->
-            b.client(esClient)
-                .maxOperations(100)
-                .maxSize(maxBulkRequestSizeInBytes)
-                .globalSettings(s -> s.refresh(refreshVal)));
+    if (!limitedBulkRequest.requests().isEmpty()) {
+      LOGGER.debug(
+          "Submit bulk of {} requests, size {} bytes.",
+          limitedBulkRequest.requests().size(),
+          limitedBulkRequest.estimatedSizeInBytes());
+      processLimitedBulkRequest(esClient, limitedBulkRequest, refreshImmediately);
+    }
+  }
+
+  @SuppressWarnings("checkstyle:NestedIfDepth")
+  private static void processLimitedBulkRequest(
+      final RestHighLevelClient esClient, BulkRequest bulkRequest, final boolean refreshImmediately)
+      throws PersistenceException {
+    if (bulkRequest.requests().size() > 0) {
+      try {
+        LOGGER.debug("************* FLUSH BULK START *************");
+        if (refreshImmediately) {
+          bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        }
+        final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        final BulkItemResponse[] items = bulkItemResponses.getItems();
+        for (int i = 0; i < items.length; i++) {
+          final BulkItemResponse responseItem = items[i];
+          if (responseItem.isFailed() && !isEventConflictError(responseItem)) {
+
+            if (isMissingIncident(responseItem)) {
+              // the case when incident was already archived to dated index, but must be updated
+              final DocWriteRequest<?> request = bulkRequest.requests().get(i);
+              final String incidentId = extractIncidentId(responseItem.getFailure().getMessage());
+              final String indexName =
+                  getIndexNames(request.index() + "alias", asList(incidentId), esClient)
+                      .get(incidentId);
+              request.index(indexName);
+              if (indexName == null) {
+                LOGGER.warn("Index is not known for incident: " + incidentId);
+              } else {
+                esClient.update((UpdateRequest) request, RequestOptions.DEFAULT);
+              }
+            } else {
+              LOGGER.error(
+                  String.format(
+                      "%s failed for type [%s] and id [%s]: %s",
+                      responseItem.getOpType(),
+                      responseItem.getIndex(),
+                      responseItem.getId(),
+                      responseItem.getFailureMessage()),
+                  responseItem.getFailure().getCause());
+              throw new PersistenceException(
+                  "Operation failed: " + responseItem.getFailureMessage(),
+                  responseItem.getFailure().getCause(),
+                  responseItem.getItemId());
+            }
+          }
+        }
+        LOGGER.debug("************* FLUSH BULK FINISH *************");
+      } catch (final IOException ex) {
+        throw new PersistenceException(
+            "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
+      }
+    }
+  }
+
+  private static String extractIncidentId(final String errorMessage) {
+    final Pattern fniPattern = Pattern.compile(".*\\[_doc\\]\\[(\\d*)\\].*");
+    final Matcher matcher = fniPattern.matcher(errorMessage);
+    matcher.matches();
+    return matcher.group(1);
+  }
+
+  private static boolean isMissingIncident(final BulkItemResponse responseItem) {
+    return responseItem.getIndex().contains(IncidentTemplate.INDEX_NAME)
+        && responseItem.getFailure().getStatus().equals(RestStatus.NOT_FOUND);
+  }
+
+  private static boolean isEventConflictError(final BulkItemResponse responseItem) {
+    return responseItem.getIndex().contains(MessageSubscriptionTemplate.INDEX_NAME)
+        && responseItem.getFailure().getStatus().equals(RestStatus.CONFLICT);
   }
 
   /* MAP QUERY RESULTS */
@@ -516,6 +571,18 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
+  public static Set<String> scrollIdsToSet(
+      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
+    final Set<String> result = new HashSet<>();
+
+    final Consumer<SearchHits> collectIds =
+        (hits) -> {
+          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
+        };
+    scrollWith(request, esClient, collectIds, null, collectIds);
+    return result;
+  }
+
   public static Map<String, String> getIndexNames(
       final String aliasName, final Collection<String> ids, final RestHighLevelClient esClient) {
 
@@ -525,7 +592,7 @@ public abstract class ElasticsearchUtil {
         new SearchRequest(aliasName)
             .source(
                 new SearchSourceBuilder()
-                    .query(QueryBuilders.idsQuery().addIds(ids.toArray(String[]::new)))
+                    .query(idsQuery().addIds(ids.toArray(String[]::new)))
                     .fetchSource(false));
     try {
       scrollWith(
@@ -549,6 +616,80 @@ public abstract class ElasticsearchUtil {
     return indexNames;
   }
 
+  public static Map<String, String> getIndexNames(
+      final AbstractTemplateDescriptor template,
+      final Collection<String> ids,
+      final RestHighLevelClient esClient) {
+
+    final Map<String, String> indexNames = new HashMap<>();
+
+    final SearchRequest piRequest =
+        ElasticsearchUtil.createSearchRequest(template)
+            .source(
+                new SearchSourceBuilder()
+                    .query(idsQuery().addIds(ids.toArray(String[]::new)))
+                    .fetchSource(false));
+    try {
+      scrollWith(
+          piRequest,
+          esClient,
+          sh -> {
+            indexNames.putAll(
+                Arrays.stream(sh.getHits())
+                    .collect(
+                        Collectors.toMap(
+                            hit -> {
+                              return hit.getId();
+                            },
+                            hit -> {
+                              return hit.getIndex();
+                            })));
+          });
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(e.getMessage(), e);
+    }
+    return indexNames;
+  }
+
+  public static Map<String, List<String>> getIndexNamesAsList(
+      final AbstractTemplateDescriptor template,
+      final Collection<String> ids,
+      final RestHighLevelClient esClient) {
+
+    final Map<String, List<String>> indexNames = new ConcurrentHashMap<>();
+
+    final SearchRequest piRequest =
+        ElasticsearchUtil.createSearchRequest(template)
+            .source(
+                new SearchSourceBuilder()
+                    .query(idsQuery().addIds(ids.toArray(String[]::new)))
+                    .fetchSource(false));
+    try {
+      scrollWith(
+          piRequest,
+          esClient,
+          sh -> {
+            Arrays.stream(sh.getHits())
+                .collect(
+                    Collectors.groupingBy(
+                        SearchHit::getId,
+                        Collectors.mapping(SearchHit::getIndex, Collectors.toList())))
+                .forEach(
+                    (key, value) ->
+                        indexNames.merge(
+                            key,
+                            value,
+                            (v1, v2) -> {
+                              v1.addAll(v2);
+                              return v1;
+                            }));
+          });
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(e.getMessage(), e);
+    }
+    return indexNames;
+  }
+
   public static RequestOptions requestOptionsFor(final int maxSizeInBytes) {
     final RequestOptions.Builder options = RequestOptions.DEFAULT.toBuilder();
     options.setHttpAsyncResponseConsumerFactory(
@@ -564,19 +705,27 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static Query termsQuery(final String name, final Collection<?> values) {
-    return Query.of(
-        q ->
-            q.terms(
-                t ->
-                    t.field(name)
-                        .terms(
-                            TermsQueryField.of(
-                                tf -> tf.value(values.stream().map(FieldValue::of).toList())))));
-  }
+  private static final class DelegatingActionListener<Response>
+      implements ActionListener<Response> {
 
-  public static <T> Query termsQuery(final String name, final T value) {
-    return termsQuery(name, Collections.singletonList(value));
+    private final CompletableFuture<Response> future;
+    private final Executor executorDelegate;
+
+    private DelegatingActionListener(
+        final CompletableFuture<Response> future, final Executor executor) {
+      this.future = future;
+      executorDelegate = executor;
+    }
+
+    @Override
+    public void onResponse(final Response response) {
+      executorDelegate.execute(() -> future.complete(response));
+    }
+
+    @Override
+    public void onFailure(final Exception e) {
+      executorDelegate.execute(() -> future.completeExceptionally(e));
+    }
   }
 
   public enum QueryType {

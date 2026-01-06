@@ -11,7 +11,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.configuration.Filter;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.it.shared.gateway.rest.util.DisableTopologyFilter;
 import io.camunda.zeebe.it.shared.gateway.rest.util.DisableUserTasksTestFilter;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -34,19 +34,15 @@ public class FilterIT {
           .withBrokersCount(1)
           .withGatewayConfig(
               (memberId, testGateway) -> {
-                final var firstFilter = new Filter();
-                firstFilter.setId("firstFilter");
-                firstFilter.setClassName(DisableTopologyFilter.class.getName());
+                final var firstFilterCfg = new FilterCfg();
+                firstFilterCfg.setId("firstFilter");
+                firstFilterCfg.setClassName(DisableTopologyFilter.class.getName());
 
-                final var secondFilter = new Filter();
-                secondFilter.setId("secondFilter");
-                secondFilter.setClassName(DisableUserTasksTestFilter.class.getName());
+                final var secondFilterCfg = new FilterCfg();
+                secondFilterCfg.setId("secondFilter");
+                secondFilterCfg.setClassName(DisableUserTasksTestFilter.class.getName());
 
-                testGateway
-                    .unifiedConfig()
-                    .getApi()
-                    .getRest()
-                    .setFilters(List.of(firstFilter, secondFilter));
+                testGateway.gatewayConfig().setFilters(List.of(firstFilterCfg, secondFilterCfg));
               })
           .build();
 

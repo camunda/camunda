@@ -9,7 +9,7 @@ package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel.Builder;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -40,52 +40,51 @@ public final class AuthorizationFixtures extends CommonFixtures {
             .resourceType(randomEnum(ResourceType.class).name())
             .resourceMatcher(randomEnum(AuthorizationResourceMatcher.class).value())
             .resourceId(nextStringId())
-            .resourcePropertyName(nextStringId())
             .permissionTypes(Set.of(randomPermissionType1, randomPermissionType2));
 
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomAuthorizations(final RdbmsWriters rdbmsWriters) {
-    createAndSaveRandomAuthorizations(rdbmsWriters, b -> b);
+  public static void createAndSaveRandomAuthorizations(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomAuthorizations(rdbmsWriter, b -> b);
   }
 
   public static AuthorizationDbModel createAndSaveRandomAuthorization(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = AuthorizationFixtures.createRandomized(builderFunction);
-    rdbmsWriters.getAuthorizationWriter().createAuthorization(definition);
-    rdbmsWriters.flush();
+    rdbmsWriter.getAuthorizationWriter().createAuthorization(definition);
+    rdbmsWriter.flush();
     return definition;
   }
 
   public static void createAndSaveRandomAuthorizations(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriters
+      rdbmsWriter
           .getAuthorizationWriter()
           .createAuthorization(AuthorizationFixtures.createRandomized(builderFunction));
     }
 
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 
   public static AuthorizationDbModel createAndSaveAuthorization(
-      final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = createRandomized(builderFunction);
-    createAndSaveAuthorizations(rdbmsWriters, List.of(definition));
+    createAndSaveAuthorizations(rdbmsWriter, List.of(definition));
     return definition;
   }
 
   public static void createAndSaveAuthorization(
-      final RdbmsWriters rdbmsWriters, final AuthorizationDbModel user) {
-    createAndSaveAuthorizations(rdbmsWriters, List.of(user));
+      final RdbmsWriter rdbmsWriter, final AuthorizationDbModel user) {
+    createAndSaveAuthorizations(rdbmsWriter, List.of(user));
   }
 
   public static void createAndSaveAuthorizations(
-      final RdbmsWriters rdbmsWriters, final List<AuthorizationDbModel> userList) {
+      final RdbmsWriter rdbmsWriter, final List<AuthorizationDbModel> userList) {
     for (final AuthorizationDbModel user : userList) {
-      rdbmsWriters.getAuthorizationWriter().createAuthorization(user);
+      rdbmsWriter.getAuthorizationWriter().createAuthorization(user);
     }
-    rdbmsWriters.flush();
+    rdbmsWriter.flush();
   }
 }

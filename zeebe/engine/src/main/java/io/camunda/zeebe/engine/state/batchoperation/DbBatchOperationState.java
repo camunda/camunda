@@ -80,8 +80,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void deprecatedCreate(
-      final long batchOperationKey, final BatchOperationCreationRecord record) {
+  public void create(final long batchOperationKey, final BatchOperationCreationRecord record) {
     LOGGER.trace("Creating batch operation with key {}", record.getBatchOperationKey());
     batchKey.wrapLong(record.getBatchOperationKey());
     final var batchOperation = new PersistedBatchOperation();
@@ -90,18 +89,6 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     // newly created batch operations are pending, so we add them to the pending column family
     pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
-  }
-
-  @Override
-  public void create(final long batchOperationKey, final BatchOperationCreationRecord record) {
-    LOGGER.trace("Creating batch operation with key {}", record.getBatchOperationKey());
-    batchKey.wrapLong(record.getBatchOperationKey());
-    final var batchOperation = new PersistedBatchOperation();
-    batchOperation.wrap(record).setStatus(BatchOperationStatus.CREATED);
-    batchOperationColumnFamily.insert(batchKey, batchOperation);
-
-    // newly created batch operations are pending, so we add them to the pending column family
-    pendingBatchOperationColumnFamily.insert(batchKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -349,29 +336,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {
     final var currentChunkKey = batch.nextChunkKey();
-    final var batchOperationKey = batch.getKey();
     batch.addChunkKey(currentChunkKey);
 
     final var batchChunk = new PersistedBatchOperationChunk();
-    batchChunk.setKey(currentChunkKey).setBatchOperationKey(batchOperationKey);
+    batchChunk.setKey(currentChunkKey).setBatchOperationKey(batch.getKey());
     chunkKey.wrapLong(batchChunk.getKey());
-
-    // Edge case fix for issue #40747: Previously, batch operation events could be appended multiple
-    // times, creating duplicate PersistedBatchOperation instances. Using upsert instead of insert
-    // allowed these duplicates to overwrite existing entries, resetting chunk properties to default
-    // values. This prevented batch operations from completing. The getNextPendingBatchOperation()
-    // method could then find the same batch operation multiple times, each with no chunk reference
-    // (chunk key reset to -1). Calling batch.nextChunkKey() would always return 0, causing insert
-    // to fail with ZeebeDbInconsistentException due to key constraint violations. This defensive
-    // check prevents reinserting existing chunks from old, corrupted batch operations.
-    final var existingChunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
-    if (existingChunk != null) {
-      LOGGER.debug(
-          "Chunk with key {} already exists for batch operation {}, returning existing chunk",
-          currentChunkKey,
-          batchOperationKey);
-      return existingChunk;
-    }
 
     batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
 

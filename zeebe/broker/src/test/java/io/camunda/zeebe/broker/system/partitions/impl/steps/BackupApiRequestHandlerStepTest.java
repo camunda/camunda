@@ -17,7 +17,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -44,7 +43,6 @@ final class BackupApiRequestHandlerStepTest {
   @Mock DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   @Mock ActorSchedulingService actorSchedulingService;
-  @Mock ZeebeDb zeebeDb;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   BrokerCfg brokerCfg;
@@ -61,7 +59,6 @@ final class BackupApiRequestHandlerStepTest {
     transitionContext.setDiskSpaceUsageMonitor(diskSpaceUsageMonitor);
     transitionContext.setActorSchedulingService(actorSchedulingService);
     transitionContext.setBrokerCfg(brokerCfg);
-    transitionContext.setZeebeDb(zeebeDb);
 
     step = new BackupApiRequestHandlerStep();
   }

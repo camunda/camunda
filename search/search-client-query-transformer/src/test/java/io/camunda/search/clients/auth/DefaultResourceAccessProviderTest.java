@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
@@ -44,8 +45,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
-    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(any()))
         .thenReturn(List.of(authScopeBar, authScopeBaz));
 
     // when
@@ -66,8 +66,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
-    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(any()))
         .thenReturn(List.of(AuthorizationScope.WILDCARD));
 
     // when
@@ -88,9 +87,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
-    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(CamundaAuthentication.class), any(Authorization.class)))
-        .thenReturn(List.of());
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(any())).thenReturn(List.of());
 
     // when
     final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
@@ -114,8 +111,7 @@ class DefaultResourceAccessProviderTest {
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(
-            eq(authScopeInvoice), any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(SecurityContext.class)))
         .thenReturn(true);
 
     // when
@@ -142,8 +138,7 @@ class DefaultResourceAccessProviderTest {
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(
-            eq(authScopeInvoice), any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(SecurityContext.class)))
         .thenReturn(false);
 
     // when
@@ -172,8 +167,7 @@ class DefaultResourceAccessProviderTest {
                     .readProcessDefinition()
                     .resourceIdSupplier(TestResource::anotherValue));
 
-    when(authorizationChecker.isAuthorized(
-            eq(authScopeOrder), any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(eq(authScopeOrder), any(SecurityContext.class)))
         .thenReturn(true);
 
     // when
@@ -200,8 +194,7 @@ class DefaultResourceAccessProviderTest {
                     .readProcessDefinition()
                     .resourceIdSupplier(TestResource::anotherValue));
 
-    when(authorizationChecker.isAuthorized(
-            eq(authScopeOrder), any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(eq(authScopeOrder), any(SecurityContext.class)))
         .thenReturn(false);
 
     // when
@@ -261,8 +254,7 @@ class DefaultResourceAccessProviderTest {
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(
-            eq(authScopeInvoice), any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(SecurityContext.class)))
         .thenReturn(true);
 
     // when
@@ -289,8 +281,7 @@ class DefaultResourceAccessProviderTest {
                     .readProcessDefinition()
                     .resourceId(authScopeInvoice.getResourceId()));
 
-    when(authorizationChecker.isAuthorized(
-            eq(authScopeInvoice), any(CamundaAuthentication.class), any(Authorization.class)))
+    when(authorizationChecker.isAuthorized(eq(authScopeInvoice), any(SecurityContext.class)))
         .thenReturn(false);
 
     // when

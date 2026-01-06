@@ -16,7 +16,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.JobTemplate.CREATION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_CODE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.FLOW_NODE_ID;
@@ -30,7 +29,6 @@ import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_KIN
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
-import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LAST_UPDATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.LISTENER_EVENT_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
@@ -68,10 +66,6 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
     of(stringOperations(LISTENER_EVENT_TYPE, filter.listenerEventTypeOperations()))
         .ifPresent(queries::addAll);
     of(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()))
-        .ifPresent(queries::addAll);
-    of(dateTimeOperations(LAST_UPDATE_TIME, filter.lastUpdateTimeOperations()))
         .ifPresent(queries::addAll);
     of(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()))
         .ifPresent(queries::addAll);

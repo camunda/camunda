@@ -32,7 +32,5 @@ public interface Authorization {
 
   String getResourceId();
 
-  String getResourcePropertyName();
-
   List<PermissionType> getPermissionTypes();
 }

@@ -15,16 +15,4 @@ public record BackupIdentifierImpl(int nodeId, int partitionId, long checkpointI
   public static BackupIdentifierImpl from(final BackupIdentifier id) {
     return new BackupIdentifierImpl(id.nodeId(), id.partitionId(), id.checkpointId());
   }
-
-  @Override
-  public String toString() {
-    return "BackupId{"
-        + "node="
-        + nodeId
-        + ", partition="
-        + partitionId
-        + ", checkpoint="
-        + checkpointId
-        + '}';
-  }
 }

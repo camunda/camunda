@@ -46,9 +46,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
     },
-    properties = {
-      "management.endpoint.health.group.readiness.include: readinessState,searchEngineCheck"
-    },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"tasklist", "test", "standalone"})
 public class HealthCheckIT {

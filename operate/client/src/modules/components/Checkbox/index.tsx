@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type CarbonIconType} from '@carbon/react/icons';
+import {type Icon} from '@carbon/react/icons';
 import {type FieldInputProps} from 'react-final-form';
 import {CheckBox, Stack} from './styled';
 
 type CheckboxProps = {
   input: FieldInputProps<string, HTMLElement>;
   labelText: string;
-  Icon: CarbonIconType;
+  Icon: Icon;
   isDisabled?: boolean;
 };
 

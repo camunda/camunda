@@ -25,8 +25,8 @@ func (w *WindowsC8Run) OpenBrowser(ctx context.Context, url string) error {
 	return nil
 }
 
-func (w *WindowsC8Run) ProcessTree(commandPid int) []int {
-	return processTree(commandPid)
+func (w *WindowsC8Run) ProcessTree(commandPid int) []*os.Process {
+	return process_tree(int(commandPid))
 }
 
 func (w *WindowsC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd {
@@ -34,14 +34,7 @@ func (w *WindowsC8Run) VersionCmd(ctx context.Context, javaBinaryPath string) *e
 }
 
 func (w *WindowsC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd {
-	elasticsearchCmd := exec.CommandContext(
-		ctx,
-		filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat"),
-		"-E", "xpack.ml.enabled=false",
-		"-E", "xpack.security.enabled=false",
-		"-E", "discovery.type=single-node",
-		"-E", "cluster.routing.allocation.disk.threshold_enabled=false",
-	)
+	elasticsearchCmd := exec.CommandContext(ctx, filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat"), "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false", "-E", "discovery.type=single-node")
 
 	elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags

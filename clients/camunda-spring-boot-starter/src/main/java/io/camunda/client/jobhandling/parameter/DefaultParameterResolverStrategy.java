@@ -21,10 +21,10 @@ import static io.camunda.client.annotation.AnnotationUtil.getVariableValue;
 import static io.camunda.client.annotation.AnnotationUtil.isCustomHeaders;
 import static io.camunda.client.annotation.AnnotationUtil.isDocument;
 import static io.camunda.client.annotation.AnnotationUtil.isKey;
-import static io.camunda.client.annotation.AnnotationUtil.isUserTaskProperties;
 import static io.camunda.client.annotation.AnnotationUtil.isVariable;
 import static io.camunda.client.annotation.AnnotationUtil.isVariablesAsType;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.annotation.value.VariableValue;
@@ -36,20 +36,24 @@ import io.camunda.client.bean.ParameterInfo;
 public class DefaultParameterResolverStrategy implements ParameterResolverStrategy {
   protected final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.worker.JobClient jobClient;
+  private final CamundaClient camundaClient;
 
   public DefaultParameterResolverStrategy(
-      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.worker.JobClient jobClient) {
+      final JsonMapper jsonMapper,
+      final io.camunda.zeebe.client.api.worker.JobClient jobClient,
+      final CamundaClient camundaClient) {
     this.jsonMapper = jsonMapper;
     this.jobClient = jobClient;
+    this.camundaClient = camundaClient;
   }
 
-  public DefaultParameterResolverStrategy(final JsonMapper jsonMapper) {
-    this(jsonMapper, null);
+  public DefaultParameterResolverStrategy(
+      final JsonMapper jsonMapper, final CamundaClient camundaClient) {
+    this(jsonMapper, null, camundaClient);
   }
 
   @Override
-  public ParameterResolver createResolver(final ParameterResolverStrategyContext context) {
-    final ParameterInfo parameterInfo = context.parameterInfo();
+  public ParameterResolver createResolver(final ParameterInfo parameterInfo) {
     final Class<?> parameterType = parameterInfo.getParameter().getType();
     // legacy
     if (io.camunda.zeebe.client.api.worker.JobClient.class.isAssignableFrom(parameterType)) {
@@ -87,12 +91,10 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
       final boolean optional = documentValue.isOptional();
       final ParameterType documentParameterType = documentValue.getParameterType();
       return new DocumentParameterResolver(
-          variableName, optional, documentParameterType, context.camundaClient());
+          variableName, optional, documentParameterType, camundaClient);
     } else if (isKey(parameterInfo)) {
       return new KeyParameterResolver(
           KeyTargetType.from(parameterType), getKeyResolver(parameterInfo).get());
-    } else if (isUserTaskProperties(parameterInfo)) {
-      return new UserTaskPropertiesParameterResolver();
     }
     throw new IllegalStateException(
         "Could not create parameter resolver for parameter " + parameterInfo);

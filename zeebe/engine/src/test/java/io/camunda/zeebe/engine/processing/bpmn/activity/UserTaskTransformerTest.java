@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.GlobalListenerConfiguration;
+import io.camunda.zeebe.engine.GlobalListenersConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -19,14 +21,17 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.TaskListenerBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,7 +47,10 @@ class UserTaskTransformerTest {
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(
           new ZeebeFeelEngineClock(InstantSource.system()));
-  private final BpmnTransformer transformer = new BpmnTransformer(expressionLanguage);
+  private final GlobalListenersConfiguration globalListenersConfiguration =
+      new GlobalListenersConfiguration(new ArrayList<>());
+  private final BpmnTransformer transformer =
+      new BpmnTransformer(expressionLanguage, globalListenersConfiguration);
 
   private BpmnModelInstance processWithUserTask(final Consumer<UserTaskBuilder> userTaskModifier) {
     return Bpmn.createExecutableProcess().startEvent().userTask(TASK_ID, userTaskModifier).done();
@@ -277,6 +285,11 @@ class UserTaskTransformerTest {
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class ZeebeTaskListenerTests {
 
+    @BeforeEach
+    public void resetGlobalListeners() {
+      globalListenersConfiguration.userTask().clear();
+    }
+
     Stream<Arguments> taskListeners() {
       return Stream.of(
           Arguments.of(
@@ -332,6 +345,198 @@ class UserTaskTransformerTest {
               listener -> {
                 assertThat(listener.getJobWorkerProperties().getTaskHeaders())
                     .isEqualTo(Map.of("key", "value"));
+              });
+    }
+
+    @DisplayName(
+        "Should transform user task with multiple task listeners and preserve listener definition order")
+    @Test
+    void shouldTransformMultipleTaskListenersAndPreserveListenersDefinitionOrderPerEventType() {
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(
+                  b ->
+                      b.zeebeTaskListener(tl -> tl.creating().type("create_1"))
+                          .zeebeTaskListener(tl -> tl.updating().type("update"))
+                          .zeebeTaskListener(tl -> tl.assigning().type("assignment_2"))
+                          .zeebeTaskListener(tl -> tl.creating().type("create_3"))
+                          .zeebeTaskListener(tl -> tl.canceling().type("cancel"))
+                          .zeebeTaskListener(tl -> tl.assigning().type("assignment_1"))
+                          .zeebeTaskListener(tl -> tl.creating().type("create_2"))
+                          .zeebeUserTask()));
+
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.creating))
+          .extracting(this::type)
+          .containsExactly("create_1", "create_3", "create_2");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.assigning))
+          .extracting(this::type)
+          .containsExactly("assignment_2", "assignment_1");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.updating)).hasSize(1);
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.canceling)).hasSize(1);
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.completing)).isEmpty();
+    }
+
+    @DisplayName(
+        "Should transform user task with deprecated task listener event types and use new style")
+    @Test
+    @SuppressWarnings("deprecation")
+    void shouldTransformDeprecatedTaskListenersAndUseNewStyle() {
+      final var create = ZeebeTaskListenerEventType.create;
+      final var update = ZeebeTaskListenerEventType.update;
+      final var assignment = ZeebeTaskListenerEventType.assignment;
+      final var complete = ZeebeTaskListenerEventType.complete;
+      final var cancel = ZeebeTaskListenerEventType.cancel;
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(
+                  b ->
+                      b.zeebeTaskListener(tl -> tl.eventType(create).type("create"))
+                          .zeebeTaskListener(tl -> tl.eventType(assignment).type("assignment"))
+                          .zeebeTaskListener(tl -> tl.eventType(update).type("update"))
+                          .zeebeTaskListener(tl -> tl.eventType(complete).type("complete"))
+                          .zeebeTaskListener(tl -> tl.eventType(cancel).type("cancel"))
+                          .zeebeUserTask()));
+
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.creating))
+          .extracting(this::type)
+          .containsExactly("create");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.assigning))
+          .extracting(this::type)
+          .containsExactly("assignment");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.updating))
+          .extracting(this::type)
+          .containsExactly("update");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.completing))
+          .extracting(this::type)
+          .containsExactly("complete");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.canceling))
+          .extracting(this::type)
+          .containsExactly("cancel");
+    }
+
+    @DisplayName(
+        "Should transform user task with globally-defined task listener including locally-defined task headers")
+    @Test
+    void shouldTransformGlobalListenersWithTaskHeaders() {
+      // given
+      globalListenersConfiguration
+          .userTask()
+          .add(new GlobalListenerConfiguration(List.of("creating"), "global", "3", false));
+
+      // when
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(b -> b.zeebeTaskHeader("key", "value").zeebeUserTask()));
+
+      // then
+      assertThat(userTask.getTaskListeners())
+          .hasSize(1)
+          .first()
+          .satisfies(
+              listener -> {
+                assertThat(listener.getJobWorkerProperties().getTaskHeaders())
+                    .isEqualTo(Map.of("key", "value"));
+              });
+    }
+
+    @DisplayName(
+        "Should transform user task with globally-defined \"generic\" task listener creating a new listener for each event type")
+    @Test
+    void shouldTransformGenericGlobalListenerWithMultipleIndividualListeners() {
+      // given
+      globalListenersConfiguration
+          .userTask()
+          .add(new GlobalListenerConfiguration(List.of("all"), "global", "3", false));
+
+      // when
+      final var userTask =
+          transformZeebeUserTask(processWithUserTask(AbstractUserTaskBuilder::zeebeUserTask));
+
+      // then
+      assertThat(userTask.getTaskListeners()).hasSize(5);
+      assertThat(userTask.getTaskListeners())
+          .extracting(TaskListener::getEventType)
+          .containsExactly(
+              ZeebeTaskListenerEventType.creating,
+              ZeebeTaskListenerEventType.assigning,
+              ZeebeTaskListenerEventType.updating,
+              ZeebeTaskListenerEventType.completing,
+              ZeebeTaskListenerEventType.canceling);
+      assertThat(userTask.getTaskListeners()).extracting(this::type).containsOnly("global");
+    }
+
+    @DisplayName(
+        "Should transform user task with globally and locally defined task listeners and preserve listener definition order, considering configuration flags")
+    @Test
+    void shouldTransformGlobalListenersAndPreserveListenersDefinitionOrderPerEventType() {
+      // given
+      globalListenersConfiguration
+          .userTask()
+          .add(
+              new GlobalListenerConfiguration(
+                  List.of("creating"), "globalCreateBefore", "3", false));
+      globalListenersConfiguration
+          .userTask()
+          .add(new GlobalListenerConfiguration(List.of("all"), "globalGenericBefore", "3", false));
+      globalListenersConfiguration
+          .userTask()
+          .add(
+              new GlobalListenerConfiguration(List.of("creating"), "globalCreateAfter", "3", true));
+      globalListenersConfiguration
+          .userTask()
+          .add(
+              new GlobalListenerConfiguration(List.of("updating"), "globalUpdateAfter", "3", true));
+
+      // when
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(
+                  b ->
+                      b.zeebeTaskListener(tl -> tl.creating().type("localCreate"))
+                          .zeebeTaskListener(tl -> tl.assigning().type("localAssign"))
+                          .zeebeUserTask()));
+
+      // then
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.creating))
+          .extracting(this::type)
+          .containsExactly(
+              "globalCreateBefore", "globalGenericBefore", "localCreate", "globalCreateAfter");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.assigning))
+          .extracting(this::type)
+          .containsExactly("globalGenericBefore", "localAssign");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.updating))
+          .extracting(this::type)
+          .containsExactly("globalGenericBefore", "globalUpdateAfter");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.canceling))
+          .extracting(this::type)
+          .containsExactly("globalGenericBefore");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.completing))
+          .extracting(this::type)
+          .containsExactly("globalGenericBefore");
+    }
+
+    @DisplayName(
+        "Should transform user task with globally and locally defined task listeners and preserve listener definition order, considering configuration flags")
+    @Test
+    void shouldTransformDeprecatedGlobalListenersWhileAvoidingDuplicates() {
+      // given
+      globalListenersConfiguration
+          .userTask()
+          .add(
+              new GlobalListenerConfiguration(
+                  List.of("creating", "create"), "globalCreateBefore", "3", false));
+
+      // when
+      final var userTask =
+          transformZeebeUserTask(processWithUserTask(AbstractUserTaskBuilder::zeebeUserTask));
+
+      // then
+      assertThat(userTask.getTaskListeners())
+          .hasSize(1)
+          .first()
+          .satisfies(
+              listener -> {
+                assertThat(listener.getEventType()).isEqualTo(ZeebeTaskListenerEventType.creating);
               });
     }
 

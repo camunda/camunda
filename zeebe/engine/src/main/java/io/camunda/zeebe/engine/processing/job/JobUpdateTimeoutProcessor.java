@@ -51,6 +51,7 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
                               command, RejectionType.INVALID_STATE, errorMessage);
                         },
                         () -> {
+                          stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, job);
                           responseWriter.writeEventOnCommand(
                               jobKey, JobIntent.TIMEOUT_UPDATED, job, command);
                         }),

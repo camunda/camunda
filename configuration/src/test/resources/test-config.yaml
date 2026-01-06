@@ -5,14 +5,6 @@ new:
   inlinelistsyntax: ["newItem3" , "newItem4"]
   inlinelistsyntaxwithoutqoutes: [newItem7, newItem8]
   commaseparatedstring: "newItem5, newItem6"
-  multilinemapsyntax:
-    k1new: 1
-    k2new: 2
-    k3new: 3
-  inlinemapsyntax: { k4new: 4, k5new: 5, k6new: 6 }
-  singlelinemapsyntax.k7new: 7
-  singlelinemapsyntax.k8new: 8
-  singlelinemapsyntax.k9new: 9
 
 legacy:
   multilinelistsyntax:
@@ -33,11 +25,3 @@ legacy:
     - 30GB
   datasizeinlinesyntax: [40B, 50MB, 60GB]
   commaseparateddatasize: "70B, 80MB, 90GB"
-  multilinemapsyntax:
-    k1legacy: 1
-    k2legacy: 2
-    k3legacy: 3
-  inlinemapsyntax: { k4legacy: 4, k5legacy: 5, k6legacy: 6 }
-  singlelinemapsyntax.k7legacy: 7
-  singlelinemapsyntax.k8legacy: 8
-  singlelinemapsyntax.k9legacy: 9

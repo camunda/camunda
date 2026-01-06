@@ -11,8 +11,6 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
-import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -25,14 +23,9 @@ public class DecisionHandler
 
   private static final Set<String> STATES = Set.of(ProcessIntent.CREATED.name());
   private final String indexName;
-  private final ExporterEntityCache<Long, CachedDecisionRequirementsEntity>
-      decisionRequirementsCache;
 
-  public DecisionHandler(
-      final String indexName,
-      final ExporterEntityCache<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache) {
+  public DecisionHandler(final String indexName) {
     this.indexName = indexName;
-    this.decisionRequirementsCache = decisionRequirementsCache;
   }
 
   @Override
@@ -73,9 +66,6 @@ public class DecisionHandler
         .setDecisionId(decision.getDecisionId())
         .setDecisionRequirementsId(decision.getDecisionRequirementsId())
         .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-        .setDecisionRequirementsName(getRequirementsName(decision.getDecisionRequirementsKey()))
-        .setDecisionRequirementsVersion(
-            getRequirementsVersion(decision.getDecisionRequirementsKey()))
         .setTenantId(tenantOrDefault(decision.getTenantId()));
   }
 
@@ -87,19 +77,5 @@ public class DecisionHandler
   @Override
   public String getIndexName() {
     return indexName;
-  }
-
-  private String getRequirementsName(final long decisionRequirementsKey) {
-    return decisionRequirementsCache
-        .get(decisionRequirementsKey)
-        .map(CachedDecisionRequirementsEntity::name)
-        .orElse(null);
-  }
-
-  private int getRequirementsVersion(final long decisionRequirementsKey) {
-    return decisionRequirementsCache
-        .get(decisionRequirementsKey)
-        .map(CachedDecisionRequirementsEntity::version)
-        .orElse(0);
   }
 }

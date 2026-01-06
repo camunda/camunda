@@ -14,7 +14,6 @@ import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAU
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_CHUNK_SIZE;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
 
-import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocationStrategy;
 import java.time.Duration;
 import java.util.Set;
 import org.springframework.util.unit.DataSize;
@@ -52,8 +51,6 @@ public class Raft {
       "zeebe.broker.experimental.raft.preferSnapshotReplicationThreshold";
   private static final String LEGACY_PREALLOCATE_SEGMENT_FILES =
       "zeebe.broker.experimental.raft.preallocateSegmentFiles";
-  private static final String LEGACY_SEGMENT_PREALLOCATION_STRATEGY =
-      "zeebe.broker.experimental.raft.segmentPreallocationStrategy";
 
   /**
    * The heartbeat interval for Raft. The leader sends a heartbeat to a follower every
@@ -167,26 +164,6 @@ public class Raft {
    * system calls, or if you notice an I/O penalty when creating segments.
    */
   private boolean preallocateSegmentFiles = true;
-
-  /**
-   * Defines the strategy to use to preallocate segment files when "preallocateSegmentFiles" is set
-   * to true. Possible options are:
-   *
-   * <ul>
-   *   <li>NOOP: does not preallocate files, same as setting `preallocateSegmentFiles=false`
-   *   <li>FILL: fills the new segments with zeroes to ensure the disk space is reserved and the
-   *       file is initialized with zeroes
-   *   <li>POSIX: reserves the space required on disk using `fallocate` posix system call. Depending
-   *       on the filesystem, this may not ensure that enough disk space is available. This strategy
-   *       reduces the write throughput to disk which can be particularly useful when using network
-   *       file systems. Running `fallocate` requires a POSIX filesystem and JNI calls which might
-   *       not be available. If you want to make sure that `fallocate` is used, configure this
-   *       strategies, otherwise use the below ones.
-   *   <li>POSIX_OR_NOOP: use POSIX strategy or NOOP if it's not possible.
-   *   <li>POSIX_OR_FILL: use POSIX strategy or FILL if it's not possible.
-   * </ul>
-   */
-  private PreAllocationStrategy segmentPreallocationStrategy = PreAllocationStrategy.POSIX_OR_FILL;
 
   public Duration getHeartbeatInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -381,22 +358,5 @@ public class Raft {
 
   public void setPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
     this.preallocateSegmentFiles = preallocateSegmentFiles;
-  }
-
-  public PreAllocationStrategy getSegmentPreallocationStrategy() {
-    if (!isPreallocateSegmentFiles()) {
-      return PreAllocationStrategy.NOOP;
-    }
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".segment-preallocation-strategy",
-        segmentPreallocationStrategy,
-        PreAllocationStrategy.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_SEGMENT_PREALLOCATION_STRATEGY));
-  }
-
-  public void setSegmentPreallocationStrategy(
-      final PreAllocationStrategy segmentPreallocationStrategy) {
-    this.segmentPreallocationStrategy = segmentPreallocationStrategy;
   }
 }

@@ -7,73 +7,26 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceStatisticsDbQuery;
-import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.columns.ProcessDefinitionInstanceStatisticsSearchColumn;
+import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ProcessDefinitionInstanceStatisticsDbReader
     extends AbstractEntityReader<ProcessDefinitionInstanceStatisticsEntity>
     implements ProcessDefinitionInstanceStatisticsReader {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ProcessDefinitionInstanceStatisticsDbReader.class);
-
-  private final ProcessDefinitionMapper processDefinitionMapper;
-
-  public ProcessDefinitionInstanceStatisticsDbReader(
-      final ProcessDefinitionMapper processDefinitionMapper) {
-    super(ProcessDefinitionInstanceStatisticsSearchColumn.values());
-    this.processDefinitionMapper = processDefinitionMapper;
-  }
-
-  public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> aggregate(
-      final ProcessDefinitionInstanceStatisticsQuery query) {
-    return aggregate(query, ResourceAccessChecks.disabled());
+  public ProcessDefinitionInstanceStatisticsDbReader() {
+    super(new SearchColumn[] {});
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> aggregate(
       final ProcessDefinitionInstanceStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
-
-    final var dbSort =
-        convertSort(
-            query.sort(), ProcessDefinitionInstanceStatisticsSearchColumn.PROCESS_DEFINITION_ID);
-
-    if (shouldReturnEmptyResult(resourceAccessChecks)) {
-      return buildSearchQueryResult(0, List.of(), dbSort);
-    }
-
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
-
-    final var dbQuery =
-        ProcessDefinitionInstanceStatisticsDbQuery.of(
-            builder ->
-                builder
-                    .authorizedResourceIds(authorizedResourceIds)
-                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
-                    .sort(dbSort)
-                    .page(convertPaging(dbSort, query.page())));
-
-    LOG.trace(
-        "[RDBMS DB] Search for process definition instance statistics with query {}", dbQuery);
-
-    return executePagedQuery(
-        () -> processDefinitionMapper.processInstanceStatisticsCount(dbQuery),
-        () -> processDefinitionMapper.processInstanceStatistics(dbQuery),
-        dbQuery.page(),
-        dbSort);
+    // Not implemented yet
+    return SearchQueryResult.empty();
   }
 }

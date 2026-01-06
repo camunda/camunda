@@ -15,7 +15,6 @@ import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHan
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
@@ -41,17 +40,12 @@ public class BrokerBasedConfiguration {
   @Autowired
   public BrokerBasedConfiguration(
       final WorkingDirectory workingDirectory,
-      final NodeIdProvider nodeIdProvider,
       final BrokerBasedProperties properties,
       final LifecycleProperties lifecycle) {
     this.workingDirectory = workingDirectory;
     this.properties = properties;
     this.lifecycle = lifecycle;
 
-    final var cluster = properties.getCluster();
-    final var currentInstance = nodeIdProvider.currentNodeInstance();
-    cluster.setNodeId(currentInstance.id());
-    cluster.setNodeVersion(currentInstance.version().version());
     properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
 

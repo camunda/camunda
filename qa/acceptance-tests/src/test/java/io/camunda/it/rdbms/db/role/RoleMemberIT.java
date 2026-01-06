@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -38,16 +38,16 @@ public class RoleMemberIT {
   @TestTemplate
   public void shouldFindRoleMember(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final RoleMemberDbReader reader = rdbmsService.getRoleMemberReader();
 
-    RoleFixtures.createAndSaveRandomRoles(rdbmsWriters, b -> b);
-    final var role = RoleFixtures.createAndSaveRole(rdbmsWriters, b -> b);
-    final var role2 = RoleFixtures.createAndSaveRole(rdbmsWriters, b -> b);
-    addUserToRole(rdbmsWriters, role.roleId(), "user-1");
-    addUserToRole(rdbmsWriters, role.roleId(), "user-2");
-    addUserToRole(rdbmsWriters, role2.roleId(), "user-3");
-    addUserToRole(rdbmsWriters, role2.roleId(), "user-4");
+    RoleFixtures.createAndSaveRandomRoles(rdbmsWriter, b -> b);
+    final var role = RoleFixtures.createAndSaveRole(rdbmsWriter, b -> b);
+    final var role2 = RoleFixtures.createAndSaveRole(rdbmsWriter, b -> b);
+    addUserToRole(rdbmsWriter, role.roleId(), "user-1");
+    addUserToRole(rdbmsWriter, role.roleId(), "user-2");
+    addUserToRole(rdbmsWriter, role2.roleId(), "user-3");
+    addUserToRole(rdbmsWriter, role2.roleId(), "user-4");
 
     final var searchResult =
         reader.search(
@@ -64,8 +64,8 @@ public class RoleMemberIT {
   }
 
   private void addUserToRole(
-      final RdbmsWriters rdbmsWriters, final String roleId, final String entityId) {
-    rdbmsWriters.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "USER"));
-    rdbmsWriters.flush();
+      final RdbmsWriter rdbmsWriter, final String roleId, final String entityId) {
+    rdbmsWriter.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "USER"));
+    rdbmsWriter.flush();
   }
 }

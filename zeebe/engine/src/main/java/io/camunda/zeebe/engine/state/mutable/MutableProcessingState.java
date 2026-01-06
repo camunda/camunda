@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -120,12 +119,6 @@ public interface MutableProcessingState extends ProcessingState {
 
   @Override
   MutableMultiInstanceState getMultiInstanceState();
-
-  @Override
-  MutableConditionalSubscriptionState getConditionalSubscriptionState();
-
-  @Override
-  MutableGlobalListenersState getGlobalListenersState();
 
   KeyGenerator getKeyGenerator();
 }

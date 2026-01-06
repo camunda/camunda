@@ -56,12 +56,6 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   }
 
   @Override
-  public TestRestoreApp withUnifiedConfig(final Consumer<Camunda> modifier) {
-    modifier.accept(config);
-    return this;
-  }
-
-  @Override
   protected String[] commandLineArgs() {
     return backupId == null
         ? super.commandLineArgs()
@@ -74,6 +68,11 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
     return super.createSpringBuilder().web(WebApplicationType.NONE);
+  }
+
+  public TestRestoreApp withConfig(final Consumer<Camunda> modifier) {
+    modifier.accept(config);
+    return this;
   }
 
   public TestRestoreApp withBackupId(final long... backupId) {

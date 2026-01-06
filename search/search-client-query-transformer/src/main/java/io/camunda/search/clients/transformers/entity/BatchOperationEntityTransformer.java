@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
@@ -50,10 +49,6 @@ public class BatchOperationEntityTransformer
         BatchOperationType.valueOf(source.getType().name()),
         source.getStartDate(),
         source.getEndDate(),
-        source.getActorType() != null
-            ? BatchOperationActorType.valueOf(source.getActorType().name())
-            : null,
-        source.getActorId(),
         source.getOperationsTotalCount(),
         source.getOperationsFailedCount(),
         source.getOperationsCompletedCount(),
@@ -76,10 +71,6 @@ public class BatchOperationEntityTransformer
         source.getType() != null ? BatchOperationType.valueOf(source.getType().name()) : null,
         source.getStartDate(),
         source.getEndDate(),
-        source.getActorType() != null
-            ? BatchOperationActorType.valueOf(source.getActorType().name())
-            : null,
-        source.getActorId(),
         source.getOperationsTotalCount(),
         0,
         source.getOperationsFinishedCount(),

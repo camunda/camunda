@@ -16,7 +16,6 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.slf4j.Logger;
@@ -42,27 +41,17 @@ public class RoleMemberDbReader extends AbstractEntityReader<RoleMemberEntity>
       return new SearchQueryResult.Builder<RoleMemberEntity>().total(0).items(List.of()).build();
     }
 
-    final var authorizedResourceIds =
-        resourceAccessChecks
-            .getAuthorizedResourceIdsByType()
-            .getOrDefault(AuthorizationResourceType.ROLE.name(), List.of());
     final var dbSort = convertSort(query.sort(), RoleMemberSearchColumn.ENTITY_ID);
-    final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
         RoleMemberDbQuery.of(
             b ->
                 b.filter(query.filter())
-                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
                     .sort(dbSort)
-                    .page(dbPage));
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for roles with filter {}", dbQuery);
     final var totalHits = roleMapper.countMembers(dbQuery);
-
-    if (shouldReturnEmptyPage(dbPage, totalHits)) {
-      return buildSearchQueryResult(totalHits, List.of(), dbSort);
-    }
-
     final var hits = roleMapper.searchMembers(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }

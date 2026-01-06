@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import io.camunda.zeebe.backup.common.LoggingBackupStore;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.event.Level;
 
 /** A store where the backup is stored * */
 public interface BackupStore {
@@ -39,28 +42,9 @@ public interface BackupStore {
    */
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
 
-  /**
-   * Stores a given {@link BackupIndexFile}.
-   *
-   * @param indexFile an opaque holder of the actual {@link BackupIndex}, as retrieved via {@link
-   *     #restoreIndex(BackupIndexIdentifier, Path)}.
-   * @implNote Some implementations may fail the future with {@link
-   *     java.util.ConcurrentModificationException} if they detect that the file has unexpectedly
-   *     changed in the meantime. To allow subsequent modifications, the internal state of the given
-   *     {@link BackupIndexFile} may be modified.
-   */
-  CompletableFuture<Void> storeIndex(BackupIndexFile indexFile);
-
-  /**
-   * Makes the stored {@link BackupIndexFile} available locally, allowing callers to construct the
-   * actual {@link BackupIndex} from it.
-   *
-   * @param id the identifier of the index to restore
-   * @param targetPath the local path where the index file should be downloaded
-   * @implNote Some implementations may store metadata in the returned {@link BackupIndexFile} that
-   *     allows them to detect concurrent modifications during {@link #storeIndex(BackupIndexFile)}.
-   */
-  CompletableFuture<BackupIndexFile> restoreIndex(BackupIndexIdentifier id, Path targetPath);
-
   CompletableFuture<Void> closeAsync();
+
+  default BackupStore logging(final Logger logger, final Level level) {
+    return new LoggingBackupStore(this, logger, level);
+  }
 }

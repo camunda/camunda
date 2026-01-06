@@ -16,14 +16,13 @@ import type {
   CreateMigrationBatchOperationRequestBody,
   CreateMigrationBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import type {RequestError} from 'modules/request';
-import {queryKeys} from 'modules/queries/queryKeys';
+import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations.ts';
 
 const useMigrateProcessInstancesBatchOperation = (
   options?: Partial<
     UseMutationOptions<
       CreateMigrationBatchOperationResponseBody,
-      RequestError,
+      Error,
       CreateMigrationBatchOperationRequestBody
     >
   >,
@@ -37,7 +36,7 @@ const useMigrateProcessInstancesBatchOperation = (
         await migrateProcessInstancesBatchOperation(payload);
       if (response !== null) {
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.batchOperations.query(),
+          queryKey: [BATCH_OPERATIONS_QUERY_KEY],
         });
 
         return response;

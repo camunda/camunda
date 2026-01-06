@@ -7,10 +7,10 @@
  */
 
 import type {APIRequestContext} from 'playwright-core';
+import {generateUniqueId} from '../constants';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
-  assertStatusCode,
   buildUrl,
   jsonHeaders,
 } from '../http';
@@ -35,17 +35,17 @@ export async function assignRoleToUsers(
   state: Record<string, unknown>,
 ) {
   for (let i = 1; i <= numberOfUsers; i++) {
-    const user = await createUser(request, state, `${i}`);
+    const user = 'user' + generateUniqueId();
     const p = {
-      userId: user.username,
+      userId: user,
       roleId: roleId,
     };
     const res = await request.put(
       buildUrl('/roles/{roleId}/users/{userId}', p),
       {headers: jsonHeaders()},
     );
-    await assertStatusCode(res, 204);
-    state[`username${roleId}${i}`] = user.username;
+    expect(res.status()).toBe(204);
+    state[`username${roleId}${i}`] = user;
   }
 }
 
@@ -61,7 +61,7 @@ export async function createUser(
     data: body,
   });
 
-  await assertStatusCode(res, 201);
+  expect(res.status()).toBe(201);
   const json = await res.json();
   assertRequiredFields(json, userRequiredFields);
   if (state && key) {

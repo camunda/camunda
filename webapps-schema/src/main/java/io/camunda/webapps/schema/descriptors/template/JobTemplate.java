@@ -23,12 +23,9 @@ public class JobTemplate extends AbstractTemplateDescriptor
   public static final String FLOW_NODE_INSTANCE_ID = "flowNodeInstanceId";
   // String - human-readable name
   public static final String FLOW_NODE_ID = "flowNodeId";
-  public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
   public static final String TENANT_ID = "tenantId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String CREATION_TIME = "creationTime";
-  public static final String LAST_UPDATE_TIME = "lastUpdateTime";
   public static final String JOB_TYPE = "type";
   public static final String JOB_WORKER = "worker";
   public static final String RETRIES = "retries";

@@ -15,11 +15,8 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
-import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
-import io.camunda.exporter.handlers.ClusterVariableCreatedHandler;
-import io.camunda.exporter.handlers.ClusterVariableDeletedHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
@@ -34,7 +31,6 @@ import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.GroupEntityAddedHandler;
 import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
-import io.camunda.exporter.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
@@ -88,18 +84,15 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
-import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -116,32 +109,8 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
-import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
-import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
@@ -166,7 +135,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedBatchOperationEntity> batchOperationCache;
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
-  private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
 
   @Override
   public void init(
@@ -193,13 +161,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entityCacheProvider.getProcessCacheLoader(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
-
-    decisionRequirementsCache =
-        new ExporterEntityCacheImpl<>(
-            configuration.getDecisionRequirementsCache().getMaxCacheSize(),
-            entityCacheProvider.getDecisionRequirementsCacheLoader(
-                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
-            new CaffeineCacheStatsCounter(NAMESPACE, "decisionRequirements", meterRegistry));
 
     formCache =
         new ExporterEntityCacheImpl<>(
@@ -240,9 +201,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new GroupEntityRemovedHandler(
                 indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
-            new DecisionHandler(
-                indexDescriptors.get(DecisionIndex.class).getFullQualifiedName(),
-                decisionRequirementsCache),
+            new DecisionHandler(indexDescriptors.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
             new ListViewFlowNodeFromIncidentHandler(
@@ -253,17 +212,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewVariableFromVariableHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
-            new ClusterVariableCreatedHandler(
-                indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()),
-            new ClusterVariableDeletedHandler(
-                indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName()),
             new VariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new DecisionRequirementsHandler(
-                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName(),
-                decisionRequirementsCache),
+                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(
                 indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromIncidentHandler(
@@ -284,11 +237,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
-            new HistoryDeletionDeletedHandler(
-                indexDescriptors.get(HistoryDeletionIndex.class).getFullQualifiedName()),
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
-                exporterMetadata),
+                indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName()),
             new UserTaskHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
@@ -368,8 +318,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
 
-    addAuditLogHandlers(configuration.getAuditLog());
-
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
       exportHandlers.add(
@@ -407,10 +355,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       processCache.clear();
       processCache = null;
     }
-    if (decisionRequirementsCache != null) {
-      decisionRequirementsCache.clear();
-      decisionRequirementsCache = null;
-    }
   }
 
   @Override
@@ -435,11 +379,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
-  public <T extends IndexDescriptor> T getIndexDescriptor(final Class<T> descriptorClass) {
-    return indexDescriptors.get(descriptorClass);
-  }
-
-  @Override
   public Set<ExportHandler<?, ?>> getExportHandlers() {
     // Register all handlers here
     return Collections.unmodifiableSet(exportHandlers);
@@ -458,45 +397,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
-  public ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity>
-      getDecisionRequirementsCache() {
-    return decisionRequirementsCache;
-  }
-
-  @Override
   public ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache() {
     return formCache;
-  }
-
-  private void addAuditLogHandlers(final AuditLogConfiguration auditLog) {
-    if (auditLog.isEnabled()) {
-      final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
-
-      AuditLogHandler.builder(indexName, auditLog)
-          .addHandler(new AuthorizationAuditLogTransformer())
-          .addHandler(new BatchOperationCreationAuditLogTransformer())
-          .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
-          .addHandler(new DecisionAuditLogTransformer())
-          .addHandler(new DecisionEvaluationAuditLogTransformer())
-          .addHandler(new GroupAuditLogTransformer())
-          .addHandler(new GroupEntityAuditLogTransformer())
-          .addHandler(new IncidentResolutionAuditLogTransformer())
-          .addHandler(new MappingRuleAuditLogTransformer())
-          .addHandler(new ProcessAuditLogTransformer())
-          .addHandler(new ProcessInstanceCancelAuditLogTransformer())
-          .addHandler(new ProcessInstanceCreationAuditLogTransformer())
-          .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
-          .addHandler(new ProcessInstanceModificationAuditLogTransformer())
-          .addHandler(new ResourceAuditLogTransformer())
-          .addHandler(new RoleAuditLogTransformer())
-          .addHandler(new RoleEntityAuditLogTransformer())
-          .addHandler(new TenantAuditLogTransformer())
-          .addHandler(new TenantEntityAuditLogTransformer())
-          .addHandler(new UserAuditLogTransformer())
-          .addHandler(new UserTaskAuditLogTransformer())
-          .addHandler(new VariableAddUpdateAuditLogTransformer())
-          .build()
-          .forEach(exportHandlers::add);
-    }
   }
 }

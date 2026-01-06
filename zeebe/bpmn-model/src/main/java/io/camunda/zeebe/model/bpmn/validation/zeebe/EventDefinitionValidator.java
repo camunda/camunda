@@ -16,7 +16,6 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
@@ -41,8 +40,7 @@ public class EventDefinitionValidator implements ModelElementValidator<EventDefi
           SignalEventDefinition.class,
           LinkEventDefinition.class,
           EscalationEventDefinition.class,
-          CompensateEventDefinition.class,
-          ConditionalEventDefinition.class);
+          CompensateEventDefinition.class);
 
   @Override
   public Class<EventDefinition> getElementType() {

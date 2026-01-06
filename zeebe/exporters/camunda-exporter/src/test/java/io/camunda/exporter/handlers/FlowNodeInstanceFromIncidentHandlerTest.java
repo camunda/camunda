@@ -25,8 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 public class FlowNodeInstanceFromIncidentHandlerTest {
 
@@ -43,6 +41,12 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
   @Test
   public void testGetEntityType() {
     assertThat(underTest.getEntityType()).isEqualTo(FlowNodeInstanceEntity.class);
+  }
+
+  @Test
+  public void shouldHandleRecord() {
+    final Record<IncidentRecordValue> incidentRecord = factory.generateRecord(ValueType.INCIDENT);
+    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
   }
 
   @Test
@@ -149,28 +153,5 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
 
     // then
     assertThat(flowNodeInstanceEntity.getIncidentKey()).isNull();
-  }
-
-  @ParameterizedTest
-  @EnumSource(
-      value = IncidentIntent.class,
-      names = {"CREATED", "MIGRATED", "RESOLVED"})
-  void shouldHandleRecordWithSupportedIntent(final IncidentIntent intent) {
-    // given
-    final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
-
-    // when - then
-    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
-  }
-
-  @Test
-  void shouldNotHandleResolveIntentRecords() {
-    // given
-    final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVE));
-
-    // when - then
-    assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
   }
 }

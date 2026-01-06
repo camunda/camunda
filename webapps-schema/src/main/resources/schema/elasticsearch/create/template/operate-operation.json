@@ -67,9 +67,6 @@
       },
       "itemKey": {
         "type": "long"
-      },
-      "rootProcessInstanceKey": {
-        "type": "long"
       }
     }
 	}

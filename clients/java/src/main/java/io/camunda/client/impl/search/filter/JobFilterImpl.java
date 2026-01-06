@@ -312,34 +312,6 @@ public class JobFilterImpl
   }
 
   @Override
-  public JobFilter creationTime(final OffsetDateTime creationTime) {
-    creationTime(b -> b.eq(creationTime));
-    return this;
-  }
-
-  @Override
-  public JobFilter creationTime(final Consumer<DateTimeProperty> fn) {
-    final DateTimeProperty property = new DateTimePropertyImpl();
-    fn.accept(property);
-    filter.setCreationTime(provideSearchRequestProperty(property));
-    return this;
-  }
-
-  @Override
-  public JobFilter lastUpdateTime(final OffsetDateTime lastUpdateTime) {
-    lastUpdateTime(b -> b.eq(lastUpdateTime));
-    return this;
-  }
-
-  @Override
-  public JobFilter lastUpdateTime(final Consumer<DateTimeProperty> fn) {
-    final DateTimeProperty property = new DateTimePropertyImpl();
-    fn.accept(property);
-    filter.setLastUpdateTime(provideSearchRequestProperty(property));
-    return this;
-  }
-
-  @Override
   protected io.camunda.client.protocol.rest.JobFilter getSearchRequestProperty() {
     return filter;
   }

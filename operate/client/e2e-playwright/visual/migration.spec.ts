@@ -10,7 +10,7 @@ import {expect} from '@playwright/test';
 import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
-  mockProcessDefinitions,
+  mockGroupedProcesses,
   mockProcessInstances,
   mockResponses,
   mockStatisticsV2,
@@ -45,7 +45,7 @@ test.describe('migration view', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        processDefinitions: mockProcessDefinitions,
+        groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,

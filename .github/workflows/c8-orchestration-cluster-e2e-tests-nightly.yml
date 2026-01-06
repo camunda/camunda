@@ -13,191 +13,6 @@ permissions:
   contents: read
 
 jobs:
-  api-tests:
-    name: API Tests (${{ matrix.branch }})
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: [stable/8.6, stable/8.7, stable/8.8, main]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ matrix.branch }}
-
-      - name: Start Camunda
-        shell: bash
-        run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            echo "Using single services for Camunda 8.6 and 8.7"
-            DATABASE=elasticsearch docker compose up -d operate tasklist
-          else
-            echo "Using standalone camunda container"
-            echo "Starting Camunda with NON_STANDALONE:$NON_STANDALONE, database:$DATABASE"
-            DATABASE=elasticsearch docker compose up -d camunda
-          fi
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-
-      - name: List running Docker containers
-        shell: bash
-        run: docker ps -a
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-
-      - name: Wait for services to be ready
-        id: wait-for-services
-        shell: bash
-        run: |
-          echo "Checking if services are up..."
-          ready=false
-          for i in {1..90}; do
-            if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
-              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
-            else
-              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
-              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
-            fi
-
-            if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
-                echo "Services are ready!"
-                ready=true
-                break
-              fi
-            else
-              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
-                echo "Services are ready!"
-                ready=true
-                break
-              fi
-            fi
-
-            echo "Waiting for services... ($i/90)"
-            echo "Response from Tasklist: $tasklist_status"
-            echo "Response from Operate: $operate_status"
-            [[ -n "$identity_status" ]] && echo "Response from Identity: $identity_status"
-            sleep 10
-          done
-
-          if [ "$ready" = true ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Services failed to start in time."
-            exit 1
-          fi
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-
-      - name: Print Docker logs before failing
-        shell: bash
-        if: failure()
-        run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            docker compose logs tasklist
-            docker compose logs operate
-          else
-            docker compose logs camunda
-          fi
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
-
-      - name: Clean install dependencies
-        shell: bash
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
-            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
-
-      - name: Install Playwright Browsers
-        shell: bash
-        run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        if: always()
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Run API tests
-        shell: bash
-        env:
-          LOCAL_TEST: "false"
-          CAMUNDA_AUTH_STRATEGY: "BASIC"
-          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
-          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          INCLUDE_SLACK_REPORTER: true
-          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
-          VERSION: ${{ matrix.branch }}
-          API_TESTS_ONLY: true
-          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
-        run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
-            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
-            export ZEEBE_REST_ADDRESS="http://localhost:8089"
-          else
-            export CORE_APPLICATION_URL="http://localhost:8080"
-            export ZEEBE_REST_ADDRESS="http://localhost:8080"
-          fi
-
-          echo "Running API tests"
-          npm run test -- --project=api-tests
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Publish test results to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
-          BRANCH_NAME: ${{ matrix.branch }}
-        run: |
-          pip install trcli
-          trcli -y -h "$TESTRAIL_HOST" \
-            --project 'C8' \
-            --username "$TESTRAIL_USERNAME" \
-            --key "$TESTRAIL_KEY" \
-            parse_junit --suite-id 17050 \
-            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - API tests - $(date '+%Y-%m-%d %H:%M:%S')" \
-            --close-run \
-            -f "$JUNIT_RESULTS_FILE"
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          job_name: "c8-orchestration-cluster-e2e-nightly-api-tests/${{ matrix.branch }}"
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-
   nightly-tests:
     name: nightly-tests (${{ matrix.branch }} - Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
@@ -312,7 +127,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
+        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -361,17 +176,13 @@ jobs:
               echo "Running all tests in V2 mode on main branch, excluding V1-specific tests"
               npm run test -- --project=chromium --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
             else
-              echo "Running all tests in V2 mode: excluding @v1-only tests"
-              npm run test -- --project=chromium --grep-invert "@v1-only"
+              echo "Running focused tests in V2 mode: Tasklist + HTO flows (excluding @v1-only tests)"
+              npm run test -- --project=chromium tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert "@v1-only"
             fi
           else
             if [[ "${{ matrix.branch }}" == "main" ]]; then
               echo "Running V1 specific tests only: common-flows/v1/ and tests/tasklist/v1/"
               npm run test -- --project=chromium tests/common-flows/v1/ tests/tasklist/v1/
-            elif [[ "${{ matrix.branch }}" == "stable/8.8" ]]; then
-              # stable/8.8: no v1/ directories, run regular directories for V1 mode
-              echo "Running focused tests in V1 mode"
-              npm run test -- --project=chromium tests/tasklist/ tests/common-flows/
             else
               echo "Running all tests in V1 mode"
               npm run test -- --project=chromium
@@ -398,14 +209,3 @@ jobs:
             --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          job_name: "c8-orchestration-cluster-e2e-nightly-tests/${{ matrix.tasklist_mode }}"
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

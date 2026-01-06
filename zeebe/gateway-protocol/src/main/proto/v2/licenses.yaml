@@ -3,7 +3,6 @@
 paths:
   /license:
     get:
-      x-eventually-consistent: false
       tags:
         - License
       operationId: getLicense
@@ -18,6 +17,7 @@ paths:
                 $ref: '#/components/schemas/LicenseResponse'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-eventually-consistent: false
 
 ## Schema definitions
 

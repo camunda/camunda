@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.immutables.value.Value;
 
 /**
@@ -83,9 +82,4 @@ public interface UserTaskRecordValue
   long getProcessDefinitionKey();
 
   int getPriority();
-
-  /**
-   * @return the tags that were set for this user task.
-   */
-  Set<String> getTags();
 }

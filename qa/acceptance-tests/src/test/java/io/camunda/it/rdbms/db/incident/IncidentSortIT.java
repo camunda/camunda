@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
-import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.IncidentEntity;
@@ -146,11 +146,11 @@ public class IncidentSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<IncidentSort>> sortBuilder,
       final Comparator<IncidentEntity> comparator) {
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final IncidentDbReader reader = rdbmsService.getIncidentReader();
 
     final var key = nextKey();
-    createAndSaveRandomIncidents(rdbmsWriters, b -> b.flowNodeInstanceKey(key));
+    createAndSaveRandomIncidents(rdbmsWriter, b -> b.flowNodeInstanceKey(key));
 
     final var searchResult =
         reader
