@@ -18,7 +18,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.value.NestedCommandValue;
+import io.camunda.zeebe.protocol.record.value.NestedRecordValue;
 import org.agrona.concurrent.UnsafeBuffer;
 
 @JsonIgnoreProperties({
@@ -26,7 +26,7 @@ import org.agrona.concurrent.UnsafeBuffer;
   "encodedLength",
   "empty"
 })
-public final class NestedCommand extends ObjectValue implements NestedCommandValue {
+public final class NestedRecord extends ObjectValue implements NestedRecordValue {
   private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
@@ -40,7 +40,7 @@ public final class NestedCommand extends ObjectValue implements NestedCommandVal
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
-  public NestedCommand() {
+  public NestedRecord() {
     super(3);
     declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
@@ -65,7 +65,7 @@ public final class NestedCommand extends ObjectValue implements NestedCommandVal
   }
 
   @Override
-  public UnifiedRecordValue getCommandValue() {
+  public UnifiedRecordValue getRecordValue() {
     // fetch a concrete instance of the record value by type
     final var valueType = getValueType();
     if (valueType == ValueType.NULL_VAL) {
@@ -96,7 +96,17 @@ public final class NestedCommand extends ObjectValue implements NestedCommandVal
     return commandValue;
   }
 
-  public NestedCommand setCommandValue(final UnifiedRecordValue commandValue) {
+  public NestedRecord setIntent(final Intent intent) {
+    intentProperty.setValue(intent.value());
+    return this;
+  }
+
+  public NestedRecord setValueType(final ValueType valueType) {
+    valueTypeProperty.setValue(valueType);
+    return this;
+  }
+
+  public NestedRecord setCommandValue(final UnifiedRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
       return this;
@@ -112,20 +122,10 @@ public final class NestedCommand extends ObjectValue implements NestedCommandVal
     return this;
   }
 
-  public NestedCommand setIntent(final Intent intent) {
-    intentProperty.setValue(intent.value());
-    return this;
-  }
-
-  public NestedCommand setValueType(final ValueType valueType) {
-    valueTypeProperty.setValue(valueType);
-    return this;
-  }
-
-  public NestedCommand wrap(final NestedCommand nestedCommand) {
+  public NestedRecord wrap(final NestedRecord nestedCommand) {
     setValueType(nestedCommand.getValueType());
     setIntent(nestedCommand.getIntent());
-    setCommandValue(nestedCommand.getCommandValue());
+    setCommandValue(nestedCommand.getRecordValue());
     return this;
   }
 }
