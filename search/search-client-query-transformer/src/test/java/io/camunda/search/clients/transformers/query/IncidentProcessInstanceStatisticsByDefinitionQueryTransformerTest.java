@@ -9,8 +9,8 @@ package io.camunda.search.clients.transformers.query;
 
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_AFFECTED_INSTANCES;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_BY_DEFINITION;
+import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_BY_TENANT;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_SORT_AND_PAGE;
-import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_TOTAL_ESTIMATE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.toBucketSortField;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 
 public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
 
-  public static final String TENANT_ID = "tenant-1";
+  public static final String TENANT_ID = "tenantId";
 
   private final ServiceTransformers transformers =
       ServiceTransformers.newInstance(new IndexDescriptors("", true));
@@ -107,54 +107,46 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
                       });
 
               final var aggregations = searchRequest.aggregations();
-              assertThat(aggregations).hasSize(2);
+              assertThat(aggregations).hasSize(1);
 
-              assertThat(aggregations.getFirst())
-                  .isInstanceOfSatisfying(
-                      SearchTermsAggregator.class,
-                      byDefinitionAgg -> {
-                        assertThat(byDefinitionAgg.name())
-                            .isEqualTo(AGGREGATION_NAME_BY_DEFINITION);
-                        assertThat(byDefinitionAgg.script()).isNotNull();
-                        assertThat(byDefinitionAgg.lang()).isNotNull();
+              final var byDefinitionAgg = (SearchTermsAggregator) aggregations.getFirst();
+              assertThat(byDefinitionAgg.name()).isEqualTo(AGGREGATION_NAME_BY_DEFINITION);
+              assertThat(byDefinitionAgg.field())
+                  .isEqualTo(IncidentTemplate.PROCESS_DEFINITION_KEY);
 
-                        final var subAggs = byDefinitionAgg.aggregations();
-                        assertThat(subAggs).hasSize(2);
+              final var subAggs = byDefinitionAgg.aggregations();
+              assertThat(subAggs)
+                  .extracting(SearchAggregator::getName)
+                  .containsExactlyInAnyOrder(
+                      AGGREGATION_NAME_BY_TENANT, AGGREGATION_NAME_SORT_AND_PAGE);
 
-                        assertThat(subAggs.getFirst())
-                            .isInstanceOfSatisfying(
-                                SearchCardinalityAggregator.class,
-                                affectedInstancesAgg -> {
-                                  assertThat(affectedInstancesAgg.name())
-                                      .isEqualTo(AGGREGATION_NAME_AFFECTED_INSTANCES);
-                                  assertThat(affectedInstancesAgg.field())
-                                      .isEqualTo(IncidentTemplate.PROCESS_INSTANCE_KEY);
-                                });
+              final var bucketSortAgg =
+                  subAggs.stream()
+                      .filter(a -> a.getName().equals(AGGREGATION_NAME_SORT_AND_PAGE))
+                      .findFirst()
+                      .map(SearchBucketSortAggregator.class::cast)
+                      .orElseThrow();
+              assertThat(bucketSortAgg.sorting()).isNotNull();
+              bucketSortAgg
+                  .sorting()
+                  .forEach(s -> assertThat(s.field()).isEqualTo(toBucketSortField(s.field())));
 
-                        assertThat(subAggs.getLast())
-                            .isInstanceOfSatisfying(
-                                SearchBucketSortAggregator.class,
-                                bucketSortAgg -> {
-                                  assertThat(bucketSortAgg.name())
-                                      .isEqualTo(AGGREGATION_NAME_SORT_AND_PAGE);
-                                  assertThat(bucketSortAgg.sorting()).isNotNull();
-                                  bucketSortAgg
-                                      .sorting()
-                                      .forEach(
-                                          s ->
-                                              assertThat(s.field())
-                                                  .isEqualTo(toBucketSortField(s.field())));
-                                });
-                      });
-
-              assertThat(aggregations.getLast())
+              final var byTenantAgg =
+                  subAggs.stream()
+                      .filter(a -> a.getName().equals(AGGREGATION_NAME_BY_TENANT))
+                      .findFirst()
+                      .map(SearchTermsAggregator.class::cast)
+                      .orElseThrow();
+              assertThat(byTenantAgg.field()).isEqualTo(TENANT_ID);
+              assertThat(byTenantAgg.aggregations())
+                  .singleElement()
                   .isInstanceOfSatisfying(
                       SearchCardinalityAggregator.class,
-                      totalEstimateAgg -> {
-                        assertThat(totalEstimateAgg.name())
-                            .isEqualTo(AGGREGATION_NAME_TOTAL_ESTIMATE);
-                        assertThat(totalEstimateAgg.script()).isNotNull();
-                        assertThat(totalEstimateAgg.lang()).isNotNull();
+                      affectedInstancesAgg -> {
+                        assertThat(affectedInstancesAgg.name())
+                            .isEqualTo(AGGREGATION_NAME_AFFECTED_INSTANCES);
+                        assertThat(affectedInstancesAgg.field())
+                            .isEqualTo(IncidentTemplate.PROCESS_INSTANCE_KEY);
                       });
             });
   }
@@ -191,12 +183,18 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
     assertThat(searchRequest.sort()).isNull();
 
     final var aggregations = searchRequest.aggregations();
-    assertThat(aggregations).hasSize(2);
+    assertThat(aggregations).hasSize(1);
 
     final var byDefinitionAgg = (SearchTermsAggregator) aggregations.getFirst();
     final List<SearchAggregator> subAggs = byDefinitionAgg.aggregations();
 
-    final var bucketSortAgg = (SearchBucketSortAggregator) subAggs.getLast();
+    final var bucketSortAgg =
+        (SearchBucketSortAggregator)
+            subAggs.stream()
+                .filter(a -> a.getName().equals(AGGREGATION_NAME_SORT_AND_PAGE))
+                .findFirst()
+                .orElseThrow();
+
     assertThat(bucketSortAgg.name()).isEqualTo(AGGREGATION_NAME_SORT_AND_PAGE);
     assertThat(bucketSortAgg.from()).isEqualTo(from);
     assertThat(bucketSortAgg.size()).isEqualTo(size);

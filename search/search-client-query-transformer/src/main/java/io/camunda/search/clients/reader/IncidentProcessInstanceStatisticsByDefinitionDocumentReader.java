@@ -13,7 +13,6 @@ import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByD
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -21,6 +20,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -147,7 +147,8 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
         .toList();
   }
 
-  private Map<Long, CachedProcessInfo> fetchProcessDefinitions(final Set<Long> processDefinitionKeys) {
+  private Map<Long, CachedProcessInfo> fetchProcessDefinitions(
+      final Set<Long> processDefinitionKeys) {
     if (processDefinitionKeys == null || processDefinitionKeys.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -170,8 +171,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
               pd ->
                   fetched.put(
                       pd.processDefinitionKey(),
-                      new CachedProcessInfo(
-                          pd.processDefinitionId(), pd.name(), pd.version())));
+                      new CachedProcessInfo(pd.processDefinitionId(), pd.name(), pd.version())));
       return fetched;
     } catch (final Exception ex) {
       LOGGER.warn(
