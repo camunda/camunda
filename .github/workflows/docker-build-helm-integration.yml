@@ -252,6 +252,7 @@ jobs:
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
+      deployment-ttl: ""
       scenario: ${{ inputs.scenario || 'keycloak-original' }}
       shortname: ${{ inputs.shortname || 'kcor' }}
       always-delete-namespace: true
