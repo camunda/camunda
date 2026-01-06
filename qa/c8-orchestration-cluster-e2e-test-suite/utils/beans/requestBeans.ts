@@ -635,3 +635,66 @@ export function CREATE_CLUSTER_VARIABLE() {
     value: {testKey: `testValue-${uid}`},
   };
 }
+
+// Conditional evaluation beans
+export const conditionalEvaluationResponseRequiredFields: string[] = [
+  'processInstances',
+];
+export const conditionalProcessInstanceItemRequiredFields: string[] = [
+  'processDefinitionKey',
+  'processInstanceKey',
+];
+
+export function EVALUATE_CONDITIONAL() {
+  return {
+    variables: {
+      x: 15,
+    },
+  };
+}
+
+export function EVALUATE_CONDITIONAL_WITH_TENANT(tenantId: string) {
+  return {
+    tenantId,
+    variables: {
+      x: 15,
+    },
+  };
+}
+
+export function EVALUATE_CONDITIONAL_WITH_PROCESS_DEF_KEY(
+  processDefinitionKey: string,
+) {
+  return {
+    processDefinitionKey,
+    variables: {
+      x: 15,
+    },
+  };
+}
+
+export function EVALUATE_CONDITIONAL_MULTIPLE_CONDITIONS() {
+  return {
+    variables: {
+      conditionA: true,
+      conditionB: true,
+    },
+  };
+}
+
+export function EVALUATE_CONDITIONAL_NO_MATCH() {
+  return {
+    variables: {
+      x: 5,
+    },
+  };
+}
+
+export function EVALUATE_CONDITIONAL_PARTIAL_MATCH() {
+  return {
+    variables: {
+      conditionA: true,
+      conditionB: false,
+    },
+  };
+}
