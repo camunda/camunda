@@ -238,9 +238,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .total(2L)
           .items(
               List.of(
-                  new VariableEntity(0L, "name", "value", null, false, 1L, 2L, "bpid", "<default>"),
                   new VariableEntity(
-                      1L, "name2", "value", "valueLong", true, 1L, 2L, "bpid", "<default>")))
+                      0L, "name", "value", null, false, 1L, 2L, 3L, "bpid", "<default>"),
+                  new VariableEntity(
+                      1L, "name2", "value", "valueLong", true, 1L, 2L, 3L, "bpid", "<default>")))
           .startCursor("0")
           .endCursor("1")
           .build();
