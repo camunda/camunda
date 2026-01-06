@@ -15,6 +15,8 @@ import io.camunda.gateway.model.mapper.RequestMapper.CompleteUserTaskRequest;
 import io.camunda.gateway.model.mapper.RequestMapper.UpdateUserTaskRequest;
 import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
 import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
@@ -24,6 +26,7 @@ import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQueryRequest;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -144,6 +147,17 @@ public class UserTaskController {
             query -> searchUserTaskVariableQuery(userTaskKey, query, truncateValues));
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{userTaskKey}/audit-logs/search")
+  public ResponseEntity<AuditLogSearchQueryResult> searchAuditLogs(
+      @PathVariable final long userTaskKey,
+      @RequestBody(required = false) final AuditLogSearchQueryRequest auditLogSearchQueryRequest) {
+    return SearchQueryRequestMapper.toAuditLogQuery(auditLogSearchQueryRequest)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query -> searchUserTaskAuditLogQuery(userTaskKey, query));
+  }
+
   private ResponseEntity<UserTaskSearchQueryResult> search(final UserTaskQuery query) {
     try {
       final var result =
@@ -166,6 +180,19 @@ public class UserTaskController {
               .searchUserTaskVariables(userTaskKey, query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<AuditLogSearchQueryResult> searchUserTaskAuditLogQuery(
+      final long userTaskKey, final AuditLogQuery query) {
+    try {
+      final var result =
+          userTaskServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .searchUserTaskAuditLogs(userTaskKey, query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

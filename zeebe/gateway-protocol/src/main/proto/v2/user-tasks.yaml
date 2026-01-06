@@ -126,7 +126,7 @@ paths:
               schema:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-            $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
     patch:
       x-eventually-consistent: false
@@ -211,7 +211,7 @@ paths:
               schema:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "500":
-            $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
   /user-tasks/{userTaskKey}/assignee:
     delete:
@@ -316,6 +316,39 @@ paths:
             application/json:
               schema:
                 $ref: 'variables.yaml#/components/schemas/VariableSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+  /user-tasks/{userTaskKey}/audit-logs/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - User task
+      operationId: searchUserTaskAuditLogs
+      summary: Search user task audit logs
+      description: Search for user task audit logs based on given criteria.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/UserTaskKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskAuditLogSearchQueryRequest'
+      responses:
+        "200":
+          description: The user task audit log search result.
+          content:
+            application/json:
+              schema:
+                $ref: 'audit-logs.yaml#/components/schemas/AuditLogSearchQueryResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "500":
@@ -686,6 +719,20 @@ components:
           allOf:
             - $ref: '#/components/schemas/UserTaskVariableFilter'
           description: The user task variable search filters.
+
+    UserTaskAuditLogSearchQueryRequest:
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      description: User task search query request.
+      additionalProperties: false
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: 'audit-logs.yaml#/components/schemas/AuditLogSearchQuerySortRequest'
+        # TODO: filter will be added in a later PR for https://github.com/camunda/camunda/issues/41202
 
     ## Enums
 
