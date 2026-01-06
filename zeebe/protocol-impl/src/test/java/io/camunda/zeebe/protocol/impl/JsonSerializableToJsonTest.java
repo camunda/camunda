@@ -93,6 +93,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -3695,7 +3696,11 @@ final class JsonSerializableToJsonTest {
                   "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
                   "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
                   "authenticationBuffer": {"expandable":false},
-                  "authorizationCheckBuffer": {"expandable":false}
+                  "authorizationCheckBuffer": {"expandable":false},
+                  "followUpCommand": {
+                    "valueType": "NULL_VAL",
+                    "intent": "UNKNOWN",
+                    "commandValue": null
                   }
                 }
                 """
@@ -3758,7 +3763,13 @@ final class JsonSerializableToJsonTest {
                               'permission_type': 'UPDATE_PROCESS_INSTANCE',
                               'resource_ids': 'foobar_process'
                             }
-                            """)),
+                            """))
+                    .setFollowUpCommand(
+                        ValueType.HISTORY_DELETION,
+                        HistoryDeletionIntent.DELETE,
+                        new HistoryDeletionRecord()
+                            .setResourceKey(1)
+                            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)),
         """
                 {
                    "batchOperationKey": 12345,
@@ -3804,7 +3815,15 @@ final class JsonSerializableToJsonTest {
                    },
                    "authorizationCheckBuffer": {
                      "expandable": false
-                   }
+                   },
+                    "followUpCommand": {
+                      "valueType": "HISTORY_DELETION",
+                      "intent": "DELETE",
+                      "commandValue": {
+                        "resourceKey": 1,
+                        "resourceType": "PROCESS_DEFINITION"
+                      }
+                    }
                  }
                 """
       },
