@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.es.backup.os;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -28,6 +29,7 @@ import io.camunda.tasklist.webapp.es.backup.os.GetCustomSnapshotResponse.Builder
 import io.camunda.tasklist.webapp.es.backup.os.response.SnapshotState;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
@@ -370,5 +372,18 @@ class BackupManagerOpenSearchTest {
             (Supplier<String>) () -> String.valueOf(Instant.now().toEpochMilli() - 0L),
             BackupStateDto.IN_PROGRESS),
         Arguments.of((Supplier<String>) () -> null, BackupStateDto.INCOMPLETE));
+  }
+
+  @Test
+  void shouldThrowNotFoundApiExceptionWhenBackupDoesNotExist() throws IOException {
+    // given
+    final long nonExistingBackupId = 999L;
+    final var snapshotResponse = GetCustomSnapshotResponse.of(b -> b.snapshots(List.of()));
+    when(openSearchTransport.performRequest(any(), any(), any())).thenReturn(snapshotResponse);
+
+    // when & then
+    assertThatThrownBy(() -> backupManagerOpenSearch.getBackupState(nonExistingBackupId))
+        .isInstanceOf(NotFoundApiException.class)
+        .hasMessageContaining("No backup with id [999] found.");
   }
 }

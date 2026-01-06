@@ -382,6 +382,9 @@ public class BackupManagerElasticSearch extends BackupManager {
 
   private GetBackupStateResponseDto getBackupResponse(
       final Long backupId, final List<SnapshotInfo> snapshots, final boolean isBackupInProgress) {
+    if (snapshots.isEmpty()) {
+      throw new NotFoundApiException(String.format("No backup with id [%s] found.", backupId));
+    }
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Metadata metadata =
