@@ -66,6 +66,9 @@
           "$ref": "#/definitions/AssertVariablesInstruction"
         },
         {
+          "$ref": "#/definitions/CompleteJobInstruction"
+        },
+        {
           "$ref": "#/definitions/CompleteUserTaskInstruction"
         },
         {
@@ -474,6 +477,72 @@
       "required": [
         "type",
         "userTaskSelector"
+      ],
+      "additionalProperties": false
+    },
+    "CompleteJobInstruction": {
+      "description": "An instruction to complete a job.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "COMPLETE_JOB"
+        },
+        "jobSelector": {
+          "description": "The selector to identify the job to complete.",
+          "$ref": "#/definitions/JobSelector"
+        },
+        "variables": {
+          "description": "The variables to complete the job with. Default: empty map.",
+          "type": "object",
+          "default": {}
+        },
+        "withExampleData": {
+          "description": "Whether to complete the job with example data from the BPMN element. This property has precedence over variables. Default: false.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "jobSelector"
+      ],
+      "additionalProperties": false
+    },
+    "JobSelector": {
+      "description": "A selector to identify a job.",
+      "type": "object",
+      "properties": {
+        "jobType": {
+          "description": "The type of the job.",
+          "type": "string"
+        },
+        "elementId": {
+          "description": "The ID of the BPMN element.",
+          "type": "string"
+        },
+        "processDefinitionId": {
+          "description": "The process definition ID of the job.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "jobType"
+          ]
+        },
+        {
+          "required": [
+            "elementId"
+          ]
+        },
+        {
+          "required": [
+            "processDefinitionId"
+          ]
+        }
       ],
       "additionalProperties": false
     },
