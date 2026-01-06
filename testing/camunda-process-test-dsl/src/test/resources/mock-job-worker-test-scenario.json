@@ -1,0 +1,39 @@
+{
+  "testCases": [
+    {
+      "name": "Mock job worker completes job without variables",
+      "description": "Test that a job worker can complete a job without any variables",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "send-email"
+        }
+      ]
+    },
+    {
+      "name": "Mock job worker completes job with variables",
+      "description": "Test that a job worker can complete a job with specific variables",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "send-email",
+          "variables": {
+            "status": "sent",
+            "timestamp": 1234567890
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mock job worker completes job with example data",
+      "description": "Test that a job worker can complete a job using example data from BPMN",
+      "instructions": [
+        {
+          "type": "MOCK_JOB_WORKER_COMPLETE_JOB",
+          "jobType": "fetch-weather-data",
+          "withExampleData": true
+        }
+      ]
+    }
+  ]
+}
