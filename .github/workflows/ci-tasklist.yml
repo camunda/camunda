@@ -296,7 +296,7 @@ jobs:
     if: inputs.runBeTests
     name: "Integration / Backup Restore ITs"
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       DOCKER_IMAGE_TAG: current-test
