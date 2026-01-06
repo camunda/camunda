@@ -47,9 +47,4 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob {
   String getSourceIndexName() {
     return decisionInstanceTemplate.getFullQualifiedName();
   }
-
-  @Override
-  String getIdFieldName() {
-    return DecisionInstanceTemplate.ID;
-  }
 }

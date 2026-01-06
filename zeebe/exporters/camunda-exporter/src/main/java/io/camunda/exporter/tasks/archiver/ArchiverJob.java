@@ -12,6 +12,7 @@ import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.zeebe.util.FunctionUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -65,13 +66,6 @@ public abstract class ArchiverJob implements BackgroundTask {
    */
   abstract String getSourceIndexName();
 
-  /**
-   * The name of the field representing the unique identifier of a record in the source index
-   *
-   * @return the id field name
-   */
-  abstract String getIdFieldName();
-
   @Override
   public CompletionStage<Integer> execute() {
     final var timer = Timer.start();
@@ -105,22 +99,26 @@ public abstract class ArchiverJob implements BackgroundTask {
       return CompletableFuture.completedFuture(0);
     }
 
-    logger.trace("Following {}s are found for archiving: {}", getJobName(), batch);
-    recordArchivingMetric.accept(batch.ids().size());
+    final var idsMap = batch.ids();
+    final int totalCount = idsMap.values().stream().mapToInt(java.util.List::size).sum();
 
-    return archive(getSourceIndexName(), batch.finishDate(), getIdFieldName(), batch.ids())
+    if (totalCount == 0) {
+      logger.trace("No {}s to archive", getJobName());
+      return CompletableFuture.completedFuture(0);
+    }
+
+    logger.trace("Following {}s are found for archiving: {}", getJobName(), batch);
+    recordArchivingMetric.accept(totalCount);
+
+    return archive(getSourceIndexName(), batch.finishDate(), idsMap)
+        .thenApplyAsync(ok -> totalCount, executor)
         // we want to make sure the rescheduling happens after we update the metrics, so we peek
         // instead of creating an additional pipeline on the interim future
         .thenApplyAsync(FunctionUtil.peek(recordArchivedMetric), executor);
   }
 
-  protected CompletableFuture<Integer> archive(
-      final String sourceIdx,
-      final String finishDate,
-      final String idFieldName,
-      final List<String> ids) {
-    return archiverRepository
-        .moveDocuments(sourceIdx, sourceIdx + finishDate, idFieldName, ids, executor)
-        .thenApplyAsync(ok -> ids.size(), executor);
+  protected CompletableFuture<Void> archive(
+      final String sourceIdx, final String finishDate, final Map<String, List<String>> ids) {
+    return archiverRepository.moveDocuments(sourceIdx, sourceIdx + finishDate, ids, executor);
   }
 }

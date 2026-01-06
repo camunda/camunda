@@ -17,6 +17,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,9 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   @BeforeEach
   void setUp() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batch =
+        new ArchiveBatch(
+            "2024-01-01", Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")));
   }
 
   @AfterEach
@@ -95,8 +98,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
             new DocumentMove(
                 processInstanceTemplate.getFullQualifiedName(),
                 processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
-                ListViewTemplate.PROCESS_INSTANCE_KEY,
-                List.of("1", "2", "3"),
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
                 executor));
   }
 
@@ -116,20 +118,21 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
             new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),
                 decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
-                decisionInstanceTemplate.getProcessInstanceDependantField(),
-                List.of("1", "2", "3"),
+                Map.of(
+                    decisionInstanceTemplate.getProcessInstanceDependantField(),
+                    List.of("1", "2", "3")),
                 executor),
             new DocumentMove(
                 sequenceFlowTemplate.getFullQualifiedName(),
                 sequenceFlowTemplate.getFullQualifiedName() + "2024-01-01",
-                sequenceFlowTemplate.getProcessInstanceDependantField(),
-                List.of("1", "2", "3"),
+                Map.of(
+                    sequenceFlowTemplate.getProcessInstanceDependantField(),
+                    List.of("1", "2", "3")),
                 executor),
             new DocumentMove(
                 processInstanceTemplate.getFullQualifiedName(),
                 processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
-                ListViewTemplate.PROCESS_INSTANCE_KEY,
-                List.of("1", "2", "3"),
+                Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2", "3")),
                 executor));
   }
 
@@ -159,7 +162,9 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     final var job =
         new ProcessInstanceArchiverJob(
             repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2"));
+    repository.batch =
+        new ArchiveBatch(
+            "2024-01-01", Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1", "2")));
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -170,7 +175,8 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     assertArchiverTimer(1);
     assertThat(repository.moves)
         .contains(
-            new DocumentMove("foo_", "foo_" + "2024-01-01", "bar", List.of("1", "2"), executor));
+            new DocumentMove(
+                "foo_", "foo_" + "2024-01-01", Map.of("bar", List.of("1", "2")), executor));
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {

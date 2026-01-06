@@ -11,8 +11,11 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
@@ -21,6 +24,8 @@ public class ProcessInstanceArchiverJob extends ArchiverJob {
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
   private final Executor executor;
+  private final CamundaExporterMetrics metrics;
+  private final Logger logger;
 
   public ProcessInstanceArchiverJob(
       final ArchiverRepository repository,
@@ -42,6 +47,8 @@ public class ProcessInstanceArchiverJob extends ArchiverJob {
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
     this.executor = executor;
+    this.metrics = metrics;
+    this.logger = logger;
   }
 
   @Override
@@ -60,8 +67,28 @@ public class ProcessInstanceArchiverJob extends ArchiverJob {
   }
 
   @Override
-  String getIdFieldName() {
-    return ListViewTemplate.PROCESS_INSTANCE_KEY;
+  protected CompletionStage<Integer> archiveBatch(final ArchiveBatch batch) {
+    if (batch == null) {
+      return CompletableFuture.completedFuture(0);
+    }
+
+    final var idsMap = batch.ids();
+    final int count = idsMap.values().stream().mapToInt(List::size).sum();
+
+    if (count == 0) {
+      return CompletableFuture.completedFuture(0);
+    }
+
+    logger.trace("Following {}s are found for archiving: {}", getJobName(), batch);
+    metrics.recordProcessInstancesArchiving(count);
+
+    return archive(batch.finishDate(), idsMap)
+        .thenApplyAsync(
+            ok -> {
+              metrics.recordProcessInstancesArchived(count);
+              return count;
+            },
+            executor);
   }
 
   /**
@@ -69,32 +96,59 @@ public class ProcessInstanceArchiverJob extends ArchiverJob {
    *
    * @param sourceIdx process instance index
    * @param finishDate move to the dated index
-   * @param idFieldName process instance key field
-   * @param ids list of process instance keys to archive
-   * @return number of archived process instances
+   * @param ids map of process instance keys to archive
+   * @return future
    */
   @Override
-  protected CompletableFuture<Integer> archive(
-      final String sourceIdx,
-      final String finishDate,
-      final String idFieldName,
-      final List<String> ids) {
+  protected CompletableFuture<Void> archive(
+      final String sourceIdx, final String finishDate, final Map<String, List<String>> ids) {
     return archiveProcessDependants(finishDate, ids)
-        .thenComposeAsync(v -> super.archive(sourceIdx, finishDate, idFieldName, ids), executor);
+        .thenComposeAsync(v -> super.archive(sourceIdx, finishDate, ids), executor);
+  }
+
+  private CompletableFuture<Void> archive(
+      final String finishDate, final Map<String, List<String>> ids) {
+    final var sourceIdx = getSourceIndexName();
+
+    return archiveProcessDependants(finishDate, ids)
+        .thenComposeAsync(
+            v ->
+                getArchiverRepository()
+                    .moveDocuments(sourceIdx, sourceIdx + finishDate, ids, executor),
+            executor);
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
       final String finishDate, final List<String> processInstanceKeys) {
-    final var moveDependentDocuments =
-        processInstanceDependants.stream()
-            .map(
-                dependant -> {
-                  final var dependentSourceIdx = dependant.getFullQualifiedName();
-                  final var dependentIdFieldName = dependant.getProcessInstanceDependantField();
-                  return super.archive(
-                      dependentSourceIdx, finishDate, dependentIdFieldName, processInstanceKeys);
-                })
-            .toArray(CompletableFuture[]::new);
-    return CompletableFuture.allOf(moveDependentDocuments);
+    // This is for the single list case (kept for compatibility if super calls it)
+    return archiveProcessDependants(
+        finishDate, Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
+  }
+
+  private CompletableFuture<Void> archiveProcessDependants(
+      final String finishDate, final Map<String, List<String>> ids) {
+    final var futures = new java.util.ArrayList<CompletableFuture<?>>();
+
+    for (final var dependant : processInstanceDependants) {
+      final var dependentSourceIdx = dependant.getFullQualifiedName();
+      final var dependentIds = new HashMap<String, List<String>>();
+
+      if (ids.containsKey(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)) {
+        dependentIds.put(
+            dependant.getRootProcessInstanceKeyField(),
+            ids.get(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY));
+      }
+      if (ids.containsKey(ListViewTemplate.PROCESS_INSTANCE_KEY)) {
+        dependentIds.put(
+            dependant.getProcessInstanceDependantField(),
+            ids.get(ListViewTemplate.PROCESS_INSTANCE_KEY));
+      }
+
+      if (!dependentIds.isEmpty()) {
+        futures.add(super.archive(dependentSourceIdx, finishDate, dependentIds));
+      }
+    }
+
+    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
   }
 }

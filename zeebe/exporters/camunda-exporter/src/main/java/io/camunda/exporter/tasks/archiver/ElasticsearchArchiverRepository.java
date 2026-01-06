@@ -35,6 +35,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
@@ -45,13 +46,17 @@ import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -126,11 +131,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     final var timer = Timer.start();
     return client
-        .search(searchRequest, Object.class)
+        .search(searchRequest, ProcessInstanceForListViewEntity.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             (response) ->
-                createArchiveBatch(response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+                createArchiveBatch(
+                    response,
+                    ListViewTemplate.END_DATE,
+                    listViewTemplateDescriptor,
+                    config.getRolloverInterval(),
+                    this::mapProcessInstanceBatch),
             executor);
   }
 
@@ -260,16 +270,19 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   @Override
   public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys) {
-    final TermsQuery termsQuery = buildIdTermsQuery(idFieldName, processInstanceKeys);
+      final String sourceIndexName, final Map<String, List<String>> keysByField) {
+    final var builder = new Builder();
+    for (final var entry : keysByField.entrySet()) {
+      builder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+    }
+    final var combinedQ = builder.build();
+
     final var request =
         new DeleteByQueryRequest.Builder()
             .index(sourceIndexName)
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
-            .query(q -> q.terms(termsQuery))
+            .query(q -> q.bool(combinedQ))
             .build();
 
     final var timer = Timer.start();
@@ -284,13 +297,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   public CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys) {
+      final Map<String, List<String>> keysByField) {
+    final var builder = new Builder();
+    for (final var entry : keysByField.entrySet()) {
+      builder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+    }
+    final var combinedQ = builder.build();
+
     final var source =
-        new Source.Builder()
-            .index(sourceIndexName)
-            .query(q -> q.terms(buildIdTermsQuery(idFieldName, processInstanceKeys)))
-            .build();
+        new Source.Builder().index(sourceIndexName).query(q -> q.bool(combinedQ)).build();
     final var request =
         new ReindexRequest.Builder()
             .source(source)
@@ -332,8 +347,42 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                     .value(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
     final var partitionQ =
         QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
+
+    final var retentionMode = config.getRetentionMode();
+    final Query hierarchyQ;
+
+    if (retentionMode == RetentionMode.PI_HIERARCHY
+        || retentionMode == RetentionMode.PI_HIERARCHY_IGNORE_LEGACY) {
+      final var rootExists =
+          QueryBuilders.exists(e -> e.field(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY));
+      final var parentExists =
+          QueryBuilders.exists(e -> e.field(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY));
+
+      // (parentPI IS NULL AND rootPI IS NOT NULL) (New hierarchy filter)
+      final var newHierarchy = QueryBuilders.bool(b -> b.mustNot(parentExists).must(rootExists));
+
+      if (retentionMode == RetentionMode.PI_HIERARCHY) {
+        // (rootPI IS NULL) (Legacy)
+        final var legacyPiFilter = QueryBuilders.bool(b -> b.mustNot(rootExists));
+        hierarchyQ =
+            QueryBuilders.bool(
+                b -> b.should(newHierarchy).should(legacyPiFilter).minimumShouldMatch("1"));
+      } else {
+        // when ignoring legacy, only use hierarchy filter
+        hierarchyQ = newHierarchy;
+      }
+    } else {
+      hierarchyQ = null;
+    }
+
     return QueryBuilders.bool(
-        q -> q.filter(endDateQ).filter(isProcessInstanceQ).filter(partitionQ));
+        q -> {
+          q.filter(endDateQ, isProcessInstanceQ, partitionQ);
+          if (hierarchyQ != null) {
+            q.filter(hierarchyQ);
+          }
+          return q;
+        });
   }
 
   private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexPattern) {
@@ -347,7 +396,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return createSearchRequest(
         listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
-        ListViewTemplate.END_DATE);
+        ListViewTemplate.END_DATE,
+        ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
   }
 
   private CompletableFuture<PutIndicesSettingsResponse> applyPolicyToIndices(
@@ -378,9 +428,26 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String field,
       final IndexTemplateDescriptor templateDescriptor,
       final String rolloverInterval) {
+    return createArchiveBatch(
+        response,
+        field,
+        templateDescriptor,
+        rolloverInterval,
+        (date, hits) ->
+            new ArchiveBatch(
+                date,
+                Map.of(templateDescriptor.getIdField(), hits.stream().map(Hit::id).toList())));
+  }
+
+  private <T> CompletableFuture<ArchiveBatch> createArchiveBatch(
+      final SearchResponse<T> response,
+      final String field,
+      final IndexTemplateDescriptor templateDescriptor,
+      final String rolloverInterval,
+      final BiFunction<String, List<Hit<T>>, ArchiveBatch> mapper) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
+      return CompletableFuture.completedFuture(new ArchiveBatch(null, Map.of()));
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
@@ -397,7 +464,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
               DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
                   endDate, date, rolloverInterval, config.getElsRolloverDateFormat());
 
-          final var ids =
+          final var batchHits =
               hits.stream()
                   .takeWhile(
                       hit ->
@@ -407,11 +474,40 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                               .asJsonArray()
                               .getString(0)
                               .equals(endDate))
-                  .map(Hit::id)
                   .toList();
 
-          return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+          return mapper.apply(lastHistoricalArchiverDate, batchHits);
         });
+  }
+
+  private ArchiveBatch mapProcessInstanceBatch(
+      final String date, final List<Hit<ProcessInstanceForListViewEntity>> hits) {
+    if (config.getRetentionMode() == RetentionMode.PI) {
+      return new ArchiveBatch(
+          date, Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, hits.stream().map(Hit::id).toList()));
+    }
+
+    final List<String> rootProcessInstanceKeys = new ArrayList<>();
+    final List<String> legacyProcessInstanceKeys = new ArrayList<>();
+
+    for (final var hit : hits) {
+      final var rootProcessInstanceKey = hit.source().getRootProcessInstanceKey();
+      if (rootProcessInstanceKey != null) {
+        rootProcessInstanceKeys.add(String.valueOf(rootProcessInstanceKey));
+      } else {
+        legacyProcessInstanceKeys.add(hit.id());
+      }
+    }
+
+    final Map<String, List<String>> fieldToIdsMap = new HashMap<>();
+    if (!rootProcessInstanceKeys.isEmpty()) {
+      fieldToIdsMap.put(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY, rootProcessInstanceKeys);
+    }
+    if (!legacyProcessInstanceKeys.isEmpty()) {
+      fieldToIdsMap.put(ListViewTemplate.PROCESS_INSTANCE_KEY, legacyProcessInstanceKeys);
+    }
+
+    return new ArchiveBatch(date, fieldToIdsMap);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
@@ -484,7 +580,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   private SearchRequest createSearchRequest(
-      final String indexName, final Query filterQuery, final String sortField) {
+      final String indexName,
+      final Query filterQuery,
+      final String sortField,
+      final String... extraFields) {
     logger.trace(
         "Create search request against index '{}', with filter '{}' and sortField '{}'",
         indexName,
@@ -496,7 +595,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .requestCache(false)
         .allowNoIndices(true)
         .ignoreUnavailable(true)
-        .source(source -> source.fetch(false))
+        .source(
+            source ->
+                extraFields.length > 0
+                    ? source.filter(b -> b.includes(List.of(extraFields)))
+                    : source.fetch(false))
         .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))

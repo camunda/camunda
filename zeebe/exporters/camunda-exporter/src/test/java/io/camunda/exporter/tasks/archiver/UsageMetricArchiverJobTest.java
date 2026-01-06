@@ -14,6 +14,7 @@ import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +39,8 @@ final class UsageMetricArchiverJobTest extends ArchiverJobRecordingMetricsAbstra
   @BeforeEach
   void setUp() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batch =
+        new ArchiveBatch("2024-01-01", Map.of(UsageMetricTemplate.ID, List.of("1", "2", "3")));
   }
 
   @AfterEach
@@ -77,8 +79,7 @@ final class UsageMetricArchiverJobTest extends ArchiverJobRecordingMetricsAbstra
             new DocumentMove(
                 usageMetricTemplate.getFullQualifiedName(),
                 usageMetricTemplate.getFullQualifiedName() + "2024-01-01",
-                UsageMetricTemplate.ID,
-                List.of("1", "2", "3"),
+                Map.of(UsageMetricTemplate.ID, List.of("1", "2", "3")),
                 executor));
   }
 }

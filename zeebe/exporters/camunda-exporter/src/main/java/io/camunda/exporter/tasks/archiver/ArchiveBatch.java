@@ -8,5 +8,10 @@
 package io.camunda.exporter.tasks.archiver;
 
 import java.util.List;
+import java.util.Map;
 
-public record ArchiveBatch(String finishDate, List<String> ids) {}
+/**
+ * Represents a batch of documents to be archived, containing the finish date and document keys
+ * mapped to their respective field names.
+ */
+public record ArchiveBatch(String finishDate, Map<String, List<String>> ids) {}

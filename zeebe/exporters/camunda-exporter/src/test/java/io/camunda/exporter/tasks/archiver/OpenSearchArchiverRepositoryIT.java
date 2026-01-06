@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.RetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -84,7 +85,7 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
-  @RegisterExtension private static SearchDBExtension searchDB = create();
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = create();
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -132,7 +133,7 @@ final class OpenSearchArchiverRepositoryIT {
     // when - delete the first two documents
     final var result =
         repository.deleteDocuments(
-            indexName, "id", documents.stream().limit(2).map(TestDocument::id).toList());
+            indexName, Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -298,8 +299,7 @@ final class OpenSearchArchiverRepositoryIT {
         repository.reindexDocuments(
             sourceIndexName,
             destIndexName,
-            "id",
-            documents.stream().limit(2).map(TestDocument::id).toList());
+            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()));
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -337,8 +337,7 @@ final class OpenSearchArchiverRepositoryIT {
         repository.moveDocuments(
             sourceIndexName,
             destIndexName,
-            "id",
-            documents.stream().limit(2).map(TestDocument::id).toList(),
+            Map.of("id", documents.stream().limit(2).map(TestDocument::id).toList()),
             Runnable::run);
 
     // then
@@ -370,12 +369,18 @@ final class OpenSearchArchiverRepositoryIT {
     final var documents =
         List.of(
             new TestProcessInstance(
-                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1),
+                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1, null, null),
             new TestProcessInstance(
-                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2),
-            new TestProcessInstance("3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1),
+                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2, null, null),
             new TestProcessInstance(
-                "4", now.toString(), ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1));
+                "3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1, null, null),
+            new TestProcessInstance(
+                "4",
+                now.toString(),
+                ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION,
+                1,
+                null,
+                null));
 
     // create the index template first to ensure ID is a keyword, otherwise the surrounding
     // aggregation will fail
@@ -392,8 +397,115 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1");
+    assertThat(batch.ids())
+        .containsExactlyEntriesOf(Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, List.of("1")));
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldHandlePIMode() throws Exception {
+    // given
+    config.setRetentionMode(RetentionMode.PI);
+    config.setRolloverBatchSize(100);
+    config.setWaitPeriodBeforeArchiving("0s");
+    final var repository = createRepository();
+
+    createProcessInstanceIndex();
+
+    // Doc A: Legacy (No root, No parent)
+    indexProcessInstance("A", "2020-01-01", null, null);
+    // Doc B: New Root (Root=X, No parent)
+    indexProcessInstance("B", "2020-01-01", 100L, null);
+    // Doc C: New Child (Root=X, Parent=X)
+    indexProcessInstance("C", "2020-01-01", 100L, 100L);
+
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch().join();
+
+    // then
+    // PI mode: Should select all 3 (since end date matches).
+    // And should treat ALL as legacyProcessInstanceKeys (PROCESS_INSTANCE_KEY)
+    assertThat(batch.ids())
+        .containsKey(ListViewTemplate.PROCESS_INSTANCE_KEY)
+        .doesNotContainKey(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
+
+    final var keys = batch.ids().get(ListViewTemplate.PROCESS_INSTANCE_KEY);
+    assertThat(keys).containsExactlyInAnyOrder("A", "B", "C");
+  }
+
+  @Test
+  void shouldHandlePIHierarchyMode() throws Exception {
+    // given
+    config.setRetentionMode(RetentionMode.PI_HIERARCHY);
+    config.setRolloverBatchSize(100);
+    config.setWaitPeriodBeforeArchiving("0s");
+    final var repository = createRepository();
+
+    createProcessInstanceIndex();
+
+    // Doc A: Legacy (No root, No parent) -> Should be selected as legacy
+    indexProcessInstance("A", "2020-01-01", null, null);
+    // Doc B: New Root (Root=X, No parent) -> Should be selected as new root
+    indexProcessInstance("B", "2020-01-01", 100L, null);
+    // Doc C: New Child (Root=X, Parent=X) -> Should NOT be selected (it's a child)
+    indexProcessInstance("C", "2020-01-01", 100L, 100L);
+
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch().join();
+
+    // then
+    assertThat(batch.ids())
+        .containsKeys(
+            ListViewTemplate.PROCESS_INSTANCE_KEY, ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
+
+    // Legacy -> "A"
+    assertThat(batch.ids().get(ListViewTemplate.PROCESS_INSTANCE_KEY)).containsExactly("A");
+
+    // New Hierarchy -> "100" (rootProcessInstanceKey)
+    assertThat(batch.ids().get(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)).containsExactly("100");
+  }
+
+  @Test
+  void shouldHandlePIHierarchyIgnoreLegacyMode() throws Exception {
+    // given
+    config.setRetentionMode(RetentionMode.PI_HIERARCHY_IGNORE_LEGACY);
+    config.setRolloverBatchSize(100);
+    config.setWaitPeriodBeforeArchiving("0s");
+    final var repository = createRepository();
+
+    createProcessInstanceIndex();
+
+    // Doc A: Legacy (No root, No parent) -> Should NOT be selected
+    indexProcessInstance("A", "2020-01-01", null, null);
+    // Doc B: New Root (Root=X, No parent) -> Should be selected as new root
+    indexProcessInstance("B", "2020-01-01", 100L, null);
+    // Doc C: New Child (Root=X, Parent=X) -> Should NOT be selected
+    indexProcessInstance("C", "2020-01-01", 100L, 100L);
+
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+
+    // when
+    final var batch = repository.getProcessInstancesNextBatch().join();
+
+    // then
+    assertThat(batch.ids()).containsKey(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY);
+    assertThat(batch.ids()).doesNotContainKey(ListViewTemplate.PROCESS_INSTANCE_KEY);
+
+    // New Hierarchy -> "100"
+    assertThat(batch.ids().get(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)).containsExactly("100");
+  }
+
+  private void indexProcessInstance(
+      final String id, final String endDate, final Long rootPI, final Long parentPI)
+      throws IOException {
+    final var doc =
+        new TestProcessInstance(
+            id, endDate, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1, rootPI, parentPI);
+    index(processInstanceIndex, doc);
   }
 
   @Test
@@ -423,7 +535,7 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("1", "2")));
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -462,7 +574,7 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("1", "2")));
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -489,16 +601,17 @@ final class OpenSearchArchiverRepositoryIT {
     final var firstBatch = repository.getBatchOperationsNextBatch();
     Awaitility.await("waiting for first batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                firstBatch.isDone()
-                    && firstBatch.get().ids().containsAll(List.of("1", "2"))
-                    && firstBatch
-                        .get()
-                        .finishDate()
-                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
+        .untilAsserted(
+            () -> {
+              assertThat(firstBatch.isDone()).isTrue();
+              assertThat(firstBatch.get().ids())
+                  .containsExactlyEntriesOf(Map.of("id", List.of("1", "2")));
+              assertThat(firstBatch.get().finishDate())
+                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+            });
     repository
-        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("1", "2"), Runnable::run)
+        .moveDocuments(
+            batchOperationIndex, destIndexName, Map.of("id", List.of("1", "2")), Runnable::run)
         .join();
 
     final var secondBatchDocuments =
@@ -511,18 +624,19 @@ final class OpenSearchArchiverRepositoryIT {
     final var secondBatch = repository.getBatchOperationsNextBatch();
     Awaitility.await("waiting for second batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                secondBatch.isDone()
-                    && secondBatch.get().ids().containsAll(List.of("3", "4"))
-                    && secondBatch
-                        .get()
-                        .finishDate()
-                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
+        .untilAsserted(
+            () -> {
+              assertThat(secondBatch.isDone()).isTrue();
+              assertThat(secondBatch.get().ids())
+                  .containsExactlyEntriesOf(Map.of("id", List.of("3", "4")));
+              assertThat(secondBatch.get().finishDate())
+                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+            });
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
     repository
-        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("3", "4"), Runnable::run)
+        .moveDocuments(
+            batchOperationIndex, destIndexName, Map.of("id", List.of("3", "4")), Runnable::run)
         .join();
 
     // we create another batch of documents, which is two hours ago, since the default archive point
@@ -538,14 +652,14 @@ final class OpenSearchArchiverRepositoryIT {
 
     Awaitility.await("waiting for third batch operation to be complete")
         .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                thirdBatch.isDone()
-                    && thirdBatch.get().ids().containsAll(List.of("5", "6"))
-                    && thirdBatch
-                        .get()
-                        .finishDate()
-                        .equals(dateFormatter.format(now.minus(Duration.ofHours(2)))));
+        .untilAsserted(
+            () -> {
+              assertThat(thirdBatch.isDone()).isTrue();
+              assertThat(thirdBatch.get().ids())
+                  .containsExactlyEntriesOf(Map.of("id", List.of("5", "6")));
+              assertThat(thirdBatch.get().finishDate())
+                  .isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+            });
   }
 
   @Test
@@ -576,7 +690,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then the batch finish date should not update:
     final var batch = repository.getBatchOperationsNextBatch().join();
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("1", "2")));
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
   }
 
@@ -605,7 +719,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then the batch finish date should update since zeebe index should be excluded:
     final var batch = repository.getBatchOperationsNextBatch().join();
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("1", "2")));
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
 
@@ -642,9 +756,9 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
-      assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2", "3");
+      assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("1", "2", "3")));
     } else {
-      assertThat(batch.ids()).containsExactlyInAnyOrder("21");
+      assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("21")));
     }
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
@@ -682,9 +796,9 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     if (partitionId == 1) {
-      assertThat(batch.ids()).containsExactlyInAnyOrder("10", "11", "12");
+      assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("10", "11", "12")));
     } else {
-      assertThat(batch.ids()).containsExactlyInAnyOrder("21");
+      assertThat(batch.ids()).containsExactlyEntriesOf(Map.of("id", List.of("21")));
     }
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
@@ -874,7 +988,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setIndexPrefix(indexPrefix);
-    connectConfig.setUrl(searchDB.esUrl());
+    connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
     schemaManagerConfig.getRetry().setMaxRetries(1);
@@ -1071,19 +1185,29 @@ final class OpenSearchArchiverRepositoryIT {
   private void createProcessInstanceIndex() throws IOException {
     final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
     final var endDateProp =
-        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+        Property.of(
+            p ->
+                p.date(
+                    d ->
+                        d.index(true)
+                            .format(
+                                "date_time || epoch_millis || strict_date_optional_time || yyyy-MM-dd HH:mm:ss.SSS")));
     final var joinRelationProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var partitionIdProp = Property.of(p -> p.integer(i -> i.index(true)));
+    final var rootPIProp = Property.of(p -> p.long_(l -> l.index(true)));
+    final var parentPIProp = Property.of(p -> p.long_(l -> l.index(true)));
+
     final var properties =
         TypeMapping.of(
             m ->
                 m.properties(
                     Map.of(
-                        ListViewTemplate.ID,
-                        idProp,
-                        ListViewTemplate.END_DATE,
-                        endDateProp,
-                        ListViewTemplate.JOIN_RELATION,
-                        joinRelationProp)));
+                        ListViewTemplate.ID, idProp,
+                        ListViewTemplate.END_DATE, endDateProp,
+                        ListViewTemplate.JOIN_RELATION, joinRelationProp,
+                        ListViewTemplate.PARTITION_ID, partitionIdProp,
+                        ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY, rootPIProp,
+                        ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY, parentPIProp)));
     testClient
         .indices()
         .create(
@@ -1094,7 +1218,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(searchDB.osUrl())).build();
+    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.osUrl())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
@@ -1214,7 +1338,13 @@ final class OpenSearchArchiverRepositoryIT {
   private record TestDocument(String id) implements TDocument {}
 
   private record TestProcessInstance(
-      String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
+      String id,
+      String endDate,
+      String joinRelation,
+      int partitionId,
+      Long rootProcessInstanceKey,
+      Long parentProcessInstanceKey)
+      implements TDocument {}
 
   private record TestUsageMetric(String id, String endTime, int partitionId) implements TDocument {}
 

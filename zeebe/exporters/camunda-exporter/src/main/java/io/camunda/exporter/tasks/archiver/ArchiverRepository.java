@@ -42,25 +42,21 @@ public interface ArchiverRepository extends AutoCloseable {
   CompletableFuture<Void> setLifeCycleToAllIndexes();
 
   CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys);
+      final String sourceIndexName, final Map<String, List<String>> keysByField);
 
   CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys);
+      final Map<String, List<String>> keysByField);
 
   default CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> ids,
+      final Map<String, List<String>> keysByField,
       final Executor executor) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
+    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField)
         .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, idFieldName, ids), executor);
+        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField), executor);
   }
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
@@ -84,27 +80,27 @@ public interface ArchiverRepository extends AutoCloseable {
 
     @Override
     public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", Map.of()));
     }
 
     @Override
     public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", Map.of()));
     }
 
     @Override
     public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", Map.of()));
     }
 
     @Override
     public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", Map.of()));
     }
 
     @Override
     public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
-      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", Map.of()));
     }
 
     @Override
@@ -119,9 +115,7 @@ public interface ArchiverRepository extends AutoCloseable {
 
     @Override
     public CompletableFuture<Void> deleteDocuments(
-        final String sourceIndexName,
-        final String idFieldName,
-        final List<String> processInstanceKeys) {
+        final String sourceIndexName, final Map<String, List<String>> keysByField) {
       return CompletableFuture.completedFuture(null);
     }
 
@@ -129,8 +123,7 @@ public interface ArchiverRepository extends AutoCloseable {
     public CompletableFuture<Void> reindexDocuments(
         final String sourceIndexName,
         final String destinationIndexName,
-        final String idFieldName,
-        final List<String> processInstanceKeys) {
+        final Map<String, List<String>> keysByField) {
       return CompletableFuture.completedFuture(null);
     }
 

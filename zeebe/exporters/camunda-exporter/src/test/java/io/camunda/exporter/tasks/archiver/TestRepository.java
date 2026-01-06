@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -50,17 +51,15 @@ final class TestRepository extends NoopArchiverRepository {
   public CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> ids,
+      final Map<String, List<String>> keysByField,
       final Executor executor) {
-    moves.add(new DocumentMove(sourceIndexName, destinationIndexName, idFieldName, ids, executor));
+    moves.add(new DocumentMove(sourceIndexName, destinationIndexName, keysByField, executor));
     return CompletableFuture.completedFuture(null);
   }
 
   record DocumentMove(
       String sourceIndexName,
       String destinationIndexName,
-      String idFieldName,
-      List<String> ids,
+      Map<String, List<String>> keysByField,
       Executor executor) {}
 }

@@ -14,6 +14,7 @@ import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,8 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
   @BeforeEach
   void setUp() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batch =
+        new ArchiveBatch("2024-01-01", Map.of(DecisionInstanceTemplate.ID, List.of("1", "2", "3")));
   }
 
   @AfterEach
@@ -80,8 +82,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
             new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),
                 decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
-                DecisionInstanceTemplate.ID,
-                List.of("1", "2", "3"),
+                Map.of(DecisionInstanceTemplate.ID, List.of("1", "2", "3")),
                 executor));
   }
 }

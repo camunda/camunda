@@ -47,9 +47,4 @@ public class UsageMetricArchiverJob extends ArchiverJob {
   public String getSourceIndexName() {
     return usageMetricTemplate.getFullQualifiedName();
   }
-
-  @Override
-  public String getIdFieldName() {
-    return UsageMetricTemplate.ID;
-  }
 }

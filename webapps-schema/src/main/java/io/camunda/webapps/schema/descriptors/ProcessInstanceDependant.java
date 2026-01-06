@@ -11,9 +11,15 @@ public interface ProcessInstanceDependant {
 
   String PROCESS_INSTANCE_KEY = "processInstanceKey";
 
+  String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
+
   String getFullQualifiedName();
 
   default String getProcessInstanceDependantField() {
     return PROCESS_INSTANCE_KEY;
+  }
+
+  default String getRootProcessInstanceKeyField() {
+    return ROOT_PROCESS_INSTANCE_KEY;
   }
 }

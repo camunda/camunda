@@ -47,9 +47,4 @@ public class BatchOperationArchiverJob extends ArchiverJob {
   String getSourceIndexName() {
     return batchOperationTemplate.getFullQualifiedName();
   }
-
-  @Override
-  String getIdFieldName() {
-    return BatchOperationTemplate.ID;
-  }
 }

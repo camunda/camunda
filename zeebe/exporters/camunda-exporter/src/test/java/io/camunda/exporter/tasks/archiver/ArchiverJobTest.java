@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -62,7 +63,7 @@ final class ArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchIdsGiven() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of());
+    repository.batch = new ArchiveBatch("2024-01-01", Map.of());
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -80,7 +81,8 @@ final class ArchiverJobTest {
   @Test
   void shouldMoveInstancesById() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batch =
+        new ArchiveBatch("2024-01-01", Map.of(ID_FIELD_NAME, List.of("1", "2", "3")));
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -92,8 +94,7 @@ final class ArchiverJobTest {
             new DocumentMove(
                 SOURCE_INDEX_NAME,
                 SOURCE_INDEX_NAME + "2024-01-01",
-                ID_FIELD_NAME,
-                List.of("1", "2", "3"),
+                Map.of(ID_FIELD_NAME, List.of("1", "2", "3")),
                 executor));
 
     // then verify recording metrics
@@ -133,11 +134,6 @@ final class ArchiverJobTest {
     @Override
     String getSourceIndexName() {
       return SOURCE_INDEX_NAME;
-    }
-
-    @Override
-    String getIdFieldName() {
-      return ID_FIELD_NAME;
     }
   }
 }

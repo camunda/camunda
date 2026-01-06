@@ -218,6 +218,7 @@ public class ExporterConfiguration {
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
     private boolean trackArchivalMetricsForProcessInstance = true;
+    private RetentionMode retentionMode = RetentionMode.PI_HIERARCHY;
 
     public boolean isProcessInstanceEnabled() {
       return processInstanceEnabled;
@@ -317,6 +318,8 @@ public class ExporterConfiguration {
           + retention
           + ", trackArchivalMetricsForProcessInstance="
           + trackArchivalMetricsForProcessInstance
+          + ", retentionMode="
+          + retentionMode
           + '}';
     }
 
@@ -327,6 +330,20 @@ public class ExporterConfiguration {
     public void setTrackArchivalMetricsForProcessInstance(
         final boolean trackArchivalMetricsForProcessInstance) {
       this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
+    }
+
+    public RetentionMode getRetentionMode() {
+      return retentionMode;
+    }
+
+    public void setRetentionMode(final RetentionMode retentionMode) {
+      this.retentionMode = retentionMode;
+    }
+
+    public enum RetentionMode {
+      PI_HIERARCHY,
+      PI_HIERARCHY_IGNORE_LEGACY,
+      PI
     }
   }
 
