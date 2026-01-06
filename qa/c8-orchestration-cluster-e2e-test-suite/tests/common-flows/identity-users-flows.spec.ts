@@ -377,7 +377,7 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify authorization was created', async () => {
       await identityAuthorizationsPage.clickResourceType('Authorization');
       await identityAuthorizationsPage.assertAuthorizationExists(
-        TEST_GROUP.name,
+        TEST_GROUP.groupId,
         'Group',
         ['Read'],
         'Authorization',
