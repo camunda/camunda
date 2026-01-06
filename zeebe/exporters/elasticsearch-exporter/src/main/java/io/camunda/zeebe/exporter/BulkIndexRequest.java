@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
@@ -50,6 +51,7 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(CheckpointRecordValue.class, CheckpointRecordMixin.class)
           .addMixIn(MessageSubscriptionRecordValue.class, MessageSubscriptionMixin.class)
+          .addMixIn(ProcessInstanceRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(
               ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionMixin.class)
           .addMixIn(
@@ -72,6 +74,7 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY =
       "moveInstructions";
   private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
+  private static final String ROOT_PROCESS_INSTANCE_KEY_PROPERTY = "rootProcessInstanceKey";
   private final List<BulkOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -211,6 +214,9 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonIgnoreProperties({PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY})
   private static final class ProcessInstanceModificationMixin {}
+
+  @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY})
+  private static final class IgnoreRootProcessInstanceKeyMixin {}
 
   public interface TerminateInstructionsMixin {
     @JsonIgnore

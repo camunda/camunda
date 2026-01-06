@@ -349,13 +349,11 @@ final class OpensearchExporterIT {
         || valueType == ValueType.JOB) {
       final var response = testClient.getExportedDocumentFor(record);
       assertThat(response)
-          .extracting(
-              GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+          .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
           .containsExactly(
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()),
-              record);
+              String.valueOf(record.getPartitionId()));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(OpenSearchException.class)

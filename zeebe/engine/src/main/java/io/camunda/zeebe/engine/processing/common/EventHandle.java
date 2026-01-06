@@ -240,6 +240,7 @@ public final class EventHandle {
         .setProcessDefinitionKey(process.getKey())
         .setVersion(process.getVersion())
         .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(processInstanceKey)
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType())
         .setTenantId(tenantId);
