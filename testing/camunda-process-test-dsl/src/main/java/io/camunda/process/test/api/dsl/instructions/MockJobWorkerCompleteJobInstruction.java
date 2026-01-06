@@ -44,10 +44,7 @@ public interface MockJobWorkerCompleteJobInstruction extends TestCaseInstruction
    *
    * @return the variables or an empty map if no variables are set
    */
-  @Value.Default
-  default Map<String, Object> getVariables() {
-    return Map.of();
-  }
+  Map<String, Object> getVariables();
 
   /**
    * Whether to use example data from the BPMN element. Optional, default is false. If set to true,
