@@ -62,10 +62,7 @@ public class PublishMessageInstructionTest {
     verify(camundaClient).newPublishMessageCommand();
 
     final PublishMessageCommandStep3 mockCommand =
-        camundaClient
-            .newPublishMessageCommand()
-            .messageName(MESSAGE_NAME)
-            .withoutCorrelationKey();
+        camundaClient.newPublishMessageCommand().messageName(MESSAGE_NAME).withoutCorrelationKey();
 
     verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).send();
@@ -90,7 +87,10 @@ public class PublishMessageInstructionTest {
     verify(camundaClient).newPublishMessageCommand();
 
     final PublishMessageCommandStep3 mockCommand =
-        camundaClient.newPublishMessageCommand().messageName(MESSAGE_NAME).correlationKey(correlationKey);
+        camundaClient
+            .newPublishMessageCommand()
+            .messageName(MESSAGE_NAME)
+            .correlationKey(correlationKey);
 
     verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).send();
@@ -177,5 +177,4 @@ public class PublishMessageInstructionTest {
 
     verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
   }
-
 }
