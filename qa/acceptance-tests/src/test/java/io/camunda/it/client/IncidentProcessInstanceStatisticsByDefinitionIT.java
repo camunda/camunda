@@ -562,6 +562,53 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
                 (long) instancesPerVersion));
   }
 
+  @Test
+  void shouldUseCachedProcessDefinitionDataForRepeatedRequests(
+      @Authenticated(USER_SINGLE_DEFINITION) final CamundaClient userClient) {
+
+    ensureTenantExistsForUser(adminClient, TENANT_SINGLE_DEFINITION, USER_SINGLE_DEFINITION);
+
+    final BpmnModelInstance model =
+        singleServiceTaskProcess(SIMPLE_PROCESS_1, PROCESS_NAME_1, JOB_TYPE_1);
+
+    final long processDefinitionKey =
+        deployAndWait(userClient, model, resourceName(SIMPLE_PROCESS_1), TENANT_SINGLE_DEFINITION);
+
+    final List<Long> processInstanceKeys =
+        createInstances(userClient, processDefinitionKey, TENANT_SINGLE_DEFINITION, 1);
+
+    waitForProcessInstancesToStart(userClient, 1);
+    waitForJobs(userClient, processInstanceKeys);
+
+    final List<Long> jobKeys = findJobKeysForInstances(userClient, processInstanceKeys, JOB_TYPE_1);
+    failJobs(userClient, jobKeys, ERROR_FAIL_1);
+    waitUntilIncidentsAreActive(userClient, 1);
+
+    // first call seeds cache
+    final var firstResult =
+        userClient
+            .newIncidentProcessInstanceStatisticsByDefinitionRequest(ERROR_FAIL_1.hashCode())
+            .send()
+            .join();
+
+    assertThat(firstResult.items()).hasSize(1);
+    assertThat(firstResult.items().getFirst().getProcessDefinitionId()).isEqualTo(SIMPLE_PROCESS_1);
+    assertThat(firstResult.items().getFirst().getProcessDefinitionName()).isEqualTo(PROCESS_NAME_1);
+    assertThat(firstResult.items().getFirst().getProcessDefinitionVersion()).isEqualTo(1);
+
+    // second call should reuse cached definition data; we assert identical payload
+    final var secondResult =
+        userClient
+            .newIncidentProcessInstanceStatisticsByDefinitionRequest(ERROR_FAIL_1.hashCode())
+            .send()
+            .join();
+
+    assertThat(secondResult.items()).hasSize(1);
+    assertThat(secondResult.items().getFirst())
+        .usingRecursiveComparison()
+        .isEqualTo(firstResult.items().getFirst());
+  }
+
   private static BpmnModelInstance singleServiceTaskProcess(
       final String bpmnProcessId, final String name, final String jobType) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
