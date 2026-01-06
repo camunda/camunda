@@ -463,6 +463,7 @@
                 <serializationLibrary>jackson</serializationLibrary>
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
+                <legacyDiscriminatorBehavior>true</legacyDiscriminatorBehavior>
                 <openApiNullable>false</openApiNullable>
                 <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
               </configOptions>

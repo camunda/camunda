@@ -971,6 +971,9 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <configOptions>
+                <useOneOfInterfaces>true</useOneOfInterfaces>
+              </configOptions>
             </configuration>
           </execution>
           <execution>
