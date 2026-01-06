@@ -8,12 +8,9 @@
 package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
-import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
-import static io.camunda.it.auditlog.AuditLogUtils.generateData;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
@@ -22,7 +19,6 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.util.collection.Tuple;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -33,9 +29,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class AuditLogGrpcClientIT {
-
-  protected static final boolean USE_REST_API = false;
+public class AuditLogSearchClientIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -46,69 +40,64 @@ public class AuditLogGrpcClientIT {
           .withAuthenticatedAccess();
 
   private static CamundaClient adminClient;
-  private static ProcessInstanceEvent processInstanceEvent;
-  private static String auditLogKey;
+  private static AuditLogUtils utils;
 
   @BeforeAll
   static void setup() {
-    final Tuple<String, ProcessInstanceEvent> tuple = generateData(adminClient, USE_REST_API);
-    auditLogKey = tuple.getLeft();
-    processInstanceEvent = tuple.getRight();
+    utils = new AuditLogUtils(adminClient);
+    utils.generateDefaults();
+    utils.await();
+  }
+
+  // TODO: this one fails, because r/n the authorizations fail if the resourceId supplier returns
+  // null, which is the case for ADMIN audit log entries
+  @Test
+  void shouldGetAuditLogByKey(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final var search = client.newAuditLogSearchRequest().page(p -> p.limit(1)).send().join();
+
+    // when
+    final var auditLog = search.items().getFirst();
+    final var log = client.newAuditLogGetRequest(auditLog.getAuditLogKey()).send().join();
+
+    // then
+    assertThat(log).isNotNull();
+    assertThat(log.getAuditLogKey()).isEqualTo(auditLog.getAuditLogKey());
+    assertThat(log.getEntityKey()).isEqualTo(auditLog.getEntityKey());
+    assertThat(log.getEntityType()).isEqualTo(auditLog.getEntityType());
+    assertThat(log.getOperationType()).isEqualTo(auditLog.getOperationType());
+    assertThat(log.getCategory()).isEqualTo(auditLog.getCategory());
   }
 
   @Test
-  void shouldSearchAuditLogEntryFromPICreation(
-      @Authenticated(DEFAULT_USERNAME) final CamundaClient adminClient) {
+  void shouldSearchAuditLogByProcessInstanceKeyAndOperationType(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
-    final var processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+    final var processInstance = utils.getProcessInstances().getFirst();
 
     // when
     final var auditLogItems =
-        adminClient
+        client
             .newAuditLogSearchRequest()
             .filter(
                 fn ->
-                    fn.processInstanceKey(String.valueOf(processInstanceKey))
+                    fn.processInstanceKey(String.valueOf(processInstance.getProcessInstanceKey()))
                         .operationType(AuditLogOperationTypeEnum.CREATE))
             .send()
             .join();
 
     // then
-    final var auditLog = auditLogItems.items().get(0);
+    final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
-    assertThat(auditLog.getProcessDefinitionId())
-        .isEqualTo(processInstanceEvent.getBpmnProcessId());
+    assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processInstance.getBpmnProcessId());
     assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessDefinitionKey()));
+        .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getProcessInstanceKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
-    assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+        .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
-  }
-
-  @Test
-  void shouldFetchAuditLogEntryByAuditLogKey(
-      @Authenticated(DEFAULT_USERNAME) final CamundaClient adminClient) {
-    // when
-    final var fetchedAuditLog = adminClient.newAuditLogGetRequest(auditLogKey).send().join();
-
-    // then
-    // verify the fetched audit log entry matches the searched one
-    assertThat(fetchedAuditLog).isNotNull();
-    assertThat(fetchedAuditLog.getAuditLogKey()).isEqualTo(auditLogKey);
-    assertThat(fetchedAuditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
-    assertThat(fetchedAuditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
-    assertThat(fetchedAuditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
-    assertThat(fetchedAuditLog.getProcessDefinitionId())
-        .isEqualTo(processInstanceEvent.getBpmnProcessId());
-    assertThat(fetchedAuditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessDefinitionKey()));
-    assertThat(fetchedAuditLog.getProcessInstanceKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
-    assertThat(fetchedAuditLog.getTenantId()).isEqualTo(TENANT_A);
-    assertThat(fetchedAuditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
 }

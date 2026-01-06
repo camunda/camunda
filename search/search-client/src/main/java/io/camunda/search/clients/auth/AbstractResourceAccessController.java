@@ -71,9 +71,9 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     final var authentication = securityContext.authentication();
     final var condition = securityContext.authorizationCondition();
     return switch (condition) {
-      case SingleAuthorizationCondition single ->
+      case final SingleAuthorizationCondition single ->
           createSingleAuthorizationCheck(authentication, single);
-      case AnyOfAuthorizationCondition anyOf ->
+      case final AnyOfAuthorizationCondition anyOf ->
           createAnyOfAuthorizationCheck(authentication, anyOf);
       default ->
           throw new IllegalStateException(
@@ -104,6 +104,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final var resourceAccess = resolveResourceAccess(authentication, authorization);
 
       if (resourceAccess.wildcard()) {
+        // here is the culprit for audit log authorizations
         return AuthorizationCheck.disabled();
       }
 
@@ -155,9 +156,9 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     final var condition = securityContext.authorizationCondition();
 
     switch (condition) {
-      case SingleAuthorizationCondition single ->
+      case final SingleAuthorizationCondition single ->
           ensureSingleAuthorizationAccessOrThrow(securityContext, document, single);
-      case AnyOfAuthorizationCondition anyOf ->
+      case final AnyOfAuthorizationCondition anyOf ->
           ensureAnyOfAuthorizationAccessOrThrow(securityContext, document, anyOf);
       default ->
           throw new IllegalStateException(
