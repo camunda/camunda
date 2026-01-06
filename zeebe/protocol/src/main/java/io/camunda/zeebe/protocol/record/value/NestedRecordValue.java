@@ -22,8 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableNestedCommandValue.Builder.class)
-public interface NestedCommandValue {
+@ImmutableProtocol(builder = ImmutableNestedRecordValue.Builder.class)
+public interface NestedRecordValue {
   /**
    * @return the wrapped record value type
    */
@@ -37,5 +37,5 @@ public interface NestedCommandValue {
   /**
    * @return the wrapped record value
    */
-  RecordValue getCommandValue();
+  RecordValue getRecordValue();
 }

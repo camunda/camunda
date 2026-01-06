@@ -63,7 +63,7 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
   /**
    * @return the follow-up command to be written right before the batch operation is completed.
    */
-  NestedCommandValue getFollowUpCommand();
+  NestedRecordValue getFollowUpCommand();
 
   @Value.Immutable
   @ImmutableProtocol(

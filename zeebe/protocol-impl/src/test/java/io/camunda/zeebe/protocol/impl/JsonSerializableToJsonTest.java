@@ -3651,7 +3651,7 @@ final class JsonSerializableToJsonTest {
                   "followUpCommand": {
                     "valueType": "NULL_VAL",
                     "intent": "UNKNOWN",
-                    "commandValue": null
+                    "recordValue": null
                   }
                 }
                 """
@@ -3769,7 +3769,7 @@ final class JsonSerializableToJsonTest {
                     "followUpCommand": {
                       "valueType": "HISTORY_DELETION",
                       "intent": "DELETE",
-                      "commandValue": {
+                      "recordValue": {
                         "resourceKey": 1,
                         "resourceType": "PROCESS_DEFINITION"
                       }

@@ -16,7 +16,7 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.NestedCommand;
+import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
@@ -56,8 +56,8 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
       new DocumentProperty(PROP_AUTHORIZATION_CHECK);
   private final ArrayProperty<IntegerValue> partitionIdsProp =
       new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
-  private final ObjectProperty<NestedCommand> followUpCommandProp =
-      new ObjectProperty<>(PROP_FOLLOWUP_COMMAND, new NestedCommand());
+  private final ObjectProperty<NestedRecord> followUpCommandProp =
+      new ObjectProperty<>(PROP_FOLLOWUP_COMMAND, new NestedRecord());
 
   public BatchOperationCreationRecord() {
     super(9);
@@ -143,7 +143,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public NestedCommand getFollowUpCommand() {
+  public NestedRecord getFollowUpCommand() {
     return followUpCommandProp.getValue();
   }
 
