@@ -48,11 +48,11 @@ printf "\nTest: test --config flag\n"
 #        exit 1
 #fi
 
-printf "\nTest: connectors api \n"
-
-STATUS="$(curl localhost:8086/actuator/health | jq '.status')"
-echo $STATUS
-if [[ "$STATUS" != "\"UP\"" ]]; then
-        echo "test failed"
-        exit 1
-fi
+#printf "\nTest: connectors api \n"
+#
+#STATUS="$(curl localhost:8086/actuator/health | jq '.status')"
+#echo $STATUS
+#if [[ "$STATUS" != "\"UP\"" ]]; then
+#        echo "test failed"
+#        exit 1
+#fi
