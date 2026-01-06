@@ -7,74 +7,62 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static io.camunda.operate.util.ElasticsearchUtil.constantScoreQuery;
+import static io.camunda.operate.util.ElasticsearchUtil.termsQuery;
+import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import java.io.IOException;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticsearchCondition.class)
-public class ElasticsearchMessageSubscriptionReader
+public class ElasticsearchMessageSubscriptionReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.MessageSubscriptionReader {
 
   final MessageSubscriptionTemplate messageSubscriptionTemplate;
 
-  private final TenantAwareElasticsearchClient tenantAwareClient;
-
-  private final ObjectMapper objectMapper;
-
   public ElasticsearchMessageSubscriptionReader(
-      final MessageSubscriptionTemplate messageSubscriptionTemplate,
-      final TenantAwareElasticsearchClient tenantAwareClient,
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+      final MessageSubscriptionTemplate messageSubscriptionTemplate) {
     this.messageSubscriptionTemplate = messageSubscriptionTemplate;
-    this.tenantAwareClient = tenantAwareClient;
-    this.objectMapper = objectMapper;
   }
 
   @Override
   public Optional<MessageSubscriptionEntity> getMessageSubscriptionEntityByFlowNodeInstanceId(
       final String flowNodeInstanceId) {
-    final QueryBuilder query =
+    final var query =
         constantScoreQuery(
-            termQuery(MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(messageSubscriptionTemplate)
-            .source(new SearchSourceBuilder().query(query).sort(MessageSubscriptionTemplate.ID));
+            termsQuery(MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var searchRequest =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(messageSubscriptionTemplate, ALL))
+            .query(tenantAwareQuery)
+            .sort(ElasticsearchUtil.sortOrder(MessageSubscriptionTemplate.ID, SortOrder.Asc))
+            .build();
+
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      final var hits = response.getHits();
-      final var totalHits =
-          (hits != null && hits.getTotalHits() != null) ? hits.getTotalHits().value : 0L;
+      final var response = es8client.search(searchRequest, MessageSubscriptionEntity.class);
+      final var totalHits = response.hits().total().value();
       if (totalHits >= 1) {
         // take last message subscription
-        final MessageSubscriptionEntity messageSubscriptionEntity =
-            fromSearchHit(
-                hits.getHits()[(int) (totalHits - 1)].getSourceAsString(),
-                objectMapper,
-                MessageSubscriptionEntity.class);
-        return Optional.of(messageSubscriptionEntity);
+        final var messageSubscriptionEntity =
+            response.hits().hits().get((int) (totalHits - 1)).source();
+        return Optional.ofNullable(messageSubscriptionEntity);
       } else {
         return Optional.empty();
       }
     } catch (final IOException e) {
-      final String message =
+      final var message =
           String.format(
               "Exception occurred, while obtaining metadata for flow node instance: %s",
               e.getMessage());
