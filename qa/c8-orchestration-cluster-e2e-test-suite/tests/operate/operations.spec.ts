@@ -45,7 +45,7 @@ test.beforeAll(async ({request}) => {
       bpmnProcessId: 'operationsProcessB',
     })),
   };
-  await sleep(1000);
+  await sleep(2000);
   await createDemoOperations(
     request,
     initialData.singleOperationInstance.processInstanceKey,
@@ -235,7 +235,7 @@ test.describe('Operations', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessesPage.getOperationAndResultsContainer('cancel', 5),
+            operateProcessesPage.operationAndResultsContainer('cancel', 5),
           ).toBeVisible({
             timeout: 30000,
           });
@@ -247,7 +247,7 @@ test.describe('Operations', () => {
       await Promise.all(
         instances.map((instance) =>
           expect(
-            operateProcessesPage.getProcessInstanceLinkByKey(
+            operateProcessesPage.processInstanceLinkByKey(
               instance.processInstanceKey,
             ),
           ).toBeVisible(),

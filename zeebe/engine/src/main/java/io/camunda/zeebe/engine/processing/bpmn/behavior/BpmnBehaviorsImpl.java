@@ -61,6 +61,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+  private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
 
@@ -119,9 +120,16 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     expressionBehavior = new ExpressionBehavior(namespaceFullClusterContext, expressionLanguage);
 
+    conditionalBehavior =
+        new BpmnConditionalBehavior(
+            processingState, writers.command(), expressionProcessor, expressionLanguage);
+
     variableBehavior =
         new VariableBehavior(
-            processingState.getVariableState(), writers.state(), processingState.getKeyGenerator());
+            processingState.getVariableState(),
+            writers.state(),
+            conditionalBehavior,
+            processingState.getKeyGenerator());
 
     catchEventBehavior =
         new CatchEventBehavior(
@@ -143,7 +151,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             catchEventBehavior,
             writers,
             processingState,
-            stateBehavior);
+            stateBehavior,
+            conditionalBehavior);
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(

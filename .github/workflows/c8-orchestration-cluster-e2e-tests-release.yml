@@ -86,7 +86,7 @@ jobs:
         run: |
           echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
           echo "Base branch: ${{ needs.validate-release.outputs.base }}"
-    
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.validate-release.outputs.base }}
@@ -104,22 +104,22 @@ jobs:
             echo "Updating separate service images (zeebe, tasklist, operate)"
             # Update zeebe image
             sed -i.bak "s|image: camunda/zeebe:.*|image: camunda/zeebe:$release_version|g" "$compose_file"
-            # Update tasklist image  
+            # Update tasklist image
             sed -i.bak2 "s|image: camunda/tasklist:.*|image: camunda/tasklist:$release_version|g" "$compose_file"
             # Update operate image
             sed -i.bak3 "s|image: camunda/operate:.*|image: camunda/operate:$release_version|g" "$compose_file"
-            
+
             echo "Updated docker-compose.yml with separate services:"
             grep -E "image: camunda/(zeebe|tasklist|operate):" "$compose_file"
           else
             echo "Updating unified camunda service image"
             # Replace the camunda image tag in docker-compose.yml
             sed -i.bak "s|image: camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
-            
+
             echo "Updated docker-compose.yml with unified service:"
             grep "image: camunda/camunda:" "$compose_file"
           fi
-      
+
       - name: Set NON_STANDALONE variable
         shell: bash
         run: |
@@ -215,7 +215,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -253,10 +253,10 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
-          
+
           echo "Running API tests"
           npm run test -- --project=api-tests
-          
+
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -329,18 +329,18 @@ jobs:
             echo "Updating separate service images (zeebe, tasklist, operate)"
             # Update zeebe image
             sed -i.bak "s|image: camunda/zeebe:.*|image: camunda/zeebe:$release_version|g" "$compose_file"
-            # Update tasklist image  
+            # Update tasklist image
             sed -i.bak2 "s|image: camunda/tasklist:.*|image: camunda/tasklist:$release_version|g" "$compose_file"
             # Update operate image
             sed -i.bak3 "s|image: camunda/operate:.*|image: camunda/operate:$release_version|g" "$compose_file"
-            
+
             echo "Updated docker-compose.yml with separate services:"
             grep -E "image: camunda/(zeebe|tasklist|operate):" "$compose_file"
           else
             echo "Updating unified camunda service image"
             # Replace the camunda image tag in docker-compose.yml
             sed -i.bak "s|image: camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
-            
+
             echo "Updated docker-compose.yml with unified service:"
             grep "image: camunda/camunda:" "$compose_file"
           fi
@@ -441,7 +441,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -480,7 +480,7 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
             TEST_ARGS=(--project=chromium)
-            
+
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
               echo "Running V2 mode tests"
               if [[ "${{ needs.validate-release.outputs.base }}" == "stable/8.8" ]]; then
@@ -552,7 +552,7 @@ jobs:
     steps:
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -563,7 +563,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send Slack notification
-        uses: slackapi/slack-github-action@5ae53f9ab3a0882dc89dbfe38e3ae46fd88ea91a
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook

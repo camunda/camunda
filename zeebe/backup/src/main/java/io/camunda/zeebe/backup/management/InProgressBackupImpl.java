@@ -94,13 +94,27 @@ final class InProgressBackupImpl implements InProgressBackup {
         .onComplete(
             (snapshots, error) -> {
               if (error != null) {
+                LOG.atError()
+                    .addKeyValue("backup", backupId)
+                    .setCause(error)
+                    .setMessage("Failed to retrieve available snapshots")
+                    .log();
                 result.completeExceptionally(error);
               } else if (snapshots.isEmpty()) {
+                LOG.atTrace()
+                    .addKeyValue("backup", backupId)
+                    .setMessage("Found no snapshots for backup")
+                    .log();
                 // no snapshot is taken until now, so return successfully
                 hasSnapshot = false;
                 availableValidSnapshots = Collections.emptySet();
                 result.complete(null);
               } else {
+                LOG.atTrace()
+                    .addKeyValue("backup", backupId)
+                    .addKeyValue("snapshots", snapshots::size)
+                    .setMessage("Found snapshots for backup")
+                    .log();
                 final var eitherSnapshots = findValidSnapshot(snapshots);
                 if (eitherSnapshots.isLeft()) {
                   result.completeExceptionally(
@@ -158,10 +172,22 @@ final class InProgressBackupImpl implements InProgressBackup {
       fileSet.put(checksumFile.getFileName().toString(), checksumFile);
 
       snapshotFileSet = new NamedFileSetImpl(fileSet);
+      LOG.atTrace()
+          .addKeyValue("backup", backupId)
+          .addKeyValue("snapshot", reservedSnapshot.getId())
+          .addKeyValue("files", snapshotFileSet.files()::size)
+          .setMessage("Collected snapshot files for backup")
+          .log();
 
       filesCollected.complete(null);
 
     } catch (final IOException e) {
+      LOG.atError()
+          .addKeyValue("backup", backupId)
+          .addKeyValue("snapshot", reservedSnapshot.getId())
+          .setCause(e)
+          .setMessage("Failed to collect snapshot files for backup")
+          .log();
       filesCollected.completeExceptionally(e);
     }
 
@@ -176,26 +202,46 @@ final class InProgressBackupImpl implements InProgressBackup {
       if (reservedSnapshot != null) {
         maxIndex = reservedSnapshot.getIndex();
       }
-      final var segments = journalInfoProvider.getTailSegments(maxIndex);
-      segments.whenComplete(
-          (journalMetadata, throwable) -> {
-            if (throwable != null) {
-              filesCollected.completeExceptionally(throwable);
-            } else if (journalMetadata.isEmpty()) {
-              filesCollected.completeExceptionally(
-                  new IllegalStateException("Segments must not be empty"));
-            } else {
-              final Map<String, Path> map =
-                  journalMetadata.stream()
-                      .collect(
-                          Collectors.toMap(
-                              path -> segmentsDirectory.relativize(path).toString(),
-                              Function.identity()));
-              segmentsFileSet = new NamedFileSetImpl(map);
-              filesCollected.complete(null);
-            }
-          });
+      journalInfoProvider
+          .getTailSegments(maxIndex)
+          .whenComplete(
+              (segments, throwable) -> {
+                if (throwable != null) {
+                  LOG.atError()
+                      .addKeyValue("backup", backupId)
+                      .setCause(throwable)
+                      .setMessage("Failed to retrieve journal segments for backup")
+                      .log();
+                  filesCollected.completeExceptionally(throwable);
+                } else if (segments.isEmpty()) {
+                  LOG.atError()
+                      .addKeyValue("backup", backupId)
+                      .setMessage("No journal segments found for backup")
+                      .log();
+                  filesCollected.completeExceptionally(
+                      new IllegalStateException("Segments must not be empty"));
+                } else {
+                  LOG.atTrace()
+                      .addKeyValue("backup", backupId)
+                      .addKeyValue("segments", segments::size)
+                      .setMessage("Collected journal segments for backup")
+                      .log();
+                  final Map<String, Path> map =
+                      segments.stream()
+                          .collect(
+                              Collectors.toMap(
+                                  path -> segmentsDirectory.relativize(path).toString(),
+                                  Function.identity()));
+                  segmentsFileSet = new NamedFileSetImpl(map);
+                  filesCollected.complete(null);
+                }
+              });
     } catch (final Exception e) {
+      LOG.atError()
+          .addKeyValue("backup", backupId)
+          .setCause(e)
+          .setMessage("Failed to retrieve journal segments for backup")
+          .log();
       filesCollected.completeExceptionally(e);
     }
     return filesCollected;
@@ -226,7 +272,11 @@ final class InProgressBackupImpl implements InProgressBackup {
   public void close() {
     if (snapshotReservation != null) {
       snapshotReservation.release();
-      LOG.debug("Released reservation for snapshot {}", reservedSnapshot.getId());
+      LOG.atTrace()
+          .addKeyValue("backup", backupId)
+          .addKeyValue("snapshot", reservedSnapshot.getId())
+          .setMessage("Released snapshot reservation")
+          .log();
     }
   }
 
@@ -245,6 +295,10 @@ final class InProgressBackupImpl implements InProgressBackup {
             .collect(Collectors.toSet());
 
     if (validSnapshots.isEmpty()) {
+      LOG.atError()
+          .addKeyValue("invalidSnapshots", snapshots::size)
+          .setMessage("No valid snapshots found for backup")
+          .log();
       return Either.left(
           String.format(
               ERROR_MSG_NO_VALID_SNAPSHOT,
@@ -252,6 +306,11 @@ final class InProgressBackupImpl implements InProgressBackup {
               snapshots,
               backupDescriptor().checkpointPosition()));
     } else {
+      LOG.atTrace()
+          .addKeyValue("backup", backupId)
+          .addKeyValue("validSnapshots", validSnapshots::size)
+          .setMessage("Found valid snapshots for backup")
+          .log();
       return Either.right(validSnapshots);
     }
   }
@@ -260,15 +319,30 @@ final class InProgressBackupImpl implements InProgressBackup {
       final Iterator<PersistedSnapshot> snapshotIterator, final ActorFuture<Void> future) {
     final var snapshot = snapshotIterator.next();
 
-    LOG.debug("Attempting to reserve snapshot {}", snapshot.getId());
+    LOG.atTrace()
+        .addKeyValue("backup", backupId)
+        .addKeyValue("snapshot", snapshot.getId())
+        .setMessage("Attempting to reserve snapshot")
+        .log();
     final ActorFuture<SnapshotReservation> reservationFuture = snapshot.reserve();
     reservationFuture.onComplete(
         (reservation, error) -> {
           if (error != null) {
-            LOG.trace("Attempting to reserve snapshot {}, but failed", snapshot.getId(), error);
             if (snapshotIterator.hasNext()) {
+              LOG.atDebug()
+                  .addKeyValue("backup", backupId)
+                  .addKeyValue("snapshot", snapshot.getId())
+                  .setCause(error)
+                  .setMessage("Failed to reserve snapshot, trying next available snapshot")
+                  .log();
               tryReserveAnySnapshot(snapshotIterator, future);
             } else {
+              LOG.atError()
+                  .addKeyValue("backup", backupId)
+                  .addKeyValue("snapshot", snapshot.getId())
+                  .setCause(error)
+                  .setMessage("Failed to reserve last available snapshot")
+                  .log();
               // fail future.
               future.completeExceptionally(
                   String.format(
@@ -280,7 +354,11 @@ final class InProgressBackupImpl implements InProgressBackup {
             // complete
             snapshotReservation = reservation;
             reservedSnapshot = snapshot;
-            LOG.debug("Reserved snapshot {}", snapshot.getId());
+            LOG.atTrace()
+                .addKeyValue("backup", backupId)
+                .addKeyValue("snapshot", snapshot.getId())
+                .setMessage("Reserved snapshot")
+                .log();
             future.complete(null);
           }
         });

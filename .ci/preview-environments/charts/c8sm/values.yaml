@@ -47,6 +47,9 @@ global:
       publicIssuerUrl: https://{{ include "ingress.domain" . }}/auth/realms/camunda-platform
       admin:
         enabled: true
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-admin-client-token
       console:
         redirectUrl: https://{{ include "ingress.domain" . }}/console
         secret:
@@ -351,7 +354,7 @@ camunda-platform:
       clusters:
         - id: "default-cluster"
           name: "Default Cluster"
-          version: "8.8.0"
+          version: "8.9.0"
           authentication: "BEARER_TOKEN"
           authorizations:
             enabled: true
@@ -377,10 +380,10 @@ camunda-platform:
       #   repository: camunda/web-modeler-webapp
       resources:
         limits:
-          cpu: 100m
-          memory: 256Mi
+          cpu: 500m
+          memory: 1Gi
         requests:
-          cpu: 40m
+          cpu: 100m
           memory: 256Mi
       nodeSelector:
         cloud.google.com/gke-nodepool: previews

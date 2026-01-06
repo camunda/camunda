@@ -164,7 +164,7 @@ jobs:
     if: inputs.runFeTests
     name: "Unit - Front End"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
@@ -181,7 +181,7 @@ jobs:
           node-version: "22"
       - run: npm ci
         name: Install dependencies
-      - run: npm run test:ci
+      - run: npm run test:ci -- --no-file-parallelism --maxWorkers 1
         name: Unit & Integration tests
       - name: Observe build status
         if: always()

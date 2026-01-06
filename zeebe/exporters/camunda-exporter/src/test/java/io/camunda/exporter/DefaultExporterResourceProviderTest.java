@@ -12,28 +12,35 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
-import io.camunda.exporter.handlers.auditlog.AuthorizationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.IncidentResolutionAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.MappingRuleAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ResourceAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.TenantAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.TenantEntityAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.UserAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayDeque;
@@ -181,9 +188,13 @@ public class DefaultExporterResourceProviderTest {
             Map.entry(
                 BatchOperationLifecycleManagementAuditLogTransformer.class,
                 ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
+            Map.entry(DecisionAuditLogTransformer.class, ValueType.DECISION),
             Map.entry(DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
+            Map.entry(GroupAuditLogTransformer.class, ValueType.GROUP),
+            Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),
             Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
             Map.entry(MappingRuleAuditLogTransformer.class, ValueType.MAPPING_RULE),
+            Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
             Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
             Map.entry(
                 ProcessInstanceCreationAuditLogTransformer.class,
@@ -195,9 +206,12 @@ public class DefaultExporterResourceProviderTest {
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
             Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
+            Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
+            Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
             Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),
+            Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
             Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Verify that all expected AuditLogHandler transformers are present

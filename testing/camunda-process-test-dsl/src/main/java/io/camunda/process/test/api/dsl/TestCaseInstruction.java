@@ -18,6 +18,10 @@ package io.camunda.process.test.api.dsl;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import io.camunda.process.test.api.dsl.instructions.AssertElementInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.AssertElementInstancesInstruction;
+import io.camunda.process.test.api.dsl.instructions.AssertProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.AssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
 
 /** An instruction to define an action or an assertion to be performed in a test case. */
@@ -27,6 +31,18 @@ import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruc
     property = "type",
     visible = true)
 @JsonSubTypes({
+  @JsonSubTypes.Type(
+      value = AssertElementInstanceInstruction.class,
+      name = TestCaseInstructionType.ASSERT_ELEMENT_INSTANCE),
+  @JsonSubTypes.Type(
+      value = AssertElementInstancesInstruction.class,
+      name = TestCaseInstructionType.ASSERT_ELEMENT_INSTANCES),
+  @JsonSubTypes.Type(
+      value = AssertProcessInstanceInstruction.class,
+      name = TestCaseInstructionType.ASSERT_PROCESS_INSTANCE),
+  @JsonSubTypes.Type(
+      value = AssertUserTaskInstruction.class,
+      name = TestCaseInstructionType.ASSERT_USER_TASK),
   @JsonSubTypes.Type(
       value = CreateProcessInstanceInstruction.class,
       name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE)

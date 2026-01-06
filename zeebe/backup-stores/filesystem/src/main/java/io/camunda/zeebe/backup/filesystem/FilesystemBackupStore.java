@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 /**
  * {@link BackupStore} for local filesystem. Stores all backups in a given baseDir.
@@ -222,6 +221,6 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   public static BackupStore of(final FilesystemBackupConfig storeConfig) {
-    return new FilesystemBackupStore(storeConfig).logging(LOG, Level.INFO);
+    return new FilesystemBackupStore(storeConfig);
   }
 }

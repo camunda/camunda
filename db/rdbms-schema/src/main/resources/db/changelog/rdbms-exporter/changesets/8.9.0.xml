@@ -68,6 +68,11 @@
       <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
+    <createIndex tableName="${prefix}PROCESS_INSTANCE"
+      indexName="${prefix}IDX_PROCESS_INSTANCE_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
+
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -162,6 +167,10 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
+    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
     <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_HIST">
       <column name="PARTITION_ID" />
       <column name="HISTORY_CLEANUP_DATE" />
@@ -202,6 +211,14 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
 
     <createTable tableName="${prefix}CANDIDATE_USER">
       <column name="USER_TASK_KEY" type="BIGINT">
@@ -278,6 +295,10 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
 
     <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_HIST">
       <column name="PARTITION_ID" />
@@ -358,6 +379,21 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_DD_KEY">
+      <column name="DECISION_DEFINITION_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+
     <createIndex tableName="${prefix}DECISION_INSTANCE" indexName="${prefix}IDX_DECISION_INSTANCE_HIST">
       <column name="PARTITION_ID" />
       <column name="HISTORY_CLEANUP_DATE" />
@@ -416,6 +452,11 @@
       <column name="EMAIL" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PASSWORD" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}USER_"
+      indexName="${prefix}IDX_USER_USER_KEY">
+      <column name="USER_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_form_table" author="camunda">
@@ -447,6 +488,11 @@
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}TENANT"
+      indexName="${prefix}IDX_TENANT_TENANT_KEY">
+      <column name="TENANT_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="tenant_members_table" author="camunda">
@@ -477,6 +523,11 @@
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}ROLES"
+      indexName="${prefix}IDX_ROLE_ROLE_KEY">
+      <column name="ROLE_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="role_members_table" author="camunda">
@@ -504,6 +555,11 @@
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}GROUP_"
+      indexName="${prefix}IDX_GROUP_GROUP_KEY">
+      <column name="GROUP_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="group_members_table" author="camunda">
@@ -632,8 +688,15 @@
       <column name="DENIED_REASON" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
-
     </createTable>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
 
     <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_HIST">
       <column name="PARTITION_ID" />
@@ -740,6 +803,11 @@
       <column name="CLAIM_VALUE" type="VARCHAR(${userCharColumnSize})"/>
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}MAPPING_RULES"
+      indexName="${prefix}IDX_MAPPING_RULES_MAPPING_RULE_KEY">
+      <column name="MAPPING_RULE_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_message_subscription_table" author="camunda">
@@ -760,6 +828,14 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
 
     <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_HIST">
       <column name="PARTITION_ID" />
@@ -800,6 +876,14 @@
     <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_HIST">
       <column name="PARTITION_ID" />
       <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
     </createIndex>
 
     <modifySql dbms="mariadb,mysql">

@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
@@ -53,6 +54,7 @@ public class RdbmsWriterFactory {
   private final MessageSubscriptionMapper messageSubscriptionMapper;
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
   private final ClusterVariableMapper clusterVariableMapper;
+  private final HistoryDeletionMapper historyDeletionMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -75,7 +77,8 @@ public class RdbmsWriterFactory {
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper) {
+      final ClusterVariableMapper clusterVariableMapper,
+      final HistoryDeletionMapper historyDeletionMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -97,6 +100,7 @@ public class RdbmsWriterFactory {
     this.messageSubscriptionMapper = messageSubscriptionMapper;
     this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
     this.clusterVariableMapper = clusterVariableMapper;
+    this.historyDeletionMapper = historyDeletionMapper;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
@@ -129,6 +133,7 @@ public class RdbmsWriterFactory {
         batchOperationMapper,
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
-        clusterVariableMapper);
+        clusterVariableMapper,
+        historyDeletionMapper);
   }
 }

@@ -20,6 +20,9 @@ import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.TopologyServices.Broker;
+import io.camunda.service.TopologyServices.Partition;
+import io.camunda.service.TopologyServices.Topology;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -28,6 +31,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.BrokerInfo;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableResult;
 import io.camunda.zeebe.gateway.protocol.rest.ClusterVariableScopeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
@@ -58,6 +62,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResult;
+import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
+import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReference;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResult;
@@ -65,6 +71,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResult;
+import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskProperties;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateResult;
@@ -796,6 +803,50 @@ public final class ResponseMapper {
             .result(expressionRecord.getResultValue())
             .warnings(expressionRecord.getWarnings());
     return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toTopologyResponse(final Topology topology) {
+    final var response = new TopologyResponse();
+    response
+        .clusterId(topology.clusterId())
+        .clusterSize(topology.clusterSize())
+        .gatewayVersion(topology.gatewayVersion())
+        .partitionsCount(topology.partitionsCount())
+        .replicationFactor(topology.replicationFactor())
+        .lastCompletedChangeId(KeyUtil.keyToString(topology.lastCompletedChangeId()));
+
+    topology
+        .brokers()
+        .forEach(
+            broker -> {
+              final var brokerInfo = new BrokerInfo();
+              addBrokerInfo(brokerInfo, broker);
+              addPartitionInfoToBrokerInfo(brokerInfo, broker.partitions());
+
+              response.addBrokersItem(brokerInfo);
+            });
+
+    return ResponseEntity.ok(response);
+  }
+
+  private static void addBrokerInfo(final BrokerInfo brokerInfo, final Broker broker) {
+    brokerInfo.setNodeId(broker.nodeId());
+    brokerInfo.setHost(broker.host());
+    brokerInfo.setPort(broker.port());
+    brokerInfo.setVersion(broker.version());
+  }
+
+  private static void addPartitionInfoToBrokerInfo(
+      final BrokerInfo brokerInfo, final List<Partition> partitions) {
+    partitions.forEach(
+        partition -> {
+          final var partitionDto = new io.camunda.zeebe.gateway.protocol.rest.Partition();
+
+          partitionDto.setPartitionId(partition.partitionId());
+          partitionDto.setRole(EnumUtil.convert(partition.role(), RoleEnum.class));
+          partitionDto.setHealth(EnumUtil.convert(partition.health(), HealthEnum.class));
+          brokerInfo.addPartitionsItem(partitionDto);
+        });
   }
 
   static class RestJobActivationResult

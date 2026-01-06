@@ -98,6 +98,13 @@ export class OperateOperationPanelPage {
       .filter({hasText: `${successCount} ${operationText} succeeded`});
   }
 
+  getModificationOperationEntry(successCount: number): Locator {
+    const operationText = successCount === 1 ? 'operation' : 'operations';
+    return this.getAllOperationEntries()
+      .filter({hasText: 'Modify'})
+      .filter({hasText: `${successCount} ${operationText} succeeded`});
+  }
+
   getRetryOperationEntry(successCount: number): Locator {
     const retryText = successCount === 1 ? 'retry' : 'retries';
     return this.getAllOperationEntries()
@@ -136,5 +143,16 @@ export class OperateOperationPanelPage {
         'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
       );
     }
+  }
+
+  async collapseOperationsPanel(): Promise<void> {
+    const isVisible = await this.operationsPanel.isVisible();
+    if (isVisible) {
+      await this.collapseButton.click();
+    }
+  }
+
+  get operationsList(): Locator {
+    return this.operationList;
   }
 }

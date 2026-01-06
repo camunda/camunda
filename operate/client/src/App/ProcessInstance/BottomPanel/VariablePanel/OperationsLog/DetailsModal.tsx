@@ -14,8 +14,12 @@ import {
   Link,
 } from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
-import {CheckmarkOutline} from '@carbon/react/icons';
-import {BatchJob, EventSchedule, UserAvatar} from '@carbon/icons-react';
+import {
+  CheckmarkOutline,
+  BatchJob,
+  EventSchedule,
+  UserAvatar,
+} from '@carbon/react/icons';
 import {
   FirstColumn,
   OperationLogName,

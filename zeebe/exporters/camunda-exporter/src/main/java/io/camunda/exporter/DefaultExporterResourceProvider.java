@@ -15,6 +15,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
+import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
 import io.camunda.exporter.handlers.ClusterVariableCreatedHandler;
@@ -66,22 +67,6 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
-import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
-import io.camunda.exporter.handlers.auditlog.AuthorizationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.IncidentResolutionAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.MappingRuleAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.ResourceAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.TenantAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.TenantEntityAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.UserAuditLogTransformer;
-import io.camunda.exporter.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -132,6 +117,28 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
@@ -469,17 +476,24 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           .addHandler(new AuthorizationAuditLogTransformer())
           .addHandler(new BatchOperationCreationAuditLogTransformer())
           .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
+          .addHandler(new DecisionAuditLogTransformer())
           .addHandler(new DecisionEvaluationAuditLogTransformer())
+          .addHandler(new GroupAuditLogTransformer())
+          .addHandler(new GroupEntityAuditLogTransformer())
           .addHandler(new IncidentResolutionAuditLogTransformer())
           .addHandler(new MappingRuleAuditLogTransformer())
+          .addHandler(new ProcessAuditLogTransformer())
           .addHandler(new ProcessInstanceCancelAuditLogTransformer())
           .addHandler(new ProcessInstanceCreationAuditLogTransformer())
           .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
           .addHandler(new ProcessInstanceModificationAuditLogTransformer())
           .addHandler(new ResourceAuditLogTransformer())
+          .addHandler(new RoleAuditLogTransformer())
+          .addHandler(new RoleEntityAuditLogTransformer())
           .addHandler(new TenantAuditLogTransformer())
           .addHandler(new TenantEntityAuditLogTransformer())
           .addHandler(new UserAuditLogTransformer())
+          .addHandler(new UserTaskAuditLogTransformer())
           .addHandler(new VariableAddUpdateAuditLogTransformer())
           .build()
           .forEach(exportHandlers::add);

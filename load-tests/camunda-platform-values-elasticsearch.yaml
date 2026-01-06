@@ -1,8 +1,16 @@
+# We need to explictly enable ELS as per default this is disabled now
+global:
+  elasticsearch:
+    enabled: true
 
 ########################################################################################
 ################################################### Orchestration cluster configuration
 ########################################################################################
 orchestration:
+  # We need to explicity set the secondary storage type to ELS
+  data:
+    secondaryStorage:
+      type: elasticsearch
   # We set extra configuration to configure additional settings for Broker and Gateway, that are part
   # of the orchestration cluster.
   # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
@@ -48,6 +56,7 @@ orchestration:
 ################################################### Elasticsearch cluster configuration
 ########################################################################################
 elasticsearch:
+  enabled: true
   master:
     fullnameOverride: elastic
     nameOverride: elastic

@@ -108,6 +108,13 @@ const routes = createRoutesFromElements(
           return {Component: DecisionInstance};
         }}
       />
+      <Route
+        path={Paths.batchOperations()}
+        lazy={async () => {
+          const {BatchOperations} = await import('./BatchOperations/index');
+          return {Component: BatchOperations};
+        }}
+      />
     </Route>
   </Route>,
 );

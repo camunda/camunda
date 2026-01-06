@@ -13,7 +13,8 @@ import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import java.util.List;
 
-public interface MessageSubscriptionMapper extends HistoryCleanupMapper {
+public interface MessageSubscriptionMapper
+    extends HistoryCleanupMapper, ProcessInstanceDependantMapper {
 
   void insert(MessageSubscriptionDbModel messageSubscription);
 

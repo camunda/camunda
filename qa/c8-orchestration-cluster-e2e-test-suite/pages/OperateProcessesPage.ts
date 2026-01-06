@@ -51,13 +51,18 @@ class OperateProcessesPage {
   readonly applyButton: Locator;
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
-  getProcessInstanceLinkByKey: (processInstanceKey: string) => Locator;
-  getOperationAndResultsContainer: (
+  readonly viewParentInstanceLinkInList: Locator;
+  readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly operationAndResultsContainer: (
     operation: string,
     resultCount?: number,
   ) => Locator;
-  getParentInstanceCell: (parentInstanceKey: string) => Locator;
-  getVersionCells: (version: string) => Locator;
+  readonly parentInstanceCell: (parentInstanceKey: string) => Locator;
+  readonly versionCells: (version: string) => Locator;
+  readonly calledInstanceCell: (
+    rowIndex?: number,
+    cellIndex?: number,
+  ) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -156,11 +161,11 @@ class OperateProcessesPage {
     this.scheduledOperationsIcons = page.getByTitle(
       /has scheduled operations/i,
     );
-    this.getProcessInstanceLinkByKey = (processInstanceKey: string) =>
+    this.processInstanceLinkByKey = (processInstanceKey: string) =>
       page.getByRole('link', {
         name: processInstanceKey,
       });
-    this.getOperationAndResultsContainer = (
+    this.operationAndResultsContainer = (
       operation: string,
       resultCount?: number,
     ) => {
@@ -169,10 +174,19 @@ class OperateProcessesPage {
         : new RegExp(`${operation}.*\\d+ results`);
       return page.locator('div').filter({hasText: pattern});
     };
-    this.getParentInstanceCell = (parentInstanceKey: string) =>
+    this.parentInstanceCell = (parentInstanceKey: string) =>
       this.dataList.getByRole('cell', {name: parentInstanceKey});
-    this.getVersionCells = (version: string) =>
+    this.versionCells = (version: string) =>
       this.dataList.getByRole('cell', {name: version, exact: true});
+    this.viewParentInstanceLinkInList = this.dataList.getByRole('link', {
+      name: /view parent instance/i,
+    });
+    this.calledInstanceCell = (rowIndex = 0, cellIndex = 2) =>
+      this.dataList
+        .getByRole('row')
+        .nth(rowIndex)
+        .getByRole('cell')
+        .nth(cellIndex);
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -408,6 +422,18 @@ class OperateProcessesPage {
   async startMigration(): Promise<void> {
     await this.clickMigrateButton();
     await this.clickContinueButton();
+  }
+
+  async clickViewParentInstanceFromList(): Promise<void> {
+    await this.viewParentInstanceLinkInList.click();
+  }
+
+  getNthProcessInstanceCheckbox(index: number): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByRole('row')
+      .nth(index + 1) // +1 to skip header row
+      .getByRole('checkbox');
   }
 }
 

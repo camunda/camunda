@@ -898,6 +898,13 @@ jobs:
     runs-on: ubuntu-latest
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
+    if: ${{ always() && !cancelled() && 
+      needs.release.result == 'success' &&
+      needs.zeebe-docker.result == 'success' &&
+      needs.operate-docker.result == 'success' &&
+      needs.tasklist-docker.result == 'success' &&
+      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
+      needs.camunda-docker.result == 'success' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1022,6 +1029,14 @@ jobs:
     name: Create FOSSA releases and generate attribution/SBOM reports
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker]
+    if: ${{ always() && !cancelled() && 
+      needs.release.result == 'success' &&
+      needs.github.result == 'success' &&
+      needs.zeebe-docker.result == 'success' &&
+      needs.operate-docker.result == 'success' &&
+      needs.tasklist-docker.result == 'success' &&
+      (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
+      needs.camunda-docker.result == 'success' }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -1039,9 +1054,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@1f5a9aec53f142d600b6d0bfea8533b860a65367
+        uses: camunda/infra-global-github-actions/fossa/info@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@1f5a9aec53f142d600b6d0bfea8533b860a65367
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1049,7 +1064,7 @@ jobs:
           revision-id: ${{ steps.fossa-context.outputs.head-revision }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@1f5a9aec53f142d600b6d0bfea8533b860a65367
+        uses: camunda/infra-global-github-actions/fossa/release@ac7a12d2c2baf37fd74a87663c3acb6fd95e984b
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}

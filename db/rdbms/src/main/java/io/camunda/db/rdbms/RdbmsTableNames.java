@@ -16,8 +16,11 @@ import java.util.List;
 public final class RdbmsTableNames {
 
   /**
-   * List of all known RDBMS table names. The order is important for the purger, so do not change it
-   * without verifying that the purge operation still works correctly.
+   * List of all known RDBMS table names. The order of tables in this list will be used by the
+   * RdbmsPurger to determine the order in which the tables are truncated. It is important to always
+   * truncate source tables of a FK reference before the target table of a FK reference is
+   * truncated. Failure to do so will result in FK constraint violations during truncation. Easiest
+   * symptom is a flaky test RdbmsPurgerIT in the CI pipeline.
    */
   public static final List<String> TABLE_NAMES =
       List.of(
@@ -40,13 +43,14 @@ public final class RdbmsTableNames {
           "FORM",
           "GROUP_MEMBER",
           "GROUP_",
+          "HISTORY_DELETION",
           "INCIDENT",
           "JOB",
           "MAPPING_RULES",
           "MESSAGE_SUBSCRIPTION",
           "PROCESS_DEFINITION",
-          "PROCESS_INSTANCE",
           "PROCESS_INSTANCE_TAG",
+          "PROCESS_INSTANCE",
           "ROLE_MEMBER",
           "ROLES",
           "SEQUENCE_FLOW",
@@ -57,8 +61,7 @@ public final class RdbmsTableNames {
           "USER_TASK_TAG",
           "USER_TASK",
           "USER_",
-          "VARIABLE",
-          "HISTORY_DELETION");
+          "VARIABLE");
 
   private RdbmsTableNames() {
     // Utility class - prevent instantiation

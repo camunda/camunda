@@ -28,6 +28,7 @@ jobs:
     concurrency:
       group: clean-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
@@ -51,3 +52,35 @@ jobs:
         token: ${{ steps.github-token.outputs.token }}
         ttl: 21d
         warning-ttl: 14d
+
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+
+    # Clean up any (remaining) smoke-test preview environments older than 12 hours
+    - uses: camunda/infra-global-github-actions/argocd-delete-applications@main
+      with:
+        argocd-token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        github-token: ${{ github.token }}
+        label-selector: |
+          preview=smoke-test
+          repo=camunda_camunda
+        min-age: 12h
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        job_name: preview-env-clean
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

@@ -25,15 +25,27 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import io.camunda.process.test.api.dsl.ImmutableElementSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
+import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
 import io.camunda.process.test.api.dsl.ImmutableTestScenario;
+import io.camunda.process.test.api.dsl.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
+import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -132,6 +144,114 @@ public class PojoCompatibilityTest {
                         ImmutableCreateProcessInstanceTerminateRuntimeInstruction.builder()
                             .afterElementId("task2")
                             .build())
+                    .build())),
+        Arguments.of(
+            "assert process instance: minimal",
+            singleTestCase(
+                ImmutableAssertProcessInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert process instance: full",
+            singleTestCase(
+                ImmutableAssertProcessInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .state(ProcessInstanceState.IS_COMPLETED)
+                    .hasActiveIncidents(false)
+                    .build())),
+        Arguments.of(
+            "assert element instance: minimal with elementId",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instance: minimal with elementName",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementName("Task A").build())
+                    .state(ElementInstanceState.IS_COMPLETED)
+                    .build())),
+        Arguments.of(
+            "assert element instance: full",
+            singleTestCase(
+                ImmutableAssertElementInstanceInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
+                    .state(ElementInstanceState.IS_TERMINATED)
+                    .amount(3)
+                    .build())),
+        Arguments.of(
+            "assert user task: minimal",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "assert user task: full",
+            singleTestCase(
+                ImmutableAssertUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .state(UserTaskState.IS_CREATED)
+                    .assignee("me")
+                    .candidateGroups(Arrays.asList("manager"))
+                    .priority(100)
+                    .elementId("task1")
+                    .name("Review")
+                    .dueDate("2025-10-31T10:00:00Z")
+                    .followUpDate("2025-10-20T10:00:00Z")
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_ACTIVE",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementName("Task B").build())
+                    .state(ElementInstancesState.IS_ACTIVE)
+                    .build())),
+        Arguments.of(
+            "assert element instances: IS_COMPLETED_IN_ORDER",
+            singleTestCase(
+                ImmutableAssertElementInstancesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .addElementSelectors(
+                        ImmutableElementSelector.builder().elementId("task2").build())
+                    .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
                     .build())));
   }
 

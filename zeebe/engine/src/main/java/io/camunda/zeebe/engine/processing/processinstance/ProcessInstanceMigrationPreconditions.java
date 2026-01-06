@@ -589,7 +589,10 @@ public final class ProcessInstanceMigrationPreconditions {
     final AbstractFlowElement targetElement =
         targetProcessDefinition.getProcess().getElementById(targetElementId);
     final BpmnElementType targetElementType = targetElement.getElementType();
-    if (targetElementType != BpmnElementType.USER_TASK) {
+
+    if (targetElementType != BpmnElementType.USER_TASK
+        && !(targetElement instanceof final ExecutableMultiInstanceBody tmi
+            && tmi.getInnerActivity().getElementType() == BpmnElementType.USER_TASK)) {
       return false;
     }
 

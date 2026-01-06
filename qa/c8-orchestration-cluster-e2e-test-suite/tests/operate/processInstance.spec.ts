@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from '../../utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -67,7 +68,7 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Resolve an incident', async ({operateProcessInstancePage}) => {
+  test('Resolve an incident', async ({page, operateProcessInstancePage}) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
@@ -107,13 +108,20 @@ test.describe('Process Instance', () => {
           /Condition error/i,
         ),
       ).toBeVisible();
-
-      await expect
-        .poll(
-          async () =>
-            await operateProcessInstancePage.incidentsTableOperationSpinner.isVisible(),
-        )
-        .toBe(false);
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(
+              async () =>
+                await operateProcessInstancePage.incidentsTableOperationSpinner.isVisible(),
+            )
+            .toBe(false);
+        },
+        onFailure: async () => {
+          await page.reload();
+          await sleep(5000);
+        },
+      });
 
       await expect(operateProcessInstancePage.incidentsTableRows).toHaveCount(
         1,
@@ -151,7 +159,15 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Expect all incidents resolved', async () => {
-      await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessInstancePage.incidentsBanner).toBeHidden();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await sleep(500);
+        },
+      });
       await expect(operateProcessInstancePage.incidentsTable).toBeHidden();
       await expect(operateProcessInstancePage.completedIcon).toBeVisible();
     });

@@ -300,7 +300,8 @@ public class UserTaskHandlerTest {
     formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987L));
     processCache.put(
         processDefinitionKey,
-        new CachedProcessEntity("my-process", "v1", List.of(), Map.of(elementId, "my-flow-node")));
+        new CachedProcessEntity(
+            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node")));
 
     // when
     final TaskEntity taskEntity =
@@ -853,7 +854,6 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
-    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getAssignee()).isEqualTo(taskRecordValue.getAssignee());
@@ -897,7 +897,6 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
-    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getAssignee()).isEqualTo(null);
@@ -1000,7 +999,6 @@ public class UserTaskHandlerTest {
         List.of(
             "priority", "dueDate", "followUpDate", "candidateUsersList", "candidateGroupsList"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
-    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
@@ -1067,7 +1065,6 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("priority", "assignee"));
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
-    expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
@@ -1078,14 +1075,16 @@ public class UserTaskHandlerTest {
   }
 
   @Test
-  void flushedCreateEntityShouldContainUserTaskMigrationUpdates() {
+  void flushedCreatingEntityShouldContainUserTaskMigrationUpdates() {
     // given
     final long processInstanceKey = 123;
     final long flowNodeInstanceKey = 456;
     final long recordKey = 110;
+    final String bpmnProcessId = "process-id";
     final String formId = "my-form-id";
-    final String formKey = "my-form-key";
+    final long formKey = 789L;
     exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
+    formCache.put(String.valueOf(formKey), new CachedFormEntity(formId, 3L));
     final var dateTime = OffsetDateTime.now();
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
@@ -1097,30 +1096,28 @@ public class UserTaskHandlerTest {
                     "candidateUsersList",
                     "candidateGroupsList"))
             .withProcessInstanceKey(processInstanceKey)
+            .withBpmnProcessId(bpmnProcessId)
+            .withProcessDefinitionVersion(2)
             .withPriority(99)
             .withDueDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
             .withFollowUpDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
             .withCandidateUsersList(Arrays.asList("user1", "user2"))
             .withCandidateGroupsList(Arrays.asList("group1", "group2"))
             .withElementInstanceKey(flowNodeInstanceKey)
+            .withFormKey(formKey)
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
         factory.generateRecord(
             ValueType.USER_TASK,
             r ->
-                r.withIntent(UserTaskIntent.CREATED)
+                r.withIntent(UserTaskIntent.CREATING)
                     .withValue(taskRecordValue)
                     .withKey(recordKey)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity =
-        underTest
-            .createNewEntity(String.valueOf(recordKey))
-            .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
-            .setFormId(formId)
-            .setFormKey(formKey);
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(recordKey));
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -1128,26 +1125,22 @@ public class UserTaskHandlerTest {
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
-    expectedUpdates.put(TaskTemplate.FOLLOW_UP_DATE, taskEntity.getFollowUpDate());
-    expectedUpdates.put(TaskTemplate.DUE_DATE, taskEntity.getDueDate());
-    expectedUpdates.put(TaskTemplate.CANDIDATE_USERS, taskEntity.getCandidateUsers());
-    expectedUpdates.put(TaskTemplate.CANDIDATE_GROUPS, taskEntity.getCandidateGroups());
-    expectedUpdates.put(
-        TaskTemplate.CHANGED_ATTRIBUTES,
-        List.of(
-            "priority", "dueDate", "followUpDate", "candidateUsersList", "candidateGroupsList"));
-    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATING);
     expectedUpdates.put(TaskTemplate.IMPLEMENTATION, taskEntity.getImplementation());
     expectedUpdates.put(TaskTemplate.FORM_ID, taskEntity.getFormId());
     expectedUpdates.put(TaskTemplate.FORM_KEY, taskEntity.getFormKey());
     expectedUpdates.put(TaskTemplate.KEY, taskEntity.getKey());
+    expectedUpdates.put(TaskTemplate.FORM_VERSION, 3L);
+    expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
+    expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
+    expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_VERSION, 2);
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
     assertThat(taskEntity.getDueDate()).isEqualTo(taskRecordValue.getDueDate());
     assertThat(taskEntity.getFollowUpDate()).isEqualTo(taskRecordValue.getFollowUpDate());
     assertThat(taskEntity.getFormId()).isEqualTo(formId);
-    assertThat(taskEntity.getFormKey()).isEqualTo(formKey);
+    assertThat(taskEntity.getFormKey()).isEqualTo(String.valueOf(formKey));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
     assertThat(Arrays.stream(taskEntity.getCandidateGroups()).toList())
         .isEqualTo(taskRecordValue.getCandidateGroupsList());

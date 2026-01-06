@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
@@ -44,6 +45,7 @@ import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
+import io.camunda.db.rdbms.write.service.ProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RdbmsWriter;
@@ -56,6 +58,7 @@ import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RdbmsWriters {
@@ -90,7 +93,8 @@ public class RdbmsWriters {
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper) {
+      final ClusterVariableMapper clusterVariableMapper,
+      final HistoryDeletionMapper historyDeletionMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     this.metrics = metrics;
@@ -151,7 +155,9 @@ public class RdbmsWriters {
     writers.put(
         ClusterVariableWriter.class,
         new ClusterVariableWriter(executionQueue, vendorDatabaseProperties));
-    writers.put(HistoryDeletionWriter.class, new HistoryDeletionWriter(executionQueue));
+    writers.put(
+        HistoryDeletionWriter.class,
+        new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
@@ -256,6 +262,13 @@ public class RdbmsWriters {
 
   public HistoryDeletionWriter getHistoryDeletionWriter() {
     return getWriter(HistoryDeletionWriter.class);
+  }
+
+  public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {
+    return writers.values().stream()
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
+        .toList();
   }
 
   private <W> W getWriter(final Class<W> writerClass) {

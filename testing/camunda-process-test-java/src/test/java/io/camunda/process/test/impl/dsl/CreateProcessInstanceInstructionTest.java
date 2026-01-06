@@ -31,7 +31,6 @@ import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstru
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -48,12 +47,10 @@ public class CreateProcessInstanceInstructionTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClient camundaClient;
 
-  private CreateProcessInstanceInstructionHandler instructionHandler;
+  @Mock private AssertionFacade assertionFacade;
 
-  @BeforeEach
-  void setup() {
-    instructionHandler = new CreateProcessInstanceInstructionHandler();
-  }
+  private final CreateProcessInstanceInstructionHandler instructionHandler =
+      new CreateProcessInstanceInstructionHandler();
 
   @Test
   void shouldCreateProcessInstanceByProcessDefinitionId() {
@@ -67,7 +64,7 @@ public class CreateProcessInstanceInstructionTest {
             .build();
 
     // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient);
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
     verify(camundaClient).newCreateInstanceCommand();
@@ -81,7 +78,7 @@ public class CreateProcessInstanceInstructionTest {
 
     verify(mockCommand).send();
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand);
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
   }
 
   @Test
@@ -101,7 +98,7 @@ public class CreateProcessInstanceInstructionTest {
             .build();
 
     // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient);
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
     verify(camundaClient).newCreateInstanceCommand();
@@ -115,7 +112,7 @@ public class CreateProcessInstanceInstructionTest {
 
     verify(mockCommand).send();
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand);
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
   }
 
   @Test
@@ -134,7 +131,7 @@ public class CreateProcessInstanceInstructionTest {
             .build();
 
     // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient);
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
     verify(camundaClient).newCreateInstanceCommand();
@@ -150,7 +147,7 @@ public class CreateProcessInstanceInstructionTest {
     verify(mockCommand).startBeforeElement("task2");
     verify(mockCommand).send();
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand);
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
   }
 
   @Test
@@ -173,7 +170,7 @@ public class CreateProcessInstanceInstructionTest {
             .build();
 
     // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient);
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
     verify(camundaClient).newCreateInstanceCommand();
@@ -189,7 +186,7 @@ public class CreateProcessInstanceInstructionTest {
     verify(mockCommand).terminateAfterElement("task2");
     verify(mockCommand).send();
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand);
+    verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
   }
 
   @Test
@@ -202,7 +199,9 @@ public class CreateProcessInstanceInstructionTest {
 
     // when/then
     assertThatThrownBy(
-            () -> instructionHandler.execute(instruction, processTestContext, camundaClient))
+            () ->
+                instructionHandler.execute(
+                    instruction, processTestContext, camundaClient, assertionFacade))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Missing required property: processDefinitionId");
   }

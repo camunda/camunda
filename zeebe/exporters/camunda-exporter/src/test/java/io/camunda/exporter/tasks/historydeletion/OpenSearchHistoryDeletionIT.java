@@ -33,7 +33,8 @@ public class OpenSearchHistoryDeletionIT extends HistoryDeletionRepositoryIT {
         client,
         Runnable::run,
         LOGGER,
-        partitionId);
+        partitionId,
+        config.getHistoryDeletion());
   }
 
   @Override

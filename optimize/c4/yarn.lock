@@ -1695,47 +1695,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.62.0":
-  version: 10.62.0
-  resolution: "@carbon/icon-helpers@npm:10.62.0"
+"@carbon/icon-helpers@npm:^10.70.0":
+  version: 10.70.0
+  resolution: "@carbon/icon-helpers@npm:10.70.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/15d91f59ee4c6689f6c7a95a4e8ee543c64c31ffee4392e63b88c7204d7e7494cec1903190d177851a24782b3d1c75416482be1b99639687bccd738994bf8911
+  checksum: 10c0/ef2d1fdc1001481de347d4f1cf263b3ee066a387bcf51c8a36af594a1f1bb7b00476dd5c6f6b12eb7de81bbbab325ef3628607db161692d847bae9e13fdd04d3
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.66.0":
-  version: 10.66.0
-  resolution: "@carbon/icon-helpers@npm:10.66.0"
+"@carbon/icons-react@npm:^11.41.0, @carbon/icons-react@npm:^11.67.0":
+  version: 11.72.0
+  resolution: "@carbon/icons-react@npm:11.72.0"
   dependencies:
-    "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/537ec0527a6841f9299a042d3b18af6782887eb5ca1d805e3e6140f51acf814d1726a8d53084724fa42a22c849e44462bc2bf125b5df72f5ce675060034590cf
-  languageName: node
-  linkType: hard
-
-"@carbon/icons-react@npm:^11.41.0":
-  version: 11.63.0
-  resolution: "@carbon/icons-react@npm:11.63.0"
-  dependencies:
-    "@carbon/icon-helpers": "npm:^10.62.0"
+    "@carbon/icon-helpers": "npm:^10.70.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     prop-types: "npm:^15.8.1"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/1bbd4751768b39678491df717f7e63393d5fb1ac2d00968495ea8eb5f5218313fb896baeaeb7a945c17fdb6ce95acf899a5757146258715c35c8b33e3a1c2f92
-  languageName: node
-  linkType: hard
-
-"@carbon/icons-react@npm:^11.67.0":
-  version: 11.67.0
-  resolution: "@carbon/icons-react@npm:11.67.0"
-  dependencies:
-    "@carbon/icon-helpers": "npm:^10.66.0"
-    "@ibm/telemetry-js": "npm:^1.5.0"
-    prop-types: "npm:^15.8.1"
-  peerDependencies:
-    react: ">=16"
-  checksum: 10c0/9931d6a469cb4ab83666c0ae00362988dabcfa8a6405b36cdaad3ae778d7dad1027489714b1e6ab1dad21ef945bcde6c765bc2052a7c47ce5218c7e9d31037c7
+  checksum: 10c0/745365425ba865372ece2fbf5288fe872b8831f597de55d11aef9e2eeeadffa194bfea5a6fd3293f3860a44a38e544b1e28e7c9b1adb86bc86c7246133653242
   languageName: node
   linkType: hard
 

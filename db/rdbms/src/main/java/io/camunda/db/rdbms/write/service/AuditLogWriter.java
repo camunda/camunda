@@ -15,7 +15,7 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class AuditLogWriter implements RdbmsWriter {
+public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
 
@@ -23,6 +23,7 @@ public class AuditLogWriter implements RdbmsWriter {
       final ExecutionQueue executionQueue,
       final AuditLogMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties) {
+    super(mapper);
     this.executionQueue = executionQueue;
   }
 

@@ -18,6 +18,8 @@ import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,59 +53,12 @@ public final class BackupRequestHandler implements BackupApi {
 
   @Override
   public CompletionStage<Long> takeBackup(final long backupId) {
-    return checkTopologyComplete()
-        .thenCompose(
-            topology -> {
-              final var backupsTaken =
-                  topology.getPartitions().stream()
-                      .map(partitionId -> createBackupRequest(backupId, partitionId))
-                      .map(brokerClient::sendRequestWithRetry)
-                      .toList();
-
-              return CompletableFuture.allOf(backupsTaken.toArray(CompletableFuture[]::new))
-                  .thenApply(
-                      ignore -> {
-
-                        // If all partition created checkpoint, then return success.
-                        // If all partitions rejected with the requested id or some rejected with a
-                        // higher id, then fail.
-                        // If some partitions created checkpoint, other partition
-                        // rejected with the same id then return success. The partitions that
-                        // rejected might have created a checkpoint due to inter-partition
-                        // communication, or it had already created one in a previous attempt to
-                        // take the backup. Since it is difficult to distinguish these cases, we
-                        // assume it as a success because other partitions have created a new
-                        // backup.
-                        final var aggregatedResponse =
-                            backupsTaken.stream()
-                                .map(response -> response.join().getResponse())
-                                .distinct()
-                                .reduce(
-                                    (r1, r2) ->
-                                        new BackupResponse(
-                                            r1.created() || r2.created(),
-                                            max(r1.checkpointId(), r2.checkpointId())))
-                                .orElseThrow();
-
-                        if (aggregatedResponse.created()
-                            && aggregatedResponse.checkpointId() == backupId) {
-                          // atleast one partition created a new checkpoint && all partitions have
-                          // the latest checkpoint at backupId
-                          return backupId;
-                        } else {
-                          throw new BackupAlreadyExistException(
-                              backupId, aggregatedResponse.checkpointId());
-                        }
-                      });
-            });
+    return takeBackup(backupId, CheckpointType.MANUAL_BACKUP);
   }
 
   @Override
   public CompletionStage<Long> takeBackup() {
-    var backupId = InstantSource.system().instant().toEpochMilli();
-    if (backupIdOffset > 0) {
-      backupId += backupIdOffset;
-    }
+    final var backupId = generateCheckpointId();
     return takeBackup(backupId);
   }
 
@@ -147,7 +102,8 @@ public final class BackupRequestHandler implements BackupApi {
                   .thenApply(
                       ignored ->
                           statusesReceived.stream()
-                              .map(response -> response.join().getResponse())
+                              .map(CompletableFuture::join)
+                              .map(BrokerResponse::getResponse)
                               .collect(Collectors.toSet()))
                   .thenApply(this::aggregateCheckpointResponses);
             });
@@ -179,6 +135,68 @@ public final class BackupRequestHandler implements BackupApi {
                         .map(partitionId -> createDeleteRequest(backupId, partitionId))
                         .map(brokerClient::sendRequestWithRetry)
                         .toArray(CompletableFuture[]::new)));
+  }
+
+  /**
+   * Trigger a checkpoint of the given type across all partitions
+   *
+   * @param checkpointType {@link CheckpointType} type of checkpoint to create
+   * @return the checkpoint id created
+   */
+  public CompletionStage<Long> checkpoint(final CheckpointType checkpointType) {
+    final var checkpointId = generateCheckpointId();
+    return takeBackup(checkpointId, checkpointType);
+  }
+
+  @VisibleForTesting
+  public CompletionStage<Long> takeBackup(
+      final long backupId, final CheckpointType checkpointType) {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var backupsTaken =
+                  topology.getPartitions().stream()
+                      .map(
+                          partitionId -> createBackupRequest(backupId, partitionId, checkpointType))
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(backupsTaken.toArray(CompletableFuture[]::new))
+                  .thenApply(
+                      ignore -> {
+
+                        // If all partition created checkpoint, then return success.
+                        // If all partitions rejected with the requested id or some rejected with a
+                        // higher id, then fail.
+                        // If some partitions created checkpoint, other partition
+                        // rejected with the same id then return success. The partitions that
+                        // rejected might have created a checkpoint due to inter-partition
+                        // communication, or it had already created one in a previous attempt to
+                        // take the backup. Since it is difficult to distinguish these cases, we
+                        // assume it as a success because other partitions have created a new
+                        // backup.
+                        final var aggregatedResponse =
+                            backupsTaken.stream()
+                                .map(response -> response.join().getResponse())
+                                .distinct()
+                                .reduce(
+                                    (r1, r2) ->
+                                        new BackupResponse(
+                                            r1.created() || r2.created(),
+                                            max(r1.checkpointId(), r2.checkpointId())))
+                                .orElseThrow();
+
+                        if (aggregatedResponse.created()
+                            && aggregatedResponse.checkpointId() == backupId) {
+                          // atleast one partition created a new checkpoint && all partitions have
+                          // the latest checkpoint at backupId
+                          return backupId;
+                        } else {
+                          throw new BackupAlreadyExistException(
+                              backupId, aggregatedResponse.checkpointId());
+                        }
+                      });
+            });
   }
 
   private List<BackupStatus> aggregateBackupList(
@@ -339,10 +357,11 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   private static BrokerBackupRequest createBackupRequest(
-      final long backupId, final int partitionId) {
+      final long backupId, final int partitionId, final CheckpointType checkpointType) {
     final var request = new BrokerBackupRequest();
     request.setBackupId(backupId);
     request.setPartitionId(partitionId);
+    request.setCheckpointType(checkpointType);
     return request;
   }
 
@@ -381,5 +400,13 @@ public final class BackupRequestHandler implements BackupApi {
     final var request = new BrokerCheckpointStateRequest();
     request.setPartitionId(partitionId);
     return request;
+  }
+
+  private long generateCheckpointId() {
+    var backupId = InstantSource.system().instant().toEpochMilli();
+    if (backupIdOffset > 0) {
+      backupId += backupIdOffset;
+    }
+    return backupId;
   }
 }

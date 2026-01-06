@@ -177,7 +177,7 @@ import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
-import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsRequest;
+import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -337,7 +337,7 @@ import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
-import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
@@ -1550,8 +1550,9 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public IncidentProcessInstanceStatisticsRequest newIncidentProcessInstanceStatisticsRequest() {
-    return new IncidentProcessInstanceStatisticsRequestImpl(httpClient, jsonMapper);
+  public IncidentProcessInstanceStatisticsByErrorRequest
+      newIncidentProcessInstanceStatisticsByErrorRequest() {
+    return new IncidentProcessInstanceStatisticsByErrorRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

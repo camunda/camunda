@@ -308,7 +308,7 @@ test.describe.serial('Process Instance Migration', () => {
         },
       });
 
-      await expect(operateProcessesPage.getVersionCells('2')).toHaveCount(6, {
+      await expect(operateProcessesPage.versionCells('2')).toHaveCount(6, {
         timeout: 30000,
       });
     });
@@ -644,7 +644,7 @@ test.describe.serial('Process Instance Migration', () => {
       await validateURL(page, /operationId=/);
 
       await expect(
-        operateProcessesPage.getVersionCells(targetVersion),
+        operateProcessesPage.versionCells(targetVersion),
       ).toHaveCount(3, {timeout: 60000});
     });
 

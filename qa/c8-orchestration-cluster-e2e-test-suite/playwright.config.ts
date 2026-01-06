@@ -28,7 +28,6 @@ function getTestTypeLabel(): string {
   return `Nightly Test Results for Mono Repo - ${process.env.VERSION} (Tasklist ${tasklistMode})`;
 }
 
-
 // Reporters
 const useReportersWithoutSlack: any[] = [
   ['list'],
@@ -68,7 +67,16 @@ const normalProjects = [
   {
     name: 'api-tests',
     testMatch: ['tests/api/**/*.spec.ts'],
+    testIgnore: ['tests/api/v2/clock/*.spec.ts'],
     use: devices['Desktop Chrome'],
+    teardown: 'clock-api-tests',
+  },
+  {
+    name: 'clock-api-tests',
+    testMatch: ['tests/api/v2/clock/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
   },
   {
     name: 'chromium',
@@ -197,6 +205,12 @@ const normalProjects = [
   {
     name: 'identity-e2e',
     testMatch: ['tests/identity/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
+  {
+    name: 'operate-e2e',
+    testMatch: ['tests/operate/*.spec.ts'],
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },

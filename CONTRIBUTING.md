@@ -268,9 +268,6 @@ You can run the Camunda distribution via IntelliJ for development purposes.
 
 ##### Troubleshooting
 
-- If you receive an error on saving the project structure settings regarding the
-  `zeebe-gateway-protocol` not being able to contain the `src/main/proto` directory, fix this by
-  removing the mentioned source root from `zeebe-gateway-protocol` module in the _Modules_ tab.
 - If you notice errors in files referencing `GatewayOuterClass` (or its inner classes), you may need
   to increase the maximum file size for which IntelliJ provides code assistance. To do this,
   `Help -> Edit Custom Properties` and add the following line:

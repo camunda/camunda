@@ -7,19 +7,24 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.List;
 import java.util.Map;
 
 public class HistoryDeletionWriter implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final HistoryDeletionMapper historyDeletionMapper;
 
-  public HistoryDeletionWriter(final ExecutionQueue executionQueue) {
+  public HistoryDeletionWriter(
+      final ExecutionQueue executionQueue, final HistoryDeletionMapper historyDeletionMapper) {
     this.executionQueue = executionQueue;
+    this.historyDeletionMapper = historyDeletionMapper;
   }
 
   public void create(final HistoryDeletionDbModel dbModel) {
@@ -43,5 +48,9 @@ public class HistoryDeletionWriter implements RdbmsWriter {
             id,
             "io.camunda.db.rdbms.sql.HistoryDeletionMapper.delete",
             Map.of("resourceKey", resourceKey, "batchOperationKey", batchOperationKey)));
+  }
+
+  public int deleteByResourceKeys(final List<Long> resourceKeys) {
+    return historyDeletionMapper.deleteByResourceKeys(resourceKeys);
   }
 }

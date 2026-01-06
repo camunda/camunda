@@ -190,7 +190,7 @@ public final class ManifestManager {
               try {
                 return MAPPER.readValue(content, Manifest.class);
               } catch (final IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
               }
             })
         .toList();

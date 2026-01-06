@@ -51,7 +51,7 @@
     <zeebe.docker.version>8.9</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.5.3</surefire-plugin.version>
+    <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
     <!-- maven dependency plugin -->
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
@@ -72,7 +72,6 @@
     <opensearch.test.version>2.17.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.2</quartz.version>
 
@@ -83,7 +82,7 @@
     <junit.platform.version>1.13.4</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.27.6</assertj.version>
-    <google-java-format.plugin.version>1.28.0</google-java-format.plugin.version>
+    <google-java-format.plugin.version>1.33.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 

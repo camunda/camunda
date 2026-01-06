@@ -59,6 +59,7 @@ export enum OwnerType {
 }
 
 export enum ResourceType {
+  AUDIT_LOG = "AUDIT_LOG",
   AUTHORIZATION = "AUTHORIZATION",
   BATCH = "BATCH",
   CLUSTER_VARIABLE = "CLUSTER_VARIABLE",

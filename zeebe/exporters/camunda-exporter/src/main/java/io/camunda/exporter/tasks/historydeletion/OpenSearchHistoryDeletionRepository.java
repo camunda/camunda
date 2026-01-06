@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -36,13 +37,15 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
 
   private final IndexDescriptor indexDescriptor;
   private final int partitionId;
+  private final HistoryDeletionConfiguration config;
 
   public OpenSearchHistoryDeletionRepository(
       final ExporterResourceProvider resourceProvider,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger,
-      final int partitionId) {
+      final int partitionId,
+      final HistoryDeletionConfiguration config) {
     super(client, executor, logger);
     indexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
@@ -51,6 +54,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             .orElseThrow(
                 () -> new IllegalStateException("No HistoryDeletionIndex descriptor found"));
     this.partitionId = partitionId;
+    this.config = config;
   }
 
   @Override
@@ -144,7 +148,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
     return new SearchRequest.Builder()
         .index(indexName)
         .requestCache(false)
-        .size(100) // TODO add configurable values
+        .size(config.getQueueBatchSize())
         .sort(s -> s.field(f -> f.field("id").order(SortOrder.Asc)))
         .query(
             q ->

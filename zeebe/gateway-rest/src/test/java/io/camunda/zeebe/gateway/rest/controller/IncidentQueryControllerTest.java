@@ -15,11 +15,11 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
-import io.camunda.search.entities.IncidentProcessInstanceStatisticsEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
-import io.camunda.search.query.IncidentProcessInstanceStatisticsQuery;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -47,7 +47,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   static final String INCIDENT_SEARCH_URL = INCIDENT_URL + "search";
 
   static final String INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL =
-      INCIDENT_URL + "statistics/process-instances";
+      INCIDENT_URL + "statistics/process-instances-by-error";
   static final String INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_URL =
       INCIDENT_URL + "statistics/process-instances-by-definition";
   static final Integer ERROR_HASH_CODE = 123456;
@@ -186,12 +186,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           }
           """;
 
-  private static final SearchQueryResult<IncidentProcessInstanceStatisticsEntity>
+  private static final SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
       INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT =
-          new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsEntity>()
+          new SearchQueryResult.Builder<IncidentProcessInstanceStatisticsByErrorEntity>()
               .items(
                   List.of(
-                      new IncidentProcessInstanceStatisticsEntity(
+                      new IncidentProcessInstanceStatisticsByErrorEntity(
                           123456, "This is an error message", 10L)))
               .total(1L)
               .startCursor(null)
@@ -398,8 +398,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldReturnIncidentProcessInstanceStatisticsByError() {
-    when(incidentServices.incidentProcessInstanceStatistics(
-            any(IncidentProcessInstanceStatisticsQuery.class)))
+    when(incidentServices.incidentProcessInstanceStatisticsByError(
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     webClient
@@ -417,8 +417,93 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(incidentServices)
-        .incidentProcessInstanceStatistics(
-            new IncidentProcessInstanceStatisticsQuery.Builder().build());
+        .incidentProcessInstanceStatisticsByError(
+            new IncidentProcessInstanceStatisticsByErrorQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSortIncidentProcessInstanceStatisticsByError() {
+    // given
+    when(incidentServices.incidentProcessInstanceStatisticsByError(
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
+        .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
+
+    final var request =
+        """
+        {
+          "sort": [
+            {
+              "field": "errorMessage",
+              "order": "asc"
+            },
+            {
+              "field": "activeInstancesWithErrorCount",
+              "order": "desc"
+            }
+          ]
+        }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            EXPECTED_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_RESPONSE,
+            JsonCompareMode.STRICT);
+
+    verify(incidentServices)
+        .incidentProcessInstanceStatisticsByError(
+            new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
+                .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
+                .build());
+  }
+
+  @Test
+  void shouldPaginateIncidentProcessInstanceStatisticsByError() {
+    // given
+    when(incidentServices.incidentProcessInstanceStatisticsByError(
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
+        .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
+
+    final var request =
+        """
+            {
+              "page": { "from": 0, "limit": 5 }
+            }
+            """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            EXPECTED_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_RESPONSE,
+            JsonCompareMode.STRICT);
+
+    verify(incidentServices)
+        .incidentProcessInstanceStatisticsByError(
+            new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
+                .page(p -> p.from(0).size(5))
+                .build());
   }
 
   @Test
@@ -682,5 +767,43 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                     f -> f.errorMessageHashes(ERROR_HASH_CODE).states(IncidentState.ACTIVE.name()))
                 .page(p -> p.from(0).size(5))
                 .build());
+  }
+
+  @Test
+  void shouldRejectIncidentProcessInstanceStatisticsByErrorRequestWithFilter() {
+    final var request =
+        """
+            {
+              "filter": {
+                "errorHashCode": 123456
+              }
+            }
+            """;
+
+    webClient
+        .post()
+        .uri(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        // We only assert the stable bits here: 400 + instance path. The detail message for unknown
+        // properties is produced by Jackson and may change between versions.
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400,
+                  "instance": "%s"
+                }
+                """
+                .formatted(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_URL),
+            JsonCompareMode.LENIENT);
   }
 }

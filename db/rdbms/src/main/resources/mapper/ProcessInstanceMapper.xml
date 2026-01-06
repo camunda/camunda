@@ -460,4 +460,13 @@
     <bind name="tableName" value="'PROCESS_INSTANCE'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}PROCESS_INSTANCE
+    WHERE PROCESS_INSTANCE_KEY IN
+    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+
 </mapper>

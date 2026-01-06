@@ -1269,6 +1269,52 @@ public final class CallActivityTest {
         .hasValue("%d".formatted(CUSTOM_CALL_ACTIVITY_DEPTH + 1));
   }
 
+  @Test
+  public void shouldSetRootProcessInstanceKeyInProcessInstanceRecordsAcrossHierarchy() {
+    // given
+    final var rootProcessId = "wf-root-three-levels";
+    final var rootProcess =
+        Bpmn.createExecutableProcess(rootProcessId)
+            .startEvent()
+            .callActivity("call-parent", c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-root.bpmn", rootProcess)
+        .withXmlResource("wf-parent.bpmn", parentProcess(CallActivityBuilder::done))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    // when
+    final long rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstanceRecords = getInstancesOf(rootInstanceKey);
+    final var parentInstanceKey = getChildInstanceOf(rootInstanceKey).getProcessInstanceKey();
+    final var parentInstanceRecords = getInstancesOf(parentInstanceKey);
+    final var childProcessInstanceKey =
+        getChildInstanceOf(parentInstanceKey).getProcessInstanceKey();
+    final var childInstanceRecords = getInstancesOf(childProcessInstanceKey);
+
+    // then
+    assertThat(rootInstanceRecords)
+        .hasSize(13)
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getRootProcessInstanceKey()).isEqualTo(rootInstanceKey));
+    assertThat(parentInstanceRecords)
+        .hasSize(13)
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getRootProcessInstanceKey()).isEqualTo(rootInstanceKey));
+    assertThat(childInstanceRecords)
+        .hasSize(13)
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getRootProcessInstanceKey()).isEqualTo(rootInstanceKey));
+  }
+
   private void deployDefaultParentAndChildProcess() {
     final var parentProcess = parentProcess(CallActivityBuilder::done);
 
@@ -1308,6 +1354,13 @@ public final class CallActivityTest {
         .withParentProcessInstanceKey(processInstanceKey)
         .getFirst()
         .getValue();
+  }
+
+  private List<ProcessInstanceRecordValue> getInstancesOf(final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .map(Record::getValue)
+        .toList();
   }
 
   private long getCallActivityInstanceKey(final long processInstanceKey) {

@@ -18,5 +18,7 @@ package io.camunda.client.api.search.enums;
 public enum AuditLogActorTypeEnum {
   USER,
   CLIENT,
+  ANONYMOUS,
+  UNKNOWN,
   UNKNOWN_ENUM_VALUE
 }

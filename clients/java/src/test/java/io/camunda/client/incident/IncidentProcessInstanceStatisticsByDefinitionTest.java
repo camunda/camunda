@@ -18,9 +18,6 @@ package io.camunda.client.incident;
 import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
@@ -36,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,27 +49,24 @@ public class IncidentProcessInstanceStatisticsByDefinitionTest extends ClientRes
   }
 
   @Test
-  void shouldRetrieveIncidentProcessInstanceStatisticsByDefinitionRequest()
-      throws JsonProcessingException {
+  void shouldRequestIncidentProcessInstanceStatisticsByDefinition() {
     // when
     client.newIncidentProcessInstanceStatisticsByDefinitionRequest(ERROR_HASH_CODE).send().join();
 
     // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl())
+    final LoggedRequest loggedRequest = RestGatewayService.getLastRequest();
+    final IncidentProcessInstanceStatisticsByDefinitionQuery queryRequest =
+        gatewayService.getLastRequest(IncidentProcessInstanceStatisticsByDefinitionQuery.class);
+
+    assertThat(loggedRequest.getUrl())
         .isEqualTo("/v2/incidents/statistics/process-instances-by-definition");
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+    assertThat(loggedRequest.getMethod()).isEqualTo(RequestMethod.POST);
 
-    final ObjectMapper mapper = new ObjectMapper();
-    final JsonNode json = mapper.readTree(request.getBodyAsString());
-
-    AssertionsForClassTypes.assertThat(json.get("filter")).isNotNull();
-    AssertionsForClassTypes.assertThat(json.get("filter").get("errorHashCode").asInt())
-        .isEqualTo(ERROR_HASH_CODE);
-    AssertionsForClassTypes.assertThat(json.get("page")).isNull();
-    AssertionsForClassTypes.assertThat(json.get("sort")).isNotNull();
-    AssertionsForClassTypes.assertThat(json.get("sort").isArray()).isTrue();
-    Assertions.assertThat(json.get("sort")).isEmpty();
+    assertThat(queryRequest.getFilter()).isNotNull();
+    assertThat(queryRequest.getFilter().getErrorHashCode()).isEqualTo(ERROR_HASH_CODE);
+    assertThat(queryRequest.getPage()).isNull();
+    assertThat(queryRequest.getSort()).isNotNull();
+    assertThat(queryRequest.getSort()).isEmpty();
   }
 
   @Test
@@ -90,10 +83,9 @@ public class IncidentProcessInstanceStatisticsByDefinitionTest extends ClientRes
         gatewayService.getLastRequest(IncidentProcessInstanceStatisticsByDefinitionQuery.class);
 
     final OffsetPagination page = request.getPage();
-    AssertionsForClassTypes.assertThat(page).isNotNull();
-    AssertionsForClassTypes.assertThat(page).extracting(OffsetPagination::getFrom).isEqualTo(5);
-
-    AssertionsForClassTypes.assertThat(page).extracting(OffsetPagination::getLimit).isEqualTo(10);
+    assertThat(page).isNotNull();
+    assertThat(page).extracting(OffsetPagination::getFrom).isEqualTo(5);
+    assertThat(page).extracting(OffsetPagination::getLimit).isEqualTo(10);
   }
 
   @Test

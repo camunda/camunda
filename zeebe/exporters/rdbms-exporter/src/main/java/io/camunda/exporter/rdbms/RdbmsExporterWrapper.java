@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
@@ -17,6 +18,7 @@ import io.camunda.exporter.rdbms.RdbmsExporter.Builder;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsDecisionRequirementsCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
+import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
 import io.camunda.exporter.rdbms.handlers.ClusterVariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler;
@@ -42,22 +44,6 @@ import io.camunda.exporter.rdbms.handlers.UsageMetricExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
-import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
-import io.camunda.exporter.rdbms.handlers.auditlog.AuthorizationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.IncidentResolutionAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.MappingRuleAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ResourceAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.TenantAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.TenantEntityAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.UserAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
@@ -68,6 +54,28 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModifica
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -144,7 +152,14 @@ public class RdbmsExporterWrapper implements Exporter {
     final var historyCleanupService = new HistoryCleanupService(rdbmsWriterConfig, rdbmsWriters);
     builder.historyCleanupService(historyCleanupService);
     final var historyDeletionService =
-        new HistoryDeletionService(rdbmsWriters, rdbmsService.getHistoryDeletionDbReader());
+        new HistoryDeletionService(
+            rdbmsWriters,
+            rdbmsService.getHistoryDeletionDbReader(),
+            new HistoryDeletionConfig(
+                config.getHistoryDeletion().getDelayBetweenRuns(),
+                config.getHistoryDeletion().getMaxDelayBetweenRuns(),
+                config.getHistoryDeletion().getQueueBatchSize(),
+                config.getHistoryDeletion().getDependentRowLimit()));
     builder.historyDeletionService(historyDeletionService);
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
@@ -304,17 +319,24 @@ public class RdbmsExporterWrapper implements Exporter {
             new AuthorizationAuditLogTransformer(),
             new BatchOperationCreationAuditLogTransformer(),
             new BatchOperationLifecycleManagementAuditLogTransformer(),
+            new DecisionAuditLogTransformer(),
             new DecisionEvaluationAuditLogTransformer(),
+            new GroupAuditLogTransformer(),
+            new GroupEntityAuditLogTransformer(),
             new IncidentResolutionAuditLogTransformer(),
             new MappingRuleAuditLogTransformer(),
+            new ProcessAuditLogTransformer(),
             new ProcessInstanceCancelAuditLogTransformer(),
             new ProcessInstanceCreationAuditLogTransformer(),
             new ProcessInstanceMigrationAuditLogTransformer(),
             new ProcessInstanceModificationAuditLogTransformer(),
             new ResourceAuditLogTransformer(),
+            new RoleAuditLogTransformer(),
+            new RoleEntityAuditLogTransformer(),
             new TenantAuditLogTransformer(),
             new TenantEntityAuditLogTransformer(),
             new UserAuditLogTransformer(),
+            new UserTaskAuditLogTransformer(),
             new VariableAddUpdateAuditLogTransformer())
         .forEach(
             transformer ->
