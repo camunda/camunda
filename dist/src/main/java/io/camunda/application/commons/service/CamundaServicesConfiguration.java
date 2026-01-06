@@ -352,6 +352,7 @@ public class CamundaServicesConfiguration {
       final FormServices formServices,
       final ElementInstanceServices elementInstanceServices,
       final VariableServices variableServices,
+      final AuditLogServices auditLogServices,
       final ProcessCache processCache,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
@@ -362,6 +363,7 @@ public class CamundaServicesConfiguration {
         formServices,
         elementInstanceServices,
         variableServices,
+        auditLogServices,
         processCache,
         null,
         executorProvider,

@@ -352,6 +352,31 @@ public record AuditLogFilter(
       return resourceKeyOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
+    public Builder copyFrom(final AuditLogFilter sourceFilter) {
+      return auditLogKeyOperations(sourceFilter.auditLogKeyOperations)
+          .entityKeyOperations(sourceFilter.entityKeyOperations)
+          .entityTypeOperations(sourceFilter.entityTypeOperations)
+          .operationTypeOperations(sourceFilter.operationTypeOperations)
+          .timestampOperations(sourceFilter.timestampOperations)
+          .actorTypeOperations(sourceFilter.actorTypeOperations)
+          .actorIdOperations(sourceFilter.actorIdOperations)
+          .tenantIdOperations(sourceFilter.tenantIdOperations)
+          .resultOperations(sourceFilter.resultOperations)
+          .categoryOperations(sourceFilter.categoryOperations)
+          .processInstanceKeyOperations(sourceFilter.processInstanceKeyOperations)
+          .processDefinitionKeyOperations(sourceFilter.processDefinitionKeyOperations)
+          .processDefinitionIdOperations(sourceFilter.processDefinitionIdOperations)
+          .userTaskKeyOperations(sourceFilter.userTaskKeyOperations)
+          .decisionDefinitionKeyOperations(sourceFilter.decisionDefinitionKeyOperations)
+          .decisionEvaluationKeyOperations(sourceFilter.decisionEvaluationKeyOperations)
+          .elementInstanceKeyOperations(sourceFilter.elementInstanceKeyOperations)
+          .jobKeyOperations(sourceFilter.jobKeyOperations)
+          .batchOperationKeyOperations(sourceFilter.batchOperationKeyOperations)
+          .deploymentKeyOperations(sourceFilter.deploymentKeyOperations)
+          .formKeyOperations(sourceFilter.formKeyOperations)
+          .resourceKeyOperations(sourceFilter.resourceKeyOperations);
+    }
+
     @Override
     public AuditLogFilter build() {
       return new AuditLogFilter(

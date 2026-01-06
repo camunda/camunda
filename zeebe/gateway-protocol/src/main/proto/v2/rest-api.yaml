@@ -391,6 +391,8 @@ paths:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignee'
   /user-tasks/{userTaskKey}/assignment:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1assignment'
+  /user-tasks/{userTaskKey}/audit-logs/search:
+    $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1audit-logs~1search'
   /user-tasks/{userTaskKey}/completion:
     $ref: 'user-tasks.yaml#/paths/~1user-tasks~1{userTaskKey}~1completion'
   /user-tasks/{userTaskKey}/form:
