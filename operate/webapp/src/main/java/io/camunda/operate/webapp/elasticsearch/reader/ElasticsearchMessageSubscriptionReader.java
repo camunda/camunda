@@ -13,6 +13,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.termsQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -44,7 +45,7 @@ public class ElasticsearchMessageSubscriptionReader extends AbstractReader
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequest =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(messageSubscriptionTemplate, ALL))
             .query(tenantAwareQuery)
             .sort(ElasticsearchUtil.sortOrder(MessageSubscriptionTemplate.ID, SortOrder.Asc))

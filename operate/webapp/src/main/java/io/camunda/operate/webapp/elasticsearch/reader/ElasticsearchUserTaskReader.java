@@ -8,11 +8,13 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static io.camunda.operate.util.ElasticsearchUtil.constantScoreQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.termsQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -27,10 +29,6 @@ import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoin
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -41,11 +39,8 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchUserTaskReader extends AbstractReader implements UserTaskReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
-  private static final TermQueryBuilder TASK_QUERY =
-      termQuery(TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType());
-  private static final Query TASK_QUERY_ES8 =
-      ElasticsearchUtil.termsQuery(
-          TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType());
+  private static final Query TASK_QUERY =
+      termsQuery(TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType());
 
   private final TaskTemplate taskTemplate;
   private final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate;
@@ -62,16 +57,16 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
     LOGGER.debug("retrieve all user tasks");
     try {
       final var searchRequestBuilder =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(whereToSearch(taskTemplate, ALL))
-              .query(ElasticsearchUtil.constantScoreQuery(TASK_QUERY_ES8));
+              .query(constantScoreQuery(TASK_QUERY));
 
       return ElasticsearchUtil.scrollAllStream(es8client, searchRequestBuilder, TaskEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
     } catch (final ScrollException e) {
-      final String message =
+      final var message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
@@ -81,19 +76,25 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   public Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
     LOGGER.debug("Get UserTask by flowNodeInstanceKey {}", flowNodeInstanceKey);
     try {
-      final QueryBuilder query =
-          joinWithAnd(
-              TASK_QUERY, termQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey));
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
-              .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
-      final var hits = tenantAwareClient.search(searchRequest).getHits();
-      if (hits.getTotalHits().value == 1) {
-        return Optional.of(
-            ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, TaskEntity.class).get(0));
+      final var query =
+          constantScoreQuery(
+              joinWithAnd(
+                  TASK_QUERY, termsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey)));
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+      final var searchRequest =
+          new SearchRequest.Builder()
+              .index(whereToSearch(taskTemplate, ALL))
+              .query(tenantAwareQuery)
+              .build();
+
+      final var response = es8client.search(searchRequest, TaskEntity.class);
+      final var totalHits = response.hits().total().value();
+      if (totalHits == 1) {
+        return Optional.ofNullable(response.hits().hits().get(0).source());
       }
     } catch (final IOException e) {
-      final String message =
+      final var message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
@@ -104,12 +105,10 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   public List<SnapshotTaskVariableEntity> getUserTaskVariables(final long taskKey) {
     LOGGER.debug("Get UserTask Completed Variables by flowNodeInstanceKey {}", taskKey);
 
-    final var query =
-        ElasticsearchUtil.constantScoreQuery(
-            ElasticsearchUtil.termsQuery(SnapshotTaskVariableTemplate.TASK_ID, taskKey));
+    final var query = constantScoreQuery(termsQuery(SnapshotTaskVariableTemplate.TASK_ID, taskKey));
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(snapshotTaskVariableTemplate, ALL))
             .query(query);
     try {
@@ -119,7 +118,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
           .map(Hit::source)
           .toList();
     } catch (final ScrollException e) {
-      final String message =
+      final var message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }

@@ -491,7 +491,7 @@ public abstract class ElasticsearchUtil {
 
   public static co.elastic.clients.elasticsearch._types.SortOrder toSortOrder(
       final String sortOrder) {
-    return sortOrder != null && sortOrder.equalsIgnoreCase("desc")
+    return "desc".equalsIgnoreCase(sortOrder)
         ? co.elastic.clients.elasticsearch._types.SortOrder.Desc
         : co.elastic.clients.elasticsearch._types.SortOrder.Asc;
   }
