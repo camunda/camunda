@@ -91,7 +91,7 @@ public class AssertElementInstancesInstructionTest {
     processInstanceSelectorCaptor.getValue().applyFilter(processInstanceFilter);
     verify(processInstanceFilter).processDefinitionId(PROCESS_DEFINITION_ID);
 
-    verifyNoMoreInteractions(camundaClient, processTestContext);
+    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
   @ParameterizedTest(name = "{0}")
@@ -121,7 +121,7 @@ public class AssertElementInstancesInstructionTest {
 
     expectedAssertion.accept(verify(processInstanceAssert));
 
-    verifyNoMoreInteractions(camundaClient, processTestContext);
+    verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
 
   @Test
