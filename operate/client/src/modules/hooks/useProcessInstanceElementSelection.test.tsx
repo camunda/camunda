@@ -98,7 +98,7 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       act(() => {
-        result.current.selectElement('service-task-1');
+        result.current.selectElement({elementId: 'service-task-1'});
       });
 
       expect(result.current.selectedElementId).toBe('service-task-1');
@@ -131,10 +131,10 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       act(() => {
-        result.current.selectElementInstance(
-          'service-task-1',
-          '2251799813699889',
-        );
+        result.current.selectElementInstance({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+        });
       });
 
       expect(result.current.location.search).toContain(
@@ -142,7 +142,7 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       act(() => {
-        result.current.selectElement('service-task-2');
+        result.current.selectElement({elementId: 'service-task-2'});
       });
 
       expect(result.current.selectedElementId).toBe('service-task-2');
@@ -172,7 +172,10 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       act(() => {
-        result.current.selectElement('service-task-1', true);
+        result.current.selectElement({
+          elementId: 'service-task-1',
+          isMultiInstanceBody: true,
+        });
       });
 
       expect(result.current.selectedElementId).toBe('service-task-1');
@@ -202,7 +205,10 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       act(() => {
-        result.current.selectElement('service-task-1', false);
+        result.current.selectElement({
+          elementId: 'service-task-1',
+          isMultiInstanceBody: false,
+        });
       });
 
       expect(result.current.selectedElementId).toBe('service-task-1');
@@ -294,10 +300,10 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       act(() => {
-        result.current.selectElementInstance(
-          'service-task-1',
-          '2251799813699889',
-        );
+        result.current.selectElementInstance({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+        });
       });
 
       expect(result.current.selectedElementId).toBe('service-task-1');
@@ -326,11 +332,11 @@ describe('useProcessInstanceElementSelection', () => {
       );
 
       act(() => {
-        result.current.selectElementInstance(
-          'service-task-1',
-          '2251799813699889',
-          true,
-        );
+        result.current.selectElementInstance({
+          elementId: 'service-task-1',
+          elementInstanceKey: '2251799813699889',
+          isMultiInstanceBody: true,
+        });
       });
 
       expect(result.current.selectedElementId).toBe('service-task-1');

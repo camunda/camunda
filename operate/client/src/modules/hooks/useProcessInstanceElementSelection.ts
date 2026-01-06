@@ -66,7 +66,13 @@ const useProcessInstanceElementSelection = () => {
     searchParams.get(IS_MULTI_INSTANCE_BODY) === 'true';
 
   const selectElement = useCallback(
-    (elementId: string, isMultiInstanceBody: boolean = false) => {
+    ({
+      elementId,
+      isMultiInstanceBody = false,
+    }: {
+      elementId: string;
+      isMultiInstanceBody?: boolean;
+    }) => {
       setSearchParams((params) => {
         return updateSelectionSearchParams(params, {
           elementId,
@@ -78,11 +84,14 @@ const useProcessInstanceElementSelection = () => {
   );
 
   const selectElementInstance = useCallback(
-    (
-      elementId: string,
-      elementInstanceKey: string,
-      isMultiInstanceBody: boolean = false,
-    ) => {
+    ({
+      elementId,
+      elementInstanceKey,
+      isMultiInstanceBody = false,
+      elementId: string;
+      elementInstanceKey: string;
+      isMultiInstanceBody?: boolean;
+    }) => {
       setSearchParams((params) => {
         return updateSelectionSearchParams(params, {
           elementId,
