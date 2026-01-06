@@ -33,7 +33,7 @@ public class MockJobWorkerCompleteJobInstructionHandler
 
     if (instruction.getWithExampleData()) {
       context.mockJobWorker(instruction.getJobType()).thenCompleteWithExampleData();
-    } else if (instruction.getVariables() != null && !instruction.getVariables().isEmpty()) {
+    } else if (!instruction.getVariables().isEmpty()) {
       context.mockJobWorker(instruction.getJobType()).thenComplete(instruction.getVariables());
     } else {
       context.mockJobWorker(instruction.getJobType()).thenComplete();
