@@ -44,5 +44,8 @@ public interface BroadcastSignalInstruction extends TestCaseInstruction {
    *
    * @return the variables or an empty map if no variables are set
    */
-  Map<String, Object> getVariables();
+  @Value.Default
+  default Map<String, Object> getVariables() {
+    return java.util.Collections.emptyMap();
+  }
 }
