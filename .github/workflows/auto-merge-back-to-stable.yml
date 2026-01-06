@@ -61,16 +61,37 @@ jobs:
       - name: Check for merge conflicts
         id: check_conflicts
         run: |
-          # GitHub API provides mergeable status
-          MERGEABLE=$(gh pr view ${{ github.event.pull_request.number }} --json mergeable --jq '.mergeable')
-          
-          if [ "$MERGEABLE" = "CONFLICTING" ]; then
-            echo "❌ Merge conflicts detected - manual resolution required"
-            exit 1
-          fi
-          
-          echo "✅ No merge conflicts"
-      
+          MAX_RETRIES=5
+          RETRY_DELAY=10
+
+          for i in $(seq 1 "$MAX_RETRIES"); do
+            echo "Checking mergeability (attempt $i/$MAX_RETRIES)..."
+            # GitHub API provides mergeable status
+            MERGEABLE=$(gh pr view ${{ github.event.pull_request.number }} --json mergeable --jq '.mergeable')
+            
+            if [ "$MERGEABLE" = "MERGEABLE" ]; then
+             echo "✅ PR is mergeable!"
+              exit 0
+            elif [ "$MERGEABLE" = "CONFLICTING" ]; then
+              echo "❌ Merge conflicts detected - manual resolution required"
+              exit 1
+            elif [ "$MERGEABLE" = "UNKNOWN" ]; then
+              if [ "$i" -eq "$MAX_RETRIES" ]; then
+                echo "❌ Mergeability still UNKNOWN after $MAX_RETRIES attempts"
+                exit 1  
+              fi
+              echo "⏳ Mergeability is UNKNOWN, waiting ${RETRY_DELAY}s before retry..."
+              sleep "$RETRY_DELAY"
+            else
+              # Handle unexpected values
+              echo "⚠️  Unexpected mergeable status: '$MERGEABLE'"
+              if [ "$i" -eq "$MAX_RETRIES" ]; then
+                echo "❌ Unable to determine mergeability after $MAX_RETRIES attempts"
+                exit 1
+              fi
+              sleep "$RETRY_DELAY"
+            fi
+          done
       - name: Validate changes are version bumps only
         id: validate_changes
         run: |
@@ -178,6 +199,9 @@ jobs:
           
           if [ "$RULESET_COUNT" -eq 0 ]; then
             echo "ℹ️  No rulesets configured for repository"
+            echo "⚠️  WARNING: Auto-merge will proceed without validating ruleset-based required status checks"
+            echo "⚠️  Note: This does NOT check traditional branch protection rules - only rulesets as only rulesets were defined during implementation"
+            echo "⚠️  If branch protection rules exist, they may still be enforced by GitHub during merge"
             echo "Proceeding without required checks validation"
             echo "checks_pattern=" >> "$GITHUB_OUTPUT"
             exit 0
