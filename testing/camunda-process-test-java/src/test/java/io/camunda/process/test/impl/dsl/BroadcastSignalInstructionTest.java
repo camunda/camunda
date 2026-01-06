@@ -62,6 +62,7 @@ public class BroadcastSignalInstructionTest {
         camundaClient.newBroadcastSignalCommand().signalName(SIGNAL_NAME);
 
     verify(camundaClient).newBroadcastSignalCommand();
+    verify(camundaClient.newBroadcastSignalCommand()).signalName(SIGNAL_NAME);
     verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).send();
 
@@ -89,6 +90,7 @@ public class BroadcastSignalInstructionTest {
         camundaClient.newBroadcastSignalCommand().signalName(SIGNAL_NAME);
 
     verify(camundaClient).newBroadcastSignalCommand();
+    verify(camundaClient.newBroadcastSignalCommand()).signalName(SIGNAL_NAME);
     verify(mockCommand).variables(variables);
     verify(mockCommand).send();
 
