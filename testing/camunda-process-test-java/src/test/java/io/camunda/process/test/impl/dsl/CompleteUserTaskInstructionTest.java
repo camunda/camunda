@@ -72,7 +72,7 @@ public class CompleteUserTaskInstructionTest {
         .completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
 
     selectorCaptor.getValue().applyFilter(userTaskFilter);
-    verify(userTaskFilter).taskName("Approve Request");
+    verify(userTaskFilter).name("Approve Request");
 
     verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
   }
@@ -115,7 +115,7 @@ public class CompleteUserTaskInstructionTest {
         .completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
 
     selectorCaptor.getValue().applyFilter(userTaskFilter);
-    verify(userTaskFilter).processDefinitionId("my-process");
+    verify(userTaskFilter).bpmnProcessId("my-process");
 
     verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
   }
@@ -141,9 +141,9 @@ public class CompleteUserTaskInstructionTest {
         .completeUserTask(selectorCaptor.capture(), eq(Collections.emptyMap()));
 
     selectorCaptor.getValue().applyFilter(userTaskFilter);
-    verify(userTaskFilter).processDefinitionId("my-process");
+    verify(userTaskFilter).bpmnProcessId("my-process");
     verify(userTaskFilter).elementId("task1");
-    verify(userTaskFilter).taskName("Review Task");
+    verify(userTaskFilter).name("Review Task");
 
     verifyNoMoreInteractions(processTestContext, camundaClient, assertionFacade);
   }
