@@ -260,6 +260,7 @@ final class InProgressBackupImpl implements InProgressBackup {
     final var backupDescriptor =
         new BackupDescriptorImpl(
             snapshotId,
+            backupDescriptor().firstLogPosition(),
             backupDescriptor().checkpointPosition(),
             backupDescriptor().numberOfPartitions(),
             VersionUtil.getVersion(),

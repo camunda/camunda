@@ -47,7 +47,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -145,12 +144,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     final var backupIdx = 3L;
     final var descriptor =
         new BackupDescriptorImpl(
-            Optional.of(snapshot.getId()),
-            3L,
-            1,
-            "1.0.0",
-            Instant.now(),
-            CheckpointType.MANUAL_BACKUP);
+            snapshot.getId(), 3L, 1, "1.0.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
     logCompactor.compactFromSnapshots(snapshotStore);
     Awaitility.await("compaction is done")
         .until(() -> logCompactor.getCompactableIndex() == snapshot.getIndex());

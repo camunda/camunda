@@ -189,12 +189,7 @@ final class BackupApiRequestHandlerTest {
             new BackupIdentifierImpl(1, 1, checkpointId),
             Optional.of(
                 new BackupDescriptorImpl(
-                    Optional.of("s-id"),
-                    100,
-                    3,
-                    "test",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP)),
+                    "s-id", 100, 3, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty(),
             Optional.of(createdAt),
@@ -306,12 +301,7 @@ final class BackupApiRequestHandlerTest {
             new BackupIdentifierImpl(1, 1, 2),
             Optional.of(
                 new BackupDescriptorImpl(
-                    Optional.of("s-id"),
-                    100,
-                    3,
-                    "test",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP)),
+                    "s-id", 100, 3, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty(),
             Optional.of(createdAt),

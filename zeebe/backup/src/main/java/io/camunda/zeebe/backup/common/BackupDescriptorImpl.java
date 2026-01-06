@@ -18,9 +18,11 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 public record BackupDescriptorImpl(
     Optional<String> snapshotId,
+    OptionalLong firstLogPosition,
     long checkpointPosition,
     int numberOfPartitions,
     String brokerVersion,
@@ -28,9 +30,43 @@ public record BackupDescriptorImpl(
     @JsonDeserialize(using = CheckpointTypeDeserializer.class) CheckpointType checkpointType)
     implements BackupDescriptor {
 
+  public BackupDescriptorImpl(
+      final String snapshotId,
+      final long checkpointPosition,
+      final int numberOfPartitions,
+      final String brokerVersion,
+      final Instant checkpointTimestamp,
+      final CheckpointType checkpointType) {
+    this(
+        Optional.of(snapshotId),
+        OptionalLong.empty(),
+        checkpointPosition,
+        numberOfPartitions,
+        brokerVersion,
+        checkpointTimestamp,
+        checkpointType);
+  }
+
+  public BackupDescriptorImpl(
+      final long checkpointPosition,
+      final int numberOfPartitions,
+      final String brokerVersion,
+      final Instant checkpointTimestamp,
+      final CheckpointType checkpointType) {
+    this(
+        Optional.empty(),
+        OptionalLong.empty(),
+        checkpointPosition,
+        numberOfPartitions,
+        brokerVersion,
+        checkpointTimestamp,
+        checkpointType);
+  }
+
   public static BackupDescriptorImpl from(final BackupDescriptor descriptor) {
     return new BackupDescriptorImpl(
         descriptor.snapshotId(),
+        descriptor.firstLogPosition(),
         descriptor.checkpointPosition(),
         descriptor.numberOfPartitions(),
         descriptor.brokerVersion(),
@@ -39,9 +75,12 @@ public record BackupDescriptorImpl(
   }
 
   public static BackupDescriptorImpl from(
-      final Record<CheckpointRecord> record, final int partitionCount) {
+      final Record<CheckpointRecord> record,
+      final long latestBackupPosition,
+      final int partitionCount) {
     return new BackupDescriptorImpl(
         Optional.empty(),
+        OptionalLong.of(latestBackupPosition),
         record.getPosition(),
         partitionCount,
         record.getBrokerVersion(),

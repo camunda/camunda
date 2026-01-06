@@ -18,7 +18,6 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ManifestStateCastingTest {
@@ -30,12 +29,7 @@ final class ManifestStateCastingTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP),
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 
@@ -55,12 +49,7 @@ final class ManifestStateCastingTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP),
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
                 new NamedFileSetImpl(Map.of()),
                 new NamedFileSetImpl(Map.of())));
 
@@ -78,12 +67,7 @@ final class ManifestStateCastingTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(),
-                    2345234L,
-                    3,
-                    "1.2.0-SNAPSHOT",
-                    Instant.now(),
-                    CheckpointType.MANUAL_BACKUP),
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
                 null,
                 null));
 
