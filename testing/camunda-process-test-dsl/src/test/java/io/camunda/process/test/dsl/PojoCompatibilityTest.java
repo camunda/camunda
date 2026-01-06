@@ -25,6 +25,7 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
+import io.camunda.process.test.api.dsl.ImmutableDecisionDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableElementSelector;
 import io.camunda.process.test.api.dsl.ImmutableJobSelector;
 import io.camunda.process.test.api.dsl.ImmutableMessageSelector;
@@ -46,6 +47,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruct
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateConditionalStartEventInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
@@ -477,6 +479,27 @@ public class PojoCompatibilityTest {
                     .signalName("signal1")
                     .putVariables("key1", "value1")
                     .putVariables("key2", 123)
+                    .build())),
+        // ===== EVALUATE_DECISION =====
+        Arguments.of(
+            "evaluate decision: minimal",
+            singleTestCase(
+                ImmutableEvaluateDecisionInstruction.builder()
+                    .decisionDefinitionSelector(
+                        ImmutableDecisionDefinitionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "evaluate decision: full",
+            singleTestCase(
+                ImmutableEvaluateDecisionInstruction.builder()
+                    .decisionDefinitionSelector(
+                        ImmutableDecisionDefinitionSelector.builder()
+                            .decisionDefinitionId("my-decision")
+                            .build())
+                    .putVariables("input", 100)
+                    .putVariables("region", "US")
                     .build()))
         // add new instructions here
         );
