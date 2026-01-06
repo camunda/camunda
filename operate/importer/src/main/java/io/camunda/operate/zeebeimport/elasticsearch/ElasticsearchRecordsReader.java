@@ -42,6 +42,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -624,6 +625,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           .filter(Objects::nonNull)
           .map(Object::toString)
           .anyMatch(indexName -> indexName.contains("8.8"));
+    } catch (final ElasticsearchException e) {
+      LOGGER.warn(
+          "Elasticsearch error when checking if partition {} completed importing: {}",
+          partitionId,
+          e.getMessage());
+      return false;
     } catch (final IOException e) {
       LOGGER.error(
           "Failed to retrieve import positions so importer completion may not resolve correctly for partition {}",
