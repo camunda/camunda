@@ -24,6 +24,7 @@ public final class SequenceFlowFixtures extends CommonFixtures {
         new Builder()
             .flowNodeId("flowNode" + nextKey)
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-definition-" + nextKey)
             .tenantId("tenant-" + nextKey)

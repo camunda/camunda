@@ -32,7 +32,8 @@ public final class MessageSubscriptionFixtures extends CommonFixtures {
             .flowNodeId("flowNode-" + UUID.randomUUID())
             .messageSubscriptionKey(nextKey())
             .processDefinitionId("processDefinitionId-" + UUID.randomUUID())
-            .processInstanceKey(nextKey());
+            .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey());
 
     return builderFunction.apply(builder).build();
   }

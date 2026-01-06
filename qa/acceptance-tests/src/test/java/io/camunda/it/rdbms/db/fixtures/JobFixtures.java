@@ -27,6 +27,7 @@ public final class JobFixtures extends CommonFixtures {
             .processDefinitionKey(nextKey())
             .processDefinitionId("job-" + generateRandomString(20))
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .jobKey(nextKey())
             .state(randomEnum(JobState.class))
             .errorMessage("error-" + generateRandomString(20))

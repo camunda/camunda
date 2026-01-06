@@ -35,6 +35,7 @@ public final class VariableFixtures extends CommonFixtures {
         new VariableDbModelBuilder()
             .variableKey(key)
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .processDefinitionId("process-definition-id-" + key)
             .tenantId("tenant-id-" + key)
             .scopeKey(nextKey())
