@@ -36,13 +36,10 @@ import org.slf4j.LoggerFactory;
 public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends DocumentBasedReader
     implements IncidentProcessInstanceStatisticsByDefinitionReader {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(IncidentProcessInstanceStatisticsByDefinitionDocumentReader.class);
   public static final int MAXIMUM_CACHE_SIZE = 1_000;
   public static final int TTL_SECONDS = 300;
-
-  private record CachedProcessInfo(
-      String processDefinitionId, String processName, Integer version) {}
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(IncidentProcessInstanceStatisticsByDefinitionDocumentReader.class);
 
   private final Cache<Long, CachedProcessInfo> cache =
       Caffeine.newBuilder()
@@ -181,4 +178,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
       return Collections.emptyMap();
     }
   }
+
+  private record CachedProcessInfo(
+      String processDefinitionId, String processName, Integer version) {}
 }
