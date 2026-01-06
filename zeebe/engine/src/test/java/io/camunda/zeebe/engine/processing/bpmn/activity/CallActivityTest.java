@@ -1293,9 +1293,9 @@ public final class CallActivityTest {
     final var rootInstanceRecords = getInstancesOf(rootInstanceKey);
     final var parentInstanceKey = getChildInstanceOf(rootInstanceKey).getProcessInstanceKey();
     final var parentInstanceRecords = getInstancesOf(parentInstanceKey);
-    final var grandchildProcessInstanceKey =
+    final var childProcessInstanceKey =
         getChildInstanceOf(parentInstanceKey).getProcessInstanceKey();
-    final var grandchildInstanceRecords = getInstancesOf(grandchildProcessInstanceKey);
+    final var childInstanceRecords = getInstancesOf(childProcessInstanceKey);
 
     // then
     assertThat(rootInstanceRecords)
@@ -1308,7 +1308,7 @@ public final class CallActivityTest {
         .allSatisfy(
             instance ->
                 assertThat(instance.getRootProcessInstanceKey()).isEqualTo(rootInstanceKey));
-    assertThat(grandchildInstanceRecords)
+    assertThat(childInstanceRecords)
         .hasSize(13)
         .allSatisfy(
             instance ->
