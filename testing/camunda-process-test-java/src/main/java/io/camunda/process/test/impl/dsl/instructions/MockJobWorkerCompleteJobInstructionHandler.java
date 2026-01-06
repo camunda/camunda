@@ -31,12 +31,10 @@ public class MockJobWorkerCompleteJobInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    if (instruction.getWithExampleData()) {
+    if (instruction.getUseExampleData()) {
       context.mockJobWorker(instruction.getJobType()).thenCompleteWithExampleData();
-    } else if (!instruction.getVariables().isEmpty()) {
-      context.mockJobWorker(instruction.getJobType()).thenComplete(instruction.getVariables());
     } else {
-      context.mockJobWorker(instruction.getJobType()).thenComplete();
+      context.mockJobWorker(instruction.getJobType()).thenComplete(instruction.getVariables());
     }
   }
 

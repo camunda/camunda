@@ -53,7 +53,7 @@ public interface MockJobWorkerCompleteJobInstruction extends TestCaseInstruction
    * @return true if example data should be used, false otherwise
    */
   @Value.Default
-  default boolean getWithExampleData() {
+  default boolean getUseExampleData() {
     return false;
   }
 }

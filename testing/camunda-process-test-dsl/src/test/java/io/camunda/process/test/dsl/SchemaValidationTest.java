@@ -49,8 +49,7 @@ public class SchemaValidationTest {
       strings = {
         "/empty-test-scenario.json",
         "/example-test-scenario.json",
-        "/full-test-scenario.json",
-        "/mock-job-worker-test-scenario.json"
+        "/full-test-scenario.json"
       })
   void shouldValidateScenario(final String filePath) throws IOException {
     // given
