@@ -26,7 +26,7 @@ GRAPHQL_QUERY='
           title
           url
           closed
-          items(first: 1, query: "is:open updated:>@today-30d", orderBy: {field: POSITION, direction: ASC}) {
+          items(first: 1, query: "is:open updated:>@today-'"$DAYS_THRESHOLD"'d", orderBy: {field: POSITION, direction: ASC}) {
             nodes {
               updatedAt
               isArchived
@@ -79,7 +79,7 @@ echo "$PROJECTS_RESPONSE" | jq -c '.data.repository.projectsV2.nodes[]' | while 
   # If no items were returned, the project has no recent activity
   if [[ "$RECENT_ITEMS_COUNT" == "0" ]]; then
     echo "    → No items updated in the last $DAYS_THRESHOLD days"
-    UPDATE_INFO="No updates in the last 30 days"
+    UPDATE_INFO="No updates in the last $DAYS_THRESHOLD days"
     echo "• <${PROJECT_URL}|Project #${PROJECT_NUMBER}: ${PROJECT_TITLE}> - ${UPDATE_INFO}" >> "$TEMP_FILE"
   else
     echo "    → Has items updated in the last $DAYS_THRESHOLD days"
