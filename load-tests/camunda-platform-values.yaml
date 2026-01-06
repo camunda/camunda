@@ -50,8 +50,8 @@ postgresql:
 ########################################################################################
 orchestration:
   data:
-      secondaryStorage:
-        type: elasticsearch
+    secondaryStorage:
+      type: elasticsearch
   security:
     authentication:
       unprotectedApi: true
