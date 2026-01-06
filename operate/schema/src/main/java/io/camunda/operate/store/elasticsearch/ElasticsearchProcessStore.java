@@ -31,8 +31,6 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -76,16 +74,12 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.Cardinality;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -239,68 +233,43 @@ public class ElasticsearchProcessStore implements ProcessStore {
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, @Nullable final Set<String> allowedBPMNProcessIds) {
-    final String tenantsGroupsAggName = "group_by_tenantId";
-    final String groupsAggName = "group_by_bpmnProcessId";
-    final String processesAggName = "processes";
 
-    final AggregationBuilder agg =
-        terms(tenantsGroupsAggName)
-            .field(ProcessIndex.TENANT_ID)
-            .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-            .subAggregation(
-                terms(groupsAggName)
-                    .field(ProcessIndex.BPMN_PROCESS_ID)
-                    .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-                    .subAggregation(
-                        topHits(processesAggName)
-                            .fetchSource(
-                                new String[] {
-                                  ProcessIndex.ID,
-                                  ProcessIndex.NAME,
-                                  ProcessIndex.VERSION,
-                                  ProcessIndex.VERSION_TAG,
-                                  ProcessIndex.BPMN_PROCESS_ID,
-                                  ProcessIndex.TENANT_ID
-                                },
-                                null)
-                            .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
-                            .sort(ProcessIndex.VERSION, SortOrder.DESC)));
+    final SearchSourceBuilder sourceBuilder =
+        new SearchSourceBuilder()
+            .query(buildQuery(tenantId, allowedBPMNProcessIds))
+            .fetchSource(
+                new String[] {
+                  ProcessIndex.ID,
+                  ProcessIndex.NAME,
+                  ProcessIndex.VERSION,
+                  ProcessIndex.VERSION_TAG,
+                  ProcessIndex.BPMN_PROCESS_ID,
+                  ProcessIndex.TENANT_ID
+                },
+                null)
+            .sort(ProcessIndex.VERSION, SortOrder.DESC);
 
-    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(agg).size(0);
-    sourceBuilder.query(buildQuery(tenantId, allowedBPMNProcessIds));
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
 
     try {
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
       final Map<ProcessKey, List<ProcessEntity>> result = new HashMap<>();
 
-      groups.getBuckets().stream()
-          .forEach(
-              b -> {
-                final String groupTenantId = b.getKeyAsString();
-                final Terms processGroups = b.getAggregations().get(groupsAggName);
+      final List<ProcessEntity> allProcesses =
+          tenantAwareClient.search(
+              searchRequest,
+              () ->
+                  ElasticsearchUtil.scroll(
+                      searchRequest, ProcessEntity.class, objectMapper, esClient));
 
-                processGroups.getBuckets().stream()
-                    .forEach(
-                        tenantB -> {
-                          final String bpmnProcessId = tenantB.getKeyAsString();
-                          final ProcessKey groupKey = new ProcessKey(bpmnProcessId, groupTenantId);
-                          result.put(groupKey, new ArrayList<>());
-
-                          final TopHits processes = tenantB.getAggregations().get(processesAggName);
-                          final SearchHit[] hits = processes.getHits().getHits();
-                          for (final SearchHit searchHit : hits) {
-                            final ProcessEntity processEntity =
-                                fromSearchHit(searchHit.getSourceAsString());
-                            result.get(groupKey).add(processEntity);
-                          }
-                        });
-              });
+      for (final ProcessEntity processEntity : allProcesses) {
+        final ProcessKey groupKey =
+            new ProcessKey(processEntity.getBpmnProcessId(), processEntity.getTenantId());
+        result.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(processEntity);
+      }
 
       return result;
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
