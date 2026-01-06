@@ -218,4 +218,37 @@ public class HistoryCleanupIT {
         .isNotNull()
         .isEqualTo(expectedCleanupDate);
   }
+
+  @Test
+  public void shouldSetHistoryCleanupDateForStandaloneDecisionAuditLog() {
+    // GIVEN
+    // Create a standalone decision audit log.
+    // Use a deterministic evaluation date for predictable cleanup date calculation
+    final var evaluationDate = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+    final var auditLog =
+        AuditLogFixtures.createRandomized(
+            b ->
+                b.entityType(AuditLogEntityType.DECISION)
+                    .processInstanceKey(-1L)
+                    .timestamp(evaluationDate)
+                    .historyCleanupDate(null));
+    AuditLogFixtures.createAndSaveAuditLog(rdbmsWriters, auditLog);
+
+    // THEN - verify cleanup date is calculated correctly
+    final OffsetDateTime cleanupDate =
+        jdbcTemplate.queryForObject(
+            "SELECT HISTORY_CLEANUP_DATE FROM AUDIT_LOG "
+                + "WHERE DECISION_DEFINITION_KEY = "
+                + auditLog.decisionDefinitionKey(),
+            OffsetDateTime.class);
+
+    // The cleanup date should be evaluationDate + decisionInstanceTTL (default 30 days)
+    final var expectedCleanupDate = evaluationDate.plusDays(30);
+    assertThat(cleanupDate)
+        .describedAs(
+            "should have cleanup date set to evaluationDate + decisionInstanceTTL for decision"
+                + " instance without process instance")
+        .isNotNull()
+        .isEqualTo(expectedCleanupDate);
+  }
 }
