@@ -1027,7 +1027,14 @@
       <column name="DEPLOYMENT_KEY" type="BIGINT"/>
       <column name="FORM_KEY" type="BIGINT"/>
       <column name="RESOURCE_KEY" type="BIGINT"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
