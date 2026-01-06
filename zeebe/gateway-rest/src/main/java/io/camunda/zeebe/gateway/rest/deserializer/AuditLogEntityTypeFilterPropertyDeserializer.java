@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedEntityTypeFilter;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogEntityTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.EntityTypeFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedEntityTypeFilter;
+import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
+import io.camunda.gateway.protocol.model.EntityTypeFilterProperty;
 
 public class AuditLogEntityTypeFilterPropertyDeserializer
     extends FilterDeserializer<EntityTypeFilterProperty, AuditLogEntityTypeEnum> {

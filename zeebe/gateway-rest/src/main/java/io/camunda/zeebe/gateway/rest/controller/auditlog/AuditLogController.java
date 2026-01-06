@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.auditlog;
 
+import io.camunda.gateway.protocol.model.AuditLogResult;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;

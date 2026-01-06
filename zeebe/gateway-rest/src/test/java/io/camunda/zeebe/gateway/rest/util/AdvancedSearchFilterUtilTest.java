@@ -9,12 +9,12 @@ package io.camunda.zeebe.gateway.rest.util;
 
 import static org.assertj.core.api.Assertions.*;
 
+import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
+import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
+import io.camunda.gateway.protocol.model.AdvancedStringFilter;
+import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedDateTimeFilter;
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
-import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilter;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;

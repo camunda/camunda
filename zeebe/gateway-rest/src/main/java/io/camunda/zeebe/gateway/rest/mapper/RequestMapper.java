@@ -40,6 +40,61 @@ import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.Changeset;
+import io.camunda.gateway.protocol.model.ClockPinRequest;
+import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
+import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
+import io.camunda.gateway.protocol.model.DecisionEvaluationById;
+import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
+import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
+import io.camunda.gateway.protocol.model.DeleteResourceRequest;
+import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
+import io.camunda.gateway.protocol.model.DocumentLinkRequest;
+import io.camunda.gateway.protocol.model.DocumentMetadata;
+import io.camunda.gateway.protocol.model.GroupCreateRequest;
+import io.camunda.gateway.protocol.model.GroupUpdateRequest;
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
+import io.camunda.gateway.protocol.model.JobResultUserTask;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
+import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
+import io.camunda.gateway.protocol.model.MessagePublicationRequest;
+import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
+import io.camunda.gateway.protocol.model.PermissionTypeEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
+import io.camunda.gateway.protocol.model.RoleCreateRequest;
+import io.camunda.gateway.protocol.model.RoleUpdateRequest;
+import io.camunda.gateway.protocol.model.SetVariableRequest;
+import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
+import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
+import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.TenantCreateRequest;
+import io.camunda.gateway.protocol.model.TenantUpdateRequest;
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -72,61 +127,6 @@ import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices.UserDTO;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.Changeset;
-import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ConditionalEvaluationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.CreateClusterVariableRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DirectAncestorKeyInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobResultAdHocSubProcess;
-import io.camunda.zeebe.gateway.protocol.rest.JobResultUserTask;
-import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceVariableInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationTerminateInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByIdInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateByKeyInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SourceElementIdInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.SourceElementInstanceKeyInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.ClusterVariableRequestValidator;
@@ -1058,7 +1058,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceFilter> toRequiredProcessInstanceFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter request) {
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
 
     final var filter = SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request);
     if (filter.isLeft()) {
@@ -1249,8 +1249,7 @@ public class RequestMapper {
   private static List<ProcessInstanceModificationActivateInstruction>
       mapProcessInstanceModificationActivateInstruction(
           final List<
-                  io.camunda.zeebe.gateway.protocol.rest
-                      .ProcessInstanceModificationActivateInstruction>
+                  io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction>
               instructions) {
     return instructions.stream()
         .map(
@@ -1283,8 +1282,7 @@ public class RequestMapper {
 
   private static List<ProcessInstanceModificationMoveInstruction>
       mapProcessInstanceModificationMoveInstruction(
-          final List<
-                  io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveInstruction>
+          final List<io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruction>
               instructions) {
     return instructions.stream()
         .map(

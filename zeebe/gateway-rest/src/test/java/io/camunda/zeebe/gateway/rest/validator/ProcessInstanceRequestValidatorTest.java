@@ -9,11 +9,11 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;

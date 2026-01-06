@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedMessageSubscriptionStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedMessageSubscriptionStateFilter;
+import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
+import io.camunda.gateway.protocol.model.MessageSubscriptionStateFilterProperty;
 
 public class MessageSubscriptionStatePropertyDeserializer
     extends FilterDeserializer<

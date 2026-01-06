@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.util;
 
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;

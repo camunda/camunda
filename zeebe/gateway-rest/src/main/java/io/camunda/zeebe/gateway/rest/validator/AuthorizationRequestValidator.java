@@ -10,11 +10,11 @@ package io.camunda.zeebe.gateway.rest.validator;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationIdBasedRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPropertyBasedRequest;
-import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
+import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
+import io.camunda.gateway.protocol.model.OwnerTypeEnum;
+import io.camunda.gateway.protocol.model.PermissionTypeEnum;
+import io.camunda.gateway.protocol.model.ResourceTypeEnum;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
 import java.util.Optional;
