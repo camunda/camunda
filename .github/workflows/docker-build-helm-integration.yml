@@ -235,30 +235,19 @@ jobs:
       platforms: gke
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
-      namespace-prefix: camunda
+      namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
-      scenario: ${{ inputs.scenario || 'qa-elasticsearch' }}
-      shortname: ${{ inputs.shortname || 'qael' }}
+      scenario: ${{ inputs.scenario || 'keycloak-original' }}
+      shortname: ${{ inputs.shortname || 'kcor' }}
       always-delete-namespace: true
       flows: install
-      values-config: |
-        {
-          "E2E_TESTS_CAMUNDA_HELM_DIR": "${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}",
-          "E2E_TESTS_IDENTITY_IMAGE_TAG": "${{ needs.build-and-push.outputs.image-tag }}",
-          "E2E_TESTS_CONNECTORS_IMAGE_TAG": "${{ needs.build-and-push.outputs.image-tag }}",
-          "E2E_TESTS_CONSOLE_IMAGE_TAG": "${{ needs.build-and-push.outputs.image-tag }}",
-          "E2E_TESTS_OPTIMIZE_IMAGE_TAG": "${{ needs.build-and-push.outputs.image-tag }}",
-          "E2E_TESTS_WEBMODELER_IMAGE_TAG": "${{ needs.build-and-push.outputs.image-tag }}",
-          "E2E_TESTS_ORCHESTRATION_IMAGE_TAG": "${{ needs.build-and-push.outputs.image-tag }}",
-          "E2E_TESTS_CORE_IMAGE_TAG": "${{ needs.build-and-push.outputs.image-tag }}",
-          "E2E_TESTS_SEARCH_ENGINE": "elasticsearch",
-          "E2E_AWS_OS_INDEX_PREFIX": "qae2e-${{ github.run_id }}",
-          "E2E_AWS_OS_INDEX_PREFIX_ZEEBE": "${{ github.run_id }}-qae2e-zeebe",
-          "E2E_AWS_OS_INDEX_PREFIX_OPERATE": "${{ github.run_id }}-qae2e-operate",
-          "E2E_AWS_OS_INDEX_PREFIX_TASKLIST": "${{ github.run_id }}-qae2e-tasklist",
-          "E2E_AWS_OS_INDEX_PREFIX_OPTIMIZE": "${{ github.run_id }}-qae2e-optimize"
-        }
+      extra-values: |
+        orchestration:
+          image:
+            registry: registry.camunda.cloud
+            repository: team-camunda/camunda
+            tag: ${{ needs.build-and-push.outputs.image-tag }}
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
