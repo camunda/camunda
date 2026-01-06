@@ -38,6 +38,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -144,83 +145,92 @@ public class FlowNodeInstanceReader extends AbstractReader
   @Deprecated
   @Override
   public Map<String, FlowNodeStateDto> getFlowNodeStates(final String processInstanceId) {
-    final String latestFlowNodeAggName = "latestFlowNode";
-    final String activeFlowNodesAggName = "activeFlowNodes";
-    final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
-    final String finishedFlowNodesAggName = "finishedFlowNodes";
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(termsQuery(PROCESS_INSTANCE_KEY, processInstanceId));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final ConstantScoreQueryBuilder query =
-        constantScoreQuery(termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
+    // Build not completed flow nodes aggregation (ACTIVE or TERMINATED)
+    final var notCompletedFlowNodesAggs =
+        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+            .filter(
+                f ->
+                    f.bool(
+                        b -> b.must(termsQuery(STATE, List.of(ACTIVE.name(), TERMINATED.name())))))
+            .aggregations(
+                ACTIVE_FLOW_NODES_BUCKETS_AGG_NAME,
+                new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+                    .terms(t -> t.field(FLOW_NODE_ID).size(TERMS_AGG_SIZE))
+                    .aggregations(
+                        LATEST_FLOW_NODE_AGG_NAME,
+                        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation
+                                .Builder()
+                            .topHits(
+                                th ->
+                                    th.sort(
+                                            ElasticsearchUtil.sortOrder(
+                                                START_DATE,
+                                                co.elastic.clients.elasticsearch._types.SortOrder
+                                                    .Desc))
+                                        .size(1)
+                                        .source(s -> s.filter(sf -> sf.includes(STATE, TREE_PATH))))
+                            .build())
+                    .build())
+            .build();
 
-    final AggregationBuilder notCompletedFlowNodesAggs =
-        filter(
-                activeFlowNodesAggName,
-                org.elasticsearch.index.query.QueryBuilders.termsQuery(
-                    STATE, ACTIVE.name(), TERMINATED.name()))
-            .subAggregation(
-                terms(activeFlowNodesBucketsAggName)
-                    .field(FLOW_NODE_ID)
-                    .size(TERMS_AGG_SIZE)
-                    .subAggregation(
-                        topHits(latestFlowNodeAggName)
-                            .sort(START_DATE, SortOrder.DESC)
-                            .size(1)
-                            .fetchSource(new String[] {STATE, TREE_PATH}, null)));
+    // Build finished flow nodes aggregation
+    final var finishedFlowNodesAggs =
+        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+            .filter(f -> f.bool(b -> b.must(termsQuery(STATE, COMPLETED.name()))))
+            .aggregations(
+                FINISHED_FLOW_NODES_BUCKETS_AGG_NAME,
+                new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+                    .terms(t -> t.field(FLOW_NODE_ID).size(TERMS_AGG_SIZE))
+                    .build())
+            .build();
 
-    final AggregationBuilder finishedFlowNodesAggs =
-        filter(finishedFlowNodesAggName, termQuery(STATE, COMPLETED))
-            .subAggregation(
-                terms(FINISHED_FLOW_NODES_BUCKETS_AGG_NAME)
-                    .field(FLOW_NODE_ID)
-                    .size(TERMS_AGG_SIZE));
+    // Build incidents aggregation
+    final var incidentsAggs =
+        new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+            .filter(f -> f.bool(b -> b.must(termsQuery(INCIDENT, true))))
+            .aggregations(
+                AGG_INCIDENT_PATHS,
+                new co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder()
+                    .terms(t -> t.field(TREE_PATH).size(TERMS_AGG_SIZE))
+                    .build())
+            .build();
 
-    final org.elasticsearch.action.search.SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .aggregation(notCompletedFlowNodesAggs)
-                    .aggregation(getIncidentsAgg())
-                    .aggregation(finishedFlowNodesAggs)
-                    .size(0));
+    final var request =
+        new SearchRequest.Builder()
+            .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+            .query(tenantAwareQuery)
+            .aggregations(ACTIVE_FLOW_NODES_AGG_NAME, notCompletedFlowNodesAggs)
+            .aggregations(AGG_INCIDENTS, incidentsAggs)
+            .aggregations(FINISHED_FLOW_NODES_AGG_NAME, finishedFlowNodesAggs)
+            .size(0)
+            .build();
+
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
+      final var response = es8client.search(request, FlowNodeInstanceEntity.class);
 
       final Set<String> incidentPaths = new HashSet<>();
-      processAggregation(response.getAggregations(), incidentPaths, new Boolean[] {false});
+      processAggregation(response.aggregations(), incidentPaths, new Boolean[] {false});
 
       final Set<String> finishedFlowNodes =
-          collectFinishedFlowNodes(response.getAggregations().get(finishedFlowNodesAggName));
+          collectFinishedFlowNodesEs8(response.aggregations().get(FINISHED_FLOW_NODES_AGG_NAME));
 
-      final Filter activeFlowNodesAgg = response.getAggregations().get(activeFlowNodesAggName);
-      final Terms flowNodesAgg =
-          activeFlowNodesAgg.getAggregations().get(activeFlowNodesBucketsAggName);
       final Map<String, FlowNodeStateDto> result = new HashMap<>();
-      if (flowNodesAgg != null) {
-        for (final Bucket flowNode : flowNodesAgg.getBuckets()) {
-          final Map<String, Object> lastFlowNodeFields =
-              ((TopHits) flowNode.getAggregations().get(latestFlowNodeAggName))
-                  .getHits()
-                  .getAt(0)
-                  .getSourceAsMap();
-          FlowNodeStateDto flowNodeState =
-              FlowNodeStateDto.valueOf(lastFlowNodeFields.get(STATE).toString());
-          if (flowNodeState.equals(FlowNodeStateDto.ACTIVE)
-              && incidentPaths.contains(lastFlowNodeFields.get(TREE_PATH))) {
-            flowNodeState = FlowNodeStateDto.INCIDENT;
-          }
-          result.put(flowNode.getKeyAsString(), flowNodeState);
-        }
-      }
+      collectActiveFlowNodeStatesEs8(
+          response.aggregations().get(ACTIVE_FLOW_NODES_AGG_NAME), incidentPaths, result);
+
       // add finished when needed
-      for (final String finishedFlowNodeId : finishedFlowNodes) {
+      for (final var finishedFlowNodeId : finishedFlowNodes) {
         if (result.get(finishedFlowNodeId) == null) {
           result.put(finishedFlowNodeId, FlowNodeStateDto.COMPLETED);
         }
       }
       return result;
     } catch (final IOException e) {
-      final String message =
+      final var message =
           String.format(
               "Exception occurred, while obtaining states for instance flow nodes: %s",
               e.getMessage());
@@ -1033,5 +1043,82 @@ public class FlowNodeInstanceReader extends AbstractReader
       }
     }
     return result;
+  }
+
+  private Set<String> collectFinishedFlowNodesEs8(
+      final co.elastic.clients.elasticsearch._types.aggregations.Aggregate finishedFlowNodes) {
+    final Set<String> result = new HashSet<>();
+    if (finishedFlowNodes != null && finishedFlowNodes.isFilter()) {
+      final var subAggs = finishedFlowNodes.filter().aggregations();
+      if (subAggs != null) {
+        final var termsAgg = subAggs.get(FINISHED_FLOW_NODES_BUCKETS_AGG_NAME);
+        if (termsAgg != null && termsAgg.isSterms()) {
+          for (final var bucket : termsAgg.sterms().buckets().array()) {
+            result.add(bucket.key().stringValue());
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  private void collectActiveFlowNodeStatesEs8(
+      final Aggregate activeFlowNodesAgg,
+      final Set<String> incidentPaths,
+      final Map<String, FlowNodeStateDto> result) {
+    if (activeFlowNodesAgg == null || !activeFlowNodesAgg.isFilter()) {
+      return;
+    }
+
+    final var subAggs = activeFlowNodesAgg.filter().aggregations();
+    if (subAggs == null) {
+      return;
+    }
+
+    final var flowNodesAgg = subAggs.get(ACTIVE_FLOW_NODES_BUCKETS_AGG_NAME);
+    if (flowNodesAgg == null || !flowNodesAgg.isSterms()) {
+      return;
+    }
+
+    for (final var flowNode : flowNodesAgg.sterms().buckets().array()) {
+      processFlowNodeBucketEs8(flowNode, incidentPaths, result);
+    }
+  }
+
+  private void processFlowNodeBucketEs8(
+      final co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket flowNode,
+      final Set<String> incidentPaths,
+      final Map<String, FlowNodeStateDto> result) {
+    final var latestFlowNodeAgg = flowNode.aggregations().get(LATEST_FLOW_NODE_AGG_NAME);
+    if (latestFlowNodeAgg == null || !latestFlowNodeAgg.isTopHits()) {
+      return;
+    }
+
+    final var topHits = latestFlowNodeAgg.topHits();
+    if (topHits.hits().hits().isEmpty()) {
+      return;
+    }
+
+    final var hit = topHits.hits().hits().get(0);
+    if (hit.source() == null) {
+      return;
+    }
+
+    // Deserialize JsonData to Map
+    final Map<String, Object> lastFlowNodeFields =
+        objectMapper.convertValue(
+            hit.source(),
+            new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+
+    final var stateValue = lastFlowNodeFields.get(STATE);
+    final var treePathValue = lastFlowNodeFields.get(TREE_PATH);
+    var flowNodeState = FlowNodeStateDto.valueOf(stateValue.toString());
+
+    if (flowNodeState.equals(FlowNodeStateDto.ACTIVE)
+        && incidentPaths.contains(treePathValue.toString())) {
+      flowNodeState = FlowNodeStateDto.INCIDENT;
+    }
+
+    result.put(flowNode.key().stringValue(), flowNodeState);
   }
 }
