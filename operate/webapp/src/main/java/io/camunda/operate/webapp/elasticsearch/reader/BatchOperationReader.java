@@ -127,8 +127,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
             .index(batchOperationTemplate.getAlias());
 
     if (querySearchAfter != null) {
-      searchReq.searchAfter(
-          Arrays.stream(querySearchAfter).map(FieldValue::of).toList());
+      searchReq.searchAfter(Arrays.stream(querySearchAfter).map(FieldValue::of).toList());
     }
 
     return searchReq.build();
