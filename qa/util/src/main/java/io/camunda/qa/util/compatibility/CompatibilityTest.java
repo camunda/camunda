@@ -53,7 +53,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("compatibility-test")
 @Documented
 @ExtendWith(CompatibilityTestExtension.class)
-@ExtendWith(CompatibilityExceptionHandler.class)
 @Inherited
 public @interface CompatibilityTest {
 
