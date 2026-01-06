@@ -193,5 +193,6 @@ class AuditLogExportHandlerTest {
     assertThat(entity.deploymentKey()).isEqualTo(606L);
     assertThat(entity.formKey()).isEqualTo(707L);
     assertThat(entity.resourceKey()).isEqualTo(808L);
+    assertThat(entity.partitionId()).isEqualTo(record.getPartitionId());
   }
 }

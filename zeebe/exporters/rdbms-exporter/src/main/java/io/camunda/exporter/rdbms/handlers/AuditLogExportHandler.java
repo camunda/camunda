@@ -59,10 +59,10 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   private AuditLogDbModel map(final Record<R> record) {
     final AuditLogEntry log = transformer.create(record);
 
-    return toAuditLogModel(log);
+    return toAuditLogModel(log, record);
   }
 
-  private AuditLogDbModel toAuditLogModel(final AuditLogEntry log) {
+  private AuditLogDbModel toAuditLogModel(final AuditLogEntry log, final Record<R> record) {
     final var key =
         RandomStringUtils.insecure()
             .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
@@ -102,7 +102,8 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .decisionDefinitionKey(log.getDecisionDefinitionKey())
             .deploymentKey(log.getDeploymentKey())
             .formKey(log.getFormKey())
-            .resourceKey(log.getResourceKey());
+            .resourceKey(log.getResourceKey())
+            .partitionId(record.getPartitionId());
 
     return auditLog.build();
   }
