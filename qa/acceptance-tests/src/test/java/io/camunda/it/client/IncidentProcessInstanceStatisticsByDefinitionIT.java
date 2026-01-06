@@ -55,6 +55,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
   private static final String USER_HASH_COLLISION = "user-definition-hash-collision";
   private static final String USER_MULTI_TENANT = "user-definition-multi-tenant";
   private static final String USER_MULTI_VERSION = "user-definition-multi-version";
+  private static final String USER_SINGLE_DEFINITION_CACHE = "user-single-definition-cache";
 
   private static final String TENANT_SINGLE_DEFINITION = "tenant-single-definition";
   private static final String TENANT_MULTI_DEFINITION = "tenant-multi-definition";
@@ -92,6 +93,9 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
 
   @UserDefinition
   private static final TestUser U_MULTI_DEFINITION = testUser(USER_MULTI_DEFINITION);
+
+  @UserDefinition
+  private static final TestUser U_SINGLE_DEFINITION_CACHE = testUser(USER_SINGLE_DEFINITION_CACHE);
 
   @UserDefinition
   private static final TestUser U_NO_READ_PROCESS_INSTANCE =
@@ -636,8 +640,9 @@ public class IncidentProcessInstanceStatisticsByDefinitionIT {
 
   @Test
   void shouldUseCachedProcessDefinitionDataForRepeatedRequests(
-      @Authenticated(USER_SINGLE_DEFINITION) final CamundaClient userClient) {
-    ensureTenantExistsForUser(adminClient, TENANT_SINGLE_DEFINITION_CACHE, USER_SINGLE_DEFINITION);
+      @Authenticated(USER_SINGLE_DEFINITION_CACHE) final CamundaClient userClient) {
+    ensureTenantExistsForUser(
+        adminClient, TENANT_SINGLE_DEFINITION_CACHE, USER_SINGLE_DEFINITION_CACHE);
 
     final BpmnModelInstance model =
         singleServiceTaskProcess(SIMPLE_PROCESS_1, PROCESS_NAME_1, JOB_TYPE_1);

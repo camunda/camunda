@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.aggregation;
 
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_AFFECTED_INSTANCES;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_BY_DEFINITION;
+import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_BY_TENANT;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_SORT_AND_PAGE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_TOTAL_ESTIMATE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_SCRIPT_LANG;
@@ -52,9 +53,9 @@ final class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformerT
         aggregationTransformer.apply(Tuple.of(aggregation, transformers));
 
     // then
-    assertThat(aggregators).hasSize(2);
+    assertThat(aggregators).hasSize(1);
 
-    assertThat(aggregators.get(0))
+    assertThat(aggregators.getFirst())
         .isInstanceOfSatisfying(
             SearchTermsAggregator.class,
             byDefinition -> {
@@ -66,7 +67,7 @@ final class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformerT
               assertThat(byDefinition.getAggregations())
                   .extracting(SearchAggregator::getName)
                   .containsExactlyInAnyOrder(
-                      AGGREGATION_NAME_AFFECTED_INSTANCES, AGGREGATION_NAME_SORT_AND_PAGE);
+                      AGGREGATION_NAME_BY_TENANT, AGGREGATION_NAME_SORT_AND_PAGE);
 
               assertThat(byDefinition.getAggregations())
                   .anySatisfy(
