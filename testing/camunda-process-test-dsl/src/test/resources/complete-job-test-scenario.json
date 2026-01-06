@@ -1,0 +1,52 @@
+{
+  "testCases": [
+    {
+      "name": "Complete job by job type",
+      "description": "Test completing a job by job type",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "test-process"
+          }
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "jobType": "send-notification"
+          },
+          "variables": {
+            "x": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Complete job with example data",
+      "description": "Test completing a job with example data",
+      "instructions": [
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "task1"
+          },
+          "withExampleData": true
+        }
+      ]
+    },
+    {
+      "name": "Complete job with combined selector",
+      "description": "Test completing a job with multiple selector properties",
+      "instructions": [
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "jobType": "send-notification",
+            "elementId": "task1",
+            "processDefinitionId": "my-process"
+          }
+        }
+      ]
+    }
+  ]
+}

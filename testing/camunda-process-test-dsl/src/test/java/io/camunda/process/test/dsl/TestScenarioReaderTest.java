@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 public class TestScenarioReaderTest {
 
   private static final String EXAMPLE_TEST_SCENARIO = "/example-test-scenario.json";
+  private static final String COMPLETE_JOB_TEST_SCENARIO = "/complete-job-test-scenario.json";
   private static final String INVALID_TEST_SCENARIO = "/invalid-test-scenario.json";
 
   @Test
@@ -43,6 +44,32 @@ public class TestScenarioReaderTest {
 
     final TestCase testCase = testScenario.getTestCases().get(0);
     assertThat(testCase.getName()).isEqualTo("Happy path order processing");
+  }
+
+  @Test
+  void shouldReadCompleteJobTestScenario() {
+    // given
+    final TestScenarioReader reader = new TestScenarioReader();
+
+    // when
+    final TestScenario testScenario =
+        reader.read(getClass().getResourceAsStream(COMPLETE_JOB_TEST_SCENARIO));
+
+    // then
+    assertThat(testScenario).isNotNull();
+    assertThat(testScenario.getTestCases()).hasSize(3);
+
+    final TestCase testCase1 = testScenario.getTestCases().get(0);
+    assertThat(testCase1.getName()).isEqualTo("Complete job by job type");
+    assertThat(testCase1.getInstructions()).hasSize(2);
+
+    final TestCase testCase2 = testScenario.getTestCases().get(1);
+    assertThat(testCase2.getName()).isEqualTo("Complete job with example data");
+    assertThat(testCase2.getInstructions()).hasSize(1);
+
+    final TestCase testCase3 = testScenario.getTestCases().get(2);
+    assertThat(testCase3.getName()).isEqualTo("Complete job with combined selector");
+    assertThat(testCase3.getInstructions()).hasSize(1);
   }
 
   @Test
