@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -127,7 +126,7 @@ final class CompressionIT {
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
-            Optional.of("test-snapshot-id"),
+            "test-snapshot-id",
             4,
             5,
             "test",

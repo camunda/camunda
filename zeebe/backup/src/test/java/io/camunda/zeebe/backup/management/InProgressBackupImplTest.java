@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -58,8 +57,7 @@ class InProgressBackupImplTest {
   void setup() throws IOException {
     metadataProvider = mock();
     final var checkpointDescriptor =
-        new BackupDescriptorImpl(
-            Optional.empty(), 10L, 1, "8.1.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+        new BackupDescriptorImpl(10L, 1, "8.1.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
 
     inProgressBackup =
         new InProgressBackupImpl(
