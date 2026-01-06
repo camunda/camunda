@@ -47,6 +47,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -157,8 +158,13 @@ public final class EventAppliers implements EventApplier {
     registerConditionalSubscriptionAppliers(state);
     registerConditionalEvaluationAppliers();
     registerExpressionEvaluationEventAppliers();
+    registerJobMetricsBatchEventAppliers();
     registerGlobalListenersEventAppliers(state);
     return this;
+  }
+
+  private void registerJobMetricsBatchEventAppliers() {
+    register(JobMetricsBatchIntent.EXPORTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerExpressionEvaluationEventAppliers() {
