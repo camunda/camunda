@@ -12,6 +12,10 @@ import {
   jsonHeaders,
   assertRequiredFields,
   assertStatusCode,
+  assertBadRequest,
+  assertUnauthorizedRequest,
+  assertUnsupportedMediaTypeRequest,
+  assertNotFoundRequest,
 } from '../../../../utils/http';
 import {
   EVALUATE_CONDITIONAL,
@@ -22,17 +26,25 @@ import {
   EVALUATE_CONDITIONAL_PARTIAL_MATCH,
   conditionalEvaluationResponseRequiredFields,
   conditionalProcessInstanceItemRequiredFields,
-} from '../../../../utils/beans/requestBeans';
+} from '../../../../utils/beans/conditional-evaluation-requestBeans';
 import {deploy, cancelProcessInstance} from '../../../../utils/zeebeClient';
 
 const CONDITIONAL_EVALUATION_ENDPOINT = '/conditionals/evaluation';
 
 test.describe.parallel('Conditional Evaluation API Tests', () => {
+  const processInstancesToCleanup: string[] = [];
+
   test.beforeAll(async () => {
     await deploy([
       './resources/conditional_start_event_single.bpmn',
       './resources/conditional_start_event_multiple.bpmn',
     ]);
+  });
+
+  test.afterAll(async () => {
+    for (const instanceKey of processInstancesToCleanup) {
+      await cancelProcessInstance(instanceKey);
+    }
   });
 
   test('Evaluate Conditional - Single Match Success', async ({request}) => {
@@ -55,10 +67,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
         instance,
         conditionalProcessInstanceItemRequiredFields,
       );
-    }
-
-    for (const instance of json.processInstances) {
-      await cancelProcessInstance(instance.processInstanceKey);
+      processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
 
@@ -82,10 +91,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
 
     for (const instance of json.processInstances) {
       assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
-    }
-
-    for (const instance of json.processInstances) {
-      await cancelProcessInstance(instance.processInstanceKey);
+      processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
 
@@ -109,8 +115,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
     expect(instance.processDefinitionKey).toBeDefined();
     expect(instance.processInstanceKey).toBeDefined();
-
-    await cancelProcessInstance(instance.processInstanceKey);
+    processInstancesToCleanup.push(instance.processInstanceKey);
   });
 
   test('Evaluate Conditional - No Match Returns Empty List', async ({
@@ -148,10 +153,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
 
     for (const instance of json.processInstances) {
       assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
-    }
-
-    for (const instance of json.processInstances) {
-      await cancelProcessInstance(instance.processInstanceKey);
+      processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
 
@@ -173,9 +175,9 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     const processDefinitionKey =
       initialJson.processInstances[0].processDefinitionKey;
 
-    // Cancel the initial instances
+    // Track initial instances for cleanup
     for (const instance of initialJson.processInstances) {
-      await cancelProcessInstance(instance.processInstanceKey);
+      processInstancesToCleanup.push(instance.processInstanceKey);
     }
 
     // Now test the conditional evaluation with a specific process definition key
@@ -200,10 +202,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
 
     for (const instance of json.processInstances) {
       assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
-    }
-
-    for (const instance of json.processInstances) {
-      await cancelProcessInstance(instance.processInstanceKey);
+      processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
 
@@ -218,14 +217,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       },
     );
 
-    await assertStatusCode(res, 401);
-    const json = await res.json();
-    assertRequiredFields(json, ['type', 'title', 'status', 'detail', 'instance']);
-    expect(json.type).toBe('about:blank');
-    expect(json.title).toBe('Unauthorized');
-    expect(json.status).toBe(401);
-    expect(json.detail).toBeDefined();
-    expect(json.instance).toBeDefined();
+    await assertUnauthorizedRequest(res);
   });
 
   test('Evaluate Conditional - Bad Request Missing Variables', async ({
@@ -239,14 +231,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       },
     );
 
-    await assertStatusCode(res, 400);
-    const json = await res.json();
-    assertRequiredFields(json, ['type', 'title', 'status', 'detail', 'instance']);
-    expect(json.type).toBe('about:blank');
-    expect(json.title).toBe('INVALID_ARGUMENT');
-    expect(json.status).toBe(400);
-    expect(json.detail).toMatch(/variables|required/i);
-    expect(json.instance).toBeDefined();
+    await assertBadRequest(res, /variables|required/i, 'INVALID_ARGUMENT');
   });
 
   test('Evaluate Conditional - Invalid Tenant', async ({request}) => {
@@ -259,14 +244,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       },
     );
 
-    await assertStatusCode(res, 400);
-    const json = await res.json();
-    assertRequiredFields(json, ['type', 'title', 'status', 'detail', 'instance']);
-    expect(json.type).toBe('about:blank');
-    expect(json.title).toBe('INVALID_ARGUMENT');
-    expect(json.status).toBe(400);
-    expect(json.detail).toBeDefined();
-    expect(json.instance).toBeDefined();
+    await assertBadRequest(res, /.+/, 'INVALID_ARGUMENT');
   });
 
   test('Evaluate Conditional - Invalid Process Definition Key', async ({
@@ -281,13 +259,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       },
     );
 
-    await assertStatusCode(res, 404);
-    const json = await res.json();
-    assertRequiredFields(json, ['type', 'title', 'status', 'detail', 'instance']);
-    expect(json.type).toBe('about:blank');
-    expect(json.title).toBe('NOT_FOUND');
-    expect(json.status).toBe(404);
-    expect(json.instance).toBeDefined();
+    await assertNotFoundRequest(res, '');
   });
 
   test('Evaluate Conditional - Unsupported Media Type', async ({request}) => {
@@ -302,14 +274,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       },
     );
 
-    await assertStatusCode(res, 415);
-    const json = await res.json();
-    assertRequiredFields(json, ['type', 'title', 'status', 'detail', 'instance']);
-    expect(json.type).toBe('about:blank');
-    expect(json.title).toContain('Unsupported Media Type');
-    expect(json.status).toBe(415);
-    expect(json.detail).toBeDefined();
-    expect(json.instance).toBeDefined();
+    await assertUnsupportedMediaTypeRequest(res);
   });
 
   test('Evaluate Conditional - Invalid JSON', async ({request}) => {
@@ -321,14 +286,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       },
     );
 
-    await assertStatusCode(res, 400);
-    const json = await res.json();
-    assertRequiredFields(json, ['type', 'title', 'status', 'detail', 'instance']);
-    expect(json.type).toBe('about:blank');
-    expect(json.title).toBeDefined();
-    expect(json.status).toBe(400);
-    expect(json.detail).toBeDefined();
-    expect(json.instance).toBeDefined();
+    await assertBadRequest(res, /.+/);
   });
 
   test('Evaluate Conditional - Verify Response Schema', async ({request}) => {
@@ -346,18 +304,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
 
     expect(json).toHaveProperty('processInstances');
     expect(Array.isArray(json.processInstances)).toBe(true);
+    expect(json.processInstances.length).toBeGreaterThan(0);
 
-    if (json.processInstances.length > 0) {
-      for (const instance of json.processInstances) {
-        expect(instance).toHaveProperty('processDefinitionKey');
-        expect(instance).toHaveProperty('processInstanceKey');
-        expect(typeof instance.processDefinitionKey).toBe('string');
-        expect(typeof instance.processInstanceKey).toBe('string');
-      }
-
-      for (const instance of json.processInstances) {
-        await cancelProcessInstance(instance.processInstanceKey);
-      }
+    for (const instance of json.processInstances) {
+      expect(instance).toHaveProperty('processDefinitionKey');
+      expect(instance).toHaveProperty('processInstanceKey');
+      expect(typeof instance.processDefinitionKey).toBe('string');
+      expect(typeof instance.processInstanceKey).toBe('string');
+      processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
 });
