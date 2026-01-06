@@ -29,7 +29,7 @@ jobs:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
-    runs-on: gcp-core-32-default
+    runs-on: gcp-core-16-default
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     timeout-minutes: 31
     strategy:
