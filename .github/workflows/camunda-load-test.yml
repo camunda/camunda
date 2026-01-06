@@ -318,6 +318,8 @@ jobs:
           --namespace ${{ inputs.name }}
           --reset-then-reuse-values
           --render-subchart-notes
+          --set elasticsearch.enabled=true
+          --set global.elasticsearch.enabled=true
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set orchestration.image.registry=gcr.io
           --set orchestration.image.repository=zeebe-io/zeebe
