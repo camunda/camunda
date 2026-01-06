@@ -135,18 +135,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set image tag
-        id: set-image-tag
-        shell: bash
-        run: |
-          if [[ -n "${{ inputs.version }}" ]]; then
-            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "tag=pr-${{ github.event.pull_request.number }}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Setup build environment
         uses: ./.github/actions/setup-build
         with:
@@ -156,6 +144,27 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
+
+      - name: Get Maven project version
+        id: maven-version
+        run: |
+          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Set semantic image tag
+        id: set-image-tag
+        run: |
+          MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
+          if [[ -n "${{ inputs.version }}" ]]; then
+            # Use explicitly provided version
+            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # For PRs: <maven-version>-pr<number> (e.g., 8.9.0-SNAPSHOT-pr123)
+            echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.9.0-SNAPSHOT-abc1234)
+            echo "tag=${MAVEN_VERSION}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Download Operate frontend artifact
         uses: actions/download-artifact@v4
