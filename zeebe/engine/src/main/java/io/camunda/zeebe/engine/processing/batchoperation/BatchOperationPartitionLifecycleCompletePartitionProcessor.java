@@ -134,7 +134,7 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
       batchCompleted.setErrors(bo.getErrors());
     }
 
-    if (bo.hasFollowupCommand()) {
+    if (bo.hasFollowUpCommand()) {
       final var followUpCommand = bo.getFollowUpCommand();
       commandWriter.appendFollowUpCommand(
           batchOperationKey, followUpCommand.getIntent(), followUpCommand.getRecordValue());

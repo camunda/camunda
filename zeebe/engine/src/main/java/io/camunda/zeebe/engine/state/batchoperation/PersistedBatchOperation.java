@@ -338,7 +338,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public boolean hasFollowupCommand() {
+  public boolean hasFollowUpCommand() {
     return !followUpCommandProp.getValue().getValueType().equals(ValueType.NULL_VAL);
   }
 
