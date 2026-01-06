@@ -537,9 +537,21 @@ jobs:
             docker-file: Dockerfile
             owner: "QA"
             module: "QA"
-          - group: modules
-            name: "Zeebe Module"
-            maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
+          - group: zeebe-ds-modules
+            name: "Zeebe Distributed Platform Modules"
+            # here
+            maven-modules: "'!qa/integration-tests,!qa/update-tests,atomix,backup,backup-stores,broker-client,docker,dynamic-config,journal,logstreams,restore,scheduler,snapshot,stream-platform,transport,dynamic-node-provider' -f zeebe"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-longrunning
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Platform"
+            module: "Zeebe"
+          - group: zeebe-engine-modules
+            name: "Zeebe Engine Modules"
+            # here
+            maven-modules: "'!qa/integration-tests,!qa/update-tests,!atomix,!backup,!backup-stores,!broker-client,!docker,!dynamic-config,!journal,!logstreams,!restore,!scheduler,!snapshot,!stream-platform,!transport,!dynamic-node-provider' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-longrunning
@@ -574,7 +586,7 @@ jobs:
             runs-on: gcp-perf-core-16-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
-            owner: "Distributed Systems"
+            owner: "Distributed Platform"
             module: "Zeebe"
             test-filter: "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*$*.java"
           - group: zeebe-ds-integration-scaleup
@@ -583,7 +595,7 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 1
             runs-on: gcp-perf-core-8-default
-            owner: "Distributed Systems"
+            owner: "Distributed Platform"
             module: "Zeebe"
             test-filter: "io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest"
           - group: zeebe-shared-integration
