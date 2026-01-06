@@ -97,7 +97,7 @@ describe('VariablePanel', () => {
     const statistics = [
       {
         elementId: 'TEST_FLOW_NODE',
-        active: 0,
+        active: 1,
         canceled: 0,
         incidents: 0,
         completed: 1,
