@@ -23,6 +23,10 @@ on:
         description: 'Test scenario'
         type: string
         default: 'keycloak-original'
+      deployment-ttl:
+        description: 'Deployment TTL'
+        type: string
+        default: ''
       shortname:
         description: 'Short name for the deployment'
         type: string
@@ -252,7 +256,7 @@ jobs:
       namespace-prefix: monorepo
       test-enabled: true
       e2e-enabled: true
-      deployment-ttl: ""
+      deployment-ttl: ${{ inputs.deployment-ttl || '' }}
       scenario: ${{ inputs.scenario || 'keycloak-original' }}
       shortname: ${{ inputs.shortname || 'kcor' }}
       always-delete-namespace: true
