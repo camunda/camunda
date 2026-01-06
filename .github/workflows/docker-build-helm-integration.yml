@@ -115,7 +115,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: identity-frontend
-          path: identity/client/build
+          path: identity/client/dist
           retention-days: 1
 
   # Main build job - waits for all frontends to complete
