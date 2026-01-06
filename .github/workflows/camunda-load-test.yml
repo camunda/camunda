@@ -324,7 +324,7 @@ jobs:
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/load-tests/camunda-platform-values.yaml
           ${{ inputs.secondary-storage-type == 'elasticsearch' && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/camunda-platform-values-elasticsearch.yaml', github.ref) || '' }}
-          ${{ inputs.secondary-storage-type == 'postgresql' && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/camunda-platform-values-rdbms.yaml --set orchestration.data.secondaryStorage.type=postgresql', github.ref) || '' }}
+          ${{ inputs.secondary-storage-type == 'postgresql' && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/camunda-platform-values-rdbms.yaml', github.ref) || '' }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/setup/default/values-stable.yaml', github.ref) || '' }}
       - name: Summarize deployment
