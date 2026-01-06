@@ -24,6 +24,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
@@ -127,8 +128,11 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   private final ArrayProperty<BatchOperationError> errorsProp =
       new ArrayProperty<>("errors", BatchOperationError::new);
 
+  private final ObjectProperty<NestedRecord> followUpCommandProp =
+      new ObjectProperty<>("followUpCommand", new NestedRecord());
+
   public PersistedBatchOperation() {
-    super(16);
+    super(17);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -144,7 +148,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(finishedPartitionsProp)
         .declareProperty(numTotalItemsProp)
         .declareProperty(numExecutedItemsProp)
-        .declareProperty(errorsProp);
+        .declareProperty(errorsProp)
+        .declareProperty(followUpCommandProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -155,6 +160,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setModificationPlan(record.getModificationPlan());
     setAuthentication(record.getAuthenticationBuffer());
     setPartitions(record.getPartitionIds());
+    setFollowUpCommand(record.getFollowUpCommand());
     return this;
   }
 
@@ -319,6 +325,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     for (final var partition : partitions) {
       partitionsProp.add().setValue(partition);
     }
+    return this;
+  }
+
+  public NestedRecord getFollowUpCommand() {
+    return followUpCommandProp.getValue();
+  }
+
+  public PersistedBatchOperation setFollowUpCommand(final NestedRecord command) {
+    followUpCommandProp.getValue().wrap(command);
     return this;
   }
 
