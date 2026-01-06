@@ -58,11 +58,10 @@ public class BroadcastSignalInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(camundaClient).newBroadcastSignalCommand();
-
     final BroadcastSignalCommandStep2 mockCommand =
         camundaClient.newBroadcastSignalCommand().signalName(SIGNAL_NAME);
 
+    verify(camundaClient).newBroadcastSignalCommand();
     verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).send();
 
@@ -86,11 +85,10 @@ public class BroadcastSignalInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(camundaClient).newBroadcastSignalCommand();
-
     final BroadcastSignalCommandStep2 mockCommand =
         camundaClient.newBroadcastSignalCommand().signalName(SIGNAL_NAME);
 
+    verify(camundaClient).newBroadcastSignalCommand();
     verify(mockCommand).variables(variables);
     verify(mockCommand).send();
 
