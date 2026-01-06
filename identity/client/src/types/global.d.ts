@@ -14,6 +14,7 @@ export declare global {
     organizationId?: string;
     clusterId?: string;
     idPattern?: string;
+    endSessionEndpoint?: string;
   }
 
   interface Window {
