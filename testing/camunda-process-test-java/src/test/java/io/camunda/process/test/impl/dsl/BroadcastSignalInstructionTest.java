@@ -61,7 +61,10 @@ public class BroadcastSignalInstructionTest {
     verify(camundaClient).newBroadcastSignalCommand();
 
     final BroadcastSignalCommandStep2 mockCommand =
-        camundaClient.newBroadcastSignalCommand().signalName(SIGNAL_NAME).variables(Collections.emptyMap());
+        camundaClient
+            .newBroadcastSignalCommand()
+            .signalName(SIGNAL_NAME)
+            .variables(Collections.emptyMap());
 
     verify(mockCommand).send();
 
