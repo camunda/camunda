@@ -18,7 +18,7 @@ const useElementInstancesCount = (elementId?: string) => {
     (stat) => stat.elementId === elementId,
   );
   if (!elementStats) {
-    return 0;
+    return null;
   }
 
   return (
