@@ -49,6 +49,7 @@ public class HistoryCleanupService {
   private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
   private final UsageMetricWriter usageMetricWriter;
   private final UsageMetricTUWriter usageMetricTUWriter;
+  private final AuditLogWriter auditLogWriter;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -85,6 +86,7 @@ public class HistoryCleanupService {
     metrics = rdbmsWriters.getMetrics();
     usageMetricWriter = rdbmsWriters.getUsageMetricWriter();
     usageMetricTUWriter = rdbmsWriters.getUsageMetricTUWriter();
+    auditLogWriter = rdbmsWriters.getAuditLogWriter();
   }
 
   public void scheduleProcessForHistoryCleanup(
@@ -174,6 +176,8 @@ public class HistoryCleanupService {
           "correlatedMessageSubscription",
           correlatedMessageSubscriptionWriter.cleanupHistory(
               partitionId, cleanupDate, cleanupBatchSize));
+      numDeletedRecords.put(
+          "auditLog", auditLogWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
       final long end = System.currentTimeMillis();
       logCleanUpInfo("", partitionId, numDeletedRecords, cleanupDate, end, start);
       final var nextDuration =

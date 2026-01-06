@@ -9,14 +9,17 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
 
 public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
+  private final AuditLogMapper mapper;
   private final ExecutionQueue executionQueue;
 
   public AuditLogWriter(
@@ -25,6 +28,7 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
       final VendorDatabaseProperties vendorDatabaseProperties) {
     super(mapper);
     this.executionQueue = executionQueue;
+    this.mapper = mapper;
   }
 
   public void create(final AuditLogDbModel auditLog) {
@@ -35,5 +39,15 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
             auditLog.entityKey(),
             "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
             auditLog));
+  }
+
+  public int cleanupHistory(
+      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupHistory(
+        new CleanupHistoryDto.Builder()
+            .partitionId(partitionId)
+            .cleanupDate(cleanupDate)
+            .limit(rowsToRemove)
+            .build());
   }
 }
