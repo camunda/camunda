@@ -463,6 +463,8 @@ public class BatchOperationSearchIT {
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_1.size());
     assertThat(batch.getOperationsCompletedCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_1.size());
     assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
+    assertThat(batch.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(batch.getActorId()).isEqualTo(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }
 
   private static void assertMigrateBatchOperation(final BatchOperation batch) {
@@ -473,6 +475,8 @@ public class BatchOperationSearchIT {
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_2.size());
     assertThat(batch.getOperationsCompletedCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_2.size());
     assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
+    assertThat(batch.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(batch.getActorId()).isEqualTo(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }
 
   private static void assertItems(
