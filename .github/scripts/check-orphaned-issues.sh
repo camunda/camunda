@@ -114,8 +114,8 @@ echo "  Issues with no project: $COUNT_NO_PROJECT"
 # Generate GitHub search URL for no-project issues
 GITHUB_SEARCH_URL=""
 if [[ $COUNT_NO_PROJECT -gt 0 ]]; then
-  ENCODED_QUERY=$(echo "$SEARCH_QUERY_NO_PROJECT" | jq -sRr @uri)
-  GITHUB_SEARCH_URL="https://github.com/${ORG_NAME}/${REPO_NAME}/issues?q=${ENCODED_QUERY}"
+  # Simplified URL-encoded query: is:issue state:open no:project
+  GITHUB_SEARCH_URL="https://github.com/${ORG_NAME}/${REPO_NAME}/issues?q=is%3Aissue%20state%3Aopen%20no%3Aproject"
   echo "  GitHub search URL: $GITHUB_SEARCH_URL"
 fi
 
