@@ -72,3 +72,6 @@ c8run/camunda-db*
 
 cmd/renovate/renovate*/
 .cache/
+
+# HTTP test private environment files
+**/http-client.private.env.json
