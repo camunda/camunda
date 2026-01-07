@@ -11,7 +11,7 @@ import {useLocation} from 'react-router-dom';
 import {TableBatchAction, Stack} from '@carbon/react';
 import {Move} from '@carbon/react/icons';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance';

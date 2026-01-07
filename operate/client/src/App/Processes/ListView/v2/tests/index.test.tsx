@@ -16,7 +16,7 @@ import {
   createUser,
   searchResult,
 } from 'modules/testUtils';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';

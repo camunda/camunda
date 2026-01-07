@@ -7,6 +7,9 @@
  */
 
 import {observer} from 'mobx-react';
+import {Button} from '@carbon/react';
+import {ClassicBatch} from '@carbon/react/icons';
+import {useNavigate} from 'react-router-dom';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {
@@ -14,8 +17,10 @@ import {
   Description,
   DescriptionTitle,
   DescriptionData,
+  HeaderActions,
 } from '../../../DiagramPanel/DiagramHeader/styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {Paths} from 'modules/Routes';
 import {
   getProcessDefinitionName,
   type ProcessDefinitionSelection,
@@ -28,6 +33,7 @@ type DiagramHeaderProps = {
 
 const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
   ({processDefinitionSelection, panelHeaderRef}) => {
+    const navigate = useNavigate();
     const title =
       processDefinitionSelection.kind === 'no-match' ? 'Process' : undefined;
 
@@ -44,9 +50,25 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
         <DefinitionSelectionContent
           processDefinitionSelection={processDefinitionSelection}
         />
-        <SingleVersionSelectionContent
+        <VersionTagContent
           processDefinitionSelection={processDefinitionSelection}
         />
+        <HeaderActions>
+          <ProcessOperationsContent
+            processDefinitionSelection={processDefinitionSelection}
+          />
+          <Button
+            kind="tertiary"
+            onClick={() => navigate(Paths.batchOperations())}
+            iconDescription="View batch operations"
+            renderIcon={ClassicBatch}
+            title="View batch operations"
+            aria-label="View batch operations"
+            size="sm"
+          >
+            View batch operations
+          </Button>
+        </HeaderActions>
       </PanelHeader>
     );
   },
@@ -82,7 +104,29 @@ function DefinitionSelectionContent(
   );
 }
 
-function SingleVersionSelectionContent(
+function VersionTagContent(
+  props: Pick<DiagramHeaderProps, 'processDefinitionSelection'>,
+) {
+  if (props.processDefinitionSelection.kind !== 'single-version') {
+    return null;
+  }
+
+  const definition = props.processDefinitionSelection.definition;
+  const versionTag = definition.versionTag;
+
+  if (!versionTag) {
+    return null;
+  }
+
+  return (
+    <Description>
+      <DescriptionTitle>Version tag</DescriptionTitle>
+      <DescriptionData title={versionTag}>{versionTag}</DescriptionData>
+    </Description>
+  );
+}
+
+function ProcessOperationsContent(
   props: Pick<DiagramHeaderProps, 'processDefinitionSelection'>,
 ) {
   if (props.processDefinitionSelection.kind !== 'single-version') {
@@ -93,22 +137,13 @@ function SingleVersionSelectionContent(
   const name = getProcessDefinitionName(definition);
   const definitionKey = definition.processDefinitionKey;
   const version = definition.version;
-  const versionTag = definition.versionTag;
 
   return (
-    <>
-      {versionTag && (
-        <Description>
-          <DescriptionTitle>Version tag</DescriptionTitle>
-          <DescriptionData title={versionTag}>{versionTag}</DescriptionData>
-        </Description>
-      )}
-      <ProcessOperations
-        processDefinitionKey={definitionKey}
-        processName={name}
-        processVersion={version}
-      />
-    </>
+    <ProcessOperations
+      processDefinitionKey={definitionKey}
+      processName={name}
+      processVersion={version}
+    />
   );
 }
 

@@ -14,7 +14,7 @@ import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
@@ -60,6 +60,7 @@ const ListView: React.FC = observer(() => {
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
+      processInstancesSelectionStore.reset();
       processesStore.reset();
     };
   }, []);

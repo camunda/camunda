@@ -10,8 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import {Toolbar} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
@@ -74,11 +73,14 @@ describe('<ProcessOperations />', () => {
       page: {totalItems: 0},
     });
 
+    processInstancesSelectionStore.init();
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount: 2,
+      visibleIds: ['1', '2'],
+      visibleRunningIds: ['1', '2'],
+    });
     processInstancesSelectionStore.selectProcessInstance('1');
     processInstancesSelectionStore.selectProcessInstance('2');
-
-    processInstancesSelectionStore.state.selectionMode = 'INCLUDE';
-    processInstancesSelectionStore.state.isAllChecked = false;
   });
 
   afterEach(() => {
@@ -86,7 +88,6 @@ describe('<ProcessOperations />', () => {
 
     batchModificationStore.reset();
     processInstancesSelectionStore.reset();
-    processInstancesStore.reset();
     panelStatesStore.reset();
     variableFilterStore.reset();
   });
@@ -147,46 +148,6 @@ describe('<ProcessOperations />', () => {
   it('should perform cancel batch operation successfully', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    processInstancesStore.setProcessInstances({
-      filteredProcessInstancesCount: 2,
-      processInstances: [
-        {
-          id: '1',
-          processId: 'process-1',
-          processName: 'Test Process',
-          processVersion: 1,
-          startDate: '2023-01-01T00:00:00.000Z',
-          endDate: null,
-          state: 'ACTIVE',
-          bpmnProcessId: 'testProcess',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '<default>',
-        },
-        {
-          id: '2',
-          processId: 'process-2',
-          processName: 'Test Process',
-          processVersion: 1,
-          startDate: '2023-01-01T00:00:00.000Z',
-          endDate: null,
-          state: 'INCIDENT',
-          bpmnProcessId: 'testProcess',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '<default>',
-        },
-      ],
-    });
-
     const trackSpy = vi.spyOn(tracking, 'track');
 
     const {user} = render(<Toolbar selectedInstancesCount={2} />, {
@@ -219,46 +180,6 @@ describe('<ProcessOperations />', () => {
 
   it('should perform resolve batch operation successfully', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
-
-    processInstancesStore.setProcessInstances({
-      filteredProcessInstancesCount: 2,
-      processInstances: [
-        {
-          id: '1',
-          processId: 'process-1',
-          processName: 'Test Process',
-          processVersion: 1,
-          startDate: '2023-01-01T00:00:00.000Z',
-          endDate: null,
-          state: 'ACTIVE',
-          bpmnProcessId: 'testProcess',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '<default>',
-        },
-        {
-          id: '2',
-          processId: 'process-2',
-          processName: 'Test Process',
-          processVersion: 1,
-          startDate: '2023-01-01T00:00:00.000Z',
-          endDate: null,
-          state: 'INCIDENT',
-          bpmnProcessId: 'testProcess',
-          hasActiveOperation: false,
-          operations: [],
-          sortValues: [],
-          parentInstanceId: null,
-          rootInstanceId: null,
-          callHierarchy: [],
-          tenantId: '<default>',
-        },
-      ],
-    });
 
     const trackSpy = vi.spyOn(tracking, 'track');
 

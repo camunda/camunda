@@ -14,7 +14,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 vi.mock('modules/utils/bpmn');

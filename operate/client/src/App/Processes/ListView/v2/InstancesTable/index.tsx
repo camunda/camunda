@@ -23,7 +23,7 @@ import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstance
 import {useLocation, useSearchParams} from 'react-router-dom';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import type {InstanceEntityState} from 'modules/types/operate';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {InstanceOperations} from './InstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
 

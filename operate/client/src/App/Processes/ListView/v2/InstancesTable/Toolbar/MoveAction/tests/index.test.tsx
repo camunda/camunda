@@ -7,22 +7,31 @@
  */
 
 import {act} from '@testing-library/react';
-import {render, screen} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockProcessInstances} from 'modules/testUtils';
+import {render, screen, waitFor, type Screen} from 'modules/testing-library';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {
-  fetchProcessInstances,
+  createV2TestWrapper,
   getProcessInstance,
-  getWrapper,
-} from '../../mocks';
+  setupSelectionStoreWithInstances,
+  mockProcessInstancesV2,
+} from 'App/Processes/ListView/v2/tests/testUtils';
 import {MoveAction} from '..';
 import {open} from 'modules/mocks/diagrams';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
 const PROCESS_ID = 'MoveModificationProcess';
+
 const mockProcessXML = open('MoveModificationProcess.bpmn');
+
+const waitForDiagramToLoad = async (screen: Screen) => {
+  await waitFor(() => {
+    const button = screen.getByRole('button', {name: /move/i});
+    const title = button.getAttribute('title');
+    expect(title).not.toBe('Please select an element from the diagram first.');
+  });
+};
 
 vi.mock('modules/stores/processes/processes.list', () => {
   const PROCESS_DEFINITION_ID = '2251799813685249';
@@ -41,10 +50,18 @@ vi.mock('modules/stores/processes/processes.list', () => {
 });
 
 describe('<MoveAction />', () => {
-  it('should disable button when no process version is selected', () => {
+  beforeEach(() => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockSearchProcessInstances().withSuccess({
+      items: mockProcessInstancesV2,
+      page: {totalItems: mockProcessInstancesV2.length},
+    });
+  });
 
-    render(<MoveAction />, {wrapper: getWrapper()});
+  it('should disable button when no process version is selected', () => {
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({withTestButtons: true}),
+    });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
 
@@ -56,22 +73,23 @@ describe('<MoveAction />', () => {
   });
 
   it('should disable button when only finished instances are selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        withTestButtons: true,
+      }),
     });
 
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
-    const instance = getProcessInstance('CANCELED', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('TERMINATED', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -84,21 +102,23 @@ describe('<MoveAction />', () => {
   });
 
   it('should disable button when start event is selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=StartEvent`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=StartEvent`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -111,21 +131,23 @@ describe('<MoveAction />', () => {
   });
 
   it('should disable button when boundary event is selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=BoundaryEvent`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=BoundaryEvent`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -138,21 +160,23 @@ describe('<MoveAction />', () => {
   });
 
   it('should disable button when multi instance task is selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MultiInstanceTask`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MultiInstanceTask`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -165,21 +189,23 @@ describe('<MoveAction />', () => {
   });
 
   it('should disable button if element is attached to event based gateway', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MessageEvent`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MessageEvent`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -192,21 +218,23 @@ describe('<MoveAction />', () => {
   });
 
   it('should disable button if element is inside multi instance sub process', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=TaskInsideMultiInstance`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=TaskInsideMultiInstance`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -219,41 +247,43 @@ describe('<MoveAction />', () => {
   });
 
   it('should enable move button when active or incident instances are selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
-      ),
+    render(<MoveAction />, {
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     expect(screen.getByRole('button', {name: /move/i})).toBeDisabled();
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
 
     expect(screen.getByRole('button', {name: /move/i})).toBeEnabled();
   });
 
   it('should enable move button when all instances are selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
     const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
-      ),
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        withTestButtons: true,
+      }),
     });
 
     expect(screen.getByRole('button', {name: /move/i})).toBeDisabled();
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
+
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),
@@ -263,16 +293,16 @@ describe('<MoveAction />', () => {
   });
 
   it('should display migration helper modal and enter migration mode', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
     const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
-      ),
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
+
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),
@@ -300,16 +330,16 @@ describe('<MoveAction />', () => {
   });
 
   it('should hide helper modal after checkbox click', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
     const {user} = render(<MoveAction />, {
-      wrapper: getWrapper(
-        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
-      ),
+      wrapper: createV2TestWrapper({
+        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        withTestButtons: true,
+      }),
     });
 
-    await fetchProcessInstances(screen, user);
+    await waitForDiagramToLoad(screen);
+
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),

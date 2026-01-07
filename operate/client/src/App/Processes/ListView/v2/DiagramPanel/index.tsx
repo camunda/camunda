@@ -19,7 +19,7 @@ import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/Modificatio
 import {BatchModificationNotification} from './BatchModificationNotification';
 import {DiagramHeader} from './DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
-import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
+import {useBatchModificationOverlayDataV2} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayDataV2';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {
   getFlowNode,
@@ -87,7 +87,7 @@ const DiagramPanel: React.FC = observer(() => {
   );
 
   const {selectedTargetElementId} = batchModificationStore.state;
-  const {data: batchOverlayData} = useBatchModificationOverlayData(
+  const {data: batchOverlayData} = useBatchModificationOverlayDataV2(
     {},
     {
       sourceFlowNodeId: flowNodeId,

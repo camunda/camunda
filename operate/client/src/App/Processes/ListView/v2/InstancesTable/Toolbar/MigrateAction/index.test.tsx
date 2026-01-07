@@ -7,13 +7,8 @@
  */
 
 import {act} from '@testing-library/react';
-import {render, screen} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {
-  mockCalledProcessInstances,
-  mockProcessInstances,
-} from 'modules/testUtils';
+import {render, screen, waitFor} from 'modules/testing-library';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {tracking} from 'modules/tracking';
@@ -21,16 +16,33 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter} from 'react-router-dom';
 import {
-  fetchProcessInstances,
   getProcessInstance,
-} from '../../../../InstancesTable/Toolbar/mocks';
-import {processInstancesStore} from 'modules/stores/processInstances';
+  setupSelectionStoreWithInstances,
+  mockProcessInstancesV2,
+} from 'App/Processes/ListView/v2/tests/testUtils';
 import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
+
+const mockCalledProcessInstancesV2: ProcessInstance[] = [
+  {
+    processInstanceKey: '5',
+    processDefinitionId: PROCESS_DEFINITION_ID,
+    processDefinitionKey: PROCESS_DEFINITION_ID,
+    processDefinitionName: 'Event Based Gateway Process',
+    processDefinitionVersion: 1,
+    state: 'ACTIVE',
+    startDate: '2023-01-01T00:00:00.000+0000',
+    hasIncident: false,
+    tenantId: '<default>',
+    parentProcessInstanceKey: '999',
+  },
+];
 
 vi.mock('modules/stores/processes/processes.list', () => {
   const PROCESS_DEFINITION_ID = '2251799813685249';
@@ -52,9 +64,9 @@ vi.mock('modules/stores/processes/processes.list', () => {
 function getWrapper(initialPath: string = '') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
+      processInstancesSelectionStore.init();
       return () => {
         processInstancesSelectionStore.reset();
-        processInstancesStore.reset();
         processInstanceMigrationStore.reset();
         batchModificationStore.reset();
       };
@@ -67,16 +79,6 @@ function getWrapper(initialPath: string = '') {
           onClick={processInstancesSelectionStore.selectAllProcessInstances}
         >
           Select all instances
-        </button>
-        <button
-          onClick={() =>
-            processInstancesStore.fetchInstances({
-              fetchType: 'initial',
-              payload: {query: {}},
-            })
-          }
-        >
-          Fetch process instances
         </button>
         <button onClick={batchModificationStore.enable}>
           Enter batch modification mode
@@ -95,9 +97,11 @@ function getWrapperWithQueryClient(initialPath: string = '') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     const InnerWrapper = getWrapper(initialPath);
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        <InnerWrapper>{children}</InnerWrapper>
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value={PROCESS_DEFINITION_ID}>
+        <QueryClientProvider client={getMockQueryClient()}>
+          <InnerWrapper>{children}</InnerWrapper>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
@@ -105,6 +109,10 @@ function getWrapperWithQueryClient(initialPath: string = '') {
 }
 
 describe('<MigrateAction />', () => {
+  beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+  });
+
   it('should disable migrate button, when no process version is selected', () => {
     render(<MigrateAction />, {wrapper: getWrapperWithQueryClient()});
 
@@ -121,102 +129,98 @@ describe('<MigrateAction />', () => {
     expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
   });
 
-  it('should enable migrate button, when active or incident instances are selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
-    const {user} = render(<MigrateAction />, {
+  it('should enable migrate button, when active or incident instances are selected', () => {
+    render(<MigrateAction />, {
       wrapper: getWrapperWithQueryClient(
         `/processes?process=eventBasedGatewayProcess&version=1`,
       ),
     });
 
-    await fetchProcessInstances(screen, user);
-
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        instance.processInstanceKey,
+      );
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
   });
 
-  it('should enable migrate button when selected instances are called by parent', async () => {
-    mockFetchProcessInstances().withSuccess(mockCalledProcessInstances);
-
-    const {user} = render(<MigrateAction />, {
+  it('should enable migrate button when selected instances are called by parent', () => {
+    render(<MigrateAction />, {
       wrapper: getWrapperWithQueryClient(
         `/processes?process=eventBasedGatewayProcess&version=1`,
       ),
     });
 
-    await fetchProcessInstances(screen, user);
-
-    const instance = getProcessInstance('ACTIVE', mockCalledProcessInstances);
+    setupSelectionStoreWithInstances(mockCalledProcessInstancesV2);
+    const instance = getProcessInstance('ACTIVE', mockCalledProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        instance.processInstanceKey,
+      );
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
   });
 
   it('should disable migrate button, when process XML could not be loaded', async () => {
-    mockFetchProcessInstances().withSuccess(mockCalledProcessInstances);
-
-    const {user} = render(<MigrateAction />, {
-      wrapper: getWrapperWithQueryClient(
-        `/processes?process=eventBasedGatewayProcess&version=1`,
-      ),
-    });
-
     mockFetchProcessDefinitionXml().withServerError();
 
-    await fetchProcessInstances(screen, user);
-
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
-
-    act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
-    });
-
-    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
-  });
-
-  it('should disable migrate button, when only finished instances are selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
-    const {user} = render(<MigrateAction />, {
+    render(<MigrateAction />, {
       wrapper: getWrapperWithQueryClient(
         `/processes?process=eventBasedGatewayProcess&version=1`,
       ),
     });
 
-    await fetchProcessInstances(screen, user);
-
-    const instance = getProcessInstance('CANCELED', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        instance.processInstanceKey,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
+    });
+  });
+
+  it('should disable migrate button, when only finished instances are selected', () => {
+    render(<MigrateAction />, {
+      wrapper: getWrapperWithQueryClient(
+        `/processes?process=eventBasedGatewayProcess&version=1`,
+      ),
+    });
+
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+    const instance = getProcessInstance('TERMINATED', mockProcessInstancesV2);
+
+    act(() => {
+      processInstancesSelectionStore.selectProcessInstance(
+        instance.processInstanceKey,
+      );
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
   });
 
   it('should enable migrate button, when all instances are selected', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
     const {user} = render(<MigrateAction />, {
       wrapper: getWrapperWithQueryClient(
         `/processes?process=eventBasedGatewayProcess&version=1`,
       ),
     });
 
-    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
 
-    await fetchProcessInstances(screen, user);
+    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),
@@ -226,20 +230,19 @@ describe('<MigrateAction />', () => {
   });
 
   it('should display migration helper modal on button click', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
     const {user} = render(<MigrateAction />, {
       wrapper: getWrapperWithQueryClient(
         `/processes?process=eventBasedGatewayProcess&version=1`,
       ),
     });
 
-    await fetchProcessInstances(screen, user);
-
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        instance.processInstanceKey,
+      );
     });
 
     await user.click(screen.getByRole('button', {name: /migrate/i}));
@@ -275,12 +278,13 @@ describe('<MigrateAction />', () => {
       wrapper: getWrapperWithQueryClient(`/processes${SEARCH_STRING}`),
     });
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    await fetchProcessInstances(screen, user);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        instance.processInstanceKey,
+      );
     });
     await user.click(screen.getByRole('button', {name: /migrate/i}));
 
@@ -292,7 +296,7 @@ describe('<MigrateAction />', () => {
     expect(processInstanceMigrationStore.state.batchOperationQuery).toEqual({
       active: true,
       excludeIds: [],
-      ids: [instance.id],
+      ids: [instance.processInstanceKey],
       incidents: false,
       processIds: [PROCESS_DEFINITION_ID],
       running: true,
@@ -308,12 +312,13 @@ describe('<MigrateAction />', () => {
       ),
     });
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    await fetchProcessInstances(screen, user);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
+    const instance = getProcessInstance('ACTIVE', mockProcessInstancesV2);
 
-    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
     act(() => {
-      processInstancesSelectionStore.selectProcessInstance(instance.id);
+      processInstancesSelectionStore.selectProcessInstance(
+        String(instance.processInstanceKey),
+      );
     });
     await user.click(screen.getByRole('button', {name: /migrate/i}));
 
@@ -331,15 +336,13 @@ describe('<MigrateAction />', () => {
   });
 
   it('should disable migrate action in batch modification mode', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
     const {user} = render(<MigrateAction />, {
       wrapper: getWrapperWithQueryClient(
         `/processes?process=eventBasedGatewayProcess&version=1`,
       ),
     });
 
-    await fetchProcessInstances(screen, user);
+    setupSelectionStoreWithInstances(mockProcessInstancesV2);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),

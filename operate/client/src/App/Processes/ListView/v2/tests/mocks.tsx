@@ -8,15 +8,13 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {operationsStore} from 'modules/stores/operations';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Paths} from 'modules/Routes';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
-import {buildV2ProcessInstanceData} from 'modules/utils/processInstance/processInstanceDataBuilder';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 type WrapperOptions = {
   initialPath?: string;
@@ -30,19 +28,27 @@ function createWrapper(options: WrapperOptions | string = {}) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       processInstancesSelectionStore.init();
+
       if (processInstances.length > 0) {
-        const adaptedInstances = processInstances.map(
-          buildV2ProcessInstanceData,
+        const visibleIds = processInstances.map((instance) =>
+          String(instance.processInstanceKey),
         );
-        processInstancesStore.setProcessInstances({
-          processInstances: adaptedInstances,
-          filteredProcessInstancesCount: processInstances.length,
+        const visibleRunningIds = processInstances
+          .filter(
+            (instance) =>
+              instance.state === 'ACTIVE' || instance.hasIncident === true,
+          )
+          .map((instance) => String(instance.processInstanceKey));
+
+        processInstancesSelectionStore.setRuntime({
+          totalProcessInstancesCount: processInstances.length,
+          visibleIds,
+          visibleRunningIds,
         });
       }
 
       return () => {
         processInstancesSelectionStore.reset();
-        processInstancesStore.reset();
         operationsStore.reset();
         batchModificationStore.reset();
       };

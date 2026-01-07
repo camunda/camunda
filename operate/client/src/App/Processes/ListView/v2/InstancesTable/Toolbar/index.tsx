@@ -20,9 +20,9 @@ import {useCancelProcessInstancesBatchOperation} from 'modules/mutations/process
 import {useResolveProcessInstancesIncidentsBatchOperation} from 'modules/mutations/processes/useResolveProcessInstancesIncidentsBatchOperation';
 import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
 import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 
 type Props = {
   selectedInstancesCount: number;

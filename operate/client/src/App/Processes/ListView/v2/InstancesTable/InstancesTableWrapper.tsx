@@ -20,8 +20,9 @@ import {
   useProcessInstancesSearchSort,
 } from 'modules/hooks/processInstancesSearch';
 import {useSearchParams} from 'react-router-dom';
-import {useProcessInstancesStoreSync} from 'modules/hooks/useProcessInstancesStoreSync';
 import {variableFilterStore} from 'modules/stores/variableFilter';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {useEffect, useMemo} from 'react';
 
 const ROW_HEIGHT = 34;
 const SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -57,21 +58,36 @@ const InstancesTableWrapper: React.FC = observer(() => {
     enabled: filter !== undefined,
   });
 
-  const handle = mapQueryResultToProcessInstancesHandle(result);
+  const {
+    processInstances,
+    totalProcessInstancesCount,
+    displayState,
+    handleScrollStartReach,
+    handleScrollEndReach,
+  } = useMemo(() => mapQueryResultToProcessInstancesHandle(result), [result]);
 
-  useProcessInstancesStoreSync(
-    handle.processInstances,
-    handle.totalProcessInstancesCount,
-    result.isSuccess,
-  );
+  useEffect(() => {
+    const visibleIds = processInstances.map(
+      (instance) => instance.processInstanceKey,
+    );
+    const visibleRunningIds = processInstances
+      .filter((instance) => instance.state === 'ACTIVE' || instance.hasIncident)
+      .map((instance) => instance.processInstanceKey);
+
+    processInstancesSelectionStore.setRuntime({
+      totalProcessInstancesCount,
+      visibleIds,
+      visibleRunningIds,
+    });
+  }, [processInstances, totalProcessInstancesCount]);
 
   return (
     <InstancesTable
-      state={handle.displayState}
-      processInstances={handle.processInstances}
-      totalProcessInstancesCount={handle.totalProcessInstancesCount}
-      onVerticalScrollStartReach={handle.handleScrollStartReach}
-      onVerticalScrollEndReach={handle.handleScrollEndReach}
+      state={displayState}
+      processInstances={processInstances}
+      totalProcessInstancesCount={totalProcessInstancesCount}
+      onVerticalScrollStartReach={handleScrollStartReach}
+      onVerticalScrollEndReach={handleScrollEndReach}
     />
   );
 });

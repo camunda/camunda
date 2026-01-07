@@ -10,7 +10,7 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ProcessDefinitionKeyContext} from '../../../processDefinitionKeyContext';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 function getWrapper(initialPath: string = Paths.dashboard()) {
   const MockApp: React.FC<{children?: React.ReactNode}> = ({children}) => {

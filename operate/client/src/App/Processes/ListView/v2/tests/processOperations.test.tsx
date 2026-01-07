@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {ListView} from '..';
-import {createWrapper} from './mocks';
+import {createSimpleV2TestWrapper} from './testUtils';
 import {
   mockProcessDefinitions,
   mockProcessXML,
@@ -67,7 +67,7 @@ describe('<ListView /> - operations', () => {
       '?active=true&incidents=true&process=demoProcess&version=1';
 
     render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+      wrapper: createSimpleV2TestWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -97,7 +97,7 @@ describe('<ListView /> - operations', () => {
     });
 
     render(<ListView />, {
-      wrapper: createWrapper('/processes'),
+      wrapper: createSimpleV2TestWrapper('/processes'),
     });
 
     expect(
@@ -128,7 +128,7 @@ describe('<ListView /> - operations', () => {
     const queryString = '?active=true&incidents=true&process=demoProcess';
 
     render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+      wrapper: createSimpleV2TestWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -146,29 +146,16 @@ describe('<ListView /> - operations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show delete button when user has resource based permissions', async () => {
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+  it.skip('should not show delete button when user has no resource based permissions', async () => {
+    // This test is skipped because resourcePermissionsEnabled is deprecated.
+    // Per the @deprecated comment in global.d.ts:
+    // "The C8 API does not expose permissions with resources.
+    // Therefore, permissions should not be checked proactively on the client.
+    // Let users try the action and surface missing permissions errors instead."
+    //
+    // The v2 implementation correctly shows the delete button and handles
+    // permission errors from the server when the user attempts the action.
 
-    const queryString = '?process=demoProcess&version=1';
-
-    render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
-    });
-
-    expect(
-      await screen.findByRole('button', {
-        name: /delete process definition/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', {name: 'Zoom in diagram'}),
-    ).toBeInTheDocument();
-  });
-
-  it('should not show delete button when user has no resource based permissions', async () => {
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
@@ -181,7 +168,7 @@ describe('<ListView /> - operations', () => {
     });
 
     render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+      wrapper: createSimpleV2TestWrapper(`/processes${queryString}`),
     });
 
     expect(
