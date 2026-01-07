@@ -1,7 +1,7 @@
-ARG BASE_IMAGE_NAME="alpine:3.23.0"
-ARG BASE_SHA="sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375"
+ARG BASE_IMAGE="alpine:3.23.2"
+ARG BASE_DIGEST="sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62"
 
-FROM ${BASE_IMAGE_NAME}@${BASE_SHA} AS base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
 
 ARG VERSION=""
@@ -23,19 +23,19 @@ COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
-FROM base
+FROM base AS app
 
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
 
 # leave the values below unset to use the default value at the top of the file
-ARG BASE_IMAGE_NAME
-ARG BASE_SHA
+ARG BASE_IMAGE
+ARG BASE_DIGEST
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE_NAME}"
-LABEL org.opencontainers.image.base.digest="${BASE_SHA}"
+LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="optimize@camunda.com"
 LABEL org.opencontainers.image.url="https://docs.camunda.io/docs/components/optimize/what-is-optimize/"
