@@ -137,7 +137,8 @@ public interface Journal extends AutoCloseable {
   boolean isOpen();
 
   /**
-   * Returns the tail segments of the journal starting from the given index.
+   * Returns the tail segments of the journal starting from the given index. If the index is out of
+   * bounds, it will return the last segment.
    *
    * @param index The index from which to get the tail segments.
    * @return The tail segments including paths and the first ASQN in the first segment.
