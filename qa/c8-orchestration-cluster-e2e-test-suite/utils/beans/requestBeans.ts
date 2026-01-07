@@ -224,6 +224,13 @@ export const correlateMessageRequiredFields: string[] = [
   'messageKey',
   'processInstanceKey',
 ];
+export const usageMetricsGetResponseRequiredFields: string[] = [
+  'activeTenants',
+  'tenants',
+  'processInstances',
+  'decisionInstances',
+  'assignees',
+];
 export const expectedMessageSubscription1 = {
   messageName: 'Message_143t419',
   correlationKey: '143419',
