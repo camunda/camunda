@@ -24,11 +24,6 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
   @Test
   void shouldBuildAggregationResultFromBucketsAndTotalEstimate() {
     // given
-    final var tenantBuckets1 =
-        Map.of("tenant-a", agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(3L))));
-    final var tenantBuckets2 =
-        Map.of("tenant-b", agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(7L))));
-
     final var buckets =
         Map.of(
             "101::tenant-a",
@@ -36,13 +31,16 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
             "202::tenant-b",
             agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(7L))));
 
-    final var input = Map.of(AGGREGATION_NAME_BY_DEFINITION, agg(0L, buckets));
+    final var input =
+        Map.of(
+            AGGREGATION_NAME_BY_DEFINITION, agg(0L, buckets),
+            AGGREGATION_NAME_TOTAL_ESTIMATE, agg(42L));
 
     // when
     final var result = transformer.apply(input);
 
     // then
-    assertThat(result.totalItems()).isEqualTo(2);
+    assertThat(result.totalItems()).isEqualTo(42);
     assertThat(result.items())
         .hasSize(2)
         .anySatisfy(
@@ -50,12 +48,18 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
               assertThat(item.processDefinitionKey()).isEqualTo(101L);
               assertThat(item.tenantId()).isEqualTo("tenant-a");
               assertThat(item.activeInstancesWithErrorCount()).isEqualTo(3L);
+              assertThat(item.processDefinitionId()).isNull();
+              assertThat(item.processDefinitionName()).isNull();
+              assertThat(item.processDefinitionVersion()).isNull();
             })
         .anySatisfy(
             item -> {
               assertThat(item.processDefinitionKey()).isEqualTo(202L);
               assertThat(item.tenantId()).isEqualTo("tenant-b");
               assertThat(item.activeInstancesWithErrorCount()).isEqualTo(7L);
+              assertThat(item.processDefinitionId()).isNull();
+              assertThat(item.processDefinitionName()).isNull();
+              assertThat(item.processDefinitionVersion()).isNull();
             });
   }
 
