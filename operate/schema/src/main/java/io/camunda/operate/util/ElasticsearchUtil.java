@@ -425,16 +425,17 @@ public abstract class ElasticsearchUtil {
                     lastScrollId.set(response.scrollId());
 
                     if (response.hits().hits().isEmpty()) {
+                      clearScrollSilently(client, lastScrollId.get());
                       return null;
                     }
                   } catch (final IOException e) {
+                    clearScrollSilently(client, lastScrollId.get());
                     throw new ScrollException(
                         "Error during scroll with id: " + lastScrollId.get(), e);
                   }
                   return response;
                 })
-            .takeWhile(Objects::nonNull)
-            .onClose(() -> clearScrollSilently(client, lastScrollId.get()));
+            .takeWhile(Objects::nonNull);
 
     return Stream.concat(Stream.of(searchRes), scrollStream);
   }
