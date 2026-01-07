@@ -125,6 +125,8 @@ public class HistoryCleanupService {
         batchOperationKey,
         historyCleanupDate);
     batchOperationWriter.scheduleForHistoryCleanup(batchOperationKey, historyCleanupDate);
+    auditLogWriter.scheduleAuditLogEntityLogsForHistoryCleanup(
+        batchOperationKey, historyCleanupDate);
   }
 
   public void scheduleAuditLogsForHistoryCleanup(
