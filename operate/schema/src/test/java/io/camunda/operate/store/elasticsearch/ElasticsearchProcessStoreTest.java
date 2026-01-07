@@ -18,11 +18,9 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
@@ -54,13 +52,9 @@ public class ElasticsearchProcessStoreTest {
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates =
       new LinkedList<>();
 
-  @Mock private ObjectMapper objectMapper;
-
   @Mock private RestHighLevelClient esClient;
 
   @Mock private ElasticsearchClient es8Client;
-
-  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Mock private OperateProperties operateProperties;
 
@@ -75,11 +69,9 @@ public class ElasticsearchProcessStoreTest {
             processIndex,
             listViewTemplate,
             processInstanceDependantTemplates,
-            objectMapper,
             operateProperties,
             esClient,
             es8Client,
-            tenantAwareClient,
             tenantHelper);
   }
 
