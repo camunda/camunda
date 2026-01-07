@@ -16297,7 +16297,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 139
+            "y": 15
           },
           "id": 154,
           "options": {
@@ -16320,8 +16320,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "editorMode": "code",
-              "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)",
+              "expr": "(sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{pod}} memory {{partition}}",
@@ -16399,7 +16398,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 139
+            "y": 15
           },
           "id": 144,
           "options": {
@@ -16498,7 +16497,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 202
+            "y": 21
           },
           "id": 142,
           "options": {
@@ -16598,7 +16597,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 208
+            "y": 27
           },
           "id": 151,
           "options": {
@@ -16698,7 +16697,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 208
+            "y": 27
           },
           "id": 152,
           "options": {
@@ -16798,7 +16797,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 214
+            "y": 33
           },
           "id": 150,
           "options": {
@@ -16898,7 +16897,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 220
+            "y": 39
           },
           "id": 147,
           "options": {
@@ -16921,11 +16920,9 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "editorMode": "code",
-              "expr": "max(\n  zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}\n) by (pod)",
+              "expr": "sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
-              "legendFormat": "{{pod}} Block cache",
-              "range": true,
+              "legendFormat": "{{pod}} Block cache {{partition}}",
               "refId": "A"
             }
           ],
@@ -16937,7 +16934,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The current usage of the block cache per broker.\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
+          "description": "The current usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -17000,7 +16997,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 220
+            "y": 39
           },
           "id": 149,
           "options": {
@@ -17023,11 +17020,9 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "editorMode": "code",
-              "expr": "max(zeebe_rocksdb_memory_block_cache_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
+              "expr": "sum(zeebe_rocksdb_memory_block_cache_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
-              "legendFormat": "{{pod}} Block cache usage",
-              "range": true,
+              "legendFormat": "{{pod}} Block cache usage {{partition}}",
               "refId": "A"
             }
           ],
@@ -17039,7 +17034,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The current pinned usage of the block cache per broker.\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
+          "description": "The current pinned usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -17101,7 +17096,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 227
+            "y": 46
           },
           "id": 148,
           "options": {
@@ -17124,11 +17119,9 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "editorMode": "code",
-              "expr": "max(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)",
+              "expr": "sum(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)",
               "interval": "",
-              "legendFormat": "{{pod}} pinned cache",
-              "range": true,
+              "legendFormat": "{{pod}} pinned cache {{partition}}",
               "refId": "A"
             }
           ],
@@ -17202,7 +17195,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 233
+            "y": 52
           },
           "id": 155,
           "options": {
@@ -17301,7 +17294,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 233
+            "y": 52
           },
           "id": 156,
           "options": {
@@ -17398,7 +17391,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 241
+            "y": 60
           },
           "id": 158,
           "options": {
@@ -17498,7 +17491,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 241
+            "y": 60
           },
           "id": 157,
           "options": {
@@ -17597,7 +17590,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 241
+            "y": 60
           },
           "id": 146,
           "options": {
@@ -17696,7 +17689,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 247
+            "y": 66
           },
           "id": 159,
           "options": {
@@ -17795,7 +17788,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 247
+            "y": 66
           },
           "id": 160,
           "options": {
@@ -17895,7 +17888,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 247
+            "y": 66
           },
           "id": 153,
           "options": {
@@ -17994,10 +17987,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 11,
-            "w": 24,
+            "h": 7,
+            "w": 21,
             "x": 0,
-            "y": 254
+            "y": 73
           },
           "id": 603,
           "options": {
@@ -18034,6 +18027,194 @@
           ],
           "title": "Column Family Access Latency 99th percentile",
           "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Shows the allocation strategy of each pod; these could be either per Partition, Broker, or Auto.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": false,
+                "inspect": false
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "__name__"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "container"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "endpoint"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "job"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "namespace"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "instance"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 3,
+            "x": 21,
+            "y": 73
+          },
+          "id": 699,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "enablePagination": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
+              "format": "table",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}} Strategy: {{strategy}}",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Rocks DB Allocation Strategy",
+          "type": "table"
         }
       ],
       "title": "RocksDB",
@@ -18080,7 +18261,7 @@
             "h": 8,
             "w": 4,
             "x": 0,
-            "y": 140
+            "y": 642
           },
           "id": 675,
           "options": {
@@ -18144,7 +18325,7 @@
             "h": 8,
             "w": 10,
             "x": 4,
-            "y": 140
+            "y": 642
           },
           "id": 676,
           "options": {
@@ -18217,7 +18398,7 @@
             "h": 8,
             "w": 10,
             "x": 14,
-            "y": 140
+            "y": 642
           },
           "id": 677,
           "options": {
@@ -18330,7 +18511,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 205
+            "y": 707
           },
           "id": 667,
           "options": {
@@ -18431,7 +18612,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 205
+            "y": 707
           },
           "id": 683,
           "options": {
