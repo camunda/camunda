@@ -100,7 +100,7 @@ public class AbstractWebSecurityConfigTest {
             entry(X_FRAME_OPTIONS, List.of("SAMEORIGIN")),
             entry(
                 CONTENT_SECURITY_POLICY,
-                List.of(ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY)),
+                List.of(ContentSecurityPolicyConfig.getDefaultSmSecurityPolicy(List.of()))),
             entry(REFERRER_POLICY, List.of("strict-origin-when-cross-origin")),
             entry(CROSS_ORIGIN_OPENER_POLICY, List.of("same-origin-allow-popups")),
             entry(CROSS_ORIGIN_EMBEDDER_POLICY, List.of("unsafe-none")),

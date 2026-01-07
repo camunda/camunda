@@ -31,6 +31,7 @@ public class OidcAuthenticationConfiguration {
   public static final Duration DEFAULT_CLOCK_SKEW = Duration.ofSeconds(60);
 
   private String issuerUri;
+  private String endSessionEndpoint;
   private String clientName;
   private String clientId;
   private String clientSecret;
@@ -73,6 +74,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setIssuerUri(final String issuerUri) {
     this.issuerUri = issuerUri;
+  }
+
+  public String getEndSessionEndpoint() {
+    return endSessionEndpoint;
+  }
+
+  public void setEndSessionEndpoint(final String endSessionEndpoint) {
+    this.endSessionEndpoint = endSessionEndpoint;
   }
 
   public String getIdTokenAlgorithm() {
@@ -243,6 +252,7 @@ public class OidcAuthenticationConfiguration {
 
   public boolean isSet() {
     return issuerUri != null
+        || endSessionEndpoint != null
         || clientId != null
         || clientName != null
         || clientSecret != null
@@ -279,6 +289,7 @@ public class OidcAuthenticationConfiguration {
 
   public static class Builder {
     private String issuerUri;
+    private String endSessionEndpoint;
     private String clientId;
     private String clientName;
     private String clientSecret;
@@ -303,6 +314,11 @@ public class OidcAuthenticationConfiguration {
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
+      return this;
+    }
+
+    public Builder endSessionEndpoint(final String endSessionEndpoint) {
+      this.endSessionEndpoint = endSessionEndpoint;
       return this;
     }
 
@@ -411,6 +427,7 @@ public class OidcAuthenticationConfiguration {
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
+      config.setEndSessionEndpoint(endSessionEndpoint);
       config.setClientId(clientId);
       config.setClientName(clientName);
       config.setClientSecret(clientSecret);

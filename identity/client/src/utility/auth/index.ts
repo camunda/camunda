@@ -60,6 +60,7 @@ export function logout(): Promise<void> {
   return fetch(getLogoutApiUrl(), {
     method: "post",
     body: data,
+    mode: "no-cors",
   })
     .then((response: Response) => {
       if (response.status < 400) {

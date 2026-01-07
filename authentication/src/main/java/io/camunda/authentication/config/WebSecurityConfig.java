@@ -8,7 +8,6 @@
 package io.camunda.authentication.config;
 
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
-import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
@@ -34,6 +33,7 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -53,14 +53,18 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.context.annotation.Bean;
@@ -91,6 +95,7 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGra
 import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
@@ -275,6 +280,14 @@ public class WebSecurityConfig {
       final HeadersConfigurer<HttpSecurity> headers,
       final HeaderConfiguration headerConfig,
       final boolean isSaas) {
+    setupSecureHeaders(headers, headerConfig, isSaas, List.of());
+  }
+
+  private static void setupSecureHeaders(
+      final HeadersConfigurer<HttpSecurity> headers,
+      final HeaderConfiguration headerConfig,
+      final boolean isSaas,
+      final List<String> allowedConnectUrls) {
 
     if (headerConfig.getContentTypeOptions().isDisabled()) {
       headers.contentTypeOptions(ContentTypeOptionsConfig::disable);
@@ -306,7 +319,7 @@ public class WebSecurityConfig {
     }
 
     if (headerConfig.getContentSecurityPolicy().isEnabled()) {
-      final String policy = getContentSecurityPolicy(headerConfig, isSaas);
+      final String policy = getContentSecurityPolicy(headerConfig, isSaas, allowedConnectUrls);
       headers.contentSecurityPolicy(csp -> csp.policyDirectives(policy));
       if (headerConfig.getContentSecurityPolicy().isReportOnly()) {
         headers.contentSecurityPolicy(csp -> csp.reportOnly().policyDirectives(policy));
@@ -343,14 +356,16 @@ public class WebSecurityConfig {
   }
 
   private static String getContentSecurityPolicy(
-      final HeaderConfiguration headerConfig, final boolean isSaas) {
+      final HeaderConfiguration headerConfig,
+      final boolean isSaas,
+      final List<String> allowedConnectUrls) {
     final String policy;
     if (headerConfig.getContentSecurityPolicy().getPolicyDirectives() == null
         || headerConfig.getContentSecurityPolicy().getPolicyDirectives().isEmpty()) {
       if (isSaas) {
         policy = DEFAULT_SAAS_SECURITY_POLICY;
       } else {
-        policy = DEFAULT_SM_SECURITY_POLICY;
+        policy = ContentSecurityPolicyConfig.getDefaultSmSecurityPolicy(allowedConnectUrls);
       }
     } else {
       policy = headerConfig.getContentSecurityPolicy().getPolicyDirectives();
@@ -632,12 +647,16 @@ public class WebSecurityConfig {
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
-        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-      final var clientRegistrations =
-          oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
-              .map(e -> createClientRegistration(e.getKey(), e.getValue()))
-              .toList();
+        final List<ClientRegistration> clientRegistrations) {
       return new InMemoryClientRegistrationRepository(clientRegistrations);
+    }
+
+    @Bean
+    public List<ClientRegistration> clientRegistrations(
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+          .map(e -> createClientRegistration(e.getKey(), e.getValue()))
+          .toList();
     }
 
     private ClientRegistration createClientRegistration(
@@ -839,6 +858,33 @@ public class WebSecurityConfig {
       return filterChainBuilder.build();
     }
 
+    private List<String> getIdPConnectUrls(final List<ClientRegistration> clientRegistrations) {
+      return clientRegistrations.stream()
+          .map(
+              registration ->
+                  (String)
+                      registration
+                          .getProviderDetails()
+                          .getConfigurationMetadata()
+                          .get("end_session_endpoint"))
+          .filter(Objects::nonNull)
+          .map(this::getBaseUrl)
+          .distinct()
+          .toList();
+    }
+
+    private String getBaseUrl(final String url) {
+      try {
+        final URI uri = new URI(url);
+        return uri.getScheme()
+            + "://"
+            + uri.getHost()
+            + (uri.getPort() != -1 ? ":" + uri.getPort() : "");
+      } catch (final URISyntaxException e) {
+        throw new IllegalStateException("Incorrect URL syntax: " + url, e);
+      }
+    }
+
     @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnSecondaryStorageEnabled
@@ -846,6 +892,7 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
+        @Qualifier("clientRegistrations") final List<ClientRegistration> clientRegistrations,
         final OidcAuthenticationConfigurationRepository oidcProviderRepository,
         final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
@@ -856,6 +903,7 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer)
         throws Exception {
+      final List<String> idpConnectUrls = getIdPConnectUrls(clientRegistrations);
       final var filterChainBuilder =
           httpSecurity
               .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
@@ -877,7 +925,8 @@ public class WebSecurityConfig {
                       setupSecureHeaders(
                           headers,
                           securityConfiguration.getHttpHeaders(),
-                          securityConfiguration.getSaas().isConfigured()))
+                          securityConfiguration.getSaas().isConfigured(),
+                          idpConnectUrls))
               .exceptionHandling(
                   (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
               .cors(AbstractHttpConfigurer::disable)
@@ -905,8 +954,10 @@ public class WebSecurityConfig {
               .logout(
                   (logout) ->
                       logout
+                          .logoutSuccessHandler(
+                              new OidcClientInitiatedLogoutSuccessHandler(
+                                  clientRegistrationRepository))
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
