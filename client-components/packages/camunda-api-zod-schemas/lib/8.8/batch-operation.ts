@@ -9,6 +9,7 @@
 import {z} from 'zod';
 import {
 	API_VERSION,
+	advancedStringFilterSchema,
 	basicStringFilterSchema,
 	getEnumFilterSchema,
 	getQueryRequestBodySchema,
@@ -41,6 +42,9 @@ const batchOperationStateSchema = z.enum([
 ]);
 type BatchOperationState = z.infer<typeof batchOperationStateSchema>;
 
+const batchOperationActorTypeSchema = z.enum(['USER', 'CLIENT']);
+type BatchOperationActorType = z.infer<typeof batchOperationActorTypeSchema>;
+
 const batchOperationItemStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'CANCELED', 'FAILED']);
 type BatchOperationItemState = z.infer<typeof batchOperationItemStateSchema>;
 
@@ -53,6 +57,8 @@ const batchOperationSchema = z.object({
 	operationsTotalCount: z.number().int(),
 	operationsFailedCount: z.number().int(),
 	operationsCompletedCount: z.number().int(),
+	actorId: z.string().optional().nullable(),
+	actorType: batchOperationActorTypeSchema.optional().nullable(),
 });
 type BatchOperation = z.infer<typeof batchOperationSchema>;
 
@@ -67,12 +73,14 @@ const batchOperationItemSchema = z.object({
 type BatchOperationItem = z.infer<typeof batchOperationItemSchema>;
 
 const queryBatchOperationsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate'] as const,
+	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate', 'actorId', 'actorType'] as const,
 	filter: z
 		.object({
 			batchOperationKey: basicStringFilterSchema,
 			operationType: getEnumFilterSchema(batchOperationTypeSchema),
 			state: getEnumFilterSchema(batchOperationStateSchema),
+			actorId: advancedStringFilterSchema,
+			actorType: getEnumFilterSchema(batchOperationActorTypeSchema),
 		})
 		.partial(),
 });
@@ -131,6 +139,7 @@ const queryBatchOperationItems: Endpoint = {
 export {
 	batchOperationTypeSchema,
 	batchOperationStateSchema,
+	batchOperationActorTypeSchema,
 	batchOperationItemStateSchema,
 	batchOperationSchema,
 	batchOperationItemSchema,
@@ -149,6 +158,7 @@ export {
 export type {
 	BatchOperationType,
 	BatchOperationState,
+	BatchOperationActorType,
 	BatchOperationItemState,
 	BatchOperation,
 	BatchOperationItem,
