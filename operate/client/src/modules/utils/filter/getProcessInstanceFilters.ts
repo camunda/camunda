@@ -69,4 +69,4 @@ function getProcessInstanceFilters(
   return filters;
 }
 
-export {getProcessInstanceFilters};
+export {getProcessInstanceFilters, getFilters};

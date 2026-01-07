@@ -39,7 +39,7 @@ type Props = {
   auditLog: AuditLog;
 };
 
-export type DetailsModalState = {
+type DetailsModalState = {
   isOpen: boolean;
   auditLog?: AuditLog;
 };
@@ -152,4 +152,5 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
   );
 };
 
+export type {DetailsModalState};
 export {DetailsModal};

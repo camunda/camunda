@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {Stack} from '@carbon/react';
 import {updateFiltersSearchString} from 'modules/utils/filter';
 import {Container} from './styled';
@@ -17,68 +17,92 @@ import {FiltersPanel} from 'modules/components/FiltersPanel/index';
 import {ProcessField} from '../../Processes/ListView/Filters/ProcessField';
 import {ProcessVersionField} from '../../Processes/ListView/Filters/ProcessVersionField';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
-import {updateProcessInstancesFilterSearchString} from 'modules/utils/filter/v2/processInstancesSearch';
+import {
+  getDefinitionIdentifier,
+  splitDefinitionIdentifier,
+} from 'modules/hooks/processDefinitions';
+import isEqual from 'lodash/isEqual';
+import {observer} from 'mobx-react';
+import {TenantField} from 'modules/components/TenantField';
+import {processesStore} from 'modules/stores/processes/processes.list';
+import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+import {
+  AUDIT_LOG_FILTER_FIELDS,
+  type OperationsLogFilterField,
+  type OperationsLogFilters,
+} from '../shared';
 
-export type OperationsFilterValues = {
-  process?: string;
-  version?: string;
-  processInstanceKey?: string;
-  operationType?: string;
-  entityType?: string;
-  actorId?: string;
-};
+const initialValues: OperationsLogFilters = {};
 
-const initialValues: OperationsFilterValues = {};
-
-const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsFilterValues)[] = [
-  'process',
-  'version',
-  'processInstanceKey',
-  'operationType',
-  'entityType',
-  'actorId',
-];
-
-const Filters: React.FC = () => {
-  const [searchParams] = useSearchParams();
+const Filters: React.FC = observer(() => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const filterValues = getFilters<
+    OperationsLogFilterField,
+    OperationsLogFilters
+  >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
+  if (filterValues.process && filterValues.tenant !== 'all') {
+    filterValues.process = getDefinitionIdentifier(
+      filterValues.process,
+      filterValues.tenant,
+    );
+  }
+  if (filterValues.tenant === 'all') {
+    delete filterValues.process;
+    delete filterValues.version;
+  }
+
+  const setFilters = (filters: OperationsLogFilters) => {
+    navigate({
+      search: updateFiltersSearchString<OperationsLogFilters>(
+        new URLSearchParams(location.search),
+        filters,
+        AUDIT_LOG_FILTER_FIELDS,
+        [],
+      ),
+    });
+  };
 
   return (
     <>
-      <Form<OperationsFilterValues>
-        onSubmit={(values: OperationsFilterValues) => {
-          console.log('values', values);
-          const nextSearchParams = updateFiltersSearchString(
-            searchParams,
-            values,
-            AUDIT_LOG_FILTER_FIELDS,
-            [],
-          );
-
-          navigate({
-            search: nextSearchParams.toString(),
+      <Form<OperationsLogFilters>
+        onSubmit={(values: OperationsLogFilters) => {
+          setFilters({
+            ...values,
+            process: splitDefinitionIdentifier(values.process).definitionId,
           });
         }}
-        initialValues={initialValues}
+        initialValues={filterValues}
       >
         {({handleSubmit, form, values}) => (
-          <form onSubmit={handleSubmit} style={{height: '100%'}}>
+          <form onSubmit={handleSubmit}>
             <FiltersPanel
               localStorageKey="isAuditLogsFiltersCollapsed"
-              isResetButtonDisabled={false}
+              isResetButtonDisabled={isEqual(initialValues, values)}
               onResetClick={() => {
                 form.reset();
-                navigate({
-                  search: updateProcessInstancesFilterSearchString(
-                    searchParams,
-                    initialValues,
-                  ),
-                });
+                setFilters(initialValues);
               }}
             >
-              <Container style={{width: '100%', padding: '1rem'}}>
-                <AutoSubmit />
+              <Container>
+                <AutoSubmit fieldsToSkipTimeout={['process', 'version']} />
                 <Stack gap={5}>
+                  {window.clientConfig?.multiTenancyEnabled && (
+                    <div>
+                      <Title>Tenant</Title>
+                      <Stack gap={5}>
+                        <TenantField
+                          onChange={(selectedItem) => {
+                            form.change('process', undefined);
+                            form.change('version', undefined);
+
+                            processesStore.fetchProcesses(selectedItem);
+                          }}
+                        />
+                      </Stack>
+                    </div>
+                  )}
                   <div>
                     <Title>Process</Title>
                     <Stack gap={5}>
@@ -98,47 +122,6 @@ const Filters: React.FC = () => {
                       </Field>
                     </Stack>
                   </div>
-                  <div>
-                    <Title>Operation</Title>
-                    <Stack gap={5}>
-                      <Field name="operationType">
-                        {({input}) => (
-                          <TextInputField
-                            {...input}
-                            id="operation-type"
-                            size="sm"
-                            labelText="Operation type"
-                            type="text"
-                            placeholder="Operation type"
-                          />
-                        )}
-                      </Field>
-                      <Field name="entityType">
-                        {({input}) => (
-                          <TextInputField
-                            {...input}
-                            id="entity-type"
-                            size="sm"
-                            labelText="Entity type"
-                            type="text"
-                            placeholder="Entity type"
-                          />
-                        )}
-                      </Field>
-                      <Field name="actorId">
-                        {({input}) => (
-                          <TextInputField
-                            {...input}
-                            id="actor-id"
-                            size="sm"
-                            labelText="Actor"
-                            type="text"
-                            placeholder="Username or client ID"
-                          />
-                        )}
-                      </Field>
-                    </Stack>
-                  </div>
                 </Stack>
               </Container>
             </FiltersPanel>
@@ -147,6 +130,6 @@ const Filters: React.FC = () => {
       </Form>
     </>
   );
-};
+});
 
 export {Filters};

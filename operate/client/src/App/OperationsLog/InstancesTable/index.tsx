@@ -33,11 +33,18 @@ import {
   type DetailsModalState,
 } from 'modules/components/OperationsLogDetailsModal';
 import {formatBatchTitle} from 'modules/utils/operationsLog';
+import {
+  AUDIT_LOG_FILTER_FIELDS,
+  type OperationsLogFilterField,
+  type OperationsLogFilters,
+} from '../shared';
+import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+import {observer} from 'mobx-react';
 
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
-const InstancesTable: React.FC = () => {
+const InstancesTable: React.FC = observer(() => {
   const location = useLocation();
   const sortParams = getSortParams(location.search) || {
     sortBy: 'timestamp',
@@ -45,9 +52,14 @@ const InstancesTable: React.FC = () => {
   };
   const sortByParsed = auditLogSortFieldEnum.safeParse(sortParams.sortBy);
   const sortBy = sortByParsed.success ? sortByParsed.data : 'timestamp';
+  const filterValues = getFilters<
+    OperationsLogFilterField,
+    OperationsLogFilters
+  >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
+  const processId = processesStore.getProcessIdByLocation(location);
 
-  const request: QueryAuditLogsRequestBody = useMemo(
-    () => ({
+  const request: QueryAuditLogsRequestBody = useMemo(() => {
+    return {
       sort: [
         {
           field: sortBy,
@@ -56,10 +68,18 @@ const InstancesTable: React.FC = () => {
       ],
       filter: {
         category: {$neq: 'ADMIN'},
+        processDefinitionKey: processId,
+        processInstanceKey: filterValues.processInstanceKey,
+        tenantId: filterValues.tenant,
       },
-    }),
-    [sortBy, sortParams.sortOrder],
-  );
+    };
+  }, [
+    filterValues.processInstanceKey,
+    filterValues.tenant,
+    processId,
+    sortBy,
+    sortParams.sortOrder,
+  ]);
 
   const {
     data,
@@ -235,12 +255,13 @@ const InstancesTable: React.FC = () => {
 
   return (
     <Container>
-      <BasePanelHeader title="Operations Log" />
+      <BasePanelHeader title="Operations Log" count={data?.totalCount} />
       <SortableTable
         state={getTableState()}
         rows={rows}
         emptyMessage={{
-          message: 'No operations found for this instance',
+          message: 'No operations log found',
+          additionalInfo: 'Try adjusting your filters or check back later.',
         }}
         onVerticalScrollStartReach={async (scrollDown) => {
           if (hasPreviousPage && !isFetchingPreviousPage) {
@@ -299,6 +320,6 @@ const InstancesTable: React.FC = () => {
       )}
     </Container>
   );
-};
+});
 
 export {InstancesTable};
