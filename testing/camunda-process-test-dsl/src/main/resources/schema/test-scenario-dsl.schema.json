@@ -517,7 +517,7 @@
       "additionalProperties": false
     },
     "AssertVariablesInstruction": {
-      "description": "An instruction to assert the variables of a process instance or element.",
+      "description": "An instruction to assert the variables of a process instance.",
       "type": "object",
       "properties": {
         "type": {
