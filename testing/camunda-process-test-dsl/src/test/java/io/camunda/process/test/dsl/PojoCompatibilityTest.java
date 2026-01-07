@@ -262,7 +262,7 @@ public class PojoCompatibilityTest {
                         ImmutableElementSelector.builder().elementId("task2").build())
                     .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
                     .build())),
-        // ===== COMPLETE_USER_TASK ===
+        // ===== COMPLETE_USER_TASK =====
         Arguments.of(
             "complete user task: minimal",
             singleTestCase(
