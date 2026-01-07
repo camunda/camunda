@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -42,6 +43,7 @@ final class MappingRuleExportHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @Mock private MappingRuleWriter writer;
+  @Mock private HistoryCleanupService historyCleanupService;
 
   @Captor private ArgumentCaptor<MappingRuleDbModel> dbModelCaptor;
 
@@ -49,7 +51,7 @@ final class MappingRuleExportHandlerTest {
 
   @BeforeEach
   void setUp() {
-    handler = new MappingRuleExportHandler(writer);
+    handler = new MappingRuleExportHandler(writer, historyCleanupService);
   }
 
   private static Stream<MappingRuleIntent> exportableIntents() {

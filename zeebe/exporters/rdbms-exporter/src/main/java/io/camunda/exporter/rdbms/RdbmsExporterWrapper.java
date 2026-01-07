@@ -212,14 +212,20 @@ public class RdbmsExporterWrapper implements Exporter {
           new ProcessExportHandler(rdbmsWriters.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
           ValueType.MAPPING_RULE,
-          new MappingRuleExportHandler(rdbmsWriters.getMappingRuleWriter()));
+          new MappingRuleExportHandler(rdbmsWriters.getMappingRuleWriter(), historyCleanupService));
       builder.withHandler(
-          ValueType.TENANT, new TenantExportHandler(rdbmsWriters.getTenantWriter()));
-      builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriters.getRoleWriter()));
-      builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriters.getUserWriter()));
+          ValueType.TENANT,
+          new TenantExportHandler(rdbmsWriters.getTenantWriter(), historyCleanupService));
+      builder.withHandler(
+          ValueType.ROLE,
+          new RoleExportHandler(rdbmsWriters.getRoleWriter(), historyCleanupService));
+      builder.withHandler(
+          ValueType.USER,
+          new UserExportHandler(rdbmsWriters.getUserWriter(), historyCleanupService));
       builder.withHandler(
           ValueType.AUTHORIZATION,
-          new AuthorizationExportHandler(rdbmsWriters.getAuthorizationWriter()));
+          new AuthorizationExportHandler(
+              rdbmsWriters.getAuthorizationWriter(), historyCleanupService));
       builder.withHandler(
           ValueType.DECISION,
           new DecisionDefinitionExportHandler(
@@ -234,7 +240,9 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
         new DecisionInstanceExportHandler(rdbmsWriters.getDecisionInstanceWriter()));
-    builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriters.getGroupWriter()));
+    builder.withHandler(
+        ValueType.GROUP,
+        new GroupExportHandler(rdbmsWriters.getGroupWriter(), historyCleanupService));
     builder.withHandler(
         ValueType.INCIDENT,
         new IncidentExportHandler(rdbmsWriters.getIncidentWriter(), processCache));

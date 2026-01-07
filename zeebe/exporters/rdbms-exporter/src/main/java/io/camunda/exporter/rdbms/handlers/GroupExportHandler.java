@@ -10,10 +10,12 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.service.GroupWriter;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +33,12 @@ public class GroupExportHandler implements RdbmsExportHandler<GroupRecordValue> 
           GroupIntent.ENTITY_REMOVED);
 
   private final GroupWriter groupWriter;
+  private final HistoryCleanupService historyCleanupService;
 
-  public GroupExportHandler(final GroupWriter groupWriter) {
+  public GroupExportHandler(
+      final GroupWriter groupWriter, final HistoryCleanupService historyCleanupService) {
     this.groupWriter = groupWriter;
+    this.historyCleanupService = historyCleanupService;
   }
 
   @Override
@@ -49,7 +54,11 @@ public class GroupExportHandler implements RdbmsExportHandler<GroupRecordValue> 
     switch (record.getIntent()) {
       case GroupIntent.CREATED -> groupWriter.create(map(value));
       case GroupIntent.UPDATED -> groupWriter.update(map(value));
-      case GroupIntent.DELETED -> groupWriter.delete(value.getGroupId());
+      case GroupIntent.DELETED -> {
+        groupWriter.delete(value.getGroupId());
+        final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
+        historyCleanupService.scheduleAuditLogsForHistoryCleanup(value.getGroupId(), endDate);
+      }
       case GroupIntent.ENTITY_ADDED ->
           groupWriter.addMember(
               new GroupMemberDbModel.Builder()
