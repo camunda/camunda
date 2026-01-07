@@ -229,7 +229,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: identity-frontend
-          path: identity/client/build
+          path: identity/client/dist
 
       - name: Build Camunda
         id: build-camunda
