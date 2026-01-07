@@ -127,6 +127,16 @@ public abstract class ElasticsearchUtil {
     }
   }
 
+  public static Query joinWithOr(final Query... queries) {
+    final List<Query> notNullQueries = throwAwayNullElements(queries);
+
+    return switch (notNullQueries.size()) {
+      case 0 -> null;
+      case 1 -> notNullQueries.get(0);
+      default -> Query.of(q -> q.bool(b -> b.should(notNullQueries)));
+    };
+  }
+
   public static QueryBuilder joinWithOr(final Collection<QueryBuilder> queries) {
     return joinWithOr(queries.toArray(new QueryBuilder[queries.size()]));
   }
@@ -479,6 +489,13 @@ public abstract class ElasticsearchUtil {
   }
 
   public static Query termsQuery(final String name, final Collection<?> values) {
+    if (values.stream().anyMatch(Objects::isNull)) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query ["
+              + name
+              + "] where terms field is "
+              + values);
+    }
     return Query.of(
         q ->
             q.terms(
@@ -490,6 +507,11 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> Query termsQuery(final String name, final T value) {
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query [" + name + "] with null value");
+    }
+
     return termsQuery(name, Collections.singletonList(value));
   }
 
