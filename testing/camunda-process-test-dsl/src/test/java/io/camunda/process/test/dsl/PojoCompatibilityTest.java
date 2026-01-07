@@ -37,6 +37,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
@@ -252,6 +253,33 @@ public class PojoCompatibilityTest {
                     .addElementSelectors(
                         ImmutableElementSelector.builder().elementId("task2").build())
                     .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
+                    .build())),
+        Arguments.of(
+            "complete user task: minimal",
+            singleTestCase(
+                ImmutableCompleteUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "complete user task: with variables",
+            singleTestCase(
+                ImmutableCompleteUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder().taskName("Approve Request").build())
+                    .putVariables("approved", true)
+                    .putVariables("comment", "Looks good")
+                    .build())),
+        Arguments.of(
+            "complete user task: with example data",
+            singleTestCase(
+                ImmutableCompleteUserTaskInstruction.builder()
+                    .userTaskSelector(
+                        ImmutableUserTaskSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
+                    .useExampleData(true)
                     .build())));
   }
 

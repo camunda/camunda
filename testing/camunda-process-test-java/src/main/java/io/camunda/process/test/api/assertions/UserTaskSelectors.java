@@ -152,6 +152,7 @@ public class UserTaskSelectors {
 
     @Override
     public void applyFilter(final UserTaskFilter filter) {
+      filter.name(taskName);
       if (processInstanceKey != null) {
         filter.processInstanceKey(processInstanceKey);
       }

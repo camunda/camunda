@@ -60,6 +60,9 @@
           "$ref": "#/definitions/AssertUserTaskInstruction"
         },
         {
+          "$ref": "#/definitions/CompleteUserTaskInstruction"
+        },
+        {
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
         }
       ]
@@ -148,6 +151,35 @@
             "processDefinitionId"
           ]
         }
+      ],
+      "additionalProperties": false
+    },
+    "CompleteUserTaskInstruction": {
+      "description": "An instruction to complete a user task.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "COMPLETE_USER_TASK"
+        },
+        "userTaskSelector": {
+          "description": "The selector to identify the user task to complete.",
+          "$ref": "#/definitions/UserTaskSelector"
+        },
+        "variables": {
+          "description": "The variables to set when completing the user task. Ignored if useExampleData is true.",
+          "type": "object"
+        },
+        "useExampleData": {
+          "description": "Whether to complete the user task with example data from the BPMN element. If true, the variables property is ignored.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "userTaskSelector"
       ],
       "additionalProperties": false
     },
