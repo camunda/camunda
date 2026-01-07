@@ -439,8 +439,7 @@ public abstract class ElasticsearchUtil {
     return Stream.concat(Stream.of(searchRes), scrollStream);
   }
 
-  private static void clearScrollSilently(
-      final ElasticsearchClient client, final String scrollId) {
+  private static void clearScrollSilently(final ElasticsearchClient client, final String scrollId) {
     if (scrollId != null) {
       try {
         client.clearScroll(cs -> cs.scrollId(scrollId));
