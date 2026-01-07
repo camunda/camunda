@@ -29,22 +29,28 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class NestedRecord extends ObjectValue implements NestedRecordValue {
   private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
   private static final StringValue INTENT_KEY = new StringValue("intent");
-  private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
+  private static final StringValue RECORD_VALUE_KEY = new StringValue("recordValue");
 
+  /**
+   * NOTE! When adding a new property here it must also be added to the ProtocolFactor! This class
+   * contains a randomizer implementation which is used to generate a random NestedRecord. The new
+   * property must be added there. Without it we won't generate a complete record.
+   */
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>(VALUE_TYPE_KEY, ValueType.class, ValueType.NULL_VAL);
-  private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
-  private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
-      new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
 
-  private final MsgPackWriter commandValueWriter = new MsgPackWriter();
-  private final MsgPackReader commandValueReader = new MsgPackReader();
+  private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
+  private final ObjectProperty<UnifiedRecordValue> recordValueProperty =
+      new ObjectProperty<>(RECORD_VALUE_KEY, new UnifiedRecordValue(10));
+
+  private final MsgPackWriter recordValueWriter = new MsgPackWriter();
+  private final MsgPackReader recordValueReader = new MsgPackReader();
 
   public NestedRecord() {
     super(3);
     declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
-        .declareProperty(commandValueProperty);
+        .declareProperty(recordValueProperty);
   }
 
   @Override
@@ -72,28 +78,44 @@ public final class NestedRecord extends ObjectValue implements NestedRecordValue
       return null;
     }
 
-    final var storedCommandValue = commandValueProperty.getValue();
-    if (storedCommandValue.isEmpty()) {
-      return storedCommandValue;
+    final var storedRecordValue = recordValueProperty.getValue();
+    if (storedRecordValue.isEmpty()) {
+      return storedRecordValue;
     }
 
-    final var commandValue = UnifiedRecordValue.fromValueType(valueType);
-    if (commandValue == null) {
+    final var recordValue = UnifiedRecordValue.fromValueType(valueType);
+    if (recordValue == null) {
       throw new IllegalStateException(
           "Expected to read the record value, but it's type `"
               + valueType.name()
               + "` is unknown. Please add it to UnifiedRecordValue#fromValueType.");
     }
 
-    // write the command value property's content into a buffer
-    final var commandValueBuffer = new UnsafeBuffer(0, 0);
-    final int encodedLength = storedCommandValue.getEncodedLength();
-    commandValueBuffer.wrap(new byte[encodedLength]);
-    storedCommandValue.write(commandValueWriter.wrap(commandValueBuffer, 0));
+    // write the record value property's content into a buffer
+    final var recordValueBuffer = new UnsafeBuffer(0, 0);
+    final int encodedLength = storedRecordValue.getEncodedLength();
+    recordValueBuffer.wrap(new byte[encodedLength]);
+    storedRecordValue.write(recordValueWriter.wrap(recordValueBuffer, 0));
 
-    // read the value back from the buffer into the concrete command value
-    commandValue.wrap(commandValueBuffer);
-    return commandValue;
+    // read the value back from the buffer into the concrete record value
+    recordValue.wrap(recordValueBuffer);
+    return recordValue;
+  }
+
+  public NestedRecord setRecordValue(final UnifiedRecordValue recordValue) {
+    if (recordValue == null) {
+      recordValueProperty.reset();
+      return this;
+    }
+
+    // inspired by IndexedRecord.setValue
+    final var valueBuffer = new UnsafeBuffer(0, 0);
+    final int encodedLength = recordValue.getLength();
+    valueBuffer.wrap(new byte[encodedLength]);
+
+    recordValue.write(valueBuffer, 0);
+    recordValueProperty.getValue().read(recordValueReader.wrap(valueBuffer, 0, encodedLength));
+    return this;
   }
 
   public NestedRecord setIntent(final Intent intent) {
@@ -106,26 +128,10 @@ public final class NestedRecord extends ObjectValue implements NestedRecordValue
     return this;
   }
 
-  public NestedRecord setCommandValue(final UnifiedRecordValue commandValue) {
-    if (commandValue == null) {
-      commandValueProperty.reset();
-      return this;
-    }
-
-    // inspired by IndexedRecord.setValue
-    final var valueBuffer = new UnsafeBuffer(0, 0);
-    final int encodedLength = commandValue.getLength();
-    valueBuffer.wrap(new byte[encodedLength]);
-
-    commandValue.write(valueBuffer, 0);
-    commandValueProperty.getValue().read(commandValueReader.wrap(valueBuffer, 0, encodedLength));
-    return this;
-  }
-
-  public NestedRecord wrap(final NestedRecord nestedCommand) {
-    setValueType(nestedCommand.getValueType());
-    setIntent(nestedCommand.getIntent());
-    setCommandValue(nestedCommand.getRecordValue());
+  public NestedRecord wrap(final NestedRecord nestedRecord) {
+    setValueType(nestedRecord.getValueType());
+    setIntent(nestedRecord.getIntent());
+    setRecordValue(nestedRecord.getRecordValue());
     return this;
   }
 }
