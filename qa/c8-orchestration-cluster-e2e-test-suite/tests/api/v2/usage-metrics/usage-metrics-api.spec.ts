@@ -90,7 +90,7 @@ test.describe('Get usage metrics API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Get Usage Metrics Invalid Argument', async ({request}) => {
+  test('Get Usage Metrics - Invalid date format', async ({request}) => {
     const invalidStartDate = 'meow';
     const invalidEndDate = 'meow';
     const expectedDetail =
