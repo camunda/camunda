@@ -250,7 +250,7 @@ test.describe('Processes', () => {
 
     await test.step('Deploy new process and verify it loads', async () => {
       await deploy(['./resources/newProcess.bpmn']);
-      await sleep(2000);
+      await sleep(5000);
 
       await expect(operateDiagramPage.diagram).toBeInViewport({timeout: 20000});
 
