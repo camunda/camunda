@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -203,6 +204,8 @@ class AuditLogInfoTest {
         Arguments.of(DecisionIntent.DELETED, AuditLogOperationType.DELETE),
         Arguments.of(DecisionEvaluationIntent.EVALUATED, AuditLogOperationType.EVALUATE),
         Arguments.of(DecisionEvaluationIntent.FAILED, AuditLogOperationType.EVALUATE),
+        Arguments.of(FormIntent.CREATED, AuditLogOperationType.CREATE),
+        Arguments.of(FormIntent.DELETED, AuditLogOperationType.DELETE),
         Arguments.of(GroupIntent.CREATED, AuditLogOperationType.CREATE),
         Arguments.of(GroupIntent.UPDATED, AuditLogOperationType.UPDATE),
         Arguments.of(GroupIntent.DELETED, AuditLogOperationType.DELETE),
@@ -253,6 +256,10 @@ class AuditLogInfoTest {
     final Record<?> recordValue = factory.generateRecord(ValueType.JOB, r -> r.withIntent(intent));
 
     final AuditLogInfo auditLogInfo = AuditLogInfo.of(recordValue);
-    assertThat(auditLogInfo.operationType()).isEqualTo(operationType);
+    assertThat(auditLogInfo.operationType())
+        .as(
+            "Intent %s.%s should map to operation type %s",
+            intent.getClass(), intent, operationType)
+        .isEqualTo(operationType);
   }
 }

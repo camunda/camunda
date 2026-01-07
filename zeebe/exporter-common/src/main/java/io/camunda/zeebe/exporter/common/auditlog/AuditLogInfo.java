@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -57,24 +58,25 @@ public record AuditLogInfo(
 
   private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
     switch (valueType) {
-      case PROCESS_INSTANCE:
-      case PROCESS_INSTANCE_CREATION:
-      case PROCESS_INSTANCE_MODIFICATION:
-      case PROCESS_INSTANCE_MIGRATION:
-      case INCIDENT:
-      case VARIABLE:
-      case DECISION:
-      case DECISION_EVALUATION:
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
+      case DECISION_EVALUATION:
+      case DECISION:
+      case FORM:
+      case INCIDENT:
+      case PROCESS_INSTANCE_CREATION:
+      case PROCESS_INSTANCE_MIGRATION:
+      case PROCESS_INSTANCE_MODIFICATION:
+      case PROCESS_INSTANCE:
       case RESOURCE:
+      case VARIABLE:
         return AuditLogOperationCategory.DEPLOYED_RESOURCES;
       case AUTHORIZATION:
-      case USER:
-      case MAPPING_RULE:
       case GROUP:
+      case MAPPING_RULE:
       case ROLE:
       case TENANT:
+      case USER:
         return AuditLogOperationCategory.ADMIN;
       case USER_TASK:
         return AuditLogOperationCategory.USER_TASKS;
@@ -112,6 +114,7 @@ public record AuditLogInfo(
         return AuditLogEntityType.ROLE;
       case TENANT:
         return AuditLogEntityType.TENANT;
+      case FORM:
       case PROCESS:
       case RESOURCE:
         return AuditLogEntityType.RESOURCE;
@@ -156,6 +159,11 @@ public record AuditLogInfo(
       case DecisionEvaluationIntent.EVALUATED:
       case DecisionEvaluationIntent.FAILED:
         return AuditLogOperationType.EVALUATE;
+
+      case FormIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case FormIntent.DELETED:
+        return AuditLogOperationType.DELETE;
 
       case GroupIntent.CREATED:
         return AuditLogOperationType.CREATE;
