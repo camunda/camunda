@@ -16,7 +16,6 @@
 package io.camunda.process.test.impl.dsl;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -29,6 +28,7 @@ import io.camunda.process.test.api.dsl.ImmutableJobSelector;
 import io.camunda.process.test.api.dsl.instructions.CompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.impl.dsl.instructions.CompleteJobInstructionHandler;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Collections.emptyMap()));
 
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
     verify(jobFilter).type(JOB_TYPE);
@@ -90,7 +90,7 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Collections.emptyMap()));
 
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
     verify(jobFilter).elementId(ELEMENT_ID);
@@ -111,7 +111,7 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Collections.emptyMap()));
 
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
     verify(jobFilter).processDefinitionId(PROCESS_DEFINITION_ID);
@@ -136,7 +136,7 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Collections.emptyMap()));
 
     jobSelectorCaptor.getValue().applyFilter(jobFilter);
     verify(jobFilter).type(JOB_TYPE);
