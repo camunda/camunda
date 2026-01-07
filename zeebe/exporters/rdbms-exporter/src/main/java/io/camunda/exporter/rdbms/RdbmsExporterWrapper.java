@@ -234,7 +234,9 @@ public class RdbmsExporterWrapper implements Exporter {
           ValueType.DECISION_REQUIREMENTS,
           new DecisionRequirementsExportHandler(
               rdbmsWriters.getDecisionRequirementsWriter(), decisionRequirementsCache));
-      builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriters.getFormWriter()));
+      builder.withHandler(
+          ValueType.FORM,
+          new FormExportHandler(rdbmsWriters.getFormWriter(), historyCleanupService));
     }
 
     builder.withHandler(
