@@ -337,6 +337,7 @@ public class MigrateCallActivityTest {
             List.of(
                 List.of(processInstanceKey, callActivityElementInstanceKey),
                 List.of(childProcessInstanceKey)))
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasProcessDefinitionPath(List.of(targetProcessDefinitionKey))
         .hasCallingElementPath(List.of(0));
   }

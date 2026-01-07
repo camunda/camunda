@@ -57,6 +57,9 @@
             },
             "callingElementPath": {
               "enabled": false
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
             }
           }
         }

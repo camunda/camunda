@@ -648,6 +648,7 @@ final class BulkIndexRequestTest {
         value = ValueType.class,
         names = {
           "DECISION_EVALUATION",
+          "INCIDENT",
           "JOB",
           "PROCESS_INSTANCE",
           "PROCESS_INSTANCE_CREATION",
@@ -686,6 +687,7 @@ final class BulkIndexRequestTest {
         value = ValueType.class,
         names = {
           "DECISION_EVALUATION",
+          "INCIDENT",
           "JOB",
           "PROCESS_INSTANCE",
           "PROCESS_INSTANCE_CREATION",

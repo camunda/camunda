@@ -699,7 +699,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "elementInstancePath":[[101, 102], [103, 104]],
                   "processDefinitionPath": [101, 102],
-                  "callingElementPath": [12345, 67890]
+                  "callingElementPath": [12345, 67890],
+                  "rootProcessInstanceKey": 101
                 }
                 """
       },
@@ -725,7 +726,8 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "elementInstancePath":[],
                   "processDefinitionPath":[],
-                  "callingElementPath":[]
+                  "callingElementPath":[],
+                  "rootProcessInstanceKey": -1
                 }
                 """
       },
