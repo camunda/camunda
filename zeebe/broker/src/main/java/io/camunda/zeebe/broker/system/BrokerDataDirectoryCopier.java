@@ -111,4 +111,49 @@ public final class BrokerDataDirectoryCopier {
     }
     return false;
   }
+
+  public void validate(final Path source, final Path target, final String markerFileName)
+      throws IOException {
+    Files.walkFileTree(
+        source,
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
+              throws IOException {
+            if (isRuntimeDirectory(source, dir)) {
+              return FileVisitResult.SKIP_SUBTREE;
+            }
+
+            final var relative = source.relativize(dir);
+            final var targetDir = target.resolve(relative);
+            if (!Files.isDirectory(targetDir)) {
+              throw new IOException(
+                  "Copy validation failed: missing directory " + targetDir + " for source " + dir);
+            }
+
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+              throws IOException {
+            final var relative = source.relativize(file);
+            if (relative.getFileName().toString().equals(markerFileName)) {
+              return FileVisitResult.CONTINUE;
+            }
+
+            if (isRuntimeDirectory(source, file)) {
+              return FileVisitResult.CONTINUE;
+            }
+
+            final var targetFile = target.resolve(relative);
+            if (!Files.isRegularFile(targetFile)) {
+              throw new IOException(
+                  "Copy validation failed: missing file " + targetFile + " for source " + file);
+            }
+
+            return FileVisitResult.CONTINUE;
+          }
+        });
+  }
 }

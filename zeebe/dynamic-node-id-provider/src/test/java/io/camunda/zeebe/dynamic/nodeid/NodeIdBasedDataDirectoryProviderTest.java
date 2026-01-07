@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     final var rootDirectory = tempDir.resolve("root");
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, copier);
+        new NodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
     final var result = initializer.initialize(rootDirectory);
@@ -82,7 +83,7 @@ class NodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, copier);
+        new NodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
     final var newDirectory = initializer.initialize(rootDirectory).join();
@@ -123,7 +124,7 @@ class NodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, copier);
+        new NodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -160,7 +161,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     createValidVersionDirectory(nodeDirectory, 3L, "file3.txt", "content3");
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -177,7 +179,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   }
 
   @Test
-  void shouldReturnExistingDirectoryWhenAlreadyInitialized() throws Exception {
+  void shouldThrowExceptionIfAlreadyInitialized() throws Exception {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(1L));
@@ -190,15 +192,18 @@ class NodeIdBasedDataDirectoryProviderTest {
     writeInitializationFile(targetDirectory, null);
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
-    final var result = initializer.initialize(rootDirectory).join();
+    final var result = initializer.initialize(rootDirectory);
 
     // then
-    assertThat(result).isEqualTo(targetDirectory);
-    assertThat(result.resolve("existing-file.txt")).exists();
-    assertThat(Files.readString(result.resolve("existing-file.txt"))).isEqualTo("existing content");
+    assertThat(result)
+        .completesExceptionallyWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withMessageContaining(
+            "Expected directory to not be initialized, but found valid init file in directory");
   }
 
   @Test
@@ -217,7 +222,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     writeInitializationFile(previousVersion, null);
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -248,7 +254,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     createValidVersionDirectory(nodeDirectory, 0L, "file0.txt", "version 0 content");
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -279,7 +286,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     Files.writeString(targetDirectory.resolve("garbage.txt"), "garbage");
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -298,7 +306,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     // given
     final var baseDirectory = tempDir.resolve("base");
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(null, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, null, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(baseDirectory);
@@ -379,6 +388,12 @@ class NodeIdBasedDataDirectoryProviderTest {
               return FileVisitResult.CONTINUE;
             }
           });
+    }
+
+    @Override
+    public void validate(final Path source, final Path target, final String markerFileName)
+        throws IOException {
+      // no-op for recording copier
     }
 
     private record Invocation(Path source, Path target, String markerFileName) {}

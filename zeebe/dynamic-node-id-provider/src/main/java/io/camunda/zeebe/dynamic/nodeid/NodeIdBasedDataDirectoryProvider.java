@@ -11,13 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -36,14 +32,16 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
   private static final String NODE_DIRECTORY_PREFIX = "node-";
   private static final String VERSION_DIRECTORY_PREFIX = "v";
   private static final String DIRECTORY_INITIALIZED_FILE = "directory-initialized.json";
-  private static final String RUNTIME_DIRECTORY = "runtime";
 
+  private final ObjectMapper objectMapper;
   private final NodeInstance nodeInstance;
   private final DataDirectoryCopier copier;
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   public NodeIdBasedDataDirectoryProvider(
-      final NodeInstance nodeInstance, final DataDirectoryCopier copier) {
+      final ObjectMapper objectMapper,
+      final NodeInstance nodeInstance,
+      final DataDirectoryCopier copier) {
+    this.objectMapper = objectMapper;
     this.nodeInstance = nodeInstance;
     this.copier = copier;
   }
@@ -56,15 +54,17 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
     }
 
     try {
-      final int nodeId = nodeInstance.id();
-      final long nodeVersion = nodeInstance.version().version();
+      final var nodeId = nodeInstance.id();
+      final var nodeVersion = nodeInstance.version().version();
 
-      final Path nodeDirectory = rootDataDirectory.resolve(NODE_DIRECTORY_PREFIX + nodeId);
-      final Path dataDirectory = nodeDirectory.resolve(VERSION_DIRECTORY_PREFIX + nodeVersion);
+      final var nodeDirectory = rootDataDirectory.resolve(NODE_DIRECTORY_PREFIX + nodeId);
+      final var dataDirectory = nodeDirectory.resolve(VERSION_DIRECTORY_PREFIX + nodeVersion);
 
       if (isDirectoryInitialized(dataDirectory)) {
-        // FIXME what to do here, this should not be possible
-        return CompletableFuture.completedFuture(dataDirectory);
+        return CompletableFuture.failedFuture(
+            new IllegalStateException(
+                "Expected directory to not be initialized, but found valid init file in directory "
+                    + dataDirectory));
       }
 
       if (Files.exists(dataDirectory)) {
@@ -76,11 +76,10 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
 
       Files.createDirectories(nodeDirectory);
 
-      final Optional<Long> previousVersion =
-          findLatestValidPreviousVersion(nodeDirectory, nodeVersion);
+      final var previousVersion = findLatestValidPreviousVersion(nodeDirectory, nodeVersion);
       if (previousVersion.isPresent()) {
-        final Path previousDataDirectory =
-            nodeDirectory.resolve(VERSION_DIRECTORY_PREFIX + previousVersion.get());
+        final var previousDataDirectory =
+            nodeDirectory.resolve(VERSION_DIRECTORY_PREFIX + previousVersion.get().version());
 
         LOG.info(
             "Initializing data directory {} by copying from {}",
@@ -89,7 +88,7 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
 
         copier.copy(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
 
-        validateCopy(previousDataDirectory, dataDirectory);
+        copier.validate(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
         writeDirectoryInitializedFile(dataDirectory, previousVersion.get());
       } else {
         LOG.info(
@@ -107,7 +106,7 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
     }
   }
 
-  private Optional<Long> findLatestValidPreviousVersion(
+  private Optional<Version> findLatestValidPreviousVersion(
       final Path nodeDirectory, final long currentNodeVersion) {
     if (!Files.exists(nodeDirectory)) {
       return Optional.empty();
@@ -126,14 +125,15 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
           .filter(
               version ->
                   isDirectoryInitialized(nodeDirectory.resolve(VERSION_DIRECTORY_PREFIX + version)))
-          .findFirst();
+          .findFirst()
+          .map(Version::of);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to list node directory " + nodeDirectory, e);
     }
   }
 
   private Optional<Long> parseVersion(final String directoryName) {
-    final String suffix = directoryName.substring(VERSION_DIRECTORY_PREFIX.length());
+    final var suffix = directoryName.substring(VERSION_DIRECTORY_PREFIX.length());
     try {
       return Optional.of(Long.parseLong(suffix));
     } catch (final NumberFormatException e) {
@@ -142,96 +142,37 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
   }
 
   private boolean isDirectoryInitialized(final Path directory) {
-    final Path initFile = directory.resolve(DIRECTORY_INITIALIZED_FILE);
-    return Files.exists(initFile) && Files.isRegularFile(initFile);
-  }
-
-  private void validateCopy(final Path source, final Path target) throws IOException {
-    Files.walkFileTree(
-        source,
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
-              throws IOException {
-            if (isRuntimeDirectory(source, dir)) {
-              return FileVisitResult.SKIP_SUBTREE;
-            }
-
-            final var relative = source.relativize(dir);
-            final var targetDir = target.resolve(relative);
-            if (!Files.isDirectory(targetDir)) {
-              throw new IOException(
-                  "Copy validation failed: missing directory " + targetDir + " for source " + dir);
-            }
-
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-              throws IOException {
-            final var relative = source.relativize(file);
-            if (relative.getFileName().toString().equals(DIRECTORY_INITIALIZED_FILE)) {
-              return FileVisitResult.CONTINUE;
-            }
-
-            if (isRuntimeDirectory(source, file)) {
-              return FileVisitResult.CONTINUE;
-            }
-
-            final var targetFile = target.resolve(relative);
-            if (!Files.isRegularFile(targetFile)) {
-              throw new IOException(
-                  "Copy validation failed: missing file " + targetFile + " for source " + file);
-            }
-
-            return FileVisitResult.CONTINUE;
-          }
-        });
-  }
-
-  private boolean isRuntimeDirectory(final Path root, final Path path) {
-    final var relative = root.relativize(path);
-    for (final var part : relative) {
-      if (part.toString().equals(RUNTIME_DIRECTORY)) {
-        return true;
+    final var initFile = directory.resolve(DIRECTORY_INITIALIZED_FILE);
+    if (Files.exists(initFile) && Files.isRegularFile(initFile)) {
+      try {
+        final var file = initFile.toFile();
+        final var info = objectMapper.readValue(file, DirectoryInitializationInfo.class);
+        return info.initialized() > 0;
+      } catch (final Exception e) {
+        LOG.warn(
+            "Failed to open file at path {}, marking directory as not correctly initialized",
+            initFile,
+            e);
       }
     }
     return false;
   }
 
-  private void writeDirectoryInitializedFile(final Path dataDirectory, final Long copiedFromVersion)
-      throws IOException {
-    final DirectoryInitializationInfo initInfo =
-        copiedFromVersion != null
-            ? DirectoryInitializationInfo.copiedFrom(copiedFromVersion)
-            : DirectoryInitializationInfo.createdEmpty();
+  private void writeDirectoryInitializedFile(
+      final Path dataDirectory, final Version copiedFromVersion) throws IOException {
+    final var initInfo = DirectoryInitializationInfo.copiedFrom(copiedFromVersion);
 
     final var bytes = objectMapper.writeValueAsBytes(initInfo);
 
     final var initFile = dataDirectory.resolve(DIRECTORY_INITIALIZED_FILE);
-    final var tmpFile = dataDirectory.resolve(DIRECTORY_INITIALIZED_FILE + ".tmp");
 
     Files.write(
-        tmpFile,
+        initFile,
         bytes,
         StandardOpenOption.CREATE_NEW,
         StandardOpenOption.WRITE,
         StandardOpenOption.SYNC);
-    Files.move(
-        tmpFile, initFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
 
     FileUtil.flushDirectory(dataDirectory);
-  }
-
-  private record DirectoryInitializationInfo(long initialized, Long initializedFrom) {
-
-    static DirectoryInitializationInfo copiedFrom(final long version) {
-      return new DirectoryInitializationInfo(System.currentTimeMillis(), version);
-    }
-
-    static DirectoryInitializationInfo createdEmpty() {
-      return new DirectoryInitializationInfo(System.currentTimeMillis(), null);
-    }
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
@@ -14,6 +15,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.ConfiguredDataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.DataDirectoryCopier;
 import io.camunda.zeebe.dynamic.nodeid.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -43,10 +46,13 @@ import software.amazon.awssdk.regions.Region;
 public class NodeIdProviderConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
 
+  private final ObjectMapper objectMapper;
   private final Cluster cluster;
 
   @Autowired
-  public NodeIdProviderConfiguration(final UnifiedConfiguration configuration) {
+  public NodeIdProviderConfiguration(
+      final ObjectMapper objectMapper, final UnifiedConfiguration configuration) {
+    this.objectMapper = objectMapper;
     cluster = configuration.getCamunda().getCluster();
   }
 
@@ -131,7 +137,7 @@ public class NodeIdProviderConfiguration {
           case SHARED_ROOT_VERSIONED_NODE -> {
             final var copier = new BrokerDataDirectoryCopier();
             yield new NodeIdBasedDataDirectoryProvider(
-                nodeIdProvider.currentNodeInstance(), copier::copy);
+                objectMapper, nodeIdProvider.currentNodeInstance(), fromBrokerCopier(copier));
           }
         };
 
@@ -143,5 +149,23 @@ public class NodeIdProviderConfiguration {
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;
+  }
+
+  // brokerCopier does not implement the interface because it's defined in zeebe-broker module
+  // which does not depend on dynamic-node-id-provider module.
+  private DataDirectoryCopier fromBrokerCopier(final BrokerDataDirectoryCopier brokerCopier) {
+    return new DataDirectoryCopier() {
+      @Override
+      public void copy(final Path source, final Path target, final String markerFileName)
+          throws IOException {
+        brokerCopier.copy(source, target, markerFileName);
+      }
+
+      @Override
+      public void validate(final Path source, final Path target, final String markerFileName)
+          throws IOException {
+        brokerCopier.validate(source, target, markerFileName);
+      }
+    };
   }
 }

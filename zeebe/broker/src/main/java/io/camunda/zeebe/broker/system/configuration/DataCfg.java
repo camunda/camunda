@@ -100,6 +100,7 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   private DataSize convertWatermarkToFreeSpace(final Double watermark) {
+    // TODO check what to do here.
     final String directoryForDiskCalculation =
         directory == null || directory.isBlank() ? rootDirectory : directory;
     final var directoryFile = new File(directoryForDiskCalculation);
