@@ -9,8 +9,6 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,14 +37,12 @@ class NodeIdBasedDataDirectoryProviderTest {
     final var nodeId = 5;
     final var nodeVersion = 3L;
 
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance())
-        .thenReturn(new NodeInstance(nodeId, Version.of(nodeVersion)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(nodeVersion));
 
     final var rootDirectory = tempDir.resolve("root");
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier);
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, copier);
 
     // when
     final var result = initializer.initialize(rootDirectory);
@@ -69,8 +65,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldCopyFromPreviousInitializedVersion() throws Exception {
     // given
     final var nodeId = 2;
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(4L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(4L));
 
     final var rootDirectory = tempDir.resolve("root");
 
@@ -87,7 +82,7 @@ class NodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier);
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, copier);
 
     // when
     final var newDirectory = initializer.initialize(rootDirectory).join();
@@ -106,7 +101,8 @@ class NodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.invocations().getFirst().source()).isEqualTo(previous);
     assertThat(copier.invocations().getFirst().target())
         .isEqualTo(rootDirectory.resolve("node-2").resolve("v4"));
-    assertThat(copier.invocations().getFirst().markerFileName()).isEqualTo(DIRECTORY_INITIALIZED_FILE);
+    assertThat(copier.invocations().getFirst().markerFileName())
+        .isEqualTo(DIRECTORY_INITIALIZED_FILE);
 
     final var initInfo = readInitializationInfo(newDirectory);
     assertThat(initInfo.get("initialized")).isNotNull();
@@ -117,8 +113,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldCopyFromLatestValidPreviousVersion() throws Exception {
     // given
     final var nodeId = 1;
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(3L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(3L));
 
     final var rootDirectory = tempDir.resolve("root");
     final var nodeDirectory = rootDirectory.resolve("node-1");
@@ -128,7 +123,7 @@ class NodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier);
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, copier);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -150,8 +145,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldSkipInvalidPreviousVersionsAndUseLatestValid() throws Exception {
     // given
     final var nodeId = 1;
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(4L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(4L));
 
     final var rootDirectory = tempDir.resolve("root");
     final var nodeDirectory = rootDirectory.resolve("node-1");
@@ -166,7 +160,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     createValidVersionDirectory(nodeDirectory, 3L, "file3.txt", "content3");
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -186,8 +180,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldReturnExistingDirectoryWhenAlreadyInitialized() throws Exception {
     // given
     final var nodeId = 1;
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(1L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(1L));
 
     final var rootDirectory = tempDir.resolve("root");
     final var targetDirectory = rootDirectory.resolve("node-1").resolve("v1");
@@ -197,7 +190,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     writeInitializationFile(targetDirectory, null);
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -212,8 +205,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldCopyDirectoryStructureRecursively() throws Exception {
     // given
     final var nodeId = 1;
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(2L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(2L));
 
     final var rootDirectory = tempDir.resolve("root");
     final var previousVersion = rootDirectory.resolve("node-1").resolve("v1");
@@ -225,7 +217,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     writeInitializationFile(previousVersion, null);
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -248,8 +240,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldHandleVersionZeroAsPrevious() throws Exception {
     // given
     final var nodeId = 1;
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(1L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(1L));
 
     final var rootDirectory = tempDir.resolve("root");
     final var nodeDirectory = rootDirectory.resolve("node-1");
@@ -257,7 +248,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     createValidVersionDirectory(nodeDirectory, 0L, "file0.txt", "version 0 content");
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -275,8 +266,7 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldDeleteAndReinitializeWhenTargetExistsButNotInitialized() throws Exception {
     // given
     final var nodeId = 1;
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(2L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(2L));
 
     final var rootDirectory = tempDir.resolve("root");
 
@@ -289,7 +279,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     Files.writeString(targetDirectory.resolve("garbage.txt"), "garbage");
 
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -306,12 +296,9 @@ class NodeIdBasedDataDirectoryProviderTest {
   @Test
   void shouldFailWhenNodeInstanceIsNull() {
     // given
-    final var nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(null);
-
     final var baseDirectory = tempDir.resolve("base");
     final DataDirectoryProvider initializer =
-        new NodeIdBasedDataDirectoryProvider(nodeIdProvider, new RecordingDataDirectoryCopier());
+        new NodeIdBasedDataDirectoryProvider(null, new RecordingDataDirectoryCopier());
 
     // when
     final var result = initializer.initialize(baseDirectory);
@@ -372,8 +359,8 @@ class NodeIdBasedDataDirectoryProviderTest {
           source,
           new SimpleFileVisitor<>() {
             @Override
-            public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
-                throws IOException {
+            public FileVisitResult preVisitDirectory(
+                final Path dir, final BasicFileAttributes attrs) throws IOException {
               Files.createDirectories(target.resolve(source.relativize(dir)));
               return FileVisitResult.CONTINUE;
             }

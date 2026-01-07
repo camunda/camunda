@@ -38,19 +38,18 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
   private static final String DIRECTORY_INITIALIZED_FILE = "directory-initialized.json";
   private static final String RUNTIME_DIRECTORY = "runtime";
 
-  private final NodeIdProvider nodeIdProvider;
+  private final NodeInstance nodeInstance;
   private final DataDirectoryCopier copier;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   public NodeIdBasedDataDirectoryProvider(
-      final NodeIdProvider nodeIdProvider, final DataDirectoryCopier copier) {
-    this.nodeIdProvider = nodeIdProvider;
+      final NodeInstance nodeInstance, final DataDirectoryCopier copier) {
+    this.nodeInstance = nodeInstance;
     this.copier = copier;
   }
 
   @Override
   public CompletableFuture<Path> initialize(final Path rootDataDirectory) {
-    final NodeInstance nodeInstance = nodeIdProvider.currentNodeInstance();
     if (nodeInstance == null) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("Node instance is not available"));
@@ -64,6 +63,7 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
       final Path dataDirectory = nodeDirectory.resolve(VERSION_DIRECTORY_PREFIX + nodeVersion);
 
       if (isDirectoryInitialized(dataDirectory)) {
+        // FIXME what to do here, this should not be possible
         return CompletableFuture.completedFuture(dataDirectory);
       }
 
@@ -189,7 +189,6 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
           }
         });
   }
-
 
   private boolean isRuntimeDirectory(final Path root, final Path path) {
     final var relative = root.relativize(path);

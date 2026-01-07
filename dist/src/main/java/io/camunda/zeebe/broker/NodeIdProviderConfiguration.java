@@ -130,7 +130,8 @@ public class NodeIdProviderConfiguration {
           case USE_PRECONFIGURED_DIRECTORY -> new ConfiguredDataDirectoryProvider();
           case SHARED_ROOT_VERSIONED_NODE -> {
             final var copier = new BrokerDataDirectoryCopier();
-            yield new NodeIdBasedDataDirectoryProvider(nodeIdProvider, copier::copy);
+            yield new NodeIdBasedDataDirectoryProvider(
+                nodeIdProvider.currentNodeInstance(), copier::copy);
           }
         };
 
