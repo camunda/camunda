@@ -39,6 +39,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
@@ -119,6 +120,7 @@ public class PojoCompatibilityTest {
                         .description("My first test case")
                         .build())
                 .build()),
+        // ===== CREATE_PROCESS_INSTANCE =====
         Arguments.of(
             "create process instance: minimal",
             singleTestCase(
@@ -146,6 +148,7 @@ public class PojoCompatibilityTest {
                             .afterElementId("task2")
                             .build())
                     .build())),
+        // ===== ASSERT_PROCESS_INSTANCE =====
         Arguments.of(
             "assert process instance: minimal",
             singleTestCase(
@@ -166,6 +169,7 @@ public class PojoCompatibilityTest {
                     .state(ProcessInstanceState.IS_COMPLETED)
                     .hasActiveIncidents(false)
                     .build())),
+        // ===== ASSERT_ELEMENT_INSTANCE =====
         Arguments.of(
             "assert element instance: minimal with elementId",
             singleTestCase(
@@ -201,6 +205,7 @@ public class PojoCompatibilityTest {
                     .state(ElementInstanceState.IS_TERMINATED)
                     .amount(3)
                     .build())),
+        // ===== ASSERT_USER_TASK =====
         Arguments.of(
             "assert user task: minimal",
             singleTestCase(
@@ -226,6 +231,7 @@ public class PojoCompatibilityTest {
                     .dueDate("2025-10-31T10:00:00Z")
                     .followUpDate("2025-10-20T10:00:00Z")
                     .build())),
+        // ===== ASSERT_ELEMENT_INSTANCES =====
         Arguments.of(
             "assert element instances: IS_ACTIVE",
             singleTestCase(
@@ -254,6 +260,7 @@ public class PojoCompatibilityTest {
                         ImmutableElementSelector.builder().elementId("task2").build())
                     .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
                     .build())),
+        // ===== COMPLETE_USER_TASK ===
         Arguments.of(
             "complete user task: minimal",
             singleTestCase(
@@ -280,7 +287,23 @@ public class PojoCompatibilityTest {
                             .elementId("task1")
                             .build())
                     .useExampleData(true)
-                    .build())));
+                    .build())),
+        // ===== PUBLISH_MESSAGE =====
+        Arguments.of(
+            "publish message: minimal",
+            singleTestCase(ImmutablePublishMessageInstruction.builder().name("message1").build())),
+        Arguments.of(
+            "publish message: full",
+            singleTestCase(
+                ImmutablePublishMessageInstruction.builder()
+                    .name("message1")
+                    .correlationKey("order-12345")
+                    .putVariables("orderId", 12345)
+                    .timeToLive(60000L)
+                    .messageId("msg-123")
+                    .build()))
+        // add new instructions here
+        );
   }
 
   private static TestScenario singleTestCase(final TestCaseInstruction instruction) {

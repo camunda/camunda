@@ -24,6 +24,7 @@ import io.camunda.process.test.api.dsl.instructions.AssertProcessInstanceInstruc
 import io.camunda.process.test.api.dsl.instructions.AssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
 
 /** An instruction to define an action or an assertion to be performed in a test case. */
 @JsonTypeInfo(
@@ -49,7 +50,10 @@ import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruc
       name = TestCaseInstructionType.COMPLETE_USER_TASK),
   @JsonSubTypes.Type(
       value = CreateProcessInstanceInstruction.class,
-      name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE)
+      name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE),
+  @JsonSubTypes.Type(
+      value = PublishMessageInstruction.class,
+      name = TestCaseInstructionType.PUBLISH_MESSAGE)
 })
 public interface TestCaseInstruction {
 
