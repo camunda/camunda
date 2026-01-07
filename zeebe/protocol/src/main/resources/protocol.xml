@@ -82,6 +82,7 @@
       <validValue name="CONDITIONAL_EVALUATION">64</validValue>
       <validValue name="GLOBAL_LISTENER_BATCH">65</validValue>
       <validValue name="EXPRESSION">66</validValue>
+      <validValue name="JOB_METRICS_BATCH">67</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
