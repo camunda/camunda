@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.dsl.ImmutableElementSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
@@ -128,7 +129,8 @@ public class AssertVariablesInstructionTest {
 
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(any());
-    verify(processInstanceAssert).hasLocalVariableNames(any(), eq("var1"), eq("var2"));
+    verify(processInstanceAssert)
+        .hasLocalVariableNames(any(ElementSelector.class), eq("var1"), eq("var2"));
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
@@ -154,7 +156,8 @@ public class AssertVariablesInstructionTest {
 
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(any());
-    verify(processInstanceAssert).hasLocalVariableNames(any(), eq("var1"), eq("var2"));
+    verify(processInstanceAssert)
+        .hasLocalVariableNames(any(ElementSelector.class), eq("var1"), eq("var2"));
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
@@ -184,7 +187,7 @@ public class AssertVariablesInstructionTest {
 
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(any());
-    verify(processInstanceAssert).hasLocalVariables(any(), eq(variables));
+    verify(processInstanceAssert).hasLocalVariables(any(ElementSelector.class), eq(variables));
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
@@ -214,7 +217,7 @@ public class AssertVariablesInstructionTest {
 
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(any());
-    verify(processInstanceAssert).hasLocalVariables(any(), eq(variables));
+    verify(processInstanceAssert).hasLocalVariables(any(ElementSelector.class), eq(variables));
 
     verifyNoMoreInteractions(camundaClient, processTestContext, processInstanceAssert);
   }
