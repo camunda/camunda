@@ -68,7 +68,7 @@ class OperateProcessInstancePage {
     this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
     this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
     this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
-    this.variableSpinner = page.getByTestId('full-variable-loader');
+    this.variableSpinner = page.getByTestId('variable-operation-spinner');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(
       'show execution count',
@@ -92,6 +92,50 @@ class OperateProcessInstancePage {
 
   async connectorResultVariableValue(variableName: string): Promise<Locator> {
     return this.page.getByTestId(variableName).locator('td').last();
+  }
+
+  async navigateToProcessInstance({id}: {id: string}): Promise<void> {
+    await this.page.goto(`/operate/processes/instances/${id}`);
+  }
+
+  async getProcessInstanceKey(): Promise<string> {
+    const url = this.page.url();
+    const matches = url.match(/instances\/(\d+)/);
+    return matches ? matches[1] : '';
+  }
+
+  async clickEditVariableButton(variableName: string): Promise<void> {
+    await this.page
+      .getByTestId(`variable-${variableName}`)
+      .getByRole('button', {
+        name: /edit variable/i,
+      })
+      .click();
+  }
+
+  async clickVariableValueInput(): Promise<void> {
+    await this.editVariableValueField.click();
+  }
+
+  async clearVariableValueInput(): Promise<void> {
+    await this.editVariableValueField.clear();
+  }
+
+  async fillVariableValueInput(value: string): Promise<void> {
+    await this.editVariableValueField.fill(value);
+  }
+
+  async clickAddVariableButton(): Promise<void> {
+    await this.addVariableButton.click();
+  }
+
+  async fillNewVariable(name: string, value: string): Promise<void> {
+    await this.newVariableNameField.fill(name);
+    await this.newVariableValueField.fill(value);
+  }
+
+  async clickSaveVariableButton(): Promise<void> {
+    await this.saveVariableButton.click();
   }
 
   async completedIconAssertion(): Promise<void> {
