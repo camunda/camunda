@@ -410,6 +410,9 @@ public class OpensearchBackupRepository implements BackupRepository {
       final Long backupId,
       final List<OpenSearchSnapshotInfo> snapshots,
       final boolean isBackupInProgress) {
+    if (snapshots.isEmpty()) {
+      throw new ResourceNotFoundException(format("No backup with id [%s] found.", backupId));
+    }
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
         Metadata.extractFromMetadataOrName(
