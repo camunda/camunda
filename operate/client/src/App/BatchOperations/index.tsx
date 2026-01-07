@@ -27,15 +27,9 @@ import {
 import {parseBatchOperationsSearchSort} from 'modules/utils/filter/batchOperationsSearchSort';
 import {BatchItemsCount} from './BatchItemsCount';
 import {BatchStateIndicator} from './BatchStateIndicator';
+import {formatOperationType} from './formatOperationType';
 
 const MAX_OPERATIONS_PER_REQUEST = 20;
-
-const formatOperationType = (type: string) => {
-  return type
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-};
 
 const BatchOperations: React.FC = () => {
   const [params, setParams] = useSearchParams();

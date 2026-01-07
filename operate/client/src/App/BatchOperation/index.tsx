@@ -7,14 +7,23 @@
  */
 
 import React, {useEffect} from 'react';
-import {Link, useParams} from 'react-router-dom';
-import Breadcrumb from '@carbon/react/lib/components/Breadcrumb/Breadcrumb';
-import BreadcrumbItem from '@carbon/react/lib/components/Breadcrumb/BreadcrumbItem';
-import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
+import {Link, useNavigate, useParams} from 'react-router-dom';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  InlineNotification,
+  SkeletonText,
+} from '@carbon/react';
+import {formatDate} from 'modules/utils/date';
+import {PAGE_TITLE} from 'modules/constants';
 import {Locations, Paths} from 'modules/Routes';
-import {useBatchOperation} from 'modules/queries/batch-operations/useBatchOperation';
 import {Forbidden} from 'modules/components/Forbidden';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
+import {useBatchOperation} from 'modules/queries/batch-operations/useBatchOperation';
+import {BatchItemsCount} from 'App/BatchOperations/BatchItemsCount';
+import {formatOperationType} from 'App/BatchOperations/formatOperationType';
+import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {
   PageContainer,
   ContentContainer,
@@ -23,34 +32,20 @@ import {
   Tile,
   TileLabel,
 } from './styled';
-import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
-import {BatchItemsCount} from 'App/BatchOperations/BatchItemsCount';
-import {formatDate} from 'modules/utils/date';
-import {SortableTable} from 'modules/components/SortableTable';
-import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
-import {PAGE_TITLE} from 'modules/constants';
-import {InlineNotification, SkeletonText} from '@carbon/react';
+import {notificationsStore} from 'modules/stores/notifications';
+import {BatchItemsTable} from './BatchItemsTable';
+
+const renderWithLoading = (isLoading: boolean, content: React.ReactNode) =>
+  isLoading ? <SkeletonText data-testid="text-skeleton" /> : content;
 
 const BatchOperation: React.FC = () => {
+  const navigate = useNavigate();
   const {batchOperationKey = ''} = useParams<{batchOperationKey: string}>();
   const {
     data: batchOperationData,
     error,
     isLoading,
   } = useBatchOperation(batchOperationKey);
-  const {
-    data: batchOperationItemsData,
-    status,
-    isFetching,
-    isFetched,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isFetchingPreviousPage,
-  } = useBatchOperationItems({
-    filter: {batchOperationKey: batchOperationKey},
-    sort: [{field: 'processedDate', order: 'desc'}],
-  });
 
   const {
     batchOperationType,
@@ -68,44 +63,16 @@ const BatchOperation: React.FC = () => {
     document.title = PAGE_TITLE.BATCH_OPERATION(operationType);
   }, [operationType]);
 
-  const headers = [
-    {
-      key: 'processInstanceKey',
-      header: 'Process Instance Key',
-      isDisabled: true,
-    },
-    {key: 'state', header: 'Batch state', isDisabled: true},
-    {key: 'processedDate', header: 'Time', sortKey: 'processedDate'},
-  ];
-
-  const migrationItems =
-    batchOperationItemsData?.pages.flatMap((page) => page.items) ?? [];
-
-  const rows = migrationItems.map((item) => ({
-    id: item.itemKey.toString(),
-    processInstanceKey: item.processInstanceKey,
-    state: <BatchStateIndicator status={item.state} />,
-    processedDate: formatDate(item.processedDate ?? ''),
-  }));
-
-  const totalItems = batchOperationItemsData?.pages[0].page.totalItems;
-
-  const getTableState = () => {
-    switch (true) {
-      case isFetched && migrationItems.length === 0:
-        return 'empty';
-      case status === 'pending' && !batchOperationItemsData:
-        return 'skeleton';
-      case isFetching && !isFetchingPreviousPage && !isFetchingNextPage:
-        return 'loading';
-      case status === 'error':
-        return 'error';
-      case status === 'success' && totalItems === 0:
-        return 'content';
-      default:
-        return 'content';
+  useEffect(() => {
+    if (error?.response?.status === 404 && batchOperationKey) {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: `batch operation ${batchOperationKey} could not be found`,
+        isDismissable: true,
+      });
+      navigate(Paths.batchOperations(), {replace: true});
     }
-  };
+  }, [error, batchOperationKey, navigate]);
 
   if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
     return <Forbidden />;
@@ -160,12 +127,12 @@ const BatchOperation: React.FC = () => {
             </Link>
           </BreadcrumbItem>
           <BreadcrumbItem isCurrentPage>
-            <div>{operationType}</div>
+            <div>{renderWithLoading(isLoading, operationType)}</div>
           </BreadcrumbItem>
         </Breadcrumb>
       </PageHeader>
       <ContentContainer gap={5}>
-        <h3>{operationType}</h3>
+        <h3>{renderWithLoading(isLoading, operationType)}</h3>
         {error && (
           <InlineNotification
             kind="error"
@@ -179,39 +146,13 @@ const BatchOperation: React.FC = () => {
           {tileData.map(({label, content}) => (
             <Tile key={label}>
               <TileLabel>{label}</TileLabel>
-              {isLoading ? <SkeletonText /> : content}
+              {renderWithLoading(isLoading, content)}
             </Tile>
           ))}
         </TilesContainer>
-        <strong>{totalItems} Items</strong>
-        <SortableTable
-          batchOperationId={batchOperationKey}
-          size="md"
-          state={getTableState()}
-          rowOperationError={(rowId) => {
-            const item = migrationItems.find(
-              (item) => item.itemKey.toString() === rowId,
-            );
-
-            if (item && item.errorMessage) {
-              return (
-                <>
-                  <strong>Failure reason:</strong> {item.errorMessage}
-                </>
-              );
-            }
-
-            return null;
-          }}
-          rows={rows}
-          headerColumns={headers}
-          onVerticalScrollEndReach={() => {
-            if (hasNextPage && !isFetchingNextPage) {
-              fetchNextPage();
-            }
-          }}
-          emptyMessage={{message: 'No items found'}}
-          stickyHeader
+        <BatchItemsTable
+          batchOperationKey={batchOperationKey}
+          isLoading={isLoading}
         />
       </ContentContainer>
     </PageContainer>
@@ -219,10 +160,3 @@ const BatchOperation: React.FC = () => {
 };
 
 export {BatchOperation};
-
-const formatOperationType = (type: string) => {
-  return type
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
-};
