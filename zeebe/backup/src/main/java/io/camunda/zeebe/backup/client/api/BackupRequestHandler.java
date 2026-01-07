@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.backup;
+package io.camunda.zeebe.backup.client.api;
 
 import static java.lang.Long.max;
 
@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
@@ -408,5 +407,12 @@ public final class BackupRequestHandler implements BackupApi {
       backupId += backupIdOffset;
     }
     return backupId;
+  }
+
+  private static class IncompleteTopologyException extends RuntimeException {
+
+    IncompleteTopologyException(final String message) {
+      super(message);
+    }
   }
 }

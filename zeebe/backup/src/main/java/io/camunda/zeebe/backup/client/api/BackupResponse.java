@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.backup;
+package io.camunda.zeebe.backup.client.api;
 
 /**
  * Response of take backup request, received from the broker.
