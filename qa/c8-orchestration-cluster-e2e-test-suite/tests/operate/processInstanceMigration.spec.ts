@@ -41,6 +41,8 @@ test.beforeAll(async () => {
     version: 1,
   };
 
+  await sleep(3000);
+
   await Promise.all(
     [...new Array(PROCESS_INSTANCE_COUNT)].map((_, index) =>
       createInstances(processV1.bpmnProcessId, processV1.version, 1, {

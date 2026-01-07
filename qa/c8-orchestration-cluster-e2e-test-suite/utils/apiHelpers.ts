@@ -7,7 +7,6 @@
  */
 
 import {APIRequestContext, request} from '@playwright/test';
-import {sleep} from './sleep';
 
 export async function authAPI(
   name: string,
