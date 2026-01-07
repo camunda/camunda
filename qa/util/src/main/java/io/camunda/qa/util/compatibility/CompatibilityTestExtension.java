@@ -65,6 +65,8 @@ public class CompatibilityTestExtension
     implements BeforeAllCallback, AfterAllCallback, ParameterResolver {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CompatibilityTestExtension.class);
+  private static final String EXTENSION_COORDINATION_KEY = "extension-running";
+  private static final String EXTENSION_NAME = "CompatibilityTestExtension";
   private static final int GRPC_PORT = 26500;
   private static final int REST_PORT = 8080;
   private static final int MANAGEMENT_PORT = 9600;
@@ -78,23 +80,33 @@ public class CompatibilityTestExtension
   private String testPrefix;
   private KeycloakContainer keycloakContainer;
 
+  private static ExtensionContext.Store coordinationStore(final ExtensionContext context) {
+    final Class<?> testClass = context.getRequiredTestClass();
+    return context
+        .getRoot()
+        .getStore(ExtensionContext.Namespace.create("test-extension-coordination", testClass));
+  }
+
+  private static boolean isOwner(final ExtensionContext context) {
+    final String extensionRunning =
+        coordinationStore(context).get(EXTENSION_COORDINATION_KEY, String.class);
+    return EXTENSION_NAME.equals(extensionRunning);
+  }
+
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
     final Class<?> testClass = context.getRequiredTestClass();
-    final var store =
-        context
-            .getRoot()
-            .getStore(ExtensionContext.Namespace.create("test-extension-coordination"));
+    final var store = coordinationStore(context);
 
     // Check if another extension has already initialized
-    final var extensionRunning = store.get("extension-running", String.class);
+    final var extensionRunning = store.get(EXTENSION_COORDINATION_KEY, String.class);
     if (extensionRunning != null) {
       LOGGER.info("Skipping CompatibilityTestExtension - {} is already running", extensionRunning);
       return;
     }
 
     // Mark this extension as running
-    store.put("extension-running", "CompatibilityTestExtension");
+    store.put(EXTENSION_COORDINATION_KEY, EXTENSION_NAME);
 
     final CompatibilityTest annotation = testClass.getAnnotation(CompatibilityTest.class);
 
@@ -522,25 +534,37 @@ public class CompatibilityTestExtension
 
   @Override
   public void afterAll(final ExtensionContext context) {
+    if (!isOwner(context)) {
+      LOGGER.debug("Skipping CompatibilityTestExtension cleanup - extension didn't run");
+      return;
+    }
+
     LOGGER.info("Stopping Camunda and database containers");
     CloseHelper.quietClose(authenticatedClientFactory);
     CloseHelper.quietClose(camundaContainer);
     CloseHelper.quietClose(elasticsearchContainer);
     CloseHelper.quietClose(network);
     CloseHelper.quietClose(keycloakContainer);
+
+    coordinationStore(context).remove(EXTENSION_COORDINATION_KEY);
   }
 
   @Override
   public boolean supportsParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return parameterContext.getParameter().getType() == CamundaClient.class;
+    return isOwner(extensionContext)
+        && parameterContext.getParameter().getType() == CamundaClient.class;
   }
 
   @Override
   public Object resolveParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
+    if (!isOwner(extensionContext)) {
+      throw new ParameterResolutionException(
+          "CompatibilityTestExtension cannot resolve parameter because it did not own the test class");
+    }
     final Authenticated authenticated =
         parameterContext.getParameter().getAnnotation(Authenticated.class);
     return getCamundaClient(authenticated);
