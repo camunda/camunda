@@ -384,7 +384,7 @@ jobs:
           -D forkCount=7
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
-          -D argLine="-Xmx4g"
+          -D argLine="@{argLine} -Xmx4g"
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
