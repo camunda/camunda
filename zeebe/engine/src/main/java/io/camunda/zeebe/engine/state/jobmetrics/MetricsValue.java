@@ -1,0 +1,109 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.state.jobmetrics;
+
+import io.camunda.zeebe.db.DbValue;
+import java.nio.ByteOrder;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+
+/**
+ * Value for the metrics column family. Contains an array of 8 StatusMetrics objects (one per
+ * JobStatus enum value).
+ *
+ * <p>Total size: 8 * (4 bytes int + 8 bytes long) = 96 bytes
+ */
+public final class MetricsValue implements DbValue {
+
+  /** Fixed size: 8 StatusMetrics = 96 bytes */
+  public static final int BYTES = JobState.count() * StatusMetrics.BYTES;
+
+  private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
+
+  private final StatusMetrics[] metrics;
+
+  public MetricsValue() {
+    metrics = new StatusMetrics[JobState.count()];
+    for (int i = 0; i < metrics.length; i++) {
+      metrics[i] = new StatusMetrics();
+    }
+  }
+
+  public StatusMetrics[] getMetrics() {
+    return metrics;
+  }
+
+  public StatusMetrics getMetricForStatus(final JobState status) {
+    return metrics[status.getIndex()];
+  }
+
+  public void incrementMetric(final JobState status, final long timestamp) {
+    metrics[status.getIndex()].increment(timestamp);
+  }
+
+  public void reset() {
+    for (final StatusMetrics metric : metrics) {
+      metric.reset();
+    }
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    int currentOffset = offset;
+    for (final StatusMetrics metric : metrics) {
+      final int count = buffer.getInt(currentOffset, BYTE_ORDER);
+      currentOffset += Integer.BYTES;
+      final long lastUpdatedAt = buffer.getLong(currentOffset, BYTE_ORDER);
+      currentOffset += Long.BYTES;
+      metric.setCount(count);
+      metric.setLastUpdatedAt(lastUpdatedAt);
+    }
+  }
+
+  @Override
+  public int getLength() {
+    return BYTES;
+  }
+
+  @Override
+  public void write(final MutableDirectBuffer buffer, final int offset) {
+    int currentOffset = offset;
+    for (final StatusMetrics metric : metrics) {
+      buffer.putInt(currentOffset, metric.getCount(), BYTE_ORDER);
+      currentOffset += Integer.BYTES;
+      buffer.putLong(currentOffset, metric.getLastUpdatedAt(), BYTE_ORDER);
+      currentOffset += Long.BYTES;
+    }
+  }
+
+  /**
+   * Creates a deep copy of the StatusMetrics array.
+   *
+   * @return a new array with copied StatusMetrics objects
+   */
+  public StatusMetrics[] copyMetrics() {
+    final StatusMetrics[] copy = new StatusMetrics[metrics.length];
+    for (int i = 0; i < metrics.length; i++) {
+      copy[i] = new StatusMetrics(metrics[i].getCount(), metrics[i].getLastUpdatedAt());
+    }
+    return copy;
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder("MetricsValue{");
+    for (int i = 0; i < metrics.length; i++) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(JobState.values()[i].name()).append("=").append(metrics[i]);
+    }
+    sb.append('}');
+    return sb.toString();
+  }
+}

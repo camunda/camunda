@@ -40,6 +40,7 @@ import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
+import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
@@ -142,6 +144,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
   private final MutableGlobalListenersState globalListenersState;
+  private final MutableJobMetricsState jobMetricsState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -205,6 +208,7 @@ public class ProcessingDbState implements MutableProcessingState {
     conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
+    jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -403,6 +407,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableGlobalListenersState getGlobalListenersState() {
     return globalListenersState;
+  }
+
+  @Override
+  public MutableJobMetricsState getJobMetricsState() {
+    return jobMetricsState;
   }
 
   @Override
