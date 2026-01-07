@@ -72,6 +72,7 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedIte
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationInitializedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
+import io.camunda.exporter.handlers.batchoperation.HistoryDeletionDeletedOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
@@ -81,6 +82,7 @@ import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromIncident
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceModificationOperationHandler;
+import io.camunda.exporter.handlers.operation.OperationFromHistoryDeletionHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
@@ -116,6 +118,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
@@ -317,6 +320,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+            new OperationFromHistoryDeletionHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new MappingRuleCreatedUpdatedHandler(
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new MappingRuleDeletedHandler(
@@ -345,6 +350,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 batchOperationCache),
             new ResolveIncidentOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new HistoryDeletionDeletedOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                OperationType.DELETE_PROCESS_INSTANCE,
+                batchOperationCache),
+            new HistoryDeletionDeletedOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                OperationType.DELETE_PROCESS_DEFINITION,
                 batchOperationCache),
             new ListViewFromProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
