@@ -50,6 +50,7 @@ import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
+import io.camunda.client.api.command.DeleteProcessInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
@@ -398,6 +399,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CancelProcessInstanceCommandStep1 newCancelInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to delete a process instance history.
+   *
+   * <pre>
+   * camundaClient
+   *  .newDeleteInstanceCommand(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key which identifies the corresponding process instance
+   * @return a builder for the command
+   */
+  DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(long processInstanceKey);
 
   /**
    * Command to set and/or update the variables of a given flow element (e.g. process instance,

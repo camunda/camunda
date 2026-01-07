@@ -8,24 +8,22 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
-import static io.camunda.it.util.TestHelper.getScopedVariables;
-import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeleteProcessInstanceResponse;
+import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -33,7 +31,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class BatchOperationDeleteProcessInstanceIT {
+public class DeleteProcessInstanceIT {
 
   @MultiDbTestApplication
   private static final TestStandaloneBroker BROKER =
@@ -47,45 +45,38 @@ public class BatchOperationDeleteProcessInstanceIT {
               });
 
   private static CamundaClient camundaClient;
-  String testScopeId;
   final String processName = "processA";
+  long processInstanceKey;
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {
     Objects.requireNonNull(camundaClient);
-    testScopeId =
-        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
 
     deployProcessAndWaitForIt(
         camundaClient,
         Bpmn.createExecutableProcess(processName).startEvent().endEvent().done(),
         processName + ".bpmn");
-    startScopedProcessInstance(camundaClient, processName, testScopeId);
-    startScopedProcessInstance(camundaClient, processName, testScopeId);
+    processInstanceKey = startProcessInstance(camundaClient, processName).getProcessInstanceKey();
 
-    waitForProcessInstancesToBeCompleted(camundaClient, f -> f.processDefinitionId(processName), 2);
+    waitForProcessInstancesToBeCompleted(
+        camundaClient, f -> f.processInstanceKey(processInstanceKey), 1);
   }
 
   @Test
-  void shouldDeleteProcessInstancesWithBatch() {
+  void shouldDeleteProcessInstance() {
     // when
-    final var result =
-        camundaClient
-            .newCreateBatchOperationCommand()
-            .processInstanceDelete()
-            .filter(f -> f.variables(getScopedVariables(testScopeId)))
-            .send()
-            .join();
+    final DeleteProcessInstanceResponse result =
+        camundaClient.newDeleteInstanceCommand(processInstanceKey).send().join();
 
     // then
     assertThat(result).isNotNull();
-    final var batchOperationKey = result.getBatchOperationKey();
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
 
     // and check that batch operation has been created with correct operation count
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 2);
-    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 2, 0);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, result.getBatchOperationKey(), 1);
 
-    // and check that process instances have been deleted
-    waitForProcessInstances(camundaClient, f -> f.variables(getScopedVariables(testScopeId)), 0);
+    // and check that process instance has been deleted
+    waitForProcessInstances(camundaClient, f -> f.processInstanceKey(processInstanceKey), 0);
   }
 }

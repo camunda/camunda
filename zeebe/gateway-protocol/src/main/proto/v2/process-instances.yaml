@@ -493,8 +493,12 @@ paths:
             schema:
               $ref: '#/components/schemas/DeleteProcessInstanceRequest'
       responses:
-        "204":
-          description: The process instance will be deleted.
+        "200":
+          description: The operation to delete the process instance was created.
+          content:
+            application/json:
+              schema:
+                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
