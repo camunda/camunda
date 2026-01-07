@@ -251,8 +251,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public void completeJob(
-      final JobSelector jobSelector, final Map<String, Object> variables) {
+  public void completeJob(final JobSelector jobSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
 
     // completing the job inside the await block to handle the eventual consistency of the API
@@ -293,7 +292,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                     job.getElementId());
 
             LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
-            client.newCompleteCommand(job.getJobKey()).variables(exampleDataVariables).send().join();
+            client
+                .newCompleteCommand(job.getJobKey())
+                .variables(exampleDataVariables)
+                .send()
+                .join();
           } catch (final BpmnExampleDataReaderException e) {
 
             LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
@@ -480,17 +483,14 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   private void awaitJob(
-      final JobSelector jobSelector,
-      final CamundaClient client,
-      final Consumer<Job> jobConsumer) {
+      final JobSelector jobSelector, final CamundaClient client, final Consumer<Job> jobConsumer) {
 
     awaitBehavior.untilAsserted(
         () -> findJob(jobSelector, client),
         job -> {
           assertThat(job)
               .withFailMessage(
-                  "Expected to complete job [%s] but no job is available.",
-                  jobSelector.describe())
+                  "Expected to complete job [%s] but no job is available.", jobSelector.describe())
               .isPresent();
 
           job.ifPresent(jobConsumer);
@@ -502,9 +502,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .newJobSearchRequest()
         .filter(
             filter ->
-                DEFAULT_JOB_COMPLETION_FILTER
-                    .andThen(jobSelector::applyFilter)
-                    .accept(filter))
+                DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter).accept(filter))
         .send()
         .join()
         .items()
