@@ -27,8 +27,6 @@ import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED
 import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
 import static org.elasticsearch.client.Requests.searchRequest;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -50,14 +48,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -345,24 +335,34 @@ public class OperationReader extends AbstractReader
     }
   }
 
-  /* Returns Terms (Multi-Buckets Aggregation) with buckets aggregated by BATCH_OPERATION_ID (and provided sub-aggregations) */
-  public Terms getOperationsAggregatedByBatchOperationId(
-      final List<String> batchOperationIds, final AggregationBuilder subAggregations) {
-    final QueryBuilder idsQuery =
-        termsQuery(OperationTemplate.BATCH_OPERATION_ID, batchOperationIds);
+  /* Returns StringTermsAggregate with buckets aggregated by BATCH_OPERATION_ID (and provided sub-aggregations) */
+  public co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate
+      getOperationsAggregatedByBatchOperationId(
+          final List<String> batchOperationIds,
+          final Map<String, co.elastic.clients.elasticsearch._types.aggregations.Aggregation>
+              subAggregations) {
+    final var idsQuery =
+        ElasticsearchUtil.termsQuery(OperationTemplate.BATCH_OPERATION_ID, batchOperationIds);
 
-    final AggregationBuilder batchIdAggregation =
-        AggregationBuilders.terms(BATCH_OPERATION_ID_AGGREGATION)
-            .field(OperationTemplate.BATCH_OPERATION_ID)
-            .subAggregation(subAggregations);
+    final var batchIdAggregation =
+        co.elastic.clients.elasticsearch._types.aggregations.Aggregation.of(
+            a ->
+                a.terms(t -> t.field(OperationTemplate.BATCH_OPERATION_ID))
+                    .aggregations(subAggregations));
 
-    final SearchSourceBuilder sourceBuilder =
-        searchSource().query(constantScoreQuery(idsQuery)).aggregation(batchIdAggregation);
-    final SearchRequest operationsRequest =
-        searchRequest(operationTemplate.getAlias()).source(sourceBuilder);
-    final SearchResponse searchResponse;
+    final var query = ElasticsearchUtil.constantScoreQuery(idsQuery);
+
+    final var searchRequest =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(operationTemplate.getAlias())
+            .query(query)
+            .size(0)
+            .aggregations(BATCH_OPERATION_ID_AGGREGATION, batchIdAggregation)
+            .build();
+
     try {
-      searchResponse = esClient.search(operationsRequest, RequestOptions.DEFAULT);
+      final var searchResponse = es8client.search(searchRequest, OperationEntity.class);
+      return searchResponse.aggregations().get(BATCH_OPERATION_ID_AGGREGATION).sterms();
     } catch (final IOException e) {
       final String message =
           String.format(
@@ -371,7 +371,6 @@ public class OperationReader extends AbstractReader
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
-    return searchResponse.getAggregations().get(BATCH_OPERATION_ID_AGGREGATION);
   }
 
   private Query allowedOperationsQuery() {
