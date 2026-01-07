@@ -13,23 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.sort;
+package io.camunda.client.api.search.enums;
 
-import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
-
-public interface BatchOperationSort extends SearchRequestSort<BatchOperationSort> {
-
-  BatchOperationSort batchOperationKey();
-
-  BatchOperationSort state();
-
-  BatchOperationSort operationType();
-
-  BatchOperationSort startDate();
-
-  BatchOperationSort endDate();
-
-  BatchOperationSort actorType();
-
-  BatchOperationSort actorId();
+public enum BatchOperationActorTypeEnum {
+  USER,
+  CLIENT,
+  UNKNOWN_ENUM_VALUE
 }

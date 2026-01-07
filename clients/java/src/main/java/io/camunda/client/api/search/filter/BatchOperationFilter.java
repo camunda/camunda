@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
@@ -73,4 +74,28 @@ public interface BatchOperationFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   BatchOperationFilter state(Consumer<BatchOperationStateProperty> fn);
+
+  /**
+   * Filters batch operations by the specified actor type.
+   *
+   * @param actorType the actor type
+   * @return the updated filter
+   */
+  BatchOperationFilter actorType(final BatchOperationActorTypeEnum actorType);
+
+  /**
+   * Filters batch operations by the specified actor id.
+   *
+   * @param actorId the actor id
+   * @return the updated filter
+   */
+  BatchOperationFilter actorId(final String actorId);
+
+  /**
+   * Filter by actorId using {@link StringProperty} consumer.
+   *
+   * @param fn the consumer to apply to the StringProperty
+   * @return the updated filter
+   */
+  BatchOperationFilter actorId(final Consumer<StringProperty> fn);
 }

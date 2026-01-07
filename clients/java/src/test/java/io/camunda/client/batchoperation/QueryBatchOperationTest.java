@@ -19,6 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
+import io.camunda.client.api.search.enums.BatchOperationState;
+import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import io.camunda.client.util.ClientRestTest;
@@ -34,22 +38,59 @@ public class QueryBatchOperationTest extends ClientRestTest {
   public void shouldGetBatchOperationByKey() {
     // given
     final String batchOperationKey = "123";
+    final OffsetDateTime dateTime = OffsetDateTime.now();
     gatewayService.onBatchOperationRequest(
         batchOperationKey,
         Instancio.create(BatchOperationResponse.class)
+            .batchOperationKey(batchOperationKey)
             .state(BatchOperationStateEnum.UNKNOWN_DEFAULT_OPEN_API)
             .batchOperationType(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API)
-            .endDate(OffsetDateTime.now().toString())
-            .startDate(OffsetDateTime.now().toString())
-            .endDate(OffsetDateTime.now().toString()));
+            .endDate(dateTime.toString())
+            .startDate(dateTime.toString())
+            .actorType(null)
+            .actorId(null));
 
     // when
-    client.newBatchOperationGetRequest(batchOperationKey).send().join();
+    final BatchOperation result =
+        client.newBatchOperationGetRequest(batchOperationKey).send().join();
 
-    // then
+    // then it sends the correct request
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
     assertThat(request.getUrl()).isEqualTo("/v2/batch-operations/123");
     assertThat(request.getBodyAsString()).isEmpty();
+
+    // and maps the response correctly
+    assertThat(result.getBatchOperationKey()).isEqualTo("123");
+    assertThat(result.getType()).isEqualTo(BatchOperationType.UNKNOWN_ENUM_VALUE);
+    assertThat(result.getStatus()).isEqualTo(BatchOperationState.UNKNOWN_ENUM_VALUE);
+    assertThat(result.getStartDate()).isEqualTo(dateTime);
+    assertThat(result.getEndDate()).isEqualTo(dateTime);
+
+    assertThat(result.getActorType()).isNull();
+    assertThat(result.getActorId()).isNull();
+  }
+
+  @Test
+  public void shouldIncludeActorInfoInGetBatchOperationResponse() {
+    // given
+    final String batchOperationKey = "123";
+
+    gatewayService.onBatchOperationRequest(
+        batchOperationKey,
+        Instancio.create(BatchOperationResponse.class)
+            .batchOperationKey(batchOperationKey)
+            .actorType(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER)
+            .actorId("demo-user")
+            .endDate(OffsetDateTime.now().toString())
+            .startDate(OffsetDateTime.now().toString()));
+
+    // when
+    final BatchOperation result =
+        client.newBatchOperationGetRequest(batchOperationKey).send().join();
+
+    // then
+    assertThat(result.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(result.getActorId()).isEqualTo("demo-user");
   }
 }
