@@ -195,6 +195,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     value.setTenantId(processInstance.getValue().getTenantId());
+    value.setRootProcessInstanceKey(processInstance.getValue().getRootProcessInstanceKey());
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
     responseWriter.writeEventOnCommand(

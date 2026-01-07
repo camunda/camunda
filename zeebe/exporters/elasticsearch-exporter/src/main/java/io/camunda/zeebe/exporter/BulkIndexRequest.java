@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -61,6 +63,10 @@ final class BulkIndexRequest implements ContentProducer {
               ProcessMessageSubscriptionRecordValue.class, ProcessMessageSubscriptionMixin.class)
           .addMixIn(
               ProcessInstanceModificationRecordValue.class, ProcessInstanceModificationMixin.class)
+          .addMixIn(
+              ProcessInstanceCreationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(
+              ProcessInstanceMigrationRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .addMixIn(
               ProcessInstanceModificationTerminateInstructionValue.class,
               TerminateInstructionsMixin.class)
@@ -221,7 +227,10 @@ final class BulkIndexRequest implements ContentProducer {
   })
   private static final class ProcessMessageSubscriptionMixin {}
 
-  @JsonIgnoreProperties({PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY})
+  @JsonIgnoreProperties({
+    PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY,
+    ROOT_PROCESS_INSTANCE_KEY_PROPERTY
+  })
   private static final class ProcessInstanceModificationMixin {}
 
   @JsonIgnoreProperties({ROOT_PROCESS_INSTANCE_KEY_PROPERTY})

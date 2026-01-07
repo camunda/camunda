@@ -29,6 +29,8 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
       new StringValue("targetProcessDefinitionKey");
   private static final StringValue MAPPING_INSTRUCTIONS_KEY =
       new StringValue("mappingInstructions");
+  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("rootProcessInstanceKey");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty targetProcessDefinitionKeyProperty =
@@ -40,13 +42,16 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
 
   private final StringProperty tenantIdProperty =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty rootProcessInstanceKeyProperty =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
 
   public ProcessInstanceMigrationRecord() {
-    super(4);
+    super(5);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(targetProcessDefinitionKeyProperty)
         .declareProperty(mappingInstructionsProperty)
-        .declareProperty(tenantIdProperty);
+        .declareProperty(tenantIdProperty)
+        .declareProperty(rootProcessInstanceKeyProperty);
   }
 
   @Override
@@ -88,6 +93,17 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
               return (ProcessInstanceMigrationMappingInstructionValue) elementCopy;
             })
         .toList();
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProperty.getValue();
+  }
+
+  public ProcessInstanceMigrationRecord setRootProcessInstanceKey(
+      final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
+    return this;
   }
 
   /** Returns true if this record has mapping instructions, otherwise false. */

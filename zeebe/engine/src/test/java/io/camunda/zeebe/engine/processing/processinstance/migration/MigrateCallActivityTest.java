@@ -686,9 +686,11 @@ public class MigrateCallActivityTest {
             RecordingExporter.processInstanceMigrationRecords(
                     ProcessInstanceMigrationIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .exists())
+                .findFirst())
         .describedAs("Expect that process instance is migrated")
-        .isTrue();
+        .isPresent()
+        .map(record -> record.getValue().getRootProcessInstanceKey())
+        .hasValue(processInstanceKey);
   }
 
   @Test
@@ -806,8 +808,10 @@ public class MigrateCallActivityTest {
             RecordingExporter.processInstanceMigrationRecords(
                     ProcessInstanceMigrationIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .exists())
+                .findFirst())
         .describedAs("Expect that process instance is migrated")
-        .isTrue();
+        .isPresent()
+        .map(record -> record.getValue().getRootProcessInstanceKey())
+        .hasValue(processInstanceKey);
   }
 }
