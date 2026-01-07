@@ -406,6 +406,7 @@ public abstract class ElasticsearchUtil {
       lastScrollId.set(searchRes.scrollId());
 
       if (searchRes.hits().hits().isEmpty()) {
+        clearScrollSilently(client, lastScrollId.get());
         return Stream.of(searchRes);
       }
     } catch (final IOException e) {
@@ -424,7 +425,6 @@ public abstract class ElasticsearchUtil {
                     lastScrollId.set(response.scrollId());
 
                     if (response.hits().hits().isEmpty()) {
-                      client.clearScroll(cs -> cs.scrollId(lastScrollId.get()));
                       return null;
                     }
                   } catch (final IOException e) {
@@ -433,9 +433,21 @@ public abstract class ElasticsearchUtil {
                   }
                   return response;
                 })
-            .takeWhile(Objects::nonNull);
+            .takeWhile(Objects::nonNull)
+            .onClose(() -> clearScrollSilently(client, lastScrollId.get()));
 
     return Stream.concat(Stream.of(searchRes), scrollStream);
+  }
+
+  private static void clearScrollSilently(
+      final ElasticsearchClient client, final String scrollId) {
+    if (scrollId != null) {
+      try {
+        client.clearScroll(cs -> cs.scrollId(scrollId));
+      } catch (final Exception e) {
+        LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId, e);
+      }
+    }
   }
 
   public static void clearScroll(final String scrollId, final RestHighLevelClient esClient) {
