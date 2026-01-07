@@ -23,6 +23,7 @@ test.beforeAll(async () => {
     './resources/Start_Form_Process.bpmn',
     './resources/Zeebe_Priority_User_Task_Process.bpmn',
   ]);
+  await sleep(1000);
   await createInstances('Job_Worker_Process', 1, 1);
   await createInstances('Zeebe_User_Task_Process', 1, 1);
   await createInstances('Variable_Process', 1, 1, {
@@ -31,6 +32,7 @@ test.beforeAll(async () => {
   await createInstances('Form_User_Task', 1, 1);
   await createInstances('Start_Form_Process', 1, 1);
   await createInstances('Zeebe_Priority_User_Task_Process', 1, 1);
+  await sleep(1000);
 });
 
 test.describe('HTO User Flow Tests', () => {

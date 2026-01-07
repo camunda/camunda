@@ -34,7 +34,7 @@ test.beforeAll(async () => {
         .processInstanceKey,
     ),
   };
-  await sleep(500);
+  await sleep(1000);
 
   processB_v_1 = {
     processInstanceKey: Number(
