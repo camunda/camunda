@@ -61,6 +61,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -72,6 +73,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -921,6 +923,27 @@ class RdbmsExporterIT {
                 recordValue.getResourceType().name())
             .orElse(null);
     assertThat(deletedAuthorization).isNull();
+  }
+
+  @Test
+  public void shouldExportJob() {
+    // given
+    final Record<RecordValue> jobCreatedRecord =
+        ImmutableRecord.builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.JOB))
+            .withIntent(JobIntent.CREATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(jobCreatedRecord);
+
+    // then
+    final var job = rdbmsService.getJobReader().findOne(jobCreatedRecord.getKey());
+    assertThat(job).isNotNull();
+    assertThat(job.get().rootProcessInstanceKey())
+        .isEqualTo(((JobRecordValue) jobCreatedRecord.getValue()).getRootProcessInstanceKey());
   }
 
   private static void verifyRootProcessInstanceKey(
