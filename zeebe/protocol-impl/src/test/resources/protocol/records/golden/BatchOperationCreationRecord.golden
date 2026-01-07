@@ -171,7 +171,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
 
   public BatchOperationCreationRecord setFollowUpCommand(
       final ValueType valueType, final Intent intent, final UnifiedRecordValue value) {
-    getFollowUpCommand().setValueType(valueType).setIntent(intent).setCommandValue(value);
+    getFollowUpCommand().setValueType(valueType).setIntent(intent).setRecordValue(value);
     return this;
   }
 
