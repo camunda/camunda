@@ -45,7 +45,6 @@ import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.FlowNodeInstanceMetadataBuilder;
-import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -69,7 +68,6 @@ import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -240,57 +238,6 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
     return richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class).stream()
         .map(r -> Long.parseLong(r.id()))
-        .toList();
-  }
-
-  @Override
-  public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(
-      final Long processInstanceId) {
-    final var searchRequestBuilder =
-        searchRequestBuilder(flowNodeInstanceTemplate)
-            .query(
-                constantScore(
-                    withTenantCheck(
-                        term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceId))))
-            .aggregations(
-                FLOW_NODE_ID_AGG,
-                withSubaggregations(
-                    termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
-                    Map.of(
-                        COUNT_INCIDENT, term(INCIDENT, true)._toAggregation(),
-                        COUNT_CANCELED,
-                            and(
-                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                                    term(STATE, TERMINATED.name()))
-                                ._toAggregation(),
-                        COUNT_COMPLETED,
-                            and(
-                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                                    term(STATE, COMPLETED.name()))
-                                ._toAggregation(),
-                        COUNT_ACTIVE,
-                            and(
-                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                                    term(STATE, ACTIVE.name()),
-                                    term(INCIDENT, false))
-                                ._toAggregation())))
-            .size(0);
-    return richOpenSearchClient
-        .doc()
-        .searchAggregations(searchRequestBuilder)
-        .get(FLOW_NODE_ID_AGG)
-        .sterms()
-        .buckets()
-        .array()
-        .stream()
-        .map(
-            entry ->
-                new FlowNodeStatisticsDto()
-                    .setActivityId(entry.key())
-                    .setCanceled(entry.aggregations().get(COUNT_CANCELED).filter().docCount())
-                    .setIncidents(entry.aggregations().get(COUNT_INCIDENT).filter().docCount())
-                    .setCompleted(entry.aggregations().get(COUNT_COMPLETED).filter().docCount())
-                    .setActive(entry.aggregations().get(COUNT_ACTIVE).filter().docCount()))
         .toList();
   }
 
