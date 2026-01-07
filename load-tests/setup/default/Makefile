@@ -3,7 +3,14 @@ secondary_storage ?= elasticsearch
 helm_chart ?= camunda-platform-8.9
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
+# Optional: additional Helm configuration for the Camunda Platform release.
+# Use this to pass extra `--set`/`-f` flags, for example:
+#   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
+# See the load test README for more examples and details.
 additional_platform_configuration ?=
+# Optional: additional Helm configuration for the load test release.
+# Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
+# See the load test README for example values and guidance.
 additional_load_test_configuration ?=
 
 # Conditional values file based on secondary_storage
