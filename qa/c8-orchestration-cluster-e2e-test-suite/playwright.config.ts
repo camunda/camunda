@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { devices, defineConfig } from '@playwright/test';
+import {devices, defineConfig} from '@playwright/test';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -13,7 +13,7 @@ const testRailOptions = {
 const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
-  ['html', { outputFolder: 'html-report' }],
+  ['html', {outputFolder: 'html-report'}],
 ];
 
 // Define reporters with SlackReporter
@@ -67,7 +67,7 @@ export default defineConfig({
       testMatch: ['tests/api/**/*.spec.ts'],
       testIgnore: ['tests/api/v2/clock/*.spec.ts'],
       use: devices['Desktop Chrome'],
-      teardown: 'clock-api-tests'
+      teardown: 'clock-api-tests',
     },
     {
       name: 'clock-api-tests',
@@ -83,10 +83,7 @@ export default defineConfig({
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
         : undefined,
-      testIgnore: [
-        'task-panel.spec.ts',
-        'tests/api/**/*.spec.ts',
-      ],
+      testIgnore: ['task-panel.spec.ts', 'tests/api/**/*.spec.ts'],
       grep: /^(?!.*@v2-only).*$/,
       teardown: 'chromium-subset',
     },
@@ -99,10 +96,7 @@ export default defineConfig({
     {
       name: 'firefox',
       use: devices['Desktop Firefox'],
-      testIgnore: [
-        'task-panel.spec.ts',
-        'tests/api/**/*.spec.ts',
-      ],
+      testIgnore: ['task-panel.spec.ts', 'tests/api/**/*.spec.ts'],
       grep: /^(?!.*@v2-only).*$/,
       teardown: 'firefox-subset',
     },
@@ -115,10 +109,7 @@ export default defineConfig({
     {
       name: 'msedge',
       use: devices['Desktop Edge'],
-      testIgnore: [
-        'task-panel.spec.ts',
-        'tests/api/**/*.spec.ts',
-      ],
+      testIgnore: ['task-panel.spec.ts', 'tests/api/**/*.spec.ts'],
       grep: /^(?!.*@v2-only).*$/,
       teardown: 'msedge-subset',
     },
@@ -133,10 +124,7 @@ export default defineConfig({
       name: 'tasklist-v1-e2e',
       testMatch: ['tests/tasklist/*.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
       use: devices['Desktop Edge'],
-      testIgnore: [
-        'task-panel.spec.ts', 
-        'tests/api/**/*.spec.ts'
-      ],
+      testIgnore: ['task-panel.spec.ts', 'tests/api/**/*.spec.ts'],
       grep: /^(?!.*@v2-only).*$/,
       teardown: 'chromium-subset',
     },
@@ -147,7 +135,7 @@ export default defineConfig({
       testIgnore: [
         'task-panel.spec.ts',
         'tests/tasklist/v1/*.spec.ts',
-        'tests/api/**/*.spec.ts'
+        'tests/api/**/*.spec.ts',
       ],
       grep: /^(?!.*@v1-only).*$/,
       teardown: 'chromium-subset',
@@ -157,6 +145,12 @@ export default defineConfig({
       testMatch: ['tests/identity/*.spec.ts'],
       testIgnore: ['tests/api/**/*.spec.ts'],
       use: devices['Desktop Chrome'],
+    },
+    {
+      name: 'operate-e2e',
+      testMatch: ['tests/operate/*.spec.ts'],
+      use: devices['Desktop Chrome'],
+      testIgnore: ['tests/api/**/*.spec.ts'],
     },
   ],
   reporter:
