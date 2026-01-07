@@ -152,8 +152,8 @@ jobs:
       - name: Get Maven project version
         id: maven-version
         run: |
-          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="\${project.version}" --non-recursive exec:exec)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set semantic image tag
         id: set-image-tag
@@ -161,13 +161,14 @@ jobs:
           MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
           if [[ -n "${{ inputs.version }}" ]]; then
             # Use explicitly provided version
-            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # For PRs: <maven-version>-pr<number> (e.g., 8.9.0-SNAPSHOT-pr123)
-            echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           else
             # For manual dispatch: <maven-version>-<short-sha> (e.g., 8.9.0-SNAPSHOT-abc1234)
-            echo "tag=${MAVEN_VERSION}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+            SHA_SHORT="${GITHUB_SHA::7}"
+            echo "tag=${MAVEN_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Download Operate frontend artifact
@@ -207,11 +208,13 @@ jobs:
 
       - name: Output image details
         run: |
-          echo "### Docker Image Built and Pushed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Docker Image Built and Pushed"
+            echo ""
+            echo "**Repository:** ${{ env.HARBOR_REPOSITORY }}"
+            echo "**Tag:** ${{ steps.set-image-tag.outputs.tag }}"
+            echo "**Full Image:** ${{ env.HARBOR_REPOSITORY }}:${{ steps.set-image-tag.outputs.tag }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
         if: always()
@@ -238,10 +241,11 @@ jobs:
         shell: bash
         run: |
           # Create a unique identifier based on run ID and short SHA
-          IDENTIFIER="docker-helm-${{ github.run_id }}-${GITHUB_SHA::7}"
+          SHA_SHORT="${GITHUB_SHA::7}"
+          IDENTIFIER="docker-helm-${{ github.run_id }}-${SHA_SHORT}"
           # Truncate to max 40 chars if needed (k8s namespace limit)
           IDENTIFIER="${IDENTIFIER:0:40}"
-          echo "identifier=${IDENTIFIER}" >> $GITHUB_OUTPUT
+          echo "identifier=${IDENTIFIER}" >> "$GITHUB_OUTPUT"
 
   helm-deploy:
     name: Helm chart Integration Tests
