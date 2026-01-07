@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.8.9-SNAPSHOT</version>
+    <version>8.8.10-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -64,7 +64,7 @@
     <version.httpclient5>5.5.2</version.httpclient5>
     <version.httpcore5>5.3.6</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.8.5</version.identity>
+    <version.identity>8.8.6</version.identity>
     <version.instancio>5.5.1</version.instancio>
     <version.surefire>3.5.4</version.surefire>
     <version.jackson>2.19.4</version.jackson>
@@ -238,7 +238,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.8.8</backwards.compat.version>
+    <backwards.compat.version>8.8.9</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
