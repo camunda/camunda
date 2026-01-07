@@ -32,7 +32,7 @@ public class JobSelectors {
   }
 
   /**
-   * Select the BPMN job by its element ID.
+   * Select the job by its BPMN element ID.
    *
    * @param elementId the ID of the BPMN element.
    * @return the selector
@@ -42,34 +42,13 @@ public class JobSelectors {
   }
 
   /**
-   * Select the BPMN job by its element ID.
-   *
-   * @param elementId the ID of the BPMN element.
-   * @param processInstanceKey the associated process instance
-   * @return the selector
-   */
-  public static JobSelector byElementId(final String elementId, final long processInstanceKey) {
-    return new JobElementIdSelector(elementId, processInstanceKey);
-  }
-
-  /**
-   * Select the BPMN job by its process definition ID.
+   * Select the job by its process definition ID.
    *
    * @param processDefinitionId the process definition ID
    * @return the selector
    */
   public static JobSelector byProcessDefinitionId(final String processDefinitionId) {
     return new JobProcessDefinitionSelector(processDefinitionId);
-  }
-
-  /**
-   * Select the BPMN job by its processInstanceKey.
-   *
-   * @param processInstanceKey the associated process instance
-   * @return the selector
-   */
-  public static JobSelector byProcessInstanceKey(final long processInstanceKey) {
-    return new JobProcessInstanceSelector(processInstanceKey);
   }
 
   private static final class JobTypeSelector implements JobSelector {
@@ -99,15 +78,9 @@ public class JobSelectors {
   private static final class JobElementIdSelector implements JobSelector {
 
     private final String elementId;
-    private final Long processInstanceKey;
 
     private JobElementIdSelector(final String elementId) {
-      this(elementId, null);
-    }
-
-    private JobElementIdSelector(final String elementId, final Long processInstanceKey) {
       this.elementId = elementId;
-      this.processInstanceKey = processInstanceKey;
     }
 
     @Override
@@ -117,20 +90,12 @@ public class JobSelectors {
 
     @Override
     public String describe() {
-      if (processInstanceKey != null) {
-        return String.format(
-            "elementId: %s, processInstanceKey: %d", elementId, processInstanceKey);
-      } else {
-        return "elementId: " + elementId;
-      }
+      return "elementId: " + elementId;
     }
 
     @Override
     public void applyFilter(final JobFilter filter) {
       filter.elementId(elementId);
-      if (processInstanceKey != null) {
-        filter.processInstanceKey(processInstanceKey);
-      }
     }
   }
 
@@ -155,30 +120,6 @@ public class JobSelectors {
     @Override
     public void applyFilter(final JobFilter filter) {
       filter.processDefinitionId(processDefinitionId);
-    }
-  }
-
-  private static final class JobProcessInstanceSelector implements JobSelector {
-
-    private final long processInstanceKey;
-
-    private JobProcessInstanceSelector(final long processInstanceKey) {
-      this.processInstanceKey = processInstanceKey;
-    }
-
-    @Override
-    public boolean test(final Job job) {
-      return job.getProcessInstanceKey().equals(processInstanceKey);
-    }
-
-    @Override
-    public String describe() {
-      return String.format("processInstanceKey: %d", processInstanceKey);
-    }
-
-    @Override
-    public void applyFilter(final JobFilter filter) {
-      filter.processInstanceKey(processInstanceKey);
     }
   }
 }

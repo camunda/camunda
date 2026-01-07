@@ -418,48 +418,23 @@ public class PojoCompatibilityTest {
             "complete job: minimal with jobType",
             singleTestCase(
                 ImmutableCompleteJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().jobType("send-notification").build())
+                    .jobSelector(
+                        ImmutableJobSelector.builder().jobType("send-notification").build())
                     .build())),
         Arguments.of(
-            "complete job: minimal with elementId",
+            "complete job: with variables and elementId",
             singleTestCase(
                 ImmutableCompleteJobInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().elementId("task1").build())
+                    .putVariables("x", 1)
                     .build())),
         Arguments.of(
-            "complete job: minimal with processDefinitionId",
+            "complete job: with example data and processDefinitionId",
             singleTestCase(
                 ImmutableCompleteJobInstruction.builder()
                     .jobSelector(
                         ImmutableJobSelector.builder().processDefinitionId("my-process").build())
-                    .build())),
-        Arguments.of(
-            "complete job: with variables",
-            singleTestCase(
-                ImmutableCompleteJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().jobType("send-notification").build())
-                    .putVariables("x", 1)
-                    .build())),
-        Arguments.of(
-            "complete job: with example data",
-            singleTestCase(
-                ImmutableCompleteJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().jobType("send-notification").build())
-                    .withExampleData(true)
-                    .build())),
-        Arguments.of(
-            "complete job: full with combined selector",
-            singleTestCase(
-                ImmutableCompleteJobInstruction.builder()
-                    .jobSelector(
-                        ImmutableJobSelector.builder()
-                            .jobType("send-notification")
-                            .elementId("task1")
-                            .processDefinitionId("my-process")
-                            .build())
-                    .putVariables("x", 1)
-                    .putVariables("y", "value")
-                    .withExampleData(true)
+                    .useExampleData(true)
                     .build()))
         // add new instructions here
         );

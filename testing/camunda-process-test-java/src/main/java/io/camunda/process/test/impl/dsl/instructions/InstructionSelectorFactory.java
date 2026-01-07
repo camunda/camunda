@@ -17,6 +17,8 @@ package io.camunda.process.test.impl.dsl.instructions;
 
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.JobSelector;
+import io.camunda.process.test.api.assertions.JobSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
@@ -75,6 +77,41 @@ final class InstructionSelectorFactory {
     if (selector == null) {
       throw new IllegalArgumentException(
           "Missing required property: at least one of elementId, taskName, or processDefinitionId must be set");
+    }
+
+    return selector;
+  }
+
+  /**
+   * Builds a job selector from a DSL job selector.
+   *
+   * @param dslSelector the DSL job selector
+   * @return the job selector
+   * @throws IllegalArgumentException if no selector property is set
+   */
+  static JobSelector buildJobSelector(
+      final io.camunda.process.test.api.dsl.JobSelector dslSelector) {
+    JobSelector selector = null;
+
+    if (dslSelector.getJobType().isPresent()) {
+      selector = JobSelectors.byJobType(dslSelector.getJobType().get());
+    }
+
+    if (dslSelector.getElementId().isPresent()) {
+      final JobSelector elementIdSelector =
+          JobSelectors.byElementId(dslSelector.getElementId().get());
+      selector = selector != null ? selector.and(elementIdSelector) : elementIdSelector;
+    }
+
+    if (dslSelector.getProcessDefinitionId().isPresent()) {
+      final JobSelector processDefSelector =
+          JobSelectors.byProcessDefinitionId(dslSelector.getProcessDefinitionId().get());
+      selector = selector != null ? selector.and(processDefSelector) : processDefSelector;
+    }
+
+    if (selector == null) {
+      throw new IllegalArgumentException(
+          "Missing required property: at least one of jobType, elementId, or processDefinitionId must be set");
     }
 
     return selector;

@@ -494,12 +494,11 @@
           "$ref": "#/definitions/JobSelector"
         },
         "variables": {
-          "description": "The variables to complete the job with. Default: empty map.",
-          "type": "object",
-          "default": {}
+          "description": "The variables to complete the job with. Defaults to an empty map.",
+          "type": "object"
         },
-        "withExampleData": {
-          "description": "Whether to complete the job with example data from the BPMN element. This property has precedence over variables. Default: false.",
+        "useExampleData": {
+          "description": "Whether to complete the job with example data from the BPMN element. This property has precedence over variables. Defaults to false.",
           "type": "boolean",
           "default": false
         }

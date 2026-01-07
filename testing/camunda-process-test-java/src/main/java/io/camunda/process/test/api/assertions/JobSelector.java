@@ -18,15 +18,15 @@ package io.camunda.process.test.api.assertions;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.response.Job;
 
-/** A selector for BPMN job elements. */
+/** A selector for jobs. */
 @FunctionalInterface
 public interface JobSelector {
 
   /**
-   * Checks if the element matches the selector.
+   * Checks if the job matches the selector.
    *
-   * @param job the BPMN element
-   * @return {@code true} if the element matches, otherwise {@code false}
+   * @param job the job
+   * @return {@code true} if the job matches, otherwise {@code false}
    */
   boolean test(Job job);
 
