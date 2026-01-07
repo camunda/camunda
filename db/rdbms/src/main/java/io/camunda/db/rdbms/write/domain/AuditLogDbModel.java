@@ -36,6 +36,7 @@ public record AuditLogDbModel(
     String decisionDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long elementInstanceKey,
     Long jobKey,
     Long userTaskKey,
@@ -77,6 +78,7 @@ public record AuditLogDbModel(
                 .decisionDefinitionId(decisionDefinitionId)
                 .processDefinitionKey(processDefinitionKey)
                 .processInstanceKey(processInstanceKey)
+                .rootProcessInstanceKey(rootProcessInstanceKey)
                 .elementInstanceKey(elementInstanceKey)
                 .jobKey(jobKey)
                 .userTaskKey(userTaskKey)
@@ -152,6 +154,7 @@ public record AuditLogDbModel(
     private String decisionDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long elementInstanceKey;
     private Long jobKey;
     private Long userTaskKey;
@@ -276,6 +279,11 @@ public record AuditLogDbModel(
       return this;
     }
 
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public Builder elementInstanceKey(final Long elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
@@ -356,6 +364,7 @@ public record AuditLogDbModel(
           decisionDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           elementInstanceKey,
           jobKey,
           userTaskKey,
