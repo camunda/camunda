@@ -21,10 +21,10 @@ import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 /** Stores */
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {Toolbar} from '../../InstancesTable/Toolbar';
+import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation, useSearchParams} from 'react-router-dom';
-import {BatchModificationFooter} from '../../InstancesTable/BatchModificationFooter';
+import {BatchModificationFooter} from './BatchModificationFooter';
 import type {InstanceEntityState} from 'modules/types/operate';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {InstanceOperations} from './InstanceOperations';
