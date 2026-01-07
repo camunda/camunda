@@ -58,7 +58,7 @@ services:
       keycloak:
         condition: service_healthy
     container_name: identity
-    image: camunda/identity:8.8.5
+    image: camunda/identity:8.8.6
     ports:
       - "8080:8080"
     volumes:
