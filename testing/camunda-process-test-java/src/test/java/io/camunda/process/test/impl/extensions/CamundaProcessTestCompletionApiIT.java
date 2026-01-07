@@ -37,21 +37,6 @@ public class CamundaProcessTestCompletionApiIT {
   private CamundaClient client;
 
   @Test
-  void shouldCompleteJob() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.completeJob("test");
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-  }
-
-  @Test
   void shouldCompleteJobWithVariables() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
@@ -89,7 +74,7 @@ public class CamundaProcessTestCompletionApiIT {
   }
 
   @Test
-  void shouldCompleteJobWithParallelTasksThatMayOrMayNotHaveExampleData() {
+  void shouldCompleteJobWithPartialExampleData() {
     // Given
     final long processDefinitionKey =
         deployProcessModel(processModelWithMultipleExampleDataCases());
@@ -112,6 +97,33 @@ public class CamundaProcessTestCompletionApiIT {
 
     assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
+  }
+
+  @Test
+  void shouldCompleteMultipleJobsBySameJobType() {
+    // Given: a multi-instance service task with a collection of two items
+    final String jobType = "test-job";
+
+    final long processDefinitionKey =
+        deployProcessModel(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("service-task-1")
+                .zeebeJobType(jobType)
+                .multiInstance()
+                .zeebeInputCollectionExpression("[1,2]")
+                .done());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When: complete both jobs
+    processTestContext.completeJob(jobType);
+    processTestContext.completeJob(jobType);
+
+    // Then: both jobs are completed (3 elements = 2 service tasks + multi-instance body)
+    assertThatProcessInstance(processInstanceEvent)
+        .isCompleted()
+        .hasCompletedElement("service-task-1", 3);
   }
 
   @Test
@@ -208,33 +220,6 @@ public class CamundaProcessTestCompletionApiIT {
 
     // Then: both user tasks are completed (3 elements = 2 user tasks + multi-instance body)
     assertThatProcessInstance(processInstanceEvent).isCompleted().hasCompletedElement(elementId, 3);
-  }
-
-  @Test
-  void shouldCompleteMultipleJobsBySameJobType() {
-    // Given: a multi-instance service task with a collection of two items
-    final String jobType = "test-job";
-
-    final long processDefinitionKey =
-        deployProcessModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("service-task-1")
-                .zeebeJobType(jobType)
-                .multiInstance()
-                .zeebeInputCollectionExpression("[1,2]")
-                .done());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When: complete both jobs
-    processTestContext.completeJob(jobType);
-    processTestContext.completeJob(jobType);
-
-    // Then: both jobs are completed (3 elements = 2 service tasks + multi-instance body)
-    assertThatProcessInstance(processInstanceEvent)
-        .isCompleted()
-        .hasCompletedElement("service-task-1", 3);
   }
 
   /**
