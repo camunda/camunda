@@ -43,9 +43,7 @@ public class AssertVariablesInstructionHandler
         assertionFacade.assertThatProcessInstance(processInstanceSelector);
 
     final Optional<ElementSelector> elementSelector =
-        instruction
-            .getElementSelector()
-            .map(InstructionSelectorFactory::buildElementSelector);
+        instruction.getElementSelector().map(InstructionSelectorFactory::buildElementSelector);
 
     // Assert variable names
     if (!instruction.getVariableNames().isEmpty()) {
