@@ -378,6 +378,8 @@ jobs:
       - name: Maven Run Test (Zeebe)
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        # Maintain the forkCount * JVM heap size ( -Xmx ) to not exceed ~50% of the available memory
+        # on the runner.
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
