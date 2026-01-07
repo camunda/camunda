@@ -72,7 +72,7 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedIte
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationInitializedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
-import io.camunda.exporter.handlers.batchoperation.HistoryDeletionDeletedOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.HistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
@@ -351,11 +351,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ResolveIncidentOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
-            new HistoryDeletionDeletedOperationHandler(
+            new HistoryDeletionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 OperationType.DELETE_PROCESS_INSTANCE,
                 batchOperationCache),
-            new HistoryDeletionDeletedOperationHandler(
+            new HistoryDeletionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 OperationType.DELETE_PROCESS_DEFINITION,
                 batchOperationCache),

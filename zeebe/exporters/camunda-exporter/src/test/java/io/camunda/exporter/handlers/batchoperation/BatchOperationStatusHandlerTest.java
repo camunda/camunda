@@ -493,7 +493,7 @@ class BatchOperationStatusHandlerTest {
 
     ProcessInstanceHistoryDeletionOperationHandlerTest() {
       super(
-          new HistoryDeletionDeletedOperationHandler(
+          new HistoryDeletionOperationHandler(
               indexName, OperationType.DELETE_PROCESS_INSTANCE, batchOperationCache));
     }
 
@@ -539,7 +539,7 @@ class BatchOperationStatusHandlerTest {
 
     ProcessDefinitionHistoryDeletionOperationHandlerTest() {
       super(
-          new HistoryDeletionDeletedOperationHandler(
+          new HistoryDeletionOperationHandler(
               indexName, OperationType.DELETE_PROCESS_DEFINITION, batchOperationCache));
     }
 
