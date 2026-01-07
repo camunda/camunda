@@ -383,7 +383,7 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=7
+          -D forkCount=3
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -D argLine="@{argLine} -Xmx4g"
