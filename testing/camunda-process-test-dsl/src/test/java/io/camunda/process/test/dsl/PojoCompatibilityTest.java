@@ -439,10 +439,7 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== EVALUATE_CONDITIONAL_START_EVENT =====
         Arguments.of(
-            "evaluate conditional start event: minimal",
-            singleTestCase(ImmutableEvaluateConditionalStartEventInstruction.builder().build())),
-        Arguments.of(
-            "evaluate conditional start event: with variables",
+            "evaluate conditional start event",
             singleTestCase(
                 ImmutableEvaluateConditionalStartEventInstruction.builder()
                     .putVariables("x", 1)

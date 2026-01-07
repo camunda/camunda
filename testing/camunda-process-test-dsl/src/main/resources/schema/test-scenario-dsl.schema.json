@@ -747,7 +747,8 @@
         }
       },
       "required": [
-        "type"
+        "type",
+        "variables"
       ],
       "additionalProperties": false
     }

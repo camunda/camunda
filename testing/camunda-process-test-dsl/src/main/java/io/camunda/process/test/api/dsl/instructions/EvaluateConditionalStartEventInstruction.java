@@ -33,9 +33,9 @@ public interface EvaluateConditionalStartEventInstruction extends TestCaseInstru
   }
 
   /**
-   * The variables to evaluate the conditional start events with. Optional.
+   * The variables to evaluate the conditional start events with.
    *
-   * @return the variables or an empty map if no variables are set
+   * @return the variables
    */
   Map<String, Object> getVariables();
 }

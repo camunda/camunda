@@ -23,7 +23,6 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.dsl.instructions.EvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.impl.dsl.instructions.EvaluateConditionalStartEventInstructionHandler;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -46,24 +45,6 @@ public class EvaluateConditionalStartEventInstructionTest {
       new EvaluateConditionalStartEventInstructionHandler();
 
   @Test
-  void shouldEvaluateConditionalStartEventWithoutVariables() {
-    // given
-    final EvaluateConditionalStartEventInstruction instruction =
-        ImmutableEvaluateConditionalStartEventInstruction.builder().build();
-
-    // when
-    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
-
-    // then
-    verify(camundaClient).newEvaluateConditionalCommand();
-    verify(camundaClient.newEvaluateConditionalCommand()).variables(Collections.emptyMap());
-    verify(camundaClient.newEvaluateConditionalCommand().variables(Collections.emptyMap()))
-        .send();
-
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
-  }
-
-  @Test
   void shouldSetVariables() {
     // given
     final Map<String, Object> variables = new HashMap<>();
@@ -80,7 +61,12 @@ public class EvaluateConditionalStartEventInstructionTest {
 
     // then
     verify(camundaClient).newEvaluateConditionalCommand();
+
+    // Get the command after variables is set (Step2)
+    // We need to verify against the mock returned by variables()
     verify(camundaClient.newEvaluateConditionalCommand()).variables(variables);
+
+    // Get the Step2 mock to verify send() was called
     verify(camundaClient.newEvaluateConditionalCommand().variables(variables)).send();
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
