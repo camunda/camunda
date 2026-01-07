@@ -41,17 +41,14 @@ public interface CompleteJobInstruction extends TestCaseInstruction {
   JobSelector getJobSelector();
 
   /**
-   * The variables to complete the job with. Default: empty map.
+   * The variables to complete the job with. Defaults to an empty map.
    *
-   * @return the variables or empty if not set
+   * @return the variables
    */
-  @Value.Default
-  default Map<String, Object> getVariables() {
-    return Map.of();
-  }
+  Map<String, Object> getVariables();
 
   /**
-   * Whether to complete the job with example data from the BPMN element. Default: false.
+   * Whether to complete the job with example data from the BPMN element. Defaults to false.
    *
    * <p>This property has precedence over {@link #getVariables()}. If example data is true, then
    * variables are ignored.
@@ -59,7 +56,7 @@ public interface CompleteJobInstruction extends TestCaseInstruction {
    * @return true if example data should be used, false otherwise
    */
   @Value.Default
-  default boolean isWithExampleData() {
+  default boolean getUseExampleData() {
     return false;
   }
 }

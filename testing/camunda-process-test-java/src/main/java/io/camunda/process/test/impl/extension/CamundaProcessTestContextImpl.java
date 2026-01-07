@@ -69,9 +69,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private static final Consumer<UserTaskFilter> DEFAULT_USER_TASK_COMPLETION_FILTER =
       filter -> filter.state(UserTaskState.CREATED);
 
-  // We can complete only activatable jobs. Ignore other states.
+  // We can complete only jobs that are in CREATED, FAILED, RETRIES_UPDATED, or TIMED_OUT states
+  // and have retries >= 1
   private static final Consumer<JobFilter> DEFAULT_JOB_COMPLETION_FILTER =
-      filter -> filter.state(JobState.ACTIVATABLE);
+      filter -> filter.retries(retries -> retries.gte(1));
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;

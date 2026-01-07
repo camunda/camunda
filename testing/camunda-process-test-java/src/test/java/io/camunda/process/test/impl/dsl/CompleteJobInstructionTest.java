@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.dsl.ImmutableJobSelector;
@@ -33,6 +34,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -49,6 +52,8 @@ public class CompleteJobInstructionTest {
   private CamundaClient camundaClient;
 
   @Mock private AssertionFacade assertionFacade;
+  @Mock private JobFilter jobFilter;
+  @Captor private ArgumentCaptor<JobSelector> jobSelectorCaptor;
 
   private final CompleteJobInstructionHandler instructionHandler =
       new CompleteJobInstructionHandler();
@@ -65,7 +70,11 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(any(JobSelector.class), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+
+    jobSelectorCaptor.getValue().applyFilter(jobFilter);
+    verify(jobFilter).type(JOB_TYPE);
+
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
@@ -81,7 +90,11 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(any(JobSelector.class), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+
+    jobSelectorCaptor.getValue().applyFilter(jobFilter);
+    verify(jobFilter).elementId(ELEMENT_ID);
+
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
@@ -98,7 +111,11 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(any(JobSelector.class), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+
+    jobSelectorCaptor.getValue().applyFilter(jobFilter);
+    verify(jobFilter).processDefinitionId(PROCESS_DEFINITION_ID);
+
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
@@ -119,7 +136,13 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(any(JobSelector.class), eq(Map.of()));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(Map.of()));
+
+    jobSelectorCaptor.getValue().applyFilter(jobFilter);
+    verify(jobFilter).type(JOB_TYPE);
+    verify(jobFilter).elementId(ELEMENT_ID);
+    verify(jobFilter).processDefinitionId(PROCESS_DEFINITION_ID);
+
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
@@ -140,7 +163,11 @@ public class CompleteJobInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJob(any(JobSelector.class), eq(variables));
+    verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(variables));
+
+    jobSelectorCaptor.getValue().applyFilter(jobFilter);
+    verify(jobFilter).type(JOB_TYPE);
+
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
@@ -150,19 +177,23 @@ public class CompleteJobInstructionTest {
     final CompleteJobInstruction instruction =
         ImmutableCompleteJobInstruction.builder()
             .jobSelector(ImmutableJobSelector.builder().jobType(JOB_TYPE).build())
-            .withExampleData(true)
+            .useExampleData(true)
             .build();
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).completeJobWithExampleData(any(JobSelector.class));
+    verify(processTestContext).completeJobWithExampleData(jobSelectorCaptor.capture());
+
+    jobSelectorCaptor.getValue().applyFilter(jobFilter);
+    verify(jobFilter).type(JOB_TYPE);
+
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
   @Test
-  void shouldIgnoreVariablesWhenWithExampleDataIsTrue() {
+  void shouldIgnoreVariablesWhenUseExampleDataIsTrue() {
     // given
     final Map<String, Object> variables = new HashMap<>();
     variables.put("x", 1);
@@ -171,7 +202,7 @@ public class CompleteJobInstructionTest {
         ImmutableCompleteJobInstruction.builder()
             .jobSelector(ImmutableJobSelector.builder().jobType(JOB_TYPE).build())
             .putAllVariables(variables)
-            .withExampleData(true)
+            .useExampleData(true)
             .build();
 
     // when
@@ -179,7 +210,11 @@ public class CompleteJobInstructionTest {
 
     // then
     // Should call completeJobWithExampleData, not completeJob with variables
-    verify(processTestContext).completeJobWithExampleData(any(JobSelector.class));
+    verify(processTestContext).completeJobWithExampleData(jobSelectorCaptor.capture());
+
+    jobSelectorCaptor.getValue().applyFilter(jobFilter);
+    verify(jobFilter).type(JOB_TYPE);
+
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
@@ -198,6 +233,6 @@ public class CompleteJobInstructionTest {
                     instruction, processTestContext, camundaClient, assertionFacade))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "JobSelector must have at least one property: jobType, elementId, or processDefinitionId");
+            "Missing required property: at least one of jobType, elementId, or processDefinitionId must be set");
   }
 }
