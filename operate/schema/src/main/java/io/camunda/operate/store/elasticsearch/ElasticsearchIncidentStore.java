@@ -40,6 +40,7 @@ import io.camunda.webapps.schema.entities.incident.IncidentState;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -134,21 +135,22 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             .aggregations(errorTypesAggName, errorTypesAgg);
 
     try {
-      final var scrollResponses =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class)
-              .toList();
+      final var firstResponse = new AtomicBoolean(true);
 
-      if (scrollResponses.isEmpty()) {
-        return List.of();
+      try (final var stream =
+          ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, IncidentEntity.class)) {
+        return stream
+            .peek(
+                res -> {
+                  if (firstResponse.compareAndSet(true, false)) {
+                    populateErrorTypes(errorTypes, res, errorTypesAggName);
+                  }
+                })
+            .flatMap(res -> res.hits().hits().stream())
+            .map(Hit::source)
+            .toList();
       }
-
-      final var searchResponse = scrollResponses.getFirst();
-      populateErrorTypes(errorTypes, searchResponse, errorTypesAggName);
-
-      return scrollResponses.stream()
-          .flatMap(res -> res.hits().hits().stream())
-          .map(Hit::source)
-          .toList();
 
     } catch (final ScrollException e) {
       final String message =
@@ -267,10 +269,21 @@ public class ElasticsearchIncidentStore implements IncidentStore {
       final ResponseBody<IncidentEntity> res,
       final String errorTypesAggName) {
 
-    final var errorTypesAggRes = res.aggregations().get(errorTypesAggName);
+    if (res.aggregations() == null) {
+      return;
+    }
 
-    errorTypesAggRes
-        .sterms()
+    final var errorTypesAggRes = res.aggregations().get(errorTypesAggName);
+    if (errorTypesAggRes == null) {
+      return;
+    }
+
+    final var sterms = errorTypesAggRes.sterms();
+    if (sterms == null || sterms.buckets() == null || sterms.buckets().array() == null) {
+      return;
+    }
+
+    sterms
         .buckets()
         .array()
         .forEach(
