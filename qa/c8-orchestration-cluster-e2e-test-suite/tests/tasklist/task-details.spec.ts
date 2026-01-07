@@ -263,10 +263,18 @@ test.describe('task details page', () => {
       '12',
     ]);
 
-    expect(await taskDetailsPage.getDynamicListValues('Quantity*')).toEqual([
-      '21',
-      '22',
-    ]);
+    await waitForAssertion({
+      assertion: async () => {
+        expect(await taskDetailsPage.getDynamicListValues('Quantity*')).toEqual(
+          ['21', '22'],
+        );
+      },
+      onFailure: async () => {
+        console.log(
+          `Quatity check failed ${await taskDetailsPage.getDynamicListValues('Quantity*')}, retrying...`,
+        );
+      },
+    });
 
     await expect(taskDetailsPage.form).toContainText('EUR 231');
     await expect(taskDetailsPage.form).toContainText('EUR 264');
