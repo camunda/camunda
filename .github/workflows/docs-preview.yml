@@ -8,7 +8,7 @@ on:
   pull_request:
     types: [opened, synchronize]
   pull_request_target:
-    types: [closed]
+    types: [closed] # triggers cleanup when the PR is being closed
 
 # Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs
 concurrency:
@@ -22,7 +22,8 @@ defaults:
     shell: bash
 
 env:
-  NODE_VERSION: "24.6.0"
+  # renovate: datasource=node-version depName=node
+  NODE_VERSION: '24.6.0'
 
 jobs:
   # Detect changes to avoid unnecessary builds
