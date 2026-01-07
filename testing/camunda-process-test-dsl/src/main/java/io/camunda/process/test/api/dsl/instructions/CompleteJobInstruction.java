@@ -20,7 +20,6 @@ import io.camunda.process.test.api.dsl.JobSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
 import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 
 /** An instruction to complete a job. */
