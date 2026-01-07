@@ -58,7 +58,14 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   @Override
   protected void onActorStarted() {
     LOG.debug("Checkpoint scheduler started");
+    metrics.register();
     actor.run(this::reschedulingTask);
+  }
+
+  @Override
+  protected void onActorClosed() {
+    LOG.debug("Checkpoint scheduler stopped");
+    metrics.close();
   }
 
   private void reschedulingTask() {

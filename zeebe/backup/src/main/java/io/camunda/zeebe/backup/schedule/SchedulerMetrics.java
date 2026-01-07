@@ -8,17 +8,26 @@
 package io.camunda.zeebe.backup.schedule;
 
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter.Id;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Supplier;
 
-public class SchedulerMetrics {
+public class SchedulerMetrics implements CloseableSilently {
   private static final String NAMESPACE = "camunda.checkpoint.scheduler";
   private static final String LAST_CHECKPOINT_GAUGE_NAME =
       NAMESPACE + ".last.checkpoint.time.millis";
   private static final String LAST_CHECKPOINT_ID_GAUGE_NAME = NAMESPACE + ".last.checkpoint.id";
   private static final String NEXT_CHECKPOINT_GAUGE_NAME =
       NAMESPACE + ".next.checkpoint.time.millis";
+  private static final String TYPE_TAG = "type";
+
+  private final MeterRegistry meterRegistry;
+  private final Set<Id> registeredMeterIds = new HashSet<>();
 
   private long nextCheckpointTimestamp = 0L;
   private long nextBackupTimestamp = 0L;
@@ -28,42 +37,45 @@ public class SchedulerMetrics {
   private long lastBackupId = 0L;
 
   public SchedulerMetrics(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+  }
 
-    Gauge.builder(LAST_CHECKPOINT_GAUGE_NAME, () -> lastCheckpointTimestamp)
-        .description("Timestamp in milliseconds of the last checkpoint created")
-        .tag("type", CheckpointType.MARKER.name())
-        .strongReference(true)
-        .register(meterRegistry);
+  public void register() {
+    registerGauge(
+        LAST_CHECKPOINT_GAUGE_NAME,
+        "Timestamp in milliseconds of the last checkpoint created",
+        CheckpointType.MARKER,
+        () -> lastCheckpointTimestamp);
 
-    Gauge.builder(LAST_CHECKPOINT_GAUGE_NAME, () -> lastBackupTimestamp)
-        .description("Timestamp in milliseconds of the last checkpoint created")
-        .tag("type", CheckpointType.SCHEDULED_BACKUP.name())
-        .strongReference(true)
-        .register(meterRegistry);
+    registerGauge(
+        LAST_CHECKPOINT_GAUGE_NAME,
+        "Timestamp in milliseconds of the last backup created",
+        CheckpointType.SCHEDULED_BACKUP,
+        () -> lastBackupTimestamp);
 
-    Gauge.builder(NEXT_CHECKPOINT_GAUGE_NAME, () -> nextCheckpointTimestamp)
-        .description("Next scheduler's expected checkpoint execution delay in seconds")
-        .tag("type", CheckpointType.MARKER.name())
-        .strongReference(true)
-        .register(meterRegistry);
+    registerGauge(
+        NEXT_CHECKPOINT_GAUGE_NAME,
+        "Next scheduler's expected checkpoint execution delay",
+        CheckpointType.MARKER,
+        () -> nextCheckpointTimestamp);
 
-    Gauge.builder(NEXT_CHECKPOINT_GAUGE_NAME, () -> nextBackupTimestamp)
-        .description("Next scheduler's expected backup execution delay in seconds")
-        .tag("type", CheckpointType.SCHEDULED_BACKUP.name())
-        .strongReference(true)
-        .register(meterRegistry);
+    registerGauge(
+        NEXT_CHECKPOINT_GAUGE_NAME,
+        "Next scheduler's expected backup execution delay",
+        CheckpointType.SCHEDULED_BACKUP,
+        () -> nextBackupTimestamp);
 
-    Gauge.builder(LAST_CHECKPOINT_ID_GAUGE_NAME, () -> lastCheckpointId)
-        .description("ID of the last checkpoint created")
-        .tag("type", CheckpointType.MARKER.name())
-        .strongReference(true)
-        .register(meterRegistry);
+    registerGauge(
+        LAST_CHECKPOINT_ID_GAUGE_NAME,
+        "ID of the last checkpoint created",
+        CheckpointType.MARKER,
+        () -> lastCheckpointId);
 
-    Gauge.builder(LAST_CHECKPOINT_ID_GAUGE_NAME, () -> lastBackupId)
-        .description("ID of the last backup created")
-        .tag("type", CheckpointType.SCHEDULED_BACKUP.name())
-        .strongReference(true)
-        .register(meterRegistry);
+    registerGauge(
+        LAST_CHECKPOINT_ID_GAUGE_NAME,
+        "ID of the last backup created",
+        CheckpointType.SCHEDULED_BACKUP,
+        () -> lastBackupId);
   }
 
   public void recordLastCheckpointTime(final Instant timestamp, final CheckpointType type) {
@@ -88,5 +100,27 @@ public class SchedulerMetrics {
     }
     // since backups lead to checkpoints as well, we always update the last checkpoint id
     lastCheckpointId = checkpointId;
+  }
+
+  @Override
+  public void close() {
+    registeredMeterIds.forEach(meterRegistry::remove);
+  }
+
+  private void registerGauge(
+      final String name,
+      final String description,
+      final CheckpointType type,
+      final Supplier<Long> valueSupplier) {
+
+    final var meterId =
+        Gauge.builder(name, valueSupplier)
+            .description(description)
+            .tag(TYPE_TAG, type.name())
+            .strongReference(true)
+            .register(meterRegistry)
+            .getId();
+
+    registeredMeterIds.add(meterId);
   }
 }
