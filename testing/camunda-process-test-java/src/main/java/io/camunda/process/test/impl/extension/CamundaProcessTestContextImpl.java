@@ -72,7 +72,16 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   // We can complete only jobs that are in CREATED, FAILED, RETRIES_UPDATED, or TIMED_OUT states
   // and have retries >= 1
   private static final Consumer<JobFilter> DEFAULT_JOB_COMPLETION_FILTER =
-      filter -> filter.retries(retries -> retries.gte(1));
+      filter ->
+          filter
+              .state(
+                  state ->
+                      state.in(
+                          JobState.CREATED,
+                          JobState.FAILED,
+                          JobState.RETRIES_UPDATED,
+                          JobState.TIMED_OUT))
+              .retries(retries -> retries.gte(1));
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
