@@ -41,6 +41,8 @@ test.beforeAll(async () => {
     version: 1,
   };
 
+  await sleep(3000);
+
   await Promise.all(
     [...new Array(PROCESS_INSTANCE_COUNT)].map((_, index) =>
       createInstances(processV1.bpmnProcessId, processV1.version, 1, {
@@ -282,7 +284,7 @@ test.describe.serial('Process Instance Migration', () => {
           expect(migratedIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
-          await page.waitForTimeout(1000);
+          await sleep(1000);
           operateOperationPanelPage.afterOperationOperationPanelEntries =
             await operateOperationPanelPage.operationIdsEntries();
           migratedIds = getNewOperationIds(
@@ -553,7 +555,7 @@ test.describe.serial('Process Instance Migration', () => {
           expect(migratedIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
-          await page.waitForTimeout(1000);
+          await sleep(1000);
           operateOperationPanelPage.afterOperationOperationPanelEntries =
             await operateOperationPanelPage.operationIdsEntries();
           migratedIds = getNewOperationIds(

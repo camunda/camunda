@@ -41,19 +41,6 @@ const createInstances = async (
   }
 };
 
-const createSingleInstance = async (
-  processDefinitionId: string,
-  version: number,
-  variables?: JSONDoc,
-) => {
-  const result = await zeebe.createProcessInstance({
-    processDefinitionId,
-    version,
-    variables: variables ?? {},
-  });
-  return result;
-};
-
 const publishMessage = async (messageName: string, correlationKey: string) => {
   try {
     await zeebe.publishMessage({
