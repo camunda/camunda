@@ -29,7 +29,8 @@ export const isTenantsApiEnabled = getClientConfigBoolean(
   false,
 );
 
-export const docsUrl = "https://docs.camunda.io";
+// To automatically point to correct versioned docs, this needs to be adjusted when main branch changes to a new release.
+export const docsUrl = "https://docs.camunda.io/docs/8.9";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
 

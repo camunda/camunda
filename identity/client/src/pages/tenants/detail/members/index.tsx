@@ -69,7 +69,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
           parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
-          docsLinkPath="/docs/components/identity/user/"
+          docsLinkPath="/components/identity/user/"
         />
         {assignUsersModal}
       </>
