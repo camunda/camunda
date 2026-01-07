@@ -81,7 +81,8 @@ public interface JobMetricsBatchRecordValue extends RecordValue {
 
     /**
      * @return the list of status metrics (e.g., ACTIVATED, COMPLETED, FAILED) and their counts for
-     *     this job type, tenant, and worker combination
+     *     this job type, tenant, and worker combination The index in the list corresponds to the
+     *     job status ordinal value.
      */
     List<StatusMetricValue> getStatusMetrics();
   }
