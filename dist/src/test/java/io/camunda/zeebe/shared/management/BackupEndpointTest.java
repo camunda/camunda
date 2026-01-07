@@ -347,6 +347,7 @@ final class BackupEndpointTest {
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
                  "snapshotId" : "1-1-1-1",
+                 "firstLogPosition": 5,
                  "checkpointPosition": 1,
                  "brokerId": 0,
                  "brokerVersion": "8.0.6"
@@ -357,6 +358,7 @@ final class BackupEndpointTest {
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
                  "snapshotId" : "1-1-1-1",
+                 "firstLogPosition": 5,
                  "checkpointPosition": 1,
                  "brokerId": 0,
                  "brokerVersion": "8.0.6"
@@ -400,6 +402,7 @@ final class BackupEndpointTest {
                  "createdAt": "2022-09-19T14:44:17.340409393Z",
                  "lastUpdatedAt": "2022-09-20T14:44:17.340409393Z",
                  "snapshotId" : "1-1-1-1",
+                 "firstLogPosition": 5,
                  "checkpointPosition": 1,
                  "brokerId": 0,
                  "brokerVersion": "8.0.6"
@@ -441,6 +444,7 @@ final class BackupEndpointTest {
           Optional.of("2022-09-19T14:44:17.340409393Z"),
           Optional.of("2022-09-20T14:44:17.340409393Z"),
           Optional.of("1-1-1-1"),
+          OptionalLong.of(5),
           OptionalLong.of(1),
           OptionalInt.of(0),
           Optional.of("8.0.6"));
@@ -463,6 +467,7 @@ final class BackupEndpointTest {
           Optional.empty(),
           Optional.empty(),
           Optional.empty(),
+          OptionalLong.empty(),
           OptionalLong.empty(),
           OptionalInt.empty(),
           Optional.empty());
@@ -606,6 +611,7 @@ final class BackupEndpointTest {
           Optional.of("2022-09-19T14:44:17.340409393Z"),
           Optional.empty(),
           Optional.empty(),
+          OptionalLong.empty(),
           OptionalLong.empty(),
           OptionalInt.empty(),
           Optional.of("8.0.6"));

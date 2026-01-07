@@ -269,12 +269,14 @@ public final class BackupApiRequestHandler
     status
         .descriptor()
         .ifPresent(
-            backupDescriptor ->
-                response
-                    .setCheckpointPosition(backupDescriptor.checkpointPosition())
-                    .setSnapshotId(backupDescriptor.snapshotId().orElse(""))
-                    .setNumberOfPartitions(backupDescriptor.numberOfPartitions())
-                    .setBrokerVersion(backupDescriptor.brokerVersion()));
+            backupDescriptor -> {
+              response
+                  .setCheckpointPosition(backupDescriptor.checkpointPosition())
+                  .setSnapshotId(backupDescriptor.snapshotId().orElse(""))
+                  .setNumberOfPartitions(backupDescriptor.numberOfPartitions())
+                  .setBrokerVersion(backupDescriptor.brokerVersion());
+              backupDescriptor.firstLogPosition().ifPresent(response::setFirstLogPosition);
+            });
     status.failureReason().ifPresent(response::setFailureReason);
     status.created().ifPresent(instant -> response.setCreatedAt(instant.toString()));
     status.lastModified().ifPresent(instant -> response.setLastUpdated(instant.toString()));

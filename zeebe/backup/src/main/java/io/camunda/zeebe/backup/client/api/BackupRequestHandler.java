@@ -243,6 +243,7 @@ public final class BackupRequestHandler implements BackupApi {
                                 Optional.empty(),
                                 Optional.empty(),
                                 OptionalLong.empty(),
+                                OptionalLong.empty(),
                                 OptionalInt.empty(),
                                 Optional.ofNullable(status.brokerVersion()));
                           })
