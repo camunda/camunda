@@ -27,6 +27,7 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.response.OpenSearchGetSnapshotResponse;
 import io.camunda.operate.store.opensearch.response.OpenSearchSnapshotInfo;
 import io.camunda.operate.store.opensearch.response.SnapshotState;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
@@ -534,5 +535,20 @@ class OpensearchBackupRepositoryTest {
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L, id -> false);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
+  }
+
+  @Test
+  void shouldThrowResourceNotFoundExceptionWhenSnapshotsListIsEmpty() {
+    // given
+    mockSynchronSnapshotOperations();
+    when(openSearchSnapshotOperations.get(any())).thenReturn(new OpenSearchGetSnapshotResponse());
+
+    // when & then
+    final var exception =
+        assertThrows(
+            ResourceNotFoundException.class,
+            () -> repository.getBackupState("repository-name", 5L, id -> false));
+
+    assertThat(exception.getMessage()).isEqualTo("No backup with id [5] found.");
   }
 }
