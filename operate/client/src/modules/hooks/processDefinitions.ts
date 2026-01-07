@@ -9,6 +9,9 @@
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {useProcessDefinitionsSearch} from 'modules/queries/processDefinitions/useProcessDefinitionsSearch';
+import {parseProcessDefinitionsSearchFilter} from 'modules/utils/filter/v2/processDefinitionsSearchFilter';
+import {useMemo} from 'react';
+import {useSearchParams} from 'react-router-dom';
 
 interface ProcessDefinitionWithIdentifier extends ProcessDefinition {
   /** A `definitionId`--`tenantId` tuple that is almost unique but not unique across versions. */
@@ -17,8 +20,22 @@ interface ProcessDefinitionWithIdentifier extends ProcessDefinition {
   label: string;
 }
 
+type ProcessDefinitionSelection =
+  | {kind: 'no-match'}
+  | {kind: 'single-version'; definition: ProcessDefinition}
+  | {
+      kind: 'all-versions';
+      definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>;
+    };
+
 function getDefinitionIdentifier(definitionId: string, tenantId?: string) {
   return `${definitionId}--${tenantId ?? DEFAULT_TENANT}`;
+}
+
+function getProcessDefinitionName(
+  definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>,
+) {
+  return definition.name ?? definition.processDefinitionId;
 }
 
 function splitDefinitionIdentifier(identifier?: string) {
@@ -40,7 +57,7 @@ function useProcessDefinitions(tenantId?: string) {
       definitions
         .map<ProcessDefinitionWithIdentifier>((d) => ({
           ...d,
-          label: d.name ?? d.processDefinitionId,
+          label: getProcessDefinitionName(d),
           identifier: getDefinitionIdentifier(
             d.processDefinitionId,
             d.tenantId,
@@ -72,9 +89,53 @@ function useProcessDefinitionVersions(
   });
 }
 
+function useProcessDefinitionSelection() {
+  const filters = useProcessDefinitionsSearchFilter();
+
+  return useProcessDefinitionsSearch<ProcessDefinitionSelection>({
+    enabled: !!filters.processDefinitionId,
+    payload: {
+      filter: {
+        processDefinitionId: filters.processDefinitionId,
+        version: filters.version,
+        tenantId: filters.tenantId,
+      },
+      sort: [{field: 'version', order: 'desc'}],
+    },
+    select: (definitions) => {
+      const definition = definitions.at(0);
+      switch (true) {
+        case !definition:
+          return {kind: 'no-match'};
+        case filters.version === undefined:
+          return {
+            kind: 'all-versions',
+            definition: {
+              name: definition.name,
+              processDefinitionId: definition.processDefinitionId,
+            },
+          };
+        default:
+          return {kind: 'single-version', definition};
+      }
+    },
+  });
+}
+
+function useProcessDefinitionsSearchFilter() {
+  const [searchParams] = useSearchParams();
+  return useMemo(
+    () => parseProcessDefinitionsSearchFilter(searchParams),
+    [searchParams],
+  );
+}
+
 export {
+  type ProcessDefinitionSelection,
   getDefinitionIdentifier,
+  getProcessDefinitionName,
   splitDefinitionIdentifier,
   useProcessDefinitions,
   useProcessDefinitionVersions,
+  useProcessDefinitionSelection,
 };

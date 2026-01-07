@@ -47,12 +47,7 @@ import {
   splitDefinitionIdentifier,
 } from 'modules/hooks/processDefinitions';
 
-interface FilterValues extends ProcessInstancesFilter {
-  variableName?: string;
-  variableValues?: string;
-}
-
-const initialValues: FilterValues = {
+const initialValues: ProcessInstancesFilter = {
   active: true,
   incidents: true,
 };
@@ -62,7 +57,7 @@ const Filters: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filterValues: FilterValues = parseProcessInstancesFilter(searchParams);
+  const filterValues = parseProcessInstancesFilter(searchParams);
   const variable = variableFilterStore.variable;
   if (variable) {
     filterValues.variableName = variable.name;

@@ -17,9 +17,6 @@ import {tracking} from 'modules/tracking';
 import {Link} from 'modules/components/Link';
 import {useFilters} from 'modules/hooks/useFilters';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-
-/** Stores */
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
@@ -45,9 +42,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     onVerticalScrollStartReach,
     onVerticalScrollEndReach,
   }) => {
-    const hasVersionTags = processInstances.some(({processDefinitionKey}) => {
-      return processesStore.getVersionTag(processDefinitionKey);
-    });
+    const hasVersionTags = processInstances.some(
+      ({processDefinitionVersionTag}) => !!processDefinitionVersionTag,
+    );
 
     const filters = useFilters();
     const location = useLocation();
@@ -108,9 +105,6 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           onVerticalScrollStartReach={onVerticalScrollStartReach}
           onVerticalScrollEndReach={onVerticalScrollEndReach}
           rows={processInstances.map((instance) => {
-            const versionTag = processesStore.getVersionTag(
-              instance.processDefinitionKey,
-            );
             const instanceState: InstanceEntityState = instance.hasIncident
               ? 'INCIDENT'
               : instance.state;
@@ -144,7 +138,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                 </Link>
               ),
               processVersion: instance.processDefinitionVersion,
-              versionTag: versionTag ?? '--',
+              versionTag: instance.processDefinitionVersionTag ?? '--',
               tenant: isTenantColumnVisible ? instance.tenantId : undefined,
               startDate: formatDate(instance.startDate),
               endDate: formatDate(instance.endDate ?? null),

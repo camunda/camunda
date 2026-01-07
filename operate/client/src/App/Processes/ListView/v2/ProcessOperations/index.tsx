@@ -23,13 +23,13 @@ import {observer} from 'mobx-react';
 import {useRunningInstancesCount} from 'modules/queries/processInstance/useRunningInstancesCount';
 
 type Props = {
-  processDefinitionId: string;
+  processDefinitionKey: string;
   processName: string;
-  processVersion: string;
+  processVersion: number;
 };
 
 const ProcessOperations: React.FC<Props> = observer(
-  ({processDefinitionId, processName, processVersion}) => {
+  ({processDefinitionKey, processName, processVersion}) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] =
       useState<boolean>(false);
 
@@ -40,7 +40,7 @@ const ProcessOperations: React.FC<Props> = observer(
       isPending,
       isError,
     } = useRunningInstancesCount({
-      processDefinitionKey: processDefinitionId,
+      processDefinitionKey: processDefinitionKey,
     });
 
     return (
@@ -67,7 +67,7 @@ const ProcessOperations: React.FC<Props> = observer(
                 tracking.track({
                   eventName: 'definition-deletion-button',
                   resource: 'process',
-                  version: processVersion,
+                  version: processVersion.toString(),
                 });
 
                 setIsDeleteModalVisible(true);
@@ -133,11 +133,11 @@ const ProcessOperations: React.FC<Props> = observer(
             tracking.track({
               eventName: 'definition-deletion-confirmation',
               resource: 'process',
-              version: processVersion,
+              version: processVersion.toString(),
             });
 
             operationsStore.applyDeleteProcessDefinitionOperation({
-              processDefinitionId,
+              processDefinitionId: processDefinitionKey,
               onSuccess: () => {
                 setIsOperationRunning(false);
                 panelStatesStore.expandOperationsPanel();
