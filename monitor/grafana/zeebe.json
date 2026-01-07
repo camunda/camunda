@@ -16234,7 +16234,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Sum of memtable, table reader and live keys memory usage.",
+          "description": "Sum of memtable, table reader and live keys memory usage. Since 8.8.9 the total block cache usage is shared across all partitions. For prior versions the values shown will be incorrect when having multiple partitions per broker.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -16834,7 +16834,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The block cache capacity per column family",
+          "description": "The block cache capacity per column family. Since 8.8.9 the total block cache usage is shared across all partitions. For prior versions the values shown will be incorrect when having multiple partitions per broker.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -16934,7 +16934,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The current usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
+          "description": "The current usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261. Since 8.8.9 the total block cache usage is shared across all partitions. For prior versions the values shown will be incorrect when having multiple partitions per broker.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -17034,7 +17034,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The current pinned usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261",
+          "description": "The current pinned usage of the block cache per column family\n\nhttps://github.com/facebook/rocksdb/blob/618bf638aabce21262228509e9f99c1c13de2b57/include/rocksdb/cache.h#L261. Since 8.8.9 the total block cache usage is shared across all partitions. For prior versions the values shown will be incorrect when having multiple partitions per broker.",
           "fieldConfig": {
             "defaults": {
               "color": {
