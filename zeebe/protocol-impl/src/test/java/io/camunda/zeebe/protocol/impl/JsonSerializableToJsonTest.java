@@ -4199,7 +4199,7 @@ final class JsonSerializableToJsonTest {
           {
             "jobTypeIndex": 0,
             "tenantIdIndex": 1,
-            "workerNameIndex": -1,
+            "workerNameIndex": 2,
             "statusMetrics": [
               {
                 "count": 1,
