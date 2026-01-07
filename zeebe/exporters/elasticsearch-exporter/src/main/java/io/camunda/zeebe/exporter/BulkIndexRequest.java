@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -73,6 +74,7 @@ final class BulkIndexRequest implements ContentProducer {
               ProcessInstanceModificationTerminateInstructionValue.class,
               TerminateInstructionsMixin.class)
           .addMixIn(UserTaskRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
+          .addMixIn(VariableRecordValue.class, IgnoreRootProcessInstanceKeyMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.

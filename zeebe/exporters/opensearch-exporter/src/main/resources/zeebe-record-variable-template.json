@@ -40,6 +40,9 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
             }
           }
         }
