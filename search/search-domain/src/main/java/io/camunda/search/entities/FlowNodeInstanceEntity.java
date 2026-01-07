@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 public record FlowNodeInstanceEntity(
     Long flowNodeInstanceKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long processDefinitionKey,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
@@ -33,6 +34,7 @@ public record FlowNodeInstanceEntity(
     return new FlowNodeInstanceEntity(
         flowNodeInstanceKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         processDefinitionKey,
         startDate,
         endDate,

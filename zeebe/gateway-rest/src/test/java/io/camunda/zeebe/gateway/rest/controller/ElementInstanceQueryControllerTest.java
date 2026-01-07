@@ -92,6 +92,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   new FlowNodeInstanceEntity(
                       1L,
                       2L,
+                      37L,
                       3L,
                       OffsetDateTime.parse("2023-05-17T00:00:00Z"),
                       OffsetDateTime.parse("2023-05-23T00:00:00Z"),
@@ -132,6 +133,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
       new FlowNodeInstanceEntity(
           23L,
           5L,
+          37L,
           17L,
           OffsetDateTime.parse("2023-05-17T10:10:10Z"),
           OffsetDateTime.parse("2023-05-23T10:10:10Z"),

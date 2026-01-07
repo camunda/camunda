@@ -21,6 +21,7 @@ public class SequenceFlowEntityTransformer
         value.getId(),
         value.getActivityId(),
         value.getProcessInstanceKey(),
+        value.getRootProcessInstanceKey(),
         value.getProcessDefinitionKey(),
         value.getBpmnProcessId(),
         value.getTenantId());
