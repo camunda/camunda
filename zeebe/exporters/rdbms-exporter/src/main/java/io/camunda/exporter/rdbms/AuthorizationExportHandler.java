@@ -9,9 +9,11 @@ package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
+import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +22,13 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationExportHandler.class);
 
   private final AuthorizationWriter authorizationWriter;
+  private final HistoryCleanupService historyCleanupService;
 
-  public AuthorizationExportHandler(final AuthorizationWriter authorizationWriter) {
+  public AuthorizationExportHandler(
+      final AuthorizationWriter authorizationWriter,
+      final HistoryCleanupService historyCleanupService) {
     this.authorizationWriter = authorizationWriter;
+    this.historyCleanupService = historyCleanupService;
   }
 
   @Override
@@ -38,7 +44,12 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
     switch (record.getIntent()) {
       case AuthorizationIntent.CREATED -> authorizationWriter.createAuthorization(map(value));
       case AuthorizationIntent.UPDATED -> authorizationWriter.updateAuthorization(map(value));
-      case AuthorizationIntent.DELETED -> authorizationWriter.deleteAuthorization(map(value));
+      case AuthorizationIntent.DELETED -> {
+        authorizationWriter.deleteAuthorization(map(value));
+        final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
+        historyCleanupService.scheduleAuditLogsForHistoryCleanup(
+            String.valueOf(value.getAuthorizationKey()), endDate);
+      }
       default -> LOG.warn("Unexpected intent {} for authorization record", record.getIntent());
     }
   }
