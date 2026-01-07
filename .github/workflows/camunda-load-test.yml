@@ -273,7 +273,7 @@ jobs:
       - name: Create namespace if not exists
         run: |
           cd load-tests/setup
-          ./newLoadTest.sh ${{ inputs.name }} ${{ inputs.secondary-storage-type }}
+          ./newLoadTest.sh ${{ inputs.name }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }}
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ inputs.name }}
