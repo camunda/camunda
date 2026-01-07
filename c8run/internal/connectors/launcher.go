@@ -1,23 +1,41 @@
 package connectors
 
 import (
-	"os"
+	"strconv"
 	"strings"
 )
 
-const propertiesLauncherEnvVar = "CONNECTORS_USE_PROPERTIES_LAUNCHER"
-
-func UsePropertiesLauncher() bool {
-	value := strings.TrimSpace(os.Getenv(propertiesLauncherEnvVar))
-	if value == "" {
+func UsePropertiesLauncher(version string) bool {
+	major, minor, ok := parseMajorMinor(version)
+	if !ok {
 		return false
 	}
-
-	value = strings.ToLower(value)
-	switch value {
-	case "1", "true", "yes", "on":
+	if major > 8 {
 		return true
-	default:
+	}
+	if major < 8 {
 		return false
 	}
+	return minor >= 9
+}
+
+func parseMajorMinor(version string) (int, int, bool) {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return 0, 0, false
+	}
+	base := strings.SplitN(version, "-", 2)[0]
+	parts := strings.Split(base, ".")
+	if len(parts) < 2 {
+		return 0, 0, false
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, false
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, false
+	}
+	return major, minor, true
 }

@@ -128,10 +128,9 @@ func TestConnectorsCmdRespectsExistingZeebeRestEnv(t *testing.T) {
 	}
 }
 
-func TestConnectorsCmdUsesPropertiesLauncherWhenEnabled(t *testing.T) {
+func TestConnectorsCmdUsesPropertiesLauncherWhenVersionRequiresIt(t *testing.T) {
 	ctx := context.Background()
 	windowsC8Run := &WindowsC8Run{}
-	t.Setenv("CONNECTORS_USE_PROPERTIES_LAUNCHER", "true")
 
 	cmd := windowsC8Run.ConnectorsCmd(
 		ctx,
