@@ -54,7 +54,7 @@ const Selection: FC<SelectionProps> = ({
                 <Translate i18nKey="usernameDescription">
                   Check the documentation for{" "}
                   <DocumentationLink
-                    path="/docs/components/identity/authorization/#about-authorizations"
+                    path="/components/identity/authorization/#about-authorizations"
                     withIcon
                   >
                     how to reference users

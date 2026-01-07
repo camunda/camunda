@@ -45,7 +45,7 @@ const List: FC = () => {
     <PageHeader
       title={t("tenants")}
       linkText={t("tenants").toLowerCase()}
-      docsLinkPath="/docs/components/identity/tenant/"
+      docsLinkPath="/components/identity/tenant/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -56,7 +56,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"tenant"}
-          docsLinkPath="/docs/components/identity/tenant/"
+          docsLinkPath="/components/identity/tenant/"
           handleClick={addTenant}
         />
         {addTenantModal}
