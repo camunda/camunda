@@ -290,6 +290,15 @@
     </foreach>
   </update>
 
+  <update id="updateAuditLogEntityHistoryCleanupDate">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE ENTITY_KEY IN
+    <foreach collection="entityKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </update>
+
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>

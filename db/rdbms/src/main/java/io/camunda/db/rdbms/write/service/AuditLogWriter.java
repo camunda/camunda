@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
+import io.camunda.db.rdbms.sql.AuditLogMapper.UpdateHistoryCleanupDateDto;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
@@ -81,6 +82,20 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
                   .historyCleanupDate(historyCleanupDate)
                   .build()));
     }
+  }
+
+  public void scheduleAuditLogEntityLogsForHistoryCleanup(
+      final String entityKey, final OffsetDateTime historyCleanupDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.AUDIT_LOG,
+            WriteStatementType.UPDATE,
+            entityKey,
+            "io.camunda.db.rdbms.sql.AuditLogMapper.updateAuditLogEntityHistoryCleanupDate",
+            new UpdateHistoryCleanupDateDto.Builder()
+                .entityKey(entityKey)
+                .historyCleanupDate(historyCleanupDate)
+                .build()));
   }
 
   public int cleanupHistory(
