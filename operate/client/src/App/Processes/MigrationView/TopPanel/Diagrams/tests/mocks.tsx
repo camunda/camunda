@@ -8,7 +8,6 @@
 
 import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
@@ -20,7 +19,6 @@ type Props = {
 const Wrapper = ({children}: Props) => {
   useEffect(() => {
     return () => {
-      processesStore.reset();
       processInstanceMigrationStore.reset();
     };
   });
