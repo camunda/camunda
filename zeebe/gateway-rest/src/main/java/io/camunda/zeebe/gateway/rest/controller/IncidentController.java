@@ -9,6 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.GatewayErrorMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQuery;
@@ -23,10 +26,8 @@ import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -57,7 +58,7 @@ public class IncidentController {
         incidentResolutionRequest == null
             ? null
             : incidentResolutionRequest.getOperationReference();
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             incidentServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -120,7 +121,7 @@ public class IncidentController {
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final ValidationException e) {
       final var problemDetail =
-          RestErrorMapper.createProblemDetail(
+          GatewayErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Validation failed for Incident Search Query");
@@ -142,7 +143,7 @@ public class IncidentController {
           SearchQueryResponseMapper.toIncidentProcessInstanceStatisticsByErrorResult(result));
     } catch (final ValidationException e) {
       final var problemDetail =
-          RestErrorMapper.createProblemDetail(
+          GatewayErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Validation failed for Incident Statistics Query");
@@ -165,7 +166,7 @@ public class IncidentController {
               result));
     } catch (final ValidationException e) {
       final var problemDetail =
-          RestErrorMapper.createProblemDetail(
+          GatewayErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Validation failed for Incident Process Instance Statistics By Definition Query");

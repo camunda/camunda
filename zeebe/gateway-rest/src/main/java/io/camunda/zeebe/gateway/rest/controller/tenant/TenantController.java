@@ -9,6 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.GroupSearchQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
@@ -47,13 +51,11 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -192,7 +194,7 @@ public class TenantController {
   @CamundaDeleteMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenant(
       @PathVariable final String tenantId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -313,17 +315,18 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(
       final TenantRequest tenantRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createTenant(tenantRequest),
-        ResponseMapper::toTenantCreateResponse);
+        ResponseMapper::toTenantCreateResponse,
+        HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToTenant(
       final TenantMemberRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -332,7 +335,7 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromTenant(
       final TenantMemberRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -467,11 +470,12 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> updateTenant(
       final TenantRequest tenantRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateTenant(tenantRequest),
-        ResponseMapper::toTenantUpdateResponse);
+        ResponseMapper::toTenantUpdateResponse,
+        HttpStatus.OK);
   }
 }

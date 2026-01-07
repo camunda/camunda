@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
-import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper.toCamundaUser;
+import static io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper.toCamundaUser;
 
 import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.gateway.protocol.model.CamundaUserResult;

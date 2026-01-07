@@ -9,6 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.AuthorizationRequest;
 import io.camunda.gateway.protocol.model.AuthorizationSearchQuery;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
@@ -24,12 +28,10 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -77,7 +79,7 @@ public class AuthorizationController {
   @CamundaDeleteMapping(path = "/{authorizationKey}")
   public CompletableFuture<ResponseEntity<Object>> delete(
       @PathVariable final long authorizationKey) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -118,17 +120,18 @@ public class AuthorizationController {
 
   private CompletableFuture<ResponseEntity<Object>> create(
       final CreateAuthorizationRequest createAuthorizationRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             authorizationServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createAuthorization(createAuthorizationRequest),
-        ResponseMapper::toAuthorizationCreateResponse);
+        ResponseMapper::toAuthorizationCreateResponse,
+        HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> update(
       final UpdateAuthorizationRequest authorizationRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

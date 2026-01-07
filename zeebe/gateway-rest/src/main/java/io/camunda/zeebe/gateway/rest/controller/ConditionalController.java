@@ -7,16 +7,18 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
 import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,11 +49,12 @@ public class ConditionalController {
 
   private CompletableFuture<ResponseEntity<Object>> evaluateConditionalEvent(
       final EvaluateConditionalRequest createRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             conditionalServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .evaluateConditional(createRequest),
-        ResponseMapper::toConditionalEvaluationResponse);
+        ResponseMapper::toConditionalEvaluationResponse,
+        HttpStatus.OK);
   }
 }

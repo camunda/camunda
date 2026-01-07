@@ -9,6 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DeleteProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.IncidentSearchQuery;
@@ -37,13 +41,11 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -101,12 +103,13 @@ public class ProcessInstanceController {
   @CamundaPostMapping(path = "/{processInstanceKey}/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveProcessInstanceIncidents(
       @PathVariable final long processInstanceKey) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .resolveProcessInstanceIncidents(processInstanceKey),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   @RequiresSecondaryStorage
@@ -139,14 +142,15 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false) final DeleteProcessInstanceRequest request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteProcessInstance(
                     processInstanceKey,
                     Objects.nonNull(request) ? request.getOperationReference() : null),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   @RequiresSecondaryStorage
@@ -278,75 +282,82 @@ public class ProcessInstanceController {
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationCancellation(
       final io.camunda.search.filter.ProcessInstanceFilter filter) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .cancelProcessInstanceBatchOperationWithResult(filter),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationResolveIncidents(
       final io.camunda.search.filter.ProcessInstanceFilter filter) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .resolveIncidentsBatchOperationWithResult(filter),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationMigrate(
       final ProcessInstanceMigrateBatchOperationRequest request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .migrateProcessInstancesBatchOperation(request),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationModify(
       final ProcessInstanceModifyBatchOperationRequest request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .modifyProcessInstancesBatchOperation(request),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationDeletion(
       final io.camunda.search.filter.ProcessInstanceFilter filter) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteProcessInstancesBatchOperation(filter),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
       final ProcessInstanceCreateRequest request) {
     if (request.awaitCompletion()) {
-      return RequestMapper.executeServiceMethod(
+      return RequestExecutor.executeServiceMethod(
           () ->
               processInstanceServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .createProcessInstanceWithResult(request),
-          ResponseMapper::toCreateProcessInstanceWithResultResponse);
+          ResponseMapper::toCreateProcessInstanceWithResultResponse,
+          HttpStatus.OK);
     }
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createProcessInstance(request),
-        ResponseMapper::toCreateProcessInstanceResponse);
+        ResponseMapper::toCreateProcessInstanceResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> cancelProcessInstance(
       final ProcessInstanceCancelRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -355,7 +366,7 @@ public class ProcessInstanceController {
 
   private CompletableFuture<ResponseEntity<Object>> migrateProcessInstance(
       final ProcessInstanceMigrateRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -364,7 +375,7 @@ public class ProcessInstanceController {
 
   private CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
       final ProcessInstanceModifyRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
