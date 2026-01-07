@@ -29,6 +29,10 @@ public interface IdentitySetupRecordValue extends RecordValue {
 
   Collection<RoleRecordValue> getRoleMembers();
 
+  Collection<GroupRecordValue> getGroups();
+
+  Collection<GroupRecordValue> getGroupMembers();
+
   List<UserRecordValue> getUsers();
 
   TenantRecordValue getDefaultTenant();

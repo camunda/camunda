@@ -10,9 +10,11 @@ package io.camunda.zeebe.protocol.impl.record.value.authorization;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -27,7 +29,11 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   private final ArrayProperty<RoleRecord> rolesProp = new ArrayProperty<>("roles", RoleRecord::new);
   private final ArrayProperty<RoleRecord> roleMembersProp =
       new ArrayProperty<>("roleMembers", RoleRecord::new);
+  private final ArrayProperty<GroupRecord> groupProp =
+      new ArrayProperty<>("defaultGroup", GroupRecord::new);
   private final ArrayProperty<UserRecord> usersProp = new ArrayProperty<>("users", UserRecord::new);
+  private final ArrayProperty<GroupRecord> groupMembersProp =
+      new ArrayProperty<>("groupMembers", GroupRecord::new);
   private final ObjectProperty<TenantRecord> defaultTenantProp =
       new ObjectProperty<>("defaultTenant", new TenantRecord());
   private final ArrayProperty<TenantRecord> tenantMembersProp =
@@ -38,14 +44,16 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
       new ArrayProperty<>("authorizations", AuthorizationRecord::new);
 
   public IdentitySetupRecord() {
-    super(7);
+    super(8);
     declareProperty(rolesProp)
         .declareProperty(roleMembersProp)
         .declareProperty(usersProp)
         .declareProperty(defaultTenantProp)
         .declareProperty(tenantMembersProp)
         .declareProperty(mappingRulesProp)
-        .declareProperty(authorizationsProp);
+        .declareProperty(authorizationsProp)
+        .declareProperty(groupProp)
+        .declareProperty(groupMembersProp);
   }
 
   @Override
@@ -56,6 +64,16 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   @Override
   public Collection<RoleRecordValue> getRoleMembers() {
     return roleMembersProp.stream().map(RoleRecordValue.class::cast).collect(Collectors.toList());
+  }
+
+  @Override
+  public Collection<GroupRecordValue> getGroups() {
+    return groupProp.stream().map(GroupRecordValue.class::cast).collect(Collectors.toList());
+  }
+
+  @Override
+  public Collection<GroupRecordValue> getGroupMembers() {
+    return groupMembersProp.stream().map(GroupRecordValue.class::cast).collect(Collectors.toList());
   }
 
   @Override
@@ -102,8 +120,18 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
     return this;
   }
 
+  public IdentitySetupRecord addGroup(final GroupRecord group) {
+    groupProp.add().copyFrom(group);
+    return this;
+  }
+
   public IdentitySetupRecord addRoleMember(final RoleRecord role) {
     roleMembersProp.add().copyFrom(role);
+    return this;
+  }
+
+  public IdentitySetupRecord addGroupMember(final GroupRecord group) {
+    groupMembersProp.add().copyFrom(group);
     return this;
   }
 
