@@ -208,6 +208,7 @@ public final class BackupEndpoint {
     partitionStatus.brokerId().ifPresent(partitionBackupInfo::setBrokerId);
     partitionStatus.brokerVersion().ifPresent(partitionBackupInfo::setBrokerVersion);
     partitionStatus.snapshotId().ifPresent(partitionBackupInfo::setSnapshotId);
+    partitionStatus.firstLogPosition().ifPresent(partitionBackupInfo::setFirstLogPosition);
     partitionStatus.checkpointPosition().ifPresent(partitionBackupInfo::setCheckpointPosition);
     return partitionBackupInfo;
   }

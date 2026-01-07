@@ -20,6 +20,7 @@ public record PartitionBackupStatus(
     Optional<String> createdAt,
     Optional<String> lastUpdatedAt,
     Optional<String> snapshotId,
+    OptionalLong firstLogPosition,
     OptionalLong checkpointPosition,
     OptionalInt brokerId,
     Optional<String> brokerVersion) {
@@ -43,6 +44,9 @@ public record PartitionBackupStatus(
         Optional.ofNullable(response.getCreatedAt()),
         Optional.ofNullable(response.getLastUpdated()),
         Optional.ofNullable(response.getSnapshotId()),
+        response.hasFirstLogPosition()
+            ? OptionalLong.of(response.getFirstLogPosition())
+            : OptionalLong.empty(),
         response.hasCheckpointPosition()
             ? OptionalLong.of(response.getCheckpointPosition())
             : OptionalLong.empty(),
@@ -59,6 +63,7 @@ public record PartitionBackupStatus(
         Optional.empty(),
         Optional.empty(),
         OptionalLong.empty(),
+        OptionalLong.empty(),
         OptionalInt.empty(),
         Optional.empty());
   }
@@ -71,6 +76,7 @@ public record PartitionBackupStatus(
         Optional.ofNullable(response.getCreatedAt()),
         Optional.ofNullable(response.getLastUpdated()),
         Optional.ofNullable(response.getSnapshotId()),
+        OptionalLong.empty(),
         OptionalLong.empty(),
         OptionalInt.empty(),
         Optional.empty());
