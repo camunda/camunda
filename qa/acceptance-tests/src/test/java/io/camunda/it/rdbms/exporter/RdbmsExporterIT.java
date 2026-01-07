@@ -37,6 +37,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter.Builder;
@@ -147,6 +148,7 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotEmpty();
+    verifyRootProcessInstanceKey(processInstance.get(), processInstanceRecord);
 
     // given
     final var processInstanceCompletedRecord = getProcessInstanceCompletedRecord(1L, key);
@@ -158,6 +160,7 @@ class RdbmsExporterIT {
     final var completedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(completedProcessInstance).isNotEmpty();
     assertThat(completedProcessInstance.get().state()).isEqualTo(ProcessInstanceState.COMPLETED);
+    verifyRootProcessInstanceKey(completedProcessInstance.get(), processInstanceRecord);
   }
 
   @Test
@@ -173,6 +176,7 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) rootProcessInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotEmpty();
+    verifyRootProcessInstanceKey(processInstance.get(), rootProcessInstanceRecord);
 
     // given
     final var rootProcessInstanceCompletedRecord =
@@ -188,6 +192,7 @@ class RdbmsExporterIT {
         .isEqualTo(ProcessInstanceState.COMPLETED);
     assertThat(rootCompletedProcessInstance.get().parentProcessInstanceKey()).isNull();
     assertThat(rootCompletedProcessInstance.get().parentFlowNodeInstanceKey()).isNull();
+    verifyRootProcessInstanceKey(rootCompletedProcessInstance.get(), rootProcessInstanceRecord);
   }
 
   @Test
@@ -306,6 +311,7 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotEmpty();
+    verifyRootProcessInstanceKey(processInstance.get(), processInstanceRecord);
 
     final var variable = rdbmsService.getVariableReader().findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
@@ -879,5 +885,14 @@ class RdbmsExporterIT {
                 recordValue.getResourceType().name())
             .orElse(null);
     assertThat(deletedAuthorization).isNull();
+  }
+
+  private static void verifyRootProcessInstanceKey(
+      final ProcessInstanceEntity processInstance,
+      final ImmutableRecord<RecordValue> processInstanceRecord) {
+    assertThat(processInstance.rootProcessInstanceKey())
+        .isEqualTo(
+            ((ProcessInstanceRecordValue) processInstanceRecord.getValue())
+                .getRootProcessInstanceKey());
   }
 }
