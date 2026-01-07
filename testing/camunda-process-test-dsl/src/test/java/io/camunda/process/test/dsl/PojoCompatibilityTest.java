@@ -287,7 +287,6 @@ public class PojoCompatibilityTest {
                             .elementId("task1")
                             .build())
                     .useExampleData(true)
-                    .build())));
                     .build())),
         // ===== PUBLISH_MESSAGE =====
         Arguments.of(
