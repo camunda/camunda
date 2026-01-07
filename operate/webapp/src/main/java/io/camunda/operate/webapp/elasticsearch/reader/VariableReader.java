@@ -8,16 +8,16 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.FULL_VALUE;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.SCOPE_KEY;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -33,13 +33,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.IdsQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,21 +73,23 @@ public class VariableReader extends AbstractReader
 
   @Override
   public VariableDto getVariable(final String id) {
-    final IdsQueryBuilder idsQ = idsQuery().addIds(id);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-            .source(new SearchSourceBuilder().query(idsQ));
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      final var query = ElasticsearchUtil.idsQuery(id);
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-      if (response.getHits().getTotalHits().value != 1) {
+      final var searchRequest =
+          new SearchRequest.Builder()
+              .index(ElasticsearchUtil.whereToSearch(variableTemplate, ALL))
+              .query(tenantAwareQuery)
+              .build();
+
+      final var response = es8client.search(searchRequest, VariableEntity.class);
+
+      if (response.hits().total().value() != 1) {
         throw new NotFoundException(String.format("Variable with id %s not found.", id));
       }
-      final VariableEntity variableEntity =
-          fromSearchHit(
-              response.getHits().getHits()[0].getSourceAsString(),
-              objectMapper,
-              VariableEntity.class);
+
+      final var variableEntity = response.hits().hits().get(0).source();
       return VariableDto.createFrom(
           variableEntity,
           null,
@@ -113,26 +108,25 @@ public class VariableReader extends AbstractReader
   public VariableDto getVariableByName(
       final String processInstanceId, final String scopeId, final String variableName) {
 
-    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder scopeIdQ = termQuery(SCOPE_KEY, scopeId);
-    final TermQueryBuilder varNameQ = termQuery(NAME, variableName);
-
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        constantScoreQuery(joinWithAnd(processInstanceIdQ, scopeIdQ, varNameQ))));
-
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      final var query =
+          ElasticsearchUtil.constantScoreQuery(
+              joinWithAnd(
+                  ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId),
+                  ElasticsearchUtil.termsQuery(SCOPE_KEY, scopeId),
+                  ElasticsearchUtil.termsQuery(NAME, variableName)));
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-      if (response.getHits().getTotalHits().value > 0) {
-        final VariableEntity variableEntity =
-            ElasticsearchUtil.fromSearchHit(
-                response.getHits().getHits()[0].getSourceAsString(),
-                objectMapper,
-                VariableEntity.class);
+      final var searchRequest =
+          new SearchRequest.Builder()
+              .index(ElasticsearchUtil.whereToSearch(variableTemplate, ALL))
+              .query(tenantAwareQuery)
+              .build();
+
+      final var response = es8client.search(searchRequest, VariableEntity.class);
+
+      if (response.hits().total().value() > 0) {
+        final var variableEntity = response.hits().hits().get(0).source();
         return VariableDto.createFrom(
             variableEntity,
             null,
@@ -227,37 +221,39 @@ public class VariableReader extends AbstractReader
     if (request.getScopeId() != null) {
       scopeKey = Long.valueOf(request.getScopeId());
     }
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder scopeKeyQuery = termQuery(VariableTemplate.SCOPE_KEY, scopeKey);
-    TermQueryBuilder varNameQ = null;
+
+    final var queries = new java.util.ArrayList<Query>();
+    queries.add(
+        ElasticsearchUtil.termsQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceId));
+    queries.add(ElasticsearchUtil.termsQuery(VariableTemplate.SCOPE_KEY, scopeKey));
     if (varName != null) {
-      varNameQ = termQuery(NAME, varName);
+      queries.add(ElasticsearchUtil.termsQuery(NAME, varName));
     }
 
-    final ConstantScoreQueryBuilder query =
-        constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery, varNameQ));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(joinWithAnd(queries.toArray(new Query[0])));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(query).fetchSource(null, FULL_VALUE);
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(variableTemplate, ALL))
+            .query(tenantAwareQuery)
+            .source(s -> s.filter(f -> f.excludes(FULL_VALUE)));
 
-    applySorting(searchSourceBuilder, request);
+    applySorting(searchRequestBuilder, request);
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL).source(searchSourceBuilder);
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      final var response = es8client.search(searchRequestBuilder.build(), VariableEntity.class);
 
       final List<VariableEntity> variableEntities =
-          ElasticsearchUtil.mapSearchHits(
-              response.getHits().getHits(),
-              (sh) -> {
-                final VariableEntity entity =
-                    ElasticsearchUtil.fromSearchHit(
-                        sh.getSourceAsString(), objectMapper, VariableEntity.class);
-                entity.setSortValues(sh.getSortValues());
-                return entity;
-              });
+          response.hits().hits().stream()
+              .map(
+                  hit -> {
+                    final VariableEntity entity = hit.source();
+                    entity.setSortValues(hit.sort().stream().map(FieldValue::_get).toArray());
+                    return entity;
+                  })
+              .toList();
 
       final Map<String, List<OperationEntity>> operations =
           operationReader.getUpdateOperationsPerVariableName(
@@ -293,29 +289,35 @@ public class VariableReader extends AbstractReader
   }
 
   private void applySorting(
-      final SearchSourceBuilder searchSourceBuilder, final VariableRequestDto request) {
+      final SearchRequest.Builder searchRequestBuilder, final VariableRequestDto request) {
     final boolean directSorting =
         request.getSearchAfter() != null
             || request.getSearchAfterOrEqual() != null
             || (request.getSearchBefore() == null && request.getSearchBeforeOrEqual() == null);
 
     if (directSorting) { // this sorting is also the default one for 1st page
-      searchSourceBuilder.sort(NAME, SortOrder.ASC);
+      searchRequestBuilder.sort(ElasticsearchUtil.sortOrder(NAME, SortOrder.Asc));
       if (request.getSearchAfter() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfter(objectMapper));
+        searchRequestBuilder.searchAfter(
+            ElasticsearchUtil.searchAfterToFieldValues(request.getSearchAfter(objectMapper)));
       } else if (request.getSearchAfterOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchAfterOrEqual(objectMapper));
+        searchRequestBuilder.searchAfter(
+            ElasticsearchUtil.searchAfterToFieldValues(
+                request.getSearchAfterOrEqual(objectMapper)));
       }
-      searchSourceBuilder.size(request.getPageSize());
+      searchRequestBuilder.size(request.getPageSize());
     } else { // searchBefore != null
       // reverse sorting
-      searchSourceBuilder.sort(NAME, SortOrder.DESC);
+      searchRequestBuilder.sort(ElasticsearchUtil.sortOrder(NAME, SortOrder.Desc));
       if (request.getSearchBefore() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBefore(objectMapper));
+        searchRequestBuilder.searchAfter(
+            ElasticsearchUtil.searchAfterToFieldValues(request.getSearchBefore(objectMapper)));
       } else if (request.getSearchBeforeOrEqual() != null) {
-        searchSourceBuilder.searchAfter(request.getSearchBeforeOrEqual(objectMapper));
+        searchRequestBuilder.searchAfter(
+            ElasticsearchUtil.searchAfterToFieldValues(
+                request.getSearchBeforeOrEqual(objectMapper)));
       }
-      searchSourceBuilder.size(request.getPageSize() + 1);
+      searchRequestBuilder.size(request.getPageSize() + 1);
     }
   }
 }
