@@ -85,6 +85,9 @@
         },
         {
           "$ref": "#/definitions/PublishMessageInstruction"
+        },
+        {
+          "$ref": "#/definitions/EvaluateConditionalStartEventInstruction"
         }
       ]
     },
@@ -726,6 +729,25 @@
       "required": [
         "type",
         "processInstanceSelector"
+      ],
+      "additionalProperties": false
+    },
+    "EvaluateConditionalStartEventInstruction": {
+      "description": "An instruction to evaluate conditional start events.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "EVALUATE_CONDITIONAL_START_EVENT"
+        },
+        "variables": {
+          "description": "The variables to evaluate the conditional start events with.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type"
       ],
       "additionalProperties": false
     }
