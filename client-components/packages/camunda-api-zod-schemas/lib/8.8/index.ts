@@ -339,6 +339,7 @@ export {
 export {
 	batchOperationTypeSchema,
 	batchOperationStateSchema,
+	batchOperationActorTypeSchema,
 	batchOperationItemStateSchema,
 	batchOperationSchema,
 	batchOperationItemSchema,
@@ -348,6 +349,7 @@ export {
 	queryBatchOperationItemsResponseBodySchema,
 	type BatchOperationType,
 	type BatchOperationState,
+	type BatchOperationActorType,
 	type BatchOperationItemState,
 	type BatchOperation,
 	type BatchOperationItem,
