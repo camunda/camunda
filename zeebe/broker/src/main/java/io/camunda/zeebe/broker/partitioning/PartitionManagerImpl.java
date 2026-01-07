@@ -121,7 +121,7 @@ public final class PartitionManagerImpl
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    sharedRocksDbResources = allocateSharedCache(brokerCfg);
+    sharedRocksDbResources = allocateSharedCache(brokerCfg, meterRegistry);
 
     zeebePartitionFactory =
         new ZeebePartitionFactory(
