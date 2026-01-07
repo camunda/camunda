@@ -148,6 +148,25 @@ export const decisionInstanceRequiredFields: string[] = [
   'elementInstanceKey',
   'rootDecisionDefinitionKey',
 ];
+export const getDecisionInstanceResponseRequiredFields: string[] = [
+  'decisionEvaluationInstanceKey',
+  'state',
+  'evaluationDate',
+  'decisionDefinitionId',
+  'decisionDefinitionName',
+  'decisionDefinitionVersion',
+  'decisionDefinitionType',
+  'result',
+  'tenantId',
+  'decisionEvaluationKey',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'decisionDefinitionKey',
+  'elementInstanceKey',
+  'evaluatedInputs',
+  'matchedRules',
+  'rootDecisionDefinitionKey',
+];
 export const evaluateDecisionRequiredFields: string[] = [
   'decisionDefinitionId',
   'decisionDefinitionName',
