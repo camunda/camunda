@@ -259,8 +259,7 @@ public class CamundaProcessTestContextIT {
 
     // Then
     Assertions.assertThatThrownBy(() -> processTestContext.completeJob("not-found"))
-        .hasMessage(
-            "Expected to complete a job with the type 'not-found' " + "but no job is available.");
+        .hasMessage("Expected to complete job [jobType: not-found] but no job is available.");
   }
 
   @Test
