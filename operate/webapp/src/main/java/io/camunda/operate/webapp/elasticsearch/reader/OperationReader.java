@@ -25,8 +25,6 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.T
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.VARIABLE_NAME;
 import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED;
 import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
-import static org.elasticsearch.client.Requests.searchRequest;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.search.Hit;

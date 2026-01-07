@@ -18,6 +18,7 @@ import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -236,6 +237,19 @@ public abstract class ElasticsearchUtil {
    */
   public static Query existsQuery(final String field) {
     return Query.of(q -> q.exists(e -> e.field(field)));
+  }
+
+  /**
+   * Creates a has_child query that returns parent documents whose child documents match the query.
+   *
+   * @param type The child type to query
+   * @param query The query to run on child documents
+   * @param scoreMode How to score the parent documents
+   * @return ES8 Query object
+   */
+  public static Query hasChildQuery(
+      final String type, final Query query, final ChildScoreMode scoreMode) {
+    return Query.of(q -> q.hasChild(h -> h.type(type).query(query).scoreMode(scoreMode)));
   }
 
   /**
@@ -550,6 +564,11 @@ public abstract class ElasticsearchUtil {
     if (value == null) {
       throw new IllegalArgumentException(
           "Cannot use terms query with null value, trying to query [" + name + "] with null value");
+    }
+
+    if (value.getClass().isArray()) {
+      throw new IllegalStateException(
+          "Cannot pass an array to the singleton terms query, must pass a collection");
     }
 
     return termsQuery(name, Collections.singletonList(value));

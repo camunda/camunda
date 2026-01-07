@@ -7,15 +7,19 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.reverseOrder;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.Tuple;
@@ -30,19 +34,8 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,11 +45,10 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-public class ListViewReader implements io.camunda.operate.webapp.reader.ListViewReader {
+public class ListViewReader extends AbstractReader
+    implements io.camunda.operate.webapp.reader.ListViewReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ListViewReader.class);
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -109,39 +101,35 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
   public List<ProcessInstanceForListViewEntity> queryListView(
       final ListViewRequestDto processInstanceRequest, final ListViewResponseDto result) {
 
-    final QueryBuilder query = queryHelper.createRequestQuery(processInstanceRequest.getQuery());
+    final Query query = queryHelper.createRequestQuery(processInstanceRequest.getQuery());
+    final Query tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    LOGGER.debug("Process instance search request: \n{}", query.toString());
+    LOGGER.debug("Process instance search request: \n{}", tenantAwareQuery.toString());
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
+    final SearchRequest.Builder searchRequestBuilder =
+        queryHelper.createSearchRequest(processInstanceRequest.getQuery()).query(tenantAwareQuery);
 
-    applySorting(searchSourceBuilder, processInstanceRequest);
+    applySorting(searchRequestBuilder, processInstanceRequest);
 
-    final SearchRequest searchRequest =
-        queryHelper
-            .createSearchRequest(processInstanceRequest.getQuery())
-            .source(searchSourceBuilder);
+    final SearchRequest searchRequest = searchRequestBuilder.build();
 
-    LOGGER.debug("Search request will search in: \n{}", searchRequest.indices());
+    LOGGER.debug("Search request will search in: \n{}", searchRequest.index());
 
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      result.setTotalCount(response.getHits().getTotalHits().value);
+      final var response = es8client.search(searchRequest, ProcessInstanceForListViewEntity.class);
+      result.setTotalCount(response.hits().total().value());
 
       final List<ProcessInstanceForListViewEntity> processInstanceEntities =
-          ElasticsearchUtil.mapSearchHits(
-              response.getHits().getHits(),
-              (sh) -> {
-                final ProcessInstanceForListViewEntity entity =
-                    ElasticsearchUtil.fromSearchHit(
-                        sh.getSourceAsString(),
-                        objectMapper,
-                        ProcessInstanceForListViewEntity.class);
-                entity.setSortValues(sh.getSortValues());
-                return entity;
-              });
+          response.hits().hits().stream()
+              .map(
+                  hit -> {
+                    final ProcessInstanceForListViewEntity entity = hit.source();
+                    entity.setSortValues(hit.sort().stream().map(FieldValue::_get).toArray());
+                    return entity;
+                  })
+              .toList();
       if (processInstanceRequest.getSearchBefore() != null) {
-        Collections.reverse(processInstanceEntities);
+        return ImmutableList.copyOf(processInstanceEntities).reverse();
       }
       return processInstanceEntities;
     } catch (final IOException e) {
@@ -155,55 +143,78 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
   @Override
   public Tuple<String, String> getCalledProcessInstanceIdAndNameByFlowNodeInstanceId(
       final String flowNodeInstanceId) {
-    final String[] calledProcessInstanceId = {null};
-    final String[] calledProcessDefinitionName = {null};
-    findCalledProcessInstance(
-        flowNodeInstanceId,
-        sh -> {
-          calledProcessInstanceId[0] = sh.getId();
-          final Map<String, Object> source = sh.getSourceAsMap();
-          String processName = (String) source.get(ListViewTemplate.PROCESS_NAME);
-          if (processName == null) {
-            processName = (String) source.get(ListViewTemplate.BPMN_PROCESS_ID);
-          }
-          calledProcessDefinitionName[0] = processName;
-        });
-    return Tuple.of(calledProcessInstanceId[0], calledProcessDefinitionName[0]);
+    final Query parentFlowNodeInstanceQ =
+        ElasticsearchUtil.termsQuery(PARENT_FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId);
+    final Query tenantAwareQuery = tenantHelper.makeQueryTenantAware(parentFlowNodeInstanceQ);
+
+    final SearchRequest request =
+        SearchRequest.of(
+            s ->
+                s.index(listViewTemplate.getAlias())
+                    .query(tenantAwareQuery)
+                    .source(
+                        src ->
+                            src.filter(
+                                f ->
+                                    f.includes(
+                                        ListViewTemplate.PROCESS_NAME,
+                                        ListViewTemplate.BPMN_PROCESS_ID))));
+    try {
+      final var response = es8client.search(request, MAP_CLASS);
+
+      if (response.hits().total().value() < 1) {
+        return Tuple.of(null, null);
+      }
+
+      final var hit = response.hits().hits().get(0);
+      final String processInstanceId = hit.id();
+      final Map<String, Object> source = hit.source();
+      String processName = (String) source.get(ListViewTemplate.PROCESS_NAME);
+      if (processName == null) {
+        processName = (String) source.get(ListViewTemplate.BPMN_PROCESS_ID);
+      }
+      return Tuple.of(processInstanceId, processName);
+    } catch (final IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining parent process instance id for flow node instance: %s",
+              e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   private void applySorting(
-      final SearchSourceBuilder searchSourceBuilder, final ListViewRequestDto request) {
+      final SearchRequest.Builder searchRequestBuilder, final ListViewRequestDto request) {
 
     final String sortBy = getSortBy(request);
 
     final boolean directSorting =
         request.getSearchAfter() != null || request.getSearchBefore() == null;
     if (request.getSorting() != null) {
-      final SortBuilder sort1;
-      final SortOrder sort1DirectOrder = SortOrder.fromString(request.getSorting().getSortOrder());
+      final SortOrder sort1DirectOrder =
+          ElasticsearchUtil.toSortOrder(request.getSorting().getSortOrder());
       if (directSorting) {
-        sort1 = SortBuilders.fieldSort(sortBy).order(sort1DirectOrder).missing("_last");
+        searchRequestBuilder.sort(ElasticsearchUtil.sortOrder(sortBy, sort1DirectOrder, "_last"));
       } else {
-        sort1 =
-            SortBuilders.fieldSort(sortBy).order(reverseOrder(sort1DirectOrder)).missing("_first");
+        searchRequestBuilder.sort(
+            ElasticsearchUtil.sortOrder(sortBy, reverseOrder(sort1DirectOrder), "_first"));
       }
-      searchSourceBuilder.sort(sort1);
     }
 
-    final SortBuilder sort2;
     final Object[] querySearchAfter;
     if (directSorting) { // this sorting is also the default one for 1st page
-      sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
+      searchRequestBuilder.sort(ElasticsearchUtil.sortOrder(ListViewTemplate.KEY, SortOrder.Asc));
       querySearchAfter = request.getSearchAfter(objectMapper); // may be null
     } else { // searchBefore != null
       // reverse sorting
-      sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.DESC);
+      searchRequestBuilder.sort(ElasticsearchUtil.sortOrder(ListViewTemplate.KEY, SortOrder.Desc));
       querySearchAfter = request.getSearchBefore(objectMapper);
     }
 
-    searchSourceBuilder.sort(sort2).size(request.getPageSize());
+    searchRequestBuilder.size(request.getPageSize());
     if (querySearchAfter != null) {
-      searchSourceBuilder.searchAfter(querySearchAfter);
+      searchRequestBuilder.searchAfter(
+          ElasticsearchUtil.searchAfterToFieldValues(querySearchAfter));
     }
   }
 
@@ -222,33 +233,5 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
       return sortBy;
     }
     return null;
-  }
-
-  private void findCalledProcessInstance(
-      final String flowNodeInstanceId, final Consumer<SearchHit> processInstanceConsumer) {
-    final TermQueryBuilder parentFlowNodeInstanceQ =
-        termQuery(PARENT_FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId);
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(parentFlowNodeInstanceQ)
-                    .fetchSource(
-                        new String[] {
-                          ListViewTemplate.PROCESS_NAME, ListViewTemplate.BPMN_PROCESS_ID
-                        },
-                        null));
-    try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value >= 1) {
-        processInstanceConsumer.accept(response.getHits().getAt(0));
-      }
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining parent process instance id for flow node instance: %s",
-              e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
   }
 }
