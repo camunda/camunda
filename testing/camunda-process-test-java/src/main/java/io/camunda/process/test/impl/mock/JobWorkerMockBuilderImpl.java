@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
@@ -113,22 +114,14 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
               errorMessage,
               variables);
 
+          final ThrowErrorCommandStep2 command =
+              jobClient.newThrowErrorCommand(job).errorCode(errorCode).variables(variables);
+
           if (errorMessage != null) {
-            jobClient
-                .newThrowErrorCommand(job)
-                .errorCode(errorCode)
-                .errorMessage(errorMessage)
-                .variables(variables)
-                .send()
-                .join();
-          } else {
-            jobClient
-                .newThrowErrorCommand(job)
-                .errorCode(errorCode)
-                .variables(variables)
-                .send()
-                .join();
+            command.errorMessage(errorMessage);
           }
+
+          command.send().join();
         });
   }
 
