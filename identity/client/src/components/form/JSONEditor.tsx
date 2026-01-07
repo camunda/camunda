@@ -117,6 +117,9 @@ const JSONEditorField: FC<JSONEditorFieldProps> = ({
 
   useEffect(() => {
     if (isValid) {
+      // This will hide the problems dialog if the user has it opened. This does not hide by
+      // default even after the problems are resolved. If the json becomes invalid again, the user
+      // can reopen this dialog to see details.
       editorRef.current?.hideMarkers();
     }
   }, [isValid]);
