@@ -522,7 +522,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   private String dynamicFromMappings(final TypeMapping mapping) {
     final var dynamic = mapping.dynamic();
-    return dynamic == null ? "strict" : dynamic.toString().toLowerCase();
+    return dynamic == null ? "true" : dynamic.toString().toLowerCase();
   }
 
   private Map<String, Object> metaFromMappings(final TypeMapping mapping) {
