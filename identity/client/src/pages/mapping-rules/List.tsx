@@ -48,7 +48,7 @@ const List: FC = () => {
     <PageHeader
       title={t("mappingRules")}
       linkText={t("mappingRules").toLowerCase()}
-      docsLinkPath="/docs/components/identity/mapping-rules/manage-mapping-rules/"
+      docsLinkPath="/components/identity/mapping-rules/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -59,7 +59,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"mappingRule"}
-          docsLinkPath="/docs/components/identity/mapping-rules/manage-mapping-rules/"
+          docsLinkPath="/components/identity/mapping-rules/"
           handleClick={addMappingRule}
         />
         {addMappingRuleModal}

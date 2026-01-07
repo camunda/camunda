@@ -72,7 +72,7 @@ const AssignMemberModal: FC<
             <Translate i18nKey="usernameDescription">
               Check the documentation for{" "}
               <DocumentationLink
-                path="/docs/components/identity/role/#assign-users-to-a-role"
+                path="/components/identity/role/#assign-users-to-a-role"
                 withIcon
               >
                 how to reference users

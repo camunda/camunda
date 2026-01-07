@@ -79,7 +79,7 @@ const AssignMemberModal: FC<
             <Translate i18nKey="usernameDescription">
               Check the documentation for{" "}
               <DocumentationLink
-                path="/docs/components/identity/group/#assign-users-to-a-group"
+                path="/components/identity/group/#assign-users-to-a-group"
                 withIcon
               >
                 how to reference users

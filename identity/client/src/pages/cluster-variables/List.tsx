@@ -53,7 +53,7 @@ export default function List() {
     <PageHeader
       title={t("clusterVariables")}
       linkText={t("clusterVariables").toLowerCase()}
-      docsLinkPath="/docs/components/identity/cluster-variable/"
+      docsLinkPath="/components/identity/cluster-variable/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -64,7 +64,7 @@ export default function List() {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"clusterVariable"}
-          docsLinkPath="/docs/components/identity/cluster-variable/"
+          docsLinkPath="/components/identity/cluster-variable/"
           handleClick={addClusterVariable}
         />
         {addClusterVariableModal}
