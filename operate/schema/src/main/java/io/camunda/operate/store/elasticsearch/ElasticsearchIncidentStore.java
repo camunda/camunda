@@ -138,6 +138,10 @@ public class ElasticsearchIncidentStore implements IncidentStore {
           ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, IncidentEntity.class)
               .toList();
 
+      if (scrollResponses.isEmpty()) {
+        return List.of();
+      }
+
       final var searchResponse = scrollResponses.getFirst();
       populateErrorTypes(errorTypes, searchResponse, errorTypesAggName);
 

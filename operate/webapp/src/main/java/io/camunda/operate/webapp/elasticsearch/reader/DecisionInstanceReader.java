@@ -173,7 +173,7 @@ public class DecisionInstanceReader extends AbstractReader
       return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
     } catch (final ScrollException e) {
       throw new OperateRuntimeException(
-          "Exception occurred while quiering DRD data for decision instance id: "
+          "Exception occurred while querying DRD data for decision instance id: "
               + decisionInstanceId);
     }
   }

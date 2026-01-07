@@ -189,7 +189,7 @@ public class OperationReader extends AbstractReader
 
     final var searchRequestBuilder =
         new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-            .index(whereToSearch(operationTemplate, ALL))
+            .index(whereToSearch(operationTemplate, ONLY_RUNTIME))
             .query(es8Query)
             .sort(
                 sortOrder(INCIDENT_KEY, co.elastic.clients.elasticsearch._types.SortOrder.Asc),

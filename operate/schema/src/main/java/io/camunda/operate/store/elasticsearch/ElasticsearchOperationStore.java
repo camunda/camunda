@@ -97,7 +97,7 @@ public class ElasticsearchOperationStore implements OperationStore {
     }
 
     final var zeebeCommandKeyQ =
-        zeebeCommandKey == null
+        zeebeCommandKey != null
             ? ElasticsearchUtil.termsQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey)
             : null;
     final var processInstanceKeyQ =

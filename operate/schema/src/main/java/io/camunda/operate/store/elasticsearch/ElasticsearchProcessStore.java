@@ -31,14 +31,12 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.ScrollException;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.operate.TreePath;
@@ -64,7 +62,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -80,13 +77,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  private final ObjectMapper objectMapper;
-
   private final RestHighLevelClient esClient;
 
   private final ElasticsearchClient es8Client;
-
-  private final TenantAwareElasticsearchClient tenantAwareClient;
 
   private final OperateProperties operateProperties;
 
@@ -96,20 +89,16 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final ProcessIndex processIndex,
       final ListViewTemplate listViewTemplate,
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final OperateProperties operateProperties,
       final RestHighLevelClient esClient,
       final ElasticsearchClient es8Client,
-      final TenantAwareElasticsearchClient tenantAwareClient,
       final ElasticsearchTenantHelper tenantHelper) {
     this.processIndex = processIndex;
     this.listViewTemplate = listViewTemplate;
     this.processInstanceDependantTemplates = processInstanceDependantTemplates;
-    this.objectMapper = objectMapper;
     this.operateProperties = operateProperties;
     this.esClient = esClient;
     this.es8Client = es8Client;
-    this.tenantAwareClient = tenantAwareClient;
     this.tenantHelper = tenantHelper;
   }
 
@@ -595,7 +584,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
                                     .action(a -> a.doc(updateFields))));
               });
 
-      // write test to confirm that the new bulk request is the same as the old one
       ElasticsearchUtil.processBulkRequest(
           es8Client,
           es8BulkRequest,
