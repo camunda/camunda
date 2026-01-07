@@ -41,7 +41,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "rdbms"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "postgresql"'
         type: choice
         options:
         - elasticsearch
@@ -88,7 +88,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "rdbms"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch" or "postgresql"'
         # type choice is invalid here
         type: string
         required: false
@@ -261,8 +261,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: 'camunda/camunda-platform-helm'
-          ref: 'main'
+          ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
@@ -273,61 +272,16 @@ jobs:
           location: europe-west1-b
       - name: Create namespace if not exists
         run: |
-          if ! kubectl get namespace ${{ inputs.name }} >/dev/null 2>&1; then
-            kubectl create namespace ${{ inputs.name }}
-          else
-            echo "Namespace '${{ inputs.name }}' already exists"
-          fi
-      - name: Label namespace with creator
-        run: >
-          kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
-      - name: Label namespace with deadline
-        run: |
-          # Calculate deadline date with the TTL days from now
-          # Use basic ISO date format (YYYY-MM-DD), as it is compatible with kubectl label values
-          # Must use minus (-) instead of / to be compatible with kubectl label value restrictions
-          deadlineDate=$(date -d "+${{ inputs.ttl }} days" +%Y-%m-%d)
-          kubectl label namespace ${{ inputs.name }} deadline-date="$deadlineDate" --overwrite
-      - name: Install Postgres database
-        if: ${{ inputs.secondary-storage-type == 'postgresql' }}
-        run: |
-          helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
-            --namespace ${{ inputs.name }} \
-            --wait --timeout 5m0s \
-            --set global.postgresql.auth.database=camunda \
-            --set global.postgresql.auth.username=camunda \
-            --set global.postgresql.auth.password=camunda \
-            --set primary.resources.requests.memory=4Gi \
-            --set primary.resources.requests.cpu=3000m \
-            --set primary.resources.limits.memory=6Gi \
-            --set primary.resources.limits.cpu=6000m \
-            --set primary.persistence.size=10Gi
-      - name: Add Camunda Helm repo
-        run: |
-          helm repo add camunda https://helm.camunda.io/
-          helm repo update
-      - name: Find previous Helm chart release version
-        id: find-chart-release
-        run: |
-          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
-      - name: Build dependencies of Camunda Platform
-        run: helm dependency build charts/${{ env.HELM_CHART }}/
+          cd load-tests/setup
+          ./newLoadTest.sh ${{ inputs.name }} ${{ inputs.secondary-storage-type }}
       - name: Install latest Camunda Platform
-        run: >
-          helm upgrade --install ${{ inputs.name }} charts/${{ env.HELM_CHART }}/ --wait --timeout 35m0s
-          --namespace ${{ inputs.name }}
-          --reset-then-reuse-values
-          --render-subchart-notes
-          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set orchestration.image.registry=gcr.io
-          --set orchestration.image.repository=zeebe-io/zeebe
-          --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/load-tests/camunda-platform-values.yaml
-          ${{ inputs.secondary-storage-type == 'elasticsearch' && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/camunda-platform-values-elasticsearch.yaml', github.ref) || '' }}
-          ${{ inputs.secondary-storage-type == 'postgresql' && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/camunda-platform-values-rdbms.yaml', github.ref) || '' }}
-          ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/load-tests/setup/default/values-stable.yaml', github.ref) || '' }}
-      - name: Summarize deployment
+        run: |
+          cd load-tests/setup/${{ inputs.name }}
+          make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
+            secondary_storage=${{ inputs.secondary-storage-type }} \
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=gcr.io --set orchestration.image.repository=zeebe-io/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}" \
+            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
+      - name: Summarize platform deployment
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
@@ -336,78 +290,7 @@ jobs:
             $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
             \`\`\`
           EOF
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  deploy-load-test:
-    name: Deploy load test
-    needs:
-      # We need to depend on calculate-image-tag, so that we can use the output in the job
-      - calculate-image-tag
-      - deploy-cluster-under-test
-      - build-camunda-image
-      - build-load-test-images
-      # To have the possibility to re-deploy the tests without rebuilding the images,
-      # the deploy will be run, when build is skipped or successful.
-    if: |
-      always() &&
-      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
-      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
-        with:
-          cluster_name: zeebe-cluster
-          location: europe-west1-b
-      - name: Add Load test Helm repo
-        run: |
-          helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
-          helm repo update
-      - name: Find previous Helm chart release version
-        id: find-chart-release
-        run: |
-          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }}-test | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
-      - name: Install load test
-        run: >
-          helm upgrade --install ${{ inputs.name }}-test camunda-load-tests/camunda-load-tests
-          --wait --timeout 35m0s
-          --namespace ${{ inputs.name }}
-          --reuse-values
-          --render-subchart-notes
-          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
-          ${{ inputs.load-test-load }}
-      - name: Setup leader balancing
-        run: |
-          if ! kubectl get cronjob leader-balancer --namespace ${{ inputs.name }} &>/dev/null; then
-            kubectl create cronjob leader-balancer \
-              --namespace ${{ inputs.name }} \
-              --image=curlimages/curl:7.87.0 \
-              --schedule="*/10 * * * *" \
-              -- curl -L -v -X POST http://camunda:9600/actuator/rebalance
-          else
-            echo "Leader balancer cronjob already exists"
-          fi
-      - name: Summarize deployment
+      - name: Summarize load test deployment
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
