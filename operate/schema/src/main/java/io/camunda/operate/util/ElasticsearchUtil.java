@@ -18,6 +18,7 @@ import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -212,6 +213,43 @@ public abstract class ElasticsearchUtil {
 
   public static Query idsQuery(final String... ids) {
     return Query.of(q -> q.ids(i -> i.values(Arrays.asList(ids))));
+  }
+
+  public static Query matchAllQuery() {
+    return Query.of(q -> q.matchAll(m -> m));
+  }
+
+  /**
+   * A query that matches documents where the specified field contains a term with a specified
+   * prefix.
+   *
+   * @param field The field name
+   * @param prefix The prefix to match
+   */
+  public static Query prefixQuery(final String field, final String prefix) {
+    return Query.of(q -> q.prefix(p -> p.field(field).value(prefix)));
+  }
+
+  /**
+   * A query that matches documents that have at least one non-null value in the specified field.
+   *
+   * @param field The field name
+   */
+  public static Query existsQuery(final String field) {
+    return Query.of(q -> q.exists(e -> e.field(field)));
+  }
+
+  /**
+   * Creates a has_child query that returns parent documents whose child documents match the query.
+   *
+   * @param type The child type to query
+   * @param query The query to run on child documents
+   * @param scoreMode How to score the parent documents
+   * @return ES8 Query object
+   */
+  public static Query hasChildQuery(
+      final String type, final Query query, final ChildScoreMode scoreMode) {
+    return Query.of(q -> q.hasChild(h -> h.type(type).query(query).scoreMode(scoreMode)));
   }
 
   /**
@@ -488,6 +526,22 @@ public abstract class ElasticsearchUtil {
     }
   }
 
+  public static co.elastic.clients.elasticsearch._types.SortOrder reverseOrder(
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    if (sortOrder.equals(co.elastic.clients.elasticsearch._types.SortOrder.Asc)) {
+      return co.elastic.clients.elasticsearch._types.SortOrder.Desc;
+    } else {
+      return co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+    }
+  }
+
+  public static co.elastic.clients.elasticsearch._types.SortOrder toSortOrder(
+      final String sortOrder) {
+    return "desc".equalsIgnoreCase(sortOrder)
+        ? co.elastic.clients.elasticsearch._types.SortOrder.Desc
+        : co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+  }
+
   public static Query termsQuery(final String name, final Collection<?> values) {
     if (values.stream().anyMatch(Objects::isNull)) {
       throw new IllegalArgumentException(
@@ -512,12 +566,37 @@ public abstract class ElasticsearchUtil {
           "Cannot use terms query with null value, trying to query [" + name + "] with null value");
     }
 
+    if (value.getClass().isArray()) {
+      throw new IllegalStateException(
+          "Cannot pass an array to the singleton terms query, must pass a collection");
+    }
+
     return termsQuery(name, Collections.singletonList(value));
   }
 
   public static SortOptions sortOrder(
       final String field, final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
     return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder)));
+  }
+
+  public static SortOptions sortOrder(
+      final String field,
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder,
+      final String missing) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder).missing(missing)));
+  }
+
+  /**
+   * Converts an array of search_after values to ES8 FieldValue list for pagination.
+   *
+   * @param searchAfter Array of sort values from previous search result
+   * @return List of FieldValue objects for ES8 searchAfter parameter
+   */
+  public static List<co.elastic.clients.elasticsearch._types.FieldValue> searchAfterToFieldValues(
+      final Object[] searchAfter) {
+    return Arrays.stream(searchAfter)
+        .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
+        .toList();
   }
 
   public enum QueryType {
