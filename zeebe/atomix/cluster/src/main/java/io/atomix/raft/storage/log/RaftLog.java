@@ -27,10 +27,9 @@ import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.SegmentInfo;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.Closeable;
-import java.nio.file.Path;
-import java.util.SortedMap;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -244,7 +243,7 @@ public final class RaftLog implements Closeable {
         + '}';
   }
 
-  public SortedMap<Long, Path> getTailSegments(final long index) {
+  public SegmentInfo getTailSegments(final long index) {
     return journal.getTailSegments(index);
   }
 }

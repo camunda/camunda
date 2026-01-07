@@ -120,7 +120,7 @@ class PartitionRestoreServiceTest {
             snapshotStore,
             dataDirectory,
             // RaftPartitions implements this interface, but the RaftServer is not started
-            index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
+            index -> CompletableFuture.completedFuture(journal.getTailSegments(index)),
             meterRegistry,
             (context, entries, source) -> Either.left(WriteFailure.CLOSED));
     actorScheduler.submitActor(backupService);

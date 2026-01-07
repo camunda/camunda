@@ -124,7 +124,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 snapshotStore,
                 dataDirectory,
                 // RaftPartitions implements this interface, but the RaftServer is not started
-                index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
+                index -> CompletableFuture.completedFuture(journal.getTailSegments(index)),
                 meterRegistry,
                 (context, entries, source) -> Either.left(WriteFailure.CLOSED)));
     actorScheduler.submitActor(backupService);
@@ -178,8 +178,8 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
       assertThat(files.toList().size()).isEqualTo(4L);
     }
     // all segments needed are still in the file system
-    final var activeSegmentPaths = journal.getTailSegments(backupIdx);
-    activeSegmentPaths.values().forEach(p -> assertThat(p).exists());
+    final var tailSegments = journal.getTailSegments(backupIdx);
+    tailSegments.segmentPaths().forEach(path -> assertThat(path).exists());
 
     assertThat(backupResultFut.isDone()).isFalse();
 

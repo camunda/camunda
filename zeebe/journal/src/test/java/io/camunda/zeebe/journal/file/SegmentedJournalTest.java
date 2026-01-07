@@ -79,6 +79,109 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldFindFirstAsqnInTailSegments() {
+    // given
+    final int entriesPerSegment = 2;
+    journal = openJournal(entriesPerSegment);
+
+    // write entries with known ASQNs across multiple segments
+    journal.append(10, journalFactory.entry()); // segment 1, entry 1
+    journal.append(20, journalFactory.entry()); // segment 1, entry 2
+    journal.append(30, journalFactory.entry()); // segment 2, entry 1
+    journal.append(40, journalFactory.entry()); // segment 2, entry 2
+
+    // when - get tail segments starting from segment 2
+    final var tailSegments = journal.getTailSegments(3);
+
+    // then - first ASQN should be 30 (first entry in segment 2)
+    assertThat(tailSegments.firstAsqn()).isPresent().hasValue(30L);
+  }
+
+  @Test
+  void shouldFindFirstAsqnSkippingAsqnIgnoreEntries() {
+    // given
+    final int entriesPerSegment = 2;
+    journal = openJournal(entriesPerSegment);
+
+    // write entries, some with ASQN_IGNORE
+    journal.append(10, journalFactory.entry()); // segment 1, entry 1
+    journal.append(20, journalFactory.entry()); // segment 1, entry 2
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 2, entry 1 - ignored
+    journal.append(50, journalFactory.entry()); // segment 2, entry 2
+
+    // when - get tail segments starting from segment 2
+    final var tailSegments = journal.getTailSegments(3);
+
+    // then - first ASQN should be 50 (first non-ignored entry)
+    assertThat(tailSegments.firstAsqn()).isPresent().hasValue(50L);
+  }
+
+  @Test
+  void shouldReturnEmptyAsqnWhenAllEntriesHaveAsqnIgnore() {
+    // given
+    final int entriesPerSegment = 2;
+    journal = openJournal(entriesPerSegment);
+
+    // write entries with ASQNs in first segment
+    journal.append(10, journalFactory.entry()); // segment 1, entry 1
+    journal.append(20, journalFactory.entry()); // segment 1, entry 2
+    // write only ASQN_IGNORE entries in second segment
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 2, entry 1
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 2, entry 2
+
+    // when - get tail segments starting from segment 2
+    final var tailSegments = journal.getTailSegments(3);
+
+    // then - first ASQN should be empty since all entries have ASQN_IGNORE
+    assertThat(tailSegments.firstAsqn()).isEmpty();
+  }
+
+  @Test
+  void shouldFindFirstAsqnInLaterSegmentWhenEarlierSegmentsHaveOnlyAsqnIgnore() {
+    // given
+    final int entriesPerSegment = 2;
+    journal = openJournal(entriesPerSegment);
+
+    // first segment has valid ASQNs
+    journal.append(10, journalFactory.entry()); // segment 1, entry 1
+    journal.append(20, journalFactory.entry()); // segment 1, entry 2
+    // second segment has only ASQN_IGNORE
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 2, entry 1
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 2, entry 2
+    // third segment has valid ASQNs
+    journal.append(100, journalFactory.entry()); // segment 3, entry 1
+    journal.append(200, journalFactory.entry()); // segment 3, entry 2
+
+    // when - get tail segments starting from segment 2
+    final var tailSegments = journal.getTailSegments(3);
+
+    // then - first ASQN should be 100 (first valid ASQN in segment 3, skipping segment 2)
+    assertThat(tailSegments.firstAsqn()).isPresent().hasValue(100L);
+  }
+
+  @Test
+  void shouldReturnEmptyAsqnWhenMultipleSegmentsHaveOnlyAsqnIgnore() {
+    // given
+    final int entriesPerSegment = 2;
+    journal = openJournal(entriesPerSegment);
+
+    // first segment has valid ASQNs (not in tail)
+    journal.append(10, journalFactory.entry()); // segment 1, entry 1
+    journal.append(20, journalFactory.entry()); // segment 1, entry 2
+    // second and third segments have only ASQN_IGNORE
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 2, entry 1
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 2, entry 2
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 3, entry 1
+    journal.append(ASQN_IGNORE, journalFactory.entry()); // segment 3, entry 2
+
+    // when - get tail segments starting from segment 2
+    final var tailSegments = journal.getTailSegments(3);
+
+    // then - first ASQN should be empty since all tail entries have ASQN_IGNORE
+    assertThat(tailSegments.firstAsqn()).isEmpty();
+  }
+
+  @Test
   void shouldDeleteIndexMappingsOnReset() {
     // given
     journal = openJournal(10);

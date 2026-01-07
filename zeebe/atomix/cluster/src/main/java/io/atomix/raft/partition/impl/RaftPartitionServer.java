@@ -39,6 +39,7 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -47,7 +48,6 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
@@ -336,7 +336,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.cluster().getMembers();
   }
 
-  public CompletableFuture<Collection<Path>> getTailSegments(final long index) {
+  public CompletableFuture<SegmentInfo> getTailSegments(final long index) {
     return server.getContext().getTailSegments(index);
   }
 }
