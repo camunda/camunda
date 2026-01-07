@@ -19,8 +19,6 @@ import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.nio.file.Path;
-import java.util.SortedMap;
 
 public interface Journal extends AutoCloseable {
 
@@ -138,5 +136,11 @@ public interface Journal extends AutoCloseable {
    */
   boolean isOpen();
 
-  SortedMap<Long, Path> getTailSegments(long index);
+  /**
+   * Returns the tail segments of the journal starting from the given index.
+   *
+   * @param index The index from which to get the tail segments.
+   * @return The tail segments including paths and the first ASQN in the first segment.
+   */
+  SegmentInfo getTailSegments(long index);
 }

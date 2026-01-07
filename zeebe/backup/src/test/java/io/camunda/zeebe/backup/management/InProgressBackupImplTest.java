@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -30,7 +31,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -284,7 +287,7 @@ class InProgressBackupImplTest {
     final var file1 = segmentsDirectory.resolve("file1.log");
     final var file2 = segmentsDirectory.resolve("file2.log");
     // create segment files
-    mockJournalProviderWith(lastSnapshot.getIndex(), Map.of(4L, file1, 49L, file2));
+    mockJournalProviderWith(lastSnapshot.getIndex(), List.of(file1, file2), OptionalLong.of(100L));
     onReserve(lastSnapshot, snapshotReservation);
     // when
     final var backup = collectBackupContents();
@@ -346,11 +349,14 @@ class InProgressBackupImplTest {
   }
 
   private void mockJournalProviderWithNonEmptySegments() {
-    mockJournalProviderWith(null, Map.of(1L, segmentsDirectory.resolve("file-1.log")));
+    mockJournalProviderWith(
+        null, List.of(segmentsDirectory.resolve("file-1.log")), OptionalLong.of(100L));
   }
 
-  private void mockJournalProviderWith(final Long expectedIndex, final Map<Long, Path> segments) {
+  private void mockJournalProviderWith(
+      final Long expectedIndex, final List<Path> segmentPaths, final OptionalLong firstAsqn) {
+    final var tailSegments = new SegmentInfo(segmentPaths, firstAsqn);
     when(metadataProvider.getTailSegments(expectedIndex != null ? expectedIndex : anyLong()))
-        .thenReturn(CompletableFuture.completedFuture(segments.values()));
+        .thenReturn(CompletableFuture.completedFuture(tailSegments));
   }
 }
