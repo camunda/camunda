@@ -378,12 +378,15 @@ jobs:
       - name: Maven Run Test (Zeebe)
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        # Maintain the forkCount * JVM heap size ( -Xmx ) to not exceed ~50% of the available memory
+        # on the runner.
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=3
+          -D forkCount=7
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
-          -D junitThreadCount=8
+          -D junitThreadCount=16
+          -D argLine="@{argLine} -Xmx4g"
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
