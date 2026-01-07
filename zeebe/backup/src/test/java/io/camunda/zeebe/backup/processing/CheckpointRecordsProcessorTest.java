@@ -951,4 +951,53 @@ final class CheckpointRecordsProcessorTest {
     assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
     assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
   }
+
+  @Test
+  void shouldProcessFailBackupCommand() {
+    // given
+    final long checkpointId = 5;
+    final long commandPosition = 100;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+    final var record =
+        new MockTypedCheckpointRecord(
+            commandPosition, 0, CheckpointIntent.FAIL_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    assertThat(result.records())
+        .singleElement()
+        .satisfies(
+            followupEvent -> {
+              assertThat(followupEvent.intent()).isEqualTo(CheckpointIntent.FAILED_BACKUP);
+              assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
+              assertThat(followupEvent.value()).isNotNull();
+
+              final var followupRecord = (CheckpointRecord) followupEvent.value();
+              assertThat(followupRecord.getCheckpointId()).isEqualTo(checkpointId);
+            });
+  }
+
+  @Test
+  void shouldReplayFailedBackupEvent() {
+    // given
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(5)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+    final var record =
+        new MockTypedCheckpointRecord(
+            100, 0, CheckpointIntent.FAILED_BACKUP, RecordType.EVENT, value);
+
+    // when
+    processor.replay(record);
+
+    // then - state remains unchanged (backup failed, nothing to record)
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+  }
 }

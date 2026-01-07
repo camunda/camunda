@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -182,7 +183,40 @@ final class BackupServiceImpl {
         .setMessage("Marking backup as failed")
         .log();
     backupSaved.completeExceptionally(error);
-    backupStore.markFailed(inProgressBackup.id(), error.getMessage());
+    writeFailBackupCommand(
+        inProgressBackup.id().checkpointId(),
+        inProgressBackup.backupDescriptor().checkpointPosition(),
+        inProgressBackup.backupDescriptor().checkpointType());
+  }
+
+  private void writeFailBackupCommand(
+      final long checkpointId, final long checkpointPosition, final CheckpointType checkpointType) {
+    final var failureWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.FAIL_BACKUP),
+                new CheckpointRecord()
+                    .setCheckpointId(checkpointId)
+                    .setCheckpointPosition(checkpointPosition)
+                    .setCheckpointType(checkpointType)));
+    switch (failureWritten) {
+      case Either.Left(final var error) ->
+          LOG.atWarn()
+              .addKeyValue("checkpoint", checkpointId)
+              .setMessage("Could not write backup failure due to {}")
+              .addArgument(error)
+              .log();
+      case final Either.Right<WriteFailure, Long> position ->
+          LOG.atTrace()
+              .addKeyValue("checkpoint", checkpointId)
+              .addKeyValue("position", position.value())
+              .setMessage("Recorded backup failure")
+              .log();
+    }
   }
 
   private void closeInProgressBackup(final InProgressBackup inProgressBackup) {
@@ -427,6 +461,7 @@ final class BackupServiceImpl {
   void createFailedBackup(
       final BackupIdentifier backupId,
       final long checkpointPosition,
+      final CheckpointType checkpointType,
       final String failureReason,
       final ConcurrencyControl executor) {
     executor.run(
@@ -437,14 +472,37 @@ final class BackupServiceImpl {
               checkpointPosition,
               failureReason);
 
-          // Directly mark the backup as failed - this will create the backup entry with failed
-          // status
+          writeFailBackupCommand(backupId.checkpointId(), checkpointPosition, checkpointType);
+        });
+  }
+
+  void markBackupAsFailed(
+      final BackupIdentifier backupId,
+      final String failureReason,
+      final ConcurrencyControl executor) {
+    executor.run(
+        () -> {
+          LOG.atDebug()
+              .addKeyValue("backup", backupId)
+              .setMessage("Marking backup as failed due to: {}")
+              .addArgument(failureReason)
+              .log();
+
           backupStore
               .markFailed(backupId, failureReason)
-              .thenAccept(ignore -> LOG.trace("Successfully created failed backup {}", backupId))
+              .thenAccept(
+                  ignore ->
+                      LOG.atTrace()
+                          .addKeyValue("backup", backupId)
+                          .setMessage("Marked backup as failed")
+                          .log())
               .exceptionally(
                   error -> {
-                    LOG.debug("Failed to create failed backup {}", backupId, error);
+                    LOG.atWarn()
+                        .addKeyValue("backup", backupId)
+                        .setCause(error)
+                        .setMessage("Failed to mark backup as failed")
+                        .log();
                     return null;
                   });
         });

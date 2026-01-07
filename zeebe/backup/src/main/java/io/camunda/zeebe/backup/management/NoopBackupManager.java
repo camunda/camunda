@@ -76,4 +76,9 @@ public class NoopBackupManager implements BackupManager {
       final String failureReason) {
     LOG.warn("Attempted to create failed backup, but cannot do it. {}", errorMessage);
   }
+
+  @Override
+  public void markBackupAsFailed(final long checkpointId, final String failureReason) {
+    LOG.warn("Attempted to mark backup as failed, but cannot do it. {}", errorMessage);
+  }
 }

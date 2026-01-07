@@ -472,7 +472,54 @@ class BackupServiceImplTest {
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
 
-    verify(logStreamWriter, never()).tryWrite(any(), any(LogAppendEntry.class));
+    // Verify FAIL_BACKUP is written, not CONFIRM_BACKUP
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.FAIL_BACKUP);
+                  assertThat(entry.recordValue())
+                      .isInstanceOfSatisfying(
+                          CheckpointRecord.class,
+                          checkpointRecord -> {
+                            assertThat(checkpointRecord.getCheckpointId())
+                                .isEqualTo(inProgressBackup.id().checkpointId());
+                            assertThat(checkpointRecord.getCheckpointPosition())
+                                .isEqualTo(
+                                    inProgressBackup.backupDescriptor().checkpointPosition());
+                          });
+                }));
+  }
+
+  @Test
+  void shouldWriteFailBackupCommandWhenBackupFails() {
+    // given
+    final var inProgressBackup = new ControllableInProgressBackup().failOnFindSnapshotFiles();
+
+    // when
+    final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
+
+    // then
+    assertThat(result).failsWithin(Duration.ofMillis(100));
+
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.FAIL_BACKUP);
+                  assertThat(entry.recordValue())
+                      .isInstanceOfSatisfying(
+                          CheckpointRecord.class,
+                          checkpointRecord ->
+                              assertThat(checkpointRecord.getCheckpointId())
+                                  .isEqualTo(inProgressBackup.id().checkpointId()));
+                }));
   }
 
   @Test
@@ -610,7 +657,15 @@ class BackupServiceImplTest {
 
   private void verifyInProgressBackupIsCleanedUpAfterFailure(
       final ControllableInProgressBackup inProgressBackup) {
-    verify(backupStore).markFailed(any(), any());
+    // Verify FAIL_BACKUP command is written (markFailed will be called by the processor)
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.FAIL_BACKUP);
+                }));
     assertThat(inProgressBackup.isClosed()).isTrue();
   }
 

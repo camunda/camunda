@@ -198,7 +198,20 @@ public final class BackupService extends Actor implements BackupManager {
         () -> {
           final var backupId = getBackupId(checkpointId);
           internalBackupManager.createFailedBackup(
-              backupId, backupDescriptor.checkpointPosition(), failureReason, actor);
+              backupId,
+              backupDescriptor.checkpointPosition(),
+              backupDescriptor.checkpointType(),
+              failureReason,
+              actor);
+        });
+  }
+
+  @Override
+  public void markBackupAsFailed(final long checkpointId, final String failureReason) {
+    actor.run(
+        () -> {
+          final var backupId = getBackupId(checkpointId);
+          internalBackupManager.markBackupAsFailed(backupId, failureReason, actor);
         });
   }
 

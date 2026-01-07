@@ -67,4 +67,12 @@ public interface BackupManager {
    */
   void createFailedBackup(
       final long checkpointId, BackupDescriptor backupDescriptor, String failureReason);
+
+  /**
+   * Marks an existing backup as failed. This is called when processing the FAIL_BACKUP command.
+   *
+   * @param checkpointId id of the backup to mark as failed
+   * @param failureReason reason why the backup failed
+   */
+  void markBackupAsFailed(final long checkpointId, String failureReason);
 }

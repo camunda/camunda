@@ -40,11 +40,13 @@ public final class CheckpointRecordsProcessor
   private final BackupManager backupManager;
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
+  private CheckpointFailBackupProcessor checkpointFailBackupProcessor;
   private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
   private CheckpointConfirmDeletionProcessor checkpointConfirmDeletionProcessor;
   private CheckpointFailDeletionProcessor checkpointFailDeletionProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
   private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
+  private CheckpointBackupFailedApplier checkpointBackupFailedApplier;
   private CheckpointDeletingBackupApplier checkpointDeletingBackupApplier;
   private CheckpointBackupDeletionConfirmedApplier checkpointBackupDeletionConfirmedApplier;
   private CheckpointBackupDeletionFailedApplier checkpointBackupDeletionFailedApplier;
@@ -102,6 +104,7 @@ public final class CheckpointRecordsProcessor
             metrics);
 
     checkpointConfirmBackupProcessor = new CheckpointConfirmBackupProcessor(checkpointState);
+    checkpointFailBackupProcessor = new CheckpointFailBackupProcessor(backupManager);
     checkpointDeleteBackupProcessor =
         new CheckpointDeleteBackupProcessor(backupManager, checkpointState);
     checkpointConfirmDeletionProcessor = new CheckpointConfirmDeletionProcessor();
@@ -109,6 +112,7 @@ public final class CheckpointRecordsProcessor
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
     checkpointBackupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
+    checkpointBackupFailedApplier = new CheckpointBackupFailedApplier();
     checkpointDeletingBackupApplier = new CheckpointDeletingBackupApplier(checkpointState);
     checkpointBackupDeletionConfirmedApplier = new CheckpointBackupDeletionConfirmedApplier();
     checkpointBackupDeletionFailedApplier = new CheckpointBackupDeletionFailedApplier();
@@ -143,6 +147,8 @@ public final class CheckpointRecordsProcessor
       case CONFIRMED_BACKUP ->
           checkpointBackupConfirmedApplier.apply(
               (CheckpointRecord) record.getValue(), record.getTimestamp());
+      case FAILED_BACKUP ->
+          checkpointBackupFailedApplier.apply((CheckpointRecord) record.getValue());
       case DELETING_BACKUP ->
           checkpointDeletingBackupApplier.apply((CheckpointRecord) record.getValue());
       case CONFIRMED_BACKUP_DELETION ->
@@ -150,7 +156,8 @@ public final class CheckpointRecordsProcessor
       case FAILED_BACKUP_DELETION ->
           checkpointBackupDeletionFailedApplier.apply((CheckpointRecord) record.getValue());
       default -> {
-        // Don't apply intents CREATE, IGNORED, DELETE_BACKUP, CONFIRM_DELETION, FAIL_DELETION
+        // Don't apply intents CREATE, IGNORED, DELETE_BACKUP, CONFIRM_DELETION, FAIL_DELETION,
+        // CONFIRM_BACKUP (commands), FAIL_BACKUP (command)
       }
     }
   }
@@ -166,6 +173,11 @@ public final class CheckpointRecordsProcessor
     if (record.getValueType() == ValueType.CHECKPOINT
         && record.getIntent() == CheckpointIntent.CONFIRM_BACKUP) {
       return checkpointConfirmBackupProcessor.process(record, resultBuilder);
+    }
+
+    if (record.getValueType() == ValueType.CHECKPOINT
+        && record.getIntent() == CheckpointIntent.FAIL_BACKUP) {
+      return checkpointFailBackupProcessor.process(record, resultBuilder);
     }
 
     if (record.getValueType() == ValueType.CHECKPOINT
