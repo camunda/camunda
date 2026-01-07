@@ -31,6 +31,7 @@ import io.camunda.process.test.api.dsl.instructions.EvaluateConditionalStartEven
 import io.camunda.process.test.api.dsl.instructions.MockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerCompleteJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.MockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
 
 /** An instruction to define an action or an assertion to be performed in a test case. */
@@ -79,6 +80,9 @@ import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
   @JsonSubTypes.Type(
       value = MockJobWorkerCompleteJobInstruction.class,
       name = TestCaseInstructionType.MOCK_JOB_WORKER_COMPLETE_JOB),
+  @JsonSubTypes.Type(
+      value = MockJobWorkerThrowBpmnErrorInstruction.class,
+      name = TestCaseInstructionType.MOCK_JOB_WORKER_THROW_BPMN_ERROR),
   @JsonSubTypes.Type(
       value = PublishMessageInstruction.class,
       name = TestCaseInstructionType.PUBLISH_MESSAGE)
