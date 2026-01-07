@@ -9,18 +9,19 @@ labels: kind/feature-request
 
 ## User Story
 
-Currently, batch move operations in the Orchestration Cluster API use a fixed ancestor scope resolution strategy (`inferAncestorScopeFromSourceHierarchy` set to `true`). However, there are scenarios where users might want to use the simpler "source parent" strategy instead.
+Currently, batch move operations in the Orchestration Cluster API use a fixed ancestor scope resolution strategy (`inferAncestorScopeFromSourceHierarchy` set to `true`). However, this is more costly than necessary for the common case and differs from the original design.
 
 In single process instance modification operations, users can choose between two ancestor scope resolution strategies:
-1. **Inferred from source hierarchy** (`inferAncestorScopeFromSourceHierarchy`): Traverses the source element's hierarchy to determine the appropriate ancestor scope
-2. **Source parent key** (`useSourceParentKeyAsAncestorScopeKey`): Directly uses the source element's parent key as the ancestor scope, which is simpler and was the original behavior before the "inferred" strategy was introduced
+1. **Inferred from source hierarchy** (`inferAncestorScopeFromSourceHierarchy`): Traverses the source element's hierarchy to determine the appropriate ancestor scope - useful when source and target elements are not siblings
+2. **Source parent key** (`useSourceParentKeyAsAncestorScopeKey`): Directly uses the source element's parent key as the ancestor scope, which is simpler, more performant (no hierarchy traversal), and was the original behavior before the "inferred" strategy was introduced
 
-Before the migration to "inferred" as the default, batch move operations used the "source parent" strategy and it worked well. The question is whether batch move operations should support both strategies to give users flexibility based on their use case.
+Before the migration to "inferred" as the default, batch move operations used the "source parent" strategy and it worked well for the majority of use cases where source and target elements are siblings within the same direct scope.
 
 **Why this would be beneficial:**
 - Provides users with flexibility to choose the most appropriate ancestor scope resolution strategy for their specific use case
-- Maintains backward compatibility for users who prefer the original "source parent" behavior
-- Allows users to optimize for simplicity (source parent) vs. more complex hierarchy traversal (inferred) based on their process structure
+- Defaults to the more performant `sourceParent` strategy which avoids unnecessary process model hierarchy traversal
+- Aligns with the original design and works well for common cases where elements are siblings
+- Allows users to explicitly opt into `inferred` strategy when they know source and target elements are not siblings (do not belong to the same direct scope)
 
 **Related documentation:**
 - [Operate docs on batch modifications](https://docs.camunda.io/docs/next/components/operate/userguide/process-instance-batch-modification/#non-supported-modifications) mention that "Move modifications are currently not possible for elements with multiple running scopes"
@@ -43,7 +44,7 @@ For batch operations, only allow `sourceParent` or `inferred` ancestor scope typ
         "sourceElementId": "taskA",
         "targetElementId": "taskB",
         "ancestorScopeInstruction": {
-          "ancestorScopeType": "sourceParent"  // or "inferred" (default)
+          "ancestorScopeType": "sourceParent"  // default, or "inferred" when needed
         }
       }
     ]
@@ -53,9 +54,10 @@ For batch operations, only allow `sourceParent` or `inferred` ancestor scope typ
 
 **Key design decisions:**
 - Use the existing `AncestorScopeInstruction` polymorphic schema pattern for consistency
-- Default to `inferred` behavior for backward compatibility
+- Default to `sourceParent` behavior as it's less costly (no process model hierarchy traversal), aligns with the original design before the inferring feature was introduced, and works well for the common case where source and target elements are siblings in the same direct scope
 - Only support `sourceParent` and `inferred` types (exclude `direct` as it's not applicable to batch operations)
-- The `ancestorScopeInstruction` field should be optional; when omitted, default to `inferred`
+- The `ancestorScopeInstruction` field should be optional; when omitted, default to `sourceParent`
+- `inferred` should be explicitly specified when users know that the modification source and target elements are not siblings (they do not belong to the same direct scope)
 
 ## Technical requirements
 
@@ -63,9 +65,9 @@ For batch operations, only allow `sourceParent` or `inferred` ancestor scope typ
 2. Add validation to ensure only `sourceParent` and `inferred` ancestor scope types are allowed in batch operations (reject `direct` type)
 3. Update the `RequestMapper.mapProcessInstanceModificationMoveBatchInstruction` method to map the `ancestorScopeInstruction` parameter to the appropriate internal instruction format
 4. Ensure the engine correctly processes both `sourceParent` and `inferred` strategies for batch operations
-5. Default to `inferred` behavior when `ancestorScopeInstruction` is not specified (for backward compatibility)
-6. Update API documentation to explain both strategies, when to use each, and why `direct` is not supported for batch operations
-7. Add tests for both `sourceParent` and `inferred` strategies in batch operations
+5. Default to `sourceParent` behavior when `ancestorScopeInstruction` is not specified (for performance and alignment with original design)
+6. Update API documentation to explain both strategies, when to use each (particularly when `inferred` is needed for non-sibling elements), and why `direct` is not supported for batch operations
+7. Add tests for both `sourceParent` (default) and `inferred` strategies in batch operations
 8. Add validation tests to ensure `direct` type is properly rejected for batch operations
 
 ## Links
