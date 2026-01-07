@@ -37,6 +37,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
@@ -261,7 +262,7 @@ public class PojoCompatibilityTest {
                         ImmutableElementSelector.builder().elementId("task2").build())
                     .state(ElementInstancesState.IS_COMPLETED_IN_ORDER)
                     .build())),
-        // ===== COMPLETE_USER_TASK ===
+        // ===== COMPLETE_USER_TASK =====
         Arguments.of(
             "complete user task: minimal",
             singleTestCase(
@@ -323,6 +324,29 @@ public class PojoCompatibilityTest {
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("fetch-weather-data")
                     .useExampleData(true)
+                    .build())),
+        // ===== ASSERT_VARIABLES =====
+        Arguments.of(
+            "assert variables: minimal",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "assert variables: complete",
+            singleTestCase(
+                ImmutableAssertVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task_A").build())
+                    .addVariableNames("var1", "var2")
+                    .putVariables("x", 3)
+                    .putVariables("y", "okay")
                     .build()))
         // add new instructions here
         );
