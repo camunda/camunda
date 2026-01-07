@@ -22,6 +22,7 @@ test.beforeAll(async () => {
     './resources/variableScrollingProcess.bpmn',
     './resources/simpleServiceTaskProcess.bpmn',
   ]);
+  await sleep(1500);
   const manyVariables = generateManyVariables();
   await createInstances('variableScrollingProcess', 1, 1, manyVariables);
   await createInstances('simpleServiceTaskProcess', 1, 1);
@@ -207,7 +208,7 @@ test.describe('Process Instance Variables', () => {
         operateProcessInstancePage.variablesList.getByRole('row'),
       ).toHaveCount(201);
 
-      await expect(page.getByText('aa', {exact: true})).not.toBeVisible();
+      await expect(page.getByText('aa', {exact: true})).toBeHidden();
       await expect(page.getByText('by', {exact: true})).toBeVisible();
       await expect(page.getByText('jp', {exact: true})).toBeVisible();
 
@@ -216,7 +217,7 @@ test.describe('Process Instance Variables', () => {
         operateProcessInstancePage.variablesList.getByRole('row'),
       ).toHaveCount(201);
 
-      await expect(page.getByText('jp', {exact: true})).not.toBeVisible();
+      await expect(page.getByText('jp', {exact: true})).toBeHidden();
       await expect(page.getByText('aa', {exact: true})).toBeVisible();
       await expect(page.getByText('by', {exact: true})).toBeVisible();
     });

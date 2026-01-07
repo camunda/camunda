@@ -64,7 +64,9 @@ class TaskPanelPage {
           ? 'assigned-to-me'
           : option.toLowerCase().replace(/\s+/g, '-');
 
-    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {timeout: 30000});
+    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {
+      timeout: 30000,
+    });
 
     await this.collapseSidePanelButton.click();
   }
