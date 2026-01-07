@@ -115,7 +115,7 @@
     <version.jqwik>1.9.3</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.json-smart>2.5.2</version.json-smart>
+    <version.json-smart>2.6.0</version.json-smart>
     <version.byte-buddy>1.17.6</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
