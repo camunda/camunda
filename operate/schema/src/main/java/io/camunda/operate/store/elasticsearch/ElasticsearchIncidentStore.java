@@ -137,20 +137,17 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     try {
       final var firstResponse = new AtomicBoolean(true);
 
-      try (final var stream =
-          ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, IncidentEntity.class)) {
-        return stream
-            .peek(
-                res -> {
-                  if (firstResponse.compareAndSet(true, false)) {
-                    populateErrorTypes(errorTypes, res, errorTypesAggName);
-                  }
-                })
-            .flatMap(res -> res.hits().hits().stream())
-            .map(Hit::source)
-            .toList();
-      }
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, IncidentEntity.class)
+          .peek(
+              res -> {
+                if (firstResponse.compareAndSet(true, false)) {
+                  populateErrorTypes(errorTypes, res, errorTypesAggName);
+                }
+              })
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
 
     } catch (final ScrollException e) {
       final String message =
