@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
-/** An instruction to assert the variables of a process instance or element. */
+/** An instruction to assert the variables of a process instance. */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableAssertVariablesInstruction.Builder.class)
 public interface AssertVariablesInstruction extends TestCaseInstruction {
@@ -55,12 +55,12 @@ public interface AssertVariablesInstruction extends TestCaseInstruction {
    *
    * @return the expected variable names or empty if not asserted
    */
-  Optional<List<String>> getVariableNames();
+  List<String> getVariableNames();
 
   /**
    * The expected variables with their values. Optional.
    *
    * @return the expected variables or empty if not asserted
    */
-  Optional<Map<String, Object>> getVariables();
+  Map<String, Object> getVariables();
 }
