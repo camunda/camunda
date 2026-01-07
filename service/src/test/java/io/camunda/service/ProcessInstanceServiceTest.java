@@ -128,9 +128,9 @@ public final class ProcessInstanceServiceTest {
                 r.items(
                     List.of(
                         new SequenceFlowEntity(
-                            "pi1_sequenceFlow1", "node1", 1L, 1L, "pd1", "<default>"),
+                            "pi1_sequenceFlow1", "node1", 1L, 37L, 1L, "pd1", "<default>"),
                         new SequenceFlowEntity(
-                            "pi1_sequenceFlow2", "node1", 1L, 1L, "pd1", "<default>"))));
+                            "pi1_sequenceFlow2", "node1", 1L, 37L, 1L, "pd1", "<default>"))));
     when(sequenceFlowSearchClient.searchSequenceFlows(any())).thenReturn(result);
 
     // when
