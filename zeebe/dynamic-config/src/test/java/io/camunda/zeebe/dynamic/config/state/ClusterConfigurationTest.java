@@ -415,6 +415,15 @@ class ClusterConfigurationTest {
     assertThat(merged.incarnationNumber()).isEqualTo(6);
   }
 
+  @Test
+  void initialIncarnationNumberIsZero() {
+    // given
+    final var initialConfig = ClusterConfiguration.init();
+
+    // then
+    assertThat(initialConfig.incarnationNumber()).isZero();
+  }
+
   private MemberId member(final int id) {
     return MemberId.from(Integer.toString(id));
   }
