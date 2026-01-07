@@ -79,7 +79,7 @@ export class OperateFiltersPanelPage {
       name: 'Process Instance Key(s)',
     });
     this.processInstanceKeysFilter = page.getByRole('textbox', {
-      name: 'process instance key',
+      name: 'Process Instance Key(s)',
     });
     this.parentProcessInstanceKey = page.getByRole('textbox', {
       name: 'parent process instance key',

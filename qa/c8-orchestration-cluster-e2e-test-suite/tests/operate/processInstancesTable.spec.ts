@@ -30,14 +30,16 @@ test.beforeAll(async () => {
 
   processA = {
     processInstanceKey: Number(
-      (await createSingleInstance('instancesTableProcessA')).processInstanceKey,
+      (await createSingleInstance('instancesTableProcessA', 1))
+        .processInstanceKey,
     ),
   };
   await sleep(500);
 
   processB_v_1 = {
     processInstanceKey: Number(
-      (await createSingleInstance('instancesTableProcessB')).processInstanceKey,
+      (await createSingleInstance('instancesTableProcessB', 1))
+        .processInstanceKey,
     ),
   };
 
@@ -46,7 +48,8 @@ test.beforeAll(async () => {
 
   processB_v_2 = {
     processInstanceKey: Number(
-      (await createSingleInstance('instancesTableProcessB')).processInstanceKey,
+      (await createSingleInstance('instancesTableProcessB', 2))
+        .processInstanceKey,
     ),
   };
 
@@ -55,6 +58,7 @@ test.beforeAll(async () => {
   for (let i = 0; i < 300; i++) {
     const instance = await createSingleInstance(
       'instancesTableProcessForInfiniteScroll',
+      1,
     );
     createdInstances.push(instance);
   }
