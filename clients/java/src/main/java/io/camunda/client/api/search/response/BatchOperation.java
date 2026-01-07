@@ -45,18 +45,18 @@ public interface BatchOperation {
   List<BatchOperationError> getErrors();
 
   /**
-   * The type of actor that created the batch operation. May be {@code null} is no actor information
-   * is known.
+   * The type of actor that created the batch operation. Is {@code null} if no actor information is
+   * known (e.g. when authentication is not required).
    *
-   * @since 8.9.0 - on older batch operations, this value is {@code null}.
+   * @since 8.9.0 - on older batch operations, this value is always {@code null}.
    */
   BatchOperationActorTypeEnum getActorType();
 
   /**
-   * The ID of the actor that created the batch operation. May be {@code null} is no actor
-   * information is known.
+   * The ID of the actor that created the batch operation. Is {@code null} if no actor information
+   * is known (e.g. when authentication is not required).
    *
-   * @since 8.9.0 - on older batch operations, this value is {@code null}.
+   * @since 8.9.0 - on older batch operations, this value is always {@code null}.
    */
   String getActorId();
 }
