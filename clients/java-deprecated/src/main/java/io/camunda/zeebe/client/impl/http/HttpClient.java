@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class HttpClient implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpClient.class);
+  private static final AtomicBoolean DEPRECATION_WARNING_LOGGED = new AtomicBoolean(false);
 
   private static final int MAX_RETRY_ATTEMPTS = 2;
 
@@ -257,9 +259,11 @@ public final class HttpClient implements AutoCloseable {
       final ApiCallback<HttpT, RespT> callback) {
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
 
-    LOGGER.warn(
-        "{} is deprecated and will be removed in version 8.10. Please migrate to io.camunda.client.CamundaClient.",
-        ZeebeClient.class.getSimpleName());
+    if (DEPRECATION_WARNING_LOGGED.compareAndSet(false, true)) {
+      LOGGER.warn(
+          "{} is deprecated and will be removed in version 8.10. Please migrate to io.camunda.client.CamundaClient.",
+          ZeebeClient.class.getSimpleName());
+    }
 
     final URI target = buildRequestURI(path);
 
