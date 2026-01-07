@@ -36,28 +36,28 @@ Copy `http-client.env.json.example` to `http-client.private.env.json` and config
 
 ## Test Categories
 
-| Category | Tests | Description |
-|----------|-------|-------------|
-| **Setup** | 001-010 | Deploy processes/forms, create instances |
-| **Basic Operations** | 011-015 | Single modifications (activate, terminate, variables) |
-| **Batch Operations** | 016-023 | Batch modifications and tracking |
-| **Search & Query** | 024-033 | Filtering, sorting, pagination |
-| **Data Validation** | 034-056 | Schema, timestamps, duplicates, actor info |
-| **Edge Cases** | 037-050 | Invalid inputs, error handling |
-| **Authorization** | 066-068 | Security and access control |
-| **Lifecycle** | 073-076 | Create → Modify → Cancel flow |
-| **Concurrent Operations** | 069-072 | Race conditions, concurrent access |
-| **Complex Scenarios** | 057-065 | Multi-step modifications |
-| **Multi-Tenant** | 082-087 | Tenant isolation and cross-tenant access |
+|         Category          |  Tests  |                      Description                      |
+|---------------------------|---------|-------------------------------------------------------|
+| **Setup**                 | 001-010 | Deploy processes/forms, create instances              |
+| **Basic Operations**      | 011-015 | Single modifications (activate, terminate, variables) |
+| **Batch Operations**      | 016-023 | Batch modifications and tracking                      |
+| **Search & Query**        | 024-033 | Filtering, sorting, pagination                        |
+| **Data Validation**       | 034-056 | Schema, timestamps, duplicates, actor info            |
+| **Edge Cases**            | 037-050 | Invalid inputs, error handling                        |
+| **Authorization**         | 066-068 | Security and access control                           |
+| **Lifecycle**             | 073-076 | Create → Modify → Cancel flow                         |
+| **Concurrent Operations** | 069-072 | Race conditions, concurrent access                    |
+| **Complex Scenarios**     | 057-065 | Multi-step modifications                              |
+| **Multi-Tenant**          | 082-087 | Tenant isolation and cross-tenant access              |
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| 401 Unauthorized | Check authentication token is set correctly |
-| Variable not found | Run Setup tests (001-010) first |
-| Tests timeout | Increase wait times for eventual consistency |
-| 404 audit logs | Enable audit log in Camunda configuration |
+|      Problem       |                   Solution                   |
+|--------------------|----------------------------------------------|
+| 401 Unauthorized   | Check authentication token is set correctly  |
+| Variable not found | Run Setup tests (001-010) first              |
+| Tests timeout      | Increase wait times for eventual consistency |
+| 404 audit logs     | Enable audit log in Camunda configuration    |
 
 ## Resources
 
@@ -75,5 +75,4 @@ audit-log-tests/
 ---
 
 **Last Updated**: December 22, 2025 | **Version**: 2.2
-
 
