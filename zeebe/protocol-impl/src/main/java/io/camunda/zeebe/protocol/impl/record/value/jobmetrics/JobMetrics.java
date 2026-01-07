@@ -71,7 +71,7 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
   public JobMetrics wrap(final JobMetricsValue value) {
     setJobTypeIndex(value.getJobTypeIndex());
     setTenantIdIndex(value.getTenantIdIndex());
-    setTenantIdIndex(value.getTenantIdIndex());
+    setWorkerNameIndex(value.getWorkerNameIndex());
     setStatusMetrics(value.getStatusMetrics());
     return this;
   }
