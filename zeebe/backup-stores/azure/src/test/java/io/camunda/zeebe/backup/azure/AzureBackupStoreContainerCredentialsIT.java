@@ -22,12 +22,11 @@ import com.azure.storage.common.sas.AccountSasSignatureValues;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -70,7 +69,7 @@ public class AzureBackupStoreContainerCredentialsIT {
   // Further explanation along the description of the manual tests to replace this can be found in
   // the PR: https://github.com/camunda/camunda/pull/31494
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void shouldLoginWithAccountSasToken(final Backup backup) {
     // we create an azure client initially so that we can generate a sas token.
     final BlobServiceClient blobServiceClient =
@@ -97,7 +96,7 @@ public class AzureBackupStoreContainerCredentialsIT {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void shouldLoginWithServiceSasToken(final Backup backup) {
     // we create an azure client initially so that we can generate a sas token.
     final BlobServiceClient blobServiceClient =

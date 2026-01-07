@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.backup.testkit.support;
+package io.camunda.zeebe.backup.s3.util;
 
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -26,15 +26,17 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.params.provider.Arguments;
 
-public final class TestBackupProvider {
+public class S3TestBackupProvider {
 
   public static Stream<? extends Arguments> provideArguments() throws Exception {
     return Stream.of(
-        arguments(named("stub", simpleBackup())),
-        arguments(named("stub without snapshot", backupWithoutSnapshot())));
+        arguments(named("stub", simpleBackup(false))),
+        arguments(named("stub legacy", simpleBackup(true))),
+        arguments(named("stub without snapshot", backupWithoutSnapshot(false))),
+        arguments(named("stub without snapshot legacy", backupWithoutSnapshot(true))));
   }
 
-  public static Backup backupWithoutSnapshot() throws IOException {
+  public static Backup backupWithoutSnapshot(final boolean legacy) throws IOException {
     final var tempDir = Files.createTempDirectory("backup");
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
@@ -47,18 +49,37 @@ public final class TestBackupProvider {
         new BackupDescriptorImpl(
             4,
             5,
-            VersionUtil.getVersion(),
+            legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion(),
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }
 
-  public static Backup simpleBackup() throws IOException {
-    return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3));
+  public static Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
+    final var tempDir = Files.createTempDirectory("backup");
+    Files.createDirectory(tempDir.resolve("segments/"));
+    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
+    Files.write(seg1, RandomUtils.nextBytes(1));
+
+    return new BackupImpl(
+        id,
+        new BackupDescriptorImpl(
+            4,
+            5,
+            "test",
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            CheckpointType.MANUAL_BACKUP),
+        new NamedFileSetImpl(Map.of()),
+        new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
   }
 
-  public static Backup simpleBackupWithId(final BackupIdentifierImpl id) throws IOException {
+  public static Backup simpleBackup(final boolean legacy) throws IOException {
+    return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), legacy);
+  }
+
+  public static Backup simpleBackupWithId(final BackupIdentifierImpl id, final boolean legacy)
+      throws IOException {
     final var tempDir = Files.createTempDirectory("backup");
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
@@ -78,28 +99,10 @@ public final class TestBackupProvider {
             "test-snapshot-id",
             4,
             5,
-            VersionUtil.getVersion(),
+            legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion(),
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
-  }
-
-  public static Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    Files.write(seg1, RandomUtils.nextBytes(1));
-
-    return new BackupImpl(
-        id,
-        new BackupDescriptorImpl(
-            4,
-            5,
-            VersionUtil.getVersion(),
-            Instant.now().truncatedTo(ChronoUnit.MILLIS),
-            CheckpointType.MANUAL_BACKUP),
-        new NamedFileSetImpl(Map.of()),
-        new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
   }
 }

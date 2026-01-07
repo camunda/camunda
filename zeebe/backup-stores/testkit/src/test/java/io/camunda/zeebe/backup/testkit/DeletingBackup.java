@@ -12,12 +12,11 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public interface DeletingBackup {
   BackupStore getStore();
@@ -32,7 +31,7 @@ public interface DeletingBackup {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void backupDoesNotExistAfterDeleting(final Backup backup) {
     // given
     getStore().save(backup).join();

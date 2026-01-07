@@ -12,19 +12,18 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public interface RestoringBackup {
   BackupStore getStore();
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void canRestoreBackup(final Backup backup, @TempDir final Path targetDir) {
     // given
     getStore().save(backup).join();
@@ -37,7 +36,7 @@ public interface RestoringBackup {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void restoredBackupHasSameContents(
       final Backup originalBackup, @TempDir final Path targetDir) {
     // given
@@ -53,7 +52,7 @@ public interface RestoringBackup {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void savedContentDoesNotGetOverWritten(
       final Backup originalBackup, @TempDir final Path targetDir) {
     // given

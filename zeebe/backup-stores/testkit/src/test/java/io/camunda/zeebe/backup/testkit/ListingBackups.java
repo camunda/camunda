@@ -9,9 +9,11 @@ package io.camunda.zeebe.backup.testkit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.WildcardBackupProvider;
@@ -49,14 +51,13 @@ public interface ListingBackups {
   @ArgumentsSource(WildcardBackupProvider.class)
   default void canFindBackupByWildcard(final WildcardTestParameter parameter) {
     // given
-    final var provider = new TestBackupProvider();
 
     final var backups =
         Stream.concat(parameter.unexpectedIds().stream(), parameter.expectedIds().stream())
             .map(
                 id -> {
                   try {
-                    return provider.minimalBackupWithId(id);
+                    return getBackup(id);
                   } catch (final IOException e) {
                     throw new UncheckedIOException(e);
                   }
@@ -71,5 +72,9 @@ public interface ListingBackups {
     assertThat(result)
         .map(BackupStatus::id)
         .containsExactlyInAnyOrderElementsOf(parameter.expectedIds());
+  }
+
+  default Backup getBackup(final BackupIdentifierImpl id) throws IOException {
+    return TestBackupProvider.minimalBackupWithId(id);
   }
 }

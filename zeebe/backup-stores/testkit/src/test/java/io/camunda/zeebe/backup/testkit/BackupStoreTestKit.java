@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.backup.testkit;
 
+import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
+
 public interface BackupStoreTestKit
     extends SavingBackup,
         DeletingBackup,
@@ -14,4 +18,10 @@ public interface BackupStoreTestKit
         UpdatingBackupStatus,
         QueryingBackupStatus,
         ListingBackups,
-        StoringRangeMarkers {}
+        StoringRangeMarkers,
+        StoringBackupIndex {
+
+  static Stream<? extends Arguments> provideBackups() throws Exception {
+    return TestBackupProvider.provideArguments();
+  }
+}

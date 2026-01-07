@@ -10,12 +10,14 @@ package io.camunda.zeebe.backup.s3;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.s3.S3BackupStore.Directory;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.manifest.CompletedBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
+import io.camunda.zeebe.backup.s3.util.S3TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
+import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -23,7 +25,8 @@ import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -45,7 +48,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void savesManifest(final Backup backup) throws IOException {
     // when
     getStore().save(backup).join();
@@ -56,7 +59,9 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
             .getObject(
                 GetObjectRequest.builder()
                     .bucket(getConfig().bucketName())
-                    .key(getStore().objectPrefix(backup.id()) + S3BackupStore.MANIFEST_OBJECT_KEY)
+                    .key(
+                        getStore().derivePath(backup.descriptor(), backup.id(), Directory.MANIFESTS)
+                            + S3BackupStore.MANIFEST_OBJECT_KEY)
                     .build(),
                 AsyncResponseTransformer.toBytes())
             .join();
@@ -77,7 +82,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void snapshotFilesExist(final Backup backup) {
     // given
     final var prefix = getStore().objectPrefix(backup.id()) + S3BackupStore.SNAPSHOT_PREFIX;
@@ -99,7 +104,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void segmentFilesExist(final Backup backup) {
     // given
     final var prefix = getStore().objectPrefix(backup.id()) + S3BackupStore.SEGMENTS_PREFIX;
@@ -121,12 +126,29 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void bucketContainsExpectedObjectsOnly(final Backup backup) {
     // given
-    final var prefix = getStore().objectPrefix(backup.id());
+    final var brokerVersion =
+        SemanticVersion.parse(backup.descriptor().brokerVersion())
+            .orElseThrow(
+                () ->
+                    new ManifestParseException(
+                        "Invalid broker version format in backup: "
+                            + backup.descriptor().brokerVersion(),
+                        null));
 
-    final var manifest = prefix + S3BackupStore.MANIFEST_OBJECT_KEY;
+    final var prefix =
+        brokerVersion.minor() <= 8
+            ? getStore().objectPrefix(backup.id())
+            : getStore().objectPrefixV2(backup.id(), Directory.CONTENTS);
+
+    final var manifestPrefix =
+        brokerVersion.minor() <= 8
+            ? getStore().objectPrefix(backup.id())
+            : getStore().objectPrefixV2(backup.id(), Directory.MANIFESTS);
+
+    final var manifest = manifestPrefix + S3BackupStore.MANIFEST_OBJECT_KEY;
     final var snapshotObjects =
         backup.snapshot().names().stream()
             .map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
@@ -158,7 +180,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void allBackupObjectsAreDeleted(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -186,7 +208,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void statusQueryFailsIfManifestIsCorrupt(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -196,7 +218,9 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
         .putObject(
             req ->
                 req.bucket(getConfig().bucketName())
-                    .key(getStore().objectPrefix(backup.id()) + S3BackupStore.MANIFEST_OBJECT_KEY),
+                    .key(
+                        getStore().derivePath(backup.descriptor(), backup.id(), Directory.MANIFESTS)
+                            + S3BackupStore.MANIFEST_OBJECT_KEY),
             AsyncRequestBody.fromString("{s"))
         .join();
 
@@ -209,7 +233,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void deletingPartialBackupSucceeds(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -228,7 +252,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void deletingInProgressBackupFails(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -242,5 +266,9 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+  }
+
+  static Stream<? extends Arguments> provideBackups() throws Exception {
+    return S3TestBackupProvider.provideArguments();
   }
 }
