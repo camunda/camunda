@@ -68,7 +68,16 @@ jobs:
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
-
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-should-run
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   # Parallel frontend builds
   build-operate-frontend:
     name: Build Operate Frontend
@@ -88,7 +97,16 @@ jobs:
           name: operate-frontend
           path: operate/client/build
           retention-days: 1
-
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-operate-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   build-tasklist-frontend:
     name: Build Tasklist Frontend
     needs: should-run
@@ -107,7 +125,16 @@ jobs:
           name: tasklist-frontend
           path: tasklist/client/build
           retention-days: 1
-
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-tasklist-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   build-identity-frontend:
     name: Build Identity Frontend
     needs: should-run
@@ -126,6 +153,16 @@ jobs:
           name: identity-frontend
           path: identity/client/dist
           retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: docker-build-helm-integration-identity-frontend
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Main build job - waits for all frontends to complete
   build-and-push:
