@@ -16,10 +16,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 
-public class HistoryDeletionDeletedOperationHandler
+public class HistoryDeletionOperationHandler
     extends AbstractOperationStatusHandler<HistoryDeletionRecordValue> {
 
-  public HistoryDeletionDeletedOperationHandler(
+  public HistoryDeletionOperationHandler(
       final String indexName,
       final OperationType operationType,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
