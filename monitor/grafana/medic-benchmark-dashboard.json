@@ -67,6 +67,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -157,7 +158,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*typical\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*typical\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -246,7 +247,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*typical\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*typical\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -327,7 +328,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic.*typical\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*typical\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -425,7 +426,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"(medic.*mixed|release-rolling)\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -510,7 +511,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"(medic.*mixed|release-rolling)\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -595,7 +596,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"(medic.*mixed|release-rolling)\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -692,7 +693,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic-daily.*\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic-daily.*\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -778,7 +779,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic-daily.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic-daily.*\",action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -864,7 +865,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"medic-daily.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic-daily.*\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -975,7 +976,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", cluster=~\"$cluster\", container!~\"curator|curl\", namespace=~\".*-latency\"}",
+          "expr": "1 - kube_pod_container_status_ready{container!~\"curator|curl\", namespace=~\".*-latency\"}",
           "legendFormat": "{{pod}} restart",
           "range": true,
           "refId": "A"
@@ -1063,7 +1064,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark|medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*benchmark|medic.*benchmark-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1075,7 +1076,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark|medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*benchmark|medic.*benchmark-latency\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1165,7 +1166,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*benchmark\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1177,7 +1178,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*benchmark\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1267,7 +1268,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*benchmark\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1279,7 +1280,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*benchmark\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1369,7 +1370,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*benchmark-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1381,7 +1382,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*benchmark-latency\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1471,7 +1472,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*benchmark-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1483,7 +1484,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*benchmark-latency\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1583,7 +1584,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "format": "heatmap",
           "interval": "30s",
           "intervalFactor": 1,
@@ -1597,7 +1598,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "interval": "",
           "legendFormat": "p99 {{namespace}}",
           "range": true,
@@ -1608,7 +1609,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "format": "heatmap",
           "interval": "30s",
           "intervalFactor": 1,
@@ -1622,7 +1623,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "interval": "",
           "legendFormat": "p99 {{namespace}}",
           "range": true,
@@ -1805,7 +1806,7 @@
             "properties": [
               {
                 "id": "custom.width",
-                "value": 466
+                "value": 184
               }
             ]
           },
@@ -1869,7 +1870,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "zeebe_health{cluster=~\"$cluster\", namespace=~\"medic.*\", partition=~\"$partition\", pod=~\"$pod\"} ",
+          "expr": "zeebe_health{namespace=~\"medic.*\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1882,7 +1883,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"medic.*\", pod=~\"$pod\", partition=~\"$partition\"} ",
+          "expr": "atomix_role{namespace=~\"medic.*\"} ",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1908,8 +1909,9 @@
               "names": [
                 "partition",
                 "pod",
+                "Value #A",
                 "Value #B",
-                "Value #A"
+                "namespace"
               ]
             }
           }
@@ -2020,7 +2022,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "kube_pod_container_status_last_terminated_reason{cluster=~\"$cluster\", namespace=~\"medic.*\", container=\"zeebe\"}",
+          "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"medic.*\", container=~\"zeebe|camunda\"}",
           "interval": "",
           "legendFormat": "{{ pod }}",
           "range": true,
@@ -2091,44 +2093,11 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Shows how much disk is used by each broker.",
+      "description": "Shows how much disk is used at max by a broker per namespace",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "links": [],
           "mappings": [],
@@ -2143,7 +2112,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percentunit"
         },
         "overrides": []
       },
@@ -2155,18 +2125,21 @@
       },
       "id": 39,
       "options": {
-        "alertThreshold": true,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.0.2",
       "targets": [
@@ -2175,14 +2148,14 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"medic.*\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
+          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
           "legendFormat": "{{persistentvolumeclaim}}",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Zeebe Broker Disk usage",
-      "type": "timeseries"
+      "title": "Namespace max disk usage",
+      "type": "stat"
     },
     {
       "collapsed": false,
@@ -2272,7 +2245,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release-8.*\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"release-8.*\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2357,7 +2330,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release-8.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"release-8.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2438,7 +2411,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"release-8.*\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"release-8.*\",action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2527,7 +2500,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"release-8.*\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2539,7 +2512,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"release-8.*\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -2629,7 +2602,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"release-8.*\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2641,7 +2614,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"release-8.*\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -2731,7 +2704,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"release-8.*\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2743,7 +2716,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"release-8.*\", pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -2953,7 +2926,7 @@
         "showHeader": true,
         "sortBy": [
           {
-            "desc": true,
+            "desc": false,
             "displayName": "Health"
           }
         ]
@@ -2966,7 +2939,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "zeebe_health{cluster=~\"$cluster\", namespace=~\"release.*\", partition=~\"$partition\", pod=~\"$pod\"} ",
+          "expr": "zeebe_health{namespace=~\"release.*\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -2979,7 +2952,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"release.*\", pod=~\"$pod\", partition=~\"$partition\"} ",
+          "expr": "atomix_role{namespace=~\"release.*\"} ",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -3005,8 +2978,9 @@
               "names": [
                 "partition",
                 "pod",
+                "Value #A",
                 "Value #B",
-                "Value #A"
+                "namespace"
               ]
             }
           }
@@ -3030,7 +3004,7 @@
             "sort": [
               {
                 "desc": true,
-                "field": "Value #B"
+                "field": "Value #A"
               }
             ]
           }
@@ -3047,44 +3021,11 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Shows how much disk is used by each broker.",
+      "description": "Shows how much disk at max is used by brokers per namespace",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "links": [],
           "mappings": [],
@@ -3096,33 +3037,37 @@
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 0.8
               }
             ]
-          }
+          },
+          "unit": "percentunit"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
+        "h": 9,
         "w": 13,
         "x": 11,
         "y": 63
       },
       "id": 296,
       "options": {
-        "alertThreshold": true,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "12.0.2",
       "targets": [
@@ -3131,14 +3076,14 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"release.*\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
-          "legendFormat": "{{persistentvolumeclaim}}",
+          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"release.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"release.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
+          "legendFormat": "{{persistentvolumeclaim}} {{namespace}}",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "Zeebe Broker Disk usage",
-      "type": "timeseries"
+      "title": "Namespace disk usage (max)",
+      "type": "stat"
     }
   ],
   "refresh": "1m",
@@ -3156,89 +3101,6 @@
         "refresh": 1,
         "regex": "",
         "type": "datasource"
-      },
-      {
-        "allValue": ".*",
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
-        },
-        "definition": "label_values(atomix_role, cluster)",
-        "description": "Kubernetes cluster",
-        "includeAll": true,
-        "name": "cluster",
-        "options": [],
-        "query": {
-          "query": "label_values(atomix_role, cluster)",
-          "refId": "Prometheus-cluster-Variable-Query"
-        },
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allValue": ".*",
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
-        },
-        "definition": "label_values(atomix_role{cluster=~\"$cluster\"}, namespace)",
-        "includeAll": true,
-        "name": "namespace",
-        "options": [],
-        "query": {
-          "query": "label_values(atomix_role{cluster=~\"$cluster\"}, namespace)",
-          "refId": "Prometheus-namespace-Variable-Query"
-        },
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allValue": ".*",
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
-        },
-        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, pod)",
-        "includeAll": true,
-        "multi": true,
-        "name": "pod",
-        "options": [],
-        "query": {
-          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, pod)",
-          "refId": "Prometheus-pod-Variable-Query"
-        },
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "allValue": ".*",
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
-        },
-        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
-        "includeAll": true,
-        "multi": true,
-        "name": "partition",
-        "options": [],
-        "query": {
-          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
-          "refId": "Prometheus-partition-Variable-Query"
-        },
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
       }
     ]
   },
@@ -3262,5 +3124,6 @@
   "timezone": "",
   "title": "Zeebe Medic Load Tests",
   "uid": "zeebe-medic-benchmark",
-  "version": 6
+  "version": 7,
+  "weekStart": ""
 }
