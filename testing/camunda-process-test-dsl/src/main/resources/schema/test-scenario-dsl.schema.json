@@ -66,6 +66,9 @@
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
         },
         {
+          "$ref": "#/definitions/MockJobWorkerCompleteJobInstruction"
+        },
+        {
           "$ref": "#/definitions/PublishMessageInstruction"
         }
       ]
@@ -478,6 +481,35 @@
       "required": [
         "type",
         "name"
+      ],
+      "additionalProperties": false
+    },
+    "MockJobWorkerCompleteJobInstruction": {
+      "description": "An instruction to mock a job worker who completes jobs.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "MOCK_JOB_WORKER_COMPLETE_JOB"
+        },
+        "jobType": {
+          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to complete the job with.",
+          "type": "object"
+        },
+        "useExampleData": {
+          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "jobType"
       ],
       "additionalProperties": false
     }
