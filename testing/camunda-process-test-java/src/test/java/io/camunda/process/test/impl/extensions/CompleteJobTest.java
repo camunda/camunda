@@ -30,6 +30,8 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.filter.JobFilter;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.client.api.search.filter.builder.JobStateProperty;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -56,7 +58,6 @@ public class CompleteJobTest {
 
   private static final Long JOB_KEY = 100L;
   private static final String JOB_TYPE = "test-job";
-  private static final String ELEMENT_ID = "service-task-1";
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
@@ -73,7 +74,17 @@ public class CompleteJobTest {
   @Mock private Job job;
 
   @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
-  @Mock private JobFilter jobFilter;
+  @Captor private ArgumentCaptor<Consumer<JobStateProperty>> jobStatePropertyCaptor;
+  @Captor private ArgumentCaptor<Consumer<IntegerProperty>> retriesPropertyCaptor;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private JobFilter jobFilter;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private JobStateProperty jobStateProperty;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private IntegerProperty retriesProperty;
 
   private CamundaProcessTestContext camundaProcessTestContext;
 
@@ -109,7 +120,6 @@ public class CompleteJobTest {
 
       when(job.getJobKey()).thenReturn(JOB_KEY);
       when(job.getType()).thenReturn(JOB_TYPE);
-      when(job.getElementId()).thenReturn(ELEMENT_ID);
     }
 
     @Test
@@ -141,15 +151,16 @@ public class CompleteJobTest {
       // then
       jobFilterCaptor.getValue().accept(jobFilter);
       verify(jobFilter).type(JOB_TYPE);
-      verify(jobFilter)
-          .state(
-              state ->
-                  state.in(
-                      JobState.CREATED,
-                      JobState.FAILED,
-                      JobState.RETRIES_UPDATED,
-                      JobState.TIMED_OUT));
-      verify(jobFilter).retries(retries -> retries.gte(1));
+      verify(jobFilter).state(jobStatePropertyCaptor.capture());
+      verify(jobFilter.state(jobStatePropertyCaptor.getValue()))
+          .retries(retriesPropertyCaptor.capture());
+
+      jobStatePropertyCaptor.getValue().accept(jobStateProperty);
+      verify(jobStateProperty)
+          .in(JobState.CREATED, JobState.FAILED, JobState.RETRIES_UPDATED, JobState.TIMED_OUT);
+
+      retriesPropertyCaptor.getValue().accept(retriesProperty);
+      verify(retriesProperty).gte(1);
 
       verifyNoMoreInteractions(jobFilter);
     }
@@ -162,15 +173,16 @@ public class CompleteJobTest {
       // then
       jobFilterCaptor.getValue().accept(jobFilter);
       verify(jobFilter).type(JOB_TYPE);
-      verify(jobFilter)
-          .state(
-              state ->
-                  state.in(
-                      JobState.CREATED,
-                      JobState.FAILED,
-                      JobState.RETRIES_UPDATED,
-                      JobState.TIMED_OUT));
-      verify(jobFilter).retries(retries -> retries.gte(1));
+      verify(jobFilter).state(jobStatePropertyCaptor.capture());
+      verify(jobFilter.state(jobStatePropertyCaptor.getValue()))
+          .retries(retriesPropertyCaptor.capture());
+
+      jobStatePropertyCaptor.getValue().accept(jobStateProperty);
+      verify(jobStateProperty)
+          .in(JobState.CREATED, JobState.FAILED, JobState.RETRIES_UPDATED, JobState.TIMED_OUT);
+
+      retriesPropertyCaptor.getValue().accept(retriesProperty);
+      verify(retriesProperty).gte(1);
 
       verifyNoMoreInteractions(jobFilter);
     }
@@ -178,7 +190,12 @@ public class CompleteJobTest {
     @Test
     void shouldAwaitUntilJobIsPresent() {
       // given
-      when(camundaClient.newJobSearchRequest().filter(jobFilterCaptor.capture()).send().join().items())
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.singletonList(job));
 
@@ -230,7 +247,12 @@ public class CompleteJobTest {
     @Test
     void shouldFailIfNoJobIsPresent() {
       // given
-      when(camundaClient.newJobSearchRequest().filter(jobFilterCaptor.capture()).send().join().items())
+      when(camundaClient
+              .newJobSearchRequest()
+              .filter(jobFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
           .thenReturn(Collections.emptyList());
 
       // when/then
