@@ -18,7 +18,7 @@ import {Title, DataTable} from './styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {useInstancesCountV2} from 'modules/queries/processInstancesStatistics/useInstancesCountV2';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessDefinitionKeyContext} from '../../../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {handleOperationError} from 'modules/utils/notifications';

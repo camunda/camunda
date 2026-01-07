@@ -19,7 +19,7 @@ import {
   getProcessInstance,
   setupSelectionStoreWithInstances,
   mockProcessInstancesV2,
-} from 'App/Processes/ListView/v2/tests/testUtils';
+} from '../../../tests/testUtils';
 import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';

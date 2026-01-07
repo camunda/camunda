@@ -21,7 +21,7 @@ import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {HelperModal} from 'modules/components/HelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessDefinitionKeyContext} from '../../../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 
 const localStorageKey = 'hideMigrationHelperModal';

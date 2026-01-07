@@ -28,7 +28,7 @@ import {getStateLocally} from 'modules/utils/localStorage';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {tracking} from 'modules/tracking';
 import {HelperModal} from 'modules/components/HelperModal';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessDefinitionKeyContext} from '../../../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNode} from 'modules/utils/flowNodes';
 

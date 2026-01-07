@@ -11,7 +11,7 @@ import {
   createV2TestWrapper,
   setupSelectionStoreWithInstances,
   mockProcessInstancesV2,
-} from 'App/Processes/ListView/v2/tests/testUtils';
+} from '../../../../tests/testUtils';
 import {MoveAction} from '..';
 import {open} from 'modules/mocks/diagrams';
 import {tracking} from 'modules/tracking';
