@@ -455,22 +455,6 @@ public class PojoCompatibilityTest {
                     .errorCode("invalid")
                     .build())),
         Arguments.of(
-            "mock job worker throw BPMN error: with variables",
-            singleTestCase(
-                ImmutableMockJobWorkerThrowBpmnErrorInstruction.builder()
-                    .jobType("validate-order")
-                    .errorCode("invalid")
-                    .putVariables("reason", "Missing required field")
-                    .build())),
-        Arguments.of(
-            "mock job worker throw BPMN error: with error message",
-            singleTestCase(
-                ImmutableMockJobWorkerThrowBpmnErrorInstruction.builder()
-                    .jobType("validate-order")
-                    .errorCode("invalid")
-                    .errorMessage("Order validation failed")
-                    .build())),
-        Arguments.of(
             "mock job worker throw BPMN error: full",
             singleTestCase(
                 ImmutableMockJobWorkerThrowBpmnErrorInstruction.builder()

@@ -24,7 +24,6 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerThrowBpmnErrorInstructionHandler;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,8 +48,6 @@ public class MockJobWorkerThrowBpmnErrorInstructionTest {
 
   @Mock private JobWorkerMockBuilder jobWorkerMockBuilder;
 
-  @Mock private JobWorkerMock jobWorkerMock;
-
   private final MockJobWorkerThrowBpmnErrorInstructionHandler instructionHandler =
       new MockJobWorkerThrowBpmnErrorInstructionHandler();
 
@@ -67,9 +64,6 @@ public class MockJobWorkerThrowBpmnErrorInstructionTest {
             .jobType(JOB_TYPE)
             .errorCode(ERROR_CODE)
             .build();
-
-    when(jobWorkerMockBuilder.thenThrowBpmnError(ERROR_CODE, Collections.emptyMap()))
-        .thenReturn(jobWorkerMock);
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
@@ -96,9 +90,6 @@ public class MockJobWorkerThrowBpmnErrorInstructionTest {
             .putAllVariables(variables)
             .build();
 
-    when(jobWorkerMockBuilder.thenThrowBpmnError(ERROR_CODE, variables))
-        .thenReturn(jobWorkerMock);
-
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
@@ -120,9 +111,6 @@ public class MockJobWorkerThrowBpmnErrorInstructionTest {
             .errorCode(ERROR_CODE)
             .errorMessage(errorMessage)
             .build();
-
-    when(jobWorkerMockBuilder.thenThrowBpmnError(ERROR_CODE, errorMessage, Collections.emptyMap()))
-        .thenReturn(jobWorkerMock);
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
@@ -150,9 +138,6 @@ public class MockJobWorkerThrowBpmnErrorInstructionTest {
             .errorMessage(errorMessage)
             .putAllVariables(variables)
             .build();
-
-    when(jobWorkerMockBuilder.thenThrowBpmnError(ERROR_CODE, errorMessage, variables))
-        .thenReturn(jobWorkerMock);
 
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
