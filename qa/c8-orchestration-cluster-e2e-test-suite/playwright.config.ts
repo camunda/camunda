@@ -72,11 +72,11 @@ const normalProjects = [
     teardown: 'api-tests-subset',
   },
   {
-      name: 'api-tests-subset',
-      testMatch: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
-      use: devices['Desktop Chrome'],
-      workers: 1,
-      fullyParallel: false,
+    name: 'api-tests-subset',
+    testMatch: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
   },
   {
     name: 'chromium',
