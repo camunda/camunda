@@ -41,6 +41,19 @@ const createInstances = async (
   }
 };
 
+const createSingleInstance = async (
+  processDefinitionId: string,
+  version: number,
+  variables?: JSONDoc,
+) => {
+  const result = await zeebe.createProcessInstance({
+    processDefinitionId,
+    version,
+    variables: variables ?? {},
+  });
+  return result;
+};
+
 const publishMessage = async (messageName: string, correlationKey: string) => {
   try {
     await zeebe.publishMessage({
@@ -53,12 +66,26 @@ const publishMessage = async (messageName: string, correlationKey: string) => {
   }
 };
 
+const generateManyVariables = () => {
+  let variables: Record<string, string> = {};
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+  alphabet.forEach((letter1) => {
+    alphabet.forEach((letter2) => {
+      variables[`${letter1}${letter2}`] = `${letter1}${letter2}`;
+    });
+  });
+
+  return variables;
+};
+
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
 ) {
   const res = await zeebe.searchProcessInstances({
     filter: {processInstanceKey},
+    sort: [],
   });
   const item = res?.items?.[0];
   console.log(
@@ -68,4 +95,10 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
-export {deploy, createInstances, publishMessage, checkUpdateOnVersion};
+export {
+  deploy,
+  createInstances,
+  publishMessage,
+  generateManyVariables,
+  checkUpdateOnVersion,
+};
