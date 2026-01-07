@@ -23,7 +23,7 @@ func (w *WindowsC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersio
 	panic("Platform was not built for windows")
 }
 
-func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd {
+func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
 	panic("Platform was not built for windows")
 }
 

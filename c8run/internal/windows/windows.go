@@ -53,9 +53,9 @@ func (w *WindowsC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersio
 	return elasticsearchCmd
 }
 
-func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd {
+func (w *WindowsC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
 	mainClass := "io.camunda.connector.runtime.app.ConnectorRuntimeApplication"
-	if connectors.UsePropertiesLauncher() {
+	if connectors.UsePropertiesLauncher(connectorsVersion) {
 		mainClass = "org.springframework.boot.loader.launch.PropertiesLauncher"
 	}
 	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-classpath", parentDir+"\\*;"+parentDir+"\\custom_connectors\\*", mainClass, "--spring.config.additional-location="+parentDir+"\\connectors-application.properties")

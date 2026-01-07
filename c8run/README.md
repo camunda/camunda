@@ -41,6 +41,6 @@ Only CI checks related to C8Run (those with "c8run" in the name) and CI runs mar
 
 To build and run C8Run locally run `./package.sh` followed by `./start.sh`
 
-### Switching the connectors launcher
+### Connectors launcher
 
-C8Run now defaults to starting the connectors runtime through Spring Boot's `PropertiesLauncher`, which matches how the connectors project ships its Docker entrypoint for Spring Boot 4+. This keeps the jar immutable while still letting `custom_connectors` be layered via the classpath. If you need to fall back to the legacy `JarLauncher`, set `CONNECTORS_USE_PROPERTIES_LAUNCHER=false` (the default `.env` enables it).
+C8Run automatically starts the connectors runtime through Spring Boot's `PropertiesLauncher` for connector bundles versioned 8.9.0 or newer (including snapshots). Older bundles continue to run via the legacy `JarLauncher`, so you can switch versions in `.env` without extra configuration.
