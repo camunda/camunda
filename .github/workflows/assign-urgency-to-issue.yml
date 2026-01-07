@@ -3,15 +3,16 @@
 ---
 # Urgency Field Automation
 #
-# This workflow automatically calculates and updates the Urgency field for Bug issues in GitHub Projects.
+# This workflow automatically calculates and updates the Urgency field for issues in GitHub Projects.
 #
 # How it works:
-# - Triggers when Bug issues are opened, labeled, unlabeled, reopened, or transferred
+# - Triggers when issues are opened, labeled, unlabeled, reopened, or transferred
 # - Calculates urgency based on severity and likelihood labels using a risk matrix
 # - Updates the Urgency field in ProjectV2 with values: immediate, next, planned, someday
+# - Applies to any issue with a severity label (not limited to Bug type)
 #
 # Labels:
-# - severity/{low,mid,high,critical} - Required for all bugs
+# - severity/{low,mid,high,critical} - Required to trigger urgency calculation
 # - likelihood/{low,mid,high,unknown} - Optional, defaults to unknown (treated as low)
 # - urgency-locked - Prevents automatic urgency updates while showing calculated value
 #
@@ -51,8 +52,6 @@ concurrency:
 
 jobs:
   assign-urgency-to-issue:
-    # Run when manually dispatched OR issue is Bug OR issueType missing (backwards compatibility)
-    if: github.event_name == 'workflow_dispatch' || (github.event.issue.issueType && github.event.issue.issueType.name == 'Bug') || github.event.issue.issueType == null
     runs-on: ubuntu-latest
     permissions: {}
     timeout-minutes: 10
@@ -74,8 +73,8 @@ jobs:
           cat << 'EOF'
           ${{ toJSON(github.event.issue) }}
           EOF
-      - name: Check issue
-        id: check_issue
+      - name: Fetch issue and project data
+        id: fetch_data
         run: |
           set -euo pipefail
 
@@ -83,9 +82,14 @@ jobs:
             echo "🔬 DRY RUN MODE - No changes will be made"
           fi
 
-          echo "🔍 Checking project membership for issue #${ISSUE_NUMBER} in project ${PROJECT_NUMBER}"
+          echo "🔍 Fetching issue #${ISSUE_NUMBER} and project ${PROJECT_NUMBER} data"
 
           # Single GraphQL query fetches: project info, project item, labels, issue type, and current urgency value
+          # projectItems section is needed to:
+          #   - Get PROJECT_ITEM_ID (required for updating the urgency field)
+          #   - Verify the issue is in the target project (filter by project.number)
+          #   - Fetch current urgency value (from fieldValues to check if update is needed)
+          # Note: Limited to first 100 projects - if issue is in 100+ projects, target might be missed
           QUERY="query(\$owner:String!,\$repo:String!,\$issueNumber:Int!,\$projectNumber:Int!){
             repository(owner:\$owner,name:\$repo){
               issue(number:\$issueNumber){
@@ -119,65 +123,86 @@ jobs:
             exit 1
           }
 
-          ISSUE_NODE_ID=$(echo "$RESP" | jq -r '.data.repository.issue.id // empty')
-          ISSUE_TYPE=$(echo "$RESP" | jq -r '.data.repository.issue.issueType.name // empty')
-          TARGET_PROJECT_NODE_ID=$(echo "$RESP" | jq -r '.data.organization.projectV2.id // empty')
+          # Store raw response parts in outputs for extraction where needed
+          ISSUE_DATA=$(echo "$RESP" | jq -c '.data.repository.issue')
+          PROJECT_DATA=$(echo "$RESP" | jq -c '.data.organization.projectV2')
 
-          # Check if issue is a Bug type
-          if [[ "$ISSUE_TYPE" != "Bug" ]]; then
-            echo "⏭️ Issue type is '$ISSUE_TYPE', not 'Bug'; skipping"
-            echo "is_relevant_issue=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          echo "✅ Fetched issue and project data"
 
-          echo "✅ Issue is a Bug"
+          # Store raw data in outputs for next steps
+          {
+            echo "issue_data<<EOF"
+            echo "$ISSUE_DATA"
+            echo "EOF"
+            echo "project_data<<EOF"
+            echo "$PROJECT_DATA"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
+      - name: Validate project membership
+        id: validate_project
+        run: |
+          set -euo pipefail
+
+          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          PROJECT_DATA='${{ steps.fetch_data.outputs.project_data }}'
+
+          # Extract project information
+          TARGET_PROJECT_NODE_ID=$(echo "$PROJECT_DATA" | jq -r '.id // empty')
+          PROJECT_ITEM_ID=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" \
+            '.projectItems.nodes[] | select(.project.number==$pn) | .id // empty')
+
+          echo "📦 Project: #${PROJECT_NUMBER} (id: ${TARGET_PROJECT_NODE_ID:-not found})"
+          echo "🔗 Project item: ${PROJECT_ITEM_ID:-not found}"
+
+          # Check if project exists
           if [[ -z "$TARGET_PROJECT_NODE_ID" ]]; then
-            echo "⏭️ Target project not found; skipping"
-            echo "is_relevant_issue=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "❌ Target project #${PROJECT_NUMBER} not found in organization ${OWNER}"
+            echo "💡 Check that the project exists and PROJECT_NUMBER is correct"
+            exit 1
           fi
 
-          PROJECT_ITEM_ID=$(echo "$RESP" | jq -r --argjson pn "$PROJECT_NUMBER" \
-            '.data.repository.issue.projectItems.nodes[] | select(.project.number==$pn) | .id // empty')
-
+          # Check if issue is in the project
           if [[ -z "$PROJECT_ITEM_ID" ]]; then
-            echo "⏭️ Issue not in target project; skipping"
-            echo "is_relevant_issue=false" >> "$GITHUB_OUTPUT"
+            echo "⏭️ Issue #${ISSUE_NUMBER} is not in target project #${PROJECT_NUMBER}; skipping"
+            echo "in_target_project=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           echo "✅ Issue is in target project (item: $PROJECT_ITEM_ID)"
 
-          # Extract current urgency value from the specific project item we found
-          CURRENT_URGENCY=$(echo "$RESP" | jq -r --argjson pn "$PROJECT_NUMBER" --arg fieldName "$URGENCY_FIELD_NAME" \
-            '.data.repository.issue.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name==$fieldName) | .name // empty')
-
-          if [[ -n "$CURRENT_URGENCY" ]]; then
-            echo "📌 Current urgency: $CURRENT_URGENCY"
-          else
-            echo "📌 Current urgency: (not set)"
-          fi
-
-          # Store all labels for next step
-          LABELS_JSON=$(echo "$RESP" | jq -c '.data.repository.issue.labels.nodes | map(.name)')
-
+          # Store extracted IDs for later use
           {
-            echo "is_relevant_issue=true"
-            echo "issue_node_id=$ISSUE_NODE_ID"
+            echo "in_target_project=true"
             echo "project_v2_id=$TARGET_PROJECT_NODE_ID"
             echo "project_item_id=$PROJECT_ITEM_ID"
-            echo "current_urgency=$CURRENT_URGENCY"
-            echo "labels=$LABELS_JSON"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Check Labels
+      - name: Check labels
         id: check_labels
-        if: steps.check_issue.outputs.is_relevant_issue == 'true'
+        if: steps.validate_project.outputs.in_target_project == 'true'
         run: |
           set -euo pipefail
 
-          LABELS='${{ steps.check_issue.outputs.labels }}'
+          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+
+          # Extract issue type and labels
+          ISSUE_TYPE=$(echo "$ISSUE_DATA" | jq -r '.issueType.name // empty')
+          LABELS=$(echo "$ISSUE_DATA" | jq -c '.labels.nodes | map(.name)')
+
+          echo "📋 Issue type: ${ISSUE_TYPE:-none}"
+
+          # Extract and validate severity & likelihood
+          severity=$(echo "$LABELS" | jq -r '.[] | select(startswith("severity/")) | sub("severity/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "critical")' | head -n1)
+          likelihood=$(echo "$LABELS" | jq -r '.[] | select(startswith("likelihood/")) | sub("likelihood/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "unknown")' | head -n1)
+
+          # Check if issue has a severity label
+          if [[ -z "$severity" ]]; then
+            echo "⏭️ Issue does not have a valid severity label; skipping"
+          else
+            echo "🏷️ Severity: $severity"
+          fi
+
 
           # Check for urgency-locked label
           has_urgency_locked=$(echo "$LABELS" | jq -r 'any(. == "urgency-locked")')
@@ -186,94 +211,72 @@ jobs:
             echo "🔒 Issue has 'urgency-locked' label - automatic urgency updates will be skipped"
           fi
 
-          # Extract and validate severity & likelihood using jq directly
-          severity=$(echo "$LABELS" | jq -r '.[] | select(startswith("severity/")) | sub("severity/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "critical")' | head -n1)
-          likelihood=$(echo "$LABELS" | jq -r '.[] | select(startswith("likelihood/")) | sub("likelihood/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "unknown")' | head -n1)
-
-          # Map missing likelihood to unknown
-          if [[ -z "$likelihood" ]]; then
-            likelihood="unknown"
-            echo "🏷️ Likelihood: (not set, treating as unknown)"
-          else
-            echo "🏷️ Likelihood: $likelihood"
-          fi
-
-          if [[ -z "$severity" ]]; then
-            echo "⚠️ No valid severity label found (expected: severity/low|mid|high|critical)"
-          else
-            echo "🏷️ Severity: $severity"
-          fi
-
           {
-            echo "has_urgency_locked=$has_urgency_locked"
             echo "severity=$severity"
             echo "likelihood=$likelihood"
+            echo "has_urgency_locked=$has_urgency_locked"
           } >> "$GITHUB_OUTPUT"
 
       - name: Calculate urgency
         id: calculate_urgency
-        if: steps.check_issue.outputs.is_relevant_issue == 'true'
+        if: steps.check_labels.outputs.severity != ''
         run: |
           set -euo pipefail
           SEVERITY='${{ steps.check_labels.outputs.severity }}'
           LIKELIHOOD='${{ steps.check_labels.outputs.likelihood }}'
 
-          if [[ -z "$SEVERITY" ]]; then
-            echo "❌ Missing severity label - cannot calculate urgency"
-            echo "  Required: severity/low|mid|high|critical"
-            echo "urgency=" >> "$GITHUB_OUTPUT"
-            exit 1
-          else
-            # Treat unknown likelihood as low for matrix lookup
-            LOOKUP_LIKELIHOOD="$LIKELIHOOD"
-            if [[ "$LIKELIHOOD" == "unknown" ]]; then
-              LOOKUP_LIKELIHOOD="low"
-              echo "ℹ️  Using likelihood=low for urgency calculation (actual: unknown)"
-            fi
-
-            # severity: low, mid, high, critical
-            # likelihood: low, mid, high (unknown treated as low)
-            # urgency: immediate, next, planned, someday
-            declare -A MATRIX=(
-              [low_low]=someday
-              [low_mid]=someday
-              [low_high]=someday
-              [mid_low]=someday
-              [mid_mid]=planned
-              [mid_high]=planned
-              [high_low]=planned
-              [high_mid]=next
-              [high_high]=next
-              [critical_low]=immediate
-              [critical_mid]=immediate
-              [critical_high]=immediate
-            )
-            key="${SEVERITY}_${LOOKUP_LIKELIHOOD}"
-            URGENCY="${MATRIX[$key]:-someday}"
-
-            # Alternative mathematical calculation (unused / illustrative only)
-            # S=$(case "$SEVERITY" in low)1;; mid)2;; high)3;; *)1;; esac)
-            # L=$(case "$LIKELIHOOD" in low)1;; mid)2;; high)3;; *)1;; esac)
-            # score=$((S*L))
-            # if (( score <= 2 )); then URGENCY="someday"
-            # elif (( score <= 4 )); then URGENCY="planned"
-            # elif (( score <= 6 )); then URGENCY="next"
-            # else URGENCY="immediate"; fi
-
-            echo "🎯 Urgency: $URGENCY"
+          # Default likelihood to unknown if not set
+          if [[ -z "$LIKELIHOOD" ]]; then
+            LIKELIHOOD="unknown"
+            echo "ℹ️  Likelihood not set, defaulting to unknown"
           fi
 
+          # Treat unknown likelihood as low for matrix lookup
+          LOOKUP_LIKELIHOOD="$LIKELIHOOD"
+          if [[ "$LIKELIHOOD" == "unknown" ]]; then
+            LOOKUP_LIKELIHOOD="low"
+            echo "ℹ️  Using likelihood=low for urgency calculation (actual: unknown)"
+          fi
+
+          # severity: low, mid, high, critical
+          # likelihood: low, mid, high (unknown treated as low)
+          # urgency: immediate, next, planned, someday
+          declare -A MATRIX=(
+            [low_low]=someday
+            [low_mid]=someday
+            [low_high]=someday
+            [mid_low]=someday
+            [mid_mid]=planned
+            [mid_high]=planned
+            [high_low]=planned
+            [high_mid]=next
+            [high_high]=next
+            [critical_low]=immediate
+            [critical_mid]=immediate
+            [critical_high]=immediate
+          )
+          key="${SEVERITY}_${LOOKUP_LIKELIHOOD}"
+          URGENCY="${MATRIX[$key]:-someday}"
+
+          echo "🎯 Urgency: $URGENCY"
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
 
       - name: Update Urgency
-        if: steps.check_issue.outputs.is_relevant_issue == 'true'
+        if: steps.calculate_urgency.outputs.urgency != ''
         run: |
           set -euo pipefail
-          PROJECT_ITEM_ID='${{ steps.check_issue.outputs.project_item_id }}'
-          PROJECT_V2_ID='${{ steps.check_issue.outputs.project_v2_id }}'
-          CURRENT_URGENCY='${{ steps.check_issue.outputs.current_urgency }}'
+
+          ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
+          PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
+          PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
           NEW_URGENCY='${{ steps.calculate_urgency.outputs.urgency }}'
           HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
+
+          # Extract current urgency value from the specific project item
+          CURRENT_URGENCY=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" --arg fieldName "$URGENCY_FIELD_NAME" \
+            '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name==$fieldName) | .name // empty')
+
+          echo "📌 Current urgency: ${CURRENT_URGENCY:-(not set)}"
 
           # Check for urgency-locked label - skip updates but show what would change
           if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
@@ -366,4 +369,14 @@ jobs:
           fi
 
           echo "✅ Updated urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
