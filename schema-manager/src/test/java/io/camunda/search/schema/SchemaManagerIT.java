@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
@@ -1160,6 +1161,35 @@ public class SchemaManagerIT {
     final var retrievedArchiveIndex2 = searchClientAdapter.getIndexAsNode(archiveIndexName2);
     assertThat(retrievedArchiveIndex2.at("/mappings/properties/foo/type").asText())
         .isEqualTo("keyword");
+  }
+
+  @TestTemplate
+  void shouldDetectDifferencesWhenSchemaWasAutoCreatedWithDefaults(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+
+    final var runtimeIndexName = indexTemplate.getFullQualifiedName();
+
+    // index some data so ES/OS creates the index with a dynamic mapping and difference field
+    // definitions
+    searchClientAdapter.index("123", runtimeIndexName, Map.of("hello", "a", "world", "b"));
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    // when
+    // then
+    assertThatThrownBy(schemaManager::startup)
+        .isInstanceOf(IndexSchemaValidationException.class)
+        .hasMessageContaining(
+            "Index name: custom-prefix-test-template_name-1.0.0_. Unsupported index changes have been introduced. Data migration is required.");
   }
 
   @TestTemplate

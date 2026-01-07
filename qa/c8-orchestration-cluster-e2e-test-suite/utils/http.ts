@@ -153,6 +153,18 @@ export async function assertNotFoundRequest(
   expect(json.detail).toContain(detail);
 }
 
+export async function assertInvalidArgument(
+  response: APIResponse,
+  expectedStatusCode: number = 400,
+  detail: string,
+) {
+  await assertStatusCode(response, expectedStatusCode);
+  const json = await response.json();
+  assertRequiredFields(json, ['detail', 'title']);
+  expect(json.title).toBe('INVALID_ARGUMENT');
+  expect(json.detail).toContain(detail);
+}
+
 export function assertEqualsForKeys(
   obj: unknown,
   expected: Record<string, unknown>,

@@ -575,16 +575,24 @@ public class OpensearchRecordsReader implements RecordsReader {
             .query(term(ImportPositionIndex.PARTITION_ID, partitionId))
             .source(sourceInclude(ImportPositionIndex.FIELD_INDEX_NAME))
             .size(50);
-    final var response =
-        zeebeRichOpenSearchClient.doc().search(searchRequestBuilder, ImportPositionEntity.class);
+    try {
+      final var response =
+          zeebeRichOpenSearchClient.doc().search(searchRequestBuilder, ImportPositionEntity.class);
 
-    final var indexNames =
-        response.hits().hits().stream()
-            .map(hit -> hit.source().getIndexName())
-            .filter(Objects::nonNull)
-            .toList();
+      final var indexNames =
+          response.hits().hits().stream()
+              .map(hit -> hit.source().getIndexName())
+              .filter(Objects::nonNull)
+              .toList();
 
-    return indexNames.stream().anyMatch(indexName -> indexName.contains("8.8"));
+      return indexNames.stream().anyMatch(indexName -> indexName.contains("8.8"));
+    } catch (final OpenSearchException e) {
+      LOGGER.warn(
+          "OpenSearch error when checking if partition {} completed importing: {}",
+          partitionId,
+          e.getMessage());
+      return false;
+    }
   }
 
   private void executeNext() {

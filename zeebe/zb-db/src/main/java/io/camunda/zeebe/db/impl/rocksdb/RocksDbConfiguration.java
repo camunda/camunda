@@ -171,6 +171,7 @@ public final class RocksDbConfiguration {
 
   public enum MemoryAllocationStrategy {
     PARTITION,
-    BROKER
+    BROKER,
+    AUTO
   }
 }
