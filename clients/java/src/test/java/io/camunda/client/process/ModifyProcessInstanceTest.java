@@ -467,6 +467,22 @@ public class ModifyProcessInstanceTest extends ClientTest {
   }
 
   @Test
+  public void shouldMoveElementsWithDirectSourceParentKey() {
+    // when
+    client
+        .newModifyProcessInstanceCommand(PI_KEY)
+        .moveElementsWithSourceParentAsAncestor(ELEMENT_ID_A, ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ModifyProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertRequest(request, 0, 1, 0);
+    final MoveInstruction moveInstruction = request.getMoveInstructions(0);
+    assertMoveInstruction(moveInstruction, ELEMENT_ID_A, ELEMENT_ID_B, 0, false, true, 0);
+  }
+
+  @Test
   public void shouldMoveElementsWithSingleVariable() {
     // when
     client
@@ -589,13 +605,33 @@ public class ModifyProcessInstanceTest extends ClientTest {
       final String expectedSourceElementId,
       final String expectedTargetElementId,
       final long expectedAncestorKey,
-      final boolean expectedUseParentScope,
+      final boolean expectedInferAncestorScope,
+      final int expectedVariableInstructions) {
+    assertMoveInstruction(
+        moveInstruction,
+        expectedSourceElementId,
+        expectedTargetElementId,
+        expectedAncestorKey,
+        expectedInferAncestorScope,
+        false,
+        expectedVariableInstructions);
+  }
+
+  private void assertMoveInstruction(
+      final MoveInstruction moveInstruction,
+      final String expectedSourceElementId,
+      final String expectedTargetElementId,
+      final long expectedAncestorKey,
+      final boolean expectedInferAncestorScope,
+      final boolean expectedUseSourceParentKey,
       final int expectedVariableInstructions) {
     assertThat(moveInstruction.getSourceElementId()).isEqualTo(expectedSourceElementId);
     assertThat(moveInstruction.getTargetElementId()).isEqualTo(expectedTargetElementId);
     assertThat(moveInstruction.getAncestorElementInstanceKey()).isEqualTo(expectedAncestorKey);
     assertThat(moveInstruction.getInferAncestorScopeFromSourceHierarchy())
-        .isEqualTo(expectedUseParentScope);
+        .isEqualTo(expectedInferAncestorScope);
+    assertThat(moveInstruction.getUseSourceParentKeyAsAncestorScopeKey())
+        .isEqualTo(expectedUseSourceParentKey);
     assertThat(moveInstruction.getVariableInstructionsCount())
         .isEqualTo(expectedVariableInstructions);
   }
