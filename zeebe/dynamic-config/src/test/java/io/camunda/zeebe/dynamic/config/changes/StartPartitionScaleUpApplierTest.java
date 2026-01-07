@@ -104,13 +104,10 @@ final class StartPartitionScaleUpApplierTest {
     final var routingState =
         new RoutingState(1, new ActivePartitions(1, Set.of(), Set.of(2, 3)), new HashMod(1));
     final var configuration =
-        new ClusterConfiguration(
-            initialConfiguration.version(),
-            initialConfiguration.members(),
-            initialConfiguration.lastChange(),
-            initialConfiguration.pendingChanges(),
-            Optional.of(routingState),
-            initialConfiguration.clusterId());
+        ClusterConfiguration.builder()
+            .from(initialConfiguration)
+            .routingState(Optional.of(routingState))
+            .build();
 
     // when - trying to init the operation to scale up
     final var result = new StartPartitionScaleUpApplier(executor, 4).init(configuration);
@@ -128,13 +125,10 @@ final class StartPartitionScaleUpApplierTest {
     // given - request handling is set up for three partitions
     final var routingState = new RoutingState(1, new AllPartitions(3), new HashMod(3));
     final var configuration =
-        new ClusterConfiguration(
-            initialConfiguration.version(),
-            initialConfiguration.members(),
-            initialConfiguration.lastChange(),
-            initialConfiguration.pendingChanges(),
-            Optional.of(routingState),
-            initialConfiguration.clusterId());
+        ClusterConfiguration.builder()
+            .from(initialConfiguration)
+            .routingState(Optional.of(routingState))
+            .build();
 
     // when - trying to init the operation to scale "up" to 2 partitions
     final var result = new StartPartitionScaleUpApplier(executor, 2).init(configuration);
@@ -152,13 +146,10 @@ final class StartPartitionScaleUpApplierTest {
     // given - routing state is stable, pointing at just one partition
     final var routingState = new RoutingState(1, new AllPartitions(1), new HashMod(1));
     final var configuration =
-        new ClusterConfiguration(
-            initialConfiguration.version(),
-            initialConfiguration.members(),
-            initialConfiguration.lastChange(),
-            initialConfiguration.pendingChanges(),
-            Optional.of(routingState),
-            initialConfiguration.clusterId());
+        ClusterConfiguration.builder()
+            .from(initialConfiguration)
+            .routingState(Optional.of(routingState))
+            .build();
 
     // when - applying the operation to scale up to three once
     final var expectedFailure = new RuntimeException("Expected failure");
@@ -178,13 +169,10 @@ final class StartPartitionScaleUpApplierTest {
     // given - routing state is stable, pointing at just one partition
     final var routingState = new RoutingState(1, new AllPartitions(3), new HashMod(1));
     final var configuration =
-        new ClusterConfiguration(
-            initialConfiguration.version(),
-            initialConfiguration.members(),
-            initialConfiguration.lastChange(),
-            initialConfiguration.pendingChanges(),
-            Optional.of(routingState),
-            initialConfiguration.clusterId());
+        ClusterConfiguration.builder()
+            .from(initialConfiguration)
+            .routingState(Optional.of(routingState))
+            .build();
 
     // when - applying the operation to scale up to three once
     when(executor.initiateScaleUp(anyInt())).thenReturn(CompletableActorFuture.completed(null));
@@ -200,13 +188,10 @@ final class StartPartitionScaleUpApplierTest {
     // given - routing state is stable, pointing at just one partition
     final var routingState = new RoutingState(1, new AllPartitions(3), new HashMod(3));
     final var configuration =
-        new ClusterConfiguration(
-            initialConfiguration.version(),
-            initialConfiguration.members(),
-            initialConfiguration.lastChange(),
-            initialConfiguration.pendingChanges(),
-            Optional.of(routingState),
-            initialConfiguration.clusterId());
+        ClusterConfiguration.builder()
+            .from(initialConfiguration)
+            .routingState(Optional.of(routingState))
+            .build();
 
     // when - applying the operation to scale up to three once
     when(executor.initiateScaleUp(anyInt())).thenReturn(CompletableActorFuture.completed(null));

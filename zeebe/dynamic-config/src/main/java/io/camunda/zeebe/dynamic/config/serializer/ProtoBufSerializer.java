@@ -54,6 +54,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -160,13 +161,16 @@ public class ProtoBufSerializer
             ? Optional.empty()
             : Optional.of(encodedClusterTopology.getClusterId());
 
+    final long incarnationNumber = encodedClusterTopology.getIncarnationNumber();
+
     return new ClusterConfiguration(
         encodedClusterTopology.getVersion(),
         members,
         completedChange,
         currentChange,
         routingState,
-        clusterId);
+        clusterId,
+        incarnationNumber);
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -195,6 +199,7 @@ public class ProtoBufSerializer
         .routingState()
         .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
     clusterConfiguration.clusterId().ifPresent(clusterId -> builder.setClusterId(clusterId));
+    builder.setIncarnationNumber(clusterConfiguration.incarnationNumber());
 
     return builder.build();
   }
@@ -500,6 +505,9 @@ public class ProtoBufSerializer
         msg.routingState().ifPresent(s -> b.setRoutingState(encodeRoutingState(s)));
         builder.setUpdateRoutingState(b);
       }
+      case final UpdateIncarnationNumberOperation msg ->
+          builder.setUpdateIncarnationNumber(
+              Topology.UpdateIncarnationNumberOperation.newBuilder().build());
     }
     return builder.build();
   }
@@ -752,6 +760,8 @@ public class ProtoBufSerializer
           topologyChangeOperation.getUpdateRoutingState().getRoutingState();
       final var routingState = decodeRoutingState(protoRoutingState);
       return new UpdateRoutingState(memberId, routingState);
+    } else if (topologyChangeOperation.hasUpdateIncarnationNumber()) {
+      return new UpdateIncarnationNumberOperation(memberId);
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

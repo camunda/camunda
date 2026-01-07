@@ -50,7 +50,8 @@ public class ClusterIdInitializer implements ClusterConfigurationModifier {
             configuration.lastChange(),
             configuration.pendingChanges(),
             configuration.routingState(),
-            Optional.ofNullable(clusterId));
+            Optional.ofNullable(clusterId),
+            configuration.incarnationNumber());
     return CompletableActorFuture.completed(withClusterId);
   }
 }
