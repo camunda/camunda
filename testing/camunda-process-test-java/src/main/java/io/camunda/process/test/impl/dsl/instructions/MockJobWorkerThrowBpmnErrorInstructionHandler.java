@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.dsl.instructions;
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerThrowBpmnErrorInstruction;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
 
@@ -31,17 +32,15 @@ public class MockJobWorkerThrowBpmnErrorInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
+    final JobWorkerMockBuilder mockBuilder = context.mockJobWorker(instruction.getJobType());
+
     if (instruction.getErrorMessage().isPresent()) {
-      context
-          .mockJobWorker(instruction.getJobType())
-          .thenThrowBpmnError(
-              instruction.getErrorCode(),
-              instruction.getErrorMessage().get(),
-              instruction.getVariables());
+      mockBuilder.thenThrowBpmnError(
+          instruction.getErrorCode(),
+          instruction.getErrorMessage().get(),
+          instruction.getVariables());
     } else {
-      context
-          .mockJobWorker(instruction.getJobType())
-          .thenThrowBpmnError(instruction.getErrorCode(), instruction.getVariables());
+      mockBuilder.thenThrowBpmnError(instruction.getErrorCode(), instruction.getVariables());
     }
   }
 
