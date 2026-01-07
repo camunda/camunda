@@ -23,6 +23,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
+import java.util.Optional;
 
 public class AssertVariablesInstructionHandler
     implements TestCaseInstructionHandler<AssertVariablesInstruction> {
@@ -41,16 +42,16 @@ public class AssertVariablesInstructionHandler
     final ProcessInstanceAssert processInstanceAssert =
         assertionFacade.assertThatProcessInstance(processInstanceSelector);
 
-    final boolean hasElementSelector = instruction.getElementSelector().isPresent();
+    final Optional<ElementSelector> elementSelector =
+        instruction
+            .getElementSelector()
+            .map(InstructionSelectorFactory::buildElementSelector);
 
     // Assert variable names
     if (!instruction.getVariableNames().isEmpty()) {
-      if (hasElementSelector) {
-        final ElementSelector elementSelector =
-            InstructionSelectorFactory.buildElementSelector(
-                instruction.getElementSelector().orElseThrow());
+      if (elementSelector.isPresent()) {
         processInstanceAssert.hasLocalVariableNames(
-            elementSelector, instruction.getVariableNames().toArray(new String[0]));
+            elementSelector.get(), instruction.getVariableNames().toArray(new String[0]));
       } else {
         processInstanceAssert.hasVariableNames(
             instruction.getVariableNames().toArray(new String[0]));
@@ -59,11 +60,8 @@ public class AssertVariablesInstructionHandler
 
     // Assert variables with values
     if (!instruction.getVariables().isEmpty()) {
-      if (hasElementSelector) {
-        final ElementSelector elementSelector =
-            InstructionSelectorFactory.buildElementSelector(
-                instruction.getElementSelector().orElseThrow());
-        processInstanceAssert.hasLocalVariables(elementSelector, instruction.getVariables());
+      if (elementSelector.isPresent()) {
+        processInstanceAssert.hasLocalVariables(elementSelector.get(), instruction.getVariables());
       } else {
         processInstanceAssert.hasVariables(instruction.getVariables());
       }
