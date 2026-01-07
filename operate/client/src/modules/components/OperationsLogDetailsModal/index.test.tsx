@@ -24,7 +24,7 @@ const baseAuditLog: AuditLog = {
   category: 'USER_TASK',
 };
 
-describe('Index', () => {
+describe('DetailsModal', () => {
   it('renders details for a normal audit log', () => {
     render(<DetailsModal isOpen onClose={() => {}} auditLog={baseAuditLog} />);
 
