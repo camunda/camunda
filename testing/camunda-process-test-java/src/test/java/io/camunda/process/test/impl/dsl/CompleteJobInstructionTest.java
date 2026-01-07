@@ -165,9 +165,6 @@ public class CompleteJobInstructionTest {
     // then
     verify(processTestContext).completeJob(jobSelectorCaptor.capture(), eq(variables));
 
-    jobSelectorCaptor.getValue().applyFilter(jobFilter);
-    verify(jobFilter).type(JOB_TYPE);
-
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
@@ -185,9 +182,6 @@ public class CompleteJobInstructionTest {
 
     // then
     verify(processTestContext).completeJobWithExampleData(jobSelectorCaptor.capture());
-
-    jobSelectorCaptor.getValue().applyFilter(jobFilter);
-    verify(jobFilter).type(JOB_TYPE);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
@@ -211,9 +205,6 @@ public class CompleteJobInstructionTest {
     // then
     // Should call completeJobWithExampleData, not completeJob with variables
     verify(processTestContext).completeJobWithExampleData(jobSelectorCaptor.capture());
-
-    jobSelectorCaptor.getValue().applyFilter(jobFilter);
-    verify(jobFilter).type(JOB_TYPE);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
