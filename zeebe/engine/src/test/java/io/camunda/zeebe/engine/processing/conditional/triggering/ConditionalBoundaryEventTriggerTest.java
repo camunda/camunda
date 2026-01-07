@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.conditional.triggering;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -77,6 +79,14 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withCondition("=x > 10")
                 .withVariableNames("x")
                 .withVariableEvents(List.of())
+                .limit(1))
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ID)
                 .limit(1))
         .hasSize(1);
   }
@@ -244,6 +254,8 @@ public final class ConditionalBoundaryEventTriggerTest {
     engine.variables().ofScope(taskInstanceKey).withDocument(Map.of("x", 11)).update();
     engine.variables().ofScope(taskInstanceKey).withDocument(Map.of("x", 12)).update();
 
+    engine.signal().withSignalName("testSpeedUp").broadcast();
+
     // then (non-interrupting boundary may trigger again)
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords(
@@ -255,6 +267,18 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withVariableEvents(List.of())
                 .limit(2))
         .hasSize(2);
+
+    assertThat(
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == DeploymentIntent.CREATED,
+                    r -> r.getIntent() == SignalIntent.BROADCASTED)
+                .processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ID)
+                .limit(1))
+        .isEmpty();
   }
 
   @Test
@@ -297,6 +321,18 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withCatchEventId("boundary")
                 .limit(1))
         .isEmpty();
+
+    assertThat(
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == DeploymentIntent.CREATED,
+                    r -> r.getIntent() == SignalIntent.BROADCASTED)
+                .processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ID)
+                .limit(1))
+        .hasSize(1);
   }
 
   @Test
@@ -348,8 +384,6 @@ public final class ConditionalBoundaryEventTriggerTest {
             .serviceTask(SIBLING_TASK_ID, t -> t.zeebeJobType("sibling"))
             .parallelGateway("join")
             .endEvent("end")
-            .moveToNode(SIBLING_TASK_ID)
-            .connectTo("join")
             .moveToNode("fork")
             .serviceTask(TASK_ID, t -> t.zeebeJobType("task"))
             .boundaryEvent("boundary")
@@ -436,6 +470,14 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withVariableEvents(List.of())
                 .limit(1))
         .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(SUBPROCESS_ID)
+                .limit(1))
+        .hasSize(1);
   }
 
   @Test
@@ -480,10 +522,18 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withVariableEvents(List.of())
                 .limit(1))
         .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(SUBPROCESS_ID)
+                .limit(1))
+        .hasSize(1);
   }
 
   @Test
-  public void shouldNotEvaluateBoundaryWhenOnlyNonFilteredVariableChanges() {
+  public void shouldNotTriggerBoundaryWhenNonFilteredVariableChanges() {
     // given
     final String processId = helper.getBpmnProcessId();
     final BpmnModelInstance process =
@@ -581,7 +631,7 @@ public final class ConditionalBoundaryEventTriggerTest {
   }
 
   @Test
-  public void shouldEvaluateBoundaryWithoutVariableNameFilterOnAnyVariableChange() {
+  public void shouldTriggerBoundaryWithoutVariableNameFilterOnAnyVariableChange() {
     // given
     final String processId = helper.getBpmnProcessId();
     final BpmnModelInstance process =
@@ -953,23 +1003,15 @@ public final class ConditionalBoundaryEventTriggerTest {
             RecordingExporter.conditionalSubscriptionRecords(
                     ConditionalSubscriptionIntent.TRIGGERED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withCatchEventId("boundaryA")
-                .withCondition("=x > 10")
                 .withVariableNames("x")
                 .withVariableEvents(List.of())
-                .limit(1))
-        .hasSize(1);
-
-    assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(
-                    ConditionalSubscriptionIntent.TRIGGERED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withCatchEventId("boundaryB")
-                .withCondition("=x > 5")
-                .withVariableNames("x")
-                .withVariableEvents(List.of())
-                .limit(1))
-        .hasSize(1);
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ConditionalSubscriptionRecordValue::getCatchEventId,
+            ConditionalSubscriptionRecordValue::getCondition)
+        .containsExactlyInAnyOrder(tuple("boundaryA", "=x > 10"), tuple("boundaryB", "=x > 5"))
+        .hasSize(2);
   }
 
   @Test
@@ -1036,6 +1078,22 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withVariableEvents(List.of())
                 .limit(1))
         .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(piKey)
+                .withElementId(SUBPROCESS_ID)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(piKey)
+                .withElementId(processId)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
   }
 
   @Test
@@ -1090,7 +1148,7 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .limit(1))
         .hasSize(1);
 
-    // then - outer boundary not triggered (condition false)
+    // then - inner boundary not triggered (condition false)
     assertThat(
             RecordingExporter.records()
                 .between(
@@ -1101,6 +1159,22 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withCatchEventId("innerBoundary")
                 .limit(1))
         .isEmpty();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(piKey)
+                .withElementId(SUBPROCESS_ID)
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .limit(1))
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(piKey)
+                .withElementId(processId)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
   }
 
   @Test
@@ -1146,24 +1220,16 @@ public final class ConditionalBoundaryEventTriggerTest {
             RecordingExporter.conditionalSubscriptionRecords(
                     ConditionalSubscriptionIntent.TRIGGERED)
                 .withProcessInstanceKey(piKey)
-                .withCatchEventId("outerBoundary")
-                .withCondition("=x > 10")
                 .withVariableNames("x")
                 .withVariableEvents(List.of())
-                .limit(1))
-        .hasSize(1);
-
-    // and inner non-interrupting boundary also triggers when descending into nested scopes
-    assertThat(
-            RecordingExporter.conditionalSubscriptionRecords(
-                    ConditionalSubscriptionIntent.TRIGGERED)
-                .withProcessInstanceKey(piKey)
-                .withCatchEventId("innerBoundary")
-                .withCondition("=x > 10")
-                .withVariableNames("x")
-                .withVariableEvents(List.of())
-                .limit(1))
-        .hasSize(1);
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ConditionalSubscriptionRecordValue::getCatchEventId,
+            ConditionalSubscriptionRecordValue::getCondition)
+        .containsExactlyInAnyOrder(
+            tuple("innerBoundary", "=x > 10"), tuple("outerBoundary", "=x > 10"))
+        .hasSize(2);
   }
 
   @Test
@@ -1274,7 +1340,7 @@ public final class ConditionalBoundaryEventTriggerTest {
             .withElementId(TASK_ID)
             .getFirst();
 
-    // when - job completion writes x=100 into same scope as service task
+    // when - job completion writes x=11 into same scope as service task
     engine.job().withKey(jobCreated.getKey()).withVariables(Map.of("x", 11)).complete();
 
     // then
@@ -1398,6 +1464,15 @@ public final class ConditionalBoundaryEventTriggerTest {
         .withElementId(processId)
         .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .getFirst();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(piKey)
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getElementId)
+        .containsExactlyInAnyOrder(SUBPROCESS_ID, INNER_TASK_ID)
+        .hasSize(2);
   }
 
   @Test
@@ -1581,14 +1656,13 @@ public final class ConditionalBoundaryEventTriggerTest {
     engine.signal().withSignalName("testSpeedUp").broadcast();
 
     // then - boundary triggers only once (for that child)
-    engine.signal().withSignalName("testSpeedUp").broadcast();
-
     assertThat(
             RecordingExporter.records()
                 .between(
                     r -> r.getIntent() == DeploymentIntent.CREATED,
                     r -> r.getIntent() == SignalIntent.BROADCASTED)
                 .conditionalSubscriptionRecords()
+                .withScopeKey(childScopeToChange)
                 .withIntent(ConditionalSubscriptionIntent.TRIGGERED)
                 .withCatchEventId("innerBoundary"))
         .hasSize(1);
@@ -1639,6 +1713,14 @@ public final class ConditionalBoundaryEventTriggerTest {
     // when - variable x is updated at process scope (visible to all children)
     engine.variables().ofScope(piKey).withDocument(Map.of("x", 11)).update();
 
+    final var innerInstances =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(piKey)
+            .withElementId(INNER_TASK_ID)
+            .limit(3)
+            .toList();
+    final var childScopes = innerInstances.stream().map(Record::getKey).toArray(Long[]::new);
+
     // then
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords(
@@ -1646,7 +1728,10 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withProcessInstanceKey(piKey)
                 .withCatchEventId("innerBoundary")
                 .limit(3))
-        .hasSize(3);
+        .hasSize(3)
+        .extracting(Record::getValue)
+        .extracting(ConditionalSubscriptionRecordValue::getScopeKey)
+        .containsExactlyInAnyOrder(childScopes);
   }
 
   @Test
@@ -1705,19 +1790,33 @@ public final class ConditionalBoundaryEventTriggerTest {
             RecordingExporter.conditionalSubscriptionRecords(
                     ConditionalSubscriptionIntent.TRIGGERED)
                 .withProcessInstanceKey(piKey)
+                .withScopeKey(childToInterrupt)
                 .withCatchEventId("innerBoundary")
                 .limit(1))
         .hasSize(1);
 
     // and we can still complete jobs for other child instances (they are unaffected)
-    // (complete all jobs; if any were cancelled, completion would fail in real engine)
+    // (complete jobs of other instances; if any were cancelled, completion would fail in real
+    // engine)
     final var jobs =
         RecordingExporter.jobRecords()
             .withProcessInstanceKey(piKey)
             .withElementId(INNER_TASK_ID)
-            .limit(2);
+            .limit(3)
+            .filter(
+                job ->
+                    job.getValue().getElementInstanceKey()
+                        != childToInterrupt); // exclude interrupted instance
 
     jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(piKey)
+                .withElementId(processId)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
   }
 
   @Test
@@ -1866,6 +1965,14 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .onlyCommandRejections()
                 .withProcessInstanceKey(piKey)
                 .withCatchEventId("boundary")
+                .limit(1))
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(piKey)
+                .withElementId(TASK_ID)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .limit(1))
         .hasSize(1);
   }
