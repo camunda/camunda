@@ -8,6 +8,8 @@
 package io.camunda.it.rdbms.exporter;
 
 import static java.util.Collections.emptyList;
+import static org.jeasy.random.FieldPredicates.inClass;
+import static org.jeasy.random.FieldPredicates.named;
 
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -49,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleMa
 import io.camunda.zeebe.protocol.record.value.ImmutableClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
@@ -80,7 +83,12 @@ public class RecordFixtures {
 
   protected static final long NO_PARENT_EXISTS_KEY = -1L;
 
-  protected static final ProtocolFactory FACTORY = new ProtocolFactory(System.nanoTime());
+  protected static final ProtocolFactory FACTORY =
+      new ProtocolFactory(System.nanoTime())
+          // retries field is SMALLINT, so need to limit range
+          .registerRandomizer(
+              named("retries").and(inClass(ImmutableJobRecordValue.class)),
+              random -> random.nextInt(1, 32_000));
 
   protected static ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(
       final long position) {
