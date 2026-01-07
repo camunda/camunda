@@ -361,7 +361,7 @@ jobs:
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
 
       - name: Update Urgency
-        if: steps.validate_urgency.outputs.urgency != ''
+        if: steps.validate_project.outputs.in_target_project == 'true'
         run: |
           set -euo pipefail
 
@@ -371,11 +371,11 @@ jobs:
           NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
           HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
 
-          # Extract current urgency value from the specific project item
+          # Extract current urgency value
           CURRENT_URGENCY=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" --arg fieldName "$URGENCY_FIELD_NAME" \
             '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name==$fieldName) | .name // empty')
 
-          echo "🔄 Update urgency: '$CURRENT_URGENCY' → '$NEW_URGENCY'"
+          echo "🔄 Update urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
 
           # Check if urgency would change
           if [[ "$CURRENT_URGENCY" == "$NEW_URGENCY" ]]; then
@@ -395,7 +395,7 @@ jobs:
             exit 0
           fi
 
-          # Fetch project fields (single query for both clear and update)
+          # Fetch project fields
           FIELD_DATA=$(gh api graphql -f query="
             query(\$projectId:ID!){
               node(id:\$projectId){
@@ -417,38 +417,51 @@ jobs:
 
           if [[ -z "$FIELD_ID" ]]; then
             echo "❌ Field '$URGENCY_FIELD_NAME' does not exist in project"
-            echo "💡 Please create a single-select field named '$URGENCY_FIELD_NAME' with options: immediate, next, planned, someday"
             exit 1
           fi
 
-          # Build and execute mutation
-          OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
-            '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
-
-          if [[ -z "$OPTION_ID" ]]; then
-            echo "❌ Option '$NEW_URGENCY' not found in field '$URGENCY_FIELD_NAME'"
-            echo "💡 Available options:"
-            echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" \
-              '.data.node.fields.nodes[] | select(.name==$name) | .options[] | "  - \(.name)"'
-            exit 1
-          fi
-
-          JSON_PAYLOAD=$(jq -n \
-            --arg projectId "$PROJECT_V2_ID" \
-            --arg itemId "$PROJECT_ITEM_ID" \
-            --arg fieldId "$FIELD_ID" \
-            --arg optionId "$OPTION_ID" \
-            '{
-              "query": "mutation($input: UpdateProjectV2ItemFieldValueInput!) { updateProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
-              "variables": {
-                "input": {
-                  "projectId": $projectId,
-                  "itemId": $itemId,
-                  "fieldId": $fieldId,
-                  "value": { "singleSelectOptionId": $optionId }
+          # Build mutation based on whether we're clearing or updating
+          if [[ -z "$NEW_URGENCY" ]]; then
+            JSON_PAYLOAD=$(jq -n \
+              --arg projectId "$PROJECT_V2_ID" \
+              --arg itemId "$PROJECT_ITEM_ID" \
+              --arg fieldId "$FIELD_ID" \
+              '{
+                "query": "mutation($input: ClearProjectV2ItemFieldValueInput!) { clearProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
+                "variables": {
+                  "input": {
+                    "projectId": $projectId,
+                    "itemId": $itemId,
+                    "fieldId": $fieldId
+                  }
                 }
-              }
-            }')
+              }')
+          else
+            OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
+              '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
+
+            if [[ -z "$OPTION_ID" ]]; then
+              echo "❌ Option '$NEW_URGENCY' not found in field '$URGENCY_FIELD_NAME'"
+              exit 1
+            fi
+
+            JSON_PAYLOAD=$(jq -n \
+              --arg projectId "$PROJECT_V2_ID" \
+              --arg itemId "$PROJECT_ITEM_ID" \
+              --arg fieldId "$FIELD_ID" \
+              --arg optionId "$OPTION_ID" \
+              '{
+                "query": "mutation($input: UpdateProjectV2ItemFieldValueInput!) { updateProjectV2ItemFieldValue(input: $input) { projectV2Item { id } } }",
+                "variables": {
+                  "input": {
+                    "projectId": $projectId,
+                    "itemId": $itemId,
+                    "fieldId": $fieldId,
+                    "value": { "singleSelectOptionId": $optionId }
+                  }
+                }
+              }')
+          fi
 
           # Execute mutation
           MUTATION_RESP=$(gh api graphql -H "Content-Type: application/json" --input - <<< "$JSON_PAYLOAD" 2>&1) || {
@@ -463,4 +476,4 @@ jobs:
             exit 1
           fi
 
-          echo "✅ Updated urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
+          echo "✅ Updated urgency: '${CURRENT_URGENCY:-(empty)}' → '${NEW_URGENCY:-(empty)}'"
