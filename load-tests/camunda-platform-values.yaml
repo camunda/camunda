@@ -73,10 +73,10 @@ orchestration:
   resources:
     requests:
       cpu: 3500m
-      memory: 2Gi
+      memory: 3Gi
     limits:
       cpu: 3500m
-      memory: 2Gi
+      memory: 3Gi
 
   nodeSelector:
     cloud.google.com/gke-nodepool: n2-standard-4
