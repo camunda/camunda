@@ -8,10 +8,12 @@
 package io.camunda.webapps.schema.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -50,6 +52,11 @@ public class FlowNodeInstanceForListViewEntity
 
   @JsonIgnore private Long startTime;
   @JsonIgnore private Long endTime;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long rootProcessInstanceKey;
 
   @Override
   public String getId() {
@@ -230,6 +237,16 @@ public class FlowNodeInstanceForListViewEntity
     return this;
   }
 
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public FlowNodeInstanceForListViewEntity setRootProcessInstanceKey(
+      final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -247,7 +264,8 @@ public class FlowNodeInstanceForListViewEntity
         position,
         positionIncident,
         positionJob,
-        joinRelation);
+        joinRelation,
+        rootProcessInstanceKey);
   }
 
   @Override
@@ -265,6 +283,7 @@ public class FlowNodeInstanceForListViewEntity
         && incident == that.incident
         && jobFailedWithRetriesLeft == that.jobFailedWithRetriesLeft
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(activityId, that.activityId)
         && activityState == that.activityState
         && activityType == that.activityType

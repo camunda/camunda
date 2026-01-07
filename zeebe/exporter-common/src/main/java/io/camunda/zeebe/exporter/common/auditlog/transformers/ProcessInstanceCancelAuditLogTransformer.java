@@ -27,5 +27,9 @@ public class ProcessInstanceCancelAuditLogTransformer
     log.setProcessDefinitionId(record.getValue().getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey());
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      log.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 }

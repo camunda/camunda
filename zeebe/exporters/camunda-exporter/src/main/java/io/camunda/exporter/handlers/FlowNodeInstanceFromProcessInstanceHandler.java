@@ -135,6 +135,10 @@ public class FlowNodeInstanceFromProcessInstanceHandler
             recordValue.getBpmnElementType() == null
                 ? null
                 : recordValue.getBpmnElementType().name()));
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override
