@@ -27,6 +27,7 @@ import io.camunda.process.test.api.dsl.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.EvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerCompleteJobInstruction;
@@ -66,6 +67,9 @@ import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
   @JsonSubTypes.Type(
       value = CreateProcessInstanceInstruction.class,
       name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE),
+  @JsonSubTypes.Type(
+      value = EvaluateConditionalStartEventInstruction.class,
+      name = TestCaseInstructionType.EVALUATE_CONDITIONAL_START_EVENT),
   @JsonSubTypes.Type(
       value = MockChildProcessInstruction.class,
       name = TestCaseInstructionType.MOCK_CHILD_PROCESS),
