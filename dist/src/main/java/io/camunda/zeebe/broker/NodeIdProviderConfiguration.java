@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.nodeid.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
@@ -134,9 +135,10 @@ public class NodeIdProviderConfiguration {
     final var initializer =
         switch (data.getInitializationMode()) {
           case USE_PRECONFIGURED_DIRECTORY -> new ConfiguredDataDirectoryProvider();
+          case SHARED_ROOT_NODE -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
           case SHARED_ROOT_VERSIONED_NODE -> {
             final var copier = new BrokerDataDirectoryCopier();
-            yield new NodeIdBasedDataDirectoryProvider(
+            yield new VersionedNodeIdBasedDataDirectoryProvider(
                 objectMapper, nodeIdProvider.currentNodeInstance(), fromBrokerCopier(copier));
           }
         };
