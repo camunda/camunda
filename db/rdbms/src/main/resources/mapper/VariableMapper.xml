@@ -22,13 +22,14 @@
     SELECT
       VAR_KEY,
       PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
       SCOPE_KEY,
       VAR_NAME,
       VAR_VALUE,
-    VAR_FULL_VALUE,
+      VAR_FULL_VALUE,
       TENANT_ID,
-    IS_PREVIEW,
-    PROCESS_DEFINITION_ID
+      IS_PREVIEW,
+      PROCESS_DEFINITION_ID
     FROM ${prefix}VARIABLE
       <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
       ) t
@@ -131,16 +132,17 @@
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
       <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
-    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+    INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                                    LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
                                    PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue, jdbcType=DOUBLE},
+    VALUES (#{variableKey}, #{processInstanceKey}, #{rootProcessInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue, jdbcType=DOUBLE},
             #{longValue, jdbcType=NUMERIC}, #{value}, #{fullValue}, #{tenantId}, #{isPreview}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 

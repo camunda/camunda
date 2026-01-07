@@ -16,6 +16,7 @@ public record IncidentEntity(
     Long processDefinitionKey,
     String processDefinitionId,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     ErrorType errorType,
     String errorMessage,
     String flowNodeId,

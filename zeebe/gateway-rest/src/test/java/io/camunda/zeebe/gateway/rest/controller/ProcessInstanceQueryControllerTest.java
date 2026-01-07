@@ -72,6 +72,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
+          null,
           "demoProcess",
           "Demo Process",
           5,
@@ -199,6 +200,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                       123L,
                       "Test_Process",
                       789L,
+                      37L,
                       ErrorType.CALLED_DECISION_ERROR,
                       "Process crashed",
                       "elementId",

@@ -24,6 +24,7 @@
     i.FLOW_NODE_INSTANCE_KEY,
     i.FLOW_NODE_ID,
     i.PROCESS_INSTANCE_KEY,
+    i.ROOT_PROCESS_INSTANCE_KEY,
     i.PROCESS_DEFINITION_ID,
     i.PROCESS_DEFINITION_KEY,
     i.ERROR_MESSAGE,
@@ -158,6 +159,7 @@
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ERROR_TYPE" javaType="io.camunda.search.entities.IncidentEntity$ErrorType"/>
       <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
@@ -175,6 +177,7 @@
                           FLOW_NODE_INSTANCE_KEY,
                           FLOW_NODE_ID,
                           PROCESS_INSTANCE_KEY,
+                          ROOT_PROCESS_INSTANCE_KEY,
                           PROCESS_DEFINITION_ID,
                           PROCESS_DEFINITION_KEY,
                           ERROR_MESSAGE,
@@ -187,7 +190,7 @@
                           PARTITION_ID,
                           TREE_PATH,
                           HISTORY_CLEANUP_DATE)
-    VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
+    VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{rootProcessInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorMessageHash}, #{errorType},
             #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId}, #{treePath},
             #{historyCleanupDate, jdbcType=TIMESTAMP})

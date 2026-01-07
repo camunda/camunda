@@ -25,6 +25,7 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
     final var builder =
         new ProcessInstanceDbModelBuilder()
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + RANDOM.nextInt(10000))
             .parentProcessInstanceKey(nextKey())

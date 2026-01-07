@@ -29,6 +29,7 @@ public final class IncidentFixtures extends CommonFixtures {
             .processDefinitionId("process-" + generateRandomString(20))
             .flowNodeInstanceKey(nextKey())
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .jobKey(nextKey())
             .flowNodeId("element-" + nextKey())
             .state(randomEnum(IncidentState.class))
