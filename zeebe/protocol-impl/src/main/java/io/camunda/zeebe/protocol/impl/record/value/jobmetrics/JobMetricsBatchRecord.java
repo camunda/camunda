@@ -29,6 +29,22 @@ public final class JobMetricsBatchRecord extends UnifiedRecordValue
   private final BooleanProperty recordSizeLimitExceededProperty =
       new BooleanProperty("recordSizeLimitExceeded", false);
 
+  /**
+   * A pool of strings used to reduce record size by deduplication. Instead of storing the same
+   * strings multiple times across different JobMetrics entries, strings are stored once in this
+   * pool and referenced by index.
+   *
+   * <p>The indices in this pool correspond to the indices used in JobMetrics for:
+   *
+   * <ul>
+   *   <li>jobType
+   *   <li>tenantId
+   *   <li>workerName
+   * </ul>
+   *
+   * <p>For example, if "my-job-type" is at index 0 in encodedStrings, a JobMetrics entry can
+   * reference it by storing 0 as its jobType index, avoiding string duplication.
+   */
   private final ArrayProperty<StringValue> encodedStringsProperty =
       new ArrayProperty<>("encodedStrings", StringValue::new);
 
