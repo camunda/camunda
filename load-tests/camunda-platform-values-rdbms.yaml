@@ -16,6 +16,8 @@ orchestration:
     rdbms:
       enabled: true
   data:
+    auditLog:
+      enabled: false
     secondaryStorage:
       type: rdbms
       rdbms:
