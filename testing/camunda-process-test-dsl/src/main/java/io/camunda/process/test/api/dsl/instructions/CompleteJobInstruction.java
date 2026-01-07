@@ -27,6 +27,7 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableCompleteJobInstruction.Builder.class)
 public interface CompleteJobInstruction extends TestCaseInstruction {
 
+  @Value.Default
   @Override
   default String getType() {
     return TestCaseInstructionType.COMPLETE_JOB;
