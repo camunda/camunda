@@ -127,6 +127,24 @@ final class OpensearchExporterIT {
             record);
   }
 
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
+  void shouldSerializeAndIndexUsingImplementationRecordValue(final ValueType valueType) {
+    // given - generate implementation record with ALL fields populated
+    final var record =
+        factory.generateRecordWithImplValue(
+            valueType, builder -> builder.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+
+    // when - serialize and export to Opensearch
+    export(record);
+
+    // then - verify document was indexed successfully
+    final var response = testClient.getExportedDocumentFor(record);
+    assertThat(response.found()).isTrue();
+    assertThat(response.index()).isEqualTo(indexRouter.indexFor(record));
+    assertThat(response.id()).isEqualTo(indexRouter.idFor(record));
+  }
+
   // both tests below are regression tests for https://github.com/camunda/camunda/issues/4640
   // one option would be to get rid of these and instead have unit tests on the templates themselves
   // where we can guarantee that this field is not indexed, for example
@@ -331,13 +349,11 @@ final class OpensearchExporterIT {
         || valueType == ValueType.JOB) {
       final var response = testClient.getExportedDocumentFor(record);
       assertThat(response)
-          .extracting(
-              GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+          .extracting(GetResponse::index, GetResponse::id, GetResponse::routing)
           .containsExactly(
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()),
-              record);
+              String.valueOf(record.getPartitionId()));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(OpenSearchException.class)

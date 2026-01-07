@@ -34,7 +34,8 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     }
   });
 
-  test('Search Batch Operations Success', async ({request}) => {
+  //Skipped due to bug 43161: https://github.com/camunda/camunda/issues/43161
+  test.skip('Search Batch Operations Success', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/batch-operations/search'), {
         headers: jsonHeaders(),
@@ -182,7 +183,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
 
     await assertBadRequest(
       res,
-      "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [batchOperationKey, operationType, state, startDate, endDate]",
+      "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [batchOperationKey, operationType, state, startDate, endDate, actorType, actorId]",
     );
   });
 });

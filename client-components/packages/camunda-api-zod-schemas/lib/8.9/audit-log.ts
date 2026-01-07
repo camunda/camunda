@@ -52,7 +52,7 @@ const auditLogOperationTypeSchema = z.enum([
 ]);
 type AuditLogOperationType = z.infer<typeof auditLogOperationTypeSchema>;
 
-const auditLogActorTypeSchema = z.enum(['USER', 'CLIENT']);
+const auditLogActorTypeSchema = z.enum(['USER', 'CLIENT', 'ANONYMOUS', 'UNKNOWN']);
 type AuditLogActorType = z.infer<typeof auditLogActorTypeSchema>;
 
 const auditLogResultSchema = z.enum(['SUCCESS', 'FAIL']);

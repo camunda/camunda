@@ -26,6 +26,9 @@
 name: Add Release Comments to Issues
 
 on:
+  schedule:
+    # Run every Wednesday at 9:00 AM UTC
+    - cron: '0 9 * * 3'
   workflow_dispatch:
     inputs:
       days_back:
@@ -73,7 +76,7 @@ jobs:
           DAYS_BACK: ${{ github.event.inputs.days_back || '10' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         shell: bash
-        run: .github/scripts/add-release-comments.sh
+        run: bash .github/scripts/add-release-comments.sh
 
       - name: Observe build status
         if: always()

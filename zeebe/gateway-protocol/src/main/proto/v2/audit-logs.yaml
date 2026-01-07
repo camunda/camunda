@@ -288,11 +288,11 @@ components:
         - INCIDENT
         - MAPPING_RULE
         - PROCESS_INSTANCE
+        - RESOURCE
         - ROLE
         - TENANT
         - USER
         - USER_TASK
-        - RESOURCE
         - VARIABLE
 
     AuditLogOperationTypeEnum:
@@ -311,30 +311,32 @@ components:
         - RESUME
         - SUSPEND
         - UNASSIGN
-        - UPDATE
         - UNKNOWN
+        - UPDATE
 
     AuditLogActorTypeEnum:
       type: string
       description: The type of actor who performed the operation.
       enum:
-        - USER
+        - ANONYMOUS
         - CLIENT
+        - UNKNOWN
+        - USER
 
     AuditLogResultEnum:
       type: string
       description: The result status of the operation.
       enum:
-        - SUCCESS
         - FAIL
+        - SUCCESS
 
     AuditLogCategoryEnum:
       type: string
       description: The category of the audit log operation.
       enum:
+        - ADMIN
         - DEPLOYED_RESOURCES
         - USER_TASKS
-        - ADMIN
 
     ## Filters
 

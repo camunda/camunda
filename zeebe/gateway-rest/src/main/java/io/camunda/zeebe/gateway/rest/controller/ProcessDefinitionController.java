@@ -9,28 +9,27 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.FormResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.gateway.protocol.rest.FormResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,15 +44,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ProcessDefinitionController {
 
   private final ProcessDefinitionServices processDefinitionServices;
-  private final FormServices formServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessDefinitionController(
       final ProcessDefinitionServices processDefinitionServices,
-      final FormServices formServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.processDefinitionServices = processDefinitionServices;
-    this.formServices = formServices;
     this.authenticationProvider = authenticationProvider;
   }
 

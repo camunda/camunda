@@ -9,28 +9,30 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleResult;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -71,7 +73,7 @@ public class MappingRuleController {
   @CamundaDeleteMapping(path = "/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> deleteMappingRule(
       @PathVariable final String mappingRuleId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             mappingRuleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -104,22 +106,24 @@ public class MappingRuleController {
 
   private CompletableFuture<ResponseEntity<Object>> createMappingRule(
       final MappingRuleDTO request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             mappingRuleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createMappingRule(request),
-        ResponseMapper::toMappingRuleCreateResponse);
+        ResponseMapper::toMappingRuleCreateResponse,
+        HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateMappingRule(
       final MappingRuleDTO request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             mappingRuleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateMappingRule(request),
-        ResponseMapper::toMappingRuleUpdateResponse);
+        ResponseMapper::toMappingRuleUpdateResponse,
+        HttpStatus.OK);
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> search(final MappingRuleQuery query) {

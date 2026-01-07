@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
@@ -292,8 +293,14 @@ public class RdbmsConfiguration {
 
   @Bean
   public HistoryDeletionDbReader historyDeletionDbReader(
-      HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper) {
     return new HistoryDeletionDbReader(historyDeletionMapper);
+  }
+
+  @Bean
+  public IncidentProcessInstanceStatisticsByErrorDbReader
+      incidentProcessInstanceStatisticsByErrorReader(final IncidentMapper incidentMapper) {
+    return new IncidentProcessInstanceStatisticsByErrorDbReader(incidentMapper);
   }
 
   @Bean
@@ -337,7 +344,8 @@ public class RdbmsConfiguration {
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
-      final ClusterVariableMapper clusterVariableMapper) {
+      final ClusterVariableMapper clusterVariableMapper,
+      final HistoryDeletionMapper historyDeletionMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -359,7 +367,8 @@ public class RdbmsConfiguration {
         batchOperationMapper,
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
-        clusterVariableMapper);
+        clusterVariableMapper,
+        historyDeletionMapper);
   }
 
   @Bean

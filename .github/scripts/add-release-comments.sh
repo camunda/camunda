@@ -73,7 +73,7 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
     
     # Check if release comment already exists
     COMMENT_EXISTS=$(gh api repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments \
-      --jq ".[] | select(.body | contains(\"released in version $TAG_NAME\")) | .id" | head -n 1 || true)
+      --jq ".[] | select(.body | contains(\"This has been released in version [$TAG_NAME]\")) | .id" | head -n 1 || true)
     
     if [ -n "$COMMENT_EXISTS" ]; then
       echo "    Skipping #$ISSUE_NUMBER - release comment already exists"

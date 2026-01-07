@@ -11,6 +11,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
+import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 
 public class ExporterConfiguration {
 
@@ -26,6 +27,7 @@ public class ExporterConfiguration {
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
   private AuditLogConfiguration auditLog = new AuditLogConfiguration();
+  private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private boolean createSchema = true;
 
   public AuditLogConfiguration getAuditLog() {
@@ -34,6 +36,14 @@ public class ExporterConfiguration {
 
   public void setAuditLog(final AuditLogConfiguration auditLog) {
     this.auditLog = auditLog;
+  }
+
+  public HistoryDeletionConfiguration getHistoryDeletion() {
+    return historyDeletion;
+  }
+
+  public void setHistoryDeletion(final HistoryDeletionConfiguration historyDeletion) {
+    this.historyDeletion = historyDeletion;
   }
 
   public ConnectConfiguration getConnect() {
@@ -159,6 +169,8 @@ public class ExporterConfiguration {
         + batchOperation
         + ", auditLog="
         + auditLog
+        + ", historyDeletion="
+        + historyDeletion
         + '}';
   }
 

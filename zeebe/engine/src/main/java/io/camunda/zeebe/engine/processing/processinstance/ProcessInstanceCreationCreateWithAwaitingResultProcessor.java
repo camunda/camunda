@@ -7,95 +7,125 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 
 @ExcludeAuthorizationCheck
 public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
-    implements CommandProcessor<ProcessInstanceCreationRecord> {
-
-  private final ProcessInstanceCreationCreateProcessor createProcessor;
+    implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
+  private final KeyGenerator keyGenerator;
+  private final TypedCommandWriter commandWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
+  private final StateWriter stateWriter;
+  private final ProcessEngineMetrics metrics;
+  private final ProcessInstanceCreationHelper helper;
   private final MutableElementInstanceState elementInstanceState;
-  private final AwaitProcessInstanceResultMetadata awaitResultMetadata =
-      new AwaitProcessInstanceResultMetadata();
-
-  private final CommandControlWithAwaitResult wrappedController =
-      new CommandControlWithAwaitResult();
-
-  private boolean shouldRespond;
 
   public ProcessInstanceCreationCreateWithAwaitingResultProcessor(
-      final ProcessInstanceCreationCreateProcessor createProcessor,
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final ProcessEngineMetrics metrics,
+      final ProcessInstanceCreationHelper processInstanceCreationHelper,
       final MutableElementInstanceState elementInstanceState) {
-    this.createProcessor = createProcessor;
+    this.keyGenerator = keyGenerator;
+    commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
+    stateWriter = writers.state();
+    this.metrics = metrics;
+    helper = processInstanceCreationHelper;
     this.elementInstanceState = elementInstanceState;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-    wrappedController.setCommand(command).setController(controller);
-    createProcessor.onCommand(command, wrappedController);
-    return shouldRespond;
+  public void processRecord(final TypedRecord<ProcessInstanceCreationRecord> command) {
+    final ProcessInstanceCreationRecord record = command.getValue();
+
+    final Either<Rejection, DeployedProcess> persistedProcess = helper.findRelevantProcess(record);
+    persistedProcess
+        .flatMap(process -> helper.isAuthorized(command, process))
+        .flatMap(process -> helper.validateCommand(command.getValue(), process))
+        .ifRightOrLeft(
+            process -> createProcessInstance(command, process),
+            rejection -> reject(command, rejection.type(), rejection.reason()));
   }
 
   @Override
-  public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
-      final long key,
-      final Intent intent,
-      final ProcessInstanceCreationRecord value) {
-    createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value);
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceCreationRecord> typedCommand, final Throwable error) {
+    if (error instanceof final EventSubscriptionException exception) {
+      // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
-  private final class CommandControlWithAwaitResult
-      implements CommandControl<ProcessInstanceCreationRecord> {
+  private void reject(
+      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final RejectionType type,
+      final String reason) {
+    rejectionWriter.appendRejection(command, type, reason);
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeRejectionOnCommand(command, type, reason);
+    }
+  }
 
-    TypedRecord<ProcessInstanceCreationRecord> command;
-    CommandControl<ProcessInstanceCreationRecord> controller;
+  private void createProcessInstance(
+      final TypedRecord<ProcessInstanceCreationRecord> command, final DeployedProcess process) {
 
-    public CommandControlWithAwaitResult setCommand(
-        final TypedRecord<ProcessInstanceCreationRecord> command) {
-      this.command = command;
-      return this;
+    final long processInstanceKey = keyGenerator.nextKey();
+    final var commandKey = command.getKey();
+    final var record = command.getValue();
+
+    final var processInstance =
+        helper.initProcessInstanceRecord(process, processInstanceKey, record.getTags());
+
+    helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
+
+    if (record.startInstructions().isEmpty()) {
+      commandWriter.appendFollowUpCommand(
+          processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
+    } else {
+      helper.activateElementsForStartInstructions(
+          record.startInstructions(), process, processInstance);
     }
 
-    public CommandControlWithAwaitResult setController(
-        final CommandControl<ProcessInstanceCreationRecord> controller) {
-      this.controller = controller;
-      return this;
-    }
+    helper.updateCreationRecord(record, processInstance);
 
-    @Override
-    public long accept(final Intent newState, final ProcessInstanceCreationRecord updatedValue) {
-      shouldRespond = false;
-      final ArrayProperty<StringValue> fetchVariables = command.getValue().fetchVariables();
-      awaitResultMetadata
-          .setRequestId(command.getRequestId())
-          .setRequestStreamId(command.getRequestStreamId())
-          .setFetchVariables(fetchVariables);
+    final var entityKey = commandKey < 0 ? keyGenerator.nextKey() : commandKey;
 
-      elementInstanceState.setAwaitResultRequestMetadata(
-          updatedValue.getProcessInstanceKey(), awaitResultMetadata);
-      return controller.accept(newState, updatedValue);
-    }
+    final var awaitResultMetadata =
+        new AwaitProcessInstanceResultMetadata()
+            .setRequestId(command.getRequestId())
+            .setRequestStreamId(command.getRequestStreamId())
+            .setFetchVariables(record.fetchVariables());
+    elementInstanceState.setAwaitResultRequestMetadata(
+        record.getProcessInstanceKey(), awaitResultMetadata);
 
-    @Override
-    public void reject(final RejectionType type, final String reason) {
-      shouldRespond = true;
-      controller.reject(type, reason);
-    }
+    stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
+    metrics.processInstanceCreated(record);
   }
 }

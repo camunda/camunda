@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -41,7 +43,6 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
@@ -76,7 +77,10 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  */
 public final class S3BackupStore implements BackupStore {
   static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
+      new ObjectMapper()
+          .registerModule(new Jdk8Module())
+          .registerModule(new JavaTimeModule())
+          .disable(WRITE_DATES_AS_TIMESTAMPS);
   static final String SNAPSHOT_PREFIX = "snapshot/";
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
@@ -106,7 +110,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   public static BackupStore of(final S3BackupConfig config) {
-    return new S3BackupStore(config).logging(LOG, Level.INFO);
+    return new S3BackupStore(config);
   }
 
   private Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
@@ -153,15 +157,15 @@ public final class S3BackupStore implements BackupStore {
           "Configuration for S3 backup store is incomplete. bucketName must not be empty.");
     }
     if (config.region().isEmpty()) {
-      LOG.warn(
+      LOG.debug(
           "No region configured for S3 backup store. Region will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment)");
     }
     if (config.endpoint().isEmpty()) {
-      LOG.warn(
+      LOG.debug(
           "No endpoint configured for S3 backup store. Endpoint will be determined from the region");
     }
     if (config.credentials().isEmpty()) {
-      LOG.warn(
+      LOG.debug(
           "Access credentials (accessKey, secretKey) not configured for S3 backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
     }
     // Create a throw away client to verify if all configurations are available. This will throw an
@@ -289,7 +293,10 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<Void> deleteBackupObjects(
       final Collection<ObjectIdentifier> objectIdentifiers) {
-    LOG.debug("Deleting {} objects", objectIdentifiers.size());
+    LOG.atTrace()
+        .addKeyValue("objects", objectIdentifiers::size)
+        .setMessage("Deleting objects")
+        .log();
     if (objectIdentifiers.isEmpty()) {
       // Nothing to delete, which we must handle because the delete request would be invalid
       return CompletableFuture.completedFuture(null);
@@ -302,6 +309,10 @@ public final class S3BackupStore implements BackupStore {
         .thenApplyAsync(
             response -> {
               if (!response.errors().isEmpty()) {
+                LOG.atError()
+                    .addKeyValue("errors", response.errors())
+                    .setMessage("Failed to delete some backup objects")
+                    .log();
                 throw new BackupDeletionIncomplete(
                     "Not all objects belonging to the backup were deleted successfully: "
                         + response.errors());
@@ -312,7 +323,10 @@ public final class S3BackupStore implements BackupStore {
 
   SdkPublisher<BackupIdentifier> findBackupIds(final BackupIdentifierWildcard wildcard) {
     final var prefix = wildcardPrefix(wildcard);
-    LOG.debug("Using prefix {} to search for manifest files matching {}", prefix, wildcard);
+    LOG.atTrace()
+        .addKeyValue("pattern", wildcard)
+        .setMessage("Searching for matching manifest files")
+        .log();
     return client
         .listObjectsV2Paginator(cfg -> cfg.bucket(config.bucketName()).prefix(prefix))
         .contents()
@@ -334,7 +348,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
-    LOG.debug("Reading manifest object of {}", id);
+    LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
     return client
         .getObject(
             req -> req.bucket(config.bucketName()).key(objectPrefix(id) + MANIFEST_OBJECT_KEY),
@@ -345,6 +359,11 @@ public final class S3BackupStore implements BackupStore {
                 return (Manifest)
                     MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
               } catch (final IOException e) {
+                LOG.atError()
+                    .addKeyValue("backup", id)
+                    .setCause(e)
+                    .setMessage("Failed to parse manifest object")
+                    .log();
                 throw new ManifestParseException(
                     "Failed to read manifest object: %s".formatted(response.asUtf8String()), e);
               }
@@ -353,12 +372,22 @@ public final class S3BackupStore implements BackupStore {
             throwable -> {
               // throwable is a `CompletionException`, `getCause` to handle the underlying exception
               if (throwable.getCause() instanceof NoSuchKeyException) {
-                LOG.debug("Found no manifest for backup {}", id);
+                LOG.atTrace().addKeyValue("backup", id).setMessage("Found no manifest").log();
                 return new NoBackupManifest(BackupIdentifierImpl.from(id));
               } else if (throwable.getCause() instanceof final S3BackupStoreException e) {
+                LOG.atError()
+                    .addKeyValue("backup", id)
+                    .setCause(e)
+                    .setMessage("Failed to read manifest")
+                    .log();
                 // Exception was already wrapped, no need to re-wrap
                 throw e;
               } else {
+                LOG.atError()
+                    .addKeyValue("backup", id)
+                    .setCause(throwable)
+                    .setMessage("Failed to read manifest")
+                    .log();
                 throw new BackupReadException(
                     "Failed to read manifest of %s".formatted(id), throwable);
               }
@@ -378,7 +407,11 @@ public final class S3BackupStore implements BackupStore {
   }
 
   CompletableFuture<ValidBackupManifest> writeManifestObject(final ValidBackupManifest manifest) {
-    LOG.debug("Updating manifest of {} to {}", manifest.id(), manifest);
+    LOG.atTrace()
+        .addKeyValue("backup", manifest.id())
+        .addKeyValue("status", manifest.statusCode())
+        .setMessage("Updating manifest")
+        .log();
     final AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(manifest));
@@ -398,13 +431,13 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
-    LOG.debug("Saving snapshot files for {}", backup.id());
+    LOG.atTrace().addKeyValue("backup", backup.id()).setMessage("Saving snapshot files").log();
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
     return fileSetManager.save(prefix, backup.snapshot());
   }
 
   private CompletableFuture<FileSet> saveSegmentFiles(final Backup backup) {
-    LOG.debug("Saving segment files for {}", backup.id());
+    LOG.atTrace().addKeyValue("backup", backup.id()).setMessage("Saving segment files").log();
     final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
     return fileSetManager.save(prefix, backup.segments());
   }

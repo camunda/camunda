@@ -56,6 +56,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new StringValue("processDefinitionPath");
   public static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
   public static final StringValue TAGS_KEY = new StringValue("tags");
+  public static final StringValue ROOT_PROCESS_INSTANCE_KEY =
+      new StringValue("rootProcessInstanceKey");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -91,8 +93,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> tagsProp =
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
 
+  private final LongProperty rootProcessInstanceKeyProp =
+      new LongProperty(ROOT_PROCESS_INSTANCE_KEY, -1L);
+
   public ProcessInstanceRecord() {
-    super(15);
+    super(16);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -107,7 +112,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
         .declareProperty(callingElementPathProp)
-        .declareProperty(tagsProp);
+        .declareProperty(tagsProp)
+        .declareProperty(rootProcessInstanceKeyProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -122,6 +128,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
   }
 
   @JsonIgnore
@@ -266,6 +273,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     if (tags != null) {
       tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
     }
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 

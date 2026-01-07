@@ -11,7 +11,27 @@ import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 
 public interface ConditionalSubscriptionState {
 
+  /**
+   * Checks whether a conditional subscription exists for the given tenant ID and subscription key.
+   *
+   * @param tenantId the tenant ID
+   * @param subscriptionKey the subscription key
+   * @return true if the conditional subscription exists, false otherwise
+   */
   boolean exists(String tenantId, long subscriptionKey);
+
+  /**
+   * Checks whether any conditional subscriptions exist for the given process definition key. Please
+   * note that this DOES NOT include conditional start event subscriptions but only boundary events,
+   * intermediate catch events, and event subprocess start events.
+   *
+   * <p>This is used to quickly check whether any conditional subscriptions need to be visited when
+   * a variable is updated in a given scope.
+   *
+   * @param processDefinitionKey the process definition key
+   * @return true if any conditional start event subscriptions exist, false otherwise
+   */
+  boolean exists(long processDefinitionKey);
 
   /**
    * Visits all (except start event) conditional subscriptions for the given scope key.
@@ -32,6 +52,6 @@ public interface ConditionalSubscriptionState {
 
   @FunctionalInterface
   interface ConditionalSubscriptionVisitor {
-    void visit(ConditionalSubscription subscription);
+    boolean visit(ConditionalSubscription subscription);
   }
 }

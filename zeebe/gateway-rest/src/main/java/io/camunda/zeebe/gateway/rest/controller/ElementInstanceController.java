@@ -9,26 +9,27 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.ElementInstanceResult;
+import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
+import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
+import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -62,7 +63,7 @@ public class ElementInstanceController {
 
   private CompletableFuture<ResponseEntity<Object>> setVariables(
       final SetVariablesRequest variablesRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             elementInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

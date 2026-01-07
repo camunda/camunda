@@ -19,6 +19,7 @@ public class ProcessInstanceEntityTransformer
   public ProcessInstanceEntity apply(final ProcessInstanceForListViewEntity source) {
     return new ProcessInstanceEntity(
         source.getKey(),
+        null, // TODO eventually we want to add this
         source.getBpmnProcessId(),
         source.getProcessName(),
         source.getProcessVersion(),

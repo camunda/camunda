@@ -193,7 +193,8 @@ public class NonInterruptingEventSubprocessTest {
         .hasBpmnElementType(BpmnElementType.START_EVENT)
         .hasElementId("event_sub_start")
         .hasVersion(currentProcess.getVersion())
-        .hasFlowScopeKey(subProcessActivated.getKey());
+        .hasFlowScopeKey(subProcessActivated.getKey())
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     assertEventSubprocessLifecycle(processInstanceKey);
   }

@@ -18,9 +18,9 @@ import {
   type ProcessInstancesFilter,
 } from 'modules/utils/filter/v2/processInstancesSearch';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
-import {ProcessField} from '../../Filters/ProcessField';
-import {ProcessVersionField} from '../../Filters/ProcessVersionField';
-import {FlowNodeField} from '../../Filters/FlowNodeField';
+import {ProcessField} from './ProcessField';
+import {ProcessVersionField} from './ProcessVersionField';
+import {FlowNodeField} from './FlowNodeField';
 import {
   Container,
   Title,
@@ -32,11 +32,11 @@ import {
   RadioButtonChecked,
   WarningFilled,
 } from 'modules/components/StateIcon/styled';
-import {CheckboxGroup} from '../../Filters/CheckboxGroup';
+import {CheckboxGroup} from './CheckboxGroup';
 import {
   type OptionalFilter,
   OptionalFiltersFormGroup,
-} from '../../Filters/OptionalFiltersFormGroup';
+} from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';

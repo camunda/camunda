@@ -174,6 +174,7 @@ public final class CatchEventBehavior {
                 ConditionalSubscriptionIntent.DELETED,
                 subscription.getRecord());
           }
+          return true;
         });
   }
 
@@ -336,6 +337,7 @@ public final class CatchEventBehavior {
     final var messageName = result.messageName;
 
     final long processInstanceKey = context.getProcessInstanceKey();
+    final long rootProcessInstanceKey = context.getRootProcessInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = context.getProcessDefinitionKey();
@@ -352,6 +354,7 @@ public final class CatchEventBehavior {
     subscription.setElementId(event.getId());
     subscription.setInterrupting(event.isInterrupting());
     subscription.setTenantId(context.getTenantId());
+    subscription.setRootProcessInstanceKey(rootProcessInstanceKey);
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(

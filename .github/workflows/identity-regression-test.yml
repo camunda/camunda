@@ -16,17 +16,13 @@ on:
         required: true
         default: 'true'
         type: choice
-        options:
-          - 'true'
-          - 'false'
+        options: ['true', 'false']
       authorizations:
         description: 'Enable Authorizations?'
         required: true
         default: 'true'
         type: choice
-        options:
-          - 'true'
-          - 'false'
+        options: ['true', 'false']
 
 concurrency:
   cancel-in-progress: true
@@ -34,39 +30,16 @@ concurrency:
 
 permissions:
   actions: write
-  attestations: none
   checks: write
   contents: read
-  deployments: none
-  id-token: none
-  issues: none
-  discussions: none
-  packages: none
-  pages: none
-  pull-requests: none
-  repository-projects: none
-  security-events: none
   statuses: write
 
 jobs:
-  run-http-regression-tests:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        env: [ 'local' ]
-        case:
-          - 'user-authorizations-tests.http'
-          - 'tenant-tests.http'
-          - 'group-tests.http'
-          - 'mapping-rules.http'
-          - 'role-tests.http'
-          - 'csrf-protection-tests.http'
-
+  build-and-package:
+    name: Build and Package Camunda
     runs-on: ubuntu-latest
-    environment: '${{ matrix.env }}-http-tests'
-    env:
-      LC_ALL: C.UTF-8
+    timeout-minutes: 15
+    if: ${{ github.event_name == 'workflow_dispatch' }}
 
     steps:
       - name: Checkout repository
@@ -82,12 +55,99 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: Start Elasticsearch with Docker Compose
-        run: docker compose -f operate/docker-compose.yml up -d elasticsearch
+      - name: Build and package Camunda
+        run: |
+          ./mvnw -B -T2C -pl dist -am -DskipTests -DskipChecks -Dflatten.skip=true --no-transfer-progress package
+
+      - name: Upload Camunda Distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: camunda-dist
+          path: dist/target/camunda-zeebe-*.tar.gz
+          retention-days: 2
+
+  run-http-regression-tests:
+    name: Run Regression Tests
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        env: ['local']
+        case:
+          - user-authorizations-tests.http
+          - tenant-tests.http
+          - group-tests.http
+          - mapping-rules.http
+          - role-tests.http
+          - csrf-protection-tests.http
+        include:
+          - case: user-authorizations-tests.http
+            hostPort: 9200
+            hostTransportPort: 9300
+          - case: tenant-tests.http
+            hostPort: 9210
+            hostTransportPort: 9310
+          - case: group-tests.http
+            hostPort: 9220
+            hostTransportPort: 9320
+          - case: mapping-rules.http
+            hostPort: 9230
+            hostTransportPort: 9330
+          - case: role-tests.http
+            hostPort: 9240
+            hostTransportPort: 9340
+          - case: csrf-protection-tests.http
+            hostPort: 9250
+            hostTransportPort: 9350
+
+    environment: '${{ matrix.case }}'
+    env:
+      LC_ALL: C.UTF-8
+
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+        env:
+          discovery.type: single-node
+          cluster.name: "ci-${{ matrix.case }}"
+          bootstrap.memory_lock: true
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - ${{ matrix.hostPort }}:9200
+          - ${{ matrix.hostTransportPort }}:9300
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Download Camunda Distribution Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: camunda-dist
+          path: ./dist/target
+
+      - name: Extract Distribution Tarball
+        run: |
+          cd ./dist/target
+          tarball=$(ls camunda-zeebe-*.tar.gz)
+          tar -xvzf "$tarball"
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -121,60 +181,71 @@ jobs:
           TOKEN_URL: ${{ steps.secrets.outputs.TOKEN_URL }}
           AUDIENCE: ${{ steps.secrets.outputs.AUDIENCE }}
 
-      - name: Package camunda-dist
-        shell: bash
-        id: build-dist
+      - name: Wait for Elasticsearch
         run: |
-          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
+          echo "Waiting for Elasticsearch on localhost:${{ matrix.hostPort }}..."
+          for i in {1..60}; do
+            status=$(curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health?wait_for_status=yellow&timeout=5s" | jq -r '.status // empty')
+            if [[ "$status" == "yellow" || "$status" == "green" ]]; then
+              echo "✅ Elasticsearch is ready (status: $status)"
+              break
+            fi
+            echo "⏳ Still waiting for cluster health ($i/60)... current status: ${status:-unknown}"
+            sleep 5
+          done
 
-      - name: Extract Distribution Tarball
-        run: |
-          cd ./dist/target
-          tarball=$(ls camunda-zeebe-*.tar.gz)
-          tar -xvzf "$tarball"
+          if [[ "$status" != "yellow" && "$status" != "green" ]]; then
+            echo "❌ Elasticsearch did not reach yellow or green state in time" >&2
+            curl -s "http://localhost:${{ matrix.hostPort }}/_cluster/health?pretty" || true
+            exit 1
+          fi
 
-      - name: Start Camunda (default config)
-        if: matrix.case != 'mapping-rules.http'
+      - name: Start Camunda
         run: |
+          export CLIENTID=${{ steps.secrets.outputs.CLIENT_ID }}
+          export CLIENTSECRET=${{ steps.secrets.outputs.CLIENT_SECRET }}
+          export ISSUERURI=${{ steps.secrets.outputs.ISSUER_URI }}
+          export CLAIMVALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE }}
+          export MTCHECKSENABLED=${{ inputs.multi-tenancy }}
+          export ESURL=http://localhost:${{ matrix.hostPort }}
+          export CONNECTURL=http://localhost:${{ matrix.hostPort }}
+          export AUTHORIZATIONS=${{ inputs.authorizations }}
           cd ./dist/target
           dir=$(ls -d camunda-zeebe-*/)
           cd "$dir"
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
-          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=${{ inputs.authorizations }} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
-          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=${{ inputs.multi-tenancy }} && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo && \
-          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com && \
-          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo && \
-          export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth,dev-data && \
-          ./bin/camunda &
-          sleep 60
 
-      - name: Start Camunda (OIDC config for mapping-rules)
-        if: matrix.case == 'mapping-rules.http'
-        run: |
-          cd ./dist/target/camunda-zeebe-8.9.0-SNAPSHOT
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
-          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_METHOD=OIDC && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTID=${{ steps.secrets.outputs.CLIENT_ID}} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTSECRET=${{ steps.secrets.outputs.CLIENT_SECRET}} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUERURI=${{ steps.secrets.outputs.ISSUER_URI}} && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECTURI=http://localhost:8080/sso-callback && \
-          export INITIAL_CLAIM_VALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE}}  && \
-          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
-          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=${{ inputs.multi-tenancy }} && \
-          export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth,dev-data && \
+          CONFIG_PATH="../../../qa/http/configs"
+          if [ "${{ matrix.case }}" = "mapping-rules.http" ]; then
+            CONFIG_FILE="$CONFIG_PATH/identity-oidc.env"
+          else
+            CONFIG_FILE="$CONFIG_PATH/identity-default.env"
+          fi
+
+          echo "Using config file: $CONFIG_FILE"
+
+          # Expand GitHub variables before sourcing
+          envsubst < "$CONFIG_FILE" > "$CONFIG_PATH/identity-runtime.env"
+          set -a
+          source "$CONFIG_PATH/identity-runtime.env"
+          set +a
+          rm "$CONFIG_PATH/identity-runtime.env"
+
           ./bin/camunda &
-          sleep 60
+
+          echo "Waiting for Camunda to start on port 8080..."
+          for i in {1..60}; do
+            if nc -z localhost 8080; then
+              echo "✅ Camunda is up!"
+              break
+            fi
+            echo "⏳ Still waiting ($i/60)..."
+            sleep 5
+          done
+
+          if ! nc -z localhost 8080; then
+            echo "❌ Camunda did not start within expected time" >&2
+            exit 1
+          fi
 
       - name: Install IntelliJ HTTP Client
         shell: bash
@@ -196,6 +267,13 @@ jobs:
         run: |
           rm qa/http/http-client.private.env.json
 
-      - name: Shut down Docker Compose
+      - name: Observe build status
         if: always()
-        run: docker compose -f operate/docker-compose.yml down -v
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "Run Regression Tests - ${{ matrix.case }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

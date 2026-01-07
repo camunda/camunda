@@ -71,6 +71,10 @@ class OperateProcessInstancePage {
   readonly modalDialog: Locator;
   readonly noVariablesText: Locator;
   readonly variableCellByName: (name: string | RegExp) => Locator;
+  readonly viewAllChildProcessesLink: Locator;
+  readonly instanceHeaderSkeleton: Locator;
+  readonly viewAllCalledInstancesLink: Locator;
+  readonly viewParentInstanceLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -179,6 +183,16 @@ class OperateProcessInstancePage {
 
     this.variableCellByName = (name) =>
       this.variablesList.getByRole('cell', {name});
+    this.viewAllChildProcessesLink = this.instanceHeader.getByRole('link', {
+      name: 'View all',
+    });
+    this.instanceHeaderSkeleton = page.getByTestId('instance-header-skeleton');
+    this.viewAllCalledInstancesLink = page.getByRole('link', {
+      name: /view all called instances/i,
+    });
+    this.viewParentInstanceLink = page.getByRole('link', {
+      name: /view parent instance/i,
+    });
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -590,6 +604,18 @@ class OperateProcessInstancePage {
     for (const elementId of elementIds) {
       await expect(this.getDiagramElement(elementId)).toBeVisible();
     }
+  }
+
+  async clickViewAllChildProcesses(): Promise<void> {
+    await this.viewAllChildProcessesLink.click();
+  }
+
+  async clickViewAllCalledInstances(): Promise<void> {
+    await this.viewAllCalledInstancesLink.click();
+  }
+
+  async clickViewParentInstance(): Promise<void> {
+    await this.viewParentInstanceLink.click();
   }
 }
 

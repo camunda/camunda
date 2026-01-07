@@ -18,13 +18,14 @@ import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
-public class MessageSubscriptionWriter implements RdbmsWriter {
+public class MessageSubscriptionWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final MessageSubscriptionMapper mapper;
 
   public MessageSubscriptionWriter(
       final ExecutionQueue executionQueue, final MessageSubscriptionMapper mapper) {
+    super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
   }

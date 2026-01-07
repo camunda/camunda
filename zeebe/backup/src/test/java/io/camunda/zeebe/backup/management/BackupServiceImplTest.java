@@ -37,6 +37,7 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -517,7 +518,8 @@ class BackupServiceImplTest {
     ControllableInProgressBackup() {
       id = new BackupIdentifierImpl(1, 2, 3);
       checkpointDescriptor =
-          new BackupDescriptorImpl(Optional.empty(), 1L, 2, "1.2.0", Instant.now(), null);
+          new BackupDescriptorImpl(
+              Optional.empty(), 1L, 2, "1.2.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
     }
 
     @Override

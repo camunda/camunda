@@ -32,6 +32,9 @@ const Paths = {
   forbidden() {
     return '/forbidden';
   },
+  batchOperations() {
+    return '/batch-operations';
+  },
 } as const;
 
 const Locations = {

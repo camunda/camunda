@@ -16,11 +16,24 @@
 package io.camunda.process.test.impl.dsl;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
+import io.camunda.process.test.api.assertions.UserTaskAssert;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.impl.dsl.instructions.AssertElementInstanceInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.AssertElementInstancesInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.AssertProcessInstanceInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.AssertUserTaskInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.AssertVariablesInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.CompleteUserTaskInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerCompleteJobInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.PublishMessageInstructionHandler;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -39,13 +52,28 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
 
   static {
     // register instruction handlers here
+    registerHandler(new AssertElementInstanceInstructionHandler());
+    registerHandler(new AssertElementInstancesInstructionHandler());
+    registerHandler(new AssertProcessInstanceInstructionHandler());
+    registerHandler(new AssertUserTaskInstructionHandler());
+    registerHandler(new AssertVariablesInstructionHandler());
+    registerHandler(new CompleteUserTaskInstructionHandler());
     registerHandler(new CreateProcessInstanceInstructionHandler());
+    registerHandler(new MockJobWorkerCompleteJobInstructionHandler());
+    registerHandler(new PublishMessageInstructionHandler());
   }
 
   private final CamundaProcessTestContext context;
+  private final AssertionFacade assertionFacade;
 
   public CamundaTestScenarioRunner(final CamundaProcessTestContext context) {
+    this(context, new TestScenarioAssertionFacade());
+  }
+
+  public CamundaTestScenarioRunner(
+      final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
     this.context = context;
+    this.assertionFacade = assertionFacade;
   }
 
   private static void registerHandler(
@@ -79,7 +107,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
 
     try {
       //noinspection unchecked
-      instructionHandler.execute(instruction, context, camundaClient);
+      instructionHandler.execute(instruction, context, camundaClient, assertionFacade);
 
     } catch (final Exception e) {
       throw new TestScenarioRunException(
@@ -107,5 +135,18 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
             () ->
                 new RuntimeException(
                     "Could not determine instruction interface of: " + instruction));
+  }
+
+  private static final class TestScenarioAssertionFacade implements AssertionFacade {
+
+    @Override
+    public ProcessInstanceAssert assertThatProcessInstance(final ProcessInstanceSelector selector) {
+      return CamundaAssert.assertThatProcessInstance(selector);
+    }
+
+    @Override
+    public UserTaskAssert assertThatUserTask(final UserTaskSelector selector) {
+      return CamundaAssert.assertThatUserTask(selector);
+    }
   }
 }

@@ -39,7 +39,8 @@ public class ElasticsearchHistoryDeletionRepositoryIT extends HistoryDeletionRep
         client,
         Runnable::run,
         LOGGER,
-        partitionId);
+        partitionId,
+        config.getHistoryDeletion());
   }
 
   @Override

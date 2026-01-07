@@ -13,6 +13,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.model.util.AuditLogCategoryConverter;
+import io.camunda.gateway.model.util.AuditLogEntityTypeConverter;
+import io.camunda.gateway.model.util.AuditLogOperationTypeConverter;
+import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
+import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
+import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.BatchOperationType;
@@ -24,13 +30,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogCategoryEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogEntityTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuditLogOperationTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.util.AuditLogCategoryConverter;
-import io.camunda.zeebe.gateway.rest.util.AuditLogEntityTypeConverter;
-import io.camunda.zeebe.gateway.rest.util.AuditLogOperationTypeConverter;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -260,7 +260,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [DEPLOYED_RESOURCES, USER_TASKS, ADMIN]",
+                  "detail": "Unexpected value 'SOMETHING' for enum field 'category'. Use any of the following values: [ADMIN, DEPLOYED_RESOURCES, USER_TASKS]",
                   "instance": "%s"
                 }""",
             AUDIT_LOGS_SEARCH_URL);

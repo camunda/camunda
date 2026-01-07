@@ -117,7 +117,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -150,6 +150,7 @@ jobs:
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
+          API_TESTS_ONLY: true
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
@@ -311,7 +312,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        uses: hashicorp/vault-action@734c523c4fbdb289cdf26dd2dc177f3627d1e140
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

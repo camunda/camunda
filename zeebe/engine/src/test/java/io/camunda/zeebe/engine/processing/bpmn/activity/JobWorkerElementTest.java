@@ -105,7 +105,8 @@ public final class JobWorkerElementTest {
         .hasBpmnElementType(elementBuilder.getElementType())
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test

@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
@@ -62,6 +63,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
@@ -71,7 +73,6 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -575,6 +576,20 @@ public class CamundaServicesConfiguration {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new ConditionalServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public TopologyServices topologyServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new TopologyServices(
         brokerClient,
         securityContextProvider,
         null,

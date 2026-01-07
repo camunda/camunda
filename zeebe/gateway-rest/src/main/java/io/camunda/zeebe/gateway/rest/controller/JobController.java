@@ -9,30 +9,31 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.RequestMapper.CompleteJobRequest;
+import io.camunda.gateway.model.mapper.RequestMapper.ErrorJobRequest;
+import io.camunda.gateway.model.mapper.RequestMapper.FailJobRequest;
+import io.camunda.gateway.model.mapper.RequestMapper.UpdateJobRequest;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobSearchQuery;
+import io.camunda.gateway.protocol.model.JobSearchQueryResult;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.search.query.JobQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
-import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.CompleteJobRequest;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.ErrorJobRequest;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.FailJobRequest;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.UpdateJobRequest;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -118,7 +119,7 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> failJob(final FailJobRequest failJobRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -132,7 +133,7 @@ public class JobController {
 
   private CompletableFuture<ResponseEntity<Object>> errorJob(
       final ErrorJobRequest errorJobRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -145,7 +146,7 @@ public class JobController {
 
   private CompletableFuture<ResponseEntity<Object>> completeJob(
       final CompleteJobRequest completeJobRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -157,7 +158,7 @@ public class JobController {
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(
       final UpdateJobRequest updateJobRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

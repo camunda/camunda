@@ -16,24 +16,34 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
-import io.camunda.exporter.rdbms.handlers.auditlog.AuditLogExportHandler;
-import io.camunda.exporter.rdbms.handlers.auditlog.AuthorizationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationCreationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.BatchOperationLifecycleManagementAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.DecisionEvaluationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.IncidentResolutionAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.MappingRuleAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCancelAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceCreationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceMigrationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.ProcessInstanceModificationAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.TenantAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.TenantEntityAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.UserAuditLogTransformer;
-import io.camunda.exporter.rdbms.handlers.auditlog.VariableAddUpdateAuditLogTransformer;
+import io.camunda.exporter.rdbms.handlers.AuditLogExportHandler;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.DecisionEvaluationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.FormAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCreationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceMigrationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceModificationAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.ResourceAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.RoleEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -95,7 +105,11 @@ class RdbmsExporterWrapperTest {
             Map.entry(
                 BatchOperationLifecycleManagementAuditLogTransformer.class,
                 ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
+            Map.entry(DecisionAuditLogTransformer.class, ValueType.DECISION),
             Map.entry(DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
+            Map.entry(FormAuditLogTransformer.class, ValueType.FORM),
+            Map.entry(GroupAuditLogTransformer.class, ValueType.GROUP),
+            Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),
             Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
             Map.entry(MappingRuleAuditLogTransformer.class, ValueType.MAPPING_RULE),
             Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
@@ -108,9 +122,14 @@ class RdbmsExporterWrapperTest {
             Map.entry(
                 ProcessInstanceModificationAuditLogTransformer.class,
                 ValueType.PROCESS_INSTANCE_MODIFICATION),
+            Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
+            Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
+            Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
+            Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
             Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),
+            Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
             Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Check that all expected AuditLogExportHandlers are registered
@@ -131,24 +150,18 @@ class RdbmsExporterWrapperTest {
   private void assertAuditLogExportPresent(
       final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers,
       final Map<Class<?>, ValueType> expectedRegisteredTransformers) {
-    expectedRegisteredTransformers.forEach(
-        (auditLogTransformerClass, valueType) -> {
-          // check whether value type exists and contains the expected transformer class
-          assertThat(registeredHandlers)
-              .containsKey(valueType)
-              .extracting(map -> map.get(valueType))
-              .satisfies(
-                  handlerList -> {
-                    assertThat(handlerList)
-                        .filteredOn(AuditLogExportHandler.class::isInstance)
-                        .extracting(
-                            exportHandler ->
-                                (Class)
-                                    ((AuditLogExportHandler<?>) exportHandler)
-                                        .getTransformer()
-                                        .getClass())
-                        .contains(auditLogTransformerClass);
-                  });
+    final Map<Class<?>, ValueType> actualRegisteredHandlers = new HashMap<>();
+    registeredHandlers.forEach(
+        (valueType, handlers) -> {
+          for (final RdbmsExportHandler<?> handler : handlers) {
+            if (handler instanceof AuditLogExportHandler<?>) {
+              actualRegisteredHandlers.put(
+                  ((AuditLogExportHandler<?>) handler).getTransformer().getClass(), valueType);
+            }
+          }
         });
+    assertThat(actualRegisteredHandlers)
+        .as("Audit log handlers should match expected handlers")
+        .containsExactlyInAnyOrderEntriesOf(expectedRegisteredTransformers);
   }
 }

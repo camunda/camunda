@@ -12,7 +12,8 @@ import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.search.entities.IncidentEntity;
 import java.util.List;
 
-public interface IncidentMapper extends ProcessBasedHistoryCleanupMapper {
+public interface IncidentMapper
+    extends ProcessBasedHistoryCleanupMapper, ProcessInstanceDependantMapper {
 
   void insert(IncidentDbModel incident);
 

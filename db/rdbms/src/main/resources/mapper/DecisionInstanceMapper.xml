@@ -25,6 +25,7 @@
     SELECT di.DECISION_INSTANCE_ID,
     di.DECISION_INSTANCE_KEY,
     di.PROCESS_INSTANCE_KEY,
+    di.ROOT_PROCESS_INSTANCE_KEY,
     di.FLOW_NODE_INSTANCE_KEY,
     di.PROCESS_DEFINITION_ID,
     di.PROCESS_DEFINITION_KEY,
@@ -188,6 +189,7 @@
       <arg column="EVALUATION_FAILURE_MESSAGE" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"/>
@@ -209,27 +211,28 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel">
     INSERT INTO ${prefix}DECISION_INSTANCE (DECISION_INSTANCE_ID,
-                                   DECISION_INSTANCE_KEY,
-                                   PROCESS_INSTANCE_KEY,
-                                   PROCESS_DEFINITION_KEY,
-                                   PROCESS_DEFINITION_ID,
-                                   DECISION_DEFINITION_KEY,
-                                   DECISION_DEFINITION_ID,
-                                   DECISION_REQUIREMENTS_KEY,
-                                   DECISION_REQUIREMENTS_ID,
-                                   FLOW_NODE_INSTANCE_KEY,
-                                   FLOW_NODE_ID,
-                                   ROOT_DECISION_DEFINITION_KEY,
-                                   TYPE,
-                                   STATE,
-                                   EVALUATION_DATE,
-                                   RESULT,
+                                            DECISION_INSTANCE_KEY,
+                                            PROCESS_INSTANCE_KEY,
+                                            ROOT_PROCESS_INSTANCE_KEY,
+                                            PROCESS_DEFINITION_KEY,
+                                            PROCESS_DEFINITION_ID,
+                                            DECISION_DEFINITION_KEY,
+                                            DECISION_DEFINITION_ID,
+                                            DECISION_REQUIREMENTS_KEY,
+                                            DECISION_REQUIREMENTS_ID,
+                                            FLOW_NODE_INSTANCE_KEY,
+                                            FLOW_NODE_ID,
+                                            ROOT_DECISION_DEFINITION_KEY,
+                                            TYPE,
+                                            STATE,
+                                            EVALUATION_DATE,
+                                            RESULT,
                                             EVALUATION_FAILURE,
                                             EVALUATION_FAILURE_MESSAGE,
                                             TENANT_ID,
                                             PARTITION_ID,
                                             HISTORY_CLEANUP_DATE)
-    VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
+    VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey}, #{rootProcessInstanceKey},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
             #{decisionRequirementsKey}, #{decisionRequirementsId},
@@ -321,6 +324,11 @@
   <delete id="cleanupHistory">
     <bind name="tableName" value="'DECISION_INSTANCE'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
   </delete>
 
 </mapper>

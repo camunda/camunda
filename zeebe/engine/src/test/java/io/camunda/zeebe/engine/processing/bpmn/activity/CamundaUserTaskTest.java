@@ -111,7 +111,8 @@ public final class CamundaUserTaskTest {
         .hasBpmnElementType(BpmnElementType.USER_TASK)
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -162,7 +163,8 @@ public final class CamundaUserTaskTest {
         .hasElementId(taskActivated.getValue().getElementId())
         .hasProcessDefinitionKey(taskActivated.getValue().getProcessDefinitionKey())
         .hasBpmnProcessId(taskActivated.getValue().getBpmnProcessId())
-        .hasProcessDefinitionVersion(taskActivated.getValue().getVersion());
+        .hasProcessDefinitionVersion(taskActivated.getValue().getVersion())
+        .hasRootProcessInstanceKey(processInstanceKey);
 
     assertThat(userTask.getValue().getUserTaskKey()).isGreaterThan(0L);
   }

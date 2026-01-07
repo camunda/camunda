@@ -39,7 +39,6 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -47,8 +46,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * This test is a combination of the ConnectorsIT and the ExtensionIT to ensure
  * that the new multitenancy configuration works with and without the connectors container.
  */
-@Disabled(
-    "https://camunda.slack.com/archives/C08PLN35WGM/p1765534773892579?thread_ts=1765531708.791569&cid=C08PLN35WGM")
 public class CamundaProcessTestExtensionMultiTenancyIT {
 
   // The ID is part of the connector configuration in the BPMN element

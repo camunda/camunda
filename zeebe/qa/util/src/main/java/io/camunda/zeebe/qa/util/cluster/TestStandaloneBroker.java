@@ -35,6 +35,7 @@ import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -442,9 +443,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .setCompressionAlgorithm(io.camunda.configuration.Cluster.CompressionAlgorithm.NONE);
 
     // Set membership defaults for fast test execution
-    unifiedConfig.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
-    unifiedConfig.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
-    unifiedConfig.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
+    final var membership = unifiedConfig.getCluster().getMembership();
+    membership.setFailureTimeout(Duration.ofSeconds(5));
+    membership.setProbeInterval(Duration.ofMillis(100));
+    membership.setSyncInterval(Duration.ofMillis(500));
+
+    final var metadata = unifiedConfig.getCluster().getMetadata();
+    metadata.setSyncInitializerDelay(Duration.ofMillis(500));
+    metadata.setSyncDelay(Duration.ofMillis(500));
 
     // Set raft defaults - disable flushing for faster tests
     unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
@@ -469,6 +475,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getDisk()
         .getFreeSpace()
         .setReplication(DataSize.ofMegabytes(64));
+
+    // set default default size for rocks db
+    unifiedConfig
+        .getData()
+        .getPrimaryStorage()
+        .getRocksDb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
 
     // Set processing defaults - enable consistency checks
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);

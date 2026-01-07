@@ -23,6 +23,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.Document;
 import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.UserTaskProperties;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.impl.CamundaObjectMapper;
@@ -137,6 +138,19 @@ public class DefaultParameterResolverStrategyTest {
         .isEqualTo(KeyTargetType.STRING);
   }
 
+  @Test
+  void shouldResolveUserTaskProperties() {
+    final CamundaClient camundaClient = mock(CamundaClient.class);
+    final DefaultParameterResolverStrategy strategy =
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+    final List<ParameterInfo> parameters = parameterInfos(this, "userTaskProperties");
+    assertThat(parameters).hasSize(1);
+    final ParameterResolver parameterResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
+    assertThat(parameterResolver).isInstanceOf(UserTaskPropertiesParameterResolver.class);
+  }
+
   public void legacyMethod(
       final io.camunda.zeebe.client.api.worker.JobClient jobClient,
       final io.camunda.zeebe.client.api.response.ActivatedJob job) {}
@@ -150,4 +164,6 @@ public class DefaultParameterResolverStrategyTest {
   public void processInstanceKeyLong(@ProcessInstanceKey final Long processInstanceKey) {}
 
   public void processInstanceKeyString(@ProcessInstanceKey final String processInstanceKey) {}
+
+  public void userTaskProperties(UserTaskProperties userTaskProperties) {}
 }

@@ -116,6 +116,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-models</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-rest</artifactId>
     </dependency>
 
@@ -853,6 +858,7 @@
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
@@ -865,11 +871,11 @@
               <outputDirectory>${project.build.directory}/camunda-zeebe/config/openapi/v2</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</directory>
-                  <filtering>false</filtering>
+                  <directory>${project.basedir}/../zeebe/gateway-protocol/src/main/proto/v2</directory>
                   <includes>
                     <include>**/*.yaml</include>
                   </includes>
+                  <filtering>false</filtering>
                 </resource>
               </resources>
             </configuration>

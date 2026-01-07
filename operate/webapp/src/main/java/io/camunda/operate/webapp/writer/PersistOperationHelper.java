@@ -170,7 +170,8 @@ public class PersistOperationHelper {
             .setState(OperationState.SCHEDULED)
             .setBatchOperationId(batchOperationId)
             .setUsername(
-                camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
+                camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .setRootProcessInstanceKey(processInstanceSource.getRootProcessInstanceKey());
 
     return operationEntity;
   }

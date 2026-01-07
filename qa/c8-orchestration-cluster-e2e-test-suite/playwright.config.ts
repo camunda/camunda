@@ -24,9 +24,9 @@ function getTestTypeLabel(): string {
   if (isApiTestsOnly) {
     return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}`;
   }
-  return `Nightly Test Results for Mono Repo - ${process.env.VERSION}`;
+  const tasklistMode = isV2ModeEnabled ? 'V2' : 'V1';
+  return `Nightly Test Results for Mono Repo - ${process.env.VERSION} (Tasklist ${tasklistMode})`;
 }
-
 
 // Reporters
 const useReportersWithoutSlack: any[] = [
@@ -67,7 +67,16 @@ const normalProjects = [
   {
     name: 'api-tests',
     testMatch: ['tests/api/**/*.spec.ts'],
+    testIgnore: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
     use: devices['Desktop Chrome'],
+    teardown: 'api-tests-subset',
+  },
+  {
+    name: 'api-tests-subset',
+    testMatch: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
   },
   {
     name: 'chromium',
@@ -196,6 +205,12 @@ const normalProjects = [
   {
     name: 'identity-e2e',
     testMatch: ['tests/identity/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
+  {
+    name: 'operate-e2e',
+    testMatch: ['tests/operate/*.spec.ts'],
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },

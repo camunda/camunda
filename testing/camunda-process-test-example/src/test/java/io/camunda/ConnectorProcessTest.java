@@ -29,7 +29,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,8 +39,6 @@ import org.springframework.boot.test.context.SpringBootTest;
       "io.camunda.process.test.connectors-secrets.WEATHER_URL=https://api.open-meteo.com/v1/forecast"
     })
 @CamundaSpringProcessTest
-@Disabled(
-    "https://camunda.slack.com/archives/C08PLN35WGM/p1765534773892579?thread_ts=1765531708.791569&cid=C08PLN35WGM")
 public class ConnectorProcessTest {
 
   private static final String CONNECTOR_ID = "1jl2sne";

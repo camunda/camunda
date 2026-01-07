@@ -130,6 +130,9 @@
                   }
                 }
               }
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
             }
           }
         }

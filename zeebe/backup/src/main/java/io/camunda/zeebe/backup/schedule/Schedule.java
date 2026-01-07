@@ -50,7 +50,7 @@ public sealed interface Schedule {
    * @throws IllegalArgumentException if the expression is invalid
    */
   static Schedule parseSchedule(final String expression) throws IllegalArgumentException {
-    if (expression == null) {
+    if (expression == null || expression.isBlank()) {
       return none();
     }
     if (expression.equalsIgnoreCase(NONE)) {

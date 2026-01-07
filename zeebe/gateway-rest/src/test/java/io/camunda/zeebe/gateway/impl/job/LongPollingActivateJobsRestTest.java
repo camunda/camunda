@@ -20,6 +20,12 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.gateway.model.mapper.GatewayErrorMapper;
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.protocol.model.ActivatedJobResult;
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -36,13 +42,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
-import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -111,9 +111,9 @@ public class LongPollingActivateJobsRestTest {
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(
-                RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+                GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(
-                RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+                GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
@@ -305,9 +305,9 @@ public class LongPollingActivateJobsRestTest {
             .setProbeTimeoutMillis(probeTimeout)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(
-                RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+                GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(
-                RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+                GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
@@ -337,9 +337,9 @@ public class LongPollingActivateJobsRestTest {
             .setProbeTimeoutMillis(probeTimeout)
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(
-                RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+                GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(
-                RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+                GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
             .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);

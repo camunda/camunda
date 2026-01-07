@@ -16,6 +16,7 @@
     type="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
     <result column="FLOW_NODE_ID" property="flowNodeId" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" />
+    <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" />
     <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" />
     <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" />
     <result column="TENANT_ID" property="tenantId" />
@@ -27,6 +28,7 @@
     SELECT distinct
       sf.FLOW_NODE_ID,
       sf.PROCESS_INSTANCE_KEY,
+      sf.ROOT_PROCESS_INSTANCE_KEY,
       sf.PROCESS_DEFINITION_KEY,
       sf.PROCESS_DEFINITION_ID,
       sf.TENANT_ID
@@ -50,6 +52,7 @@
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
     INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
                                         PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
@@ -57,6 +60,7 @@
                                         HISTORY_CLEANUP_DATE)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
@@ -68,6 +72,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="postgresql">
     INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
                                         PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
@@ -75,6 +80,7 @@
                                         HISTORY_CLEANUP_DATE)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
@@ -87,6 +93,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mariadb">
     INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
                                         PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
@@ -94,6 +101,7 @@
                                         HISTORY_CLEANUP_DATE)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
@@ -106,6 +114,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mysql">
     INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
                                         PROCESS_INSTANCE_KEY,
+                                        ROOT_PROCESS_INSTANCE_KEY,
                                         PROCESS_DEFINITION_KEY,
                                         PROCESS_DEFINITION_ID,
                                         TENANT_ID,
@@ -113,6 +122,7 @@
                                         HISTORY_CLEANUP_DATE)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
@@ -129,6 +139,7 @@
     WHEN NOT MATCHED THEN
     INSERT (FLOW_NODE_ID,
             PROCESS_INSTANCE_KEY,
+            ROOT_PROCESS_INSTANCE_KEY,
             PROCESS_DEFINITION_KEY,
             PROCESS_DEFINITION_ID,
             TENANT_ID,
@@ -136,6 +147,7 @@
             HISTORY_CLEANUP_DATE)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
@@ -151,6 +163,7 @@
     WHEN NOT MATCHED THEN
     INSERT (FLOW_NODE_ID,
             PROCESS_INSTANCE_KEY,
+            ROOT_PROCESS_INSTANCE_KEY,
             PROCESS_DEFINITION_KEY,
             PROCESS_DEFINITION_ID,
             TENANT_ID,
@@ -158,6 +171,7 @@
             HISTORY_CLEANUP_DATE)
     VALUES (#{flowNodeId},
             #{processInstanceKey},
+            #{rootProcessInstanceKey},
             #{processDefinitionKey},
             #{processDefinitionId},
             #{tenantId},
@@ -173,6 +187,7 @@
     WHEN NOT MATCHED THEN
       INSERT (FLOW_NODE_ID,
               PROCESS_INSTANCE_KEY,
+              ROOT_PROCESS_INSTANCE_KEY,
               PROCESS_DEFINITION_KEY,
               PROCESS_DEFINITION_ID,
               TENANT_ID,
@@ -180,6 +195,7 @@
               HISTORY_CLEANUP_DATE)
       VALUES (#{flowNodeId},
               #{processInstanceKey},
+              #{rootProcessInstanceKey},
               #{processDefinitionKey},
               #{processDefinitionId},
               #{tenantId},
@@ -199,6 +215,11 @@
   <delete id="cleanupHistory">
     <bind name="tableName" value="'SEQUENCE_FLOW'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'SEQUENCE_FLOW'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
   </delete>
 
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">

@@ -87,13 +87,21 @@ test.describe('Processes', () => {
       await expect(
         operateFiltersPanelPage.runningInstancesCheckbox,
       ).toBeChecked();
-      await expect(operateFiltersPanelPage.activeCheckbox).toBeChecked();
-      await expect(operateFiltersPanelPage.incidentsCheckbox).toBeChecked();
+      await expect(
+        operateFiltersPanelPage.activeInstancesCheckbox,
+      ).toBeChecked();
+      await expect(
+        operateFiltersPanelPage.incidentsInstancesCheckbox,
+      ).toBeChecked();
       await expect(
         operateFiltersPanelPage.finishedInstancesCheckbox,
       ).not.toBeChecked();
-      await expect(operateFiltersPanelPage.completedCheckbox).not.toBeChecked();
-      await expect(operateFiltersPanelPage.canceledCheckbox).not.toBeChecked();
+      await expect(
+        operateFiltersPanelPage.completedInstancesCheckbox,
+      ).not.toBeChecked();
+      await expect(
+        operateFiltersPanelPage.canceledInstancesCheckbox,
+      ).not.toBeChecked();
     });
 
     await test.step('Validate no process selected message', async () => {
@@ -242,7 +250,7 @@ test.describe('Processes', () => {
 
     await test.step('Deploy new process and verify it loads', async () => {
       await deploy(['./resources/newProcess.bpmn']);
-      await sleep(2000);
+      await sleep(5000);
 
       await expect(operateDiagramPage.diagram).toBeInViewport({timeout: 20000});
 

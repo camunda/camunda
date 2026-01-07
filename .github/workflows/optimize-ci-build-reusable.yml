@@ -28,6 +28,10 @@ on:
         description: "Whether the built docker images are pushed to camunda registry"
         type: boolean
         default: false
+      version:
+        description: "Custom Docker image tag (defaults to pr-<commit-hash>)"
+        required: false
+        type: string
 
 defaults:
   run:
@@ -51,16 +55,21 @@ jobs:
       #########################################################################
       # Setup: define env variables
       - name: Set GitHub environment variables
+        env:
+          BRANCH: ${{ inputs.branch }}
+          VERSION: ${{ inputs.version }}
+          REGISTRY: registry.camunda.cloud/team-camunda/optimize
         run: |
-          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
+          GIT_COMMIT_HASH=$(git rev-parse "$BRANCH")
+          TAG="${VERSION:-pr-$GIT_COMMIT_HASH}"
           echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
-          echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=$REGISTRY:$TAG" >> "$GITHUB_ENV"
 
       #########################################################################
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@7db437bac241fa58b8b82ed5ef1984822cad0614 # 2.1.69
+        uses: YunaBraska/java-info-action@82fed751c5a2cfb4b740fdb2c56166616d81eab9 # 2.1.90
         with:
           work-dir: ./optimize
 

@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
-import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
@@ -46,7 +47,7 @@ public class ClockController {
       path = "/reset",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> resetClock() {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             clockServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -54,7 +55,7 @@ public class ClockController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> pinClock(final long pinnedEpoch) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             clockServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

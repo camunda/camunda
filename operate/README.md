@@ -87,6 +87,10 @@ To set this value permanently, update the `vm.max_map_count` setting in /etc/sys
 ## Preview environment
 
 - You can deploy a preview of the self managed environment from a PR. To do this, add the `deploy-preview` label to the PR.
+- Preview environments can also be deployed programmatically via the `preview-env-build-and-deploy.yml` workflow, which accepts:
+  - `app-name`: The ArgoCD application name (max 15 chars)
+  - `labels`: Additional ArgoCD app labels (comma or newline-separated key=value pairs)
+- A weekly smoke test runs automatically to verify preview environment functionality.
 
 ## Branch name flags
 

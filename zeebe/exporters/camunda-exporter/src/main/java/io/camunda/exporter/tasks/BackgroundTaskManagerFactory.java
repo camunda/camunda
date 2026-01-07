@@ -266,13 +266,13 @@ public final class BackgroundTaskManagerFactory {
   private OpenSearchHistoryDeletionRepository createHistoryDeletionRepository(
       final OpenSearchAsyncClient asyncClient) {
     return new OpenSearchHistoryDeletionRepository(
-        resourceProvider, asyncClient, executor, logger, partitionId);
+        resourceProvider, asyncClient, executor, logger, partitionId, config.getHistoryDeletion());
   }
 
   private ElasticsearchHistoryDeletionRepository createHistoryDeletionRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchHistoryDeletionRepository(
-        resourceProvider, asyncClient, executor, logger, partitionId);
+        resourceProvider, asyncClient, executor, logger, partitionId, config.getHistoryDeletion());
   }
 
   private ReschedulingTask buildRolloverPeriodJob() {
@@ -415,8 +415,14 @@ public final class BackgroundTaskManagerFactory {
   }
 
   private ReschedulingTask buildHistoryDeletionTask(final BackgroundTask task) {
-    // TODO make hardcoded values configurable
-    return new ReschedulingTask(task, 1, 1000, 60000, executor, logger);
+    final var historyDeletion = config.getHistoryDeletion();
+    return new ReschedulingTask(
+        task,
+        1,
+        historyDeletion.getDelayBetweenRuns().toMillis(),
+        historyDeletion.getMaxDelayBetweenRuns().toMillis(),
+        executor,
+        logger);
   }
 
   private ScheduledThreadPoolExecutor buildExecutor() {

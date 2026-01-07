@@ -11,13 +11,16 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
@@ -25,9 +28,15 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,43 +45,38 @@ public record AuditLogInfo(
     AuditLogEntityType entityType,
     AuditLogOperationType operationType,
     AuditLogActor actor,
-    Optional<BatchOperation> batchOperation) {
+    Optional<AuditLogTenant> tenant) {
 
   public static AuditLogInfo of(final Record<?> record) {
     return new AuditLogInfo(
         getOperationCategory(record.getValueType()),
         getEntityType(record.getValueType()),
-        getOperationType(record.getIntent()),
+        getOperationType(record),
         AuditLogActor.of(record),
-        getBatchOperation(record));
-  }
-
-  private static Optional<BatchOperation> getBatchOperation(final Record<?> record) {
-    final var batchOperationKey = record.getBatchOperationReference();
-    if (RecordMetadataDecoder.batchOperationReferenceNullValue() != batchOperationKey) {
-      return Optional.of(new BatchOperation(batchOperationKey));
-    }
-    return Optional.empty();
+        AuditLogTenant.of(record));
   }
 
   private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
     switch (valueType) {
-      case PROCESS_INSTANCE:
-      case PROCESS_INSTANCE_CREATION:
-      case PROCESS_INSTANCE_MODIFICATION:
-      case PROCESS_INSTANCE_MIGRATION:
-      case INCIDENT:
-      case VARIABLE:
-      case DECISION_EVALUATION:
       case BATCH_OPERATION_CREATION:
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
+      case DECISION_EVALUATION:
+      case DECISION:
+      case FORM:
+      case INCIDENT:
+      case PROCESS_INSTANCE_CREATION:
+      case PROCESS_INSTANCE_MIGRATION:
+      case PROCESS_INSTANCE_MODIFICATION:
+      case PROCESS_INSTANCE:
+      case RESOURCE:
+      case VARIABLE:
         return AuditLogOperationCategory.DEPLOYED_RESOURCES;
       case AUTHORIZATION:
-      case USER:
-      case MAPPING_RULE:
       case GROUP:
+      case MAPPING_RULE:
       case ROLE:
       case TENANT:
+      case USER:
         return AuditLogOperationCategory.ADMIN;
       case USER_TASK:
         return AuditLogOperationCategory.USER_TASKS;
@@ -94,6 +98,7 @@ public record AuditLogInfo(
         return AuditLogEntityType.INCIDENT;
       case VARIABLE:
         return AuditLogEntityType.VARIABLE;
+      case DECISION:
       case DECISION_EVALUATION:
         return AuditLogEntityType.DECISION;
       case BATCH_OPERATION_CREATION:
@@ -109,6 +114,10 @@ public record AuditLogInfo(
         return AuditLogEntityType.ROLE;
       case TENANT:
         return AuditLogEntityType.TENANT;
+      case FORM:
+      case PROCESS:
+      case RESOURCE:
+        return AuditLogEntityType.RESOURCE;
       case USER_TASK:
         return AuditLogEntityType.USER_TASK;
       default:
@@ -116,7 +125,8 @@ public record AuditLogInfo(
     }
   }
 
-  private static AuditLogOperationType getOperationType(final Intent intent) {
+  private static AuditLogOperationType getOperationType(final Record<?> record) {
+    final Intent intent = record.getIntent();
     if (intent == null) {
       return AuditLogOperationType.UNKNOWN;
     }
@@ -141,9 +151,30 @@ public record AuditLogInfo(
       case BatchOperationIntent.CANCEL:
         return AuditLogOperationType.CANCEL;
 
+      case DecisionIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case DecisionIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+
       case DecisionEvaluationIntent.EVALUATED:
       case DecisionEvaluationIntent.FAILED:
         return AuditLogOperationType.EVALUATE;
+
+      case FormIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case FormIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+
+      case GroupIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case GroupIntent.UPDATED:
+        return AuditLogOperationType.UPDATE;
+      case GroupIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+      case GroupIntent.ENTITY_ADDED:
+        return AuditLogOperationType.ASSIGN;
+      case GroupIntent.ENTITY_REMOVED:
+        return AuditLogOperationType.UNASSIGN;
 
       case IncidentIntent.RESOLVED:
       case IncidentIntent.RESOLVE:
@@ -154,6 +185,11 @@ public record AuditLogInfo(
       case MappingRuleIntent.UPDATED:
         return AuditLogOperationType.UPDATE;
       case MappingRuleIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+
+      case ProcessIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case ProcessIntent.DELETED:
         return AuditLogOperationType.DELETE;
 
       case ProcessInstanceCreationIntent.CREATED:
@@ -168,7 +204,13 @@ public record AuditLogInfo(
         return AuditLogOperationType.MIGRATE;
 
       case ProcessInstanceModificationIntent.MODIFIED:
+      case ProcessInstanceModificationIntent.MODIFY:
         return AuditLogOperationType.MODIFY;
+
+      case ResourceIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case ResourceIntent.DELETED:
+        return AuditLogOperationType.DELETE;
 
       case TenantIntent.CREATED:
         return AuditLogOperationType.CREATE;
@@ -181,12 +223,41 @@ public record AuditLogInfo(
       case TenantIntent.ENTITY_REMOVED:
         return AuditLogOperationType.UNASSIGN;
 
+      case RoleIntent.CREATED:
+        return AuditLogOperationType.CREATE;
+      case RoleIntent.UPDATED:
+        return AuditLogOperationType.UPDATE;
+      case RoleIntent.DELETED:
+        return AuditLogOperationType.DELETE;
+      case RoleIntent.ENTITY_ADDED:
+        return AuditLogOperationType.ASSIGN;
+      case RoleIntent.ENTITY_REMOVED:
+        return AuditLogOperationType.UNASSIGN;
+
       case UserIntent.CREATED:
         return AuditLogOperationType.CREATE;
       case UserIntent.UPDATED:
         return AuditLogOperationType.UPDATE;
       case UserIntent.DELETED:
         return AuditLogOperationType.DELETE;
+
+      case UserTaskIntent.ASSIGNED:
+        // Operation type is UNASSIGN if assignee is not provided
+        if (!(record.getValue() instanceof UserTaskRecordValue)) {
+          return AuditLogOperationType.UNKNOWN;
+        }
+        final String assignee = ((UserTaskRecordValue) record.getValue()).getAssignee();
+        return (assignee == null || assignee.isBlank())
+            ? AuditLogOperationType.UNASSIGN
+            : AuditLogOperationType.ASSIGN;
+      case UserTaskIntent.ASSIGN:
+        return AuditLogOperationType.ASSIGN;
+      case UserTaskIntent.UPDATED:
+      case UserTaskIntent.UPDATE:
+        return AuditLogOperationType.UPDATE;
+      case UserTaskIntent.COMPLETED:
+      case UserTaskIntent.COMPLETE:
+        return AuditLogOperationType.COMPLETE;
 
       case VariableIntent.CREATED:
         return AuditLogOperationType.CREATE;
@@ -201,19 +272,66 @@ public record AuditLogInfo(
 
   public record AuditLogActor(AuditLogActorType actorType, String actorId) {
 
+    public static final AuditLogActor ANONYMOUS =
+        new AuditLogActor(AuditLogActorType.ANONYMOUS, null);
+    public static final AuditLogActor UNKNOWN = new AuditLogActor(AuditLogActorType.UNKNOWN, null);
+
+    public static AuditLogActor unknown() {
+      return UNKNOWN;
+    }
+
+    public static AuditLogActor anonymous() {
+      return ANONYMOUS;
+    }
+
     public static AuditLogActor of(final Record<?> record) {
       final Map<String, Object> authorizations = record.getAuthorizations();
-      final var clientId = (String) authorizations.get(Authorization.AUTHORIZED_CLIENT_ID);
+
+      // client
+      final String clientId =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_CLIENT_ID))
+              .map(Object::toString)
+              .orElse(null);
       if (clientId != null) {
         return new AuditLogActor(AuditLogActorType.CLIENT, clientId);
       }
-      final var username = (String) authorizations.get(Authorization.AUTHORIZED_USERNAME);
+
+      // user
+      final String username =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_USERNAME))
+              .map(Object::toString)
+              .orElse(null);
       if (username != null) {
         return new AuditLogActor(AuditLogActorType.USER, username);
       }
-      return null;
+
+      // anonymous / internal
+      final boolean isAnonymous =
+          Optional.ofNullable(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))
+              .map(Boolean.class::cast)
+              .orElse(false);
+      if (isAnonymous) {
+        return AuditLogActor.anonymous();
+      }
+
+      return AuditLogActor.unknown();
     }
   }
 
-  public record BatchOperation(long key) {}
+  public record AuditLogTenant(String tenantId) {
+    public AuditLogTenantScope scope() {
+      return AuditLogTenantScope.TENANT;
+    }
+
+    public static Optional<AuditLogTenant> of(final Record<?> record) {
+      final var value = record.getValue();
+
+      if (value instanceof TenantOwned) {
+        final var tenantId = ((TenantOwned) value).getTenantId();
+        return Optional.of(new AuditLogTenant(tenantId));
+      }
+
+      return Optional.empty();
+    }
+  }
 }

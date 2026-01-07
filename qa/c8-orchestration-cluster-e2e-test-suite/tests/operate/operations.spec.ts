@@ -45,7 +45,7 @@ test.beforeAll(async ({request}) => {
       bpmnProcessId: 'operationsProcessB',
     })),
   };
-  await sleep(1000);
+  await sleep(2000);
   await createDemoOperations(
     request,
     initialData.singleOperationInstance.processInstanceKey,
@@ -207,12 +207,12 @@ test.describe('Operations', () => {
 
       await operateProcessesPage.applyButton.click();
 
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
       await sleep(500);
 
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
 
       await expect
         .poll(async () => {
@@ -235,7 +235,7 @@ test.describe('Operations', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessesPage.getOperationAndResultsContainer('cancel', 5),
+            operateProcessesPage.operationAndResultsContainer('cancel', 5),
           ).toBeVisible({
             timeout: 30000,
           });
@@ -262,12 +262,12 @@ test.describe('Operations', () => {
       await operateProcessesPage.cancelButton.click();
       await operateProcessesPage.applyButton.click();
 
-      await expect(operateProcessesPage.operationsList).toBeVisible({
+      await expect(operateOperationPanelPage.operationList).toBeVisible({
         timeout: 30000,
       });
       await sleep(500);
 
-      await operateProcessesPage.expandOperationsPanel();
+      await operateOperationPanelPage.expandOperationsPanel();
 
       await expect
         .poll(async () => {

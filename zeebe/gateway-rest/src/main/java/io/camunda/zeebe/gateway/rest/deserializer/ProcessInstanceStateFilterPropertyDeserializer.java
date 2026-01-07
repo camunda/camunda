@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedProcessInstanceStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedProcessInstanceStateFilter;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateFilterProperty;
 
 public class ProcessInstanceStateFilterPropertyDeserializer
     extends FilterDeserializer<ProcessInstanceStateFilterProperty, ProcessInstanceStateEnum> {

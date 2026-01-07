@@ -7,6 +7,7 @@
  */
 package io.camunda.it.schema.strategy;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_OPENSEARCH_VERSION;
 
 import io.camunda.application.Profile;
@@ -28,13 +29,19 @@ import java.util.Objects;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
-import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
 public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
 
-  private OpenSearchContainer<?> container;
+  private static final String ADMIN_USER = "camunda-admin";
+  private static final String ADMIN_PASSWORD = "AdminPassword123!";
+  private static final String APP_USER = "camunda-app";
+  private static final String APP_PASSWORD = "AppPassword123!";
+  private static final String INITIAL_ADMIN_PASSWORD = "Strong-Initial-Password123!";
+
+  private GenericContainer<?> container;
   private OpenSearchClient adminClient;
   private String url;
 
@@ -44,16 +51,29 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
       throw new IllegalStateException("Container is already started");
     }
     container =
-        new OpenSearchContainer<>(
+        new GenericContainer<>(
                 DockerImageName.parse("opensearchproject/opensearch")
                     .withTag(SUPPORTED_OPENSEARCH_VERSION))
+            .withEnv("discovery.type", "single-node")
+            .withEnv("DISABLE_SECURITY_PLUGIN", "false")
+            .withEnv("plugins.security.ssl.http.enabled", "false")
+            .withEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", INITIAL_ADMIN_PASSWORD)
             // Configure with allowed repository storage path
             .withEnv("path.repo", "~/")
+            .withExposedPorts(9200)
             .withStartupTimeout(Duration.ofMinutes(5))
-            .withStartupAttempts(3);
+            .withStartupAttempts(3)
+            .waitingFor(
+                new HttpWaitStrategy()
+                    .forPort(9200)
+                    .withBasicCredentials("admin", INITIAL_ADMIN_PASSWORD)
+                    .forStatusCodeMatching(response -> response == 200 || response == 401)
+                    .withReadTimeout(Duration.ofSeconds(10))
+                    .withStartupTimeout(Duration.ofMinutes(5)));
 
     container.start();
-    url = container.getHttpHostAddress();
+    createUsersAndRoles();
+    url = "http://" + container.getHost() + ":" + container.getMappedPort(9200);
   }
 
   @Override
@@ -65,8 +85,8 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
   public void createAdminClient() throws Exception {
     final var cfg = new ConnectConfiguration();
     cfg.setUrl(url);
-    cfg.setUsername(container.getUsername());
-    cfg.setPassword(container.getPassword());
+    cfg.setUsername(ADMIN_USER);
+    cfg.setPassword(ADMIN_PASSWORD);
     adminClient = new OpensearchConnector(cfg).createClient();
   }
 
@@ -83,13 +103,16 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
         .withProperty(
             "zeebe.broker.exporters.opensearch.class-name", OpensearchExporter.class.getName())
         .withProperty("zeebe.broker.exporters.opensearch.args.url", url)
+        .withProperty("zeebe.broker.exporters.opensearch.args.authentication.username", ADMIN_USER)
+        .withProperty(
+            "zeebe.broker.exporters.opensearch.args.authentication.password", ADMIN_PASSWORD)
         .withSecondaryStorageType(SecondaryStorageType.opensearch)
         .withUnifiedConfig(
             cfg -> {
               final var opensearch = cfg.getData().getSecondaryStorage().getOpensearch();
               opensearch.setUrl(url);
-              opensearch.setUsername(container.getUsername());
-              opensearch.setPassword(container.getPassword());
+              opensearch.setUsername(ADMIN_USER);
+              opensearch.setPassword(ADMIN_PASSWORD);
             });
   }
 
@@ -102,8 +125,8 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
             cfg -> {
               final var opensearch = cfg.getData().getSecondaryStorage().getOpensearch();
               opensearch.setUrl(url);
-              opensearch.setUsername(container.getUsername());
-              opensearch.setPassword(container.getPassword());
+              opensearch.setUsername(ADMIN_USER);
+              opensearch.setPassword(ADMIN_PASSWORD);
 
               cfg.getData()
                   .getSecondaryStorage()
@@ -118,12 +141,15 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
     camunda
         .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
         .withUnauthenticatedAccess()
-        .withProperty("camunda.database.url", url)
-        .withProperty("camunda.database.type", "opensearch")
+        .withProperty(CREATE_SCHEMA_PROPERTY, "false")
+        .withProperty("camunda.operate.opensearch.health-check-enabled", "false")
+        .withProperty("camunda.tasklist.opensearch.health-check-enabled", "false")
         .withSecondaryStorageType(SecondaryStorageType.opensearch)
         .withUnifiedConfig(
             cfg -> {
               cfg.getData().getSecondaryStorage().getOpensearch().setUrl(url);
+              cfg.getData().getSecondaryStorage().getOpensearch().setUsername(APP_USER);
+              cfg.getData().getSecondaryStorage().getOpensearch().setPassword(APP_PASSWORD);
               cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
             })
         .withExporter(
@@ -133,7 +159,15 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
               cfg.setArgs(
                   Map.of(
                       "connect",
-                      Map.of("url", url, "type", "opensearch"),
+                      Map.of(
+                          "url",
+                          url,
+                          "type",
+                          "opensearch",
+                          "username",
+                          APP_USER,
+                          "password",
+                          APP_PASSWORD),
                       "history",
                       Map.of("waitPeriodBeforeArchiving", "1s"),
                       "createSchema",
@@ -143,7 +177,14 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
             OpensearchExporter.class.getSimpleName(),
             cfg -> {
               cfg.setClassName(OpensearchExporter.class.getName());
-              cfg.setArgs(Map.of("url", url, "index", Map.of("createTemplate", true)));
+              cfg.setArgs(
+                  Map.of(
+                      "url",
+                      url,
+                      "index",
+                      Map.of("createTemplate", false),
+                      "authentication",
+                      Map.of("username", APP_USER, "password", APP_PASSWORD)));
             });
   }
 
@@ -210,11 +251,125 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
             q -> q.name(repositoryName).type("fs").settings(s -> s.location(repositoryName)));
   }
 
+  /**
+   * Creates the OpenSearch security users and roles required for the acceptance tests.
+   *
+   * <p>Security model:
+   *
+   * <ul>
+   *   <li>{@code camunda_app_role}: application role used by the Camunda components under test
+   *       (e.g. exporters, web applications) to access their indices. It is restricted to:
+   *       <ul>
+   *         <li>Cluster-level permission {@code indices:data/read/scroll/clear} to clean up scroll
+   *             contexts created during queries.
+   *         <li>Index-level permissions on the {@code zeebe-*}, {@code operate-*}, {@code
+   *             tasklist-*}, and {@code camunda-*} indices, allowing: {@code indices:data/write/*},
+   *             {@code indices:data/read/*}, {@code indices:admin/create}, and {@code
+   *             indices:admin/shards/search_shards}.
+   *       </ul>
+   *       These permissions are intended to be the minimal set required for the application to read
+   *       from and write to its own indices in this test environment.
+   *   <li>{@code camunda-app} user ({@link #APP_USER}): test application user that authenticates
+   *       against OpenSearch using {@link #APP_PASSWORD} and is assigned only the {@code
+   *       camunda_app_role}. This user is used by the Camunda application in tests and should not
+   *       have cluster-wide administrative rights.
+   *   <li>{@code camunda-admin} user ({@link #ADMIN_USER}): administrative test user that
+   *       authenticates using {@link #ADMIN_PASSWORD} and is assigned the built-in {@code
+   *       all_access} role.
+   * </ul>
+   *
+   * <p>The {@code all_access} role is provided by the OpenSearch security plugin as a
+   * superuser-style role. In the test security configuration used here, the Camunda admin role
+   * ({@code camunda_admin_role}) is mapped to {@code all_access}, meaning that granting {@code
+   * all_access} to the {@code camunda-admin} user also grants it the effective privileges of {@code
+   * camunda_admin_role}. This is acceptable in this QA context to simplify setup and ensure the
+   * admin user can perform any required operation on the test cluster, but it should not be used as
+   * a reference for production deployments.
+   *
+   * @throws IOException if the role or user creation HTTP calls fail
+   * @throws InterruptedException if the container execution is interrupted
+   */
+  private void createUsersAndRoles() throws IOException, InterruptedException {
+    // Create camunda_app_role
+    container.execInContainer(
+        "curl",
+        "-X",
+        "PUT",
+        "-u",
+        "admin:" + INITIAL_ADMIN_PASSWORD,
+        "-H",
+        "Content-Type: application/json",
+        "http://localhost:9200/_plugins/_security/api/roles/camunda_app_role",
+        "-d",
+        """
+        {
+          "cluster_permissions": [
+            "indices:data/read/scroll/clear"
+          ],
+          "index_permissions": [
+            {
+              "index_patterns": [
+                "zeebe-*",
+                "operate-*",
+                "tasklist-*",
+                "camunda-*"
+              ],
+              "allowed_actions": [
+                "indices:data/write/*",
+                "indices:data/read/*",
+                "indices:admin/create",
+                "indices:admin/shards/search_shards"
+              ]
+            }
+          ]
+        }""");
+
+    // Create camunda-app user
+    container.execInContainer(
+        "curl",
+        "-X",
+        "PUT",
+        "-u",
+        "admin:" + INITIAL_ADMIN_PASSWORD,
+        "-H",
+        "Content-Type: application/json",
+        "http://localhost:9200/_plugins/_security/api/internalusers/" + APP_USER,
+        "-d",
+        """
+        {
+          "password": "%s",
+          "opendistro_security_roles": [
+            "camunda_app_role"
+          ]
+        }"""
+            .formatted(APP_PASSWORD));
+
+    // Create camunda-admin user
+    container.execInContainer(
+        "curl",
+        "-X",
+        "PUT",
+        "-u",
+        "admin:" + INITIAL_ADMIN_PASSWORD,
+        "-H",
+        "Content-Type: application/json",
+        "http://localhost:9200/_plugins/_security/api/internalusers/" + ADMIN_USER,
+        "-d",
+        """
+        {
+          "password": "%s",
+          "opendistro_security_roles": [
+            "all_access"
+          ]
+        }"""
+            .formatted(ADMIN_PASSWORD));
+  }
+
   private OpensearchExporterConfiguration exporterAdminConfig() {
     final var cfg = new OpensearchExporterConfiguration();
     cfg.url = url;
-    cfg.getAuthentication().setUsername(container.getUsername());
-    cfg.getAuthentication().setPassword(container.getPassword());
+    cfg.getAuthentication().setUsername(ADMIN_USER);
+    cfg.getAuthentication().setPassword(ADMIN_PASSWORD);
     cfg.index.createTemplate = true;
     return cfg;
   }

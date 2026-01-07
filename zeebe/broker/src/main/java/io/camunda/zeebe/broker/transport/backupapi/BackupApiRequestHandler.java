@@ -30,7 +30,6 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
@@ -125,7 +124,7 @@ public final class BackupApiRequestHandler
     final var checkpointRecord =
         new CheckpointRecord()
             .setCheckpointId(requestReader.backupId())
-            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+            .setCheckpointType(requestReader.checkpointType());
     final var written =
         logStreamWriter.tryWrite(
             WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));

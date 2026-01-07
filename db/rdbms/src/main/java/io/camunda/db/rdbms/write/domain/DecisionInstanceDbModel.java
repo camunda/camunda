@@ -28,6 +28,7 @@ public record DecisionInstanceDbModel(
     Long flowNodeInstanceKey,
     String flowNodeId,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long processDefinitionKey,
     String processDefinitionId,
     Long decisionDefinitionKey,
@@ -76,6 +77,7 @@ public record DecisionInstanceDbModel(
         flowNodeInstanceKey,
         flowNodeId,
         processInstanceKey,
+        rootProcessInstanceKey,
         processDefinitionKey,
         processDefinitionId,
         decisionDefinitionKey,
@@ -103,6 +105,7 @@ public record DecisionInstanceDbModel(
         .flowNodeInstanceKey(flowNodeInstanceKey)
         .flowNodeId(flowNodeId)
         .processInstanceKey(processInstanceKey)
+        .rootProcessInstanceKey(rootProcessInstanceKey)
         .processDefinitionKey(processDefinitionKey)
         .processDefinitionId(processDefinitionId)
         .decisionDefinitionKey(decisionDefinitionKey)
@@ -130,6 +133,7 @@ public record DecisionInstanceDbModel(
     private Long flowNodeInstanceKey;
     private String flowNodeId;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long processDefinitionKey;
     private String processDefinitionId;
     private Long decisionDefinitionKey;
@@ -191,6 +195,11 @@ public record DecisionInstanceDbModel(
 
     public Builder processInstanceKey(final Long value) {
       processInstanceKey = value;
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey(final Long value) {
+      rootProcessInstanceKey = value;
       return this;
     }
 
@@ -272,6 +281,7 @@ public record DecisionInstanceDbModel(
           flowNodeInstanceKey,
           flowNodeId,
           processInstanceKey,
+          rootProcessInstanceKey,
           processDefinitionKey,
           processDefinitionId,
           decisionDefinitionKey,

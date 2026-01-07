@@ -17,7 +17,6 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -33,8 +32,6 @@ public final class ProcessorNamingArchTest {
       ArchRuleDefinition.classes()
           .that()
           .implement(TypedRecordProcessor.class)
-          .or()
-          .implement(CommandProcessor.class)
           .should(
               new ArchCondition<>(
                   "follow the processor naming convention: <ValueType><Intent>Processor") {
@@ -143,8 +140,6 @@ public final class ProcessorNamingArchTest {
                   private static final Set<String> WHITELIST =
                       Set.of(
                           "BpmnStreamProcessor", // special case
-                          "CommandProcessor", // will be removed in #40162
-                          "CommandProcessorImpl", // will be removed in #40162
                           "UserTaskProcessor"); // will be refactored in the future
                   private static volatile boolean initialized = false;
 

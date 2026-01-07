@@ -13,7 +13,7 @@ import {useState} from 'react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {MigrateAction} from '../../v2/InstancesTable/Toolbar/MigrateAction';
+import {MigrateAction} from './MigrateAction';
 import {MoveAction} from './MoveAction';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';

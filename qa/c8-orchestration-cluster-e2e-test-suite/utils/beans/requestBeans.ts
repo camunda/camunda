@@ -131,6 +131,42 @@ export const decisionRequirementRequiredFields: string[] = [
   'decisionRequirementsKey',
   'resourceName',
 ];
+export const decisionInstanceRequiredFields: string[] = [
+  'decisionEvaluationInstanceKey',
+  'state',
+  'evaluationDate',
+  'decisionDefinitionId',
+  'decisionDefinitionName',
+  'decisionDefinitionVersion',
+  'decisionDefinitionType',
+  'result',
+  'tenantId',
+  'decisionEvaluationKey',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'decisionDefinitionKey',
+  'elementInstanceKey',
+  'rootDecisionDefinitionKey',
+];
+export const getDecisionInstanceResponseRequiredFields: string[] = [
+  'decisionEvaluationInstanceKey',
+  'state',
+  'evaluationDate',
+  'decisionDefinitionId',
+  'decisionDefinitionName',
+  'decisionDefinitionVersion',
+  'decisionDefinitionType',
+  'result',
+  'tenantId',
+  'decisionEvaluationKey',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'decisionDefinitionKey',
+  'elementInstanceKey',
+  'evaluatedInputs',
+  'matchedRules',
+  'rootDecisionDefinitionKey',
+];
 export const evaluateDecisionRequiredFields: string[] = [
   'decisionDefinitionId',
   'decisionDefinitionName',
@@ -189,6 +225,13 @@ export const correlateMessageRequiredFields: string[] = [
   'tenantId',
   'messageKey',
   'processInstanceKey',
+];
+export const usageMetricsGetResponseRequiredFields: string[] = [
+  'activeTenants',
+  'tenants',
+  'processInstances',
+  'decisionInstances',
+  'assignees',
 ];
 export const expectedMessageSubscription1 = {
   messageName: 'Message_143t419',
@@ -618,3 +661,4 @@ export function CREATE_CLUSTER_VARIABLE() {
     value: {testKey: `testValue-${uid}`},
   };
 }
+

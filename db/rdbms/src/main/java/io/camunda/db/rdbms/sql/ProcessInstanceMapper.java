@@ -34,6 +34,8 @@ public interface ProcessInstanceMapper extends ProcessBasedHistoryCleanupMapper 
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
 
+  void deleteByKeys(List<Long> processInstanceKeys);
+
   record EndProcessInstanceDto(
       long processInstanceKey,
       ProcessInstanceEntity.ProcessInstanceState state,

@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda-orchestration-cluster-api",
-    "commit": "6b770a0fb85bcdcd5f00b194cbb414e88294084c",
-    "generatedAt": "2025-10-02T12:03:58.149Z",
+    "commit": "8fe19877bb473c834b44b52dafb33e9b5ec235bd",
+    "generatedAt": "2026-01-06T06:35:37.769Z",
     "specPath": "specification/rest-api.yaml",
-    "specSha256": "b49a73ba78ef93977ace34f643187fe0a0b2393670db2dc995334e123fcb52c7"
+    "specSha256": "c6c3f5f4c9c24b7b7d6873e31f72d83db79418de81dc00f09a21843b4ce0d507"
   },
   "responses": [
     {
@@ -359,34 +359,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<JobSearchResult>",
             "children": {
@@ -402,10 +374,6 @@
                 {
                   "name": "elementInstanceKey",
                   "type": "string"
-                },
-                {
-                  "name": "hasFailedWithRetriesLeft",
-                  "type": "boolean"
                 },
                 {
                   "name": "jobKey",
@@ -512,13 +480,44 @@
                   "type": "string"
                 },
                 {
+                  "name": "hasFailedWithRetriesLeft",
+                  "type": "boolean"
+                },
+                {
                   "name": "isDenied",
                   "type": "boolean"
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -935,7 +934,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "userTaskKey",
+            "type": "string"
+          }
+        ],
         "optional": [
           {
             "name": "assignee",
@@ -1037,10 +1041,6 @@
             "underlyingPrimitive": "string",
             "rawRefName": "TenantId",
             "wrapper": true
-          },
-          {
-            "name": "userTaskKey",
-            "type": "string"
           }
         ]
       }
@@ -1082,38 +1082,15 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<UserTaskResult>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "userTaskKey",
+                  "type": "string"
+                }
+              ],
               "optional": [
                 {
                   "name": "assignee",
@@ -1215,15 +1192,38 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "TenantId",
                   "wrapper": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
                 },
                 {
-                  "name": "userTaskKey",
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
                   "type": "string"
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1233,39 +1233,10 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<VariableResultBase>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "isTruncated",
                   "type": "boolean"
@@ -1294,10 +1265,38 @@
                   "name": "variableKey",
                   "type": "string"
                 }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1307,39 +1306,10 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<VariableResultBase>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "isTruncated",
                   "type": "boolean"
@@ -1368,10 +1338,38 @@
                   "name": "variableKey",
                   "type": "string"
                 }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1379,8 +1377,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "name",
             "type": "string"
@@ -1405,7 +1402,8 @@
             "name": "variableKey",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {

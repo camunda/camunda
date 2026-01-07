@@ -32,6 +32,7 @@ public final class UserTaskFixtures extends CommonFixtures {
             .name(generateRandomString("elementBpmnName"))
             .processDefinitionId(generateRandomString("processDefinitionId"))
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .creationDate(NOW)
             .completionDate(NOW.plusDays(1))
             .assignee("bud spencer")

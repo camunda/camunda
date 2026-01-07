@@ -57,6 +57,8 @@ public class DecisionInstanceIT {
     assertThat(actual.decisionInstanceId()).isEqualTo(original.decisionInstanceId());
     assertThat(actual.decisionInstanceKey()).isEqualTo(original.decisionInstanceKey());
     assertThat(actual.processDefinitionKey()).isEqualTo(original.processDefinitionKey());
+    assertThat(actual.processInstanceKey()).isEqualTo(original.processInstanceKey());
+    assertThat(actual.rootProcessInstanceKey()).isEqualTo(original.rootProcessInstanceKey());
     assertThat(actual.decisionDefinitionId()).isEqualTo(original.decisionDefinitionId());
     assertThat(actual.state()).isEqualTo(original.state());
     assertThat(actual.evaluationDate())

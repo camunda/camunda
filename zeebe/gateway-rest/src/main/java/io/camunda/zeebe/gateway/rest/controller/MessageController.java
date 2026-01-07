@@ -7,18 +7,20 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
+import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,21 +60,23 @@ public class MessageController {
 
   private CompletableFuture<ResponseEntity<Object>> correlateMessage(
       final CorrelateMessageRequest correlationRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             messageServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .correlateMessage(correlationRequest),
-        ResponseMapper::toMessageCorrelationResponse);
+        ResponseMapper::toMessageCorrelationResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> publishMessage(
       final PublicationMessageRequest request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             messageServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .publishMessage(request),
-        ResponseMapper::toMessagePublicationResponse);
+        ResponseMapper::toMessagePublicationResponse,
+        HttpStatus.OK);
   }
 }

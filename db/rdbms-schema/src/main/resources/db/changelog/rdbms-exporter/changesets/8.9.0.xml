@@ -48,6 +48,7 @@
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="STATE" type="VARCHAR(20)"/>
@@ -63,6 +64,20 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
+    <createIndex tableName="${prefix}PROCESS_INSTANCE" indexName="${prefix}IDX_PROCESS_INSTANCE_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
+
+    <createIndex tableName="${prefix}PROCESS_INSTANCE"
+      indexName="${prefix}IDX_PROCESS_INSTANCE_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}PROCESS_INSTANCE" indexName="${prefix}IDX_ROOT_PROCESS_INSTANCE_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -70,6 +85,7 @@
     <modifySql dbms="mssql">
       <replace replace="datetime2" with="DATETIMEOFFSET"/>
     </modifySql>
+
   </changeSet>
 
   <changeSet id="create_process_instance_tag_table" author="camunda">
@@ -93,6 +109,7 @@
         <constraints primaryKey="true"/>
       </column>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="SCOPE_KEY" type="BIGINT"/>
       <column name="TYPE" type="VARCHAR(255)"/>
@@ -110,9 +127,17 @@
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_ROOT_PROCESS_INSTANCE_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
       <column name="TENANT_ID"/>
     </createIndex>
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
+
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -137,6 +162,7 @@
       <column name="FLOW_NODE_NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="FLOW_NODE_SCOPE_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="TYPE" type="VARCHAR(100)"/>
@@ -150,6 +176,19 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}FLOW_NODE_INSTANCE" indexName="${prefix}IDX_FLOW_NODE_INSTANCE_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -175,6 +214,7 @@
       <column name="FORM_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="DUE_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
@@ -186,6 +226,18 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
 
     <createTable tableName="${prefix}CANDIDATE_USER">
       <column name="USER_TASK_KEY" type="BIGINT">
@@ -224,6 +276,12 @@
     <createIndex tableName="${prefix}USER_TASK_TAG" indexName="${prefix}IDX_USER_TASK_TAG_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
+
+    <createIndex tableName="${prefix}USER_TASK" indexName="${prefix}IDX_USER_TASK_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
+
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -241,6 +299,7 @@
       <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
       <column name="FLOW_NODE_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="ERROR_MESSAGE" type="VARCHAR(4000)"/>
@@ -256,6 +315,19 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}INCIDENT" indexName="${prefix}IDX_INCIDENT_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -311,6 +383,7 @@
       </column>
       <column name="DECISION_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="DECISION_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
@@ -330,6 +403,31 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_DD_KEY">
+      <column name="DECISION_DEFINITION_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE"
+      indexName="${prefix}IDX_DECISION_INSTANCE_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_INSTANCE" indexName="${prefix}IDX_DECISION_INSTANCE_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -384,6 +482,11 @@
       <column name="EMAIL" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PASSWORD" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}USER_"
+      indexName="${prefix}IDX_USER_USER_KEY">
+      <column name="USER_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_form_table" author="camunda">
@@ -415,6 +518,11 @@
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}TENANT"
+      indexName="${prefix}IDX_TENANT_TENANT_KEY">
+      <column name="TENANT_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="tenant_members_table" author="camunda">
@@ -445,6 +553,11 @@
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}ROLES"
+      indexName="${prefix}IDX_ROLE_ROLE_KEY">
+      <column name="ROLE_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="role_members_table" author="camunda">
@@ -472,6 +585,11 @@
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
       <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}GROUP_"
+      indexName="${prefix}IDX_GROUP_GROUP_KEY">
+      <column name="GROUP_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="group_members_table" author="camunda">
@@ -581,6 +699,7 @@
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="ELEMENT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
@@ -600,8 +719,24 @@
       <column name="DENIED_REASON" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
-
     </createTable>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_FNI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}JOB" indexName="${prefix}IDX_JOB_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -620,6 +755,7 @@
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
@@ -629,6 +765,15 @@
 
     <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_ROOT_PROCESS_INSTANCE_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
     <modifySql dbms="mariadb,mysql">
@@ -698,6 +843,11 @@
       <column name="CLAIM_VALUE" type="VARCHAR(${userCharColumnSize})"/>
       <column name="NAME" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}MAPPING_RULES"
+      indexName="${prefix}IDX_MAPPING_RULES_MAPPING_RULE_KEY">
+      <column name="MAPPING_RULE_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_message_subscription_table" author="camunda">
@@ -708,6 +858,7 @@
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="FLOW_NODE_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
       <column name="MESSAGE_SUBSCRIPTION_STATE" type="VARCHAR(20)"/>
@@ -718,6 +869,23 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
+
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_MESSAGE_SUBSCRIPTION_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -743,12 +911,30 @@
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="SUBSCRIPTION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
       <column name="SUBSCRIPTION_TYPE" type="VARCHAR(255)"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_HIST">
+      <column name="PARTITION_ID" />
+      <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION" indexName="${prefix}IDX_CORRELATED_MESSAGE_SUBSCRIPTION_FNI_KEY">
+      <column name="FLOW_NODE_INSTANCE_KEY"/>
+    </createIndex>
 
     <modifySql dbms="mariadb,mysql">
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>

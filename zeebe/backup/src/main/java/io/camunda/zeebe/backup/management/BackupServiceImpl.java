@@ -50,14 +50,24 @@ final class BackupServiceImpl {
   }
 
   void close() {
+    LOG.atDebug()
+        .addKeyValue("inProgress", backupsInProgress.size())
+        .setMessage("Closing backup service")
+        .log();
     backupsInProgress.forEach(InProgressBackup::close);
   }
 
   ActorFuture<Void> takeBackup(
       final InProgressBackup inProgressBackup, final ConcurrencyControl concurrencyControl) {
+    LOG.atInfo().addKeyValue("backup", inProgressBackup.id()).setMessage("Taking backup").log();
+
     this.concurrencyControl = concurrencyControl;
 
     backupsInProgress.add(inProgressBackup);
+    LOG.atDebug()
+        .addKeyValue("backup", inProgressBackup.id())
+        .setMessage("Querying existing backup status")
+        .log();
 
     final var checkCurrentBackup =
         backupStore.list(
@@ -97,31 +107,41 @@ final class BackupServiceImpl {
             : Collections.max(availableBackups, BackupStatusCode.BY_STATUS).statusCode();
     switch (existingBackupStatus) {
       case COMPLETED -> {
-        LOG.debug("Backup {} is already completed, will not take a new one", inProgressBackup.id());
+        LOG.atDebug()
+            .addKeyValue("backup", inProgressBackup.id())
+            .setMessage("Backup is already completed, will not take a new one")
+            .log();
         backupSaved.complete(null);
       }
       case FAILED, IN_PROGRESS -> {
-        LOG.error(
-            "Backup {} already exists with status {}, will not take a new one",
-            inProgressBackup.id(),
-            existingBackupStatus);
+        LOG.atWarn()
+            .addKeyValue("backup", inProgressBackup.id())
+            .addArgument(existingBackupStatus)
+            .setMessage("Backup already exists with status {}, will not take a new one")
+            .log();
         backupSaved.completeExceptionally(
             new BackupAlreadyExistsException(inProgressBackup.id(), existingBackupStatus));
       }
-      case DOES_NOT_EXIST ->
-          inProgressBackup
-              .findValidSnapshot()
-              .andThen(ok -> inProgressBackup.reserveSnapshot(), concurrencyControl)
-              .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
-              .andThen(ok -> inProgressBackup.findSnapshotFiles(), concurrencyControl)
-              .onComplete(
-                  (result, error) -> {
-                    if (error != null) {
-                      failBackup(inProgressBackup, backupSaved, error);
-                    } else {
-                      saveBackup(inProgressBackup, backupSaved);
-                    }
-                  });
+      case DOES_NOT_EXIST -> {
+        LOG.atDebug()
+            .addKeyValue("backup", inProgressBackup.id())
+            .setMessage("No existing backup found, taking a new backup")
+            .log();
+        inProgressBackup
+            .findValidSnapshot()
+            .andThen(ok -> inProgressBackup.reserveSnapshot(), concurrencyControl)
+            .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
+            .andThen(ok -> inProgressBackup.findSnapshotFiles(), concurrencyControl)
+            .onComplete(
+                (result, error) -> {
+                  if (error != null) {
+                    failBackup(inProgressBackup, backupSaved, error);
+                  } else {
+                    saveBackup(inProgressBackup, backupSaved);
+                  }
+                },
+                concurrencyControl);
+      }
       default -> LOG.warn("Invalid case on BackupStatus {}", existingBackupStatus);
     }
   }
@@ -138,6 +158,7 @@ final class BackupServiceImpl {
   private ActorFuture<Void> saveBackup(final InProgressBackup inProgressBackup) {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
     final var backup = inProgressBackup.createBackup();
+    LOG.atDebug().addKeyValue("backup", inProgressBackup.id()).setMessage("Saving backup").log();
     backupStore
         .save(backup)
         .whenComplete(
@@ -155,6 +176,11 @@ final class BackupServiceImpl {
       final InProgressBackup inProgressBackup,
       final ActorFuture<Void> backupSaved,
       final Throwable error) {
+    LOG.atWarn()
+        .addKeyValue("backup", inProgressBackup.id())
+        .setCause(error)
+        .setMessage("Marking backup as failed")
+        .log();
     backupSaved.completeExceptionally(error);
     backupStore.markFailed(inProgressBackup.id(), error.getMessage());
   }
@@ -167,6 +193,7 @@ final class BackupServiceImpl {
   private void confirmBackup(final InProgressBackup inProgressBackup) {
     final var checkpointId = inProgressBackup.id().checkpointId();
     final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
+    final var checkpointType = inProgressBackup.backupDescriptor().checkpointType();
     final var confirmationWritten =
         logStreamWriter.tryWrite(
             WriteContext.internal(),
@@ -177,16 +204,21 @@ final class BackupServiceImpl {
                     .intent(CheckpointIntent.CONFIRM_BACKUP),
                 new CheckpointRecord()
                     .setCheckpointId(checkpointId)
-                    .setCheckpointPosition(checkpointPosition)));
+                    .setCheckpointPosition(checkpointPosition)
+                    .setCheckpointType(checkpointType)));
     switch (confirmationWritten) {
       case Either.Left(final var error) ->
-          LOG.warn(
-              "Could not confirm backup {} at position {}: {}",
-              checkpointId,
-              checkpointPosition,
-              error);
-      case final Either.Right<WriteFailure, Long> ignored ->
-          LOG.debug("Confirmed backup {} at position {}", checkpointId, ignored);
+          LOG.atWarn()
+              .addKeyValue("backup", inProgressBackup.id())
+              .addKeyValue("error", error)
+              .setMessage("Could not confirm backup")
+              .log();
+      case final Either.Right<WriteFailure, Long> position ->
+          LOG.atInfo()
+              .addKeyValue("backup", inProgressBackup.id())
+              .addKeyValue("position", position.value())
+              .setMessage("Confirmed backup")
+              .log();
     }
   }
 
@@ -204,19 +236,29 @@ final class BackupServiceImpl {
   ActorFuture<Optional<BackupStatus>> getBackupStatus(
       final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
     final ActorFuture<Optional<BackupStatus>> future = executor.createFuture();
+    final var pattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
+    LOG.atDebug().addKeyValue("pattern", pattern).setMessage("Querying backup status").log();
     executor.run(
         () ->
             backupStore
-                .list(
-                    new BackupIdentifierWildcardImpl(
-                        Optional.empty(),
-                        Optional.of(partitionId),
-                        CheckpointPattern.of(checkpointId)))
+                .list(pattern)
                 .whenComplete(
                     (backupStatuses, throwable) -> {
                       if (throwable != null) {
+                        LOG.atError()
+                            .addKeyValue("pattern", pattern)
+                            .setCause(throwable)
+                            .setMessage("Failed to query backup status")
+                            .log();
                         future.completeExceptionally(throwable);
                       } else {
+                        LOG.atTrace()
+                            .addKeyValue("pattern", pattern)
+                            .addKeyValue("found", backupStatuses.size())
+                            .setMessage("Queried backup status")
+                            .log();
                         future.complete(backupStatuses.stream().max(BackupStatusCode.BY_STATUS));
                       }
                     }));
@@ -265,6 +307,13 @@ final class BackupServiceImpl {
   ActorFuture<Void> deleteBackup(
       final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
     final ActorFuture<Void> deleteCompleted = executor.createFuture();
+    final var searchPattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
+    LOG.atDebug()
+        .addKeyValue("pattern", searchPattern)
+        .setMessage("Deleting matching backups")
+        .log();
     executor.run(
         () ->
             backupStore
@@ -289,7 +338,7 @@ final class BackupServiceImpl {
   }
 
   private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {
-    LOG.debug("Deleting backup {}", backupStatus.id());
+    LOG.atInfo().addKeyValue("backup", backupStatus.id()).setMessage("Deleting backup").log();
     if (backupStatus.statusCode() == BackupStatusCode.IN_PROGRESS) {
       // In progress backups cannot be deleted. So first mark it as failed
       return backupStore

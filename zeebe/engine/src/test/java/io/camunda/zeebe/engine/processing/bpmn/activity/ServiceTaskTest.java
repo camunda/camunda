@@ -129,6 +129,7 @@ public class ServiceTaskTest {
             .getFirst();
 
     assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    assertThat(jobCreated.getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
     final List<LinkedResourceProps> resourcePropsList =
         MAPPER.readValue(
             jobCreated.getValue().getCustomHeaders().get("linkedResources"),

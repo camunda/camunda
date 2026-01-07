@@ -171,21 +171,28 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     // given
-    final var index =
+    final var index1 =
         createTestIndexDescriptor(
             "index_name_" + ENGINE_CLIENT_TEST_MARKERS, "/mappings-complex-property.json");
+    final var index2 =
+        createTestIndexDescriptor(
+            "index_dynamic_" + ENGINE_CLIENT_TEST_MARKERS, "/mappings-default-dynamic.json");
 
-    opensearchEngineClient.createIndex(index, new IndexConfiguration());
+    opensearchEngineClient.createIndex(index1, new IndexConfiguration());
+    opensearchEngineClient.createIndex(index2, new IndexConfiguration());
 
     // when
     final var mappings =
-        opensearchEngineClient.getMappings(index.getFullQualifiedName(), MappingSource.INDEX);
+        opensearchEngineClient.getMappings(
+            index1.getFullQualifiedName() + "," + index2.getFullQualifiedName(),
+            MappingSource.INDEX);
 
     // then
-    assertThat(mappings.size()).isEqualTo(1);
-    assertThat(mappings.get(index.getFullQualifiedName()).dynamic()).isEqualTo("strict");
+    assertThat(mappings.size()).isEqualTo(2);
+    assertThat(mappings.get(index1.getFullQualifiedName()).dynamic()).isEqualTo("strict");
+    assertThat(mappings.get(index2.getFullQualifiedName()).dynamic()).isEqualTo("true");
 
-    assertThat(mappings.get(index.getFullQualifiedName()).properties())
+    assertThat(mappings.get(index1.getFullQualifiedName()).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
@@ -195,6 +202,12 @@ public class OpensearchEngineClientIT {
             new IndexMappingProperty.Builder()
                 .name("world")
                 .typeDefinition(Map.of("type", "keyword"))
+                .build());
+    assertThat(mappings.get(index2.getFullQualifiedName()).properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
                 .build());
   }
 

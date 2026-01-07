@@ -22,7 +22,7 @@ export async function createDemoOperations(
   };
 
   await Promise.all(
-    [...new Array(count)].map(async () => {
+    [...new Array(count)].map(async (_, index) => {
       const response = await request.post(
         `${credentials.baseUrl}/api/process-instances/${processInstanceKey}/operation`,
         {
@@ -35,11 +35,15 @@ export async function createDemoOperations(
       if (!response.ok()) {
         const errorBody = await response.text();
         console.error(
-          `Failed to create operation: ${response.status()} ${response.statusText()}`,
+          `Failed to create operation ${index + 1}/${count}: ${response.status()} ${response.statusText()}`,
         );
+        console.error(`Process Instance Key: ${processInstanceKey}`);
         console.error(`Response body: ${errorBody}`);
       }
-      expect(response.ok()).toBeTruthy();
+      expect(
+        response.ok(),
+        `Operation ${index + 1}/${count} failed: ${response.status()} ${response.statusText()}`,
+      ).toBeTruthy();
       return response;
     }),
   );

@@ -7,21 +7,23 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.ResourceServices.ResourceFetchRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -68,29 +70,32 @@ public class ResourceController {
   @CamundaGetMapping(path = "/resources/{resourceKey}")
   public CompletableFuture<ResponseEntity<Object>> getResource(
       @PathVariable final long resourceKey) {
-    return RequestMapper.executeServiceMethod(
-        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceResponse);
+    return RequestExecutor.executeServiceMethod(
+        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceResponse, HttpStatus.OK);
   }
 
   @CamundaGetMapping(path = "/resources/{resourceKey}/content")
   public CompletableFuture<ResponseEntity<Object>> getResourceContent(
       @PathVariable final long resourceKey) {
-    return RequestMapper.executeServiceMethod(
-        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceContentResponse);
+    return RequestExecutor.executeServiceMethod(
+        () -> fetchResource(resourceKey),
+        ResponseMapper::toGetResourceContentResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(
       final DeployResourcesRequest request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             resourceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deployResources(request),
-        ResponseMapper::toDeployResourceResponse);
+        ResponseMapper::toDeployResourceResponse,
+        HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> delete(final ResourceDeletionRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             resourceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

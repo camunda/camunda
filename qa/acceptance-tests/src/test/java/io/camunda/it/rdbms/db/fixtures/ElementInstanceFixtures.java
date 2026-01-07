@@ -27,6 +27,7 @@ public final class ElementInstanceFixtures extends CommonFixtures {
         new FlowNodeInstanceDbModelBuilder()
             .flowNodeInstanceKey(nextKey())
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + generateRandomString(20))
             .flowNodeId("element-" + generateRandomString(20))

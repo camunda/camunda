@@ -12,6 +12,7 @@
   <select id="findOne" parameterType="java.lang.Long"
     resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT pi.PROCESS_INSTANCE_KEY,
+           pi.ROOT_PROCESS_INSTANCE_KEY,
            pi.PROCESS_DEFINITION_ID,
            pi.PROCESS_DEFINITION_KEY,
            pi.STATE,
@@ -49,6 +50,7 @@
     SELECT * FROM (
     SELECT
     pif.PROCESS_INSTANCE_KEY,
+    pif.ROOT_PROCESS_INSTANCE_KEY,
     pif.PROCESS_DEFINITION_ID,
     pif.PROCESS_DEFINITION_KEY,
     pif.STATE,
@@ -67,6 +69,7 @@
     SELECT *  FROM (
     SELECT
     pi.PROCESS_INSTANCE_KEY,
+    pi.ROOT_PROCESS_INSTANCE_KEY,
     pi.PROCESS_DEFINITION_ID,
     pi.PROCESS_DEFINITION_KEY,
     pi.STATE,
@@ -345,6 +348,7 @@
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
     <constructor>
       <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
@@ -389,13 +393,13 @@
   </select>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
-    INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID,
+    INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID,
                                            PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE,
                                            TENANT_ID, PARENT_PROCESS_INSTANCE_KEY,
                                            PARENT_ELEMENT_INSTANCE_KEY,
                                            NUM_INCIDENTS, VERSION, PARTITION_ID, TREE_PATH,
                                            HISTORY_CLEANUP_DATE)
-    VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state},
+    VALUES (#{processInstanceKey}, #{rootProcessInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
             #{parentProcessInstanceKey},
             #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId}, #{treePath},
@@ -460,4 +464,13 @@
     <bind name="tableName" value="'PROCESS_INSTANCE'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}PROCESS_INSTANCE
+    WHERE PROCESS_INSTANCE_KEY IN
+    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+
 </mapper>

@@ -23,7 +23,7 @@ import {BatchModificationNotification} from './BatchModificationNotification';
 import {DiagramHeader} from './DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
-import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {
   getFlowNode,
