@@ -733,4 +733,222 @@ final class CheckpointRecordsProcessorTest {
     // then
     verify(backupManager, times(1)).takeBackup(eq(backupId), any());
   }
+
+  @Test
+  void shouldProcessDeleteBackupCommand() {
+    // given
+    final long backupId = 5;
+    final long commandPosition = 100;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(backupId)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+    final var record =
+        new MockTypedCheckpointRecord(
+            commandPosition, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, times(1)).deleteBackup(eq(backupId));
+    assertThat(result.records())
+        .singleElement()
+        .satisfies(
+            followupEvent -> {
+              assertThat(followupEvent.intent()).isEqualTo(CheckpointIntent.DELETING_BACKUP);
+              assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
+              assertThat(followupEvent.value()).isNotNull();
+
+              final var followupRecord = (CheckpointRecord) followupEvent.value();
+              assertThat(followupRecord.getCheckpointId()).isEqualTo(backupId);
+              assertThat(followupRecord.getCheckpointPosition()).isEqualTo(commandPosition);
+            });
+  }
+
+  @Test
+  void shouldProcessConfirmDeletionCommand() {
+    // given
+    final long backupId = 5;
+    final long commandPosition = 100;
+    final var value = new CheckpointRecord().setCheckpointId(backupId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            commandPosition, 0, CheckpointIntent.CONFIRM_DELETION, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    assertThat(result.records())
+        .singleElement()
+        .satisfies(
+            followupEvent -> {
+              assertThat(followupEvent.intent())
+                  .isEqualTo(CheckpointIntent.CONFIRMED_BACKUP_DELETION);
+              assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
+              assertThat(followupEvent.value()).isNotNull();
+
+              final var followupRecord = (CheckpointRecord) followupEvent.value();
+              assertThat(followupRecord.getCheckpointId()).isEqualTo(backupId);
+            });
+  }
+
+  @Test
+  void shouldClearBothCheckpointAndBackupStateWhenDeletingMatchingBackup() {
+    // given - set up existing checkpoint and backup state with same ID
+    final long backupId = 5;
+    final long position = 50;
+    final long timestamp = Instant.now().toEpochMilli();
+    state.setLatestCheckpointInfo(backupId, position, timestamp, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(backupId, position, timestamp, CheckpointType.MANUAL_BACKUP);
+
+    final var value = new CheckpointRecord().setCheckpointId(backupId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            100, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then - both checkpoint and backup state are cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+  }
+
+  @Test
+  void shouldNotClearCheckpointStateWhenDeletingDifferentBackup() {
+    // given - set up existing checkpoint state
+    final long checkpointId = 10;
+    final long checkpointPosition = 100;
+    final long timestamp = Instant.now().toEpochMilli();
+    state.setLatestCheckpointInfo(
+        checkpointId, checkpointPosition, timestamp, CheckpointType.MANUAL_BACKUP);
+
+    // Delete a different backup
+    final long backupIdToDelete = 5;
+    final var value = new CheckpointRecord().setCheckpointId(backupIdToDelete);
+    final var record =
+        new MockTypedCheckpointRecord(
+            200, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then - checkpoint state is unchanged
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
+  }
+
+  @Test
+  void shouldClearCheckpointStateWhenDeletingLatestCheckpoint() {
+    // given - set up existing checkpoint state
+    final long checkpointId = 5;
+    final long checkpointPosition = 50;
+    final long timestamp = Instant.now().toEpochMilli();
+    state.setLatestCheckpointInfo(
+        checkpointId, checkpointPosition, timestamp, CheckpointType.MANUAL_BACKUP);
+
+    final var value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            100, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then - checkpoint state is cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+  }
+
+  @Test
+  void shouldClearBackupStateWhenDeletingLatestBackup() {
+    // given - set up existing backup state (different from checkpoint)
+    final long checkpointId = 10;
+    state.setLatestCheckpointInfo(
+        checkpointId, 100, Instant.now().toEpochMilli(), CheckpointType.MARKER);
+
+    final long backupId = 5;
+    state.setLatestBackupInfo(backupId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+
+    final var value = new CheckpointRecord().setCheckpointId(backupId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            200, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then - backup state is cleared, checkpoint state unchanged
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+  }
+
+  @Test
+  void shouldReplayDeletingBackupEventAndClearState() {
+    // given - set up existing checkpoint and backup state with same ID
+    final long backupId = 5;
+    final long position = 50;
+    final long timestamp = Instant.now().toEpochMilli();
+    state.setLatestCheckpointInfo(backupId, position, timestamp, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(backupId, position, timestamp, CheckpointType.MANUAL_BACKUP);
+
+    final var value =
+        new CheckpointRecord().setCheckpointId(backupId).setCheckpointPosition(position);
+    final var record =
+        new MockTypedCheckpointRecord(
+            100, 0, CheckpointIntent.DELETING_BACKUP, RecordType.EVENT, value);
+
+    // when
+    processor.replay(record);
+
+    // then - both checkpoint and backup state are cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+  }
+
+  @Test
+  void shouldProcessFailDeletionCommand() {
+    // given
+    final long backupId = 5;
+    final long commandPosition = 100;
+    final var value = new CheckpointRecord().setCheckpointId(backupId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            commandPosition, 0, CheckpointIntent.FAIL_DELETION, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    assertThat(result.records())
+        .singleElement()
+        .satisfies(
+            followupEvent -> {
+              assertThat(followupEvent.intent())
+                  .isEqualTo(CheckpointIntent.FAILED_BACKUP_DELETION);
+              assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
+              assertThat(followupEvent.value()).isNotNull();
+
+              final var followupRecord = (CheckpointRecord) followupEvent.value();
+              assertThat(followupRecord.getCheckpointId()).isEqualTo(backupId);
+            });
+  }
+
+  @Test
+  void shouldReplayFailedBackupDeletionEvent() {
+    // given - set up existing state (state was already cleared on DELETING_BACKUP)
+    final var value = new CheckpointRecord().setCheckpointId(5);
+    final var record =
+        new MockTypedCheckpointRecord(
+            100, 0, CheckpointIntent.FAILED_BACKUP_DELETION, RecordType.EVENT, value);
+
+    // when
+    processor.replay(record);
+
+    // then - state remains unchanged (was cleared on DELETING_BACKUP)
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+  }
 }

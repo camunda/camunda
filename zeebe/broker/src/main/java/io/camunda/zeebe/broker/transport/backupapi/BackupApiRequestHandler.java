@@ -97,7 +97,9 @@ public final class BackupApiRequestHandler
                   requestStreamId, requestId, requestReader, responseWriter, errorWriter));
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
-      case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
+      case DELETE ->
+          CompletableActorFuture.completed(
+              handleDeleteBackupRequest(requestReader, responseWriter, errorWriter));
       case QUERY_STATE -> handleQueryStateRequest(responseWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
@@ -186,31 +188,35 @@ public final class BackupApiRequestHandler
     return result;
   }
 
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
-      handleDeleteBackupRequest(
-          final BackupApiRequestReader requestReader,
-          final BackupApiResponseWriter responseWriter,
-          final ErrorResponseWriter errorWriter) {
-    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
-        new CompletableActorFuture<>();
-    final var backupId = requestReader.backupId();
-    backupManager
-        .deleteBackup(backupId)
-        .onComplete(
-            (ignore, error) -> {
-              if (error == null) {
-                final BackupStatusResponse response =
-                    new BackupStatusResponse()
-                        .setBackupId(backupId)
-                        .setStatus(BackupStatusCode.DOES_NOT_EXIST)
-                        .setPartitionId(requestReader.partitionId());
-                result.complete(Either.right(responseWriter.withStatus(response)));
-              } else {
-                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
-                result.complete(Either.left(errorWriter));
-              }
-            });
-    return result;
+  private Either<ErrorResponseWriter, BackupApiResponseWriter> handleDeleteBackupRequest(
+      final BackupApiRequestReader requestReader,
+      final BackupApiResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter) {
+    if (!isDiskSpaceAvailable) {
+      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+    }
+
+    final RecordMetadata metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .valueType(ValueType.CHECKPOINT)
+            .intent(CheckpointIntent.DELETE_BACKUP);
+    final var checkpointRecord = new CheckpointRecord().setCheckpointId(requestReader.backupId());
+    final var written =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
+
+    if (written.isRight()) {
+      // Respond immediately with DOES_NOT_EXIST status since deletion has been initiated
+      final BackupStatusResponse response =
+          new BackupStatusResponse()
+              .setBackupId(requestReader.backupId())
+              .setStatus(BackupStatusCode.DOES_NOT_EXIST)
+              .setPartitionId(partitionId);
+      return Either.right(responseWriter.withStatus(response));
+    } else {
+      return Either.left(errorWriter.mapWriteError(partitionId, written.getLeft()));
+    }
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleQueryStateRequest(

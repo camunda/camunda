@@ -72,4 +72,10 @@ public interface CheckpointState {
 
   /** Returns the type of the last created backup. */
   CheckpointType getLatestBackupType();
+
+  /** Clears the latest checkpoint info, resetting it to the initial state. */
+  void clearLatestCheckpointInfo();
+
+  /** Clears the latest backup info, resetting it to the initial state. */
+  void clearLatestBackupInfo();
 }

@@ -328,13 +328,70 @@ final class BackupServiceImpl {
                             backups.stream()
                                 .map(this::deleteBackupIfExists)
                                 .toArray(CompletableFuture[]::new)))
-                .thenAccept(ignore -> deleteCompleted.complete(null))
+                .thenAccept(
+                    ignore -> {
+                      confirmDeletion(checkpointId);
+                      deleteCompleted.complete(null);
+                    })
                 .exceptionally(
                     error -> {
+                      failDeletion(checkpointId, error);
                       deleteCompleted.completeExceptionally(error);
                       return null;
                     }));
     return deleteCompleted;
+  }
+
+  private void confirmDeletion(final long checkpointId) {
+    final var confirmationWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.CONFIRM_DELETION),
+                new CheckpointRecord().setCheckpointId(checkpointId)));
+    switch (confirmationWritten) {
+      case Either.Left(final var error) ->
+          LOG.atWarn()
+              .addKeyValue("checkpoint", checkpointId)
+              .addKeyValue("error", error)
+              .setMessage("Could not confirm backup deletion")
+              .log();
+      case final Either.Right<WriteFailure, Long> position ->
+          LOG.atDebug()
+              .addKeyValue("checkpoint", checkpointId)
+              .addKeyValue("position", position.value())
+              .setMessage("Confirmed backup deletion")
+              .log();
+    }
+  }
+
+  private void failDeletion(final long checkpointId, final Throwable error) {
+    final var failureWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.FAIL_DELETION),
+                new CheckpointRecord().setCheckpointId(checkpointId)));
+    switch (failureWritten) {
+      case Either.Left(final var writeError) ->
+          LOG.atWarn()
+              .addKeyValue("checkpoint", checkpointId)
+              .addKeyValue("error", writeError)
+              .setMessage("Could not write backup deletion failure")
+              .log();
+      case final Either.Right<WriteFailure, Long> position ->
+          LOG.atDebug()
+              .addKeyValue("checkpoint", checkpointId)
+              .addKeyValue("position", position.value())
+              .setMessage("Recorded backup deletion failure")
+              .log();
+    }
   }
 
   private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {

@@ -188,4 +188,76 @@ final class DbCheckpointStateTest {
     assertThat(state.getLatestBackupId()).isEqualTo(21L);
     assertThat(state.getLatestBackupPosition()).isEqualTo(28L);
   }
+
+  @Test
+  void shouldClearLatestCheckpointInfo() {
+    // given
+    state.setLatestCheckpointInfo(
+        5L, 10L, Instant.now().toEpochMilli(), CheckpointType.SCHEDULED_BACKUP);
+
+    // when
+    state.clearLatestCheckpointInfo();
+
+    // then
+    assertThat(state.getLatestCheckpointId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointTimestamp()).isEqualTo(-1L);
+    assertThat(state.getLatestCheckpointType()).isNull();
+  }
+
+  @Test
+  void shouldClearLatestBackupInfo() {
+    // given
+    state.setLatestBackupInfo(7L, 14L, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+
+    // when
+    state.clearLatestBackupInfo();
+
+    // then
+    assertThat(state.getLatestBackupId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestBackupTimestamp()).isEqualTo(-1L);
+    assertThat(state.getLatestBackupType()).isNull();
+  }
+
+  @Test
+  void shouldClearCheckpointInfoWithoutAffectingBackupInfo() {
+    // given
+    state.setLatestCheckpointInfo(
+        5L, 10L, Instant.now().toEpochMilli(), CheckpointType.SCHEDULED_BACKUP);
+    final var tsBackup = Instant.now().toEpochMilli();
+    state.setLatestBackupInfo(7L, 14L, tsBackup, CheckpointType.MANUAL_BACKUP);
+
+    // when
+    state.clearLatestCheckpointInfo();
+
+    // then - checkpoint info cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(NO_CHECKPOINT);
+    // then - backup info unchanged
+    assertThat(state.getLatestBackupId()).isEqualTo(7L);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(14L);
+    assertThat(state.getLatestBackupTimestamp()).isEqualTo(tsBackup);
+    assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
+  }
+
+  @Test
+  void shouldClearBackupInfoWithoutAffectingCheckpointInfo() {
+    // given
+    final var tsCheckpoint = Instant.now().toEpochMilli();
+    state.setLatestCheckpointInfo(5L, 10L, tsCheckpoint, CheckpointType.SCHEDULED_BACKUP);
+    state.setLatestBackupInfo(7L, 14L, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+
+    // when
+    state.clearLatestBackupInfo();
+
+    // then - backup info cleared
+    assertThat(state.getLatestBackupId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(NO_CHECKPOINT);
+    // then - checkpoint info unchanged
+    assertThat(state.getLatestCheckpointId()).isEqualTo(5L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(10L);
+    assertThat(state.getLatestCheckpointTimestamp()).isEqualTo(tsCheckpoint);
+    assertThat(state.getLatestCheckpointType()).isEqualTo(CheckpointType.SCHEDULED_BACKUP);
+  }
 }

@@ -491,6 +491,119 @@ class BackupServiceImplTest {
     verify(logStreamWriter).tryWrite(any(), any(LogAppendEntry.class));
   }
 
+  @Test
+  void shouldConfirmDeletionAfterSuccessfulDelete() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 2L;
+    final BackupStatus backup = mock(BackupStatus.class);
+    when(backup.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
+
+    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.CONFIRM_DELETION);
+                  assertThat(entry.recordValue())
+                      .isInstanceOfSatisfying(
+                          CheckpointRecord.class,
+                          checkpointRecord ->
+                              assertThat(checkpointRecord.getCheckpointId())
+                                  .isEqualTo(checkpointId));
+                }));
+  }
+
+  @Test
+  void shouldWriteFailDeletionCommandWhenDeletionFails() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 2L;
+    final BackupStatus backup = mock(BackupStatus.class);
+    when(backup.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
+
+    when(backupStore.delete(any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Store deletion failed")));
+
+    // when
+    assertThat(backupService.deleteBackup(partitionId, checkpointId, concurrencyControl))
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Store deletion failed");
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.FAIL_DELETION);
+                  assertThat(entry.recordValue())
+                      .isInstanceOfSatisfying(
+                          CheckpointRecord.class,
+                          checkpointRecord ->
+                              assertThat(checkpointRecord.getCheckpointId())
+                                  .isEqualTo(checkpointId));
+                }));
+  }
+
+  @Test
+  void shouldWriteFailDeletionCommandWhenListingFails() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 2L;
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Listing failed")));
+
+    // when
+    assertThat(backupService.deleteBackup(partitionId, checkpointId, concurrencyControl))
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Listing failed");
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.FAIL_DELETION);
+                  assertThat(entry.recordValue())
+                      .isInstanceOfSatisfying(
+                          CheckpointRecord.class,
+                          checkpointRecord ->
+                              assertThat(checkpointRecord.getCheckpointId())
+                                  .isEqualTo(checkpointId));
+                }));
+  }
+
   private ActorFuture<Void> failedFuture() {
     return concurrencyControl.failedFuture(new RuntimeException("Expected"));
   }

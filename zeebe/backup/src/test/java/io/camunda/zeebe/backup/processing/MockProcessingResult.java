@@ -76,7 +76,7 @@ record MockProcessingResult(List<Event> records, Response response) implements P
               key,
               value);
       followupRecords.add(record);
-      return Either.right(null);
+      return Either.right(this);
     }
 
     @Override
