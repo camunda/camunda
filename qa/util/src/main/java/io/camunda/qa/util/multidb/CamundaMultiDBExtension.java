@@ -237,6 +237,16 @@ public class CamundaMultiDBExtension
   private EntityManager entityManager;
   private KeycloakContainer keycloakContainer;
 
+  public CamundaMultiDBExtension() {
+    this(new TestStandaloneBroker());
+  }
+
+  public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
+    defaultTestApplication = testApplication;
+    // resolve active database and exporter type
+    databaseType = currentMultiDbDatabaseType();
+  }
+
   private static ExtensionContext.Store coordinationStore(final ExtensionContext context) {
     final Class<?> testClass = context.getRequiredTestClass();
     return context
@@ -248,16 +258,6 @@ public class CamundaMultiDBExtension
     final String extensionRunning =
         coordinationStore(context).get(EXTENSION_COORDINATION_KEY, String.class);
     return EXTENSION_NAME.equals(extensionRunning);
-  }
-
-  public CamundaMultiDBExtension() {
-    this(new TestStandaloneBroker());
-  }
-
-  public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
-    defaultTestApplication = testApplication;
-    // resolve active database and exporter type
-    databaseType = currentMultiDbDatabaseType();
   }
 
   public static DatabaseType currentMultiDbDatabaseType() {
