@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
+import io.camunda.gateway.model.mapper.GatewayErrorMapper;
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.ResponseMapper;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -18,12 +21,12 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,7 +65,7 @@ public class SetupController {
       final var exception =
           new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
-          RestErrorMapper.mapErrorToProblem(exception));
+          GatewayErrorMapper.mapErrorToProblem(exception));
     }
 
     if (roleServices
@@ -70,7 +73,7 @@ public class SetupController {
         .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
-          RestErrorMapper.mapErrorToProblem(exception));
+          GatewayErrorMapper.mapErrorToProblem(exception));
     }
 
     return RequestMapper.toUserRequest(
@@ -78,12 +81,13 @@ public class SetupController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->
-                RequestMapper.executeServiceMethod(
+                RequestExecutor.executeServiceMethod(
                     () ->
                         userServices
                             .withAuthentication(
                                 authenticationProvider.getAnonymousCamundaAuthentication())
                             .createInitialAdminUser(dto),
-                    ResponseMapper::toUserCreateResponse));
+                    ResponseMapper::toUserCreateResponse,
+                    HttpStatus.CREATED));
   }
 }

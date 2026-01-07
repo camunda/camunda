@@ -9,6 +9,11 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.model.mapper.RequestMapper.DecisionEvaluationRequest;
+import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
+import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQueryResult;
@@ -20,14 +25,11 @@ import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.DecisionEvaluationRequest;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -116,7 +118,7 @@ public class DecisionDefinitionController {
 
   private CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       final DecisionEvaluationRequest request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             decisionDefinitionServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -125,6 +127,7 @@ public class DecisionDefinitionController {
                     request.decisionKey(),
                     request.variables(),
                     request.tenantId()),
-        ResponseMapper::toEvaluateDecisionResponse);
+        ResponseMapper::toEvaluateDecisionResponse,
+        HttpStatus.OK);
   }
 }

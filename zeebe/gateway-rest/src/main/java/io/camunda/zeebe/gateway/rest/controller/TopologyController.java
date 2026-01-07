@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.model.mapper.ResponseMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -32,11 +33,12 @@ public final class TopologyController {
 
   @CamundaGetMapping(path = "/topology")
   public CompletableFuture<ResponseEntity<Object>> getTopology() {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             topologyServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .getTopology(),
-        ResponseMapper::toTopologyResponse);
+        ResponseMapper::toTopologyResponse,
+        HttpStatus.OK);
   }
 }

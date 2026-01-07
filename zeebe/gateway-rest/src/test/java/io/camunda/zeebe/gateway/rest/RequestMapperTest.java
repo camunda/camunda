@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.model.mapper.RequestMapper;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
@@ -18,7 +19,6 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperati
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.Test;

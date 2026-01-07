@@ -11,7 +11,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +29,7 @@ public class StatusController {
 
   @CamundaGetMapping(path = "/status")
   public CompletableFuture<ResponseEntity<Object>> getStatus() {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () -> topologyServices.withAuthentication(CamundaAuthentication.none()).getStatus(),
         StatusController::getStatusResponse);
   }

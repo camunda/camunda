@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import io.camunda.gateway.model.mapper.GatewayErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -172,7 +173,7 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
   private static ResponseEntity<ProblemDetail> getProblemDetailResponseEntity(
       final Exception ex, final HttpServletRequest request) {
-    final ProblemDetail problemDetail = RestErrorMapper.mapErrorToProblem(ex);
+    final ProblemDetail problemDetail = GatewayErrorMapper.mapErrorToProblem(ex);
     problemDetail.setInstance(URI.create(request.getRequestURI()));
     return RestErrorMapper.mapProblemToResponse(problemDetail);
   }
