@@ -28,12 +28,11 @@ Before the migration to "inferred" as the default, batch move operations used th
 
 ## Design
 
-Add an optional parameter to batch move operation instructions that allows users to specify which ancestor scope resolution strategy to use:
-- Keep the current default behavior (`inferAncestorScopeFromSourceHierarchy: true`) for backward compatibility
-- Allow users to optionally specify `useSourceParentKeyAsAncestorScopeKey: true` to use the source parent strategy instead
-- Make these options mutually exclusive to avoid ambiguity
+Add an optional parameter to batch move operation instructions that allows users to specify which ancestor scope resolution strategy to use. This should follow the same pattern as single process instance modifications, using the `AncestorScopeInstruction` schema defined in the REST API (see `zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml`).
 
-Example API enhancement:
+For batch operations, only allow `sourceParent` or `inferred` ancestor scope types (not `direct`, which requires specifying a specific element instance key that doesn't make sense in the context of batch operations across multiple process instances).
+
+**Recommended API design** (consistent with single instance modifications):
 ```json
 {
   "operationType": "MODIFY_PROCESS_INSTANCE",
@@ -43,38 +42,31 @@ Example API enhancement:
       {
         "sourceElementId": "taskA",
         "targetElementId": "taskB",
-        "ancestorScopeResolutionStrategy": "SOURCE_PARENT" // or "INFERRED" (default)
+        "ancestorScopeInstruction": {
+          "ancestorScopeType": "sourceParent"  // or "inferred" (default)
+        }
       }
     ]
   }
 }
 ```
 
-Or keep the existing boolean flags approach:
-```json
-{
-  "operationType": "MODIFY_PROCESS_INSTANCE",
-  "processInstanceKeys": [...],
-  "modification": {
-    "moveInstructions": [
-      {
-        "sourceElementId": "taskA",
-        "targetElementId": "taskB",
-        "useSourceParentKeyAsAncestorScopeKey": true  // optional, defaults to false
-      }
-    ]
-  }
-}
-```
+**Key design decisions:**
+- Use the existing `AncestorScopeInstruction` polymorphic schema pattern for consistency
+- Default to `inferred` behavior for backward compatibility
+- Only support `sourceParent` and `inferred` types (exclude `direct` as it's not applicable to batch operations)
+- The `ancestorScopeInstruction` field should be optional; when omitted, default to `inferred`
 
 ## Technical requirements
 
-1. Extend the batch move operation API to accept an ancestor scope resolution strategy parameter
-2. Update the `RequestMapper.mapProcessInstanceModificationMoveBatchInstruction` method to map the strategy parameter to the appropriate internal instruction format
-3. Ensure the engine correctly processes both strategies for batch operations
-4. Add validation to prevent both strategies from being specified simultaneously
-5. Update API documentation to explain both strategies and when to use each
-6. Add tests for both strategies in batch operations
+1. Extend the batch move operation schema to accept the `ancestorScopeInstruction` parameter (using the existing `AncestorScopeInstruction` polymorphic schema)
+2. Add validation to ensure only `sourceParent` and `inferred` ancestor scope types are allowed in batch operations (reject `direct` type)
+3. Update the `RequestMapper.mapProcessInstanceModificationMoveBatchInstruction` method to map the `ancestorScopeInstruction` parameter to the appropriate internal instruction format
+4. Ensure the engine correctly processes both `sourceParent` and `inferred` strategies for batch operations
+5. Default to `inferred` behavior when `ancestorScopeInstruction` is not specified (for backward compatibility)
+6. Update API documentation to explain both strategies, when to use each, and why `direct` is not supported for batch operations
+7. Add tests for both `sourceParent` and `inferred` strategies in batch operations
+8. Add validation tests to ensure `direct` type is properly rejected for batch operations
 
 ## Links
 
