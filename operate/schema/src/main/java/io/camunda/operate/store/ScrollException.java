@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.util.searchrepository;
+package io.camunda.operate.store;
 
-import java.util.List;
+public class ScrollException extends RuntimeException {
 
-public interface TestZeebeRepository {
-  <R> List<R> scrollTerm(String index, String field, long value, Class<R> clazz);
+  public ScrollException(final String message, final Throwable cause) {
+    super(message);
+  }
 }

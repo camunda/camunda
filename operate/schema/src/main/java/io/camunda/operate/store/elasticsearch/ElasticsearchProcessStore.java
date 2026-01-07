@@ -11,9 +11,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.operate.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_XML;
 import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TREE_PATH;
@@ -27,21 +25,18 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_NAME;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.operate.TreePath;
@@ -62,17 +57,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -88,13 +77,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  private final ObjectMapper objectMapper;
-
   private final RestHighLevelClient esClient;
 
   private final ElasticsearchClient es8Client;
-
-  private final TenantAwareElasticsearchClient tenantAwareClient;
 
   private final OperateProperties operateProperties;
 
@@ -104,20 +89,16 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final ProcessIndex processIndex,
       final ListViewTemplate listViewTemplate,
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final OperateProperties operateProperties,
       final RestHighLevelClient esClient,
       final ElasticsearchClient es8Client,
-      final TenantAwareElasticsearchClient tenantAwareClient,
       final ElasticsearchTenantHelper tenantHelper) {
     this.processIndex = processIndex;
     this.listViewTemplate = listViewTemplate;
     this.processInstanceDependantTemplates = processInstanceDependantTemplates;
-    this.objectMapper = objectMapper;
     this.operateProperties = operateProperties;
     this.esClient = esClient;
     this.es8Client = es8Client;
-    this.tenantAwareClient = tenantAwareClient;
     this.tenantHelper = tenantHelper;
   }
 
@@ -499,42 +480,38 @@ public class ElasticsearchProcessStore implements ProcessStore {
     // remove id of current process instance
     processInstanceIdsWithoutCurrentProcess.remove(currentProcessInstanceId);
 
-    final QueryBuilder query =
-        joinWithAnd(
-            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-            termsQuery(ID, processInstanceIdsWithoutCurrentProcess));
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate)
+    final var q =
+        ElasticsearchUtil.joinWithAnd(
+            ElasticsearchUtil.termsQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+            ElasticsearchUtil.termsQuery(ID, processInstanceIdsWithoutCurrentProcess));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(q);
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(listViewTemplate, ALL))
             .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .fetchSource(
-                        new String[] {ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID}, null));
+                src -> src.filter(f -> f.includes(ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID)))
+            .query(tenantAwareQuery);
+
     try {
-      tenantAwareClient.search(
-          request,
-          () -> {
-            scrollWith(
-                request,
-                esClient,
-                searchHits -> {
-                  Arrays.stream(searchHits.getHits())
-                      .forEach(
-                          sh -> {
-                            final Map<String, Object> source = sh.getSourceAsMap();
-                            callHierarchy.add(
-                                Map.of(
-                                    "instanceId", String.valueOf(source.get(ID)),
-                                    "processDefinitionId", String.valueOf(source.get(PROCESS_KEY)),
-                                    "processDefinitionName",
-                                        String.valueOf(
-                                            source.getOrDefault(
-                                                PROCESS_NAME, source.get(BPMN_PROCESS_ID)))));
-                          });
-                });
-            return null;
-          });
-    } catch (final IOException e) {
+      final var resStream =
+          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+
+      resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .forEach(
+              resMap ->
+                  callHierarchy.add(
+                      Map.of(
+                          "instanceId",
+                          String.valueOf(resMap.get(ID)),
+                          "processDefinitionId",
+                          String.valueOf(resMap.get(PROCESS_KEY)),
+                          "processDefinitionName",
+                          String.valueOf(
+                              resMap.getOrDefault(PROCESS_NAME, resMap.get(BPMN_PROCESS_ID))))));
+    } catch (final ScrollException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining process instance call hierarchy: %s",
@@ -567,44 +544,46 @@ public class ElasticsearchProcessStore implements ProcessStore {
     // - middle level: we remove /PI_key/FN_name/FNI_key from the middle
     // - end level: we remove /PI_key from the end
 
-    final QueryBuilder query =
-        ((BoolQueryBuilder)
-                joinWithAnd(
-                    termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-                    termQuery(TREE_PATH, treePath)))
-            .mustNot(termQuery(KEY, processInstanceKey));
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate)
-            .source(new SearchSourceBuilder().query(query).fetchSource(TREE_PATH, null));
+    final var query =
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                                ElasticsearchUtil.termsQuery(
+                                    JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+                                ElasticsearchUtil.termsQuery(TREE_PATH, treePath))
+                            .mustNot(ElasticsearchUtil.termsQuery(KEY, processInstanceKey))));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(listViewTemplate, ALL))
+            .query(tenantAwareQuery)
+            .source(s -> s.filter(f -> f.includes(TREE_PATH)));
     try {
-      tenantAwareClient.search(
-          request,
-          () -> {
-            ElasticsearchUtil.scroll(
-                request,
-                hits -> {
-                  Arrays.stream(hits.getHits())
-                      .forEach(
-                          sh -> {
-                            final Map<String, Object> updateFields = new HashMap<>();
-                            final String newTreePath =
-                                new TreePath((String) sh.getSourceAsMap().get(TREE_PATH))
-                                    .removeProcessInstance(processInstanceKey)
-                                    .toString();
-                            updateFields.put(TREE_PATH, newTreePath);
-                            es8BulkRequest.operations(
-                                op ->
-                                    op.update(
-                                        u ->
-                                            u.index(sh.getIndex())
-                                                .id(sh.getId())
-                                                .retryOnConflict(UPDATE_RETRY_COUNT)
-                                                .action(a -> a.doc(updateFields))));
-                          });
-                },
-                esClient);
-            return null;
-          });
+      final var resStream =
+          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+      resStream
+          .flatMap(res -> res.hits().hits().stream())
+          .forEach(
+              hit -> {
+                final Map<String, Object> updateFields = new HashMap<>();
+                final String newTreePath =
+                    new TreePath((String) hit.source().get(TREE_PATH))
+                        .removeProcessInstance(processInstanceKey)
+                        .toString();
+                updateFields.put(TREE_PATH, newTreePath);
+                es8BulkRequest.operations(
+                    op ->
+                        op.update(
+                            u ->
+                                u.index(hit.index())
+                                    .id(hit.id())
+                                    .retryOnConflict(UPDATE_RETRY_COUNT)
+                                    .action(a -> a.doc(updateFields))));
+              });
+
       ElasticsearchUtil.processBulkRequest(
           es8Client,
           es8BulkRequest,
@@ -666,21 +645,30 @@ public class ElasticsearchProcessStore implements ProcessStore {
           "Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
     }
 
-    final QueryBuilder query =
-        joinWithAnd(
-            QueryBuilders.termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-            QueryBuilders.termsQuery(PARENT_PROCESS_INSTANCE_KEY, parentProcessInstanceKeys));
-    final SearchSourceBuilder source =
-        new SearchSourceBuilder().size(size).query(query).fetchSource(includeFields, null);
-    final SearchRequest searchRequest = createSearchRequest(listViewTemplate, ALL).source(source);
+    final var q =
+        ElasticsearchUtil.joinWithAnd(
+            ElasticsearchUtil.termsQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+            ElasticsearchUtil.termsQuery(PARENT_PROCESS_INSTANCE_KEY, parentProcessInstanceKeys));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(q);
+
+    final List<String> nulLSafeIncludeField =
+        includeFields == null ? Collections.emptyList() : Arrays.asList(includeFields);
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(whereToSearch(listViewTemplate, ALL))
+            .size(size)
+            .query(tenantAwareQuery)
+            .source(s -> s.filter(f -> f.includes(nulLSafeIncludeField)));
 
     try {
-      return tenantAwareClient.search(
-          searchRequest,
-          () ->
-              ElasticsearchUtil.scroll(
-                  searchRequest, ProcessInstanceForListViewEntity.class, objectMapper, esClient));
-    } catch (final IOException ex) {
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, ProcessInstanceForListViewEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+
+    } catch (final ScrollException ex) {
       throw new OperateRuntimeException(
           "Failed to search process instances by parentProcessInstanceKeys", ex);
     }
