@@ -10,24 +10,16 @@ import {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {useFilters} from 'modules/hooks/useFilters';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {PAGE_TITLE} from 'modules/constants';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 import {Container} from './styled';
+import {processInstancesStore} from 'modules/stores/processInstances';
+import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {observer} from 'mobx-react';
 
-const OperationsLog: React.FC = () => {
+const OperationsLog: React.FC = observer(() => {
   const location = useLocation();
-  const {getFilters} = useFilters();
-  const filters = getFilters();
-  const {process, tenant, version} = filters;
-
-  const processDefinitionKey = processesStore.getProcessId({
-    process,
-    tenant,
-    version,
-  });
 
   useEffect(() => {
     if (
@@ -39,15 +31,22 @@ const OperationsLog: React.FC = () => {
   }, [location.state]);
 
   useEffect(() => {
-    processInstancesSelectionStore.init();
     processesStore.fetchProcesses();
 
     document.title = PAGE_TITLE.AUDIT_LOG;
 
     return () => {
+      processInstancesStore.reset();
       processesStore.reset();
     };
   }, []);
+
+  const {process, tenant, version} = getProcessInstanceFilters(location.search);
+  const processDefinitionKey = processesStore.getProcessId({
+    process,
+    tenant,
+    version,
+  });
 
   return (
     <ProcessDefinitionKeyContext.Provider value={processDefinitionKey}>
@@ -57,6 +56,6 @@ const OperationsLog: React.FC = () => {
       </Container>
     </ProcessDefinitionKeyContext.Provider>
   );
-};
+});
 
 export {OperationsLog};
