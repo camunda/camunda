@@ -25,11 +25,6 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-
     <!-- required to guarantee the protocol is processed earlier during the build -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -107,12 +102,6 @@
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- rest api dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -145,12 +134,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-crypto</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
@@ -176,18 +159,8 @@
     </dependency>
 
     <dependency>
-      <groupId>commons-validator</groupId>
-      <artifactId>commons-validator</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <dependency>
@@ -266,6 +239,24 @@
 
     <!-- test dependencies -->
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <scope>test</scope>
@@ -292,6 +283,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -437,6 +434,12 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <!-- dependencies only used without explicit import reference in compile code -->
+          <ignoredNonTestScopedDependencies>
+            <!-- Needed to interact with broker -->
+            <dependency>io.camunda:zeebe-protocol</dependency>
+            <dependency>io.camunda:zeebe-msgpack-value</dependency>
+          </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
             <!-- Needed to run tests -->

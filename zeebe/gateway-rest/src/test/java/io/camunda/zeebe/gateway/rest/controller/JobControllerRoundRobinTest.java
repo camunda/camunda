@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.gateway.model.mapper.ResponseMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -30,7 +31,6 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;

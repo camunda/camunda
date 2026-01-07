@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.gateway.model.mapper.GatewayErrorMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +36,7 @@ public class EndpointAccessErrorFilter extends HttpFilter {
     res.setStatus(HttpServletResponse.SC_FORBIDDEN);
     res.setContentType(MediaType.APPLICATION_PROBLEM_JSON.toString());
     final var detail =
-        RestErrorMapper.createProblemDetail(
+        GatewayErrorMapper.createProblemDetail(
             HttpStatusCode.valueOf(HttpServletResponse.SC_FORBIDDEN),
             String.format("%s endpoint is not accessible: %s", req.getRequestURI(), errorMessage),
             "Access issue");

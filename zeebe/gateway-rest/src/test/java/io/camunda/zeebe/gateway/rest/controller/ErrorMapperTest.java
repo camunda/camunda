@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
+import io.camunda.gateway.model.mapper.GatewayErrorMapper;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -34,7 +35,6 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -701,7 +701,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     final ProblemDetail problemDetail =
-        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -717,7 +717,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     final ProblemDetail problemDetail =
-        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
@@ -733,7 +733,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     final ProblemDetail problemDetail =
-        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -752,7 +752,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     final ProblemDetail problemDetail =
-        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
@@ -772,7 +772,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     final ProblemDetail problemDetail =
-        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -792,7 +792,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     final ProblemDetail problemDetail =
-        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
@@ -812,7 +812,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     final ProblemDetail problemDetail =
-        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
+        GatewayErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
