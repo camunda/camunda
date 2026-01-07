@@ -16,6 +16,7 @@ import {
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 test.beforeAll(async () => {
   await deploy([
@@ -157,7 +158,27 @@ test.describe('Process Instance Variables', () => {
       );
 
       await expect(page.getByText('1 result')).toBeVisible();
-      await operateProcessesPage.assertProcessInstanceLink(processInstanceKey);
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessesPage.assertProcessInstanceLink(
+            processInstanceKey,
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Process Instance Key(s)',
+          );
+          await operateFiltersPanelPage.displayOptionalFilter('Variable');
+          await operateFiltersPanelPage.fillVariableNameFilter('secondTestKey');
+          await operateFiltersPanelPage.fillVariableValueFilter(
+            '"secondTestValue"',
+          );
+          await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+            processInstanceKey,
+          );
+        },
+      });
     });
   });
 

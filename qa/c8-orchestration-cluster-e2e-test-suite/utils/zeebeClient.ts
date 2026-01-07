@@ -10,11 +10,18 @@ import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 
 const c8 = new Camunda8({
-  CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY,
+  CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
+    | 'BASIC'
+    | 'OAUTH'
+    | 'BEARER'
+    | 'COOKIE'
+    | 'NONE'
+    | undefined,
   CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
 });
+
 const zeebe = c8.getCamundaRestClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
@@ -28,27 +35,27 @@ const deploy = async (processFilePaths: string[]) => {
 
 const createInstances = async (
   processDefinitionId: string,
-  version: number,
+  processDefinitionVersion: number,
   numberOfInstances: number,
   variables?: JSONDoc,
 ) => {
   for (let i = 0; i < numberOfInstances; i++) {
     await zeebe.createProcessInstance({
       processDefinitionId,
-      version,
-      variables: variables ?? {}, // Ensure it's never undefined
+      processDefinitionVersion,
+      variables: variables ?? {},
     });
   }
 };
 
 const createSingleInstance = async (
   processDefinitionId: string,
-  version: number,
+  processDefinitionVersion: number,
   variables?: JSONDoc,
 ) => {
   const result = await zeebe.createProcessInstance({
     processDefinitionId,
-    version,
+    processDefinitionVersion,
     variables: variables ?? {},
   });
   return result;
@@ -79,6 +86,16 @@ const generateManyVariables = () => {
   return variables;
 };
 
+const cancelProcessInstance = async (processInstanceKey: string) => {
+  return zeebe.cancelProcessInstance({processInstanceKey});
+};
+
+async function searchByProcessInstanceKey(processInstanceKey: string) {
+  return zeebe.searchProcessInstances({
+    filter: {processInstanceKey},
+    sort: [],
+  });
+}
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -101,5 +118,7 @@ export {
   createSingleInstance,
   publishMessage,
   generateManyVariables,
+  cancelProcessInstance,
+  searchByProcessInstanceKey,
   checkUpdateOnVersion,
 };
