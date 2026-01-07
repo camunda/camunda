@@ -7,22 +7,22 @@
 #
 # How it works:
 # - Triggers when issues are opened, labeled, unlabeled, reopened, or transferred
-# - Calculates urgency based on severity and likelihood labels using a risk matrix
+# - Calculates urgency based on severity/likelihood OR impact/when labels using risk matrices
 # - Updates the Urgency field in ProjectV2 with values: immediate, next, planned, someday
-# - Applies to any issue with a severity label (not limited to Bug type)
+# - Applies to any issue with a severity label OR impact label
 #
-# Labels:
-# - severity/{low,mid,high,critical} - Required to trigger urgency calculation
+# Labels (Option 1 - Risk-based):
+# - severity/{low,mid,high,critical} - Required to trigger severity/likelihood calculation
 # - likelihood/{low,mid,high,unknown} - Optional, defaults to unknown (treated as low)
+#
+# Labels (Option 2 - Impact-based):
+# - impact/{low,medium,high} - Required to trigger impact/when calculation
+# - when/{later,soon,now} - Optional, defaults to later
+#
+# Other labels:
 # - urgency-locked - Prevents automatic urgency updates while showing calculated value
 #
-# Matrix:
-#   Likelihood →     low        mid        high
-#   Severity ↓
-#   low              someday    someday    someday
-#   mid              someday    planned    planned
-#   high             planned    next       next
-#   critical         immediate  immediate  immediate
+# Note: If both severity and impact labels are present, impact/when takes precedence
 #
 # Manual usage:
 #   gh workflow run assign-urgency-to-issue.yml -f issue_number=123 -f project_id=173
@@ -68,7 +68,7 @@ jobs:
         shell: bash
 
     steps:
-      - name: Dump issue JSON
+      - name: Dump event issue JSON
         run: |
           cat << 'EOF'
           ${{ toJSON(github.event.issue) }}
@@ -192,17 +192,28 @@ jobs:
 
           echo "📋 Issue type: ${ISSUE_TYPE:-none}"
 
-          # Extract and validate severity & likelihood
+          # Extract and validate severity, likelihood, impact & when
           severity=$(echo "$LABELS" | jq -r '.[] | select(startswith("severity/")) | sub("severity/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "critical")' | head -n1)
           likelihood=$(echo "$LABELS" | jq -r '.[] | select(startswith("likelihood/")) | sub("likelihood/"; "") | select(. == "low" or . == "mid" or . == "high" or . == "unknown")' | head -n1)
+          impact=$(echo "$LABELS" | jq -r '.[] | select(startswith("impact/")) | sub("impact/"; "") | select(. == "low" or . == "medium" or . == "high")' | head -n1)
+          when=$(echo "$LABELS" | jq -r '.[] | select(startswith("when/")) | sub("when/"; "") | select(. == "later" or . == "soon" or . == "now")' | head -n1)
 
-          # Check if issue has a severity label
-          if [[ -z "$severity" ]]; then
-            echo "⏭️ Issue does not have a valid severity label; skipping"
-          else
+          # Log extracted labels
+          if [[ -n "$severity" ]]; then
             echo "🏷️ Severity: $severity"
           fi
 
+          if [[ -n "$likelihood" ]]; then
+            echo "🏷️ Likelihood: $likelihood"
+          fi
+
+          if [[ -n "$impact" ]]; then
+            echo "🏷️ Impact: $impact"
+          fi
+
+          if [[ -n "$when" ]]; then
+            echo "🏷️ When: $when"
+          fi
 
           # Check for urgency-locked label
           has_urgency_locked=$(echo "$LABELS" | jq -r 'any(. == "urgency-locked")')
@@ -214,86 +225,173 @@ jobs:
           {
             echo "severity=$severity"
             echo "likelihood=$likelihood"
+            echo "impact=$impact"
+            echo "when=$when"
             echo "has_urgency_locked=$has_urgency_locked"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Calculate urgency
-        id: calculate_urgency
+      - name: Calculate urgency from severity
+        id: calculate_urgency_from_severity
         if: steps.check_labels.outputs.severity != ''
         run: |
           set -euo pipefail
           SEVERITY='${{ steps.check_labels.outputs.severity }}'
           LIKELIHOOD='${{ steps.check_labels.outputs.likelihood }}'
 
-          # Default likelihood to unknown if not set
-          if [[ -z "$LIKELIHOOD" ]]; then
-            LIKELIHOOD="unknown"
-            echo "ℹ️  Likelihood not set, defaulting to unknown"
+          # Default missing or unknown likelihood to low
+          if [[ -z "$LIKELIHOOD" || "$LIKELIHOOD" == "unknown" ]]; then
+            LIKELIHOOD="low"
+            echo "ℹ️  Likelihood not set or unknown, using low for urgency calculation"
           fi
 
-          # Treat unknown likelihood as low for matrix lookup
-          LOOKUP_LIKELIHOOD="$LIKELIHOOD"
-          if [[ "$LIKELIHOOD" == "unknown" ]]; then
-            LOOKUP_LIKELIHOOD="low"
-            echo "ℹ️  Using likelihood=low for urgency calculation (actual: unknown)"
+          # Severity/Likelihood Matrix:
+          #   Likelihood →     low        mid        high
+          #   Severity ↓
+          #   low              someday    someday    someday
+          #   mid              someday    planned    planned
+          #   high             planned    next       next
+          #   critical         immediate  immediate  immediate
+          #
+          # Use case statement for bash 3.2+ compatibility
+          case "${SEVERITY}_${LIKELIHOOD}" in
+            low_low|low_mid|low_high|mid_low)
+              URGENCY="someday"
+              ;;
+            mid_mid|mid_high|high_low)
+              URGENCY="planned"
+              ;;
+            high_mid|high_high)
+              URGENCY="next"
+              ;;
+            critical_low|critical_mid|critical_high)
+              URGENCY="immediate"
+              ;;
+            *)
+              URGENCY="someday"
+              ;;
+          esac
+
+          echo "🎯 Urgency (from severity/likelihood): $URGENCY"
+          echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate urgency from impact
+        id: calculate_urgency_from_impact
+        if: steps.check_labels.outputs.impact != ''
+        run: |
+          set -euo pipefail
+          IMPACT='${{ steps.check_labels.outputs.impact }}'
+          WHEN='${{ steps.check_labels.outputs.when }}'
+
+          # Default when to later if not set
+          if [[ -z "$WHEN" ]]; then
+            WHEN="later"
+            echo "ℹ️  When not set, defaulting to later"
           fi
 
-          # severity: low, mid, high, critical
-          # likelihood: low, mid, high (unknown treated as low)
-          # urgency: immediate, next, planned, someday
-          declare -A MATRIX=(
-            [low_low]=someday
-            [low_mid]=someday
-            [low_high]=someday
-            [mid_low]=someday
-            [mid_mid]=planned
-            [mid_high]=planned
-            [high_low]=planned
-            [high_mid]=next
-            [high_high]=next
-            [critical_low]=immediate
-            [critical_mid]=immediate
-            [critical_high]=immediate
-          )
-          key="${SEVERITY}_${LOOKUP_LIKELIHOOD}"
-          URGENCY="${MATRIX[$key]:-someday}"
+          # Impact/When Matrix:
+          #   When →           later      soon       now
+          #   Impact ↓
+          #   low              someday    planned    planned
+          #   medium           planned    next       next
+          #   high             planned    next       immediate
+          #
+          # Use case statement for bash 3.2+ compatibility
+          case "${IMPACT}_${WHEN}" in
+            low_later)
+              URGENCY="someday"
+              ;;
+            low_soon|low_now|medium_later)
+              URGENCY="planned"
+              ;;
+            medium_soon|medium_now|high_later)
+              URGENCY="next"
+              ;;
+            high_soon)
+              URGENCY="next"
+              ;;
+            high_now)
+              URGENCY="immediate"
+              ;;
+            *)
+              URGENCY="someday"
+              ;;
+          esac
 
-          echo "🎯 Urgency: $URGENCY"
+          echo "🎯 Urgency (from impact/when): $URGENCY"
+          echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
+
+      - name: Validate urgency
+        id: validate_urgency
+        if: steps.calculate_urgency_from_severity.outputs.urgency != '' || steps.calculate_urgency_from_impact.outputs.urgency != ''
+        run: |
+          set -euo pipefail
+          URGENCY_FROM_SEVERITY='${{ steps.calculate_urgency_from_severity.outputs.urgency }}'
+          URGENCY_FROM_IMPACT='${{ steps.calculate_urgency_from_impact.outputs.urgency }}'
+
+          # Urgency priority: immediate > next > planned > someday
+          # Use case statement for bash 3.2+ compatibility
+          get_urgency_priority() {
+            case "$1" in
+              immediate) echo 4 ;;
+              next) echo 3 ;;
+              planned) echo 2 ;;
+              someday) echo 1 ;;
+              *) echo 0 ;;
+            esac
+          }
+
+          if [[ -n "$URGENCY_FROM_IMPACT" && -n "$URGENCY_FROM_SEVERITY" ]]; then
+            IMPACT_PRIORITY=$(get_urgency_priority "$URGENCY_FROM_IMPACT")
+            SEVERITY_PRIORITY=$(get_urgency_priority "$URGENCY_FROM_SEVERITY")
+
+            if (( IMPACT_PRIORITY >= SEVERITY_PRIORITY )); then
+              URGENCY="$URGENCY_FROM_IMPACT"
+            else
+              URGENCY="$URGENCY_FROM_SEVERITY"
+            fi
+            echo "🎯 Selected urgency: $URGENCY (from severity=$URGENCY_FROM_SEVERITY, from impact=$URGENCY_FROM_IMPACT)"
+          elif [[ -n "$URGENCY_FROM_IMPACT" ]]; then
+            URGENCY="$URGENCY_FROM_IMPACT"
+            echo "🎯 Selected urgency: $URGENCY"
+          else
+            URGENCY="$URGENCY_FROM_SEVERITY"
+            echo "🎯 Selected urgency: $URGENCY"
+          fi
+
           echo "urgency=$URGENCY" >> "$GITHUB_OUTPUT"
 
       - name: Update Urgency
-        if: steps.calculate_urgency.outputs.urgency != ''
+        if: steps.validate_urgency.outputs.urgency != ''
         run: |
           set -euo pipefail
 
           ISSUE_DATA='${{ steps.fetch_data.outputs.issue_data }}'
           PROJECT_ITEM_ID='${{ steps.validate_project.outputs.project_item_id }}'
           PROJECT_V2_ID='${{ steps.validate_project.outputs.project_v2_id }}'
-          NEW_URGENCY='${{ steps.calculate_urgency.outputs.urgency }}'
+          NEW_URGENCY='${{ steps.validate_urgency.outputs.urgency }}'
           HAS_URGENCY_LOCKED='${{ steps.check_labels.outputs.has_urgency_locked }}'
 
           # Extract current urgency value from the specific project item
           CURRENT_URGENCY=$(echo "$ISSUE_DATA" | jq -r --argjson pn "$PROJECT_NUMBER" --arg fieldName "$URGENCY_FIELD_NAME" \
             '.projectItems.nodes[] | select(.project.number==$pn) | .fieldValues.nodes[] | select(.field.name==$fieldName) | .name // empty')
 
-          echo "📌 Current urgency: ${CURRENT_URGENCY:-(not set)}"
+          echo "🔄 Update urgency: '$CURRENT_URGENCY' → '$NEW_URGENCY'"
 
-          # Check for urgency-locked label - skip updates but show what would change
-          if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
-            echo "🔒 Skipping urgency update - issue has 'urgency-locked' label"
-            echo "ℹ️  Calculated urgency: '$NEW_URGENCY' (current: '$CURRENT_URGENCY')"
+          # Check if urgency would change
+          if [[ "$CURRENT_URGENCY" == "$NEW_URGENCY" ]]; then
+            echo "⏭️ Urgency already set to '$NEW_URGENCY'"
             exit 0
           fi
 
-          # Check if urgency matches - skip if already correct
-          if [[ "$CURRENT_URGENCY" == "$NEW_URGENCY" ]]; then
-            echo "⏭️ Urgency already set to '$NEW_URGENCY'; skipping update"
+          # Check for urgency-locked label
+          if [[ "$HAS_URGENCY_LOCKED" == "true" ]]; then
+            echo "🔒 Update skipped - issue has 'urgency-locked' label"
             exit 0
           fi
 
           # Dry run check
           if [[ "$DRY_RUN" == "true" ]]; then
-            echo "🔬 DRY RUN: Would update urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
+            echo "🔬 DRY RUN: Update skipped (dry run mode)"
             exit 0
           fi
 
@@ -324,9 +422,6 @@ jobs:
           fi
 
           # Build and execute mutation
-          OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
-            '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
-
           OPTION_ID=$(echo "$FIELD_DATA" | jq -r --arg name "$URGENCY_FIELD_NAME" --arg value "$NEW_URGENCY" \
             '.data.node.fields.nodes[] | select(.name==$name) | .options[]? | select(.name==$value) | .id // empty')
 
@@ -369,14 +464,3 @@ jobs:
           fi
 
           echo "✅ Updated urgency from '$CURRENT_URGENCY' to '$NEW_URGENCY'"
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
