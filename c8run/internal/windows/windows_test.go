@@ -127,3 +127,24 @@ func TestConnectorsCmdRespectsExistingZeebeRestEnv(t *testing.T) {
 		}
 	}
 }
+
+func TestConnectorsCmdUsesPropertiesLauncherWhenVersionRequiresIt(t *testing.T) {
+	ctx := context.Background()
+	windowsC8Run := &WindowsC8Run{}
+
+	cmd := windowsC8Run.ConnectorsCmd(
+		ctx,
+		"java",
+		"C:\\test\\parent\\dir",
+		"8.9.0",
+		8080,
+	)
+
+	args := strings.Join(cmd.Args, " ")
+	if !strings.Contains(args, "org.springframework.boot.loader.launch.PropertiesLauncher") {
+		t.Fatalf("expected PropertiesLauncher to be used when env var enabled, got args: %s", args)
+	}
+	if strings.Contains(args, "io.camunda.connector.runtime.app.ConnectorRuntimeApplication") {
+		t.Fatalf("did not expect legacy main class when PropertiesLauncher is enabled")
+	}
+}
