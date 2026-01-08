@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -72,7 +71,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
       throws APIException {
 
     final var searchRequestBuilder =
-        buildQueryOn(query, DecisionDefinition.KEY, new Builder(), true);
+        buildQueryOn(query, DecisionDefinition.KEY, new SearchRequest.Builder(), true);
     try {
       final var searchReq = searchRequestBuilder.index(decisionIndex.getAlias()).build();
       final var decisionDefinitions = searchWithResultsReturn(searchReq, DecisionDefinition.class);
@@ -187,17 +186,13 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
             .query(tenantAwareQuery)
             .source(s -> s.filter(f -> f.includes(DecisionRequirementsIndex.KEY)));
 
-    final var streamResult =
+    final var nonNullKeys =
         ElasticsearchUtil.scrollAllStream(
                 es8Client, searchRequestBuilder, DecisionRequirements.class)
             .flatMap(res -> res.hits().hits().stream())
-            .toList();
-    final var sourceRes = streamResult.stream().map(Hit::source).toList();
-    final var nonNullKeys =
-        sourceRes.stream()
+            .map(Hit::source)
             .filter(Objects::nonNull)
             .map(DecisionRequirements::getKey)
-            .filter(Objects::nonNull)
             .toList();
 
     if (nonNullKeys.isEmpty()) {

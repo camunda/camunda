@@ -100,6 +100,11 @@ public class DecisionInstance {
     return evaluationFailureMessage;
   }
 
+  public DecisionInstance setEvaluationFailureMessage(final String evaluationFailureMessage) {
+    this.evaluationFailureMessage = evaluationFailureMessage;
+    return this;
+  }
+
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
