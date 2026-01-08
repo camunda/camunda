@@ -27,6 +27,7 @@ import {getScopeId} from 'modules/utils/variables';
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useVariableScopeKey} from 'modules/hooks/variables';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -45,7 +46,9 @@ const Variables: React.FC<Props> = observer(
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
 
-    const scopeId = getScopeId() ?? newScopeIdForFlowNode;
+    const scopeKey = IS_ELEMENT_SELECTION_V2
+      ? useVariableScopeKey(newScopeIdForFlowNode)
+      : (getScopeId() ?? newScopeIdForFlowNode);
 
     const {isModificationModeEnabled} = modificationsStore;
 
@@ -70,7 +73,7 @@ const Variables: React.FC<Props> = observer(
 
     const isViewMode = isModificationModeEnabled
       ? fieldArray.fields.length === 0 &&
-        modificationsStore.getAddVariableModifications(scopeId).length === 0
+        modificationsStore.getAddVariableModifications(scopeKey).length === 0
       : initialValues === undefined ||
         Object.values(initialValues).length === 0;
 
@@ -122,7 +125,7 @@ const Variables: React.FC<Props> = observer(
         )}
         {(!isViewMode || displayStatus === 'variables') && (
           <VariablesTable
-            scopeId={scopeId}
+            scopeId={scopeKey}
             isVariableModificationAllowed={isVariableModificationAllowed}
           />
         )}

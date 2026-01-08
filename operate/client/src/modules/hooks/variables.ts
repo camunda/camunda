@@ -15,7 +15,6 @@ import {
   useNewTokenCountForSelectedNode,
 } from './flowNodeSelection';
 import {useHasMultipleInstances} from './flowNodeMetadata';
-import {getScopeId} from 'modules/utils/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {TOKEN_OPERATIONS} from 'modules/constants';
@@ -63,6 +62,7 @@ const useVariableScopeKey = (fallback?: string | null) => {
 };
 
 const useDisplayStatus = ({
+  scopeKey,
   isLoading,
   isFetchingNextPage,
   isFetchingPreviousPage,
@@ -70,6 +70,7 @@ const useDisplayStatus = ({
   isError,
   hasItems,
 }: {
+  scopeKey: string | null;
   isLoading: boolean;
   isFetchingNextPage: boolean;
   isFetchingPreviousPage: boolean;
@@ -100,10 +101,10 @@ const useDisplayStatus = ({
     return 'no-variables';
   }
 
-  if (modificationsStore.isModificationModeEnabled && getScopeId() === null) {
+  if (modificationsStore.isModificationModeEnabled && scopeKey === null) {
     return 'no-variables';
   }
-  if (isLoading || getScopeId() === null) {
+  if (isLoading || scopeKey === null) {
     return 'spinner';
   }
   if (!hasItems) {
