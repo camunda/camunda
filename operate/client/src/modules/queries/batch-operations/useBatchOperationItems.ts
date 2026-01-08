@@ -18,13 +18,13 @@ const useBatchOperationItems = (
 ) => {
   return useInfiniteQuery({
     queryKey: queryKeys.batchOperationItems.query(payload),
-    queryFn: async () => {
+    queryFn: async ({pageParam = 0}) => {
       const requestPayload = {
         ...payload,
         page: {
           ...payload.page,
           limit: payload.page?.limit ?? MAX_OPERATIONS_PER_REQUEST,
-          from: payload.page?.from ?? 0,
+          from: pageParam,
         },
       };
 
@@ -41,7 +41,7 @@ const useBatchOperationItems = (
       const {page} = lastPage;
       const nextPage = lastPageParam + MAX_OPERATIONS_PER_REQUEST;
 
-      if (nextPage > page.totalItems) {
+      if (nextPage >= page.totalItems) {
         return null;
       }
 
