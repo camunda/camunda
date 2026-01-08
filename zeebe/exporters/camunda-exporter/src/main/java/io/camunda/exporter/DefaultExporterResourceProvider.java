@@ -283,8 +283,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName(),
                 exporterMetadata),
             new SequenceFlowDeletedHandler(
-                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName(),
-                exporterMetadata),
+                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(

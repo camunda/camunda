@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.handlers;
 
-import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
@@ -23,12 +22,9 @@ public class SequenceFlowDeletedHandler
 
   private static final String ID_PATTERN = "%s_%s";
   private final String indexName;
-  private final ExporterMetadata exporterMetadata;
 
-  public SequenceFlowDeletedHandler(
-      final String indexName, final ExporterMetadata exporterMetadata) {
+  public SequenceFlowDeletedHandler(final String indexName) {
     this.indexName = indexName;
-    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -68,11 +64,6 @@ public class SequenceFlowDeletedHandler
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setActivityId(recordValue.getElementId())
         .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
-    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0
-        && exporterMetadata.isKeyAfterFirstRootProcessInstanceKey(rootProcessInstanceKey)) {
-      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
   }
 
   @Override
