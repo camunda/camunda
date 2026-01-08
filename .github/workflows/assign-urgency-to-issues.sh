@@ -5,7 +5,7 @@ set -euo pipefail
 ORG_NAME="camunda"                                    # Hardcoded organization
 REPO_NAME="camunda"                                   # Hardcoded repository
 PROJECT_ID="${1:-173}"                                # Numeric Project V2 number
-BRANCH="${2:-eppdot-urgency-field-automation}"        # Branch to trigger workflow on
+BRANCH="${2:-main}"        # Branch to trigger workflow on
 LIMIT="${3:-20}"                                      # Number of issues to process
 SKIP_ASSIGNED="${4:-false}"                           # Skip issues that already have urgency assigned (true/false)
 DRY_RUN="${5:-false}"                                 # Dry run mode - don't trigger workflows (true/false)
@@ -23,7 +23,7 @@ Arguments (all optional, with defaults):
   DRY_RUN          Don't trigger workflows, just show what would be done (default: false)
 
 Examples:
-  $0                        # Use all defaults - process all bug issues in project 173
+  $0                        # Use all defaults - process all issues in project 173
   $0 173                    # Specify project
   $0 173 main 50            # All parameters except skip filter and dry run
   $0 173 main 50 true       # Only process issues without urgency
@@ -32,8 +32,8 @@ EOF
   exit 0
 fi
 
-# --- Fetch first N bug issues from the project ---
-echo "Fetching up to $LIMIT bug issues from project (with pagination)..."
+# --- Fetch first N issues from the project ---
+echo "Fetching up to $LIMIT issues from project (with pagination)..."
 
 # Initialize variables for pagination
 ISSUE_NUMBERS=""
@@ -42,8 +42,8 @@ CURSOR="null"
 PAGE_SIZE=50
 MAX_PAGES=20  # Safety limit to avoid infinite loops
 
-# Build search query - search for open bugs in the repo and project
-SEARCH_QUERY="repo:${ORG_NAME}/${REPO_NAME} is:issue is:open type:bug project:${ORG_NAME}/${PROJECT_ID}"
+# Build search query - search for open issues in the repo and project
+SEARCH_QUERY="repo:${ORG_NAME}/${REPO_NAME} is:issue is:open project:${ORG_NAME}/${PROJECT_ID}"
 
 for ((page=1; page<=MAX_PAGES; page++)); do
   # Build query with pagination cursor
@@ -104,7 +104,7 @@ for ((page=1; page<=MAX_PAGES; page++)); do
     ISSUE_COUNT=$(echo "$ISSUE_NUMBERS" | wc -l | tr -d ' ')
   fi
 
-  echo "  Page $page: Found $ISSUE_COUNT bug issue(s) so far..."
+  echo "  Page $page: Found $ISSUE_COUNT issue(s) so far..."
 
   # Check if we have enough issues
   if [[ $ISSUE_COUNT -ge $LIMIT ]]; then
@@ -125,12 +125,12 @@ for ((page=1; page<=MAX_PAGES; page++)); do
 done
 
 if [[ -z "$ISSUE_NUMBERS" ]]; then
-  echo "⚠️  No bug issues found in the project (or missing permissions)."
+  echo "⚠️  No issues found in the project (or missing permissions)."
   exit 1
 fi
 
 ISSUE_COUNT=$(echo "$ISSUE_NUMBERS" | wc -l | tr -d ' ')
-echo "✅ Found $ISSUE_COUNT bug issue(s) to process"
+echo "✅ Found $ISSUE_COUNT issue(s) to process"
 
 # --- Run the workflow for each issue ---
 if [[ "$DRY_RUN" == "true" ]]; then
@@ -138,7 +138,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
   for ISSUE_NUMBER in $ISSUE_NUMBERS; do
     echo "  → Would run for issue #$ISSUE_NUMBER"
   done
-  echo "ℹ️  Dry run complete. Would have triggered workflow for $ISSUE_COUNT bug issue(s)."
+  echo "ℹ️  Dry run complete. Would have triggered workflow for $ISSUE_COUNT issue(s)."
 else
   echo "Running workflow 'assign-urgency-to-issue.yml' for issues:"
   for ISSUE_NUMBER in $ISSUE_NUMBERS; do
@@ -148,5 +148,5 @@ else
       -f issue_number="$ISSUE_NUMBER" \
       -f project_id="$PROJECT_ID"
   done
-  echo "✅ Done! Triggered workflow for $ISSUE_COUNT bug issue(s)."
+  echo "✅ Done! Triggered workflow for $ISSUE_COUNT issue(s)."
 fi

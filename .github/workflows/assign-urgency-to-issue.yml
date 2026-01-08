@@ -300,13 +300,10 @@ jobs:
             low_later)
               URGENCY="someday"
               ;;
-            low_soon|low_now|medium_later)
+            low_soon|low_now|medium_later|high_later)
               URGENCY="planned"
               ;;
-            medium_soon|medium_now|high_later)
-              URGENCY="next"
-              ;;
-            high_soon)
+            medium_soon|medium_now|high_soon)
               URGENCY="next"
               ;;
             high_now)
