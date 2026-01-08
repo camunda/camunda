@@ -57,6 +57,9 @@
           "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
+          "$ref": "#/definitions/AssertProcessInstanceMessageSubscriptionInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertUserTaskInstruction"
         },
         {
@@ -244,6 +247,59 @@
             "processDefinitionId"
           ]
         }
+      ],
+      "additionalProperties": false
+    },
+    "AssertProcessInstanceMessageSubscriptionInstruction": {
+      "description": "An instruction to assert the state of a process instance message subscription.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "messageSelector": {
+          "description": "The selector to identify the message.",
+          "$ref": "#/definitions/MessageSelector"
+        },
+        "state": {
+          "description": "The expected state of the message subscription.",
+          "type": "string",
+          "enum": [
+            "IS_WAITING",
+            "IS_NOT_WAITING",
+            "IS_CORRELATED"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "messageSelector",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "MessageSelector": {
+      "description": "A selector to identify a message.",
+      "type": "object",
+      "properties": {
+        "messageName": {
+          "description": "The name of the message.",
+          "type": "string"
+        },
+        "correlationKey": {
+          "description": "The correlation key of the message.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "messageName"
       ],
       "additionalProperties": false
     },
