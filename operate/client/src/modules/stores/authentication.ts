@@ -93,6 +93,7 @@ class Authentication {
         {
           skipSessionCheck: true,
         },
+        'no-cors',
       );
 
       if (!response.ok) {

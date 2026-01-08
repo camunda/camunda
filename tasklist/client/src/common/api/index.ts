@@ -45,6 +45,7 @@ const commonApi = {
       headers: {
         'Content-Type': 'application/json',
       },
+      mode: 'no-cors', // not a real CORS “disable”; response becomes opaque
     }),
   getCurrentUser: () =>
     new Request(getFullURL(endpoints.getCurrentUser.getUrl()), {
