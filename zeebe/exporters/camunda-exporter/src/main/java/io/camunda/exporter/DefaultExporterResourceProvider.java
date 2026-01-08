@@ -119,6 +119,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
@@ -150,7 +151,6 @@ import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisio
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -165,6 +165,9 @@ import java.util.function.BiConsumer;
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
   public static final String NAMESPACE = "zeebe.camunda.exporter.cache";
 
+  /** The partition on which all process deployments and identity entities are published */
+  public static final int PROCESS_DEFINITION_PARTITION = 1;
+
   private IndexDescriptors indexDescriptors;
   private Set<ExportHandler<?, ?>> exportHandlers;
   private Map<String, ErrorHandler> indicesWithCustomErrorHandlers;
@@ -177,13 +180,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   public void init(
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
-      final MeterRegistry meterRegistry,
+      final Context context,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {
     final var globalPrefix = configuration.getConnect().getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
+    final var meterRegistry = context.getMeterRegistry();
+    final var partitionId = context.getPartitionId();
 
     batchOperationCache =
         new ExporterEntityCacheImpl<>(
@@ -381,7 +386,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
 
-    addAuditLogHandlers(configuration.getAuditLog());
+    addAuditLogHandlers(configuration.getAuditLog(), partitionId);
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
@@ -481,33 +486,39 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     return formCache;
   }
 
-  private void addAuditLogHandlers(final AuditLogConfiguration auditLog) {
+  private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {
     if (auditLog.isEnabled()) {
       final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
 
-      AuditLogHandler.builder(indexName, auditLog)
-          .addHandler(new AuthorizationAuditLogTransformer())
-          .addHandler(new BatchOperationCreationAuditLogTransformer())
+      final var auditLogBuilder = AuditLogHandler.builder(indexName, auditLog);
+
+      if (partitionId == PROCESS_DEFINITION_PARTITION) {
+        auditLogBuilder
+            .addHandler(new AuthorizationAuditLogTransformer())
+            .addHandler(new BatchOperationCreationAuditLogTransformer())
+            .addHandler(new DecisionRequirementsRecordAuditLogTransformer())
+            .addHandler(new DecisionAuditLogTransformer())
+            .addHandler(new FormAuditLogTransformer())
+            .addHandler(new GroupAuditLogTransformer())
+            .addHandler(new GroupEntityAuditLogTransformer())
+            .addHandler(new MappingRuleAuditLogTransformer())
+            .addHandler(new ProcessAuditLogTransformer())
+            .addHandler(new ResourceAuditLogTransformer())
+            .addHandler(new RoleAuditLogTransformer())
+            .addHandler(new RoleEntityAuditLogTransformer())
+            .addHandler(new TenantAuditLogTransformer())
+            .addHandler(new TenantEntityAuditLogTransformer())
+            .addHandler(new UserAuditLogTransformer());
+      }
+
+      auditLogBuilder
           .addHandler(new BatchOperationLifecycleManagementAuditLogTransformer())
-          .addHandler(new DecisionAuditLogTransformer())
           .addHandler(new DecisionEvaluationAuditLogTransformer())
-          .addHandler(new DecisionRequirementsRecordAuditLogTransformer())
-          .addHandler(new FormAuditLogTransformer())
-          .addHandler(new GroupAuditLogTransformer())
-          .addHandler(new GroupEntityAuditLogTransformer())
           .addHandler(new IncidentResolutionAuditLogTransformer())
-          .addHandler(new MappingRuleAuditLogTransformer())
-          .addHandler(new ProcessAuditLogTransformer())
           .addHandler(new ProcessInstanceCancelAuditLogTransformer())
           .addHandler(new ProcessInstanceCreationAuditLogTransformer())
           .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
           .addHandler(new ProcessInstanceModificationAuditLogTransformer())
-          .addHandler(new ResourceAuditLogTransformer())
-          .addHandler(new RoleAuditLogTransformer())
-          .addHandler(new RoleEntityAuditLogTransformer())
-          .addHandler(new TenantAuditLogTransformer())
-          .addHandler(new TenantEntityAuditLogTransformer())
-          .addHandler(new UserAuditLogTransformer())
           .addHandler(new UserTaskAuditLogTransformer())
           .addHandler(new VariableAddUpdateAuditLogTransformer())
           .build()
