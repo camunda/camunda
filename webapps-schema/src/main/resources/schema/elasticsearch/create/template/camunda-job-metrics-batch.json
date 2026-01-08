@@ -1,0 +1,51 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "startTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "endTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "incompleteBatch": {
+        "type": "boolean"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "failedCount": {
+        "type": "integer"
+      },
+      "lastFailedAt": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "completedCount": {
+        "type": "integer"
+      },
+      "lastCompletedAt": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "createdCount": {
+        "type": "integer"
+      },
+      "lastCreatedAt": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "jobType": {
+        "type": "keyword"
+      },
+      "worker": {
+        "type": "keyword"
+      }
+    }
+  }
+}

@@ -834,13 +834,13 @@ final class ElasticsearchArchiverRepositoryIT {
         .untilAsserted(
             () ->
                 verify(
-                        indicesClientSpy, times(19) // number of index templates
+                        indicesClientSpy, times(20) // number of index templates
                         )
                     .putSettings(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(19)
+        .hasSize(20)
         .allSatisfy(
             request -> {
               assertThat(request.index()).hasSize(1);

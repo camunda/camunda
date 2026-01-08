@@ -84,7 +84,7 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
-  @RegisterExtension private static SearchDBExtension searchDB = create();
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = create();
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -810,13 +810,13 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () ->
                 verify(
-                        genericClientSpy, times(19) // number of index templates
+                        genericClientSpy, times(20) // number of index templates
                         )
                     .executeAsync(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(19)
+        .hasSize(20)
         .allSatisfy(
             request -> {
               final var indexPattern =
@@ -874,7 +874,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setIndexPrefix(indexPrefix);
-    connectConfig.setUrl(searchDB.esUrl());
+    connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
     schemaManagerConfig.getRetry().setMaxRetries(1);
@@ -1094,7 +1094,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(searchDB.osUrl())).build();
+    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.osUrl())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
