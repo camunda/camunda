@@ -55,7 +55,7 @@
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.0</version.docker-java-api>
     <version.elasticsearch>8.16.6</version.elasticsearch>
-    <version.error-prone>2.45.0</version.error-prone>
+    <version.error-prone>2.46.0</version.error-prone>
     <version.grpc>1.78.0</version.grpc>
     <version.gson>2.13.2</version.gson>
     <version.guava>33.4.8-jre</version.guava>
