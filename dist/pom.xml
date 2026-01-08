@@ -131,6 +131,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-mcp</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
     </dependency>
 
