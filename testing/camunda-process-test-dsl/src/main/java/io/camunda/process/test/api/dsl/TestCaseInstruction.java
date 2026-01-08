@@ -25,6 +25,7 @@ import io.camunda.process.test.api.dsl.instructions.AssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.MockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
 
@@ -56,6 +57,9 @@ import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
   @JsonSubTypes.Type(
       value = CreateProcessInstanceInstruction.class,
       name = TestCaseInstructionType.CREATE_PROCESS_INSTANCE),
+  @JsonSubTypes.Type(
+      value = MockDmnDecisionInstruction.class,
+      name = TestCaseInstructionType.MOCK_DMN_DECISION),
   @JsonSubTypes.Type(
       value = MockJobWorkerCompleteJobInstruction.class,
       name = TestCaseInstructionType.MOCK_JOB_WORKER_COMPLETE_JOB),

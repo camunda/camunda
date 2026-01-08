@@ -69,6 +69,9 @@
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
         },
         {
+          "$ref": "#/definitions/MockDmnDecisionInstruction"
+        },
+        {
           "$ref": "#/definitions/MockJobWorkerCompleteJobInstruction"
         },
         {
@@ -484,6 +487,30 @@
       "required": [
         "type",
         "name"
+      ],
+      "additionalProperties": false
+    },
+    "MockDmnDecisionInstruction": {
+      "description": "An instruction to mock a DMN decision.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "MOCK_DMN_DECISION"
+        },
+        "decisionDefinitionId": {
+          "description": "The decision definition ID to mock.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to set as the decision output.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "decisionDefinitionId"
       ],
       "additionalProperties": false
     },
