@@ -88,6 +88,10 @@ public final class RdbmsExporter {
 
   public void open(final Controller controller) {
     this.controller = controller;
+    LOG.info(
+        "[RDBMS Exporter P{}] Opening exporter with broker position {}",
+        partitionId,
+        controller.getLastExportedRecordPosition());
 
     if (!rdbmsSchemaManager.isInitialized()) {
       LOG.warn("[RDBMS Exporter P{}] Schema is not yet ready for use", partitionId);
@@ -180,6 +184,15 @@ public final class RdbmsExporter {
         record.getPosition(),
         record.getValueType(),
         record.getIntent());
+
+    if (record.getPosition() <= lastPosition) {
+      LOG.info(
+          "[RDBMS Exporter P{}] Skipping already exported record {} with position {}",
+          partitionId,
+          record.getValue(),
+          record.getPosition());
+      return;
+    }
 
     boolean exported = false;
     if (registeredHandlers.containsKey(record.getValueType())) {

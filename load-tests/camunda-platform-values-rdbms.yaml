@@ -15,6 +15,7 @@ orchestration:
       enabled: false
     rdbms:
       enabled: true
+  data:
     secondaryStorage:
       type: rdbms
       rdbms:
@@ -24,7 +25,7 @@ orchestration:
           inlineSecret: camunda
         queueSize: 2001
         history:
-          defaultHistoryTTL: PT8H
+          defaultHistoryTTL: PT4H
           minHistoryCleanupInterval: PT2S
           maxHistoryCleanupInterval: PT1M
           historyCleanupBatchSize: 50000
@@ -58,7 +59,7 @@ orchestration:
       # RocksDB memory limit setting, limits the overall RocksDB memory usage
       # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
       zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
-      camunda.data.audit-log.enabled: "false"
+      # camunda.data.audit-log.enabled: "false"
 
 ########################################################################################
 ################################################### Disable ElasticSearch for RDBMS

@@ -20,7 +20,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
-import org.apache.commons.lang3.RandomStringUtils;
+import java.util.UUID;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
   private final AuditLogWriter auditLogWriter;
@@ -63,9 +63,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   }
 
   private AuditLogDbModel toAuditLogModel(final AuditLogEntry log, final Record<R> record) {
-    final var key =
-        RandomStringUtils.insecure()
-            .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
+    final var key = UUID.randomUUID().toString();
 
     final var auditLog =
         new AuditLogDbModel.Builder()

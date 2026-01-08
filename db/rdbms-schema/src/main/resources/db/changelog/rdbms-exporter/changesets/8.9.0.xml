@@ -992,7 +992,8 @@
 
   <changeSet id="create_audit_log_table" author="camunda">
     <createTable tableName="${prefix}AUDIT_LOG">
-      <column name="AUDIT_LOG_KEY" type="VARCHAR(${userCharColumnSize})">
+      <!-- UUID length -->
+      <column name="AUDIT_LOG_KEY" type="VARCHAR(36)">
         <constraints primaryKey="true" nullable="false"/>
       </column>
       <column name="ENTITY_KEY" type="VARCHAR(${userCharColumnSize})"/>
