@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import static io.camunda.gateway.model.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
-import static io.camunda.gateway.model.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 
 import io.camunda.gateway.protocol.model.CursorBackwardPagination;
 import io.camunda.gateway.protocol.model.CursorForwardPagination;

@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
-import io.camunda.gateway.model.mapper.RequestMapper;
-import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;

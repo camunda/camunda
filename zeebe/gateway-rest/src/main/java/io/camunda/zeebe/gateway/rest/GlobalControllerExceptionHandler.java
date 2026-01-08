@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;

@@ -9,12 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.model.mapper.RequestMapper;
-import io.camunda.gateway.model.mapper.RequestMapper.AssignUserTaskRequest;
-import io.camunda.gateway.model.mapper.RequestMapper.CompleteUserTaskRequest;
-import io.camunda.gateway.model.mapper.RequestMapper.UpdateUserTaskRequest;
-import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
-import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.RequestMapper.AssignUserTaskRequest;
+import io.camunda.gateway.mapping.http.RequestMapper.CompleteUserTaskRequest;
+import io.camunda.gateway.mapping.http.RequestMapper.UpdateUserTaskRequest;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.FormResult;

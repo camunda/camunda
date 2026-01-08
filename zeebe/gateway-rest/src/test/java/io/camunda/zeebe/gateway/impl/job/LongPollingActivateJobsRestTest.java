@@ -20,9 +20,9 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
-import io.camunda.gateway.model.mapper.RequestMapper;
-import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;

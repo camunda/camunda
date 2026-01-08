@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.model.mapper.RequestMapper;
-import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.DocumentLinkRequest;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -118,8 +118,7 @@ public class DocumentController {
 
   private static ResponseEntity<StreamingResponseBody> toDocumentContentResponse(
       final DocumentContentResponse response) {
-    final MediaType mediaType =
-        io.camunda.gateway.model.mapper.ResponseMapper.resolveMediaType(response);
+    final MediaType mediaType = ResponseMapper.resolveMediaType(response);
     return ResponseEntity.ok()
         .contentType(mediaType)
         .body(

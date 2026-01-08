@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
-import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;

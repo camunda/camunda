@@ -40,7 +40,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-gateway-models</artifactId>
+      <artifactId>camunda-gateway-mapping-http</artifactId>
     </dependency>
 
     <dependency>

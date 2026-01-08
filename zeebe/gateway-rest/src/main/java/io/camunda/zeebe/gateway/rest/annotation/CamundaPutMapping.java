@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.annotation;
 
-import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
