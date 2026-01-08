@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.dsl;
 
+import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
+import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
@@ -39,4 +41,12 @@ public interface AssertionFacade {
    * @return the assertion object
    */
   UserTaskAssert assertThatUserTask(final UserTaskSelector userTaskSelector);
+
+  /**
+   * Returns the assertion object for the given decision selector.
+   *
+   * @param decisionSelector the selector to identify the decision
+   * @return the assertion object
+   */
+  DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector);
 }
