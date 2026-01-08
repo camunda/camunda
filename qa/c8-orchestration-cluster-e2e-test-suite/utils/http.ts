@@ -130,7 +130,7 @@ export async function assertConflictRequest(
   await assertStatusCode(response, 409);
   const json = await response.json();
   assertRequiredFields(json, ['title']);
-  expect(json['title']).toContain(detail || 'ALREADY_EXISTS');
+  expect(json['detail']).toContain(detail || 'ALREADY_EXISTS');
 }
 
 export async function assertInvalidState(
