@@ -56,7 +56,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
-import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.StatusMetric;
+import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.StatusMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -4221,7 +4221,7 @@ final class JsonSerializableToJsonTest {
                                 .setWorkerNameIndex(2)
                                 .setStatusMetrics(
                                     List.of(
-                                        new StatusMetric().setCount(1).setLastUpdatedAt(1000))))),
+                                        new StatusMetrics().setCount(1).setLastUpdatedAt(1000))))),
         """
       {
         "jobMetrics": [

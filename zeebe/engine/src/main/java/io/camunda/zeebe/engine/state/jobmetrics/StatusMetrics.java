@@ -11,14 +11,14 @@ package io.camunda.zeebe.engine.state.jobmetrics;
 public final class StatusMetrics {
 
   /** Size in bytes: int (4 bytes) + long (8 bytes) = 12 bytes */
-  public static final int BYTES = Integer.BYTES + Long.BYTES;
+  public static final int TOTAL_SIZE_BYTES = Integer.BYTES + Long.BYTES;
 
   private int count;
   private long lastUpdatedAt;
 
   public StatusMetrics() {
     count = 0;
-    lastUpdatedAt = 0L;
+    lastUpdatedAt = -1L;
   }
 
   public StatusMetrics(final int count, final long lastUpdatedAt) {
@@ -49,7 +49,7 @@ public final class StatusMetrics {
 
   public void reset() {
     count = 0;
-    lastUpdatedAt = 0L;
+    lastUpdatedAt = -1L;
   }
 
   @Override

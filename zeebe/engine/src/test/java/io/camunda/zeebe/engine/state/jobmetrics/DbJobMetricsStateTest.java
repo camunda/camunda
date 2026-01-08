@@ -28,9 +28,9 @@ class DbJobMetricsStateTest {
   private static final int UUID_BYTE_SIZE = 36;
   private static final int MAX_METRICS_NUMBERS_BEFORE_TRUNCATION =
       MAX_SIZE_BEFORE_TRUNCATION
-          / ((MetricsKey.BYTES + MetricsValue.BYTES)
+          / ((MetricsKey.TOTAL_SIZE_BYTES + MetricsValue.TOTAL_SIZE_BYTES)
               + (UUID_BYTE_SIZE
-                  * 3)); // 19418 This is theoretical maximum before truncation when using unique
+                  * 3)); // This is theoretical maximum before truncation when using unique
   // UUID strings;
 
   public final ProcessingStateRule stateRule = new ProcessingStateRule();
@@ -46,7 +46,7 @@ class DbJobMetricsStateTest {
   @Test
   void shouldIncrementMetricForNewKey() {
     // when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
 
     // then
     final List<int[]> keys = new ArrayList<>();
@@ -59,34 +59,35 @@ class DbJobMetricsStateTest {
 
     assertThat(keys).hasSize(1);
     assertThat(values).hasSize(1);
-    assertThat(values.getFirst()[JobState.CREATED.getIndex()].getCount()).isEqualTo(1);
-    assertThat(values.getFirst()[JobState.CREATED.getIndex()].getLastUpdatedAt()).isGreaterThan(0);
+    assertThat(values.getFirst()[JobMetricsState.CREATED.getIndex()].getCount()).isEqualTo(1);
+    assertThat(values.getFirst()[JobMetricsState.CREATED.getIndex()].getLastUpdatedAt())
+        .isGreaterThan(0);
   }
 
   @Test
   void shouldIncrementMetricForExistingKey() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
 
     // when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.COMPLETED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.COMPLETED);
 
     // then
     final List<StatusMetrics[]> values = new ArrayList<>();
     state.forEach((jobTypeIdx, tenantIdx, workerIdx, metrics) -> values.add(metrics));
 
     assertThat(values).hasSize(1);
-    assertThat(values.getFirst()[JobState.CREATED.getIndex()].getCount()).isEqualTo(2);
-    assertThat(values.getFirst()[JobState.COMPLETED.getIndex()].getCount()).isEqualTo(1);
+    assertThat(values.getFirst()[JobMetricsState.CREATED.getIndex()].getCount()).isEqualTo(2);
+    assertThat(values.getFirst()[JobMetricsState.COMPLETED.getIndex()].getCount()).isEqualTo(1);
   }
 
   @Test
   void shouldTrackDifferentKeysSeparately() {
     // when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
-    state.incrementMetric("jobType2", "tenant1", "worker1", JobState.CREATED);
-    state.incrementMetric("jobType1", "tenant1", "worker2", JobState.COMPLETED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType2", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker2", JobMetricsState.COMPLETED);
 
     // then
     final List<int[]> keys = new ArrayList<>();
@@ -98,8 +99,8 @@ class DbJobMetricsStateTest {
   @Test
   void shouldEncodeStringsToIntegers() {
     // when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
-    state.incrementMetric("jobType2", "tenant2", "worker2", JobState.COMPLETED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsState.COMPLETED);
 
     // then
     final List<String> encodedStrings = state.getEncodedStrings();
@@ -112,9 +113,9 @@ class DbJobMetricsStateTest {
   @Test
   void shouldReuseEncodedStrings() {
     // when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.COMPLETED);
-    state.incrementMetric("jobType1", "tenant1", "worker2", JobState.FAILED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.COMPLETED);
+    state.incrementMetric("jobType1", "tenant1", "worker2", JobMetricsState.FAILED);
 
     // then
     final List<String> encodedStrings = state.getEncodedStrings();
@@ -125,8 +126,8 @@ class DbJobMetricsStateTest {
   @Test
   void shouldUpdateMetadata() {
     // when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
-    state.incrementMetric("jobType2", "tenant2", "worker2", JobState.COMPLETED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsState.COMPLETED);
 
     // then
     final long jobMetricsNb = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
@@ -148,13 +149,13 @@ class DbJobMetricsStateTest {
   }
 
   @Test
-  void shouldFlushAllData() {
+  void shouldCleanUpAllData() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
-    state.incrementMetric("jobType2", "tenant2", "worker2", JobState.COMPLETED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsState.COMPLETED);
 
     // when
-    state.flush();
+    state.cleanUp();
 
     // then
     final List<int[]> keys = new ArrayList<>();
@@ -173,7 +174,7 @@ class DbJobMetricsStateTest {
   @Test
   void shouldTrackAllJobStatuses() {
     // when
-    for (final JobState status : JobState.values()) {
+    for (final JobMetricsState status : JobMetricsState.values()) {
       state.incrementMetric("jobType1", "tenant1", "worker1", status);
     }
 
@@ -182,7 +183,7 @@ class DbJobMetricsStateTest {
     state.forEach((jobTypeIdx, tenantIdx, workerIdx, metrics) -> values.add(metrics));
 
     assertThat(values).hasSize(1);
-    for (final JobState status : JobState.values()) {
+    for (final JobMetricsState status : JobMetricsState.values()) {
       assertThat(values.getFirst()[status.getIndex()].getCount()).isEqualTo(1);
     }
   }
@@ -190,7 +191,7 @@ class DbJobMetricsStateTest {
   @Test
   void shouldCalculateBatchRecordTotalSize() {
     // when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
 
     // then
     final long jobMetricsNb = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
@@ -201,7 +202,8 @@ class DbJobMetricsStateTest {
 
     // Formula: job_metrics_nb * (12 + 96) + total_encoded_strings_size
     final long expectedSize =
-        jobMetricsNb * (MetricsKey.BYTES + MetricsValue.BYTES) + totalEncodedStringsSize;
+        jobMetricsNb * (MetricsKey.TOTAL_SIZE_BYTES + MetricsValue.TOTAL_SIZE_BYTES)
+            + totalEncodedStringsSize;
     assertThat(batchRecordTotalSize).isEqualTo(expectedSize);
   }
 
@@ -209,7 +211,7 @@ class DbJobMetricsStateTest {
   void shouldCalculateBatchRecordTotalSizeWithComplexChar() {
 
     // when
-    state.incrementMetric("❌", "✅", "😅", JobState.CREATED);
+    state.incrementMetric("❌", "✅", "😅", JobMetricsState.CREATED);
 
     // then
     final long jobMetricsNb = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
@@ -220,7 +222,8 @@ class DbJobMetricsStateTest {
 
     // Formula: job_metrics_nb * (12 + 96) + total_encoded_strings_size
     final long expectedSize =
-        jobMetricsNb * (MetricsKey.BYTES + MetricsValue.BYTES) + totalEncodedStringsSize;
+        jobMetricsNb * (MetricsKey.TOTAL_SIZE_BYTES + MetricsValue.TOTAL_SIZE_BYTES)
+            + totalEncodedStringsSize;
     assertThat(batchRecordTotalSize).isEqualTo(expectedSize);
   }
 
@@ -233,7 +236,7 @@ class DbJobMetricsStateTest {
   @Test
   void shouldNotBeTruncatedInitially() {
     // when/then
-    assertThat(state.isTruncated()).isFalse();
+    assertThat(state.isIncompleteBatch()).isFalse();
   }
 
   @Test
@@ -245,25 +248,29 @@ class DbJobMetricsStateTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
-          JobState.CREATED);
+          JobMetricsState.CREATED);
     }
 
-    assertThat(state.isTruncated()).isFalse();
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
-    assertThat(state.isTruncated()).isTrue();
+    assertThat(state.isIncompleteBatch()).isFalse();
+    state.incrementMetric(
+        UUID.randomUUID().toString(),
+        UUID.randomUUID().toString(),
+        UUID.randomUUID().toString(),
+        JobMetricsState.CREATED);
+    assertThat(state.isIncompleteBatch()).isTrue();
   }
 
   @Test
   void shouldSkipIncrementWhenAlreadyTruncated() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
 
     // Manually set truncated flag via flush and re-insert mechanism
     // This simulates the truncated state
     final long initialCount = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
 
     // when - the state is not truncated, so this should work
-    state.incrementMetric("jobType2", "tenant2", "worker2", JobState.COMPLETED);
+    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsState.COMPLETED);
 
     // then
     final long newCount = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
@@ -271,29 +278,30 @@ class DbJobMetricsStateTest {
   }
 
   @Test
-  void shouldResetTruncatedFlagOnFlush() {
+  void shouldResetTruncatedFlagOnCleanUp() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
 
     // when
-    state.flush();
+    state.cleanUp();
 
     // then
-    assertThat(state.isTruncated()).isFalse();
+    assertThat(state.isIncompleteBatch()).isFalse();
     assertThat(state.getMetadata(DbJobMetricsState.META_TOTAL_SIZE_EXCEEDED)).isZero();
   }
 
   @Test
-  void shouldCalculateSizeImpactCorrectlyForNewStrings() {
+  void shouldCalculateSizeImpactInBytesCorrectlyForNewStrings() {
     // when - first insert with all new strings
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
 
     // then - size should include: 3 string sizes + key + value
     final long expectedStringSize =
         "jobType1".getBytes(StandardCharsets.UTF_8).length
             + "tenant1".getBytes(StandardCharsets.UTF_8).length
             + "worker1".getBytes(StandardCharsets.UTF_8).length;
-    final long expectedTotalSize = (MetricsKey.BYTES + MetricsValue.BYTES) + expectedStringSize;
+    final long expectedTotalSize =
+        (MetricsKey.TOTAL_SIZE_BYTES + MetricsValue.TOTAL_SIZE_BYTES) + expectedStringSize;
 
     assertThat(state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE))
         .isEqualTo(expectedTotalSize);
@@ -302,12 +310,12 @@ class DbJobMetricsStateTest {
   @Test
   void shouldNotAddSizeForExistingKeyUpdate() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
     final long sizeAfterFirstInsert =
         state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE);
 
     // when - update existing key (same strings, different status)
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.COMPLETED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.COMPLETED);
 
     // then - size should remain the same (no new key or strings added)
     assertThat(state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE))

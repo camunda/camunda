@@ -20,15 +20,16 @@ import org.agrona.MutableDirectBuffer;
  */
 public final class MetricsValue implements DbValue {
 
-  /** Fixed size: 8 StatusMetrics = 96 bytes */
-  public static final int BYTES = JobState.count() * StatusMetrics.BYTES;
+  /** Fixed size: 3 StatusMetrics = 36 bytes */
+  public static final int TOTAL_SIZE_BYTES =
+      JobMetricsState.count() * StatusMetrics.TOTAL_SIZE_BYTES;
 
   private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
   private final StatusMetrics[] metrics;
 
   public MetricsValue() {
-    metrics = new StatusMetrics[JobState.count()];
+    metrics = new StatusMetrics[JobMetricsState.count()];
     for (int i = 0; i < metrics.length; i++) {
       metrics[i] = new StatusMetrics();
     }
@@ -38,11 +39,11 @@ public final class MetricsValue implements DbValue {
     return metrics;
   }
 
-  public StatusMetrics getMetricForStatus(final JobState status) {
+  public StatusMetrics getMetricForStatus(final JobMetricsState status) {
     return metrics[status.getIndex()];
   }
 
-  public void incrementMetric(final JobState status, final long timestamp) {
+  public void incrementMetric(final JobMetricsState status, final long timestamp) {
     metrics[status.getIndex()].increment(timestamp);
   }
 
@@ -67,7 +68,7 @@ public final class MetricsValue implements DbValue {
 
   @Override
   public int getLength() {
-    return BYTES;
+    return TOTAL_SIZE_BYTES;
   }
 
   @Override
@@ -101,7 +102,7 @@ public final class MetricsValue implements DbValue {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(JobState.values()[i].name()).append("=").append(metrics[i]);
+      sb.append(JobMetricsState.values()[i].name()).append("=").append(metrics[i]);
     }
     sb.append('}');
     return sb.toString();

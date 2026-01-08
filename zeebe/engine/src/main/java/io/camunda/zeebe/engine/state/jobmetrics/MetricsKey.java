@@ -22,7 +22,7 @@ import org.agrona.MutableDirectBuffer;
 public final class MetricsKey implements DbKey, DbValue {
 
   /** Fixed size: 3 integers = 12 bytes */
-  public static final int BYTES = 3 * Integer.BYTES;
+  public static final int TOTAL_SIZE_BYTES = 3 * Integer.BYTES;
 
   private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
@@ -77,7 +77,7 @@ public final class MetricsKey implements DbKey, DbValue {
 
   @Override
   public int getLength() {
-    return BYTES;
+    return TOTAL_SIZE_BYTES;
   }
 
   @Override

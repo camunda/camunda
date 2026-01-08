@@ -41,5 +41,5 @@ public interface JobMetricsState {
    *
    * @return true if the batch record total size exceeded the maximum threshold
    */
-  boolean isTruncated();
+  boolean isIncompleteBatch();
 }

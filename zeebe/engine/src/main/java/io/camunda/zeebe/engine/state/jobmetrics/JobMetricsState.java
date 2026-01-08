@@ -8,18 +8,13 @@
 package io.camunda.zeebe.engine.state.jobmetrics;
 
 /** Represents the different statuses a job can have for metrics tracking. */
-public enum JobState {
+public enum JobMetricsState {
   CREATED(0),
   COMPLETED(1),
-  CANCELED(2),
-  ERROR_THROWN(3),
-  FAILED(4),
-  MIGRATED(5),
-  RETRIES_UPDATED(6),
-  TIMED_OUT(7);
+  FAILED(2);
   private final int index;
 
-  JobState(final int index) {
+  JobMetricsState(final int index) {
     this.index = index;
   }
 

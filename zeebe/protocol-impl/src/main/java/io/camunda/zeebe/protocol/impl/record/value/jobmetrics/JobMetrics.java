@@ -22,8 +22,8 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
   private final IntegerProperty workerNameIndexProperty =
       new IntegerProperty("workerNameIndex", -1);
 
-  private final ArrayProperty<StatusMetric> statusMetricsProperty =
-      new ArrayProperty<>("statusMetrics", StatusMetric::new);
+  private final ArrayProperty<StatusMetrics> statusMetricsProperty =
+      new ArrayProperty<>("statusMetrics", StatusMetrics::new);
 
   public JobMetrics() {
     super(4);
@@ -78,12 +78,7 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
 
   public JobMetricsValue setStatusMetrics(final List<StatusMetricValue> statusMetrics) {
     statusMetricsProperty.reset();
-    statusMetrics.forEach(
-        statusMetricValue ->
-            statusMetricsProperty
-                .add()
-                .setCount(statusMetricValue.getCount())
-                .setLastUpdatedAt(statusMetricValue.getLastUpdatedAt()));
+    statusMetrics.forEach(statusMetricValue -> statusMetricsProperty.add().wrap(statusMetricValue));
     return this;
   }
 }

@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.immutable.JobMetricsState;
-import io.camunda.zeebe.engine.state.jobmetrics.JobState;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsState;
 
 /** Mutable interface for managing job metrics state. */
-public interface MutableJobMetricsState extends JobMetricsState {
+public interface MutableJobMetricsState
+    extends io.camunda.zeebe.engine.state.immutable.JobMetricsState {
 
   /**
    * Increments the metric for the given combination by 1.
@@ -31,7 +31,7 @@ public interface MutableJobMetricsState extends JobMetricsState {
    * @param workerName the worker name string
    * @param status the job status to increment
    */
-  void incrementMetric(String jobType, String tenantId, String workerName, JobState status);
+  void incrementMetric(String jobType, String tenantId, String workerName, JobMetricsState status);
 
   /**
    * Clears all data:
@@ -39,8 +39,8 @@ public interface MutableJobMetricsState extends JobMetricsState {
    * <ul>
    *   <li>Delete ALL keys/values in METRICS column family
    *   <li>Delete ALL keys/values in STRING_ENCODING column family
-   *   <li>Reset all values in META column family to 0 (keep the keys)
+   *   <li>Delete ALL keys/values in METADATA column family
    * </ul>
    */
-  void flush();
+  void cleanUp();
 }
