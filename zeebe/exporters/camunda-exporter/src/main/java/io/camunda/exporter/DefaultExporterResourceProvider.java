@@ -72,8 +72,9 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedIte
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationInitializedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
-import io.camunda.exporter.handlers.batchoperation.HistoryDeletionOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessDefinitionHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ResolveIncidentOperationHandler;
@@ -118,7 +119,6 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
@@ -351,13 +351,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ResolveIncidentOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
-            new HistoryDeletionOperationHandler(
+            new ProcessInstanceHistoryDeletionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
-                OperationType.DELETE_PROCESS_INSTANCE,
                 batchOperationCache),
-            new HistoryDeletionOperationHandler(
+            new ProcessDefinitionHistoryDeletionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
-                OperationType.DELETE_PROCESS_DEFINITION,
                 batchOperationCache),
             new ListViewFromProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),

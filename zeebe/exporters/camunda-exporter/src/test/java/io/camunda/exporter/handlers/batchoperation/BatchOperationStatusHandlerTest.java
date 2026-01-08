@@ -492,9 +492,7 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
 
     ProcessInstanceHistoryDeletionOperationHandlerTest() {
-      super(
-          new HistoryDeletionOperationHandler(
-              indexName, OperationType.DELETE_PROCESS_INSTANCE, batchOperationCache));
+      super(new ProcessDefinitionHistoryDeletionOperationHandler(indexName, batchOperationCache));
     }
 
     @Override
@@ -510,7 +508,7 @@ class BatchOperationStatusHandlerTest {
       final var record = createSuccessRecord();
       final var processInstanceKey = handler.getProcessInstanceKey(record);
 
-      assertThat(processInstanceKey).isEqualTo(-1);
+      assertThat(processInstanceKey).isEqualTo(record.getValue().getResourceKey());
     }
 
     @Override
@@ -538,9 +536,7 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
 
     ProcessDefinitionHistoryDeletionOperationHandlerTest() {
-      super(
-          new HistoryDeletionOperationHandler(
-              indexName, OperationType.DELETE_PROCESS_DEFINITION, batchOperationCache));
+      super(new ProcessDefinitionHistoryDeletionOperationHandler(indexName, batchOperationCache));
     }
 
     @Override
