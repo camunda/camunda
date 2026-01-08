@@ -9,23 +9,19 @@
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 
 const useElementInstancesCount = (elementId?: string) => {
-  const {data: statistics} = useFlownodeInstancesStatistics();
-
-  if (!statistics?.items || !elementId) {
-    return null;
-  }
-  const elementStats = statistics.items.find(
-    (stat) => stat.elementId === elementId,
+  const {data: elementInstanceStatistics} = useFlownodeInstancesStatistics(
+    (data) => data.items.find((item) => item.elementId === elementId),
   );
-  if (!elementStats) {
+
+  if (!elementInstanceStatistics) {
     return null;
   }
 
   return (
-    elementStats.active +
-    elementStats.completed +
-    elementStats.canceled +
-    elementStats.incidents
+    elementInstanceStatistics.active +
+    elementInstanceStatistics.completed +
+    elementInstanceStatistics.canceled +
+    elementInstanceStatistics.incidents
   );
 };
 
