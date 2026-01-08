@@ -73,12 +73,7 @@
 
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-codec-base</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-compression</artifactId>
+      <artifactId>netty-codec</artifactId>
     </dependency>
 
     <dependency>
