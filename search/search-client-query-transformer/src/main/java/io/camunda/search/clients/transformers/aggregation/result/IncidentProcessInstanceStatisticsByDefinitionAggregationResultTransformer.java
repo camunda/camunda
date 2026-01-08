@@ -20,8 +20,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTrans
     implements AggregationResultTransformer<
         IncidentProcessInstanceStatisticsByDefinitionAggregationResult> {
 
-  private static final String BUCKET_KEY_DELIMITER = "::";
-
   @Override
   public IncidentProcessInstanceStatisticsByDefinitionAggregationResult apply(
       final Map<String, AggregationResult> value) {
@@ -38,7 +36,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTrans
       final Map<String, AggregationResult> subAggs =
           bucketAgg != null ? bucketAgg.aggregations() : Map.of();
 
-      final BucketKey parsedKey = BucketKey.parse(bucketKey);
+      final long processDefinitionKey = parseProcessDefinitionKey(bucketKey);
 
       final long activeInstancesWithErrorCount =
           subAggs
@@ -47,12 +45,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTrans
 
       items.add(
           new IncidentProcessInstanceStatisticsByDefinitionEntity(
-              null,
-              parsedKey.processDefinitionKey(),
-              null,
-              null,
-              parsedKey.tenantId(),
-              activeInstancesWithErrorCount));
+              null, processDefinitionKey, null, null, null, activeInstancesWithErrorCount));
     }
 
     final AggregationResult cardinalityAgg = value.get(AGGREGATION_NAME_TOTAL_ESTIMATE);
@@ -64,28 +57,19 @@ public class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTrans
     return new IncidentProcessInstanceStatisticsByDefinitionAggregationResult(items, totalItems);
   }
 
-  private record BucketKey(long processDefinitionKey, String tenantId) {
-    private static BucketKey parse(final String bucketKey) {
-      if (bucketKey == null || bucketKey.isBlank()) {
-        throw new IllegalStateException(
-            "Missing required bucket key for by-definition aggregation");
-      }
+  private static long parseProcessDefinitionKey(final String bucketKey) {
+    if (bucketKey == null || bucketKey.isBlank()) {
+      throw new IllegalStateException("Missing required bucket key for by-definition aggregation");
+    }
 
-      final String[] parts = bucketKey.split(BUCKET_KEY_DELIMITER, -1);
-      if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
-        throw new IllegalStateException(
-            "Invalid bucket key for by-definition aggregation: '" + bucketKey + "'");
-      }
-
-      try {
-        return new BucketKey(Long.parseLong(parts[0]), parts[1]);
-      } catch (final NumberFormatException e) {
-        throw new IllegalStateException(
-            "Invalid processDefinitionKey in bucket key for by-definition aggregation: '"
-                + bucketKey
-                + "'",
-            e);
-      }
+    try {
+      return Long.parseLong(bucketKey);
+    } catch (final NumberFormatException e) {
+      throw new IllegalStateException(
+          "Invalid processDefinitionKey in bucket key for by-definition aggregation: '"
+              + bucketKey
+              + "'",
+          e);
     }
   }
 }

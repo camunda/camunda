@@ -138,7 +138,8 @@ public class SearchAggregationResultTransformer<T>
             final String key =
                 switch (bucket) {
                   case final StringTermsBucket b -> b.key();
-                  case final LongTermsBucket b -> b.keyAsString();
+                  case final LongTermsBucket b ->
+                      b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key());
                   case final CompositeBucket b ->
                       b.key().values().stream()
                           .map(SearchAggregationResultTransformer::fieldValueToString)
