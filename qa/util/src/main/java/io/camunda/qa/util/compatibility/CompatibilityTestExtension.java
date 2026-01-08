@@ -29,6 +29,8 @@ import io.camunda.qa.util.multidb.CamundaClientTestFactory;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.EntityManager;
+import io.camunda.qa.util.multidb.HistoryMultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.OidcCamundaClientTestFactory;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
@@ -67,6 +69,8 @@ public class CompatibilityTestExtension
   private static final Logger LOGGER = LoggerFactory.getLogger(CompatibilityTestExtension.class);
   private static final String EXTENSION_COORDINATION_KEY = "extension-running";
   private static final String EXTENSION_NAME = "CompatibilityTestExtension";
+  private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
+  private static final String PREFERRED_EXTENSION_MULTIDB = "multi-db";
   private static final int GRPC_PORT = 26500;
   private static final int REST_PORT = 8080;
   private static final int MANAGEMENT_PORT = 9600;
@@ -96,6 +100,16 @@ public class CompatibilityTestExtension
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
     final Class<?> testClass = context.getRequiredTestClass();
+
+    final String preferredExtension = System.getProperty(PREFERRED_EXTENSION_PROPERTY);
+    if (PREFERRED_EXTENSION_MULTIDB.equals(preferredExtension)
+        && (testClass.isAnnotationPresent(MultiDbTest.class)
+            || testClass.isAnnotationPresent(HistoryMultiDbTest.class))) {
+      LOGGER.info(
+          "Skipping CompatibilityTestExtension - preferred extension is {}", preferredExtension);
+      return;
+    }
+
     final var store = coordinationStore(context);
 
     // Check if another extension has already initialized

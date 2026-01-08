@@ -659,7 +659,7 @@
               <groups>multi-db-test</groups>
               <excludedGroups>rdbms</excludedGroups>
               <systemPropertyVariables>
-                <groups>multi-db-test</groups>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
               </systemPropertyVariables>
             </configuration>
           </plugin>
@@ -688,6 +688,9 @@
               <failIfNoTests>false</failIfNoTests>
               <groups>compatibility-test</groups>
               <excludedGroups>rdbms</excludedGroups>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>compatibility</camunda.test.preferred.extension>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>
