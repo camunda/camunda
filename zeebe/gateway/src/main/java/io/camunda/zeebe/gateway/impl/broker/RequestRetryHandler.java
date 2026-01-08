@@ -145,7 +145,7 @@ public final class RequestRetryHandler {
       return true;
     } else if (error instanceof BrokerErrorException) {
       final ErrorCode code = ((BrokerErrorException) error).getError().getCode();
-      return code == ErrorCode.PARTITION_LEADER_MISMATCH || code == ErrorCode.RESOURCE_EXHAUSTED;
+      return code == ErrorCode.PARTITION_LEADER_MISMATCH;
     }
     return false;
   }
