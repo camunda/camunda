@@ -63,6 +63,7 @@ class IncidentToolsTest extends ToolsTest {
           23L,
           "complexProcess",
           42L,
+          42L,
           ErrorType.JOB_NO_RETRIES,
           "No retries left.",
           "elementId",
