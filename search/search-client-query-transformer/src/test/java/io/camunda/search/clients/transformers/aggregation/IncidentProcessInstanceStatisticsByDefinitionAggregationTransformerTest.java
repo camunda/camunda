@@ -11,9 +11,9 @@ import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByD
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_BY_DEFINITION;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_SORT_AND_PAGE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_NAME_TOTAL_ESTIMATE;
-import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_SCRIPT_LANG;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation.PROCESS_DEFINITION_AND_TENANT_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation;
@@ -59,8 +59,9 @@ final class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformerT
             SearchTermsAggregator.class,
             byDefinition -> {
               assertThat(byDefinition.getName()).isEqualTo(AGGREGATION_NAME_BY_DEFINITION);
-              assertThat(byDefinition.lang()).isEqualTo(AGGREGATION_SCRIPT_LANG);
-              assertThat(byDefinition.script()).isEqualTo(PROCESS_DEFINITION_AND_TENANT_KEY);
+              assertThat(byDefinition.field()).isEqualTo(PROCESS_DEFINITION_KEY);
+              assertThat(byDefinition.script()).isNull();
+              assertThat(byDefinition.lang()).isNull();
               assertThat(byDefinition.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
 
               assertThat(byDefinition.getAggregations())
@@ -77,6 +78,18 @@ final class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformerT
                                   b ->
                                       assertThat(b.getName())
                                           .isEqualTo(AGGREGATION_NAME_SORT_AND_PAGE)));
+
+              assertThat(byDefinition.getAggregations())
+                  .anySatisfy(
+                      agg ->
+                          assertThat(agg)
+                              .isInstanceOfSatisfying(
+                                  SearchCardinalityAggregator.class,
+                                  c -> {
+                                    assertThat(c.getName())
+                                        .isEqualTo(AGGREGATION_NAME_AFFECTED_INSTANCES);
+                                    assertThat(c.field()).isEqualTo(PROCESS_INSTANCE_KEY);
+                                  }));
             });
 
     assertThat(aggregators.get(1))
@@ -84,8 +97,9 @@ final class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformerT
             SearchCardinalityAggregator.class,
             totalEstimate -> {
               assertThat(totalEstimate.getName()).isEqualTo(AGGREGATION_NAME_TOTAL_ESTIMATE);
-              assertThat(totalEstimate.lang()).isEqualTo(AGGREGATION_SCRIPT_LANG);
-              assertThat(totalEstimate.script()).isEqualTo(PROCESS_DEFINITION_AND_TENANT_KEY);
+              assertThat(totalEstimate.field()).isEqualTo(PROCESS_DEFINITION_KEY);
+              assertThat(totalEstimate.script()).isNull();
+              assertThat(totalEstimate.lang()).isNull();
             });
   }
 }

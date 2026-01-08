@@ -115,8 +115,10 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
                       byDefinitionAgg -> {
                         assertThat(byDefinitionAgg.name())
                             .isEqualTo(AGGREGATION_NAME_BY_DEFINITION);
-                        assertThat(byDefinitionAgg.script()).isNotNull();
-                        assertThat(byDefinitionAgg.lang()).isNotNull();
+                        assertThat(byDefinitionAgg.field())
+                            .isEqualTo(IncidentTemplate.PROCESS_DEFINITION_KEY);
+                        assertThat(byDefinitionAgg.script()).isNull();
+                        assertThat(byDefinitionAgg.lang()).isNull();
 
                         final var subAggs = byDefinitionAgg.aggregations();
                         assertThat(subAggs).hasSize(2);
@@ -153,8 +155,10 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
                       totalEstimateAgg -> {
                         assertThat(totalEstimateAgg.name())
                             .isEqualTo(AGGREGATION_NAME_TOTAL_ESTIMATE);
-                        assertThat(totalEstimateAgg.script()).isNotNull();
-                        assertThat(totalEstimateAgg.lang()).isNotNull();
+                        assertThat(totalEstimateAgg.field())
+                            .isEqualTo(IncidentTemplate.PROCESS_DEFINITION_KEY);
+                        assertThat(totalEstimateAgg.script()).isNull();
+                        assertThat(totalEstimateAgg.lang()).isNull();
                       });
             });
   }
@@ -194,6 +198,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
     assertThat(aggregations).hasSize(2);
 
     final var byDefinitionAgg = (SearchTermsAggregator) aggregations.getFirst();
+    assertThat(byDefinitionAgg.field()).isEqualTo(IncidentTemplate.PROCESS_DEFINITION_KEY);
     final List<SearchAggregator> subAggs = byDefinitionAgg.aggregations();
 
     final var bucketSortAgg = (SearchBucketSortAggregator) subAggs.getLast();

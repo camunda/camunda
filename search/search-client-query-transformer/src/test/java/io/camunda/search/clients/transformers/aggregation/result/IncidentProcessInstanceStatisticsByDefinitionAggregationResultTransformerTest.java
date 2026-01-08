@@ -26,9 +26,9 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
     // given
     final var buckets =
         Map.of(
-            "101::tenant-a",
+            "101",
             agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(3L))),
-            "202::tenant-b",
+            "202",
             agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(7L))));
 
     final var input =
@@ -46,7 +46,7 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
         .anySatisfy(
             item -> {
               assertThat(item.processDefinitionKey()).isEqualTo(101L);
-              assertThat(item.tenantId()).isEqualTo("tenant-a");
+              assertThat(item.tenantId()).isNull();
               assertThat(item.activeInstancesWithErrorCount()).isEqualTo(3L);
               assertThat(item.processDefinitionId()).isNull();
               assertThat(item.processDefinitionName()).isNull();
@@ -55,7 +55,7 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
         .anySatisfy(
             item -> {
               assertThat(item.processDefinitionKey()).isEqualTo(202L);
-              assertThat(item.tenantId()).isEqualTo("tenant-b");
+              assertThat(item.tenantId()).isNull();
               assertThat(item.activeInstancesWithErrorCount()).isEqualTo(7L);
               assertThat(item.processDefinitionId()).isNull();
               assertThat(item.processDefinitionName()).isNull();
@@ -67,8 +67,8 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
   void shouldFallbackToBucketCountWhenTotalEstimateIsMissing() {
     // given
     final Map<String, AggregationResult> buckets = new LinkedHashMap<>();
-    buckets.put("101::tenant-a", agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(3L))));
-    buckets.put("202::tenant-b", agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(7L))));
+    buckets.put("101", agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(3L))));
+    buckets.put("202", agg(0L, Map.of(AGGREGATION_NAME_AFFECTED_INSTANCES, agg(7L))));
 
     final var input = Map.of(AGGREGATION_NAME_BY_DEFINITION, agg(0L, buckets));
 
@@ -83,7 +83,7 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
   @Test
   void shouldDefaultAffectedInstancesToZeroWhenSubAggregationIsMissing() {
     // given
-    final var buckets = Map.of("101::tenant-a", agg(0L, Map.of()));
+    final var buckets = Map.of("101", agg(0L, Map.of()));
 
     final var input = Map.of(AGGREGATION_NAME_BY_DEFINITION, agg(0L, buckets));
 
@@ -97,7 +97,7 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
         .satisfies(
             item -> {
               assertThat(item.processDefinitionKey()).isEqualTo(101L);
-              assertThat(item.tenantId()).isEqualTo("tenant-a");
+              assertThat(item.tenantId()).isNull();
               assertThat(item.activeInstancesWithErrorCount()).isEqualTo(0L);
             });
   }
@@ -109,21 +109,8 @@ class IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformerT
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Missing required bucket key");
 
-    // invalid parts
-    assertThatThrownBy(() -> transformer.apply(inputWithBucketKey("123")))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Invalid bucket key");
-
-    assertThatThrownBy(() -> transformer.apply(inputWithBucketKey("123::")))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Invalid bucket key");
-
-    assertThatThrownBy(() -> transformer.apply(inputWithBucketKey("::tenant")))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Invalid bucket key");
-
     // invalid processDefinitionKey
-    assertThatThrownBy(() -> transformer.apply(inputWithBucketKey("abc::tenant")))
+    assertThatThrownBy(() -> transformer.apply(inputWithBucketKey("abc")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Invalid processDefinitionKey");
   }

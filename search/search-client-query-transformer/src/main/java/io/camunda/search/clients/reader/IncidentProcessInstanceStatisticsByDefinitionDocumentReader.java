@@ -119,7 +119,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
                     key,
                     processInfo.processName(),
                     processInfo.version(),
-                    item.tenantId(),
+                    processInfo.tenantId(),
                     item.activeInstancesWithErrorCount());
               }
 
@@ -128,7 +128,8 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
                     new CachedProcessInfo(
                         item.processDefinitionId(),
                         item.processDefinitionName(),
-                        item.processDefinitionVersion());
+                        item.processDefinitionVersion(),
+                        item.tenantId());
                 cache.put(key, seeded);
                 return new IncidentProcessInstanceStatisticsByDefinitionEntity(
                     seeded.processDefinitionId(),
@@ -168,7 +169,8 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
               pd ->
                   fetched.put(
                       pd.processDefinitionKey(),
-                      new CachedProcessInfo(pd.processDefinitionId(), pd.name(), pd.version())));
+                      new CachedProcessInfo(
+                          pd.processDefinitionId(), pd.name(), pd.version(), pd.tenantId())));
       return fetched;
     } catch (final Exception ex) {
       LOGGER.warn(
@@ -180,5 +182,5 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
   }
 
   private record CachedProcessInfo(
-      String processDefinitionId, String processName, Integer version) {}
+      String processDefinitionId, String processName, Integer version, String tenantId) {}
 }
