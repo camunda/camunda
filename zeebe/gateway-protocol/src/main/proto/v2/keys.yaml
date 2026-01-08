@@ -158,7 +158,7 @@ components:
       example: "22517998136843567"
       type: string
 
-## Filters
+    ## Filters
 
     ProcessDefinitionKeyFilterProperty:
       description: ProcessDefinitionKey property with full advanced search capabilities.
@@ -502,3 +502,40 @@ components:
           items:
             $ref: "#/components/schemas/AuditLogKey"
 
+    FormKeyFilterProperty:
+      description: FormKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/FormKey"
+        - $ref: "#/components/schemas/AdvancedFormKeyFilter"
+
+    AdvancedFormKeyFilter:
+      title: Advanced filter
+      description: Advanced FormKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/FormKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/FormKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/FormKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/FormKey"

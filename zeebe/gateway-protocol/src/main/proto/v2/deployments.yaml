@@ -260,7 +260,7 @@ components:
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
         decisionDefinitionKey:
           allOf:
-            - $ref:  'keys.yaml#/components/schemas/DecisionDefinitionKey'
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
           description: |
             The assigned decision key, which acts as a unique identifier for this decision.
         decisionRequirementsKey:
@@ -390,3 +390,81 @@ components:
         - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
       description: The system-assigned key for this resource.
       format: ResourceKey
+
+    ## Filters
+
+    DeploymentKeyFilterProperty:
+      description: DeploymentKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/DeploymentKey"
+        - $ref: '#/components/schemas/AdvancedDeploymentKeyFilter'
+
+    AdvancedDeploymentKeyFilter:
+      title: Advanced filter
+      description: Advanced DeploymentKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/DeploymentKey'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/DeploymentKey'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/DeploymentKey'
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/DeploymentKey'
+
+    ResourceKeyFilterProperty:
+      description: ResourceKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ResourceKey"
+        - $ref: "#/components/schemas/AdvancedResourceKeyFilter"
+
+    AdvancedResourceKeyFilter:
+      title: Advanced filter
+      description: Advanced ResourceKey filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ResourceKey"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ResourceKey"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/ResourceKey"
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/ResourceKey"

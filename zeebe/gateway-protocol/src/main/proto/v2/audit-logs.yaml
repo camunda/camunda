@@ -277,15 +277,15 @@ components:
         deploymentKey:
           description: The deployment key filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+            - $ref: 'deployments.yaml#/components/schemas/DeploymentKeyFilterProperty'
         formKey:
           description: The form key filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+            - $ref: 'keys.yaml#/components/schemas/FormKeyFilterProperty'
         resourceKey:
           description: The resource key filter.
           allOf:
-            - $ref: 'filters.yaml#/components/schemas/BasicStringFilterProperty'
+            - $ref: 'deployments.yaml#/components/schemas/ResourceKeyFilterProperty'
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
