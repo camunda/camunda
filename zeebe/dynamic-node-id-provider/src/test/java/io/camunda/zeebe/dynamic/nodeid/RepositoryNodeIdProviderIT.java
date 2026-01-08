@@ -16,6 +16,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberConfig;
+import io.atomix.cluster.NodeId;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
@@ -25,10 +28,13 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3Client
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -209,6 +215,43 @@ public class RepositoryNodeIdProviderIT {
     assertThat(renewedLease).isNotEqualTo(firstLease);
     assertThat(renewedLease.lease().timestamp()).isGreaterThan(firstLease.lease().timestamp());
     assertThat(renewedLease.node()).isEqualTo(firstLease.node());
+  }
+
+  @Test
+  void shouldUpdateKnownMemberVersionWhenRenewing() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    repository = Mockito.spy(repository);
+
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+    final var firstLease = nodeIdProvider.getCurrentLease();
+
+    // when
+    final var expectedMappings = Map.of(1, Version.of(2), 2, Version.of(2), 3, Version.of(1));
+    nodeIdProvider.setMembers(getMembers(expectedMappings));
+    // move the clock forward
+    clock.setInstant(clock.instant().plusSeconds(2));
+
+    // then
+    Awaitility.await("until lease is renewed")
+        .untilAsserted(() -> assertThat(nodeIdProvider.getCurrentLease()).isNotEqualTo(firstLease));
+    final StoredLease.Initialized renewedLease =
+        (StoredLease.Initialized) repository.getLease(firstLease.node().id());
+    assertThat(renewedLease.lease().knownVersionMappings().mappingsByNodeId())
+        .containsExactlyInAnyOrderEntriesOf(expectedMappings);
+  }
+
+  private Set<Member> getMembers(final Map<Integer, Version> nodeIdVersions) {
+    return nodeIdVersions.entrySet().stream()
+        .map(
+            entry ->
+                new Member(
+                    new MemberConfig()
+                        .setId(NodeId.from(entry.getKey().toString()))
+                        .setNodeVersion(entry.getValue().version())))
+        .collect(Collectors.toSet());
   }
 
   @Test
