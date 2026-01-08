@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
@@ -122,7 +123,13 @@ public class NodeIdProviderConfiguration {
   @Bean
   public DataDirectoryProvider dataDirectoryProvider(
       final NodeIdProvider nodeIdProvider,
+      final NodeIdProviderReadinessAwaiter readinessAwaiter,
       final BrokerBasedConfiguration brokerBasedConfiguration) {
+
+    if (!readinessAwaiter.isReady()) {
+      throw new IllegalStateException("NodeIdProvider is not ready");
+    }
+
     final var initializer =
         switch (cluster.getNodeIdProvider().getType()) {
           case FIXED -> new ConfiguredDataDirectoryProvider();
@@ -136,4 +143,28 @@ public class NodeIdProviderConfiguration {
 
     return initializer;
   }
+
+  @Bean
+  public NodeIdProviderReadinessAwaiter nodeIdProviderReadinessAwaiter(
+      final NodeIdProvider nodeIdProvider, final AtomixCluster atomixCluster) {
+    final var membershipService = atomixCluster.getMembershipService();
+    membershipService.addListener(
+        l -> {
+          switch (l.type()) {
+            case MEMBER_ADDED, MEMBER_REMOVED ->
+                nodeIdProvider.setMembers(membershipService.getMembers());
+            default -> {
+              // noop
+            }
+          }
+        });
+
+    // initialize current members
+    nodeIdProvider.setMembers(membershipService.getMembers());
+
+    final var isReady = nodeIdProvider.awaitReadiness().join();
+    return new NodeIdProviderReadinessAwaiter(isReady);
+  }
+
+  public record NodeIdProviderReadinessAwaiter(boolean isReady) {}
 }
