@@ -51,7 +51,7 @@
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.10.1</version.commons-validator>
     <version.zstd-jni>1.5.7-6</version.zstd-jni>
-    <version.commons-text>1.14.0</version.commons-text>
+    <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.0</version.docker-java-api>
     <version.elasticsearch>8.16.6</version.elasticsearch>
