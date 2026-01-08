@@ -186,7 +186,7 @@ public class Raft {
    *   <li>POSIX_OR_FILL: use POSIX strategy or FILL if it's not possible.
    * </ul>
    */
-  private PreAllocationStrategy segmentPreallocationStrategy = PreAllocationStrategy.POSIX_OR_FILL;
+  private PreAllocationStrategy segmentPreallocationStrategy = PreAllocationStrategy.FILL;
 
   public Duration getHeartbeatInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
