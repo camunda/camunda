@@ -369,7 +369,7 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
         Arguments.of(
-            "assert process instance message subscription: IS_WAITING",
+            "assert process instance message subscription: minimal",
             singleTestCase(
                 ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
                     .processInstanceSelector(
@@ -381,34 +381,7 @@ public class PojoCompatibilityTest {
                     .state(MessageSubscriptionState.IS_WAITING)
                     .build())),
         Arguments.of(
-            "assert process instance message subscription: IS_WAITING with correlation key",
-            singleTestCase(
-                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
-                    .processInstanceSelector(
-                        ImmutableProcessInstanceSelector.builder()
-                            .processDefinitionId("my-process")
-                            .build())
-                    .messageSelector(
-                        ImmutableMessageSelector.builder()
-                            .messageName("update")
-                            .correlationKey("key-1")
-                            .build())
-                    .state(MessageSubscriptionState.IS_WAITING)
-                    .build())),
-        Arguments.of(
-            "assert process instance message subscription: IS_NOT_WAITING",
-            singleTestCase(
-                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
-                    .processInstanceSelector(
-                        ImmutableProcessInstanceSelector.builder()
-                            .processDefinitionId("my-process")
-                            .build())
-                    .messageSelector(
-                        ImmutableMessageSelector.builder().messageName("update").build())
-                    .state(MessageSubscriptionState.IS_NOT_WAITING)
-                    .build())),
-        Arguments.of(
-            "assert process instance message subscription: IS_CORRELATED",
+            "assert process instance message subscription: complete",
             singleTestCase(
                 ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
                     .processInstanceSelector(
