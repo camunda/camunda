@@ -9,13 +9,14 @@ package io.camunda.zeebe.engine.state.jobmetrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,13 +24,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ProcessingStateExtension.class)
 class DbJobMetricsStateTest {
 
-  private ZeebeDb<ZbColumnFamilies> zeebeDb;
-  private TransactionContext transactionContext;
+  private static final int MAX_SIZE_BEFORE_TRUNCATION = 4 * 1024 * 1024; // 4 MB
+  private static final int UUID_BYTE_SIZE = 36;
+  private static final int MAX_METRICS_NUMBERS_BEFORE_TRUNCATION =
+      MAX_SIZE_BEFORE_TRUNCATION
+          / ((MetricsKey.BYTES + MetricsValue.BYTES)
+              + (UUID_BYTE_SIZE
+                  * 3)); // 19418 This is theoretical maximum before truncation when using unique
+  // UUID strings;
+
+  public final ProcessingStateRule stateRule = new ProcessingStateRule();
+
+  private MutableProcessingState processingState;
   private MutableJobMetricsState state;
 
   @BeforeEach
-  void beforeEach() {
-    state = new DbJobMetricsState(zeebeDb, transactionContext);
+  public void setUp() {
+    state = processingState.getJobMetricsState();
   }
 
   @Test
@@ -48,8 +59,8 @@ class DbJobMetricsStateTest {
 
     assertThat(keys).hasSize(1);
     assertThat(values).hasSize(1);
-    assertThat(values.get(0)[JobState.CREATED.getIndex()].getCount()).isEqualTo(1);
-    assertThat(values.get(0)[JobState.CREATED.getIndex()].getLastUpdatedAt()).isGreaterThan(0);
+    assertThat(values.getFirst()[JobState.CREATED.getIndex()].getCount()).isEqualTo(1);
+    assertThat(values.getFirst()[JobState.CREATED.getIndex()].getLastUpdatedAt()).isGreaterThan(0);
   }
 
   @Test
@@ -66,8 +77,8 @@ class DbJobMetricsStateTest {
     state.forEach((jobTypeIdx, tenantIdx, workerIdx, metrics) -> values.add(metrics));
 
     assertThat(values).hasSize(1);
-    assertThat(values.get(0)[JobState.CREATED.getIndex()].getCount()).isEqualTo(2);
-    assertThat(values.get(0)[JobState.COMPLETED.getIndex()].getCount()).isEqualTo(1);
+    assertThat(values.getFirst()[JobState.CREATED.getIndex()].getCount()).isEqualTo(2);
+    assertThat(values.getFirst()[JobState.COMPLETED.getIndex()].getCount()).isEqualTo(1);
   }
 
   @Test
@@ -172,7 +183,7 @@ class DbJobMetricsStateTest {
 
     assertThat(values).hasSize(1);
     for (final JobState status : JobState.values()) {
-      assertThat(values.get(0)[status.getIndex()].getCount()).isEqualTo(1);
+      assertThat(values.getFirst()[status.getIndex()].getCount()).isEqualTo(1);
     }
   }
 
@@ -227,20 +238,19 @@ class DbJobMetricsStateTest {
 
   @Test
   void shouldMarkAsTruncatedWhenSizeLimitExceeded() {
-    // given - create a state with a very low threshold for testing
-    // We need to fill it up until it exceeds the limit
-    // Each new key adds: MetricsKey.BYTES (12) + MetricsValue.BYTES (96) = 108 bytes
-    // Plus the string sizes
 
-    // when - add metrics until we exceed the 4MB limit
-    // For this test, we'll verify the mechanism works by checking
-    // that after many insertions, at some point it gets truncated
-    // Note: In real scenario, MAX_BATCH_SIZE is 4MB, so this won't truncate
-    // unless we add ~37,000 unique combinations
+    // given - simulate size limit exceeded by directly setting metadata
+    for (int i = 0; i < MAX_METRICS_NUMBERS_BEFORE_TRUNCATION; i++) {
+      state.incrementMetric(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          JobState.CREATED);
+    }
 
-    // For unit test, let's verify the flag mechanism works
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
     assertThat(state.isTruncated()).isFalse();
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobState.CREATED);
+    assertThat(state.isTruncated()).isTrue();
   }
 
   @Test
@@ -280,7 +290,9 @@ class DbJobMetricsStateTest {
 
     // then - size should include: 3 string sizes + key + value
     final long expectedStringSize =
-        "jobType1".getBytes().length + "tenant1".getBytes().length + "worker1".getBytes().length;
+        "jobType1".getBytes(StandardCharsets.UTF_8).length
+            + "tenant1".getBytes(StandardCharsets.UTF_8).length
+            + "worker1".getBytes(StandardCharsets.UTF_8).length;
     final long expectedTotalSize = (MetricsKey.BYTES + MetricsValue.BYTES) + expectedStringSize;
 
     assertThat(state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE))

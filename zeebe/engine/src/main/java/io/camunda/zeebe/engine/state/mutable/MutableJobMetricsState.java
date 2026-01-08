@@ -27,8 +27,8 @@ public interface MutableJobMetricsState extends JobMetricsState {
    * <p>IMPORTANT: If this creates a NEW key in METRICS column family, increments __job_metrics_nb
    *
    * @param jobType the job type string
-   * @param workerName the worker name string
    * @param tenantId the tenant ID string
+   * @param workerName the worker name string
    * @param status the job status to increment
    */
   void incrementMetric(String jobType, String tenantId, String workerName, JobState status);

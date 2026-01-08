@@ -15,11 +15,13 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.nio.charset.StandardCharsets;
+import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * RocksDB-based implementation of job metrics state management.
@@ -69,10 +71,14 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   private final DbLong metaValue;
 
   // In-memory cache for string encoding (for fast lookups)
-  private final ConcurrentHashMap<String, Integer> stringEncodingCache;
+  private final HashMap<String, Integer> stringEncodingCache;
+  private final InstantSource clock;
 
   public DbJobMetricsState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final InstantSource clock) {
+    this.clock = clock;
 
     // Initialize metrics column family
     metricsKey = new MetricsKey();
@@ -99,7 +105,7 @@ public class DbJobMetricsState implements MutableJobMetricsState {
             ZbColumnFamilies.JOB_METRICS_META, transactionContext, metaKey, metaValue);
 
     // Initialize string encoding cache
-    stringEncodingCache = new ConcurrentHashMap<>();
+    stringEncodingCache = new HashMap<>();
 
     // Populate cache from existing data
     populateStringEncodingCache();
@@ -147,55 +153,18 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   public void incrementMetric(
       final String jobType, final String tenantId, final String workerName, final JobState status) {
 
-    // Check if already truncated, skip if so
     if (isTruncated()) {
       return;
     }
 
-    // Calculate size impact BEFORE making any changes
-    final long sizeImpact = calculateSizeImpact(jobType, tenantId, workerName);
-    final long currentSize = getMetadata(META_BATCH_RECORD_TOTAL_SIZE);
+    final MetricContext ctx = resolveMetricContext(jobType, tenantId, workerName);
 
-    if (currentSize + sizeImpact > MAX_BATCH_SIZE) {
-      // Would exceed threshold - mark as truncated and skip
+    if (wouldExceedSizeLimit(ctx)) {
       setMetadataValue(META_TOTAL_SIZE_EXCEEDED, 1L);
       return;
     }
 
-    // Safe to proceed with the increment
-    final int jobTypeIdx = getOrCreateStringIndex(jobType);
-    final int tenantIdx = getOrCreateStringIndex(tenantId);
-    final int workerIdx = getOrCreateStringIndex(workerName);
-
-    // Build the key
-    metricsKey.set(jobTypeIdx, tenantIdx, workerIdx);
-
-    // Check if key exists
-    final MetricsValue existingValue = metricsColumnFamily.get(metricsKey);
-    final boolean isNewKey = existingValue == null;
-
-    if (isNewKey) {
-      // Create new metrics value
-      metricsValue.reset();
-      incrementMetadataValue(META_JOB_METRICS_NB, 1);
-    } else {
-      // Copy existing value to our working instance
-      copyMetricsValue(existingValue, metricsValue);
-    }
-
-    // Increment the metric for the specified status
-    final long timestamp = System.currentTimeMillis();
-    metricsValue.incrementMetric(status, timestamp);
-
-    // Write back to column family
-    if (isNewKey) {
-      metricsColumnFamily.insert(metricsKey, metricsValue);
-    } else {
-      metricsColumnFamily.update(metricsKey, metricsValue);
-    }
-
-    // Update batch record total size
-    updateBatchRecordTotalSize();
+    persistMetricIncrement(ctx, status);
   }
 
   @Override
@@ -218,52 +187,80 @@ public class DbJobMetricsState implements MutableJobMetricsState {
     setMetadataValue(META_TOTAL_SIZE_EXCEEDED, 0L);
   }
 
-  /**
-   * Calculates the size impact of adding a metric for the given strings. Only counts new strings
-   * and new keys.
-   *
-   * @param jobType the job type string
-   * @param tenantId the tenant ID string
-   * @param workerName the worker name string
-   * @return the size impact in bytes
-   */
-  private long calculateSizeImpact(
+  /** Resolves all context needed for a metric increment in a single pass. */
+  private MetricContext resolveMetricContext(
       final String jobType, final String tenantId, final String workerName) {
-    long impact = 0;
 
-    // Check if strings are new (would add to encoded strings size)
     final boolean jobTypeIsNew = !stringEncodingCache.containsKey(jobType);
     final boolean tenantIdIsNew = !stringEncodingCache.containsKey(tenantId);
     final boolean workerNameIsNew = !stringEncodingCache.containsKey(workerName);
 
-    if (jobTypeIsNew) {
-      impact += jobType.getBytes().length;
-    }
-    if (tenantIdIsNew) {
-      impact += tenantId.getBytes().length;
-    }
-    if (workerNameIsNew) {
-      impact += workerName.getBytes().length;
-    }
-
-    // Check if the key combination is new (would add key+value size)
     if (jobTypeIsNew || tenantIdIsNew || workerNameIsNew) {
       // At least one string is new, so key is definitely new
-      impact += MetricsKey.BYTES + MetricsValue.BYTES;
-    } else {
-      // All strings exist, check if key combination exists
-      final int jobTypeIdx = stringEncodingCache.get(jobType);
-      final int tenantIdx = stringEncodingCache.get(tenantId);
-      final int workerIdx = stringEncodingCache.get(workerName);
-
-      metricsKey.set(jobTypeIdx, tenantIdx, workerIdx);
-      if (metricsColumnFamily.get(metricsKey) == null) {
-        impact += MetricsKey.BYTES + MetricsValue.BYTES;
-      }
-      // If key exists, no additional size impact (just updating existing record)
+      return new MetricContext(
+          jobType, tenantId, workerName, jobTypeIsNew, tenantIdIsNew, workerNameIsNew, true, null);
     }
 
+    // All strings exist - fetch existing value (single DB read)
+    metricsKey.set(
+        stringEncodingCache.get(jobType),
+        stringEncodingCache.get(tenantId),
+        stringEncodingCache.get(workerName));
+    final MetricsValue existingValue = metricsColumnFamily.get(metricsKey);
+
+    return new MetricContext(
+        jobType, tenantId, workerName, false, false, false, existingValue == null, existingValue);
+  }
+
+  /** Checks if adding this metric would exceed the size limit. */
+  private boolean wouldExceedSizeLimit(final MetricContext ctx) {
+    final long sizeImpact = calculateSizeImpact(ctx);
+    final long currentSize = getMetadata(META_BATCH_RECORD_TOTAL_SIZE);
+    return currentSize + sizeImpact > MAX_BATCH_SIZE;
+  }
+
+  /** Calculates the size impact of adding a metric. */
+  private long calculateSizeImpact(final MetricContext ctx) {
+    long impact = 0;
+    if (ctx.jobTypeIsNew()) {
+      impact += ctx.jobType().getBytes(StandardCharsets.UTF_8).length;
+    }
+    if (ctx.tenantIdIsNew()) {
+      impact += ctx.tenantId().getBytes(StandardCharsets.UTF_8).length;
+    }
+    if (ctx.workerNameIsNew()) {
+      impact += ctx.workerName().getBytes(StandardCharsets.UTF_8).length;
+    }
+    if (ctx.isNewKey()) {
+      impact += MetricsKey.BYTES + MetricsValue.BYTES;
+    }
     return impact;
+  }
+
+  /** Persists the metric increment to the database. */
+  private void persistMetricIncrement(final MetricContext ctx, final JobState status) {
+    final int jobTypeIdx = getOrCreateStringIndex(ctx.jobType());
+    final int tenantIdx = getOrCreateStringIndex(ctx.tenantId());
+    final int workerIdx = getOrCreateStringIndex(ctx.workerName());
+
+    metricsKey.set(jobTypeIdx, tenantIdx, workerIdx);
+
+    if (ctx.isNewKey()) {
+      metricsValue.reset();
+      incrementMetadataValue(META_JOB_METRICS_NB, 1);
+    } else {
+      copyMetricsValue(ctx.existingValue(), metricsValue);
+    }
+
+    metricsValue.incrementMetric(status, clock.millis());
+
+    if (ctx.isNewKey()) {
+      metricsColumnFamily.insert(metricsKey, metricsValue);
+    } else {
+      metricsColumnFamily.update(metricsKey, metricsValue);
+    }
+
+    updateBatchRecordTotalSize();
   }
 
   /**
@@ -294,7 +291,8 @@ public class DbJobMetricsState implements MutableJobMetricsState {
     stringEncodingColumnFamily.insert(stringEncodingKey, stringEncodingValue);
 
     // Update total encoded strings size
-    incrementMetadataValue(META_TOTAL_ENCODED_STRINGS_SIZE, string.getBytes().length);
+    incrementMetadataValue(
+        META_TOTAL_ENCODED_STRINGS_SIZE, string.getBytes(StandardCharsets.UTF_8).length);
 
     // Add to cache
     stringEncodingCache.put(string, newIndex);
@@ -360,4 +358,18 @@ public class DbJobMetricsState implements MutableJobMetricsState {
       destMetrics[i].setLastUpdatedAt(sourceMetrics[i].getLastUpdatedAt());
     }
   }
+
+  /**
+   * Holds pre-resolved context for a metric increment operation. Avoids repeated lookups and
+   * enables single-pass processing.
+   */
+  private record MetricContext(
+      String jobType,
+      String tenantId,
+      String workerName,
+      boolean jobTypeIsNew,
+      boolean tenantIdIsNew,
+      boolean workerNameIsNew,
+      boolean isNewKey,
+      MetricsValue existingValue) {}
 }
