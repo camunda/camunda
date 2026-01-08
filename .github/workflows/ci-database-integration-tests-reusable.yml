@@ -40,7 +40,7 @@ jobs:
   integration-tests:
     name: "${{inputs.database-type}}"
     permissions: { }  # GITHUB_TOKEN unused in this job
-    timeout-minutes: 15
+    timeout-minutes: 20
     runs-on: gcp-perf-core-8-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
