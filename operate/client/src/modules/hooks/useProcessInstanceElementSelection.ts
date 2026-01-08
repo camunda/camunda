@@ -152,6 +152,22 @@ const useProcessInstanceElementSelection = () => {
     elementInstanceByKey ??
     (searchResult?.page.totalItems === 1 ? searchResult?.items[0] : null);
 
+  const isSelected = (element: {
+    elementId?: string;
+    elementInstanceKey?: string;
+    isMultiInstanceBody?: boolean;
+  }) => {
+    if (isMultiInstanceBody !== element.isMultiInstanceBody) {
+      return false;
+    }
+
+    if (elementInstanceKey === null) {
+      return elementId === element.elementId;
+    }
+
+    return elementInstanceKey === element.elementInstanceKey;
+  };
+
   return {
     selectElement,
     selectElementInstance,
@@ -174,6 +190,7 @@ const useProcessInstanceElementSelection = () => {
     selectedAnchorElementId: anchorElementId,
     isFetchingElement:
       isFetchingElementInstanceByKey || isFetchingElementInstancesSearch,
+    isSelected,
   };
 };
 
