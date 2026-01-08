@@ -61,11 +61,7 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
         authenticated.value(),
         restAddress);
     final var username = authenticated.value();
-    final var client = cachedClients.get(username);
-    System.out.println("Returning client for: " + username);
-    System.out.println(
-        "Client hash: " + (client != null ? System.identityHashCode(client) : "null"));
-    return client;
+    return cachedClients.get(username);
   }
 
   public void createClientForUser(

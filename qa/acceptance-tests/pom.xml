@@ -687,7 +687,7 @@
             <configuration>
               <failIfNoTests>false</failIfNoTests>
               <groups>compatibility-test</groups>
-              <excludedGroups>rdbms, multi-db-test</excludedGroups>
+              <excludedGroups>rdbms</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
