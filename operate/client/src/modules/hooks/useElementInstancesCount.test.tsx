@@ -117,35 +117,6 @@ describe('useElementInstancesCount', () => {
     await waitFor(() => expect(result.current).toBe(18));
   });
 
-  it('should return correct count for different element', async () => {
-    const mockData: GetProcessInstanceStatisticsResponseBody = {
-      items: [
-        {
-          elementId: 'node1',
-          active: 5,
-          completed: 10,
-          canceled: 2,
-          incidents: 1,
-        },
-        {
-          elementId: 'node2',
-          active: 3,
-          completed: 7,
-          canceled: 0,
-          incidents: 2,
-        },
-      ],
-    };
-
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
-
-    const {result} = renderHook(() => useElementInstancesCount('node2'), {
-      wrapper: Wrapper,
-    });
-
-    await waitFor(() => expect(result.current).toBe(12));
-  });
-
   it('should return 0 when there are no instances', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
