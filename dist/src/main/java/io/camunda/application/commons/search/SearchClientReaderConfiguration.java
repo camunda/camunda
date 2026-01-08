@@ -11,6 +11,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.cache.ProcessCache;
 import io.camunda.search.clients.reader.AuditLogDocumentReader;
 import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
@@ -113,6 +114,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -406,8 +408,22 @@ public class SearchClientReaderConfiguration {
   @Bean
   public IncidentProcessInstanceStatisticsByDefinitionReader
       incidentProcessInstanceStatisticsByDefinitionReader(
-          final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+          final SearchClientBasedQueryExecutor executor,
+          final IndexDescriptors descriptors,
+          final ProcessCache processCache) {
     return new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(
-        executor, descriptors.get(IncidentTemplate.class));
+        executor, descriptors.get(IncidentTemplate.class), processCache);
+  }
+
+  @Bean
+  public ProcessCache searchClientProcessCache(
+      final GatewayRestConfiguration configuration, final SearchClientBasedQueryExecutor executor) {
+
+    final var cacheConfiguration =
+        new ProcessCache.Configuration(
+            configuration.getProcessCache().getMaxSize(),
+            configuration.getProcessCache().getExpirationIdleMillis());
+
+    return new ProcessCache(cacheConfiguration, executor);
   }
 }
