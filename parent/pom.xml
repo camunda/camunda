@@ -1052,6 +1052,11 @@
         <artifactId>mcp</artifactId>
         <version>${version.mcp-sdk}</version>
       </dependency>
+      <dependency>
+        <groupId>io.modelcontextprotocol.sdk</groupId>
+        <artifactId>mcp-core</artifactId>
+        <version>${version.mcp-sdk}</version>
+      </dependency>
 
       <dependency>
         <groupId>com.nimbusds</groupId>
