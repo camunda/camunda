@@ -1000,6 +1000,7 @@ public class SchemaManagerIT {
         // we verify the names hard coded on purpose
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
+            newPrefix + "-camunda-job-metrics-batch-8.9.0_",
             newPrefix + "-camunda-authorization-8.8.0_",
             newPrefix + "-camunda-cluster-variable-8.9.0_",
             newPrefix + "-camunda-correlated-message-subscription-8.8.0_",
