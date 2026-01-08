@@ -33,6 +33,7 @@ import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,7 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.snapshot.*;
+import org.opensearch.client.transport.JsonEndpoint;
 
 @ExtendWith(MockitoExtension.class)
 class OpensearchBackupRepositoryTest {
@@ -256,15 +258,43 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void validateRepositoryExistsSuccess() throws IOException {
-    when(openSearchClient.snapshot().getRepository((GetRepositoryRequest) any()))
-        .thenReturn(GetRepositoryResponse.of(b -> b));
+    final HashMap<String, Object> mockResponse = new HashMap<>();
+    mockResponse.put("repo", new HashMap<String, Object>());
+    when(openSearchClient
+            ._transport()
+            .performRequest(
+                any(GetRepositoryRequest.class), any(JsonEndpoint.class), any()))
+        .thenReturn(mockResponse);
 
     repository.validateRepositoryExists("repo");
   }
 
   @Test
+  void validateRepositoryExistsSuccessWithMissingLocationProperty() throws IOException {
+    // This test verifies that the repository validation works even when
+    // AWS OpenSearch doesn't return all expected properties (e.g., location)
+    final HashMap<String, Object> mockResponse = new HashMap<>();
+    final HashMap<String, Object> repoSettings = new HashMap<>();
+    // AWS OpenSearch may not include 'location' property
+    repoSettings.put("type", "s3");
+    repoSettings.put("settings", new HashMap<>());
+    mockResponse.put("repo", repoSettings);
+    when(openSearchClient
+            ._transport()
+            .performRequest(
+                any(GetRepositoryRequest.class), any(JsonEndpoint.class), any()))
+        .thenReturn(mockResponse);
+
+    // Should not throw an exception even without 'location' property
+    repository.validateRepositoryExists("repo");
+  }
+
+  @Test
   void validateRepositoryExistsFailed() throws IOException {
-    when(openSearchClient.snapshot().getRepository((GetRepositoryRequest) any()))
+    when(openSearchClient
+            ._transport()
+            .performRequest(
+                any(GetRepositoryRequest.class), any(JsonEndpoint.class), any()))
         .thenThrow(
             new OpenSearchException(
                 new ErrorResponse.Builder()

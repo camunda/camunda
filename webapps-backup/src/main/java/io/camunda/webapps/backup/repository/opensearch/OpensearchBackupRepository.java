@@ -48,13 +48,19 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
+import org.opensearch.client.transport.JsonEndpoint;
+import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,10 +118,14 @@ public class OpensearchBackupRepository implements BackupRepository {
   @Override
   public void validateRepositoryExists(final String repositoryName) {
     try {
+      // Use a custom endpoint with HashMap deserializer to avoid missing property issues
+      // AWS OpenSearch may not return all expected properties (e.g., RepositorySettings.location)
+      final var request = repositoryRequestBuilder(repositoryName).build();
+      final var endpoint = createGetRepositoryEndpoint();
       final var repositoryResponse =
           openSearchClient
-              .snapshot()
-              .getRepository(repositoryRequestBuilder(repositoryName).build());
+              ._transport()
+              .performRequest(request, endpoint, openSearchClient._transportOptions());
       LOGGER.debug("Repository {} exists", repositoryResponse);
     } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
@@ -128,6 +138,21 @@ public class OpensearchBackupRepository implements BackupRepository {
               repositoryName);
       throw new BackupException(reason, e);
     }
+  }
+
+  /**
+   * Creates a custom endpoint for GetRepository that uses HashMap deserializer to avoid missing
+   * property exceptions when AWS OpenSearch doesn't return all expected fields.
+   */
+  private JsonEndpoint<GetRepositoryRequest, HashMap, ErrorResponse>
+      createGetRepositoryEndpoint() {
+    return new SimpleEndpoint<>(
+        r -> "GET",
+        r -> "/_snapshot/" + String.join(",", r.repository()),
+        r -> java.util.Map.of(),
+        r -> java.util.Map.of(),
+        false,
+        JsonpDeserializer.stringMapDeserializer(JsonpDeserializer.jsonValueDeserializer()));
   }
 
   @Override
