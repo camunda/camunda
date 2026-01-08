@@ -21,6 +21,17 @@ on:
         required: false
         type: string
         default: ''
+      helm-extra-args:
+        description: |
+          Additional Helm arguments to pass to ArgoCD (newline-separated --helm-set pairs).
+          e.g., "--helm-set global.preview.ingress.domain=custom.domain"
+        required: false
+        type: string
+        default: ''
+    outputs:
+      host-name:
+        description: "Hostname of the deployed preview environment (e.g., smoke-123.camunda.camunda.cloud)"
+        value: ${{ jobs.deploy-preview.outputs.host-name }}
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 concurrency:
@@ -120,6 +131,8 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      host-name: ${{ steps.set-host-name.outputs.host-name }}
     steps:
     #########################################################################
     # Validate app-name length (only for workflow_call input)
@@ -151,6 +164,14 @@ jobs:
         echo "app-name=${APP_NAME}" >> "$GITHUB_OUTPUT"
 
     #########################################################################
+    # Set the preview environment host output
+    - id: set-host-name
+      env:
+        APP_NAME: ${{ inputs.app-name || steps.sanitize.outputs.branch_name }}
+      run: |
+        echo "host-name=${APP_NAME}.camunda.camunda.cloud" >> "$GITHUB_OUTPUT"
+
+    #########################################################################
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
@@ -176,6 +197,8 @@ jobs:
       run: |
         # Convert comma/newline-separated labels to multiple --label arguments
         label_args=$(echo "${labels}" | tr ',' '\n' | sed '/^$/d; s/^/--label /' | tr '\n' ' ')
+        # Convert newline-separated helm-extra-args to space-separated string
+        helm_extra=$(echo "${helm_extra_args}" | tr '\n' ' ' | sed 's/  */ /g; s/^ //; s/ $//')
         echo "argocd_arguments=--dest-namespace ${app_name} \
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
@@ -185,9 +208,10 @@ jobs:
           --name ${app_name} \
           --revision ${revision} \
           --helm-set git.branch=${revision} \
-          --upsert ${label_args}" >> "$GITHUB_ENV"
+          --upsert ${label_args} ${helm_extra}" >> "$GITHUB_ENV"
       env:
         docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
+        helm_extra_args: ${{ inputs.helm-extra-args }}
         labels: ${{ inputs.labels }}
         revision: ${{ github.head_ref || github.ref_name }}
         app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
@@ -200,7 +224,7 @@ jobs:
         revision: ${{ github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         app_name: camunda-${{ steps.set-app-name.outputs.app-name }}
-        app_url: https://${{ steps.set-app-name.outputs.app-name }}.camunda.camunda.cloud
+        app_url: https://${{ steps.set-host-name.outputs.host-name }}
         argocd_arguments: ${{ env.argocd_arguments }}
         argocd_server: argocd.int.camunda.com
         argocd_wait_for_sync_timeout: "1800" # waits up to 30 minutes

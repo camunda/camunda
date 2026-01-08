@@ -11,7 +11,8 @@ camunda.cloud/created-by: "{{ .Values.global.preview.git.repoUrl }}/blob/{{ .Val
 {{- end }}
 
 {{- define "ingress.domain" -}}
-{{- printf "%s.%s" .Release.Name .Values.global.preview.ingress.domain | trimPrefix "camunda-" -}}
+{{- $baseName := .Release.Name | trimPrefix "camunda-" -}}
+{{- printf "%s.%s" $baseName .Values.global.preview.ingress.domain -}}
 {{- end -}}
 
 # Temporary override the following (existing) template blocks
