@@ -37,6 +37,14 @@ inputs:
     description: 'Path to the dockerfile, that should be used; defaults to Dockerfile'
     required: false
     default: 'Dockerfile'
+  publicBaseImage:
+    description: 'Base image from DockerHub to use when running on fork PRs without Minimus access'
+    required: false
+    default: 'eclipse-temurin:21-jre-noble'
+  publicBaseDigest:
+    description: 'Base image digest from DockerHub to use when running on fork PRs without Minimus access'
+    required: false
+    default: 'sha256:67fc762eabacb56e5444b367889e04ce8c839b8f4b3d8ef3e459c5579fbefd8a'
   debug:
     description: 'Enable debug logging for BuildKit daemon'
     required: false
@@ -63,6 +71,10 @@ runs:
         IS_MAIN_OR_STABLE_BRANCH: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
       run: |
         echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
+
+    - name: Check for Fork
+      uses: ./.github/actions/is-fork
+      id: is-fork
 
     - name: Set up multi-platform support
       uses: docker/setup-qemu-action@v3
@@ -117,6 +129,23 @@ runs:
       shell: bash
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
 
+    - name: Set additional build args dynamically based on workflow run context
+      id: get-additional-build-args
+      shell: bash
+      run: |
+        # Check if current workflow run is related to a fork PR
+        if [[ "${{ steps.is-fork.outputs.is-fork }}" == "true" ]]; then
+          echo "The current workflow run is related to a fork PR."
+          echo "As a result, private Minimus hardened base images will be replaced with public images."
+
+          {
+            echo 'result<<EOF'
+            echo 'BASE_IMAGE=${{ inputs.publicBaseImage }}'
+            echo 'BASE_DIGEST=${{ inputs.publicBaseDigest }}'
+            echo 'EOF'
+          } | tee -a $GITHUB_OUTPUT
+        fi
+
     - name: Build Docker image
       uses: docker/build-push-action@v6
       env:
@@ -135,4 +164,5 @@ runs:
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
           VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
+          ${{ steps.get-additional-build-args.outputs.result }}
         target: app
