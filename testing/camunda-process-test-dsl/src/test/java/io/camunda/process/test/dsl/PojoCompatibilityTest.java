@@ -40,6 +40,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstr
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
@@ -324,6 +325,21 @@ public class PojoCompatibilityTest {
                 ImmutableMockJobWorkerCompleteJobInstruction.builder()
                     .jobType("fetch-weather-data")
                     .useExampleData(true)
+                    .build())),
+        // ===== MOCK_DMN_DECISION =====
+        Arguments.of(
+            "mock dmn decision: minimal",
+            singleTestCase(
+                ImmutableMockDmnDecisionInstruction.builder()
+                    .decisionDefinitionId("credit-check-decision")
+                    .build())),
+        Arguments.of(
+            "mock dmn decision: with variables",
+            singleTestCase(
+                ImmutableMockDmnDecisionInstruction.builder()
+                    .decisionDefinitionId("credit-check-decision")
+                    .putVariables("approved", true)
+                    .putVariables("score", 750)
                     .build())),
         // ===== ASSERT_VARIABLES =====
         Arguments.of(
