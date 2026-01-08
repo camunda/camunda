@@ -26,11 +26,10 @@ public interface FlowNodeInstanceReader {
   String LEVELS_AGG_NAME = "levelsAgg";
   String LEVELS_TOP_HITS_AGG_NAME = "levelsTopHitsAgg";
   String FINISHED_FLOW_NODES_BUCKETS_AGG_NAME = "finishedFlowNodesBuckets";
-  String FLOW_NODE_ID_AGG = "flowNodeIdAgg";
-  String COUNT_INCIDENT = "countIncident";
-  String COUNT_CANCELED = "countCanceled";
-  String COUNT_COMPLETED = "countCompleted";
-  String COUNT_ACTIVE = "countActive";
+  String LATEST_FLOW_NODE_AGG_NAME = "latestFlowNode";
+  String ACTIVE_FLOW_NODES_AGG_NAME = "activeFlowNodes";
+  String ACTIVE_FLOW_NODES_BUCKETS_AGG_NAME = "activeFlowNodesBuckets";
+  String FINISHED_FLOW_NODES_AGG_NAME = "finishedFlowNodes";
 
   Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstances(FlowNodeInstanceRequestDto request);
 

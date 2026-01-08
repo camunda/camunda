@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class FlowNodeInstanceDto {
 
@@ -72,7 +71,7 @@ public class FlowNodeInstanceDto {
     return flowNodeInstanceEntities.stream()
         .filter(item -> item != null)
         .map(item -> createFrom(item, objectMapper))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   public String getId() {
