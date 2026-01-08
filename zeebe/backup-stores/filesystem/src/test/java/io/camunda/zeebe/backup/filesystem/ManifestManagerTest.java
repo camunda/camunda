@@ -169,7 +169,6 @@ class ManifestManagerTest {
     return new BackupImpl(
         backupIdentifier,
         new BackupDescriptorImpl(
-            Optional.of("snapshotId"),
             backupIdentifier.checkpointId(),
             1,
             "8.7.0",

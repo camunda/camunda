@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.api;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * Additional information about the backup that might be required for restoring or querying the
@@ -20,6 +21,13 @@ public interface BackupDescriptor {
    * @return id of the snapshot included in the backup
    */
   Optional<String> snapshotId();
+
+  /**
+   * @return the position of the first known log entry included in the backup. Because we back up
+   *     entire segments, the actual first log position might be lower. May be empty if the first
+   *     log position is not known.
+   */
+  OptionalLong firstLogPosition();
 
   /**
    * @return the checkpoint position of the checkpoint included in the backup

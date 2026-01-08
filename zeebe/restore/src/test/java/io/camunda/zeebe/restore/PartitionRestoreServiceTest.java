@@ -45,7 +45,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -121,7 +120,7 @@ class PartitionRestoreServiceTest {
             snapshotStore,
             dataDirectory,
             // RaftPartitions implements this interface, but the RaftServer is not started
-            index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
+            index -> CompletableFuture.completedFuture(journal.getTailSegments(index)),
             meterRegistry,
             (context, entries, source) -> Either.left(WriteFailure.CLOSED));
     actorScheduler.submitActor(backupService);
@@ -254,7 +253,6 @@ class PartitionRestoreServiceTest {
         backupStore.waitForBackup(new BackupIdentifierImpl(nodeId, partitionId, backupId));
     final var descriptor =
         new BackupDescriptorImpl(
-            Optional.empty(),
             checkpointPosition,
             1, // Use partition count of 1 for tests
             "test",

@@ -327,11 +327,13 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   SortedMap<Long, Segment> getTailSegments(final long index) {
+    // First look for a segment that contains the index
     final var segment = getSegment(index);
     if (segment == null) {
       return Collections.emptySortedMap();
     }
-
+    // Then use its first index to get the tail map. We can't get the tail map directly using the
+    // given index, because it may be in the middle of a segment.
     return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)); // inclusive
   }
 

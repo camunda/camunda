@@ -518,8 +518,7 @@ class BackupServiceImplTest {
     ControllableInProgressBackup() {
       id = new BackupIdentifierImpl(1, 2, 3);
       checkpointDescriptor =
-          new BackupDescriptorImpl(
-              Optional.empty(), 1L, 2, "1.2.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+          new BackupDescriptorImpl(1L, 2, "1.2.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
     }
 
     @Override

@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -129,12 +128,7 @@ final class BackupUploadIT {
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
-            Optional.of("test-snapshot-id"),
-            4,
-            5,
-            "test",
-            Instant.now(),
-            CheckpointType.MANUAL_BACKUP),
+            "test-snapshot-id", 4, 5, "test", Instant.now(), CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(largeNumberOfSegments),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
   }
@@ -156,12 +150,7 @@ final class BackupUploadIT {
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
-            Optional.of("test-snapshot-id"),
-            4,
-            5,
-            "test",
-            Instant.now(),
-            CheckpointType.MANUAL_BACKUP),
+            "test-snapshot-id", 4, 5, "test", Instant.now(), CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }

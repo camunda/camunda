@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -60,6 +61,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   private PersistedSnapshot reservedSnapshot;
   private NamedFileSet snapshotFileSet;
   private NamedFileSet segmentsFileSet;
+  private OptionalLong firstLogPosition = OptionalLong.empty();
 
   InProgressBackupImpl(
       final PersistedSnapshotStore snapshotStore,
@@ -205,7 +207,7 @@ final class InProgressBackupImpl implements InProgressBackup {
       journalInfoProvider
           .getTailSegments(maxIndex)
           .whenComplete(
-              (segments, throwable) -> {
+              (tailSegments, throwable) -> {
                 if (throwable != null) {
                   LOG.atError()
                       .addKeyValue("backup", backupId)
@@ -213,7 +215,7 @@ final class InProgressBackupImpl implements InProgressBackup {
                       .setMessage("Failed to retrieve journal segments for backup")
                       .log();
                   filesCollected.completeExceptionally(throwable);
-                } else if (segments.isEmpty()) {
+                } else if (tailSegments.segmentPaths().isEmpty()) {
                   LOG.atError()
                       .addKeyValue("backup", backupId)
                       .setMessage("No journal segments found for backup")
@@ -223,11 +225,13 @@ final class InProgressBackupImpl implements InProgressBackup {
                 } else {
                   LOG.atTrace()
                       .addKeyValue("backup", backupId)
-                      .addKeyValue("segments", segments::size)
+                      .addKeyValue("segments", tailSegments.segmentPaths()::size)
                       .setMessage("Collected journal segments for backup")
                       .log();
+                  firstLogPosition = tailSegments.firstAsqn();
+
                   final Map<String, Path> map =
-                      segments.stream()
+                      tailSegments.segmentPaths().stream()
                           .collect(
                               Collectors.toMap(
                                   path -> segmentsDirectory.relativize(path).toString(),
@@ -260,6 +264,7 @@ final class InProgressBackupImpl implements InProgressBackup {
     final var backupDescriptor =
         new BackupDescriptorImpl(
             snapshotId,
+            firstLogPosition,
             backupDescriptor().checkpointPosition(),
             backupDescriptor().numberOfPartitions(),
             VersionUtil.getVersion(),

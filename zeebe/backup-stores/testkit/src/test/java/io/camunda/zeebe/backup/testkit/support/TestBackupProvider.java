@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -49,7 +48,6 @@ public final class TestBackupProvider implements ArgumentsProvider {
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
-            Optional.empty(),
             4,
             5,
             "test",
@@ -80,7 +78,7 @@ public final class TestBackupProvider implements ArgumentsProvider {
     return new BackupImpl(
         id,
         new BackupDescriptorImpl(
-            Optional.of("test-snapshot-id"),
+            "test-snapshot-id",
             4,
             5,
             "test",
@@ -99,7 +97,6 @@ public final class TestBackupProvider implements ArgumentsProvider {
     return new BackupImpl(
         id,
         new BackupDescriptorImpl(
-            Optional.empty(),
             4,
             5,
             "test",

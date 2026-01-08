@@ -72,6 +72,7 @@ import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.CheckedRunnable;
@@ -81,10 +82,8 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -1322,12 +1321,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return snapshotChunkSize;
   }
 
-  public CompletableFuture<Collection<Path>> getTailSegments(final long index) {
-    final var fut = new CompletableFuture<Collection<Path>>();
+  public CompletableFuture<SegmentInfo> getTailSegments(final long index) {
+    final var fut = new CompletableFuture<SegmentInfo>();
     threadContext.execute(
         () -> {
           final var segments = raftLog.getTailSegments(index);
-          fut.complete(segments.values());
+          fut.complete(segments);
         });
     return fut;
   }
