@@ -399,6 +399,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
   private GetBackupStateResponseDto getBackupResponse(
       final Long backupId, final List<SnapshotInfo> snapshots, final boolean isBackupInProgress) {
+    if (snapshots.isEmpty()) {
+      throw new ResourceNotFoundException(String.format("No backup with id [%s] found.", backupId));
+    }
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final var firstSnapshot = snapshots.getFirst();
     final Metadata metadata =
