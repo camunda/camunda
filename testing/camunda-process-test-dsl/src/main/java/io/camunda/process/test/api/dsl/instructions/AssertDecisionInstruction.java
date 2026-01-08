@@ -63,7 +63,7 @@ public interface AssertDecisionInstruction extends TestCaseInstruction {
   List<Integer> getNotMatchedRules();
 
   /**
-   * Whether to assert that no rules were matched. Optional. Default: false.
+   * Whether to assert that no rules were matched. Defaults to {@code false}.
    *
    * @return true if asserting no rules matched, false otherwise
    */
