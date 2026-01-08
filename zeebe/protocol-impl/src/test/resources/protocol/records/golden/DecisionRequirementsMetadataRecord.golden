@@ -41,9 +41,10 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
 
   public DecisionRequirementsMetadataRecord() {
-    super(9);
+    super(10);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)
@@ -52,7 +53,8 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   @Override
@@ -171,6 +173,16 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
 
   public DecisionRequirementsMetadataRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public DecisionRequirementsMetadataRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
     return this;
   }
 }

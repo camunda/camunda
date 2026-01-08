@@ -405,7 +405,8 @@ public final class DeploymentCreateProcessor
         .setResourceName(drg.getResourceName())
         .setChecksum(wrapArray(drg.getChecksum()))
         .setResource(resource)
-        .setTenantId(drg.getTenantId());
+        .setTenantId(drg.getTenantId())
+        .setDeploymentKey(drg.getDeploymentKey());
   }
 
   /**
