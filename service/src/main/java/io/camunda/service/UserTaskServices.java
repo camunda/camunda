@@ -7,15 +7,18 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.auditLogSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.userTaskSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.UserTaskSearchClient;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
@@ -55,6 +58,7 @@ public final class UserTaskServices
   private final ElementInstanceServices elementInstanceServices;
   private final VariableServices variableServices;
   private final ProcessCache processCache;
+  private final AuditLogServices auditLogServices;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
@@ -63,6 +67,7 @@ public final class UserTaskServices
       final FormServices formServices,
       final ElementInstanceServices elementInstanceServices,
       final VariableServices variableServices,
+      final AuditLogServices auditLogServices,
       final ProcessCache processCache,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
@@ -77,6 +82,7 @@ public final class UserTaskServices
     this.formServices = formServices;
     this.elementInstanceServices = elementInstanceServices;
     this.variableServices = variableServices;
+    this.auditLogServices = auditLogServices;
     this.processCache = processCache;
   }
 
@@ -89,6 +95,7 @@ public final class UserTaskServices
         formServices,
         elementInstanceServices,
         variableServices,
+        auditLogServices,
         processCache,
         authentication,
         executorProvider,
@@ -239,6 +246,28 @@ public final class UserTaskServices
             variableServices
                 .withAuthentication(CamundaAuthentication.anonymous())
                 .search(variableQueryWithTreePathFilter));
+  }
+
+  public SearchQueryResult<AuditLogEntity> searchUserTaskAuditLogs(
+      final long userTaskKey, final AuditLogQuery auditLogQuery) {
+    getByKey(userTaskKey); // Ensure user task exists and is accessible
+
+    // Create an audit log query with user task key filter
+    final var auditLogWithUserTaskKeyFilter =
+        auditLogSearchQuery(
+            q ->
+                q.filter(auditLogQuery.filter().toBuilder().userTaskKeys(userTaskKey).build())
+                    .sort(auditLogQuery.sort())
+                    .page(auditLogQuery.page()));
+
+    // Execute the search
+    return executeSearchRequest(
+        () ->
+            auditLogServices
+                // TODO: Implement authentication in issue:
+                // https://github.com/camunda/camunda/issues/41205
+                .withAuthentication(CamundaAuthentication.anonymous())
+                .search(auditLogWithUserTaskKeyFilter));
   }
 
   private String fetchFlowNodeTreePath(final long flowNodeInstanceKey) {
