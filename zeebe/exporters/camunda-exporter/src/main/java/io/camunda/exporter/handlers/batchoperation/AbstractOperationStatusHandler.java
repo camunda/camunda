@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers.batchoperation;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -43,14 +44,17 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
   private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractOperationStatusHandler.class);
   protected final ValueType handledValueType;
+  private final ExporterMetadata exporterMetadata;
 
   public AbstractOperationStatusHandler(
       final String indexName,
       final ValueType handledValueType,
       final OperationType relevantOperationType,
-      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
+      final ExporterMetadata exporterMetadata) {
     super(indexName, batchOperationCache, relevantOperationType);
     this.handledValueType = handledValueType;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -88,7 +92,8 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
         .setItemKey(getItemKey(record))
         .setProcessInstanceKey(getProcessInstanceKey(record));
     final var rootProcessInstanceKey = getRootProcessInstanceKey(record);
-    if (rootProcessInstanceKey > 0) {
+    if (rootProcessInstanceKey > 0
+        && exporterMetadata.isKeyAfterFirstRootProcessInstanceKey(rootProcessInstanceKey)) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -26,12 +27,14 @@ public class ProcessInstanceModificationOperationHandler
 
   public ProcessInstanceModificationOperationHandler(
       final String indexName,
-      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
+      final ExporterMetadata exporterMetadata) {
     super(
         indexName,
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         OperationType.MODIFY_PROCESS_INSTANCE,
-        batchOperationCache);
+        batchOperationCache,
+        exporterMetadata);
   }
 
   @Override
@@ -41,8 +44,7 @@ public class ProcessInstanceModificationOperationHandler
 
   @Override
   long getRootProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
-    return -1; // TODO implement when available in the record
-    // https://github.com/camunda/camunda/pull/43315
+    return record.getValue().getRootProcessInstanceKey();
   }
 
   @Override

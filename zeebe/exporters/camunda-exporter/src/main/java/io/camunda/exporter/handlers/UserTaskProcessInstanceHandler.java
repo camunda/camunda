@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -23,9 +24,12 @@ public class UserTaskProcessInstanceHandler
     implements ExportHandler<TaskProcessInstanceEntity, ProcessInstanceRecordValue> {
 
   private final String indexName;
+  private final ExporterMetadata exporterMetadata;
 
-  public UserTaskProcessInstanceHandler(final String indexName) {
+  public UserTaskProcessInstanceHandler(
+      final String indexName, final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -65,7 +69,8 @@ public class UserTaskProcessInstanceHandler
 
     entity.setJoin(join);
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
+    if (rootProcessInstanceKey > 0
+        && exporterMetadata.isKeyAfterFirstRootProcessInstanceKey(rootProcessInstanceKey)) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
   }

@@ -15,8 +15,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
@@ -44,14 +46,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
   private final TestProcessCache processCache = new TestProcessCache();
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
   private final ListViewProcessInstanceFromProcessInstanceHandler underTest =
-      new ListViewProcessInstanceFromProcessInstanceHandler(indexName, processCache);
+      new ListViewProcessInstanceFromProcessInstanceHandler(
+          indexName, processCache, exporterMetadata);
 
   @Test
   public void testGetHandledValueType() {
@@ -237,6 +243,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .withProcessDefinitionPath(List.of(222L))
             .withTags(Set.of("tag1", "tag2"))
             .build();
+    exporterMetadata.setFirstRootProcessInstanceKey(
+        processInstanceRecordValue.getRootProcessInstanceKey());
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
@@ -299,6 +307,24 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");
     assertThat(processInstanceForListViewEntity.getProcessVersionTag())
         .isEqualTo("test-version-tag");
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {Long.MAX_VALUE, -1L})
+  void shouldNotSetRootProcessInstanceKey(final long metadataValue) {
+    // given
+    exporterMetadata.setFirstRootProcessInstanceKey(metadataValue);
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE, r -> r.withKey(111).withIntent(ELEMENT_ACTIVATING));
+
+    // when
+    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+
+    // then
+    assertThat(processInstanceForListViewEntity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test

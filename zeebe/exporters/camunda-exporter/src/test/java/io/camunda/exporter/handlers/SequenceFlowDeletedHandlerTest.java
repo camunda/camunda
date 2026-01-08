@@ -12,7 +12,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -22,11 +24,16 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class SequenceFlowDeletedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "sequence-flow";
-  private final SequenceFlowDeletedHandler underTest = new SequenceFlowDeletedHandler(indexName);
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
+  private final SequenceFlowDeletedHandler underTest =
+      new SequenceFlowDeletedHandler(indexName, exporterMetadata);
 
   @Test
   void testGetHandledValueType() {
@@ -123,16 +130,19 @@ public class SequenceFlowDeletedHandlerTest {
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .build();
 
-    final Record<ProcessInstanceRecordValue> variableRecord =
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
                 r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED)
                     .withValue(processInstanceRecordValue));
 
+    exporterMetadata.setFirstRootProcessInstanceKey(
+        processInstanceRecordValue.getRootProcessInstanceKey());
+
     // when
     final SequenceFlowEntity sequenceFlowEntity = new SequenceFlowEntity();
-    underTest.updateEntity(variableRecord, sequenceFlowEntity);
+    underTest.updateEntity(processInstanceRecord, sequenceFlowEntity);
 
     // then
     assertThat(sequenceFlowEntity.getId())
@@ -153,5 +163,24 @@ public class SequenceFlowDeletedHandlerTest {
     assertThat(sequenceFlowEntity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(processInstanceRecordValue.getRootProcessInstanceKey());
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {Long.MAX_VALUE, -1L})
+  void shouldNotSetRootProcessInstanceKey(final long metadataValue) {
+    // given
+    exporterMetadata.setFirstRootProcessInstanceKey(metadataValue);
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED));
+
+    // when
+    final SequenceFlowEntity sequenceFlowEntity = new SequenceFlowEntity();
+    underTest.updateEntity(processInstanceRecord, sequenceFlowEntity);
+
+    // then
+    assertThat(sequenceFlowEntity.getRootProcessInstanceKey()).isNull();
+    assertThat(processInstanceRecord.getValue().getRootProcessInstanceKey()).isPositive();
   }
 }

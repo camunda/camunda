@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -27,12 +28,14 @@ public class ProcessInstanceCancellationOperationHandler
 
   public ProcessInstanceCancellationOperationHandler(
       final String indexName,
-      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
+      final ExporterMetadata exporterMetadata) {
     super(
         indexName,
         ValueType.PROCESS_INSTANCE,
         OperationType.CANCEL_PROCESS_INSTANCE,
-        batchOperationCache);
+        batchOperationCache,
+        exporterMetadata);
   }
 
   @Override

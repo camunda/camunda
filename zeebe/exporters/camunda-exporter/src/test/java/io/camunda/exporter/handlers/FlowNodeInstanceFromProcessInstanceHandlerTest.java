@@ -12,8 +12,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -36,13 +38,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
   private final TestProcessCache processCache = new TestProcessCache();
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
   private final FlowNodeInstanceFromProcessInstanceHandler underTest =
-      new FlowNodeInstanceFromProcessInstanceHandler(indexName, processCache);
+      new FlowNodeInstanceFromProcessInstanceHandler(indexName, processCache, exporterMetadata);
 
   @Test
   public void testGetHandledValueType() {
@@ -263,6 +268,8 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
                     .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withTimestamp(timestamp)
                     .withValue(processInstanceRecordValue));
+    exporterMetadata.setFirstRootProcessInstanceKey(
+        processInstanceRecordValue.getRootProcessInstanceKey());
 
     // when
     final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
@@ -291,6 +298,28 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getStartDate())
         .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
     assertThat(flowNodeInstanceEntity.getPosition()).isEqualTo(processInstanceRecord.getPosition());
+    assertThat(flowNodeInstanceEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(processInstanceRecordValue.getRootProcessInstanceKey());
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {Long.MAX_VALUE, -1L})
+  void shouldNotSetRootProcessInstanceKey(final long metadataValue) {
+    // given
+    exporterMetadata.setFirstRootProcessInstanceKey(metadataValue);
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceEntity);
+
+    // then
+    assertThat(flowNodeInstanceEntity.getRootProcessInstanceKey()).isNull();
+    assertThat(processInstanceRecord.getValue().getRootProcessInstanceKey()).isPositive();
   }
 
   @Test

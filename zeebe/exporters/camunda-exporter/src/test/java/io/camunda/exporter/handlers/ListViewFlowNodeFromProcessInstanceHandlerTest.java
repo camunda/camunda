@@ -11,7 +11,9 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSI
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
@@ -31,13 +33,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ListViewFlowNodeFromProcessInstanceHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
   private final ListViewFlowNodeFromProcessInstanceHandler underTest =
-      new ListViewFlowNodeFromProcessInstanceHandler(indexName);
+      new ListViewFlowNodeFromProcessInstanceHandler(indexName, exporterMetadata);
 
   @Test
   public void testGetHandledValueType() {
@@ -228,6 +234,9 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
                     .withPosition(55L)
                     .withValue(processInstanceRecordValue));
 
+    exporterMetadata.setFirstRootProcessInstanceKey(
+        processInstanceRecordValue.getRootProcessInstanceKey());
+
     // when
     final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
         new FlowNodeInstanceForListViewEntity();
@@ -257,6 +266,26 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceForListViewEntity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(processInstanceRecordValue.getRootProcessInstanceKey());
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {Long.MAX_VALUE, -1L})
+  void shouldNotSetRootProcessInstanceKey(final long metadataValue) {
+    // given
+    exporterMetadata.setFirstRootProcessInstanceKey(metadataValue);
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
+        new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceForListViewEntity);
+
+    // then
+    assertThat(flowNodeInstanceForListViewEntity.getRootProcessInstanceKey()).isNull();
+    assertThat(processInstanceRecord.getValue().getRootProcessInstanceKey()).isPositive();
   }
 
   @Test

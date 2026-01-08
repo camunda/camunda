@@ -44,6 +44,7 @@ public final class ExporterMetadata {
         }
       };
   private long firstProcessMessageSubscriptionKey = UNSET_POSITION;
+  private long firstRootProcessInstanceKey = UNSET_POSITION;
 
   public ExporterMetadata(final ObjectMapper objectMapper) {
     // Specialized reader/writer for this class for efficiency
@@ -94,6 +95,20 @@ public final class ExporterMetadata {
         || key < getFirstProcessMessageSubscriptionKey();
   }
 
+  public long getFirstRootProcessInstanceKey() {
+    return firstRootProcessInstanceKey;
+  }
+
+  public void setFirstRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    if (firstRootProcessInstanceKey == UNSET_POSITION) {
+      firstRootProcessInstanceKey = rootProcessInstanceKey;
+    }
+  }
+
+  public boolean isKeyAfterFirstRootProcessInstanceKey(final long key) {
+    return firstRootProcessInstanceKey != UNSET_POSITION && key >= firstRootProcessInstanceKey;
+  }
+
   public void deserialize(final byte[] bytes) {
     try {
       objectReader.readValue(bytes);
@@ -114,7 +129,10 @@ public final class ExporterMetadata {
   @Override
   public int hashCode() {
     return Objects.hash(
-        lastIncidentUpdatePosition, firstUserTaskKeys, firstProcessMessageSubscriptionKey);
+        lastIncidentUpdatePosition,
+        firstUserTaskKeys,
+        firstProcessMessageSubscriptionKey,
+        firstRootProcessInstanceKey);
   }
 
   @Override
@@ -127,8 +145,9 @@ public final class ExporterMetadata {
     }
     final ExporterMetadata that = (ExporterMetadata) o;
     return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition
-        && firstUserTaskKeys == that.firstUserTaskKeys
-        && firstProcessMessageSubscriptionKey == that.firstProcessMessageSubscriptionKey;
+        && firstProcessMessageSubscriptionKey == that.firstProcessMessageSubscriptionKey
+        && firstRootProcessInstanceKey == that.firstRootProcessInstanceKey
+        && Objects.equals(firstUserTaskKeys, that.firstUserTaskKeys);
   }
 
   @Override
@@ -140,6 +159,8 @@ public final class ExporterMetadata {
         + firstUserTaskKeys
         + ", firstProcessMessageSubscriptionKey="
         + firstProcessMessageSubscriptionKey
+        + ", firstRootProcessInstanceKey="
+        + firstRootProcessInstanceKey
         + '}';
   }
 

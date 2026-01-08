@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValu
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -64,5 +65,29 @@ class ProcessInstanceCancelAuditLogTransformerTest {
     assertThat(entity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(record.getValue().getRootProcessInstanceKey());
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenNotIncluded() {
+    // given
+    final var transformerWithExclusion = new ProcessInstanceCancelAuditLogTransformer(key -> false);
+
+    final ProcessInstanceRecordValue recordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withRootProcessInstanceKey(123L)
+            .build();
+
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.CANCEL).withValue(recordValue));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformerWithExclusion.transform(record, entity);
+
+    // then
+    assertThat(entity.getRootProcessInstanceKey()).isNull();
   }
 }

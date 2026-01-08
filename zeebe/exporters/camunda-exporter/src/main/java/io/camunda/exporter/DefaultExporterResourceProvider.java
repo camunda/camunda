@@ -246,13 +246,16 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(DecisionIndex.class).getFullQualifiedName(),
                 decisionRequirementsCache),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                processCache,
+                exporterMetadata),
             new ListViewFlowNodeFromIncidentHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromJobHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                exporterMetadata),
             new ListViewVariableFromVariableHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ClusterVariableCreatedHandler(
@@ -272,13 +275,16 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
-                processCache),
+                processCache,
+                exporterMetadata),
             new IncidentHandler(
                 indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
             new SequenceFlowHandler(
-                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName(),
+                exporterMetadata),
             new SequenceFlowDeletedHandler(
-                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName(),
+                exporterMetadata),
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
@@ -303,7 +309,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 exporterMetadata,
                 objectMapper),
             new UserTaskProcessInstanceHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(), exporterMetadata),
             new UserTaskVariableHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
@@ -336,16 +342,20 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new ProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
-                batchOperationCache),
+                batchOperationCache,
+                exporterMetadata),
             new ProcessInstanceMigrationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
-                batchOperationCache),
+                batchOperationCache,
+                exporterMetadata),
             new ProcessInstanceModificationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
-                batchOperationCache),
+                batchOperationCache,
+                exporterMetadata),
             new ResolveIncidentOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
-                batchOperationCache),
+                batchOperationCache,
+                exporterMetadata),
             new ListViewFromProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
@@ -370,7 +380,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName())));
 
-    addAuditLogHandlers(configuration.getAuditLog());
+    addAuditLogHandlers(configuration.getAuditLog(), exporterMetadata);
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
@@ -470,7 +480,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     return formCache;
   }
 
-  private void addAuditLogHandlers(final AuditLogConfiguration auditLog) {
+  private void addAuditLogHandlers(
+      final AuditLogConfiguration auditLog, final ExporterMetadata exporterMetadata) {
     if (auditLog.isEnabled()) {
       final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
 
@@ -487,7 +498,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           .addHandler(new IncidentResolutionAuditLogTransformer())
           .addHandler(new MappingRuleAuditLogTransformer())
           .addHandler(new ProcessAuditLogTransformer())
-          .addHandler(new ProcessInstanceCancelAuditLogTransformer())
+          .addHandler(
+              new ProcessInstanceCancelAuditLogTransformer(
+                  exporterMetadata::isKeyAfterFirstRootProcessInstanceKey))
           .addHandler(new ProcessInstanceCreationAuditLogTransformer())
           .addHandler(new ProcessInstanceMigrationAuditLogTransformer())
           .addHandler(new ProcessInstanceModificationAuditLogTransformer())

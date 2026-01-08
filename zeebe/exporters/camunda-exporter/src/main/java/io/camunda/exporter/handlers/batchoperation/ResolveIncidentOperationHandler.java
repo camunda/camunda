@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -25,14 +26,19 @@ public class ResolveIncidentOperationHandler
 
   public ResolveIncidentOperationHandler(
       final String indexName,
-      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
-    super(indexName, ValueType.INCIDENT, OperationType.RESOLVE_INCIDENT, batchOperationCache);
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
+      final ExporterMetadata exporterMetadata) {
+    super(
+        indexName,
+        ValueType.INCIDENT,
+        OperationType.RESOLVE_INCIDENT,
+        batchOperationCache,
+        exporterMetadata);
   }
 
   @Override
   long getRootProcessInstanceKey(final Record<IncidentRecordValue> record) {
-    return -1; // TODO implement when available in the record
-    // https://github.com/camunda/camunda/pull/43320
+    return record.getValue().getRootProcessInstanceKey();
   }
 
   @Override

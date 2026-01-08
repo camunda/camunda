@@ -12,9 +12,21 @@ import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTra
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.function.Predicate;
 
 public class ProcessInstanceCancelAuditLogTransformer
     implements AuditLogTransformer<ProcessInstanceRecordValue> {
+
+  private final Predicate<Long> shouldIncludeRootProcessInstanceKey;
+
+  public ProcessInstanceCancelAuditLogTransformer() {
+    shouldIncludeRootProcessInstanceKey = key -> true;
+  }
+
+  public ProcessInstanceCancelAuditLogTransformer(
+      final Predicate<Long> shouldIncludeRootProcessInstanceKey) {
+    this.shouldIncludeRootProcessInstanceKey = shouldIncludeRootProcessInstanceKey;
+  }
 
   @Override
   public TransformerConfig config() {
@@ -28,7 +40,8 @@ public class ProcessInstanceCancelAuditLogTransformer
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey());
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
+    if (rootProcessInstanceKey > 0
+        && shouldIncludeRootProcessInstanceKey.test(rootProcessInstanceKey)) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
   }

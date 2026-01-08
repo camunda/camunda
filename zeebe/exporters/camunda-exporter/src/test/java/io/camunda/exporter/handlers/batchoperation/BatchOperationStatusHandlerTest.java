@@ -12,7 +12,9 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperat
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -55,6 +57,9 @@ class BatchOperationStatusHandlerTest {
 
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache =
       mock(ExporterEntityCache.class);
+
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
 
   abstract class AbstractOperationStatusHandlerTest<T extends RecordValue> {
 
@@ -247,12 +252,48 @@ class BatchOperationStatusHandlerTest {
     @Test
     abstract void shouldExtractCorrectItemKey();
 
+    @ParameterizedTest
+    @MethodSource("recordProviderStream")
+    void shouldUpdateEntitySetRootProcessInstanceKey(
+        final Function<AbstractOperationStatusHandlerTest, Record<T>> recordProvider) {
+      final var record = recordProvider.apply(this);
+      final var entity = new OperationEntity();
+      exporterMetadata.setFirstRootProcessInstanceKey(getRootProcessInstanceKey(record));
+
+      handler.updateEntity(record, entity);
+
+      assertThat(entity.getRootProcessInstanceKey())
+          .isPositive()
+          .isEqualTo(getRootProcessInstanceKey(record));
+    }
+
+    @ParameterizedTest
+    @MethodSource("recordProviderStream")
+    void shouldNotSetRootProcessInstanceKeyWhenLowerThanFirstExporterMetadata(
+        final Function<AbstractOperationStatusHandlerTest, Record<T>> recordProvider) {
+      final var record = recordProvider.apply(this);
+      final var entity = new OperationEntity();
+      exporterMetadata.setFirstRootProcessInstanceKey(Long.MAX_VALUE);
+
+      handler.updateEntity(record, entity);
+
+      assertThat(entity.getRootProcessInstanceKey()).isNull();
+    }
+
+    static Stream<Function<AbstractOperationStatusHandlerTest, Record<?>>> recordProviderStream() {
+      return Stream.of(
+          AbstractOperationStatusHandlerTest::createSuccessRecord,
+          AbstractOperationStatusHandlerTest::createFailureRecord);
+    }
+
     @Test
     abstract void shouldExtractCorrectProcessInstanceKey();
 
     abstract Record<T> createSuccessRecord();
 
     abstract Record<T> createFailureRecord();
+
+    abstract long getRootProcessInstanceKey(Record<T> record);
   }
 
   @Nested
@@ -260,7 +301,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceModificationRecordValue> {
 
     ProcessInstanceModificationOperationHandlerTest() {
-      super(new ProcessInstanceModificationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceModificationOperationHandler(
+              indexName, batchOperationCache, exporterMetadata));
     }
 
     @Override
@@ -297,6 +340,11 @@ class BatchOperationStatusHandlerTest {
                   .withIntent(ProcessInstanceModificationIntent.MODIFY)
                   .withBatchOperationReference(batchOperationKey));
     }
+
+    @Override
+    long getRootProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
+      return record.getValue().getRootProcessInstanceKey();
+    }
   }
 
   @Nested
@@ -304,7 +352,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceMigrationRecordValue> {
 
     ProcessInstanceMigrationOperationHandlerTest() {
-      super(new ProcessInstanceMigrationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceMigrationOperationHandler(
+              indexName, batchOperationCache, exporterMetadata));
     }
 
     @Override
@@ -341,6 +391,11 @@ class BatchOperationStatusHandlerTest {
                   .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
                   .withBatchOperationReference(batchOperationKey));
     }
+
+    @Override
+    long getRootProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
+      return record.getValue().getRootProcessInstanceKey();
+    }
   }
 
   @Nested
@@ -348,7 +403,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceRecordValue> {
 
     ProcessInstanceCancellationOperationHandlerTest() {
-      super(new ProcessInstanceCancellationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceCancellationOperationHandler(
+              indexName, batchOperationCache, exporterMetadata));
     }
 
     @Test
@@ -415,30 +472,9 @@ class BatchOperationStatusHandlerTest {
                   .withBatchOperationReference(batchOperationKey));
     }
 
-    @ParameterizedTest
-    @MethodSource("recordProviderStream")
-    void shouldUpdateEntitySetRootProcessInstanceKey(
-        final Function<
-                ProcessInstanceCancellationOperationHandlerTest, Record<ProcessInstanceRecordValue>>
-            recordProvider) {
-      final var record = recordProvider.apply(this);
-      final var entity = new OperationEntity();
-
-      handler.updateEntity(record, entity);
-
-      assertThat(entity.getRootProcessInstanceKey())
-          .isPositive()
-          .isEqualTo(record.getValue().getRootProcessInstanceKey());
-    }
-
-    static Stream<
-            Function<
-                ProcessInstanceCancellationOperationHandlerTest,
-                Record<ProcessInstanceRecordValue>>>
-        recordProviderStream() {
-      return Stream.of(
-          ProcessInstanceCancellationOperationHandlerTest::createSuccessRecord,
-          ProcessInstanceCancellationOperationHandlerTest::createFailureRecord);
+    @Override
+    long getRootProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
+      return record.getValue().getRootProcessInstanceKey();
     }
   }
 
@@ -447,7 +483,7 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<IncidentRecordValue> {
 
     ResolveIncidentOperationHandlerTest() {
-      super(new ResolveIncidentOperationHandler(indexName, batchOperationCache));
+      super(new ResolveIncidentOperationHandler(indexName, batchOperationCache, exporterMetadata));
     }
 
     @Override
@@ -482,6 +518,11 @@ class BatchOperationStatusHandlerTest {
               b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(IncidentIntent.RESOLVE)
                   .withBatchOperationReference(batchOperationKey));
+    }
+
+    @Override
+    long getRootProcessInstanceKey(final Record<IncidentRecordValue> record) {
+      return record.getValue().getRootProcessInstanceKey();
     }
   }
 }

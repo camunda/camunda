@@ -12,7 +12,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskProcessInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -25,6 +27,8 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class UserTaskProcessInstanceHandlerTest {
 
@@ -38,8 +42,10 @@ public class UserTaskProcessInstanceHandlerTest {
           BpmnElementType.MULTI_INSTANCE_BODY);
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
+  private final ExporterMetadata exporterMetadata =
+      new ExporterMetadata(TestObjectMapper.objectMapper());
   private final UserTaskProcessInstanceHandler underTest =
-      new UserTaskProcessInstanceHandler(indexName);
+      new UserTaskProcessInstanceHandler(indexName, exporterMetadata);
 
   @Test
   void testGetHandledValueType() {
@@ -144,6 +150,8 @@ public class UserTaskProcessInstanceHandlerTest {
                 r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withValue(processInstanceRecordValue)
                     .withKey(expectedId));
+    exporterMetadata.setFirstRootProcessInstanceKey(
+        processInstanceRecordValue.getRootProcessInstanceKey());
 
     // when
     final TaskProcessInstanceEntity processInstanceEntity =
@@ -161,5 +169,24 @@ public class UserTaskProcessInstanceHandlerTest {
     assertThat(processInstanceEntity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(processInstanceRecord.getValue().getRootProcessInstanceKey());
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {Long.MAX_VALUE, -1L})
+  void shouldNotSetRootProcessInstanceKey(final long metadataValue) {
+    // given
+    exporterMetadata.setFirstRootProcessInstanceKey(metadataValue);
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final TaskProcessInstanceEntity processInstanceEntity = new TaskProcessInstanceEntity();
+    underTest.updateEntity(processInstanceRecord, processInstanceEntity);
+
+    // then
+    assertThat(processInstanceEntity.getRootProcessInstanceKey()).isNull();
+    assertThat(processInstanceRecord.getValue().getRootProcessInstanceKey()).isPositive();
   }
 }

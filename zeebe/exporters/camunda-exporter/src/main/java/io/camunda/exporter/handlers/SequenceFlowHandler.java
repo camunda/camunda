@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
@@ -21,9 +22,11 @@ public class SequenceFlowHandler
 
   private static final String ID_PATTERN = "%s_%s";
   private final String indexName;
+  private final ExporterMetadata exporterMetadata;
 
-  public SequenceFlowHandler(final String indexName) {
+  public SequenceFlowHandler(final String indexName, final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -64,7 +67,8 @@ public class SequenceFlowHandler
         .setActivityId(recordValue.getElementId())
         .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
+    if (rootProcessInstanceKey > 0
+        && exporterMetadata.isKeyAfterFirstRootProcessInstanceKey(rootProcessInstanceKey)) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
   }

@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -48,11 +49,15 @@ public class FlowNodeInstanceFromProcessInstanceHandler
 
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private final ExporterMetadata exporterMetadata;
 
   public FlowNodeInstanceFromProcessInstanceHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
     this.processCache = processCache;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -136,7 +141,8 @@ public class FlowNodeInstanceFromProcessInstanceHandler
                 ? null
                 : recordValue.getBpmnElementType().name()));
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
+    if (rootProcessInstanceKey > 0
+        && exporterMetadata.isKeyAfterFirstRootProcessInstanceKey(rootProcessInstanceKey)) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
   }

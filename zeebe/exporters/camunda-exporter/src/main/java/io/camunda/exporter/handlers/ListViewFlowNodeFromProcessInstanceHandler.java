@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.AC
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
@@ -41,9 +42,12 @@ public class ListViewFlowNodeFromProcessInstanceHandler
       Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
 
   private final String indexName;
+  private final ExporterMetadata exporterMetadata;
 
-  public ListViewFlowNodeFromProcessInstanceHandler(final String indexName) {
+  public ListViewFlowNodeFromProcessInstanceHandler(
+      final String indexName, final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -116,7 +120,8 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     final long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
+    if (rootProcessInstanceKey > 0
+        && exporterMetadata.isKeyAfterFirstRootProcessInstanceKey(rootProcessInstanceKey)) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
   }

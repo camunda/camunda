@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -48,11 +49,15 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
 
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final String indexName;
+  private final ExporterMetadata exporterMetadata;
 
   public ListViewProcessInstanceFromProcessInstanceHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
     this.processCache = processCache;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -80,6 +85,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
 
   @Override
   public List<String> generateIds(final Record<ProcessInstanceRecordValue> record) {
+    if (record.getIntent() == ELEMENT_ACTIVATING
+        && record.getValue().getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID) {
+      exporterMetadata.setFirstRootProcessInstanceKey(
+          record.getValue().getRootProcessInstanceKey());
+    }
     return List.of(String.valueOf(record.getValue().getProcessInstanceKey()));
   }
 
@@ -146,7 +156,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
     }
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
+    if (rootProcessInstanceKey > 0
+        && exporterMetadata.isKeyAfterFirstRootProcessInstanceKey(rootProcessInstanceKey)) {
       piEntity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
   }
