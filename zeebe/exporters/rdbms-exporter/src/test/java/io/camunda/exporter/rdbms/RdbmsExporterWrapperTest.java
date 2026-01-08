@@ -151,6 +151,114 @@ class RdbmsExporterWrapperTest {
         .isEqualTo(expectedTransformers.size());
   }
 
+  @Test
+  public void shouldRegisterPartition1OnlyHandlersWhenOnPartition1() {
+    // given
+    final var configuration = new ExporterConfiguration();
+    final Context context = Mockito.mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsService rdbmsService = Mockito.mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsWriters rdbmsWriters = Mockito.mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+
+    Mockito.when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
+        .thenReturn(configuration);
+    Mockito.when(context.getPartitionId()).thenReturn(1);
+    Mockito.when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(
+            rdbmsService,
+            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(VendorDatabaseProperties.class));
+
+    // when
+    exporterWrapper.configure(context);
+
+    // then - verify that partition 1 specific handlers are registered
+    final var registeredHandlers = exporterWrapper.getExporter().getRegisteredHandlers();
+
+    assertThat(registeredHandlers)
+        .as("Should register PROCESS handler on partition 1")
+        .containsKey(ValueType.PROCESS);
+    assertThat(registeredHandlers)
+        .as("Should register MAPPING_RULE handler on partition 1")
+        .containsKey(ValueType.MAPPING_RULE);
+    assertThat(registeredHandlers)
+        .as("Should register TENANT handler on partition 1")
+        .containsKey(ValueType.TENANT);
+    assertThat(registeredHandlers)
+        .as("Should register ROLE handler on partition 1")
+        .containsKey(ValueType.ROLE);
+    assertThat(registeredHandlers)
+        .as("Should register USER handler on partition 1")
+        .containsKey(ValueType.USER);
+    assertThat(registeredHandlers)
+        .as("Should register AUTHORIZATION handler on partition 1")
+        .containsKey(ValueType.AUTHORIZATION);
+    assertThat(registeredHandlers)
+        .as("Should register DECISION handler on partition 1")
+        .containsKey(ValueType.DECISION);
+    assertThat(registeredHandlers)
+        .as("Should register DECISION_REQUIREMENTS handler on partition 1")
+        .containsKey(ValueType.DECISION_REQUIREMENTS);
+    assertThat(registeredHandlers)
+        .as("Should register FORM handler on partition 1")
+        .containsKey(ValueType.FORM);
+  }
+
+  @Test
+  public void shouldNotRegisterPartition1OnlyHandlersWhenNotOnPartition1() {
+    // given
+    final var configuration = new ExporterConfiguration();
+    final Context context = Mockito.mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsService rdbmsService = Mockito.mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsWriters rdbmsWriters = Mockito.mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+
+    Mockito.when(context.getConfiguration().instantiate(Mockito.eq(ExporterConfiguration.class)))
+        .thenReturn(configuration);
+    Mockito.when(context.getPartitionId()).thenReturn(2);
+    Mockito.when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(
+            rdbmsService,
+            Mockito.mock(LiquibaseSchemaManager.class),
+            Mockito.mock(VendorDatabaseProperties.class));
+
+    // when
+    exporterWrapper.configure(context);
+
+    // then - verify that partition 1 specific handlers are NOT registered
+    final var registeredHandlers = exporterWrapper.getExporter().getRegisteredHandlers();
+
+    assertThat(registeredHandlers)
+        .as("Should not register PROCESS handler on partition 2")
+        .doesNotContainKey(ValueType.PROCESS);
+    assertThat(registeredHandlers)
+        .as("Should not register MAPPING_RULE handler on partition 2")
+        .doesNotContainKey(ValueType.MAPPING_RULE);
+    assertThat(registeredHandlers)
+        .as("Should not register TENANT handler on partition 2")
+        .doesNotContainKey(ValueType.TENANT);
+    assertThat(registeredHandlers)
+        .as("Should not register ROLE handler on partition 2")
+        .doesNotContainKey(ValueType.ROLE);
+    assertThat(registeredHandlers)
+        .as("Should not register USER handler on partition 2")
+        .doesNotContainKey(ValueType.USER);
+    assertThat(registeredHandlers)
+        .as("Should not register AUTHORIZATION handler on partition 2")
+        .doesNotContainKey(ValueType.AUTHORIZATION);
+    assertThat(registeredHandlers)
+        .as("Should not register DECISION handler on partition 2")
+        .doesNotContainKey(ValueType.DECISION);
+    assertThat(registeredHandlers)
+        .as("Should not register DECISION_REQUIREMENTS handler on partition 2")
+        .doesNotContainKey(ValueType.DECISION_REQUIREMENTS);
+    assertThat(registeredHandlers)
+        .as("Should not register FORM handler on partition 2")
+        .doesNotContainKey(ValueType.FORM);
+  }
+
   private void assertAuditLogExportPresent(
       final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers,
       final Map<Class<?>, ValueType> expectedRegisteredTransformers) {
