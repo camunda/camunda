@@ -256,7 +256,7 @@ public final class UserTaskServices
     final var auditLogWithUserTaskKeyFilter =
         auditLogSearchQuery(
             q ->
-                q.filter(f -> f.copyFrom(auditLogQuery.filter()).userTaskKeys(userTaskKey))
+                q.filter(auditLogQuery.filter().toBuilder().userTaskKeys(userTaskKey).build())
                     .sort(auditLogQuery.sort())
                     .page(auditLogQuery.page()));
 
