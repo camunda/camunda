@@ -216,7 +216,7 @@
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.14.1</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.16.0</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.8.1</plugin.version.dependency>
+    <plugin.version.dependency>3.9.0</plugin.version.dependency>
     <plugin.version.enforcer>3.6.2</plugin.version.enforcer>
     <plugin.version.exec>3.5.1</plugin.version.exec>
     <plugin.version.failsafe>3.5.4</plugin.version.failsafe>
