@@ -79,9 +79,7 @@ public class AssertDecisionInstructionTest {
     final AssertDecisionInstruction instruction =
         ImmutableAssertDecisionInstruction.builder()
             .decisionSelector(
-                ImmutableDecisionSelector.builder()
-                    .decisionDefinitionName("My Decision")
-                    .build())
+                ImmutableDecisionSelector.builder().decisionDefinitionName("My Decision").build())
             .build();
 
     // when
