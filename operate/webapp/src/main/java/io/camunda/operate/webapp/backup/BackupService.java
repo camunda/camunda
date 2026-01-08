@@ -132,16 +132,35 @@ public class BackupService {
     final SnapshotRequest nextRequest = requestsQueue.poll();
     currentRequest.set(nextRequest); // if the queue is empty, currentRequest will be set to null
     if (nextRequest != null) {
-      threadPoolTaskExecutor.submit(
-          () ->
-              repository.executeSnapshotting(
-                  nextRequest,
-                  this::scheduleNextSnapshot,
-                  () -> {
-                    currentRequest.set(null);
-                    requestsQueue.clear();
-                  }));
-      LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
+      try {
+        threadPoolTaskExecutor.submit(
+            () -> {
+              try {
+                repository.executeSnapshotting(
+                    nextRequest,
+                    this::scheduleNextSnapshot,
+                    () -> {
+                      currentRequest.set(null);
+                      requestsQueue.clear();
+                    });
+              } catch (final Exception e) {
+                LOGGER.error(
+                    "Unexpected exception during snapshot execution for backup ID: {}",
+                    nextRequest.metadata().getBackupId(),
+                    e);
+                currentRequest.set(null);
+                requestsQueue.clear();
+              }
+            });
+        LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
+      } catch (final Exception e) {
+        LOGGER.error(
+            "Failed to submit snapshot task for backup ID: {}",
+            nextRequest.metadata().getBackupId(),
+            e);
+        currentRequest.set(null);
+        requestsQueue.clear();
+      }
     }
   }
 

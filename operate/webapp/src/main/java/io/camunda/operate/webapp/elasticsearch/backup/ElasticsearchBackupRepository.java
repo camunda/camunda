@@ -500,40 +500,65 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
     @Override
     public void onResponse(final CreateSnapshotResponse response) {
-      if (snapshotWentWell(response.getSnapshotInfo())) {
-        onSuccess.run();
-      } else {
-        onFailure.run();
+      try {
+        if (snapshotWentWell(response.getSnapshotInfo())) {
+          onSuccess.run();
+        } else {
+          onFailure.run();
+        }
+      } catch (final Exception e) {
+        LOGGER.error(
+            String.format(
+                "Exception while handling snapshot response for [%s], backup id [%d].",
+                snapshotRequest.snapshotName(), backupId),
+            e);
+        try {
+          onFailure.run();
+        } catch (final Exception ex) {
+          LOGGER.error("Exception while calling onFailure callback", ex);
+        }
       }
     }
 
     @Override
     public void onFailure(final Exception ex) {
-      if (ex instanceof SocketTimeoutException) {
-        // This is thrown even if the backup is still running
-        final int snapshotTimeout = operateProperties.getBackup().getSnapshotTimeout();
-        LOGGER.warn(
-            String.format(
-                "Socket timeout while creating snapshot [%s] for backup id [%d]. Start waiting with polling timeout, %s",
-                snapshotRequest.snapshotName(),
-                backupId,
-                (snapshotTimeout == 0)
-                    ? "until completion."
-                    : "at most " + snapshotTimeout + " seconds."));
-        if (isSnapshotFinishedWithinTimeout(
-            snapshotRequest.repositoryName(), snapshotRequest.snapshotName())) {
-          onSuccess.run();
+      try {
+        if (ex instanceof SocketTimeoutException) {
+          // This is thrown even if the backup is still running
+          final int snapshotTimeout = operateProperties.getBackup().getSnapshotTimeout();
+          LOGGER.warn(
+              String.format(
+                  "Socket timeout while creating snapshot [%s] for backup id [%d]. Start waiting with polling timeout, %s",
+                  snapshotRequest.snapshotName(),
+                  backupId,
+                  (snapshotTimeout == 0)
+                      ? "until completion."
+                      : "at most " + snapshotTimeout + " seconds."));
+          if (isSnapshotFinishedWithinTimeout(
+              snapshotRequest.repositoryName(), snapshotRequest.snapshotName())) {
+            onSuccess.run();
+          } else {
+            onFailure.run();
+          }
         } else {
+          LOGGER.error(
+              String.format(
+                  "Exception while creating snapshot [%s] for backup id [%d].",
+                  snapshotRequest.snapshotName(), backupId),
+              ex);
           onFailure.run();
         }
-      } else {
+      } catch (final Exception e) {
         LOGGER.error(
             String.format(
-                "Exception while creating snapshot [%s] for backup id [%d].",
+                "Exception while handling snapshot failure for [%s], backup id [%d].",
                 snapshotRequest.snapshotName(), backupId),
-            ex);
-        // No need to continue
-        onFailure.run();
+            e);
+        try {
+          onFailure.run();
+        } catch (final Exception ex2) {
+          LOGGER.error("Exception while calling onFailure callback", ex2);
+        }
       }
     }
   }
