@@ -16,14 +16,22 @@ fi
 ### For a new namespace a new folder will be created
 
 helm_chart="camunda-platform-8.9"
-namespace=$1
-secondaryStorage=${2:-elasticsearch}
+namespace="$1"
 
 # Validate secondaryStorage value
+secondaryStorage="${2:-elasticsearch}"
 if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "postgresql" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
   echo "Allowed values are: elasticsearch, postgresql"
   exit 1
+fi
+
+# Validate TTL value
+ttl_days="${3:-7}"
+numberRegex='^[0-9]+$'
+if ! [[ $ttl_days =~ $numberRegex ]] ; then
+   echo "Error: TTL '$ttl_days' is not a number"
+   exit 1
 fi
 
 # Create namespace if it doesn't exist
@@ -57,7 +65,6 @@ git_author=$(sanitize_k8s_label "$raw_git_author")
 kubectl label namespace "$namespace" created-by="$git_author" --overwrite
 
 # Label namespace with TTL deadline (default: 7 days from now)
-ttl_days="${2:-7}"
 # Try GNU date format first (Linux), then BSD/macOS format
 if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
   : # GNU date succeeded
