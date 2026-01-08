@@ -20,9 +20,9 @@ namespace="$1"
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "postgresql" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, postgresql"
+  echo "Allowed values are: elasticsearch, opensearch, postgresql"
   exit 1
 fi
 
@@ -81,6 +81,7 @@ cp -rv default/ $namespace
 
 # Copy camunda-platform-values*.yaml files to the new folder
 cp -v ../camunda-platform-values*.yaml $namespace/
+cp -v ../secondary-storage-values*.yaml $namespace/
 
 # Copy Prometheus ElasticSearch Exporter values.yaml to the new folder
 cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
@@ -94,6 +95,7 @@ sed_inplace "s/elasticsearch/$secondaryStorage/" Makefile
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
 helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
+helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
 helm repo update
 
 # Clone Platform Helm so we can run the latest chart
