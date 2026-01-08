@@ -131,7 +131,7 @@
     <version.jnr-ffi>2.2.18</version.jnr-ffi>
     <version.jnr-posix>3.1.21</version.jnr-posix>
     <version.jnr-constants>0.10.4</version.jnr-constants>
-    <version.zpt>8.7.21</version.zpt>
+    <version.zpt>8.7.22</version.zpt>
     <version.feign>13.6</version.feign>
     <version.google-sdk>26.64.0</version.google-sdk>
     <version.azure-sdk>1.2.38</version.azure-sdk>
