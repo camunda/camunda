@@ -42,6 +42,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstr
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
@@ -307,6 +308,21 @@ public class PojoCompatibilityTest {
                     .putVariables("orderId", 12345)
                     .timeToLive(60000L)
                     .messageId("msg-123")
+                    .build())),
+        // ===== MOCK_CHILD_PROCESS =====
+        Arguments.of(
+            "mock child process: minimal",
+            singleTestCase(
+                ImmutableMockChildProcessInstruction.builder()
+                    .processDefinitionId("child-process")
+                    .build())),
+        Arguments.of(
+            "mock child process: with variables",
+            singleTestCase(
+                ImmutableMockChildProcessInstruction.builder()
+                    .processDefinitionId("payment-process")
+                    .putVariables("amount", 100.0)
+                    .putVariables("currency", "USD")
                     .build())),
         // ===== MOCK_JOB_WORKER_COMPLETE_JOB =====
         Arguments.of(
