@@ -9,9 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
-import io.camunda.gateway.model.mapper.search.SearchQueryRequestMapper;
-import io.camunda.gateway.model.mapper.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQuery;

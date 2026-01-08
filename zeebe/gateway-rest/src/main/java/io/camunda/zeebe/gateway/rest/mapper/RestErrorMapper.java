@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.mapper;
 
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;

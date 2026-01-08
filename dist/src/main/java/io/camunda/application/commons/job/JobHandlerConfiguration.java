@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.job;
 
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
-import io.camunda.gateway.model.mapper.ResponseMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;

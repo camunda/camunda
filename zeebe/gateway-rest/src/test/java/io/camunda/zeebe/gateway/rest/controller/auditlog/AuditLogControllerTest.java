@@ -13,9 +13,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.model.util.AuditLogCategoryConverter;
-import io.camunda.gateway.model.util.AuditLogEntityTypeConverter;
-import io.camunda.gateway.model.util.AuditLogOperationTypeConverter;
+import io.camunda.gateway.mapping.http.util.AuditLogCategoryConverter;
+import io.camunda.gateway.mapping.http.util.AuditLogEntityTypeConverter;
+import io.camunda.gateway.mapping.http.util.AuditLogOperationTypeConverter;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;

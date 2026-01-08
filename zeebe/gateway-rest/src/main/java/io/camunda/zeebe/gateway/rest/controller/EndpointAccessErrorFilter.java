@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;

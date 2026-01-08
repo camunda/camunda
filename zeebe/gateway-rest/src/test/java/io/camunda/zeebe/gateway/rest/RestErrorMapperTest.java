@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.gateway.model.mapper.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
