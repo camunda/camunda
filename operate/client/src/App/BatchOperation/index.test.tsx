@@ -162,7 +162,7 @@ describe('<BatchOperation />', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'batch operation migrate-operation-123 could not be found',
+      title: 'Batch operation migrate-operation-123 could not be found',
       isDismissable: true,
     });
   });

@@ -67,7 +67,7 @@ const BatchOperation: React.FC = () => {
     if (error?.response?.status === 404 && batchOperationKey) {
       notificationsStore.displayNotification({
         kind: 'error',
-        title: `batch operation ${batchOperationKey} could not be found`,
+        title: `Batch operation ${batchOperationKey} could not be found`,
         isDismissable: true,
       });
       navigate(Paths.batchOperations(), {replace: true});
