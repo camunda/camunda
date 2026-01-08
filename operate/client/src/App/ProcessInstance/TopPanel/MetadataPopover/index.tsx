@@ -44,15 +44,16 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
   const {data: statistics} = useFlownodeInstancesStatistics();
 
-  const elementInstancesCount = useElementInstancesCount(elementId);
-  const isMultiInstanceBody = selection?.isMultiInstance ?? false;
-
+  let elementInstancesCount = useElementInstancesCount(elementId);
+  if (selection?.isMultiInstance) {
+    elementInstancesCount = 1;
+  }
   const incidentCount =
     statistics?.items.find((stat) => stat.elementId === elementId)?.incidents ??
     0;
 
   const shouldFetchElementInstances =
-    (elementInstancesCount === 1 || isMultiInstanceBody) &&
+    elementInstancesCount === 1 &&
     !elementInstanceKey &&
     !!processInstance?.processInstanceKey &&
     !!elementId;
@@ -79,7 +80,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
     if (
       !elementInstanceKey &&
-      (elementInstancesCount === 1 || isMultiInstanceBody) &&
+      elementInstancesCount === 1 &&
       elementInstancesSearchResult?.items?.length === 1
     ) {
       return elementInstancesSearchResult.items[0];
@@ -91,7 +92,6 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     elementInstance,
     elementInstancesCount,
     elementInstancesSearchResult,
-    isMultiInstanceBody,
   ]);
 
   if (
@@ -116,8 +116,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       <Stack gap={3}>
         {elementInstancesCount !== null &&
           elementInstancesCount > 1 &&
-          !elementInstanceKey &&
-          !isMultiInstanceBody && (
+          !elementInstanceKey && (
             <>
               <Header
                 title={`This element instance triggered ${elementInstancesCount} times`}
