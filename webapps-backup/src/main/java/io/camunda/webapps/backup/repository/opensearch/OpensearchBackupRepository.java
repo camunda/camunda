@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.HashMap;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -118,15 +117,14 @@ public class OpensearchBackupRepository implements BackupRepository {
   @Override
   public void validateRepositoryExists(final String repositoryName) {
     try {
-      // Use a custom endpoint with HashMap deserializer to avoid missing property issues
+      // Use a custom endpoint without deserializing to avoid missing property issues
       // AWS OpenSearch may not return all expected properties (e.g., RepositorySettings.location)
       final var request = repositoryRequestBuilder(repositoryName).build();
       final var endpoint = createGetRepositoryEndpoint();
-      final var repositoryResponse =
-          openSearchClient
-              ._transport()
-              .performRequest(request, endpoint, openSearchClient._transportOptions());
-      LOGGER.debug("Repository {} exists", repositoryResponse);
+      openSearchClient
+          ._transport()
+          .performRequest(request, endpoint, openSearchClient._transportOptions());
+      LOGGER.debug("Repository {} exists", repositoryName);
     } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason = noRepositoryErrorMessage(repositoryName);
@@ -141,18 +139,17 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   /**
-   * Creates a custom endpoint for GetRepository that uses HashMap deserializer to avoid missing
-   * property exceptions when AWS OpenSearch doesn't return all expected fields.
+   * Creates a custom endpoint for GetRepository that doesn't deserialize the response to avoid
+   * missing property exceptions when AWS OpenSearch doesn't return all expected fields.
    */
-  private JsonEndpoint<GetRepositoryRequest, HashMap, ErrorResponse>
-      createGetRepositoryEndpoint() {
+  private JsonEndpoint<GetRepositoryRequest, Void, ErrorResponse> createGetRepositoryEndpoint() {
     return new SimpleEndpoint<>(
         r -> "GET",
         r -> "/_snapshot/" + String.join(",", r.repository()),
         r -> java.util.Map.of(),
         r -> java.util.Map.of(),
         false,
-        JsonpDeserializer.stringMapDeserializer(JsonpDeserializer.jsonValueDeserializer()));
+        JsonpDeserializer.voidDeserializer());
   }
 
   @Override
