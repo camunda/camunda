@@ -11,98 +11,95 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
-import io.camunda.client.api.search.enums.PermissionType;
-import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 import org.awaitility.Awaitility;
 
 public class AuditLogUtils {
 
   public static final String DEFAULT_USERNAME = "demo";
-  public static final String PROCESS_ID_DEPLOYED_RESOURCES = "DEPLOYED_RESOURCES";
-  public static final BpmnModelInstance TWO_SERVICE_TASKS_PROCESS =
-      Bpmn.createExecutableProcess(PROCESS_ID_DEPLOYED_RESOURCES)
-          .startEvent()
-          .serviceTask("taskA", t -> t.zeebeJobType("taskA"))
-          .serviceTask("taskB", t -> t.zeebeJobType("taskB"))
-          .endEvent()
-          .done();
-  public static final String PROCESS_ID_A = "processA";
-  public static final BpmnModelInstance PROCESS_TENANT_A =
-      Bpmn.createExecutableProcess(PROCESS_ID_A)
+
+  public static final String TENANT_A = "tenantA";
+  public static final String TENANT_B = "tenantB";
+
+  public static final String PROCESS_A_ID = "processA";
+  public static final BpmnModelInstance PROCESS_A =
+      Bpmn.createExecutableProcess(PROCESS_A_ID)
           .startEvent()
           .serviceTask("taskA", t -> t.zeebeJobType("taskA"))
           .endEvent()
           .done();
-  public static final String PROCESS_ID_B = "processB";
-  public static final BpmnModelInstance PROCESS_TENANT_B =
-      Bpmn.createExecutableProcess(PROCESS_ID_B)
+  public static final String PROCESS_B_ID = "USER_TASKS_B";
+  public static final BpmnModelInstance PROCESS_B =
+      Bpmn.createExecutableProcess(PROCESS_B_ID)
           .startEvent()
-          .serviceTask("taskB", t -> t.zeebeJobType("taskB"))
+          .userTask("taskB")
+          .zeebeUserTask()
           .endEvent()
           .done();
-  public static final String USER_TASKS_PROCESS_ID = "USER_TASKS";
+
+  public static final String PROCESS_C_ID = "USER_TASKS_C";
   public static final BpmnModelInstance PROCESS_C =
-      Bpmn.createExecutableProcess(USER_TASKS_PROCESS_ID)
+      Bpmn.createExecutableProcess(PROCESS_C_ID)
           .startEvent()
           .userTask("taskC")
           .zeebeUserTask()
           .endEvent()
           .done();
-  public static final String TENANT_A = "tenantA";
-  public static final String TENANT_B = "tenantB";
 
-  public static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
+  private final boolean useRestApi;
+  private final CamundaClient defaultClient;
+
+  private final List<DeploymentEvent> deployments = new ArrayList<>();
+  private final List<ProcessInstanceEvent> processInstances = new ArrayList<>();
+  private final List<UserTenantAssignment> userTenantAssignments = new ArrayList<>();
+
+  public AuditLogUtils(final CamundaClient defaultClient) {
+    this(defaultClient, true);
   }
 
-  public static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
-
-    Awaitility.await("User is assigned to tenant")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () -> {
-              final var users = camundaClient.newUsersByTenantSearchRequest(tenant).send().join();
-              assertThat(
-                      users.items().stream()
-                          .anyMatch(tenantUser -> tenantUser.getUsername().equals(username)))
-                  .isTrue();
-            });
+  public AuditLogUtils(final CamundaClient defaultClient, final boolean useRestApi) {
+    this.defaultClient = defaultClient;
+    this.useRestApi = useRestApi;
   }
 
-  public static void deployResource(
-      final CamundaClient camundaClient,
-      final String resourceName,
-      final BpmnModelInstance modelInstance,
-      final String tenant) {
-    camundaClient
-        .newDeployResourceCommand()
-        .addProcessModel(modelInstance, resourceName)
-        .tenantId(tenant)
-        .send()
-        .join();
+  public void createTenant(final String tenant) {
+    defaultClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
   }
 
-  public static ProcessInstanceEvent startProcessInstance(
-      final CamundaClient camundaClient,
-      final String processId,
-      final String tenant,
-      final boolean useRest) {
-    final var commandStep1 = camundaClient.newCreateInstanceCommand();
-    if (useRest) {
+  public void assignUserToTenant(final String username, final String tenant) {
+    defaultClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
+
+    userTenantAssignments.add(new UserTenantAssignment(username, tenant));
+  }
+
+  public DeploymentEvent deployResource(
+      final String resourceName, final BpmnModelInstance modelInstance, final String tenant) {
+    final var deployment =
+        defaultClient
+            .newDeployResourceCommand()
+            .addProcessModel(modelInstance, resourceName)
+            .tenantId(tenant)
+            .send()
+            .join();
+
+    deployments.add(deployment);
+
+    return deployment;
+  }
+
+  public ProcessInstanceEvent startProcessInstance(final String processId, final String tenant) {
+    final var commandStep1 = defaultClient.newCreateInstanceCommand();
+    if (useRestApi) {
       commandStep1.useRest();
     } else {
       commandStep1.useGrpc();
@@ -111,70 +108,12 @@ public class AuditLogUtils {
     final var instanceCreated =
         commandStep1.bpmnProcessId(processId).latestVersion().tenantId(tenant).send().join();
 
+    processInstances.add(instanceCreated);
+
     return instanceCreated;
   }
 
-  public static Tuple<String, ProcessInstanceEvent> generateData(
-      final CamundaClient adminClient, final boolean useRest) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
-    assignUserToTenant(adminClient, DEFAULT_USERNAME, TENANT_A);
-    assignUserToTenant(adminClient, DEFAULT_USERNAME, TENANT_B);
-
-    deployResource(adminClient, "testProcess.bpmn", TWO_SERVICE_TASKS_PROCESS, TENANT_A);
-    deployResource(adminClient, "processA.bpmn", PROCESS_TENANT_A, TENANT_A);
-    deployResource(adminClient, "processB.bpmn", PROCESS_TENANT_B, TENANT_B);
-    deployResource(adminClient, "processC.bpmn", PROCESS_C, TENANT_B);
-
-    final var processInstanceEvent =
-        startProcessInstance(adminClient, PROCESS_ID_DEPLOYED_RESOURCES, TENANT_A, useRest);
-    startProcessInstance(adminClient, PROCESS_ID_A, TENANT_A, useRest);
-    startProcessInstance(adminClient, PROCESS_ID_B, TENANT_B, useRest);
-    final var userTaskProcessInstance =
-        startProcessInstance(adminClient, USER_TASKS_PROCESS_ID, TENANT_B, useRest);
-
-    // wait until all process instances are created
-    RecordingExporter.processInstanceCreationRecords()
-        .withIntent(ProcessInstanceCreationIntent.CREATED)
-        .limit(4L)
-        .await();
-
-    final String[] auditLogKey = new String[1];
-    // wait until all audit logs for the created process instances are exported
-    Awaitility.await("Audit log entries are created for the created process instances")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () -> {
-              final var auditLogItems =
-                  adminClient
-                      .newAuditLogSearchRequest()
-                      .filter(
-                          fn ->
-                              fn.entityType(AuditLogEntityTypeEnum.PROCESS_INSTANCE)
-                                  .operationType(AuditLogOperationTypeEnum.CREATE))
-                      .send()
-                      .join();
-              assertThat(auditLogItems.items()).hasSize(4);
-              assertThat(
-                      auditLogItems.items().stream()
-                          .map(item -> item.getProcessDefinitionId())
-                          .collect(Collectors.toSet()))
-                  .containsExactlyInAnyOrder(
-                      PROCESS_ID_DEPLOYED_RESOURCES,
-                      PROCESS_ID_A,
-                      PROCESS_ID_B,
-                      USER_TASKS_PROCESS_ID);
-              auditLogKey[0] = auditLogItems.items().get(0).getAuditLogKey();
-            });
-
-    assignUserToUserTask(
-        adminClient, DEFAULT_USERNAME, userTaskProcessInstance.getProcessInstanceKey());
-
-    return Tuple.of(auditLogKey[0], processInstanceEvent);
-  }
-
-  public static void assignUserToUserTask(
-      final CamundaClient adminClient, final String username, final Long processInstanceKey) {
+  public void assignUserToUserTask(final String username, final Long processInstanceKey) {
     final var task =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -183,7 +122,7 @@ public class AuditLogUtils {
             .get()
             .getValue();
 
-    adminClient.newAssignUserTaskCommand(task.getUserTaskKey()).assignee(username).send().join();
+    defaultClient.newAssignUserTaskCommand(task.getUserTaskKey()).assignee(username).send().join();
 
     Awaitility.await("Audit log entry is created for the assigned user task")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -194,7 +133,7 @@ public class AuditLogUtils {
               // currently it's not possible to search by entityKey, thus we are using the
               // processInstance as a workaround
               final var auditLogItems =
-                  adminClient
+                  defaultClient
                       .newAuditLogSearchRequest()
                       .filter(
                           fn ->
@@ -207,34 +146,104 @@ public class AuditLogUtils {
             });
   }
 
-  public static long createAuthorization(
-      final CamundaClient camundaClient,
-      final String username,
-      final ResourceType authorizationResourceType,
-      final PermissionType permission) {
-    final var authorizationResponse =
-        camundaClient
-            .newCreateAuthorizationCommand()
-            .ownerId(username)
-            .ownerType(io.camunda.client.api.search.enums.OwnerType.USER)
-            .resourceId("*")
-            .resourceType(authorizationResourceType)
-            .permissionTypes(permission)
-            .send()
-            .join();
-    final var authorizationKey = authorizationResponse.getAuthorizationKey();
+  public AuditLogUtils generateDefaults() {
+    init();
 
-    RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED).limit(1L);
-    Awaitility.await("Audit log entry is created for the authorization")
+    // tenant A
+    deployResource("A.bpmn", PROCESS_A, TENANT_A);
+    startProcessInstance(PROCESS_A_ID, TENANT_A);
+
+    deployResource("B.bpmn", PROCESS_B, TENANT_A);
+    final var instanceWithUserTask = startProcessInstance(PROCESS_B_ID, TENANT_A);
+    assignUserToUserTask(DEFAULT_USERNAME, instanceWithUserTask.getProcessInstanceKey());
+
+    // tenant B
+    deployResource("A.bpmn", PROCESS_A, TENANT_B);
+    startProcessInstance(PROCESS_A_ID, TENANT_B);
+
+    deployResource("C.bpmn", PROCESS_C, TENANT_B);
+    final var instanceWithUserTask2 = startProcessInstance(PROCESS_C_ID, TENANT_B);
+    assignUserToUserTask(DEFAULT_USERNAME, instanceWithUserTask2.getProcessInstanceKey());
+
+    return this;
+  }
+
+  public AuditLogUtils init() {
+    createTenant(TENANT_A);
+    createTenant(TENANT_B);
+    assignUserToTenant(DEFAULT_USERNAME, TENANT_A);
+    assignUserToTenant(DEFAULT_USERNAME, TENANT_B);
+    await();
+    return this;
+  }
+
+  private void awaitUserTenantAssignments(final UserTenantAssignment assignment) {
+    Awaitility.await("User is assigned to tenant")
         .ignoreExceptionsInstanceOf(ProblemException.class)
-        .atMost(Duration.ofSeconds(20))
         .untilAsserted(
             () -> {
-              final var authorization =
-                  camundaClient.newAuthorizationGetRequest(authorizationKey).send().join();
-              assertThat(authorization).isNotNull();
+              final var users =
+                  defaultClient.newUsersByTenantSearchRequest(assignment.tenantId).send().join();
+              assertThat(
+                      users.items().stream()
+                          .anyMatch(
+                              tenantUser -> tenantUser.getUsername().equals(assignment.username)))
+                  .isTrue();
             });
-
-    return authorizationKey;
   }
+
+  private void awaitProcessInstances(final ProcessInstanceEvent processInstance) {
+    // wait until audit log for the process instance is exported
+    final var processInstanceKey = String.valueOf(processInstance.getProcessInstanceKey());
+
+    Awaitility.await("Audit log entry is created for the process instance")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var auditLogItems =
+                  defaultClient
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          fn ->
+                              fn.entityType(AuditLogEntityTypeEnum.PROCESS_INSTANCE)
+                                  .operationType(AuditLogOperationTypeEnum.CREATE)
+                                  .processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
+
+              assertThat(auditLogItems.items()).hasSize(1);
+            });
+  }
+
+  public CamundaClient getDefaultClient() {
+    return defaultClient;
+  }
+
+  public List<DeploymentEvent> getDeployments() {
+    return deployments;
+  }
+
+  public List<ProcessInstanceEvent> getProcessInstances() {
+    return processInstances;
+  }
+
+  public List<UserTenantAssignment> getUserTenantAssignments() {
+    return userTenantAssignments;
+  }
+
+  public AuditLogUtils await() {
+    if (!getUserTenantAssignments().isEmpty()) {
+      // this waits for the creation export
+      awaitUserTenantAssignments(getUserTenantAssignments().getLast());
+    }
+
+    // this waits for the actual audit log
+    if (!getProcessInstances().isEmpty()) {
+      awaitProcessInstances(getProcessInstances().getLast());
+    }
+
+    return this;
+  }
+
+  private record UserTenantAssignment(String username, String tenantId) {}
 }

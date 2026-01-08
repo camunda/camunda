@@ -9,20 +9,16 @@ package io.camunda.it.auditlog;
 
 import static io.camunda.it.auditlog.AuditLogUtils.DEFAULT_USERNAME;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
-import static io.camunda.it.auditlog.AuditLogUtils.createAuthorization;
-import static io.camunda.it.auditlog.AuditLogUtils.generateData;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.AuditLogResult;
-import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Membership;
@@ -35,9 +31,10 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.util.collection.Tuple;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -48,9 +45,9 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class AuditLogRestClientIT {
+public class AuditLogIdentityOperationsIT {
 
-  protected static final boolean USE_REST_API = true;
+  public static AuditLogUtils utils;
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -82,77 +79,10 @@ public class AuditLogRestClientIT {
           ROLE_A_ID, ROLE_A_ID, List.of(new Membership(DEFAULT_USERNAME, EntityType.USER)));
 
   private static CamundaClient adminClient;
-  private static ProcessInstanceEvent processInstanceEvent;
-  private static String auditLogKey;
-  private static Long authorizationKey;
 
   @BeforeAll
   static void setup() {
-    final Tuple<String, ProcessInstanceEvent> tuple = generateData(adminClient, USE_REST_API);
-    auditLogKey = tuple.getLeft();
-    processInstanceEvent = tuple.getRight();
-    authorizationKey =
-        createAuthorization(
-            adminClient,
-            DEFAULT_USERNAME,
-            ResourceType.PROCESS_DEFINITION,
-            PermissionType.READ_PROCESS_INSTANCE);
-  }
-
-  @Test
-  void shouldSearchAuditLogEntryFromPICreation(
-      @Authenticated(DEFAULT_USERNAME) final CamundaClient adminClient) {
-    // given
-    final var processInstanceKey = processInstanceEvent.getProcessInstanceKey();
-
-    // when
-    final var auditLogItems =
-        adminClient
-            .newAuditLogSearchRequest()
-            .filter(
-                fn ->
-                    fn.processInstanceKey(String.valueOf(processInstanceKey))
-                        .operationType(AuditLogOperationTypeEnum.CREATE))
-            .send()
-            .join();
-
-    // then
-    final var auditLog = auditLogItems.items().getFirst();
-    assertThat(auditLog).isNotNull();
-    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
-    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
-    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
-    assertThat(auditLog.getProcessDefinitionId())
-        .isEqualTo(processInstanceEvent.getBpmnProcessId());
-    assertThat(auditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessDefinitionKey()));
-    assertThat(auditLog.getProcessInstanceKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
-    assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
-    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
-  }
-
-  @Test
-  void shouldFetchAuditLogEntryByAuditLogKey(
-      @Authenticated(DEFAULT_USERNAME) final CamundaClient adminClient) {
-    // when
-    final var fetchedAuditLog = adminClient.newAuditLogGetRequest(auditLogKey).send().join();
-
-    // then
-    // verify the fetched audit log entry matches the searched one
-    assertThat(fetchedAuditLog).isNotNull();
-    assertThat(fetchedAuditLog.getAuditLogKey()).isEqualTo(auditLogKey);
-    assertThat(fetchedAuditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.PROCESS_INSTANCE);
-    assertThat(fetchedAuditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
-    assertThat(fetchedAuditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
-    assertThat(fetchedAuditLog.getProcessDefinitionId())
-        .isEqualTo(processInstanceEvent.getBpmnProcessId());
-    assertThat(fetchedAuditLog.getProcessDefinitionKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessDefinitionKey()));
-    assertThat(fetchedAuditLog.getProcessInstanceKey())
-        .isEqualTo(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
-    assertThat(fetchedAuditLog.getTenantId()).isEqualTo(TENANT_A);
-    assertThat(fetchedAuditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+    utils = new AuditLogUtils(adminClient).init();
   }
 
   @Test
@@ -217,6 +147,12 @@ public class AuditLogRestClientIT {
 
   @Test
   void shouldTrackAuthorizationOperationsCorrectly() {
+    final var authorizationKey =
+        createAuthorization(
+            DEFAULT_USERNAME,
+            ResourceType.PROCESS_DEFINITION,
+            PermissionType.READ_PROCESS_INSTANCE);
+
     // when
     final var auditLogAuthorizationItems =
         adminClient
@@ -462,5 +398,43 @@ public class AuditLogRestClientIT {
     assertThat(auditLogAssign.getEntityKey()).isEqualTo(TENANT_A);
     assertThat(auditLogAssign.getTenantId()).isNull();
     assertThat(auditLogAssign.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
+
+  private static String createAuthorization(
+      final String username,
+      final ResourceType authorizationResourceType,
+      final PermissionType permission) {
+    final var authorization =
+        adminClient
+            .newCreateAuthorizationCommand()
+            .ownerId(username)
+            .ownerType(io.camunda.client.api.search.enums.OwnerType.USER)
+            .resourceId("*")
+            .resourceType(authorizationResourceType)
+            .permissionTypes(permission)
+            .send()
+            .join();
+
+    final var authorizationKey = String.valueOf(authorization.getAuthorizationKey());
+    Awaitility.await("Audit log entry is created for the authorization")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var logs =
+                  adminClient
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          fn ->
+                              fn.entityType(AuditLogEntityTypeEnum.AUTHORIZATION)
+                                  .operationType(AuditLogOperationTypeEnum.CREATE))
+                      .send()
+                      .join();
+              assertThat(logs.items())
+                  .anyMatch(l -> l.getEntityKey().equals(authorizationKey))
+                  .isNotEmpty();
+            });
+
+    return authorizationKey;
   }
 }
