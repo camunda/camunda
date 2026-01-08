@@ -215,6 +215,11 @@ jobs:
             echo "🏷️ When: $when"
           fi
 
+          # Log hint if no matching labels found
+          if [[ -z "$severity" && -z "$impact" ]]; then
+            echo "💡 No severity or impact labels found - urgency will not be calculated"
+          fi
+
           # Check for urgency-locked label
           has_urgency_locked=$(echo "$LABELS" | jq -r 'any(. == "urgency-locked")')
 
@@ -413,7 +418,9 @@ jobs:
             '.data.node.fields.nodes[] | select(.name==$name) | .id // empty')
 
           if [[ -z "$FIELD_ID" ]]; then
-            echo "❌ Field '$URGENCY_FIELD_NAME' does not exist in project"
+            echo "❌ Field '$URGENCY_FIELD_NAME' does not exist in project '$PROJECT_V2_ID'"
+            echo "   Expected: A ProjectV2 single-select field named '$URGENCY_FIELD_NAME' with options: immediate, next, planned, someday"
+            echo "   Verify: The field exists in the target project and URGENCY_FIELD_NAME is configured correctly"
             exit 1
           fi
 
@@ -439,6 +446,8 @@ jobs:
 
             if [[ -z "$OPTION_ID" ]]; then
               echo "❌ Option '$NEW_URGENCY' not found in field '$URGENCY_FIELD_NAME'"
+              echo "   Expected options: immediate, next, planned, someday"
+              echo "   Verify: The field has all required options configured in the project"
               exit 1
             fi
 
