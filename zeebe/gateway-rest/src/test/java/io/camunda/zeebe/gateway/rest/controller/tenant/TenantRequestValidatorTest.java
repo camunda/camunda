@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
-import static io.camunda.gateway.model.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.gateway.model.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
-import static io.camunda.gateway.model.validator.IdentifierValidator.TENANT_ID_MASK;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
+import static io.camunda.gateway.mapping.http.validator.IdentifierValidator.TENANT_ID_MASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.gateway.model.validator.TenantRequestValidator;
+import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.protocol.record.value.EntityType;

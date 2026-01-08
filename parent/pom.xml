@@ -592,7 +592,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>camunda-gateway-models</artifactId>
+        <artifactId>camunda-gateway-model</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-gateway-mapping-http</artifactId>
         <version>${project.version}</version>
       </dependency>
 

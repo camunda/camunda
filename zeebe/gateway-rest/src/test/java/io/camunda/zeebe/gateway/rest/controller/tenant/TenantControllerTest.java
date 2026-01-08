@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.model.validator.IdentifierValidator;
+import io.camunda.gateway.mapping.http.validator.IdentifierValidator;
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;

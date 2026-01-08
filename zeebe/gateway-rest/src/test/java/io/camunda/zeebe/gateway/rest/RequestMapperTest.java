@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.gateway.model.mapper.RequestMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
