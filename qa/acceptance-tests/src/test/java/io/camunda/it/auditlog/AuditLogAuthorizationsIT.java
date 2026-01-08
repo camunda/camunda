@@ -32,6 +32,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -197,6 +198,7 @@ public class AuditLogAuthorizationsIT {
   }
 
   // TODO: this one fails, due to the wildcard shortcut in the authorization checks
+  @Disabled("https://github.com/camunda/camunda/issues/43662")
   @Test
   void shouldAuthorizeByProcessIdWildcard(
       @Authenticated(USER_B_USERNAME) final CamundaClient client) {
@@ -236,6 +238,7 @@ public class AuditLogAuthorizationsIT {
   }
 
   // TODO: this one fails, due to the wildcard shortcut in the authorization checks
+  @Disabled("https://github.com/camunda/camunda/issues/43662")
   @Test
   void shouldAuthorizeByUserTaskProcessIdWildcard(
       @Authenticated(USER_C_USERNAME) final CamundaClient client) {

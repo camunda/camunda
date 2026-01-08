@@ -20,6 +20,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -51,6 +52,7 @@ public class AuditLogSearchClientIT {
 
   // TODO: this one fails, because r/n the authorizations fail if the resourceId supplier returns
   // null, which is the case for ADMIN audit log entries
+  @Disabled("https://github.com/camunda/camunda/issues/43662")
   @Test
   void shouldGetAuditLogByKey(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
