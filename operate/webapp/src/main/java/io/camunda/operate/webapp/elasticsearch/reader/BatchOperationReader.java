@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.I
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -95,32 +96,19 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
     if (searchAfter != null
         || searchBefore == null) { // this sorting is also the default one for 1st page
       sort1 =
-          ElasticsearchUtil.sortOrder(
-              BatchOperationTemplate.END_DATE,
-              co.elastic.clients.elasticsearch._types.SortOrder.Desc,
-              "_first");
-      sort2 =
-          ElasticsearchUtil.sortOrder(
-              BatchOperationTemplate.START_DATE,
-              co.elastic.clients.elasticsearch._types.SortOrder.Desc);
+          ElasticsearchUtil.sortOrder(BatchOperationTemplate.END_DATE, SortOrder.Desc, "_first");
+      sort2 = ElasticsearchUtil.sortOrder(BatchOperationTemplate.START_DATE, SortOrder.Desc);
       querySearchAfter = searchAfter; // may be null
     } else { // searchBefore != null
       // reverse sorting
-      sort1 =
-          ElasticsearchUtil.sortOrder(
-              BatchOperationTemplate.END_DATE,
-              co.elastic.clients.elasticsearch._types.SortOrder.Asc,
-              "_last");
-      sort2 =
-          ElasticsearchUtil.sortOrder(
-              BatchOperationTemplate.START_DATE,
-              co.elastic.clients.elasticsearch._types.SortOrder.Asc);
+      sort1 = ElasticsearchUtil.sortOrder(BatchOperationTemplate.END_DATE, SortOrder.Asc, "_last");
+      sort2 = ElasticsearchUtil.sortOrder(BatchOperationTemplate.START_DATE, SortOrder.Asc);
       querySearchAfter = searchBefore;
     }
 
     final var query = ElasticsearchUtil.constantScoreQuery(allowedOperationsQuery());
     final var searchReq =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .query(query)
             .sort(sort1, sort2)
             .size(batchOperationRequestDto.getPageSize())
@@ -136,7 +124,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
   private Query allowedOperationsQuery() {
     final var allowed = permissionsService.getBatchOperationsWithPermission(PermissionType.READ);
     return allowed.isAll()
-        ? Query.of(q -> q.matchAll(m -> m))
+        ? ElasticsearchUtil.matchAllQuery()
         : ElasticsearchUtil.termsQuery(ID, allowed.getIds());
   }
 }
