@@ -715,6 +715,10 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
+          <groupId>io.camunda</groupId>
+          <artifactId>camunda-gateway-mcp</artifactId>
+        </exclusion>
+        <exclusion>
           <groupId>org.liquibase</groupId>
           <artifactId>liquibase-core</artifactId>
         </exclusion>
