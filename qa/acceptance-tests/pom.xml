@@ -22,6 +22,8 @@
   <name>Camunda QA Acceptance Tests</name>
   <properties>
     <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
+    <!-- Runtime client version for compatibility tests - can be overridden -->
+    <camunda.client.version>${project.version}</camunda.client.version>
   </properties>
 
   <dependencies>
@@ -596,7 +598,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, compatibility-test</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -630,7 +632,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
-              <excludedGroups>multi-db-test</excludedGroups>
+              <excludedGroups>multi-db-test, compatibility-test</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -656,6 +658,39 @@
               <failIfNoTests>false</failIfNoTests>
               <groups>multi-db-test</groups>
               <excludedGroups>rdbms</excludedGroups>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile will run all tests annotated with @Tag("compatibility-test").
+    The profile is used to run tests against different versions of Camunda components.
+
+    To test with a specific client version:
+    ./mvnw verify -Pcompatibility-test -Dcamunda.client.version=8.8.0 -Dit.test=AuthorizationIT
+
+    Tests compile against the current (SNAPSHOT) version but run with the specified client version.
+    Tests that use APIs not available in the specified version will be automatically skipped.
+    -->
+    <profile>
+      <id>compatibility-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>compatibility-test</groups>
+              <excludedGroups>rdbms</excludedGroups>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>compatibility</camunda.test.preferred.extension>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>

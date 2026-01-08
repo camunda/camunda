@@ -25,6 +25,7 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 @MultiDbTest
+@CompatibilityTest
 public class ElementInstanceSearchIT {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
