@@ -80,6 +80,11 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
       entity.setFullValue(null);
       entity.setIsPreview(false);
     }
+
+    final var rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override
