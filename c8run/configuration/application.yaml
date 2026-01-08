@@ -8,6 +8,9 @@ camunda:
         password:
         flushInterval: PT0.5S
         queueSize: 1000
+  cluster:
+    raft:
+      segment-preallocation-strategy: FILL
   security:
     initialization:
       users:
