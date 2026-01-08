@@ -190,7 +190,7 @@ public class UserTaskIT {
             b ->
                 b.processInstanceKey(userTask.processInstanceKey())
                     .name("randomVariable" + UUID.randomUUID()));
-    final RdbmsWriters writer = rdbmsService.createWriter(1L);
+    final RdbmsWriter writer = rdbmsService.createWriter(1L);
     writer.getVariableWriter().create(randomizedVariable);
     writer.flush();
 
@@ -233,7 +233,7 @@ public class UserTaskIT {
             b ->
                 b.processInstanceKey(userTask.processInstanceKey())
                     .name("randomVariable" + UUID.randomUUID()));
-    final RdbmsWriters writer = rdbmsService.createWriter(1L);
+    final RdbmsWriter writer = rdbmsService.createWriter(1L);
     writer.getVariableWriter().create(randomizedVariable);
     writer.getVariableWriter().create(randomizedVariable2);
     writer.flush();
@@ -319,7 +319,7 @@ public class UserTaskIT {
                 b.processInstanceKey(userTask.processInstanceKey())
                     .name("randomVariable" + UUID.randomUUID()));
 
-    final RdbmsWriters writer = rdbmsService.createWriter(1L);
+    final RdbmsWriter writer = rdbmsService.createWriter(1L);
     writer.getVariableWriter().create(randomizedVariable);
     writer.getVariableWriter().create(randomizedVariable2);
     writer.flush();
@@ -364,7 +364,7 @@ public class UserTaskIT {
 
     final VariableDbModel randomizedVariable =
         VariableFixtures.createRandomized(b -> b.scopeKey(userTask.elementInstanceKey()));
-    final RdbmsWriters writer = rdbmsService.createWriter(1L);
+    final RdbmsWriter writer = rdbmsService.createWriter(1L);
     writer.getVariableWriter().create(randomizedVariable);
     writer.flush();
 
@@ -409,7 +409,7 @@ public class UserTaskIT {
                 b.scopeKey(userTask.elementInstanceKey())
                     .name("localVariable" + UUID.randomUUID()));
 
-    final RdbmsWriters writer = rdbmsService.createWriter(1L);
+    final RdbmsWriter writer = rdbmsService.createWriter(1L);
     writer.getVariableWriter().create(randomizedVariable);
     writer.getVariableWriter().create(randomizedVariable2);
     writer.flush();
