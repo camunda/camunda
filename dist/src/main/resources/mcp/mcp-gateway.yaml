@@ -1,7 +1,3 @@
-camunda:
-  mcp:
-    enabled: true
-
 spring:
   ai:
     mcp:
