@@ -9,8 +9,12 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import com.google.common.collect.ImmutableList;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -23,17 +27,7 @@ import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -46,59 +40,59 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchListenerReader.class);
 
   private final JobTemplate jobTemplate;
-  private final RestHighLevelClient esClient;
 
-  private final TermQueryBuilder executionListenersQ;
-  private final TermQueryBuilder taskListenersQ;
+  private final Query executionListenersQ;
+  private final Query taskListenersQ;
 
-  public ElasticsearchListenerReader(
-      final JobTemplate jobTemplate, final RestHighLevelClient esClient) {
+  public ElasticsearchListenerReader(final JobTemplate jobTemplate) {
     this.jobTemplate = jobTemplate;
-    this.esClient = esClient;
-    executionListenersQ = termQuery(JobTemplate.JOB_KIND, ListenerType.EXECUTION_LISTENER);
-    taskListenersQ = termQuery(JobTemplate.JOB_KIND, ListenerType.TASK_LISTENER);
+    executionListenersQ =
+        ElasticsearchUtil.termsQuery(JobTemplate.JOB_KIND, ListenerType.EXECUTION_LISTENER);
+    taskListenersQ = ElasticsearchUtil.termsQuery(JobTemplate.JOB_KIND, ListenerType.TASK_LISTENER);
   }
 
   @Override
   public ListenerResponseDto getListenerExecutions(
       final String processInstanceId, final ListenerRequestDto request) {
-    final TermQueryBuilder processInstanceQ =
-        termQuery(JobTemplate.PROCESS_INSTANCE_KEY, processInstanceId);
+    final var processInstanceQ =
+        ElasticsearchUtil.termsQuery(JobTemplate.PROCESS_INSTANCE_KEY, processInstanceId);
 
-    final SearchSourceBuilder sourceBuilder =
-        new SearchSourceBuilder()
-            .query(
-                joinWithAnd(
-                    processInstanceQ, getFlowNodeQuery(request), getListenerTypeQuery(request)))
+    final var query =
+        joinWithAnd(processInstanceQ, getFlowNodeQuery(request), getListenerTypeQuery(request));
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(whereToSearch(jobTemplate, ALL))
+            .query(query)
             .size(request.getPageSize());
 
-    applySorting(sourceBuilder, request);
+    applySorting(searchRequestBuilder, request);
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(jobTemplate, ALL).source(sourceBuilder);
+    final var searchRequest = searchRequestBuilder.build();
 
     final Long totalHitCount;
     final List<ListenerDto> listeners;
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      totalHitCount = response.getHits().getTotalHits().value;
+      final var response = es8client.search(searchRequest, JobEntity.class);
+      totalHitCount = response.hits().total().value();
       listeners =
-          ElasticsearchUtil.mapSearchHits(
-              response.getHits().getHits(),
-              (searchHit) -> {
-                final JobEntity entity =
-                    fromSearchHit(searchHit.getSourceAsString(), objectMapper, JobEntity.class);
-                final ListenerDto dto = ListenerDto.fromJobEntity(entity);
-                final SortValuesWrapper[] sortValues =
-                    SortValuesWrapper.createFrom(searchHit.getSortValues(), objectMapper);
-                dto.setSortValues(sortValues);
-                return dto;
-              });
+          response.hits().hits().stream()
+              .map(
+                  hit -> {
+                    final var entity = hit.source();
+                    final var dto = ListenerDto.fromJobEntity(entity);
+                    final var sortValues =
+                        SortValuesWrapper.createFrom(
+                            hit.sort().stream().map(FieldValue::_get).toArray(), objectMapper);
+                    dto.setSortValues(sortValues);
+                    return dto;
+                  })
+              .toList();
       if (request.getSearchBefore() != null) {
-        Collections.reverse(listeners);
+        return new ListenerResponseDto(ImmutableList.copyOf(listeners).reverse(), totalHitCount);
       }
     } catch (final IOException e) {
-      final String message =
+      final var message =
           String.format("Exception occurred while searching for listeners: %s", e.getMessage());
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
@@ -106,15 +100,16 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
     return new ListenerResponseDto(listeners, totalHitCount);
   }
 
-  private TermQueryBuilder getFlowNodeQuery(final ListenerRequestDto request) {
+  private Query getFlowNodeQuery(final ListenerRequestDto request) {
     if (request.getFlowNodeInstanceId() != null) {
-      return termQuery(JobTemplate.FLOW_NODE_INSTANCE_ID, request.getFlowNodeInstanceId());
+      return ElasticsearchUtil.termsQuery(
+          JobTemplate.FLOW_NODE_INSTANCE_ID, request.getFlowNodeInstanceId());
     }
-    return termQuery(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId());
+    return ElasticsearchUtil.termsQuery(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId());
   }
 
-  private QueryBuilder getListenerTypeQuery(final ListenerRequestDto request) {
-    final ListenerType listenerFilter = request.getListenerTypeFilter();
+  private Query getListenerTypeQuery(final ListenerRequestDto request) {
+    final var listenerFilter = request.getListenerTypeFilter();
     if (listenerFilter == null) {
       return joinWithOr(executionListenersQ, taskListenersQ);
     } else if (listenerFilter.equals(ListenerType.EXECUTION_LISTENER)) {
@@ -126,19 +121,17 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
   }
 
   private void applySorting(
-      final SearchSourceBuilder searchSourceBuilder, final ListenerRequestDto request) {
+      final SearchRequest.Builder searchRequestBuilder, final ListenerRequestDto request) {
 
-    SortOrder sortOrder = SortOrder.DESC; // default
-    if (request.getSorting() != null) {
-      if (request.getSorting().getSortOrder() != null) {
-        sortOrder = SortOrder.fromString(request.getSorting().getSortOrder());
-      }
+    var sortOrder = SortOrder.Desc; // default
+    if (request.getSorting() != null && request.getSorting().getSortOrder() != null) {
+      sortOrder = ElasticsearchUtil.toSortOrder(request.getSorting().getSortOrder());
     }
 
     final String missing;
     Object[] querySearchAfter = null;
     if (request.getSearchBefore() != null) {
-      sortOrder = reverseOrder(sortOrder);
+      sortOrder = ElasticsearchUtil.reverseOrder(sortOrder);
       missing = "_last";
       querySearchAfter = request.getSearchBefore(objectMapper);
     } else {
@@ -149,11 +142,11 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
     }
 
     if (querySearchAfter != null) {
-      searchSourceBuilder.searchAfter(querySearchAfter);
+      searchRequestBuilder.searchAfter(searchAfterToFieldValues(querySearchAfter));
     }
 
-    searchSourceBuilder
-        .sort(SortBuilders.fieldSort(JobTemplate.TIME).order(sortOrder).missing(missing))
-        .sort(SortBuilders.fieldSort(JobTemplate.JOB_KEY).order(sortOrder));
+    searchRequestBuilder
+        .sort(ElasticsearchUtil.sortOrder(JobTemplate.TIME, sortOrder, missing))
+        .sort(ElasticsearchUtil.sortOrder(JobTemplate.JOB_KEY, sortOrder));
   }
 }
