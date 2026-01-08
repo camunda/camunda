@@ -62,6 +62,24 @@ jobs:
       - name: Push Changes to the target branch
         if: ${{ steps.update-identity-version.outcome == 'success' && inputs.dryRun == false }}
         run: git push origin "${{ inputs.targetBranch }}"
+      - name: Notify Camunda of completion
+        if: success()
+        uses: camunda-community-hub/camunda-platform-8-github-action@787c775abd971a613cea6026a5525f504613f9ae
+        with:
+          clientConfig: ${{ secrets.MONOREPO_RELEASE_CLUSTER_CLIENT_CONFIG }}
+          operation: publishMessage
+          messageName: 'identity-workflow-completed'
+          correlationKey: 'identity-update-${{ inputs.identityVersion }}'
+          variables: |
+            {
+              "workflow_run": {
+                "name": "Update Identity Version",
+                "conclusion": "success",
+                "head_branch": "${{ github.head_ref || github.ref_name }}",
+                "target_branch": "${{ inputs.targetBranch }}"
+              },
+              "action": "completed"
+            }
       - name: Observe build status
         if: always()
         continue-on-error: true
