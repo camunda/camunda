@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.dsl.instructions;
 
+import io.camunda.process.test.api.assertions.DecisionSelector;
+import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.IncidentSelector;
@@ -165,5 +167,25 @@ final class InstructionSelectorFactory {
     }
 
     return selector;
+  }
+
+  /**
+   * Builds a decision selector from a DSL decision selector.
+   *
+   * @param dslSelector the DSL decision selector
+   * @return the decision selector
+   * @throws IllegalArgumentException if neither decisionDefinitionId nor decisionDefinitionName is
+   *     set
+   */
+  static DecisionSelector buildDecisionSelector(
+      final io.camunda.process.test.api.dsl.DecisionSelector dslSelector) {
+    if (dslSelector.getDecisionDefinitionId().isPresent()) {
+      return DecisionSelectors.byId(dslSelector.getDecisionDefinitionId().get());
+    } else if (dslSelector.getDecisionDefinitionName().isPresent()) {
+      return DecisionSelectors.byName(dslSelector.getDecisionDefinitionName().get());
+    } else {
+      throw new IllegalArgumentException(
+          "Decision selector must have either decisionDefinitionId or decisionDefinitionName");
+    }
   }
 }

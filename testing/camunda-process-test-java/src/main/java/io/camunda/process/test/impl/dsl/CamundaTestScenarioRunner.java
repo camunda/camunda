@@ -18,6 +18,8 @@ package io.camunda.process.test.impl.dsl;
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
+import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
@@ -25,6 +27,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCase;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.impl.dsl.instructions.AssertDecisionInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.AssertElementInstanceInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.AssertElementInstancesInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.AssertProcessInstanceInstructionHandler;
@@ -65,6 +68,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
 
   static {
     // register instruction handlers here
+    registerHandler(new AssertDecisionInstructionHandler());
     registerHandler(new AssertElementInstanceInstructionHandler());
     registerHandler(new AssertElementInstancesInstructionHandler());
     registerHandler(new AssertProcessInstanceInstructionHandler());
@@ -173,6 +177,11 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     @Override
     public UserTaskAssert assertThatUserTask(final UserTaskSelector selector) {
       return CamundaAssert.assertThatUserTask(selector);
+    }
+
+    @Override
+    public DecisionInstanceAssert assertThatDecision(final DecisionSelector selector) {
+      return CamundaAssert.assertThatDecision(selector);
     }
   }
 }

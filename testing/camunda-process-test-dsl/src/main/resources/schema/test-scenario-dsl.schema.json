@@ -48,6 +48,9 @@
       "description": "An instruction to define an action or an assertion to be performed in a test case.",
       "oneOf": [
         {
+          "$ref": "#/definitions/AssertDecisionInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertElementInstanceInstruction"
         },
         {
@@ -223,6 +226,74 @@
             "processDefinitionId"
           ]
         }
+      ],
+      "additionalProperties": false
+    },
+    "DecisionSelector": {
+      "description": "A selector to identify a decision.",
+      "type": "object",
+      "properties": {
+        "decisionDefinitionId": {
+          "description": "The ID of the decision definition.",
+          "type": "string"
+        },
+        "decisionDefinitionName": {
+          "description": "The name of the decision definition.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "decisionDefinitionId"
+          ]
+        },
+        {
+          "required": [
+            "decisionDefinitionName"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "AssertDecisionInstruction": {
+      "description": "An instruction to assert the evaluation of a decision.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_DECISION"
+        },
+        "decisionSelector": {
+          "description": "The selector to identify the decision.",
+          "$ref": "#/definitions/DecisionSelector"
+        },
+        "output": {
+          "description": "The expected output of the decision."
+        },
+        "matchedRules": {
+          "description": "The expected matched rule indexes.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "notMatchedRules": {
+          "description": "The expected not matched rule indexes.",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "noMatchedRules": {
+          "description": "Whether to assert that no rules were matched.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "decisionSelector"
       ],
       "additionalProperties": false
     },
