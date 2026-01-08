@@ -17,6 +17,8 @@ import {
 import {useHasMultipleInstances} from './flowNodeMetadata';
 import {getScopeId} from 'modules/utils/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
+import {TOKEN_OPERATIONS} from 'modules/constants';
 
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -28,6 +30,36 @@ const useHasNoContent = () => {
     !hasRunningOrFinishedTokens &&
     newTokenCountForSelectedNode === 0
   );
+};
+
+const useVariableScopeKey = (fallback?: string | null) => {
+  const {
+    resolvedElementInstance,
+    selectedElementInstanceKey,
+    selectedElementId,
+  } = useProcessInstanceElementSelection();
+
+  // First try to get actual instance ID
+  const actualInstanceKey =
+    selectedElementInstanceKey ?? resolvedElementInstance?.elementInstanceKey;
+  if (actualInstanceKey) {
+    return actualInstanceKey;
+  }
+
+  // In modification mode, if selecting from diagram, check for pending ADD_TOKEN
+  if (modificationsStore.state.status === 'enabled' && selectedElementId) {
+    const addTokenModification = modificationsStore.flowNodeModifications.find(
+      (modification) =>
+        modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
+        modification.flowNode.id === selectedElementId,
+    );
+
+    if (addTokenModification && 'scopeId' in addTokenModification) {
+      return addTokenModification.scopeId;
+    }
+  }
+
+  return fallback ?? null;
 };
 
 const useDisplayStatus = ({
@@ -85,4 +117,4 @@ const useDisplayStatus = ({
   return 'error';
 };
 
-export {useDisplayStatus};
+export {useDisplayStatus, useVariableScopeKey};
