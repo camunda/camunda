@@ -82,6 +82,7 @@ jobs:
           operation: publishMessage
           messageName: 'identity-workflow-completed'
           correlationKey: 'identity-update-${{ inputs.identityVersion }}'
+          timeToLive: '240000'
           variables: |
             {
               "workflow_run": {
