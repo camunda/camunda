@@ -18,13 +18,11 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class SchedulerMetrics implements CloseableSilently {
-  private static final String NAMESPACE = "camunda.checkpoint.scheduler";
-  private static final String LAST_CHECKPOINT_GAUGE_NAME =
-      NAMESPACE + ".last.checkpoint.time.millis";
-  private static final String LAST_CHECKPOINT_ID_GAUGE_NAME = NAMESPACE + ".last.checkpoint.id";
-  private static final String NEXT_CHECKPOINT_GAUGE_NAME =
-      NAMESPACE + ".next.checkpoint.time.millis";
-  private static final String TYPE_TAG = "type";
+  static final String NAMESPACE = "camunda.checkpoint.scheduler";
+  static final String LAST_CHECKPOINT_GAUGE_NAME = NAMESPACE + ".last.checkpoint.time.millis";
+  static final String LAST_CHECKPOINT_ID_GAUGE_NAME = NAMESPACE + ".last.checkpoint.id";
+  static final String NEXT_CHECKPOINT_GAUGE_NAME = NAMESPACE + ".next.checkpoint.time.millis";
+  static final String TYPE_TAG = "type";
 
   private final MeterRegistry meterRegistry;
   private final Set<Id> registeredMeterIds = new HashSet<>();
