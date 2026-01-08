@@ -118,7 +118,8 @@ public class OpensearchBackupRepository implements BackupRepository {
   public void validateRepositoryExists(final String repositoryName) {
     try {
       // Use a custom endpoint without deserializing to avoid missing property issues
-      // AWS OpenSearch may not return all expected properties (e.g., RepositorySettings.location)
+      // AWS OpenSearch with S3 backup repository may not return all expected properties (e.g.,
+      // RepositorySettings.location)
       final var request = repositoryRequestBuilder(repositoryName).build();
       final var endpoint = createGetRepositoryEndpoint();
       openSearchClient
@@ -138,10 +139,6 @@ public class OpensearchBackupRepository implements BackupRepository {
     }
   }
 
-  /**
-   * Creates a custom endpoint for GetRepository that doesn't deserialize the response to avoid
-   * missing property exceptions when AWS OpenSearch doesn't return all expected fields.
-   */
   private JsonEndpoint<GetRepositoryRequest, Void, ErrorResponse> createGetRepositoryEndpoint() {
     return new SimpleEndpoint<>(
         r -> "GET",
