@@ -32,7 +32,14 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-mapping-http</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

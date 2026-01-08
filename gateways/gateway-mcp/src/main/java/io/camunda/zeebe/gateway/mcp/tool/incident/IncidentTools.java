@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway.mcp.tool.incident;
 import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -49,12 +51,12 @@ public class IncidentTools {
 
   private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final JobServices jobServices;
+  private final JobServices<JobActivationResult> jobServices;
 
   public IncidentTools(
       final IncidentServices incidentServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final JobServices jobServices) {
+      final JobServices<JobActivationResult> jobServices) {
     this.incidentServices = incidentServices;
     this.authenticationProvider = authenticationProvider;
     this.jobServices = jobServices;
@@ -78,14 +80,15 @@ public class IncidentTools {
       }
 
       final var result =
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(
-                  SearchQueryBuilders.incidentSearchQuery()
-                      .filter(SearchQueryFilterMapper.toIncidentFilter(filter))
-                      .page(SearchQueryPageMapper.toSearchQueryPage(page))
-                      .sort(sortRequest.get())
-                      .build());
+          SearchQueryResponseMapper.toIncidentSearchQueryResponse(
+              incidentServices
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                  .search(
+                      SearchQueryBuilders.incidentSearchQuery()
+                          .filter(SearchQueryFilterMapper.toIncidentFilter(filter))
+                          .page(SearchQueryPageMapper.toSearchQueryPage(page))
+                          .sort(sortRequest.get())
+                          .build()));
 
       return CallToolResultMapper.from(result);
     } catch (final Exception e) {
@@ -104,9 +107,10 @@ public class IncidentTools {
           final Long incidentKey) {
     try {
       return CallToolResultMapper.from(
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getByKey(incidentKey));
+          SearchQueryResponseMapper.toIncident(
+              incidentServices
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                  .getByKey(incidentKey)));
     } catch (final Exception e) {
       return mapErrorToResult(e);
     }
@@ -151,7 +155,6 @@ public class IncidentTools {
             "Cannot retrieve job key for job-based incident.", Status.INVALID_STATE);
       }
       // update retries for the job to 1
-      // noinspection unchecked
       final Either<ServiceException, JobRecord> updateResult =
           CallToolResultMapper.executeServiceMethod(
               jobServices

@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -82,7 +83,7 @@ class IncidentToolsTest extends ToolsTest {
           .build();
 
   @MockitoBean private IncidentServices incidentServices;
-  @MockitoBean private JobServices jobServices;
+  @MockitoBean private JobServices<JobActivationResult> jobServices;
 
   @Autowired private ObjectMapper objectMapper;
   @Captor private ArgumentCaptor<IncidentQuery> queryCaptor;
