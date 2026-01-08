@@ -19,4 +19,11 @@
   <artifactId>camunda-gateway-mcp</artifactId>
   <packaging>jar</packaging>
   <name>Camunda Gateway MCP server</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+  </dependencies>
 </project>
