@@ -8,6 +8,7 @@
 package io.camunda.security.validation;
 
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static java.util.Collections.emptyList;
 
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
@@ -30,6 +31,17 @@ public class TenantValidator {
     return violations;
   }
 
+  public List<String> validateTenantMembers(
+      final List<String> memberIds, final EntityType memberType) {
+    if (memberIds == null) {
+      return emptyList();
+    }
+    return memberIds.stream()
+        .map(memberId -> validateMemberId(memberId, memberType))
+        .flatMap(List::stream)
+        .toList();
+  }
+
   private void validateTenantId(final String id, final List<String> violations) {
     identifierValidator.validateTenantId(id, violations, DEFAULT_TENANT_ID::equals);
   }
@@ -40,38 +52,18 @@ public class TenantValidator {
     }
   }
 
-  private static void validateTenantDescription(
-      final String description, final List<String> violations) {
-    if (description == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
-    }
-  }
-
-  private void validateMemberId(
-      final String entityId, final EntityType entityType, final List<String> violations) {
-    switch (entityType) {
-      case USER:
-        validateId(entityId, "username", violations);
-        break;
-      case GROUP:
-        validateId(entityId, "groupId", violations);
-        break;
-      case MAPPING_RULE:
-        validateId(entityId, "mappingRuleId", violations);
-        break;
-      case ROLE:
-        validateId(entityId, "roleId", violations);
-        break;
-      case CLIENT:
-        validateId(entityId, "clientId", violations);
-        break;
-      default:
-        validateId(entityId, "entityId", violations);
-    }
-  }
-
-  private void validateId(
-      final String id, final String propertyName, final List<String> violations) {
-    identifierValidator.validateId(id, propertyName, violations);
+  private List<String> validateMemberId(final String entityId, final EntityType entityType) {
+    final List<String> violations = new ArrayList<>();
+    final var propertyName =
+        switch (entityType) {
+          case USER -> "username";
+          case GROUP -> "groupId";
+          case MAPPING_RULE -> "mappingRuleId";
+          case ROLE -> "roleId";
+          case CLIENT -> "clientId";
+          default -> "entityId";
+        };
+    identifierValidator.validateId(entityId, propertyName, violations);
+    return violations;
   }
 }

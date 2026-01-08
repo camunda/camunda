@@ -115,6 +115,11 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         });
     configuredAuthorizations.ifRight(auths -> auths.forEach(setupRecord::addAuthorization));
     configuredTenants.ifRight(tenants -> tenants.forEach(setupRecord::addTenant));
+    initialization
+        .getTenants()
+        .forEach(
+            tenant ->
+                tenantConfigurer.configureMembers(tenant).forEach(setupRecord::addTenantMember));
 
     initialization
         .getUsers()
