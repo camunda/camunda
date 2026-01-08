@@ -326,7 +326,7 @@
 
       <!-- Local Variables Filter -->
       <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
-      AND
+        AND
         <foreach collection="filter.localVariableFilters" item="variableValueFilter"
           separator=" AND ">
           EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
