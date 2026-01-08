@@ -122,7 +122,6 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     return Set.of();
   }
 
-  @Override
   public long getRootProcessInstanceKey() {
     return -1L; // not used in Optimize
   }
