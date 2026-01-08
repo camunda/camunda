@@ -578,6 +578,44 @@ export function CREATE_COMPONENT_AUTHORIZATION(
   };
 }
 
+export function CREATE_CUSTOM_AUTHORIZATION_BODY(
+  ownerId: string,
+  ownerType:
+    | 'USER'
+    | 'CLIENT'
+    | 'ROLE'
+    | 'GROUP'
+    | 'MAPPING_RULE'
+    | 'WRONG_VALUE_FOR_TEST',
+  resourceId: string,
+  resourceType:
+    | 'AUTHORIZATION'
+    | 'MAPPING_RULE'
+    | 'MESSAGE'
+    | 'BATCH'
+    | 'COMPONENT'
+    | 'SYSTEM'
+    | 'TENANT'
+    | 'RESOURCE'
+    | 'PROCESS_DEFINITION'
+    | 'DECISION_REQUIREMENTS_DEFINITION'
+    | 'DECISION_DEFINITION'
+    | 'GROUP'
+    | 'USER'
+    | 'ROLE'
+    | 'DOCUMENT'
+    | 'WRONG_VALUE_FOR_TEST',
+  permissionTypes: string[],
+) {
+  return {
+    ownerId: ownerId,
+    ownerType: ownerType,
+    resourceType: resourceType,
+    resourceId: resourceId,
+    permissionTypes: permissionTypes,
+  };
+}
+
 export function GET_CURRENT_USER_EXPECTED_BODY(
   username: string,
   name: string,
