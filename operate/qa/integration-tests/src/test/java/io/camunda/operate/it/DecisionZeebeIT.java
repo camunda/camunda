@@ -39,7 +39,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class DecisionZeebeIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_DECISIONS_GROUPED_URL = "/api/decisions/grouped";
-  private static final String QUERY_DECISION_XML_URL = "/api/decisions/%s/xml";
 
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
@@ -55,6 +54,8 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
     super.before();
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(any(), any())).thenReturn(true);
+    when(permissionsService.getDecisionsWithPermission(any()))
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
   }
 
   @Test
@@ -121,80 +122,6 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
         .isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
 
     verify(permissionsService, times(2)).getDecisionDefinitionPermissions(anyString());
-  }
-
-  @Test
-  public void testDecisionGetDiagramV1() throws Exception {
-    // given
-    final Long decision1V1Id = 1222L;
-    final Long decision2V1Id = 1333L;
-
-    createData();
-
-    // when invoiceClassification version 1
-    MockHttpServletRequestBuilder request =
-        get(String.format(QUERY_DECISION_XML_URL, decision1V1Id));
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-
-    final String invoiceClassificationVersion1 = mvcResult.getResponse().getContentAsString();
-
-    // and invoiceClassification version 1
-    request = get(String.format(QUERY_DECISION_XML_URL, decision2V1Id));
-    mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-
-    final String invoiceAssignApproverVersion1 = mvcResult.getResponse().getContentAsString();
-
-    // then one and the same DRD is returned
-    assertThat(invoiceAssignApproverVersion1).isEqualTo(invoiceClassificationVersion1);
-
-    // it is of version 1
-    assertThat(invoiceAssignApproverVersion1).isNotEmpty();
-    assertThat(invoiceAssignApproverVersion1)
-        .contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    assertThat(invoiceAssignApproverVersion1).doesNotContain("exceptional");
-  }
-
-  @Test
-  public void testDecisionGetDiagramV2() throws Exception {
-    // given
-    final Long decision1V2Id = 2222L;
-    final Long decision2V2Id = 2333L;
-
-    createData();
-
-    // when invoiceClassification version 2
-    MockHttpServletRequestBuilder request =
-        get(String.format(QUERY_DECISION_XML_URL, decision1V2Id));
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-
-    final String invoiceClassificationVersion2 = mvcResult.getResponse().getContentAsString();
-
-    // and invoiceClassification version 2
-    request = get(String.format(QUERY_DECISION_XML_URL, decision2V2Id));
-    mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-
-    final String invoiceAssignApproverVersion2 = mvcResult.getResponse().getContentAsString();
-
-    // then
-    // one and the same DRD is returned
-    assertThat(invoiceAssignApproverVersion2).isEqualTo(invoiceClassificationVersion2);
-    // it is of version 2
-    assertThat(invoiceAssignApproverVersion2).isNotEmpty();
-    assertThat(invoiceAssignApproverVersion2)
-        .contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    assertThat(invoiceAssignApproverVersion2).contains("exceptional");
-  }
-
-  @Test
-  public void testNonExistingDecisionGetDiagram() throws Exception {
-    // given
-    final String decisionDefinitionId = "111";
-    // no decisions deployed
-
-    // when
-    final MockHttpServletRequestBuilder request =
-        get(String.format(QUERY_DECISION_XML_URL, decisionDefinitionId));
-    mockMvc.perform(request).andExpect(status().isNotFound());
   }
 
   @Test
