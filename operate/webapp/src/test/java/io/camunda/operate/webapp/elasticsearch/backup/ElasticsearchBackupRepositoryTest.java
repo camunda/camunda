@@ -11,6 +11,7 @@ import static io.camunda.operate.webapp.management.dto.BackupStateDto.INCOMPLETE
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.backup.BackupService.SnapshotRequest;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
@@ -277,6 +279,27 @@ public class ElasticsearchBackupRepositoryTest {
   @Test
   void shouldCreateRepository() {
     assertThat(backupRepository).isNotNull();
+  }
+
+  @Test
+  void shouldThrowResourceNotFoundExceptionWhenSnapshotsListIsEmpty() throws IOException {
+    // given
+    final var snapshotClient = mock(SnapshotClient.class);
+    final var snapshotResponse = mock(GetSnapshotsResponse.class);
+
+    // Set up Snapshot client
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    // Set up Snapshot response with empty list
+    when(snapshotResponse.getSnapshots()).thenReturn(List.of());
+    when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
+
+    // when & then
+    final var exception =
+        assertThrows(
+            ResourceNotFoundException.class,
+            () -> backupRepository.getBackupState("repository-name", 5L, id -> false));
+
+    assertThat(exception.getMessage()).isEqualTo("No backup with id [5] found.");
   }
 
   @Test
