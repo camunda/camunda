@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -433,5 +434,46 @@ public class ElasticsearchBackupRepositoryTest {
     // Test
     final var backupState = backupRepository.getBackupState("repository-name", 5L, id -> false);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+  }
+
+  @Test
+  public void testOnFailureCallbackInvokedWhenFindSnapshotsThrowsException() throws IOException {
+    // given
+    final var captor = ArgumentCaptor.forClass(ActionListener.class);
+    when(esClient.snapshot().createAsync(any(), any(), any())).thenReturn(null);
+    when(operateProperties.getBackup().getSnapshotTimeout()).thenReturn(1);
+
+    // Mock findSnapshots to throw a RuntimeException to simulate the scenario
+    // where findSnapshots() fails during isSnapshotFinishedWithinTimeout
+    doThrow(new RuntimeException("Simulated findSnapshots failure"))
+        .when(backupRepository)
+        .findSnapshots(any(), any());
+
+    // Track if onFailure callback was invoked
+    final boolean[] onFailureCalled = {false};
+
+    // when
+    backupRepository.executeSnapshotting(
+        new SnapshotRequest(
+            repositoryName,
+            snapshotName,
+            List.of("index-example"),
+            new Metadata().setBackupId(backupId).setPartCount(1).setPartNo(6).setVersion("8.3.0")),
+        () -> {},
+        () -> {
+          onFailureCalled[0] = true;
+        });
+
+    verify(esClient.snapshot()).createAsync(any(), any(), captor.capture());
+
+    // Trigger onFailure with SocketTimeoutException, which will call
+    // isSnapshotFinishedWithinTimeout
+    // where findSnapshots will throw an exception
+    captor.getValue().onFailure(new SocketTimeoutException());
+
+    // then - verify that despite the exception in findSnapshots, the onFailure callback was invoked
+    Awaitility.await("onFailure callback invoked despite exception in findSnapshots")
+        .atMost(5, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(onFailureCalled[0]).isTrue());
   }
 }
