@@ -74,10 +74,6 @@ public final class ProcessDefinitionProvider {
                       pd.processDefinitionKey(),
                       new ProcessCacheItem(
                           pd.processDefinitionId(), pd.name(), pd.version(), pd.tenantId())));
-
-      // Fill missing keys with EMPTY for safe enrichment
-      processDefinitionKeys.forEach(key -> fetched.putIfAbsent(key, ProcessCacheItem.EMPTY));
-
       return fetched;
     } catch (final Exception ex) {
       LOG.warn(
