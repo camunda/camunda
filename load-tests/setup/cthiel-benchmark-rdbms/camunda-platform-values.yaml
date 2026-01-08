@@ -1,0 +1,149 @@
+# Values for Camunda Platform Chart.
+# https://github.com/camunda/camunda-platform-helm
+#
+# This file is used to override the default values of the chart.
+# The values are optimized for running the load tests with a Camunda cluster on GKE.
+#
+# This is a YAML-formatted file.
+
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  # Disable global ingress
+  ingress:
+    enabled: false
+  image:
+    # Image.repository defines the repository from which to fetch the docker images
+    repository: "gcr.io/zeebe-io"
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: SNAPSHOT
+    ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+    pullPolicy: Always
+    ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+    pullSecrets: []
+  # By default, we run without Identity
+  identity:
+    auth:
+      enabled: false
+
+identity:
+  enabled: false
+
+identityKeycloak:
+  enabled: false
+
+optimize:
+  enabled: false
+
+connectors:
+  enabled: false
+
+webModeler:
+  enabled: false
+
+postgresql:
+  enabled: false
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  security:
+    authentication:
+      unprotectedApi: true
+    authorizations:
+      enabled: false
+  # For simplicity of the deployment, we override the names to camunda
+  # This means we will have pods like: camunda-0, camunda-1, camunda-2
+  fullnameOverride: camunda
+  image:
+    tag: "SNAPSHOT"
+  ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
+  clusterSize: "3"
+  ## @param core.partitionCount defines how many partitions are set up in the cluster
+  partitionCount: "3"
+  ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
+  replicationFactor: "3"
+  ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
+  cpuThreadCount: "3"
+  ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
+  ioThreadCount: "3"
+  # Resources of the orchestration cluster
+  resources:
+    requests:
+      cpu: 3500m
+      memory: 3Gi
+    limits:
+      cpu: 3500m
+      memory: 3Gi
+
+  nodeSelector:
+    cloud.google.com/gke-nodepool: n2-standard-4
+
+  ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
+  pvcSize: "64Gi"
+  ## @param core.pvcStorageClassName can be used to set the storage class name which should be used by the persistent volume claim.
+  # It is recommended to use a storage class, which is backed with a SSD. Set to "-" to disable use of default storage class.
+  pvcStorageClassName: "ssd"
+  # @extra core.containerSecurityContext defines the security options the container should be run with
+  containerSecurityContext:
+    ## @param core.containerSecurityContext.allowPrivilegeEscalation
+    allowPrivilegeEscalation: true
+    ## @param core.containerSecurityContext.privileged
+    privileged: true
+    ## @param core.containerSecurityContext.runAsNonRoot
+    runAsNonRoot: true
+    ## @param core.containerSecurityContext.runAsUser
+    runAsUser: 1000
+    capabilities:
+      add: ["NET_ADMIN"]
+  javaOpts: >-
+    -XX:MaxRAMPercentage=25.0
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/camunda/data
+    -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log
+    -XX:NativeMemoryTracking=summary
+    -Xlog:gc*:file=/usr/local/camunda/data/gc.log:time:filecount=7,filesize=8M
+
+  # Zeebe config
+  extraVolumes:
+    - name: logs
+      emptyDir: {}
+  ## @param core.extraVolumeMounts can be used to mount extra volumes for the broker pods, useful for additional exporters
+  extraVolumeMounts:
+    - name: logs
+      mountPath: /usr/local/camunda/logs
+  history:
+    retention:
+      ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
+      enabled: true
+      ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
+      minimumAge: 70m
+  # @param core.env can be used to set extra environment variables in each broker container
+  env:
+    # Enable JSON logging for google cloud stackdriver
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    - name: ZEEBE_LOG_LEVEL
+      value: DEBUG
+    # To be able to load a separate/additional configuration
+    # See https://github.com/camunda/camunda-platform-helm/issues/2197
+    - name: SPRING_CONFIG_ADDITIONALLOCATION
+      value: "/usr/local/camunda/config/application.yml"
+
+# Change these settings to configure a different way to collect metrics
+prometheusServiceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  scrapeInterval: 30s
