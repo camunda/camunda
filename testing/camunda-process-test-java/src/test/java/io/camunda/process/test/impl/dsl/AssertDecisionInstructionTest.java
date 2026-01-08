@@ -109,9 +109,11 @@ public class AssertDecisionInstructionTest {
 
     // then
     verify(assertionFacade).assertThatDecision(any());
-    verify(assertionFacade.assertThatDecision(any())).hasOutput("valid");
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
+    final DecisionInstanceAssert decisionInstanceAssert = assertionFacade.assertThatDecision(any());
+    verify(decisionInstanceAssert).hasOutput("valid");
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, decisionInstanceAssert);
   }
 
   @Test
@@ -129,9 +131,11 @@ public class AssertDecisionInstructionTest {
 
     // then
     verify(assertionFacade).assertThatDecision(any());
-    verify(assertionFacade.assertThatDecision(any())).hasMatchedRules(1, 3, 5);
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
+    final DecisionInstanceAssert decisionInstanceAssert = assertionFacade.assertThatDecision(any());
+    verify(decisionInstanceAssert).hasMatchedRules(1, 3, 5);
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, decisionInstanceAssert);
   }
 
   @Test
@@ -149,9 +153,11 @@ public class AssertDecisionInstructionTest {
 
     // then
     verify(assertionFacade).assertThatDecision(any());
-    verify(assertionFacade.assertThatDecision(any())).hasNotMatchedRules(2, 4);
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
+    final DecisionInstanceAssert decisionInstanceAssert = assertionFacade.assertThatDecision(any());
+    verify(decisionInstanceAssert).hasNotMatchedRules(2, 4);
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, decisionInstanceAssert);
   }
 
   @Test
@@ -169,9 +175,11 @@ public class AssertDecisionInstructionTest {
 
     // then
     verify(assertionFacade).assertThatDecision(any());
-    verify(assertionFacade.assertThatDecision(any())).hasNoMatchedRules();
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
+    final DecisionInstanceAssert decisionInstanceAssert = assertionFacade.assertThatDecision(any());
+    verify(decisionInstanceAssert).hasNoMatchedRules();
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, decisionInstanceAssert);
   }
 
   @Test
@@ -190,11 +198,13 @@ public class AssertDecisionInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    final DecisionInstanceAssert decisionAssert = verify(assertionFacade).assertThatDecision(any());
-    verify(decisionAssert).hasOutput("valid");
-    verify(decisionAssert).hasMatchedRules(1, 3);
-    verify(decisionAssert).hasNotMatchedRules(2, 4);
+    verify(assertionFacade).assertThatDecision(any());
 
-    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
+    final DecisionInstanceAssert decisionInstanceAssert = assertionFacade.assertThatDecision(any());
+    verify(decisionInstanceAssert).hasOutput("valid");
+    verify(decisionInstanceAssert).hasMatchedRules(1, 3);
+    verify(decisionInstanceAssert).hasNotMatchedRules(2, 4);
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, decisionInstanceAssert);
   }
 }
