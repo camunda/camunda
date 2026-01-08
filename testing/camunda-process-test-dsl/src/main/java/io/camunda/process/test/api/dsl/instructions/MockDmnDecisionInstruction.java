@@ -18,6 +18,7 @@ package io.camunda.process.test.api.dsl.instructions;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestCaseInstructionType;
+import java.util.Collections;
 import java.util.Map;
 import org.immutables.value.Value;
 
@@ -44,5 +45,8 @@ public interface MockDmnDecisionInstruction extends TestCaseInstruction {
    *
    * @return the variables or an empty map if no variables are set
    */
-  Map<String, Object> getVariables();
+  @Value.Default
+  default Map<String, Object> getVariables() {
+    return Collections.emptyMap();
+  }
 }
