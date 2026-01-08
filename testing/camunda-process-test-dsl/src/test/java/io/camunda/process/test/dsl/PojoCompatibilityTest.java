@@ -311,13 +311,7 @@ public class PojoCompatibilityTest {
                         ImmutableDecisionSelector.builder()
                             .decisionDefinitionId("my-decision")
                             .build())
-                    .output(
-                        new java.util.HashMap<String, Object>() {
-                          {
-                            put("status", "approved");
-                            put("amount", 1000);
-                          }
-                        })
+                    .output(Collections.singletonMap("status", "approved"))
                     .build())),
         Arguments.of(
             "assert decision: full",

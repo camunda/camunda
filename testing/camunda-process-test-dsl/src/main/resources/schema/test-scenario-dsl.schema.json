@@ -270,7 +270,7 @@
           "$ref": "#/definitions/DecisionSelector"
         },
         "output": {
-          "description": "The expected output of the decision. The output can be a string, number, boolean, list, or JSON document."
+          "description": "The expected output of the decision."
         },
         "matchedRules": {
           "description": "The expected matched rule indexes.",
