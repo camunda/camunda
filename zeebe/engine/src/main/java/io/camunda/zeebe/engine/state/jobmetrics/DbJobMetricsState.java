@@ -34,6 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DbJobMetricsState implements MutableJobMetricsState {
 
+  /** Maximum batch record size in bytes (4 MiB) */
+  public static final long MAX_BATCH_SIZE = 4 * 1024 * 1024;
+
   /** Metadata key: sum of all bytes string in STRING_ENCODING_CF */
   public static final String META_TOTAL_ENCODED_STRINGS_SIZE =
       "__total_encoded_strings_byte_size__";
@@ -46,6 +49,9 @@ public class DbJobMetricsState implements MutableJobMetricsState {
 
   /** Metadata key: auto-increment counter for STRING_ENCODING_CF */
   public static final String META_COUNTER = "__counter__";
+
+  /** Metadata key: flag indicating if size limit was exceeded (1 = true, 0 = false) */
+  public static final String META_TOTAL_SIZE_EXCEEDED = "__total_size_exceeded__";
 
   // Column family for metrics: MetricsKey -> MetricsValue
   private final ColumnFamily<MetricsKey, MetricsValue> metricsColumnFamily;
@@ -133,9 +139,30 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   }
 
   @Override
+  public boolean isTruncated() {
+    return getMetadata(META_TOTAL_SIZE_EXCEEDED) == 1L;
+  }
+
+  @Override
   public void incrementMetric(
       final String jobType, final String tenantId, final String workerName, final JobState status) {
-    // Get or create integer indices for strings
+
+    // Check if already truncated, skip if so
+    if (isTruncated()) {
+      return;
+    }
+
+    // Calculate size impact BEFORE making any changes
+    final long sizeImpact = calculateSizeImpact(jobType, tenantId, workerName);
+    final long currentSize = getMetadata(META_BATCH_RECORD_TOTAL_SIZE);
+
+    if (currentSize + sizeImpact > MAX_BATCH_SIZE) {
+      // Would exceed threshold - mark as truncated and skip
+      setMetadataValue(META_TOTAL_SIZE_EXCEEDED, 1L);
+      return;
+    }
+
+    // Safe to proceed with the increment
     final int jobTypeIdx = getOrCreateStringIndex(jobType);
     final int tenantIdx = getOrCreateStringIndex(tenantId);
     final int workerIdx = getOrCreateStringIndex(workerName);
@@ -174,25 +201,11 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   @Override
   public void flush() {
     // Delete all keys in metrics column family
-    final List<MetricsKey> metricsKeysToDelete = new ArrayList<>();
-    metricsColumnFamily.forEach(
-        (key, value) -> {
-          final MetricsKey keyToDelete =
-              new MetricsKey(
-                  key.getJobTypeIndex(), key.getTenantIdIndex(), key.getWorkerNameIndex());
-          metricsKeysToDelete.add(keyToDelete);
-        });
-    for (final MetricsKey keyToDelete : metricsKeysToDelete) {
-      metricsColumnFamily.deleteExisting(keyToDelete);
-    }
+    metricsColumnFamily.forEach((mk, mv) -> metricsColumnFamily.deleteExisting(mk));
 
     // Delete all keys in string encoding column family
-    final List<String> stringsToDelete = new ArrayList<>();
-    stringEncodingColumnFamily.forEach((key, value) -> stringsToDelete.add(key.toString()));
-    for (final String stringToDelete : stringsToDelete) {
-      stringEncodingKey.wrapString(stringToDelete);
-      stringEncodingColumnFamily.deleteExisting(stringEncodingKey);
-    }
+    stringEncodingColumnFamily.forEach(
+        (dbString, dbInt) -> stringEncodingColumnFamily.deleteExisting(dbString));
 
     // Clear the cache
     stringEncodingCache.clear();
@@ -202,6 +215,55 @@ public class DbJobMetricsState implements MutableJobMetricsState {
     setMetadataValue(META_JOB_METRICS_NB, 0L);
     setMetadataValue(META_BATCH_RECORD_TOTAL_SIZE, 0L);
     setMetadataValue(META_COUNTER, 0L);
+    setMetadataValue(META_TOTAL_SIZE_EXCEEDED, 0L);
+  }
+
+  /**
+   * Calculates the size impact of adding a metric for the given strings. Only counts new strings
+   * and new keys.
+   *
+   * @param jobType the job type string
+   * @param tenantId the tenant ID string
+   * @param workerName the worker name string
+   * @return the size impact in bytes
+   */
+  private long calculateSizeImpact(
+      final String jobType, final String tenantId, final String workerName) {
+    long impact = 0;
+
+    // Check if strings are new (would add to encoded strings size)
+    final boolean jobTypeIsNew = !stringEncodingCache.containsKey(jobType);
+    final boolean tenantIdIsNew = !stringEncodingCache.containsKey(tenantId);
+    final boolean workerNameIsNew = !stringEncodingCache.containsKey(workerName);
+
+    if (jobTypeIsNew) {
+      impact += jobType.getBytes().length;
+    }
+    if (tenantIdIsNew) {
+      impact += tenantId.getBytes().length;
+    }
+    if (workerNameIsNew) {
+      impact += workerName.getBytes().length;
+    }
+
+    // Check if the key combination is new (would add key+value size)
+    if (jobTypeIsNew || tenantIdIsNew || workerNameIsNew) {
+      // At least one string is new, so key is definitely new
+      impact += MetricsKey.BYTES + MetricsValue.BYTES;
+    } else {
+      // All strings exist, check if key combination exists
+      final int jobTypeIdx = stringEncodingCache.get(jobType);
+      final int tenantIdx = stringEncodingCache.get(tenantId);
+      final int workerIdx = stringEncodingCache.get(workerName);
+
+      metricsKey.set(jobTypeIdx, tenantIdx, workerIdx);
+      if (metricsColumnFamily.get(metricsKey) == null) {
+        impact += MetricsKey.BYTES + MetricsValue.BYTES;
+      }
+      // If key exists, no additional size impact (just updating existing record)
+    }
+
+    return impact;
   }
 
   /**
@@ -278,7 +340,7 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   private void updateBatchRecordTotalSize() {
     final long jobMetricsNb = getMetadata(META_JOB_METRICS_NB);
     final long totalEncodedStringsSize = getMetadata(META_TOTAL_ENCODED_STRINGS_SIZE);
-    // Formula: job_metrics_nb * (12 + 96) + total_encoded_strings_size
+    // Formula: job_metrics_nb * (12 + sizeOf(int) * JobState.size()) + total_encoded_strings_size
     final long batchRecordTotalSize =
         jobMetricsNb * (MetricsKey.BYTES + MetricsValue.BYTES) + totalEncodedStringsSize;
     setMetadataValue(META_BATCH_RECORD_TOTAL_SIZE, batchRecordTotalSize);

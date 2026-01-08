@@ -35,4 +35,11 @@ public interface JobMetricsState {
    * @return the metadata value, or 0 if not found
    */
   long getMetadata(String key);
+
+  /**
+   * Checks if the metrics collection has been truncated due to size limits.
+   *
+   * @return true if the batch record total size exceeded the maximum threshold
+   */
+  boolean isTruncated();
 }
