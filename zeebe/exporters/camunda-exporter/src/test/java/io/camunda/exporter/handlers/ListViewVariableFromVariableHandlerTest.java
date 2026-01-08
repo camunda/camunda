@@ -20,6 +20,7 @@ import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
@@ -152,5 +153,30 @@ public class ListViewVariableFromVariableHandlerTest {
     assertThat(entity.getVarName()).isEqualTo(variableRecord.getValue().getName());
     assertThat(entity.getVarValue()).isEqualTo(variableRecord.getValue().getValue());
     assertThat(entity.getTenantId()).isEqualTo(variableRecord.getValue().getTenantId());
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(variableRecord.getValue().getRootProcessInstanceKey());
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withRootProcessInstanceKey(-1L)
+                            .build()));
+
+    // when
+    final VariableForListViewEntity entity = new VariableForListViewEntity();
+    underTest.updateEntity(variableRecord, entity);
+
+    // then
+    assertThat(entity.getRootProcessInstanceKey()).isNull();
   }
 }

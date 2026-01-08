@@ -238,6 +238,9 @@ public class UserTaskVariableHandlerTest {
     assertThat(localVariable.getJoin().getParent()).isEqualTo(variableRecordValue.getScopeKey());
     assertThat(localVariable.getJoin().getName())
         .isEqualTo(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
+    assertThat(localVariable.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(variableRecordValue.getRootProcessInstanceKey());
 
     // Process Variable Assertions
     assertThat(processVariable.getId())
@@ -257,6 +260,9 @@ public class UserTaskVariableHandlerTest {
         .isEqualTo(variableRecordValue.getProcessInstanceKey());
     assertThat(processVariable.getJoin().getName())
         .isEqualTo(TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
+    assertThat(processVariable.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(variableRecordValue.getRootProcessInstanceKey());
   }
 
   @Test
@@ -329,5 +335,29 @@ public class UserTaskVariableHandlerTest {
     assertThat(variableEntity.getFullValue())
         .isEqualTo("v".repeat(underTest.variableSizeThreshold + 1));
     assertThat(variableEntity.getIsTruncated()).isTrue();
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withRootProcessInstanceKey(-1L)
+                            .build()));
+
+    // when
+    final UserTaskVariableBatch batch = new UserTaskVariableBatch().setVariables(new ArrayList<>());
+    underTest.updateEntity(variableRecord, batch);
+
+    // then
+    for (final var variableEntity : batch.getVariables()) {
+      assertThat(variableEntity.getRootProcessInstanceKey()).isNull();
+    }
   }
 }
