@@ -24,6 +24,7 @@
     i.FLOW_NODE_INSTANCE_KEY,
     i.FLOW_NODE_ID,
     i.PROCESS_INSTANCE_KEY,
+    i.ROOT_PROCESS_INSTANCE_KEY,
     i.PROCESS_DEFINITION_ID,
     i.PROCESS_DEFINITION_KEY,
     i.ERROR_MESSAGE,
@@ -158,6 +159,7 @@
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ERROR_TYPE" javaType="io.camunda.search.entities.IncidentEntity$ErrorType"/>
       <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
@@ -175,6 +177,7 @@
                           FLOW_NODE_INSTANCE_KEY,
                           FLOW_NODE_ID,
                           PROCESS_INSTANCE_KEY,
+                          ROOT_PROCESS_INSTANCE_KEY,
                           PROCESS_DEFINITION_ID,
                           PROCESS_DEFINITION_KEY,
                           ERROR_MESSAGE,
@@ -187,7 +190,7 @@
                           PARTITION_ID,
                           TREE_PATH,
                           HISTORY_CLEANUP_DATE)
-    VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
+    VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{rootProcessInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorMessageHash}, #{errorType},
             #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId}, #{treePath},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
@@ -238,5 +241,54 @@
     <bind name="tableName" value="'INCIDENT'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
   </delete>
+
+  <select id="processInstanceStatisticsByErrorCount" parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery"
+          resultType="long">
+    SELECT COUNT(*)
+    FROM (
+      SELECT i.ERROR_MESSAGE_HASH
+      FROM ${prefix}INCIDENT i
+      <include refid="processInstanceStatisticsByErrorWhere"/>
+      <include refid="processInstanceStatisticsByErrorGroupBy"/>
+    ) t
+  </select>
+
+  <select id="processInstanceStatisticsByError" parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery"
+          resultType="io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity">
+    SELECT * FROM (
+      SELECT
+        i.ERROR_MESSAGE_HASH AS ERROR_HASH_CODE,
+        i.ERROR_MESSAGE AS ERROR_MESSAGE,
+        COUNT(DISTINCT i.PROCESS_INSTANCE_KEY) AS ACTIVE_INSTANCES_WITH_ERROR_COUNT
+      FROM ${prefix}INCIDENT i
+      <include refid="processInstanceStatisticsByErrorWhere"/>
+      <include refid="processInstanceStatisticsByErrorGroupBy"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="processInstanceStatisticsByErrorWhere">
+    <where>
+      i.STATE = 'ACTIVE'
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND i.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND i.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+  <sql id="processInstanceStatisticsByErrorGroupBy">
+    GROUP BY i.ERROR_MESSAGE_HASH, i.ERROR_MESSAGE
+  </sql>
 
 </mapper>

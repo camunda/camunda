@@ -36,6 +36,7 @@ public final class CorrelatedMessageSubscriptionFixtures extends CommonFixtures 
             .processDefinitionId("procDef-" + generateRandomString(10))
             .processDefinitionKey(nextKey())
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .tenantId("tenant-" + generateRandomString(10));
     return builderFunction.apply(builder).build();
   }

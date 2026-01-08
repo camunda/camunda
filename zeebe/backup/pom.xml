@@ -62,6 +62,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-journal</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -96,8 +101,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-grpc</artifactId>
+      <artifactId>zeebe-transport</artifactId>
     </dependency>
 
     <dependency>

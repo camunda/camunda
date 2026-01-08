@@ -8,8 +8,10 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.IncidentDbQuery;
+import io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import java.util.List;
 
 public interface IncidentMapper
@@ -24,6 +26,11 @@ public interface IncidentMapper
   Long count(IncidentDbQuery filter);
 
   List<IncidentEntity> search(IncidentDbQuery filter);
+
+  Long processInstanceStatisticsByErrorCount(IncidentProcessInstanceStatisticsByErrorDbQuery query);
+
+  List<IncidentProcessInstanceStatisticsByErrorEntity> processInstanceStatisticsByError(
+      IncidentProcessInstanceStatisticsByErrorDbQuery query);
 
   record IncidentStateDto(
       Long incidentKey,

@@ -72,7 +72,6 @@
     <opensearch.test.version>2.17.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.2</quartz.version>
 
@@ -218,7 +217,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.8.1</version>
+          <version>3.9.0</version>
           <configuration>
             <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
             <ignoredUnusedDeclaredDependencies combine.children="append">
@@ -289,7 +288,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.4.2</version>
+          <version>3.5.0</version>
           <executions>
             <execution>
               <id>empty-javadoc-jar</id>
@@ -361,7 +360,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>

@@ -32,4 +32,10 @@ public interface DecisionRequirementsRecordValue
    * @return the binary DMN resource
    */
   byte[] getResource();
+
+  /**
+   * @return the key of the deployment this decision was deployed with
+   */
+  @Override
+  long getDeploymentKey();
 }

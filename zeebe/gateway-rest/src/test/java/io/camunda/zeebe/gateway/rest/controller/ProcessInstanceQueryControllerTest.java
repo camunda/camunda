@@ -14,6 +14,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.gateway.mapping.http.util.ProcessInstanceStateConverter;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -33,11 +37,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentErrorTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -72,6 +72,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
+          null,
           "demoProcess",
           "Demo Process",
           5,
@@ -199,6 +200,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                       123L,
                       "Test_Process",
                       789L,
+                      37L,
                       ErrorType.CALLED_DECISION_ERROR,
                       "Process crashed",
                       "elementId",

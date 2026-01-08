@@ -17,6 +17,8 @@ package io.camunda.process.test.impl.dsl;
 
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
+import io.camunda.process.test.api.assertions.UserTaskAssert;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
 
 /** Facade to provide assertions for different entities. */
 public interface AssertionFacade {
@@ -29,4 +31,12 @@ public interface AssertionFacade {
    */
   ProcessInstanceAssert assertThatProcessInstance(
       final ProcessInstanceSelector processInstanceSelector);
+
+  /**
+   * Returns the assertion object for the given user task selector.
+   *
+   * @param userTaskSelector the selector to identify the user task
+   * @return the assertion object
+   */
+  UserTaskAssert assertThatUserTask(final UserTaskSelector userTaskSelector);
 }

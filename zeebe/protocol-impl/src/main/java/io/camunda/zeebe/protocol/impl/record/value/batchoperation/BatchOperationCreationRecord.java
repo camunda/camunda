@@ -16,6 +16,9 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Collection;
@@ -34,6 +37,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_AUTHENTICATION = "authentication";
   public static final String PROP_AUTHORIZATION_CHECK = "authorizationCheck";
   public static final String PROP_PARTITION_IDS = "partitionIds";
+  public static final String PROP_FOLLOWUP_COMMAND = "followUpCommand";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
@@ -52,9 +56,11 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
       new DocumentProperty(PROP_AUTHORIZATION_CHECK);
   private final ArrayProperty<IntegerValue> partitionIdsProp =
       new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
+  private final ObjectProperty<NestedRecord> followUpCommandProp =
+      new ObjectProperty<>(PROP_FOLLOWUP_COMMAND, new NestedRecord());
 
   public BatchOperationCreationRecord() {
-    super(8);
+    super(9);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
@@ -62,7 +68,8 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
         .declareProperty(modificationPlanProp)
         .declareProperty(authenticationProp)
         .declareProperty(authorizationCheckProp)
-        .declareProperty(partitionIdsProp);
+        .declareProperty(partitionIdsProp)
+        .declareProperty(followUpCommandProp);
   }
 
   @Override
@@ -135,6 +142,11 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public NestedRecord getFollowUpCommand() {
+    return followUpCommandProp.getValue();
+  }
+
   public DirectBuffer getAuthenticationBuffer() {
     return authenticationProp.getValue();
   }
@@ -157,6 +169,12 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return entityFilterProp.getValue();
   }
 
+  public BatchOperationCreationRecord setFollowUpCommand(
+      final ValueType valueType, final Intent intent, final UnifiedRecordValue value) {
+    getFollowUpCommand().setValueType(valueType).setIntent(intent).setRecordValue(value);
+    return this;
+  }
+
   public BatchOperationCreationRecord wrap(final BatchOperationCreationRecord record) {
     batchOperationKeyProp.setValue(record.getBatchOperationKey());
     batchOperationTypeProp.setValue(record.getBatchOperationType());
@@ -165,6 +183,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     modificationPlanProp.getValue().wrap(record.getModificationPlan());
     authenticationProp.setValue(record.getAuthenticationBuffer());
     setPartitionIds(record.getPartitionIds());
+    followUpCommandProp.getValue().wrap(record.getFollowUpCommand());
 
     return this;
   }

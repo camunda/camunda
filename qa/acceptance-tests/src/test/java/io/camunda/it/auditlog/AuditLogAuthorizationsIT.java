@@ -1,0 +1,303 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.auditlog;
+
+import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
+import static io.camunda.client.api.search.enums.ResourceType.AUDIT_LOG;
+import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
+import static io.camunda.it.auditlog.AuditLogUtils.PROCESS_A_ID;
+import static io.camunda.it.auditlog.AuditLogUtils.PROCESS_B_ID;
+import static io.camunda.it.auditlog.AuditLogUtils.PROCESS_C_ID;
+import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
+import static io.camunda.it.auditlog.AuditLogUtils.TENANT_B;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TestUser;
+import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import java.util.List;
+import java.util.Objects;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+
+/*
+ * Test is disabled on RDBMS until https://github.com/camunda/camunda/issues/43323 is implemented.
+ */
+@MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+public class AuditLogAuthorizationsIT {
+  protected static final boolean USE_REST_API = true;
+
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withBasicAuth()
+          .withMultiTenancyEnabled()
+          .withAuthorizationsEnabled()
+          .withAuthenticatedAccess();
+
+  private static final String USER_UNAUTHORIZED_NAME = "UnauthorizedUser";
+  private static final String USER_A_USERNAME = "userA";
+  private static final String USER_AA_USERNAME = "userAA";
+  private static final String USER_B_USERNAME = "userB";
+  private static final String USER_BB_USERNAME = "userBB";
+  private static final String USER_C_USERNAME = "userC";
+  private static final String USER_CC_USERNAME = "userCC";
+  private static final String USER_D_USERNAME = "userD";
+  private static final String PASSWORD = "password";
+  private static final List WILDCARD = List.of(AuthorizationScope.WILDCARD.getResourceId());
+
+  @UserDefinition
+  private static final TestUser USER_UNAUTHORIZED =
+      new TestUser(USER_UNAUTHORIZED_NAME, PASSWORD, List.of());
+
+  // With AUDIT_LOG#READ permissions
+  @UserDefinition
+  private static final TestUser USER_A =
+      new TestUser(USER_A_USERNAME, PASSWORD, List.of(new Permissions(AUDIT_LOG, READ, WILDCARD)));
+
+  @UserDefinition
+  private static final TestUser USER_AA =
+      new TestUser(
+          USER_AA_USERNAME,
+          PASSWORD,
+          List.of(new Permissions(AUDIT_LOG, READ, List.of(AuditLogCategoryEnum.ADMIN.name()))));
+
+  // With PROCESS_DEFINITION#READ_PROCESS_INSTANCE permission
+  @UserDefinition
+  private static final TestUser USER_B =
+      new TestUser(
+          USER_B_USERNAME,
+          PASSWORD,
+          List.of(new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, WILDCARD)));
+
+  @UserDefinition
+  private static final TestUser USER_BB =
+      new TestUser(
+          USER_BB_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_A_ID))));
+
+  @UserDefinition
+  private static final TestUser USER_C =
+      new TestUser(
+          USER_C_USERNAME,
+          PASSWORD,
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, WILDCARD)));
+
+  @UserDefinition
+  private static final TestUser USER_CC =
+      new TestUser(
+          USER_CC_USERNAME,
+          PASSWORD,
+          List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_C_ID))));
+
+  @UserDefinition
+  private static final TestUser USER_D =
+      new TestUser(
+          USER_D_USERNAME,
+          PASSWORD,
+          List.of(
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_A_ID)),
+              new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_B_ID))));
+
+  private static CamundaClient adminClient;
+
+  @BeforeAll
+  static void setUp() {
+    final var utils = new AuditLogUtils(adminClient);
+    utils.generateDefaults();
+    utils.assignUserToTenant(USER_UNAUTHORIZED_NAME, TENANT_A);
+    utils.assignUserToTenant(USER_A_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_AA_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_B_USERNAME, TENANT_B);
+    utils.assignUserToTenant(USER_BB_USERNAME, TENANT_B);
+    utils.assignUserToTenant(USER_C_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_CC_USERNAME, TENANT_A);
+    utils.assignUserToTenant(USER_C_USERNAME, TENANT_B);
+    utils.assignUserToTenant(USER_CC_USERNAME, TENANT_B);
+    utils.assignUserToTenant(USER_D_USERNAME, TENANT_A);
+    utils.await();
+  }
+
+  @Test
+  void shouldNotAuthorizeWithoutPermissions(
+      @Authenticated(USER_UNAUTHORIZED_NAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isEmpty();
+  }
+
+  @Test
+  void shouldAuthorizeByTenant(@Authenticated(USER_A_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(
+                    log -> Objects.isNull(log.getTenantId()) || TENANT_A.equals(log.getTenantId())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldAuthorizeByCategoryWildcard(
+      @Authenticated(USER_A_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> AuditLogCategoryEnum.ADMIN.equals(log.getCategory())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> AuditLogCategoryEnum.DEPLOYED_RESOURCES.equals(log.getCategory())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldAuthorizeByCategory(@Authenticated(USER_AA_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(log -> AuditLogCategoryEnum.ADMIN.equals(log.getCategory())))
+        .isTrue();
+  }
+
+  // TODO: this one fails, due to the wildcard shortcut in the authorization checks
+  @Disabled("https://github.com/camunda/camunda/issues/43662")
+  @Test
+  void shouldAuthorizeByProcessIdWildcard(
+      @Authenticated(USER_B_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(
+                    log ->
+                        AuditLogCategoryEnum.DEPLOYED_RESOURCES.equals(log.getCategory())
+                            || AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> PROCESS_A_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> PROCESS_C_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldAuthorizeByProcessId(@Authenticated(USER_BB_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(log -> PROCESS_A_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+  }
+
+  // TODO: this one fails, due to the wildcard shortcut in the authorization checks
+  @Disabled("https://github.com/camunda/camunda/issues/43662")
+  @Test
+  void shouldAuthorizeByUserTaskProcessIdWildcard(
+      @Authenticated(USER_C_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> PROCESS_B_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .anyMatch(log -> PROCESS_C_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldAuthorizeByUserTaskProcessId(
+      @Authenticated(USER_CC_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .allMatch(log -> PROCESS_C_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldAuthorizeWithCompositePermissions(
+      @Authenticated(USER_D_USERNAME) final CamundaClient client) {
+    // when
+    final var logs = client.newAuditLogSearchRequest().send().join();
+
+    // then
+    assertThat(logs.items()).isNotEmpty();
+    assertThat(
+            logs.items().stream()
+                .allMatch(
+                    log ->
+                        PROCESS_A_ID.equals(log.getProcessDefinitionId())
+                            || PROCESS_B_ID.equals(log.getProcessDefinitionId())))
+        .isTrue();
+    assertThat(
+            logs.items().stream()
+                .filter(log -> PROCESS_B_ID.equals(log.getProcessDefinitionId()))
+                .allMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
+        .isTrue();
+  }
+}

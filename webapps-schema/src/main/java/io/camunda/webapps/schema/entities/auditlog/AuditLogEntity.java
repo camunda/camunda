@@ -388,8 +388,9 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
     return decisionEvaluationKey;
   }
 
-  public void setDecisionEvaluationKey(final Long decisionEvaluationKey) {
+  public AuditLogEntity setDecisionEvaluationKey(final Long decisionEvaluationKey) {
     this.decisionEvaluationKey = decisionEvaluationKey;
+    return this;
   }
 
   public Long getRootProcessInstanceKey() {

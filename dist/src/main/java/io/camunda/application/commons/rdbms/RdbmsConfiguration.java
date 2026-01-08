@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
@@ -297,6 +298,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public IncidentProcessInstanceStatisticsByErrorDbReader
+      incidentProcessInstanceStatisticsByErrorReader(final IncidentMapper incidentMapper) {
+    return new IncidentProcessInstanceStatisticsByErrorDbReader(incidentMapper);
+  }
+
+  @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
   }
@@ -401,7 +408,9 @@ public class RdbmsConfiguration {
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
           processDefinitionInstanceVersionStatisticsReader,
-      final HistoryDeletionDbReader historyDeletionDbReader) {
+      final HistoryDeletionDbReader historyDeletionDbReader,
+      final IncidentProcessInstanceStatisticsByErrorDbReader
+          incidentProcessInstanceStatisticsByErrorReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -436,7 +445,8 @@ public class RdbmsConfiguration {
         correlatedMessageSubscriptionReader,
         processDefinitionInstanceStatisticsReader,
         processDefinitionInstanceVersionStatisticsReader,
-        historyDeletionDbReader);
+        historyDeletionDbReader,
+        incidentProcessInstanceStatisticsByErrorReader);
   }
 
   @Bean

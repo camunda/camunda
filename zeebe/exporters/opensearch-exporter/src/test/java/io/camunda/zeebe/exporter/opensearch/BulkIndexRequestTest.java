@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
@@ -43,6 +44,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
@@ -638,6 +641,91 @@ final class BulkIndexRequestTest {
           .describedAs(
               "Expect that the records are serialized with elementId in terminateInstructions")
           .containsExactly(tuple("foo", 5));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "DECISION_EVALUATION",
+          "INCIDENT",
+          "JOB",
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+          "PROCESS_INSTANCE_MIGRATION",
+          "PROCESS_INSTANCE_MODIFICATION",
+          "PROCESS_MESSAGE_SUBSCRIPTION",
+          "USER_TASK",
+          "VARIABLE",
+        })
+    void shouldIndexWithoutRootProcessInstanceKeyOnPreviousVersion(final ValueType valueType)
+        throws Exception {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      final long rootProcessInstanceKey = getRootProcessInstanceKey(record.getValue());
+      assertThat(rootProcessInstanceKey).isPositive();
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized without rootProcessInstanceKey")
+          .containsExactly(new Object[] {null});
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ValueType.class,
+        names = {
+          "DECISION_EVALUATION",
+          "INCIDENT",
+          "JOB",
+          "PROCESS_INSTANCE",
+          "PROCESS_INSTANCE_CREATION",
+          "PROCESS_INSTANCE_MIGRATION",
+          "PROCESS_INSTANCE_MODIFICATION",
+          "PROCESS_MESSAGE_SUBSCRIPTION",
+          "USER_TASK",
+          "VARIABLE",
+        })
+    void shouldIndexWithRootProcessInstanceKey(final ValueType valueType) throws Exception {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              valueType, r -> r.withBrokerVersion(VersionUtil.getVersion()));
+
+      final long rootProcessInstanceKey = getRootProcessInstanceKey(record.getValue());
+      assertThat(rootProcessInstanceKey).isPositive();
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("rootProcessInstanceKey"))
+          .describedAs("Expect that the records are serialized with rootProcessInstanceKey")
+          .containsExactly(rootProcessInstanceKey);
+    }
+
+    private static long getRootProcessInstanceKey(final RecordValue recordValue) throws Exception {
+      final var field = recordValue.getClass().getDeclaredField("rootProcessInstanceKey");
+      field.setAccessible(true);
+      return (long) field.get(recordValue);
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

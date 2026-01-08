@@ -14,6 +14,8 @@ import {
   mockProcessXML,
   createUser,
   mockProcessInstancesV2,
+  searchResult,
+  createProcessDefinition,
 } from 'modules/testUtils';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -26,6 +28,16 @@ describe('<ListView /> - operations', () => {
   beforeEach(() => {
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionId: 'demoProcess',
+          processDefinitionKey: 'demoProcess1',
+          name: 'New demo process',
+          version: 1,
+        }),
+      ]),
+    );
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockQueryBatchOperations().withSuccess({
@@ -53,11 +65,6 @@ describe('<ListView /> - operations', () => {
 
     const queryString =
       '?active=true&incidents=true&process=demoProcess&version=1';
-
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
 
     render(<ListView />, {
       wrapper: createWrapper(`/processes${queryString}`),
@@ -120,11 +127,6 @@ describe('<ListView /> - operations', () => {
 
     const queryString = '?active=true&incidents=true&process=demoProcess';
 
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
     render(<ListView />, {
       wrapper: createWrapper(`/processes${queryString}`),
     });
@@ -152,11 +154,6 @@ describe('<ListView /> - operations', () => {
 
     const queryString = '?process=demoProcess&version=1';
 
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
     render(<ListView />, {
       wrapper: createWrapper(`/processes${queryString}`),
     });
@@ -179,11 +176,6 @@ describe('<ListView /> - operations', () => {
 
     const queryString = '?process=demoProcess&version=1';
 
-    vi.stubGlobal('location', {
-      ...window.location,
-      search: queryString,
-    });
-
     vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
     });
@@ -192,6 +184,9 @@ describe('<ListView /> - operations', () => {
       wrapper: createWrapper(`/processes${queryString}`),
     });
 
+    expect(
+      await screen.findByRole('heading', {name: 'New demo process'}),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,

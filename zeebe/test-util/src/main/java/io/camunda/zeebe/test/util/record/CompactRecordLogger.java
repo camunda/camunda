@@ -102,6 +102,7 @@ import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
@@ -319,6 +320,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.FORM, this::summarizeForm);
     valueLoggers.put(ValueType.HISTORY_DELETION, this::summarizeHistoryDeletion);
     valueLoggers.put(ValueType.GLOBAL_LISTENER_BATCH, this::summarizeGlobalListenerBatch);
+    valueLoggers.put(ValueType.JOB_METRICS_BATCH, this::summarizeJobMetricsBatch);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -2085,5 +2087,13 @@ public class CompactRecordLogger {
     } catch (final NumberFormatException e) {
       return -1;
     }
+  }
+
+  private String summarizeJobMetricsBatch(final Record<?> record) {
+    final var value = (JobMetricsBatchRecordValue) record.getValue();
+    final var jobMetrics = value.getJobMetrics();
+    final var metricsCount = jobMetrics != null ? jobMetrics.size() : 0;
+
+    return "metrics: " + metricsCount + (value.getRecordSizeLimitExceeded() ? " (truncated)" : "");
   }
 }

@@ -7,6 +7,9 @@
  */
 package io.camunda.application.commons.job;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -14,12 +17,9 @@ import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -91,8 +91,8 @@ public class JobHandlerConfiguration {
         .setMinEmptyResponses(config.longPolling().getMinEmptyResponses())
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setResourceExhaustedExceptionProvider(
-            RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
-        .setRequestCanceledExceptionProvider(RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+            GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+        .setRequestCanceledExceptionProvider(GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .setMetrics(
             new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.REST))
         .build();

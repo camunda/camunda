@@ -25,6 +25,7 @@
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <idArg column="SUBSCRIPTION_KEY" javaType="java.lang.Long"/>
       <arg column="SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.CorrelatedMessageSubscriptionEntity$MessageSubscriptionType" />
       <arg column="TENANT_ID" javaType="java.lang.String"/>
@@ -44,6 +45,7 @@
       PROCESS_DEFINITION_ID,
       PROCESS_DEFINITION_KEY,
       PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
       SUBSCRIPTION_KEY,
       SUBSCRIPTION_TYPE,
       TENANT_ID
@@ -60,6 +62,7 @@
       #{processDefinitionId},
       #{processDefinitionKey},
       #{processInstanceKey},
+      #{rootProcessInstanceKey},
       #{subscriptionKey},
       #{subscriptionType},
       #{tenantId}
@@ -87,6 +90,7 @@
         PROCESS_DEFINITION_ID,
         PROCESS_DEFINITION_KEY,
         PROCESS_INSTANCE_KEY,
+        ROOT_PROCESS_INSTANCE_KEY,
         SUBSCRIPTION_KEY,
         SUBSCRIPTION_TYPE,
         TENANT_ID

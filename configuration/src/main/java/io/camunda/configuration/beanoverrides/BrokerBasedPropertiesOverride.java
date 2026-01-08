@@ -767,8 +767,8 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+    final Data data = unifiedConfiguration.getCamunda().getData();
+    final SecondaryStorage secondaryStorage = data.getSecondaryStorage();
 
     if (!secondaryStorage.getAutoconfigureCamundaExporter()) {
       LOGGER.debug("Skipping autoconfiguration of the (default) exporter 'camundaexporter'");
@@ -777,12 +777,8 @@ public class BrokerBasedPropertiesOverride {
 
     final DocumentBasedSecondaryStorageDatabase database;
     switch (secondaryStorage.getType()) {
-      case elasticsearch ->
-          database =
-              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
-      case opensearch ->
-          database =
-              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
+      case elasticsearch -> database = secondaryStorage.getElasticsearch();
+      case opensearch -> database = secondaryStorage.getOpensearch();
       default -> {
         // RDBMS and NONE are not supported.
         return;
@@ -910,16 +906,18 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "bulk.size", database.getBulk().getSize());
     setArg(args, "bulk.memoryLimit", database.getBulk().getMemoryLimit().toMegabytes());
 
-    final var auditLog = unifiedConfiguration.getCamunda().getData().getAuditLog();
+    final var auditLog = data.getAuditLog();
+    final var historyDeletion = data.getHistoryDeletion();
     exporter.setArgs(
         ExporterConfiguration.of(io.camunda.exporter.config.ExporterConfiguration.class, args)
             .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
+            .apply(config -> config.setHistoryDeletion(historyDeletion.toConfiguration()))
             .toArgs());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+    final Data data = unifiedConfiguration.getCamunda().getData();
+    final SecondaryStorage secondaryStorage = data.getSecondaryStorage();
 
     final Rdbms database = secondaryStorage.getRdbms();
 
@@ -993,10 +991,12 @@ public class BrokerBasedPropertiesOverride {
     setArgIfNotNull(
         args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
 
-    final var auditLog = unifiedConfiguration.getCamunda().getData().getAuditLog();
+    final var auditLog = data.getAuditLog();
+    final var historyDeletion = data.getHistoryDeletion();
     exporter.setArgs(
         ExporterConfiguration.of(io.camunda.exporter.rdbms.ExporterConfiguration.class, args)
             .apply(config -> config.setAuditLog(auditLog.toConfiguration()))
+            .apply(config -> config.setHistoryDeletion(historyDeletion.toConfiguration()))
             .toArgs());
   }
 

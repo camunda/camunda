@@ -806,6 +806,10 @@ message ModifyProcessInstanceRequest {
     // whether to use the source element hierarchy to infer the ancestor element
     // instance key
     bool inferAncestorScopeFromSourceHierarchy = 6;
+    // whether to use the source's direct parent key as the ancestor scope key;
+    // this is a simpler alternative to inferAncestorScopeFromSourceHierarchy
+    // that skips hierarchy traversal and directly uses the source's parent key
+    bool useSourceParentKeyAsAncestorScopeKey = 7;
   }
 }
 

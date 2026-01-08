@@ -11,35 +11,36 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.lucene.search.TotalHits;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
+import java.util.function.Function;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchProcessStoreTest {
@@ -51,15 +52,13 @@ public class ElasticsearchProcessStoreTest {
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates =
       new LinkedList<>();
 
-  @Mock private ObjectMapper objectMapper;
-
   @Mock private RestHighLevelClient esClient;
 
   @Mock private ElasticsearchClient es8Client;
 
-  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
-
   @Mock private OperateProperties operateProperties;
+
+  @Mock private ElasticsearchTenantHelper tenantHelper;
 
   private ElasticsearchProcessStore underTest;
 
@@ -70,16 +69,16 @@ public class ElasticsearchProcessStoreTest {
             processIndex,
             listViewTemplate,
             processInstanceDependantTemplates,
-            objectMapper,
             operateProperties,
             esClient,
             es8Client,
-            tenantAwareClient);
+            tenantHelper);
   }
 
   @Test
   public void testExceptionDuringGetDistinctCountFor() throws IOException {
-    when(esClient.search(any(), any())).thenThrow(new IOException());
+
+    when(es8Client.search(any(SearchRequest.class), any())).thenThrow(new IOException());
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
     final Optional<Long> result = underTest.getDistinctCountFor("foo");
@@ -90,17 +89,9 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessByKeyTooManyResults() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
+    final var mockRes = createMockSearchResponse(List.of(new Object(), new Object()));
 
-    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    final SearchHits mockHits = Mockito.mock(SearchHits.class);
-    // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    final TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
-
-    when(mockResponse.getHits()).thenReturn(mockHits);
-    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
-    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    whenEs8ClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -108,17 +99,9 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessByKeyNoResults() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
+    final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    final SearchHits mockHits = Mockito.mock(SearchHits.class);
-    // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
-
-    when(mockResponse.getHits()).thenReturn(mockHits);
-    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
-    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    whenEs8ClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -126,8 +109,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessByKeyWithException() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -135,17 +117,9 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetDiagramByKeyNoResults() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
+    final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    final SearchHits mockHits = Mockito.mock(SearchHits.class);
-    // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
-
-    when(mockResponse.getHits()).thenReturn(mockHits);
-    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
-    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    whenEs8ClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getDiagramByKey(123L));
@@ -153,17 +127,9 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetDiagramByKeyTooManyResults() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
+    final var mockRes = createMockSearchResponse(List.of(new Object(), new Object()));
 
-    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    final SearchHits mockHits = Mockito.mock(SearchHits.class);
-    // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    final TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
-
-    when(mockResponse.getHits()).thenReturn(mockHits);
-    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
-    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    whenEs8ClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getDiagramByKey(123L));
@@ -171,8 +137,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetDiagramByKeyWithException() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -180,8 +145,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessesGrouped() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessesGrouped(DEFAULT_TENANT_ID, Set.of("demoProcess")));
@@ -189,8 +153,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessesIdsToProcessesWithFields() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(
@@ -201,17 +164,10 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstanceListViewByKeyTooManyResults() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
+    final var mockRes = createMockSearchResponse(List.of(new Object(), new Object()));
 
-    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    final SearchHits mockHits = Mockito.mock(SearchHits.class);
-    // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    final TotalHits mockTotalHits = new TotalHits(2L, mockRelation);
-
-    when(mockResponse.getHits()).thenReturn(mockHits);
-    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
-    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    whenEs8ClientSearch().thenReturn(mockRes);
+    mockTenantHelper();
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessInstanceListViewByKey(123L));
@@ -219,26 +175,44 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstanceListViewByKeyNoResults() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
+    final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    final SearchHits mockHits = Mockito.mock(SearchHits.class);
-    // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
-
-    when(mockResponse.getHits()).thenReturn(mockHits);
-    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
-    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    whenEs8ClientSearch().thenReturn(mockRes);
+    mockTenantHelper();
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessInstanceListViewByKey(123L));
   }
 
+  private OngoingStubbing<co.elastic.clients.elasticsearch.core.SearchResponse>
+      whenEs8ClientSearch() throws IOException {
+    return when(es8Client.search((Function) any(), any()));
+  }
+
+  private <T> co.elastic.clients.elasticsearch.core.SearchResponse<T> createMockSearchResponse(
+      final List<T> responseObjects) {
+    final var mockTotalHits =
+        Mockito.mock(co.elastic.clients.elasticsearch.core.search.TotalHits.class);
+    when(mockTotalHits.value()).thenReturn(Long.valueOf(responseObjects.size()));
+
+    final var mockRes = Mockito.mock(co.elastic.clients.elasticsearch.core.SearchResponse.class);
+    final var hitObjects =
+        responseObjects.stream().map(obj -> Hit.of(h -> h.source(obj).index("test"))).toList();
+
+    when(mockRes.hits()).thenReturn(HitsMetadata.of(m -> m.hits(hitObjects).total(mockTotalHits)));
+
+    return mockRes;
+  }
+
+  private void mockTenantHelper() {
+    when(tenantHelper.makeQueryTenantAware(any(Query.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+  }
+
   @Test
   public void testGetProcessInstanceListViewByKeyWithException() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
+    mockTenantHelper();
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessInstanceListViewByKey(123L));
@@ -246,8 +220,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetCoreStatistics() throws IOException {
-    when(listViewTemplate.getFullQualifiedName()).thenReturn("listViewIndexPath");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getCoreStatistics(Set.of("demoProcess")));
@@ -255,17 +228,9 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstanceTreePathByIdNoResults() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
+    final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
-    final SearchHits mockHits = Mockito.mock(SearchHits.class);
-    // Normally TotalHits would just be mocked, but Mockito can't stub or mock direct field accesses
-    final TotalHits.Relation mockRelation = Mockito.mock(TotalHits.Relation.class);
-    final TotalHits mockTotalHits = new TotalHits(0L, mockRelation);
-
-    when(mockResponse.getHits()).thenReturn(mockHits);
-    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
-    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    whenEs8ClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
@@ -273,8 +238,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessInstanceTreePathById() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
@@ -282,8 +246,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringDeleteProcessInstanceFromTreePath() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.deleteProcessInstanceFromTreePath("2251799813685251"));
@@ -312,8 +275,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessInstancesByProcessAndStates() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(tenantAwareClient.search(any())).thenThrow(new IOException());
+    whenEs8ClientSearch().thenThrow(new IOException());
 
     final Exception exception =
         assertThatExceptionOfType(OperateRuntimeException.class)
@@ -349,7 +311,7 @@ public class ElasticsearchProcessStoreTest {
   @Test
   public void testExceptionDuringGetProcessInstancesByParentKeys() throws IOException {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(tenantAwareClient.search(any(), any())).thenThrow(new IOException());
+    when(es8Client.search(any(SearchRequest.class), any())).thenThrow(new IOException());
 
     final Exception exception =
         assertThatExceptionOfType(OperateRuntimeException.class)
@@ -373,8 +335,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringDeleteProcessInstancesAndDependants() throws IOException {
-    when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(esClient.deleteByQuery(any(), eq(RequestOptions.DEFAULT))).thenThrow(new IOException());
+    when(es8Client.deleteByQuery(any((Function.class)))).thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.deleteProcessInstancesAndDependants(Set.of(123L)));
@@ -395,8 +356,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringDeleteProcessDefinitionsByKeys() throws IOException {
-    when(processIndex.getAlias()).thenReturn("processIndexAlias");
-    when(esClient.deleteByQuery(any(), eq(RequestOptions.DEFAULT))).thenThrow(new IOException());
+    when(es8Client.deleteByQuery(any(Function.class))).thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.deleteProcessDefinitionsByKeys(123L, 234L));

@@ -21,6 +21,7 @@ import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.Job;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.util.Comparator;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class JobSearchIT {
 
   private static CamundaClient camundaClient;

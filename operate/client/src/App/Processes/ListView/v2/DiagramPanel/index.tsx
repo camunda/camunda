@@ -6,11 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate, type Location} from 'react-router-dom';
+import {useSearchParams} from 'react-router-dom';
 import {observer} from 'mobx-react';
-import {deleteSearchParams} from 'modules/utils/filter';
-import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {Section} from '../../DiagramPanel/styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
@@ -23,7 +20,6 @@ import {BatchModificationNotification} from './BatchModificationNotification';
 import {DiagramHeader} from './DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
-import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {
   getFlowNode,
@@ -31,6 +27,11 @@ import {
 } from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {FlowNodeState} from 'modules/types/operate';
+import {parseProcessInstancesFilter} from 'modules/utils/filter/v2/processInstancesSearch';
+import {
+  getProcessDefinitionName,
+  useProcessDefinitionSelection,
+} from 'modules/hooks/processDefinitions';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -39,29 +40,24 @@ type ModificationBadgePayload = {
   cancelledTokenCount: number;
 };
 
-function setSearchParam(
-  location: Location,
-  [key, value]: [key: string, value: string],
-) {
-  const params = new URLSearchParams(location.search);
-
-  params.set(key, value);
-
-  return {
-    ...location,
-    search: params.toString(),
-  };
-}
-
 const DiagramPanel: React.FC = observer(() => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const {version, flowNodeId} = getProcessInstanceFilters(location.search);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {flowNodeId} = parseProcessInstancesFilter(searchParams);
 
-  const isVersionSelected = version !== undefined && version !== 'all';
-
-  const processDetails = processesStore.getSelectedProcessDetails();
-  const {processName} = processDetails;
+  const {
+    data: definitionSelection = {kind: 'no-match'},
+    isLoading: isDefinitionSelectionLoading,
+    isEnabled: isDefinitionSelectionEnabled,
+    isError: isDefinitionSelectionError,
+  } = useProcessDefinitionSelection();
+  const selectedDefinitionKey =
+    definitionSelection.kind === 'single-version'
+      ? definitionSelection.definition.processDefinitionKey
+      : undefined;
+  const selectedDefinitionName =
+    definitionSelection.kind !== 'no-match'
+      ? getProcessDefinitionName(definitionSelection.definition)
+      : 'Process';
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
@@ -72,17 +68,14 @@ const DiagramPanel: React.FC = observer(() => {
       ({type}) => type === OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE,
     );
 
-  const processId = processesStore.getProcessIdByLocation(location);
-
-  const {selectedTargetElementId} = batchModificationStore.state;
-
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const processDefinitionXML = useListViewXml({
-    processDefinitionKey,
+  const {
+    data: processDefinitionXML,
+    isFetching: isXmlFetching,
+    isError: isXmlError,
+  } = useListViewXml({
+    processDefinitionKey: selectedDefinitionKey,
   });
-
-  const xml = processDefinitionXML?.data?.xml;
-  const selectableIds = processDefinitionXML?.data?.selectableFlowNodes.map(
+  const selectableIds = processDefinitionXML?.selectableFlowNodes.map(
     (flowNode) => flowNode.id,
   );
 
@@ -90,16 +83,17 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
     {},
-    processId,
+    selectedDefinitionKey,
   );
 
+  const {selectedTargetElementId} = batchModificationStore.state;
   const {data: batchOverlayData} = useBatchModificationOverlayData(
     {},
     {
       sourceFlowNodeId: flowNodeId,
       targetFlowNodeId: selectedTargetElementId ?? undefined,
     },
-    processId,
+    selectedDefinitionKey,
     batchModificationStore.state.isEnabled,
   );
 
@@ -116,37 +110,29 @@ const DiagramPanel: React.FC = observer(() => {
     'statistics-incidents',
   );
 
-  const isDiagramLoading =
-    processDefinitionXML?.isFetching ||
-    !processesStore.isInitialLoadComplete ||
-    (processesStore.state.status === 'fetching' &&
-      location.state?.refreshContent);
-
   const getStatus = () => {
-    if (isDiagramLoading) {
-      return 'loading';
+    switch (true) {
+      case isXmlFetching || isDefinitionSelectionLoading:
+        return 'loading';
+      case isXmlError || isDefinitionSelectionError:
+        return 'error';
+      case !isDefinitionSelectionEnabled ||
+        definitionSelection.kind !== 'single-version':
+        return 'empty';
+      default:
+        return 'content';
     }
-    if (processDefinitionXML?.isError) {
-      return 'error';
-    }
-    if (!isVersionSelected) {
-      return 'empty';
-    }
-    return 'content';
   };
 
   return (
     <Section aria-label="Diagram Panel">
-      <DiagramHeader
-        processDetails={processDetails}
-        processDefinitionKey={processDefinitionKey}
-      />
+      <DiagramHeader processDefinitionSelection={definitionSelection} />
       <DiagramShell
         status={getStatus()}
         emptyMessage={
-          version === 'all'
+          definitionSelection.kind === 'all-versions'
             ? {
-                message: `There is more than one Version selected for Process "${processName}"`,
+                message: `There is more than one Version selected for Process "${selectedDefinitionName}"`,
                 additionalInfo: 'To see a Diagram, select a single Version',
               }
             : {
@@ -156,10 +142,10 @@ const DiagramPanel: React.FC = observer(() => {
               }
         }
       >
-        {xml !== undefined && (
+        {processDefinitionXML?.xml !== undefined && (
           <Diagram
-            xml={xml}
-            processDefinitionKey={processDefinitionKey}
+            xml={processDefinitionXML.xml}
+            processDefinitionKey={selectedDefinitionKey}
             {...(batchModificationStore.state.isEnabled
               ? // Props for batch modification mode
                 {
@@ -188,8 +174,7 @@ const DiagramPanel: React.FC = observer(() => {
                       isMoveModificationTarget(
                         getFlowNode({
                           businessObjects:
-                            processDefinitionXML.data?.diagramModel
-                              .elementsById,
+                            processDefinitionXML?.diagramModel.elementsById,
                           flowNodeId: selectedFlowNodeId,
                         }),
                       ),
@@ -200,11 +185,15 @@ const DiagramPanel: React.FC = observer(() => {
                   selectedFlowNodeIds: flowNodeId ? [flowNodeId] : undefined,
                   onFlowNodeSelection: (flowNodeId) => {
                     if (flowNodeId === null || flowNodeId === undefined) {
-                      navigate(deleteSearchParams(location, ['flowNodeId']));
+                      setSearchParams((p) => {
+                        p.delete('flowNodeId');
+                        return p;
+                      });
                     } else {
-                      navigate(
-                        setSearchParam(location, ['flowNodeId', flowNodeId]),
-                      );
+                      setSearchParams((p) => {
+                        p.set('flowNodeId', flowNodeId);
+                        return p;
+                      });
                     }
                   },
                   overlaysData: [

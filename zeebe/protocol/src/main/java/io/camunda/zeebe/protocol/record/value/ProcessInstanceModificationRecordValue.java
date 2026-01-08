@@ -46,6 +46,19 @@ public interface ProcessInstanceModificationRecordValue
   @Deprecated
   Set<Long> getAncestorScopeKeys();
 
+  /**
+   * Returns the key of the root process instance in the hierarchy. For top-level process instances,
+   * this is equal to {@link #getProcessInstanceKey()}. For child process instances (created via
+   * call activities), this is the key of the topmost parent process instance.
+   *
+   * <p>Important: This value is only set for process instance records created after version 8.9.0
+   * and part of hierarchies created after that version. For older process instances, the method
+   * will return -1.
+   *
+   * @return the key of the root process instance, or {@code -1} if not set
+   */
+  long getRootProcessInstanceKey();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableProcessInstanceModificationTerminateInstructionValue.Builder.class)
@@ -138,5 +151,13 @@ public interface ProcessInstanceModificationRecordValue
      * hierarchy.
      */
     boolean isInferAncestorScopeFromSourceHierarchy();
+
+    /**
+     * Indicates whether the source's direct parent key should be used as the ancestor scope key for
+     * the target element. This is a simpler alternative to {@link
+     * #isInferAncestorScopeFromSourceHierarchy()} that skips hierarchy traversal and directly uses
+     * the source's parent key.
+     */
+    boolean isUseSourceParentKeyAsAncestorScopeKey();
   }
 }

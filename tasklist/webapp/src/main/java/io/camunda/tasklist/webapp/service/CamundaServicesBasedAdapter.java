@@ -7,10 +7,10 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.service.exception.ServiceException.Status.*;
 import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessageFromServiceException;
 
 import io.camunda.client.impl.command.StreamUtil;
+import io.camunda.gateway.mapping.http.validator.MultiTenancyValidator;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.JobServices;
@@ -29,7 +29,6 @@ import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.tenant.TenantService;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
-import io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import java.io.FileNotFoundException;
 import java.io.IOException;

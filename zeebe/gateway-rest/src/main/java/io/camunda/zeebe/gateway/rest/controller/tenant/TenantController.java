@@ -9,6 +9,27 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.GroupSearchQueryResult;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
+import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleSearchQueryResult;
+import io.camunda.gateway.protocol.model.TenantClientSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantClientSearchResult;
+import io.camunda.gateway.protocol.model.TenantCreateRequest;
+import io.camunda.gateway.protocol.model.TenantGroupSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantGroupSearchResult;
+import io.camunda.gateway.protocol.model.TenantResult;
+import io.camunda.gateway.protocol.model.TenantSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
+import io.camunda.gateway.protocol.model.TenantUpdateRequest;
+import io.camunda.gateway.protocol.model.TenantUserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.TenantUserSearchResult;
+import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
@@ -24,36 +45,17 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantGroupSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantGroupSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -192,7 +194,7 @@ public class TenantController {
   @CamundaDeleteMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenant(
       @PathVariable final String tenantId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -313,17 +315,18 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(
       final TenantRequest tenantRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createTenant(tenantRequest),
-        ResponseMapper::toTenantCreateResponse);
+        ResponseMapper::toTenantCreateResponse,
+        HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToTenant(
       final TenantMemberRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -332,7 +335,7 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromTenant(
       final TenantMemberRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -467,11 +470,12 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> updateTenant(
       final TenantRequest tenantRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             tenantServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateTenant(tenantRequest),
-        ResponseMapper::toTenantUpdateResponse);
+        ResponseMapper::toTenantUpdateResponse,
+        HttpStatus.OK);
   }
 }

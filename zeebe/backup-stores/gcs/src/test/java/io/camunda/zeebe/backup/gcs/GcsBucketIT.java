@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,8 +67,7 @@ public class GcsBucketIT {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of(
                     "snapshotFile1",
@@ -116,8 +114,7 @@ public class GcsBucketIT {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            new BackupDescriptorImpl(1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
             new NamedFileSetImpl(
                 Map.of(
                     "snapshotFile1",

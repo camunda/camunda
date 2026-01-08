@@ -48,10 +48,40 @@
       "description": "An instruction to define an action or an assertion to be performed in a test case.",
       "oneOf": [
         {
+          "$ref": "#/definitions/AssertElementInstanceInstruction"
+        },
+        {
+          "$ref": "#/definitions/AssertElementInstancesInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertProcessInstanceInstruction"
         },
         {
+          "$ref": "#/definitions/AssertProcessInstanceMessageSubscriptionInstruction"
+        },
+        {
+          "$ref": "#/definitions/AssertUserTaskInstruction"
+        },
+        {
+          "$ref": "#/definitions/AssertVariablesInstruction"
+        },
+        {
+          "$ref": "#/definitions/CompleteUserTaskInstruction"
+        },
+        {
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
+        },
+        {
+          "$ref": "#/definitions/MockChildProcessInstruction"
+        },
+        {
+          "$ref": "#/definitions/MockDmnDecisionInstruction"
+        },
+        {
+          "$ref": "#/definitions/MockJobWorkerCompleteJobInstruction"
+        },
+        {
+          "$ref": "#/definitions/PublishMessageInstruction"
         }
       ]
     },
@@ -142,6 +172,35 @@
       ],
       "additionalProperties": false
     },
+    "CompleteUserTaskInstruction": {
+      "description": "An instruction to complete a user task.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "COMPLETE_USER_TASK"
+        },
+        "userTaskSelector": {
+          "description": "The selector to identify the user task to complete.",
+          "$ref": "#/definitions/UserTaskSelector"
+        },
+        "variables": {
+          "description": "The variables to set when completing the user task. Ignored if useExampleData is true.",
+          "type": "object"
+        },
+        "useExampleData": {
+          "description": "Whether to complete the user task with example data from the BPMN element. If true, the variables property is ignored.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "userTaskSelector"
+      ],
+      "additionalProperties": false
+    },
     "AssertProcessInstanceInstruction": {
       "description": "An instruction to assert the state of a process instance.",
       "type": "object",
@@ -191,6 +250,414 @@
             "processDefinitionId"
           ]
         }
+      ],
+      "additionalProperties": false
+    },
+    "AssertProcessInstanceMessageSubscriptionInstruction": {
+      "description": "An instruction to assert the state of a process instance message subscription.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "messageSelector": {
+          "description": "The selector to identify the message.",
+          "$ref": "#/definitions/MessageSelector"
+        },
+        "state": {
+          "description": "The expected state of the message subscription.",
+          "type": "string",
+          "enum": [
+            "IS_WAITING",
+            "IS_NOT_WAITING",
+            "IS_CORRELATED"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "messageSelector",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "MessageSelector": {
+      "description": "A selector to identify a message.",
+      "type": "object",
+      "properties": {
+        "messageName": {
+          "description": "The name of the message.",
+          "type": "string"
+        },
+        "correlationKey": {
+          "description": "The correlation key of the message.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "messageName"
+      ],
+      "additionalProperties": false
+    },
+    "AssertElementInstanceInstruction": {
+      "description": "An instruction to assert the state of an element instance.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_ELEMENT_INSTANCE"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "state": {
+          "description": "The expected state of the element instance.",
+          "type": "string",
+          "enum": [
+            "IS_ACTIVE",
+            "IS_COMPLETED",
+            "IS_TERMINATED"
+          ]
+        },
+        "amount": {
+          "description": "The expected amount of element instances in the given state.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "elementSelector",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "AssertElementInstancesInstruction": {
+      "description": "An instruction to assert the state of multiple element instances.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_ELEMENT_INSTANCES"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelectors": {
+          "description": "The selectors to identify the elements.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ElementSelector"
+          }
+        },
+        "state": {
+          "description": "The expected state of the element instances.",
+          "type": "string",
+          "enum": [
+            "IS_ACTIVE",
+            "IS_COMPLETED",
+            "IS_TERMINATED",
+            "IS_NOT_ACTIVE",
+            "IS_NOT_ACTIVATED",
+            "IS_ACTIVE_EXACTLY",
+            "IS_COMPLETED_IN_ORDER"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "elementSelectors",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "ElementSelector": {
+      "description": "A selector to identify a BPMN element.",
+      "type": "object",
+      "properties": {
+        "elementId": {
+          "description": "The ID of the BPMN element.",
+          "type": "string"
+        },
+        "elementName": {
+          "description": "The name of the BPMN element.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "elementId"
+          ]
+        },
+        {
+          "required": [
+            "elementName"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "AssertUserTaskInstruction": {
+      "description": "An instruction to assert the state of a user task.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_USER_TASK"
+        },
+        "userTaskSelector": {
+          "description": "The selector to identify the user task.",
+          "$ref": "#/definitions/UserTaskSelector"
+        },
+        "state": {
+          "description": "The expected state of the user task.",
+          "type": "string",
+          "enum": [
+            "IS_CREATED",
+            "IS_COMPLETED",
+            "IS_CANCELED",
+            "IS_FAILED"
+          ]
+        },
+        "assignee": {
+          "description": "The expected assignee of the user task.",
+          "type": "string"
+        },
+        "candidateGroups": {
+          "description": "The expected candidate groups of the user task.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "description": "The expected priority of the user task.",
+          "type": "integer"
+        },
+        "elementId": {
+          "description": "The expected element ID of the user task.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The expected name of the user task.",
+          "type": "string"
+        },
+        "dueDate": {
+          "description": "The expected due date of the user task in ISO-8601 format.",
+          "type": "string"
+        },
+        "followUpDate": {
+          "description": "The expected follow-up date of the user task in ISO-8601 format.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "userTaskSelector"
+      ],
+      "additionalProperties": false
+    },
+    "UserTaskSelector": {
+      "description": "A selector to identify a user task.",
+      "type": "object",
+      "properties": {
+        "elementId": {
+          "description": "The ID of the BPMN element.",
+          "type": "string"
+        },
+        "taskName": {
+          "description": "The name of the user task.",
+          "type": "string"
+        },
+        "processDefinitionId": {
+          "description": "The process definition ID of the user task.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "elementId"
+          ]
+        },
+        {
+          "required": [
+            "taskName"
+          ]
+        },
+        {
+          "required": [
+            "processDefinitionId"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "PublishMessageInstruction": {
+      "description": "An instruction to publish a message.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "PUBLISH_MESSAGE"
+        },
+        "name": {
+          "description": "The name of the message.",
+          "type": "string"
+        },
+        "correlationKey": {
+          "description": "The correlation key of the message.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to publish with the message.",
+          "type": "object"
+        },
+        "timeToLive": {
+          "description": "The time-to-live of the message in milliseconds.",
+          "type": "integer"
+        },
+        "messageId": {
+          "description": "The message ID for uniqueness.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "MockDmnDecisionInstruction": {
+      "description": "An instruction to mock a DMN decision.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "MOCK_DMN_DECISION"
+        },
+        "decisionDefinitionId": {
+          "description": "The decision definition ID to mock.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to set as the decision output.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "decisionDefinitionId"
+      ],
+      "additionalProperties": false
+    },
+    "MockChildProcessInstruction": {
+      "description": "An instruction to mock a child process.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "MOCK_CHILD_PROCESS"
+        },
+        "processDefinitionId": {
+          "description": "The ID of the child process to mock.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to set for the mocked child process.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "processDefinitionId"
+      ],
+      "additionalProperties": false
+    },
+    "MockJobWorkerCompleteJobInstruction": {
+      "description": "An instruction to mock a job worker who completes jobs.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "MOCK_JOB_WORKER_COMPLETE_JOB"
+        },
+        "jobType": {
+          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to complete the job with.",
+          "type": "object"
+        },
+        "useExampleData": {
+          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "jobType"
+      ],
+      "additionalProperties": false
+    },
+    "AssertVariablesInstruction": {
+      "description": "An instruction to assert the variables of a process instance.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_VARIABLES"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element for local variables.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "variableNames": {
+          "description": "The expected variable names.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "variables": {
+          "description": "The expected variables with their values.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector"
       ],
       "additionalProperties": false
     }

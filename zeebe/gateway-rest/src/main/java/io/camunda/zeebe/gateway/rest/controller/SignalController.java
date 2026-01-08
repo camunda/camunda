@@ -7,17 +7,19 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.RequestMapper.BroadcastSignalRequest;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
-import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.BroadcastSignalRequest;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,11 +51,12 @@ public class SignalController {
 
   private CompletableFuture<ResponseEntity<Object>> broadcastSignal(
       final BroadcastSignalRequest request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             signalServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .broadcastSignal(request.signalName(), request.variables(), request.tenantId()),
-        ResponseMapper::toSignalBroadcastResponse);
+        ResponseMapper::toSignalBroadcastResponse,
+        HttpStatus.OK);
   }
 }

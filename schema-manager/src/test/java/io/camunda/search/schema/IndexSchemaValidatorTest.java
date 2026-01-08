@@ -209,7 +209,7 @@ public class IndexSchemaValidatorTest {
     assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index)))
         .isInstanceOf(IndexSchemaValidationException.class)
         .hasMessageContaining(
-            "Not supported index changes are introduced. Data migration is required.");
+            "Unsupported index changes have been introduced. Data migration is required.");
   }
 
   @Test

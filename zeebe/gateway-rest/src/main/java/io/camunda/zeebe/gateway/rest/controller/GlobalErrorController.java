@@ -31,12 +31,12 @@ public class GlobalErrorController implements ErrorController {
 
   private final ErrorAttributes errorAttributes;
 
-  public GlobalErrorController(ErrorAttributes errorAttributes) {
+  public GlobalErrorController(final ErrorAttributes errorAttributes) {
     this.errorAttributes = errorAttributes;
   }
 
   @RequestMapping("/error")
-  public ResponseEntity<ProblemDetail> handleError(HttpServletRequest request) {
+  public ResponseEntity<ProblemDetail> handleError(final HttpServletRequest request) {
     final WebRequest webRequest = new ServletWebRequest(request);
     final ErrorAttributeOptions options =
         ErrorAttributeOptions.of(Include.MESSAGE, Include.PATH, Include.STATUS);

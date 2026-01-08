@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedDateTimeFilter;
-import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedDateTimeFilter;
+import io.camunda.gateway.protocol.model.DateTimeFilterProperty;
 
 public class DateTimeFilterPropertyDeserializer
     extends FilterDeserializer<DateTimeFilterProperty, String> {

@@ -77,9 +77,9 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.9'
+      ACTIONLINT_VERSION: '1.7.10'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.64.0'
+      CONFTEST_VERSION: '0.66.0'
     steps:
       - uses: actions/checkout@v4
       - uses: camunda/infra-global-github-actions/actionlint@main
@@ -89,6 +89,7 @@ jobs:
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
             condition "false" is always evaluated to false
+            constant expression "false" in condition
           use_shellcheck: true
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
@@ -377,12 +378,15 @@ jobs:
       - name: Maven Run Test (Zeebe)
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        # Maintain the forkCount * JVM heap size ( -Xmx ) to not exceed ~50% of the available memory
+        # on the runner.
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=3
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
-          -D junitThreadCount=8
+          -D junitThreadCount=16
+          -D argLine="@{argLine} -Xmx4g"
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
@@ -391,15 +395,18 @@ jobs:
         id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
+        continue-on-error: true
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        continue-on-error: true
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suite}}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
+        continue-on-error: true
         id: matrix-write
         with:
           matrix-step-name: ${{ github.job }}
@@ -708,17 +715,20 @@ jobs:
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/analyze-test-runs
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        continue-on-error: true
         with:
           name: "[IT] ${{ matrix.name }}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
         id: matrix-write
+        continue-on-error: true
         with:
           matrix-step-name: ${{ github.job }}
           matrix-key: ${{ matrix.module }} - [IT] ${{ matrix.name }} - ${{ matrix.owner }}
@@ -925,7 +935,7 @@ jobs:
 
   utils-flaky-tests-summary:
     name: flaky tests summary comment
-    if: always() && github.event_name == 'pull_request'
+    if: always() && github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
     needs:
       - archunit-tests
       - docker-checks
@@ -1138,7 +1148,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=daveshanley/vacuum
-      VACUUM_VERSION: 'v0.18.0'
+      VACUUM_VERSION: 'v0.23.2'
     steps:
       - uses: actions/checkout@v4
       - name: Install vacuum

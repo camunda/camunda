@@ -18,9 +18,9 @@ import {
   type ProcessInstancesFilter,
 } from 'modules/utils/filter/v2/processInstancesSearch';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
-import {ProcessField} from '../../Filters/ProcessField';
-import {ProcessVersionField} from '../../Filters/ProcessVersionField';
-import {FlowNodeField} from '../../Filters/FlowNodeField';
+import {ProcessField} from './ProcessField';
+import {ProcessVersionField} from './ProcessVersionField';
+import {FlowNodeField} from './FlowNodeField';
 import {
   Container,
   Title,
@@ -32,11 +32,11 @@ import {
   RadioButtonChecked,
   WarningFilled,
 } from 'modules/components/StateIcon/styled';
-import {CheckboxGroup} from '../../Filters/CheckboxGroup';
+import {CheckboxGroup} from './CheckboxGroup';
 import {
   type OptionalFilter,
   OptionalFiltersFormGroup,
-} from '../../Filters/OptionalFiltersFormGroup';
+} from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -47,12 +47,7 @@ import {
   splitDefinitionIdentifier,
 } from 'modules/hooks/processDefinitions';
 
-interface FilterValues extends ProcessInstancesFilter {
-  variableName?: string;
-  variableValues?: string;
-}
-
-const initialValues: FilterValues = {
+const initialValues: ProcessInstancesFilter = {
   active: true,
   incidents: true,
 };
@@ -62,7 +57,7 @@ const Filters: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
-  const filterValues: FilterValues = parseProcessInstancesFilter(searchParams);
+  const filterValues = parseProcessInstancesFilter(searchParams);
   const variable = variableFilterStore.variable;
   if (variable) {
     filterValues.variableName = variable.name;

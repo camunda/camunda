@@ -287,10 +287,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
       incidentProcessInstanceStatisticsByError(
           final IncidentProcessInstanceStatisticsByErrorQuery query) {
-    // TODO will be implemented by the following tasks:
-    // https://github.com/camunda/camunda/issues/42650
-    // https://github.com/camunda/camunda/issues/42652
-    return SearchQueryResult.empty();
+
+    return doSearchWithReader(readers.incidentProcessInstanceStatisticsByErrorReader(), query);
   }
 
   @Override

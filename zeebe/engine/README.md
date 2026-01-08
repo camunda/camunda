@@ -9,7 +9,7 @@ This README provides an overview of the engine's architecture, module structure,
 
 ## High-level engine architecture
 
-The Zeebe Workflow Engine is a state machine built as an stream of records.
+The Zeebe Workflow Engine is a state machine built as a stream of records.
 It keeps track of the state of all entities related to process orchestration (like processes, process instances, jobs, and user tasks), as well as system related entities (like users, and batch operations).
 
 The state of these entities is stored in a key-value store (RocksDB).
@@ -56,7 +56,7 @@ There are three sources of commands.
 
 ### Relation to other components
 
-The workflow engine is build on top of the `protocol` and `stream-platform` modules.
+The workflow engine is built on top of the `protocol` and `stream-platform` modules.
 
 The `procotol` module defines the available records.
 This includes their schema as well as the available value types which specify the data schema of records of that particular type.

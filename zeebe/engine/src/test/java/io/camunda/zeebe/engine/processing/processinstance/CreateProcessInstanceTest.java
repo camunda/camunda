@@ -79,6 +79,7 @@ public final class CreateProcessInstanceTest {
         .hasFlowScopeKey(-1)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(value.getCallingElementPath()).isEmpty();
@@ -118,7 +119,7 @@ public final class CreateProcessInstanceTest {
     final ProcessInstanceRecordValue value = process.getValue();
     assertThat(value.getCallingElementPath()).isEmpty();
     assertThat(value.getElementInstancePath()).hasSize(1);
-    final List<Long> elementInstances = value.getElementInstancePath().get(0);
+    final List<Long> elementInstances = value.getElementInstancePath().getFirst();
     assertThat(elementInstances).containsExactly(processInstanceKey);
     assertThat(value.getProcessDefinitionPath()).containsExactly(value.getProcessDefinitionKey());
   }
@@ -263,6 +264,7 @@ public final class CreateProcessInstanceTest {
         .hasFlowScopeKey(-1)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasTags("businessKey:1234", "priority:high");
   }
@@ -306,7 +308,8 @@ public final class CreateProcessInstanceTest {
         .hasBpmnElementType(BpmnElementType.START_EVENT)
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -371,7 +374,8 @@ public final class CreateProcessInstanceTest {
         .hasBpmnElementType(BpmnElementType.SEQUENCE_FLOW)
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
-        .hasProcessInstanceKey(processInstanceKey);
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasRootProcessInstanceKey(processInstanceKey);
   }
 
   @Test

@@ -7,7 +7,6 @@
  */
 
 import {observer} from 'mobx-react';
-import isNil from 'lodash/isNil';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {
@@ -17,30 +16,24 @@ import {
   DescriptionData,
 } from '../../../DiagramPanel/DiagramHeader/styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
-
-type ProcessDetails = {
-  bpmnProcessId?: string;
-  processName: string;
-  version?: string;
-  versionTag?: string | null;
-};
+import {
+  getProcessDefinitionName,
+  type ProcessDefinitionSelection,
+} from 'modules/hooks/processDefinitions';
 
 type DiagramHeaderProps = {
-  processDetails: ProcessDetails;
-  processDefinitionKey?: string;
+  processDefinitionSelection: ProcessDefinitionSelection;
   panelHeaderRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
-  ({processDetails, processDefinitionKey, panelHeaderRef}) => {
-    const {processName, bpmnProcessId, version, versionTag} = processDetails;
-    const hasVersionTag = !isNil(versionTag);
-    const hasSelectedProcess = bpmnProcessId !== undefined;
-    const hasSelectedVersion = version !== undefined && version !== 'all';
+  ({processDefinitionSelection, panelHeaderRef}) => {
+    const title =
+      processDefinitionSelection.kind === 'no-match' ? 'Process' : undefined;
 
     return (
       <PanelHeader
-        title={!hasSelectedProcess ? 'Process' : undefined}
+        title={title}
         ref={panelHeaderRef}
         className={
           panelStatesStore.state.isOperationsCollapsed
@@ -48,43 +41,75 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
             : 'panelOffset'
         }
       >
-        {hasSelectedProcess && (
-          <>
-            <Description>
-              <DescriptionTitle>Process name</DescriptionTitle>
-              <DescriptionData title={processName} role="heading">
-                {processName}
-              </DescriptionData>
-            </Description>
-
-            <Description>
-              <DescriptionTitle>Process ID</DescriptionTitle>
-              <DescriptionData>
-                <CopiableProcessID bpmnProcessId={bpmnProcessId} />
-              </DescriptionData>
-            </Description>
-
-            {hasVersionTag && (
-              <Description>
-                <DescriptionTitle>Version tag</DescriptionTitle>
-                <DescriptionData title={versionTag}>
-                  {versionTag}
-                </DescriptionData>
-              </Description>
-            )}
-          </>
-        )}
-
-        {hasSelectedVersion && processDefinitionKey !== undefined && (
-          <ProcessOperations
-            processDefinitionId={processDefinitionKey}
-            processName={processName}
-            processVersion={version}
-          />
-        )}
+        <DefinitionSelectionContent
+          processDefinitionSelection={processDefinitionSelection}
+        />
+        <SingleVersionSelectionContent
+          processDefinitionSelection={processDefinitionSelection}
+        />
       </PanelHeader>
     );
   },
 );
+
+function DefinitionSelectionContent(
+  props: Pick<DiagramHeaderProps, 'processDefinitionSelection'>,
+) {
+  if (props.processDefinitionSelection.kind === 'no-match') {
+    return null;
+  }
+
+  const definition = props.processDefinitionSelection.definition;
+  const name = getProcessDefinitionName(definition);
+  const definitionId = definition.processDefinitionId;
+
+  return (
+    <>
+      <Description>
+        <DescriptionTitle>Process name</DescriptionTitle>
+        <DescriptionData title={name} role="heading">
+          {name}
+        </DescriptionData>
+      </Description>
+
+      <Description>
+        <DescriptionTitle>Process ID</DescriptionTitle>
+        <DescriptionData>
+          <CopiableProcessID processDefinitionId={definitionId} />
+        </DescriptionData>
+      </Description>
+    </>
+  );
+}
+
+function SingleVersionSelectionContent(
+  props: Pick<DiagramHeaderProps, 'processDefinitionSelection'>,
+) {
+  if (props.processDefinitionSelection.kind !== 'single-version') {
+    return null;
+  }
+
+  const definition = props.processDefinitionSelection.definition;
+  const name = getProcessDefinitionName(definition);
+  const definitionKey = definition.processDefinitionKey;
+  const version = definition.version;
+  const versionTag = definition.versionTag;
+
+  return (
+    <>
+      {versionTag && (
+        <Description>
+          <DescriptionTitle>Version tag</DescriptionTitle>
+          <DescriptionData title={versionTag}>{versionTag}</DescriptionData>
+        </Description>
+      )}
+      <ProcessOperations
+        processDefinitionKey={definitionKey}
+        processName={name}
+        processVersion={version}
+      />
+    </>
+  );
+}
 
 export {DiagramHeader};

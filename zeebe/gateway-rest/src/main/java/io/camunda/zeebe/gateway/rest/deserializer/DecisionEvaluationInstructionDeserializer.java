@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
+import io.camunda.gateway.protocol.model.DecisionEvaluationById;
+import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
+import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
 import java.util.List;
 import java.util.Set;
 

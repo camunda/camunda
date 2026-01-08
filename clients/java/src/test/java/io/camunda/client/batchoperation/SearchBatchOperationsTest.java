@@ -19,12 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.search.response.BatchOperation;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.BatchOperationSearchQuerySortRequest.FieldEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 class SearchBatchOperationsTest extends ClientRestTest {
@@ -116,5 +122,141 @@ class SearchBatchOperationsTest extends ClientRestTest {
     assertThat(request.getSort().get(3).getOrder()).isEqualTo(SortOrderEnum.ASC);
     assertThat(request.getSort().get(4).getField()).isEqualTo(FieldEnum.OPERATION_TYPE);
     assertThat(request.getSort().get(4).getOrder()).isEqualTo(SortOrderEnum.ASC);
+  }
+
+  @Test
+  void shouldMapSearchBatchOperationsResponse() {
+    // given
+    final OffsetDateTime dateTime = OffsetDateTime.now();
+
+    final BatchOperationSearchQueryResult searchResult =
+        Instancio.create(BatchOperationSearchQueryResult.class)
+            .page(
+                Instancio.create(SearchQueryPageResponse.class)
+                    .totalItems(1L)
+                    .hasMoreTotalItems(false))
+            .items(
+                Collections.singletonList(
+                    Instancio.create(BatchOperationResponse.class)
+                        .batchOperationKey("123")
+                        .batchOperationType(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API)
+                        .state(BatchOperationStateEnum.UNKNOWN_DEFAULT_OPEN_API)
+                        .startDate(dateTime.toString())
+                        .endDate(dateTime.toString())
+                        .actorType(null)
+                        .actorId(null)));
+
+    gatewayService.onSearchBatchOperationsRequest(searchResult);
+
+    // when
+    final SearchResponse<BatchOperation> result =
+        client.newBatchOperationSearchRequest().send().join();
+
+    // then
+    assertThat(result.page().totalItems()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+
+    final BatchOperation mapped = result.items().get(0);
+    assertThat(mapped.getBatchOperationKey()).isEqualTo("123");
+    assertThat(mapped.getType()).isEqualTo(BatchOperationType.UNKNOWN_ENUM_VALUE);
+    assertThat(mapped.getStatus()).isEqualTo(BatchOperationState.UNKNOWN_ENUM_VALUE);
+    assertThat(mapped.getStartDate()).isEqualTo(dateTime);
+    assertThat(mapped.getEndDate()).isEqualTo(dateTime);
+    assertThat(mapped.getActorType()).isNull();
+    assertThat(mapped.getActorId()).isNull();
+  }
+
+  @Test
+  void shouldMapSearchBatchOperationsResponseWithActorInfo() {
+    // given
+    final OffsetDateTime dateTime = OffsetDateTime.now();
+
+    final BatchOperationSearchQueryResult searchResult =
+        Instancio.create(BatchOperationSearchQueryResult.class)
+            .page(
+                Instancio.create(SearchQueryPageResponse.class)
+                    .totalItems(1L)
+                    .hasMoreTotalItems(false))
+            .items(
+                Collections.singletonList(
+                    Instancio.create(BatchOperationResponse.class)
+                        .batchOperationKey("123")
+                        .startDate(dateTime.toString())
+                        .endDate(dateTime.toString())
+                        .actorType(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER)
+                        .actorId("demo-user")));
+
+    gatewayService.onSearchBatchOperationsRequest(searchResult);
+
+    // when
+    final SearchResponse<BatchOperation> result =
+        client.newBatchOperationSearchRequest().send().join();
+
+    // then
+    assertThat(result.page().totalItems()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+
+    final BatchOperation mapped = result.items().get(0);
+    assertThat(mapped.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(mapped.getActorId()).isEqualTo("demo-user");
+  }
+
+  @Test
+  void shouldSearchBatchOperationWithActorInfoFilter() {
+    // when
+    client
+        .newBatchOperationSearchRequest()
+        .filter(f -> f.actorType(BatchOperationActorTypeEnum.USER).actorId("demo-user"))
+        .send()
+        .join();
+
+    // then
+    final BatchOperationSearchQuery request =
+        gatewayService.getLastRequest(BatchOperationSearchQuery.class);
+
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter().getActorType())
+        .isEqualTo(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER);
+    assertThat(request.getFilter().getActorId().get$Eq()).isEqualTo("demo-user");
+  }
+
+  @Test
+  void shouldSearchBatchOperationWithAdvancedActorIdFilter() {
+    // when
+    client
+        .newBatchOperationSearchRequest()
+        .filter(f -> f.actorId(p -> p.like("demo-%").neq("demo-user")))
+        .send()
+        .join();
+
+    // then
+    final BatchOperationSearchQuery request =
+        gatewayService.getLastRequest(BatchOperationSearchQuery.class);
+
+    assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter().getActorId().get$Like()).isEqualTo("demo-%");
+    assertThat(request.getFilter().getActorId().get$Neq()).isEqualTo("demo-user");
+  }
+
+  @Test
+  void shouldSearchBatchOperationWithActorInfoSorting() {
+    // when
+    client
+        .newBatchOperationSearchRequest()
+        .sort(s -> s.actorType().asc().actorId().desc())
+        .send()
+        .join();
+
+    // then
+    final BatchOperationSearchQuery request =
+        gatewayService.getLastRequest(BatchOperationSearchQuery.class);
+
+    assertThat(request.getSort()).hasSize(2);
+    assertThat(request.getSort().get(0).getField())
+        .isEqualTo(BatchOperationSearchQuerySortRequest.FieldEnum.ACTOR_TYPE);
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
+    assertThat(request.getSort().get(1).getField())
+        .isEqualTo(BatchOperationSearchQuerySortRequest.FieldEnum.ACTOR_ID);
+    assertThat(request.getSort().get(1).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }

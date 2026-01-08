@@ -267,7 +267,8 @@ public class ResourceDeletionDeleteProcessor
             .setResourceName(bufferAsString(drg.getResourceName()))
             .setChecksum(drg.getChecksum())
             .setResource(drg.getResource())
-            .setTenantId(drg.getTenantId());
+            .setTenantId(drg.getTenantId())
+            .setDeploymentKey(drg.getDeploymentKey());
 
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), DecisionRequirementsIntent.DELETED, drgRecord);

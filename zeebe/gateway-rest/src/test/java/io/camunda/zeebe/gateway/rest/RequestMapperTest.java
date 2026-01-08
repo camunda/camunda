@@ -9,16 +9,16 @@ package io.camunda.zeebe.gateway.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.protocol.model.AdvancedStringFilter;
+import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
-import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -117,6 +117,7 @@ class RequestMapperTest {
               assertThat(instruction.getTargetElementId()).isEqualTo("target1");
               assertThat(instruction.getAncestorScopeKey()).isEqualTo(-1L);
               assertThat(instruction.isInferAncestorScopeFromSourceHierarchy()).isTrue();
+              assertThat(instruction.isUseSourceParentKeyAsAncestorScopeKey()).isFalse();
               assertThat(instruction.getVariableInstructions()).isEmpty();
             });
   }

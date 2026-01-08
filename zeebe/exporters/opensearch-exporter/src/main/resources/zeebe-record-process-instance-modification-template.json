@@ -60,6 +60,9 @@
                 },
                 "inferAncestorScopeFromSourceHierarchy": {
                   "type": "boolean"
+                },
+                "useSourceParentKeyAsAncestorScopeKey": {
+                  "type": "boolean"
                 }
               }
             },
@@ -91,6 +94,9 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
             }
           }
         }

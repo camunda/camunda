@@ -18,6 +18,17 @@ package io.camunda.process.test.api.dsl;
 /** A collection of supported test case instruction types. */
 public class TestCaseInstructionType {
 
+  public static final String ASSERT_ELEMENT_INSTANCE = "ASSERT_ELEMENT_INSTANCE";
+  public static final String ASSERT_ELEMENT_INSTANCES = "ASSERT_ELEMENT_INSTANCES";
   public static final String ASSERT_PROCESS_INSTANCE = "ASSERT_PROCESS_INSTANCE";
+  public static final String ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =
+      "ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION";
+  public static final String ASSERT_USER_TASK = "ASSERT_USER_TASK";
+  public static final String ASSERT_VARIABLES = "ASSERT_VARIABLES";
+  public static final String COMPLETE_USER_TASK = "COMPLETE_USER_TASK";
   public static final String CREATE_PROCESS_INSTANCE = "CREATE_PROCESS_INSTANCE";
+  public static final String MOCK_CHILD_PROCESS = "MOCK_CHILD_PROCESS";
+  public static final String MOCK_DMN_DECISION = "MOCK_DMN_DECISION";
+  public static final String MOCK_JOB_WORKER_COMPLETE_JOB = "MOCK_JOB_WORKER_COMPLETE_JOB";
+  public static final String PUBLISH_MESSAGE = "PUBLISH_MESSAGE";
 }

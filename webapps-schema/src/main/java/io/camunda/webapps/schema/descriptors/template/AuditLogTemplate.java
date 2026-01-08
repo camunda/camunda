@@ -9,17 +9,20 @@ package io.camunda.webapps.schema.descriptors.template;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
+import java.util.Optional;
 
 public class AuditLogTemplate extends AbstractTemplateDescriptor
-    implements ProcessInstanceDependant, Prio5Backup {
+    implements ProcessInstanceDependant, DecisionInstanceDependant, Prio5Backup {
 
   public static final String INDEX_NAME = "audit-log";
   public static final String INDEX_VERSION = "8.9.0";
 
+  public static final String ID = "id";
   public static final String ACTOR_ID = "actorId";
   public static final String ACTOR_TYPE = "actorType";
   public static final String ANNOTATION = "annotation";
@@ -45,6 +48,7 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   public static final String RESOURCE_KEY = "resourceKey";
   public static final String RESULT = "result";
   public static final String TENANT_ID = "tenantId";
+  public static final String TENANT_SCOPE = "tenantScope";
   public static final String TIMESTAMP = "timestamp";
   public static final String USER_TASK_KEY = "userTaskKey";
   public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
@@ -62,6 +66,11 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

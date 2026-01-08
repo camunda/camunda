@@ -101,7 +101,7 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(50_704_475L, CompactionPriority.OldestSmallestSeqFirst, 4);
+        .containsExactly(16_901_492L, CompactionPriority.OldestSmallestSeqFirst, 4);
 
     // then - user options should override defaults
     assertThat(customOptions)
@@ -114,15 +114,15 @@ final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
-  void shouldCreateDbWithExpectedOptions() {
+  void shouldHaveDefaultsIfPerPartitionMemoryAllocationStrategy() {
     // given
-    final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
+    final RocksDbConfiguration rocksDbConfiguration = new RocksDbConfiguration();
+    rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
 
     // then - options should match our defaults
-    validateDefaultExpectedOptions(
-        factoryWithDefaults.createColumnFamilyOptions(new ArrayList<>()));
+    // we expect the same options regardless of the memory allocation strategy
+    // as long as the memory limit per partition is the same.
+    validateDefaultExpectedOptions(rocksDbConfiguration);
   }
 
   @Test
@@ -131,23 +131,22 @@ final class ZeebeRocksDbFactoryTest {
     final RocksDbConfiguration rocksDbConfiguration = new RocksDbConfiguration();
     rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
 
-    // adjust memory limit to be per broker
-    final int defaultPartitionCount = 3;
-    rocksDbConfiguration.setMemoryLimit(
-        rocksDbConfiguration.getMemoryLimit() * defaultPartitionCount);
+    // then - options should match our defaults
+    // we expect the same options regardless of the memory allocation strategy
+    // as long as the memory limit per partition is the same.
+    validateDefaultExpectedOptions(rocksDbConfiguration);
+  }
 
-    final var factoryWithCustomOptions =
-        new ZeebeRocksDbFactory<>(
-            rocksDbConfiguration,
-            new ConsistencyChecksSettings(),
-            new AccessMetricsConfiguration(Kind.NONE, 1),
-            SimpleMeterRegistry::new);
+  @Test
+  void shouldHaveDefaultsIfPerAutoMemoryAllocationStrategy() {
+    // when configuring with per-broker memory allocation strategy
+    final RocksDbConfiguration rocksDbConfiguration = new RocksDbConfiguration();
+    rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
 
     // then - options should match our defaults
     // we expect the same options regardless of the memory allocation strategy
     // as long as the memory limit per partition is the same.
-    validateDefaultExpectedOptions(
-        factoryWithCustomOptions.createColumnFamilyOptions(new ArrayList<>()));
+    validateDefaultExpectedOptions(rocksDbConfiguration);
   }
 
   @Test
@@ -244,7 +243,21 @@ final class ZeebeRocksDbFactoryTest {
   }
 
   private static void validateDefaultExpectedOptions(
-      final ColumnFamilyOptions columnFamilyOptions) {
+      final RocksDbConfiguration rocksDbConfiguration) {
+
+    final int defaultPartitionCount = 3;
+    rocksDbConfiguration.setMemoryLimit(
+        rocksDbConfiguration.getMemoryLimit() * defaultPartitionCount);
+
+    final var factoryWithCustomOptions =
+        new ZeebeRocksDbFactory<>(
+            rocksDbConfiguration,
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE, 1),
+            SimpleMeterRegistry::new);
+
+    final var columnFamilyOptions =
+        factoryWithCustomOptions.createColumnFamilyOptions(new ArrayList<>());
 
     // column family options match our defaults
     assertThat(columnFamilyOptions.memtablePrefixBloomSizeRatio()).isEqualTo(0.15);

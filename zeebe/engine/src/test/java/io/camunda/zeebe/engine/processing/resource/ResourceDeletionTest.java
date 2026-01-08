@@ -819,14 +819,16 @@ public class ResourceDeletionTest {
             DecisionRequirementsMetadataValue::getDecisionRequirementsVersion,
             DecisionRequirementsMetadataValue::getDecisionRequirementsKey,
             DecisionRequirementsMetadataValue::getResourceName,
-            DecisionRequirementsMetadataValue::getChecksum)
+            DecisionRequirementsMetadataValue::getChecksum,
+            DecisionRequirementsMetadataValue::getDeploymentKey)
         .containsOnly(
             drgCreatedRecord.getDecisionRequirementsId(),
             drgCreatedRecord.getDecisionRequirementsName(),
             drgCreatedRecord.getDecisionRequirementsVersion(),
             drgCreatedRecord.getDecisionRequirementsKey(),
             drgCreatedRecord.getResourceName(),
-            drgCreatedRecord.getChecksum());
+            drgCreatedRecord.getChecksum(),
+            drgCreatedRecord.getDeploymentKey());
   }
 
   private void verifyDecisionIdWithVersionIsDeleted(

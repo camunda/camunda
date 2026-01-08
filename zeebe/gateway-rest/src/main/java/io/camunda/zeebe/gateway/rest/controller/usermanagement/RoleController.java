@@ -9,6 +9,22 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
+import io.camunda.gateway.protocol.model.RoleClientSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleClientSearchResult;
+import io.camunda.gateway.protocol.model.RoleCreateRequest;
+import io.camunda.gateway.protocol.model.RoleGroupSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleGroupSearchResult;
+import io.camunda.gateway.protocol.model.RoleSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleSearchQueryResult;
+import io.camunda.gateway.protocol.model.RoleUpdateRequest;
+import io.camunda.gateway.protocol.model.RoleUserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.RoleUserSearchResult;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
@@ -19,31 +35,17 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleGroupSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleGroupSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,12 +80,13 @@ public class RoleController {
 
   private CompletableFuture<ResponseEntity<Object>> createRole(
       final CreateRoleRequest createRoleRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createRole(createRoleRequest),
-        ResponseMapper::toRoleCreateResponse);
+        ResponseMapper::toRoleCreateResponse,
+        HttpStatus.CREATED);
   }
 
   @CamundaPutMapping(path = "/{roleId}")
@@ -95,17 +98,18 @@ public class RoleController {
 
   public CompletableFuture<ResponseEntity<Object>> updateRole(
       final UpdateRoleRequest updateRoleRequest) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateRole(updateRoleRequest),
-        ResponseMapper::toRoleUpdateResponse);
+        ResponseMapper::toRoleUpdateResponse,
+        HttpStatus.OK);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}")
   public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final String roleId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -270,7 +274,7 @@ public class RoleController {
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToRole(
       final RoleMemberRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -361,7 +365,7 @@ public class RoleController {
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromRole(
       final RoleMemberRequest request) {
 
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

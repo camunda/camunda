@@ -9,31 +9,35 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.RequestMapper.AssignUserTaskRequest;
+import io.camunda.gateway.mapping.http.RequestMapper.CompleteUserTaskRequest;
+import io.camunda.gateway.mapping.http.RequestMapper.UpdateUserTaskRequest;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
+import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
+import io.camunda.gateway.protocol.model.FormResult;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskResult;
+import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
+import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
+import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
+import io.camunda.gateway.protocol.model.UserTaskVariableSearchQueryRequest;
+import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.zeebe.gateway.protocol.rest.FormResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.AssignUserTaskRequest;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.CompleteUserTaskRequest;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.UpdateUserTaskRequest;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -143,6 +147,17 @@ public class UserTaskController {
             query -> searchUserTaskVariableQuery(userTaskKey, query, truncateValues));
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{userTaskKey}/audit-logs/search")
+  public ResponseEntity<AuditLogSearchQueryResult> searchAuditLogs(
+      @PathVariable final long userTaskKey,
+      @RequestBody(required = false) final AuditLogSearchQueryRequest auditLogSearchQueryRequest) {
+    return SearchQueryRequestMapper.toAuditLogQuery(auditLogSearchQueryRequest)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query -> searchUserTaskAuditLogQuery(userTaskKey, query));
+  }
+
   private ResponseEntity<UserTaskSearchQueryResult> search(final UserTaskQuery query) {
     try {
       final var result =
@@ -170,9 +185,22 @@ public class UserTaskController {
     }
   }
 
+  private ResponseEntity<AuditLogSearchQueryResult> searchUserTaskAuditLogQuery(
+      final long userTaskKey, final AuditLogQuery query) {
+    try {
+      final var result =
+          userTaskServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .searchUserTaskAuditLogs(userTaskKey, query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private CompletableFuture<ResponseEntity<Object>> assignUserTask(
       final AssignUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -185,7 +213,7 @@ public class UserTaskController {
 
   private CompletableFuture<ResponseEntity<Object>> completeUserTask(
       final CompleteUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -194,7 +222,7 @@ public class UserTaskController {
 
   private CompletableFuture<ResponseEntity<Object>> unassignUserTask(
       final AssignUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -203,7 +231,7 @@ public class UserTaskController {
 
   private CompletableFuture<ResponseEntity<Object>> updateUserTask(
       final UpdateUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

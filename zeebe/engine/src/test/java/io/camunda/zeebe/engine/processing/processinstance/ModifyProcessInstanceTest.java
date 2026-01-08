@@ -1623,7 +1623,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .moveElementsWithSourceParent("A", "B")
+        .moveElementsWithInferredScope("A", "B")
         .modify();
 
     // then
@@ -1828,7 +1828,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .moveElementsWithSourceParent("A", "B")
+        .moveElementsWithInferredScope("A", "B")
         .modify();
 
     // then
@@ -2378,6 +2378,68 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldMoveElementInstanceBySourceElementInstanceKeyWithInferredScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .userTask("A")
+                            .zeebeUserTask()
+                            .userTask("B")
+                            .zeebeUserTask()
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // wait for task A to be activated and get its instance key
+    final var taskARecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    final var taskAInstanceKey = taskARecord.getKey();
+    final var subprocessInstanceKey = taskARecord.getValue().getFlowScopeKey();
+
+    // when: move the specific task A instance to task B using inferred scope based on the source
+    // instance hierarchy
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementInstanceWithInferredScope(taskAInstanceKey, "B")
+        .modify();
+
+    // then: task A is terminated and task B is activated in the same subprocess scope
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .getFirst()
+                .getKey())
+        .describedAs("Expect the specified element instance to be terminated")
+        .isEqualTo(taskAInstanceKey);
+
+    final var activatedTaskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .getFirst();
+
+    assertThat(activatedTaskB.getValue().getFlowScopeKey())
+        .describedAs("Expect task B to be activated in the same subprocess scope")
+        .isEqualTo(subprocessInstanceKey);
+  }
+
+  @Test
   public void shouldMoveElementInstanceBySourceElementInstanceKeyWithSourceParent() {
     // given
     ENGINE
@@ -2414,7 +2476,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .moveElementInstanceWithSourceParent(taskAInstanceKey, "B")
+        .moveElementInstanceWithSourceParentScope(taskAInstanceKey, "B")
         .modify();
 
     // then: task A is terminated and task B is activated in the same subprocess scope
@@ -2571,7 +2633,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .moveElementsWithSourceParent("task1", "task2")
+        .moveElementsWithInferredScope("task1", "task2")
         .modify();
 
     // then task2 should be activated in subprocess A (not in subprocess B)
@@ -2653,7 +2715,7 @@ public class ModifyProcessInstanceTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .moveElementInstanceWithSourceParent(task1InstanceKey, "task2")
+        .moveElementInstanceWithInferredScope(task1InstanceKey, "task2")
         .modify();
 
     // then task2 should be activated in subprocess A (not in subprocess B)
@@ -2666,6 +2728,70 @@ public class ModifyProcessInstanceTest {
     assertThat(task2Activated.getValue().getFlowScopeKey())
         .describedAs("Expect task2 to be activated in subprocess A, not in subprocess B")
         .isEqualTo(subprocessAKey);
+  }
+
+  @Test
+  public void shouldMoveSiblingElementsInSubprocessWithSourceParentScope() {
+    // given - two sibling tasks A and B inside a subprocess
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sub ->
+                        sub.embeddedSubProcess()
+                            .startEvent()
+                            .userTask("A")
+                            .zeebeUserTask()
+                            .userTask("B")
+                            .zeebeUserTask()
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // Wait for task A to be activated
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    final var subprocessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("subprocess")
+            .getFirst()
+            .getKey();
+
+    // when moving A to B using source's direct parent as ancestor scope
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementsWithSourceParentScope("A", "B")
+        .modify();
+
+    // then task B should be activated in the same subprocess
+    final var taskBActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .getFirst();
+
+    assertThat(taskBActivated.getValue().getFlowScopeKey())
+        .describedAs("Expect task B to be activated in the subprocess")
+        .isEqualTo(subprocessKey);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .exists())
+        .isTrue();
   }
 
   private void verifyThatRootElementIsActivated(

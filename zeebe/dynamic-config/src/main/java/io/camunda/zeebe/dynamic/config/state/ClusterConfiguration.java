@@ -31,6 +31,7 @@ import java.util.stream.Stream;
  *     the coordinator when a new configuration change is triggered.
  * @param members - represents the state of each member
  * @param pendingChanges - keeps track of the ongoing configuration changes
+ * @param incarnationNumber - represents the incarnation number of the cluster configuration
  *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
  *     state.
  */
@@ -40,9 +41,11 @@ public record ClusterConfiguration(
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges,
     Optional<RoutingState> routingState,
-    Optional<String> clusterId) {
+    Optional<String> clusterId,
+    long incarnationNumber) {
 
   public static final int INITIAL_VERSION = 1;
+  public static final long INITIAL_INCARNATION_NUMBER = 0;
   private static final int UNINITIALIZED_VERSION = -1;
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -52,14 +55,16 @@ public record ClusterConfiguration(
       final Optional<CompletedChange> lastChange,
       final Optional<ClusterChangePlan> pendingChanges,
       final Optional<RoutingState> routingState,
-      final Optional<String> clusterId) {
+      final Optional<String> clusterId,
+      final long incarnationNumber) {
     this(
         version,
         ImmutableSortedMap.copyOf(members),
         lastChange,
         pendingChanges,
         routingState,
-        clusterId);
+        clusterId,
+        incarnationNumber);
   }
 
   public ClusterConfiguration {
@@ -73,6 +78,9 @@ public record ClusterConfiguration(
     Objects.requireNonNull(pendingChanges);
     Objects.requireNonNull(routingState);
     Objects.requireNonNull(clusterId);
+    if (incarnationNumber < 0) {
+      throw new IllegalArgumentException("Incarnation number must be >= 0");
+    }
   }
 
   public static ClusterConfiguration uninitialized() {
@@ -82,7 +90,8 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
-        Optional.empty());
+        Optional.empty(),
+        INITIAL_INCARNATION_NUMBER);
   }
 
   public boolean isUninitialized() {
@@ -96,7 +105,8 @@ public record ClusterConfiguration(
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
-        Optional.empty());
+        Optional.empty(),
+        INITIAL_INCARNATION_NUMBER);
   }
 
   public ClusterConfiguration addMember(final MemberId memberId, final MemberState state) {
@@ -110,12 +120,24 @@ public record ClusterConfiguration(
     final var newMembers =
         ImmutableMap.<MemberId, MemberState>builder().putAll(members).put(memberId, state).build();
     return new ClusterConfiguration(
-        version, newMembers, lastChange, pendingChanges, routingState, clusterId);
+        version,
+        newMembers,
+        lastChange,
+        pendingChanges,
+        routingState,
+        clusterId,
+        incarnationNumber);
   }
 
   public ClusterConfiguration setRoutingState(final RoutingState updatedRoutingState) {
     return new ClusterConfiguration(
-        version, members, lastChange, pendingChanges, Optional.of(updatedRoutingState), clusterId);
+        version,
+        members,
+        lastChange,
+        pendingChanges,
+        Optional.of(updatedRoutingState),
+        clusterId,
+        incarnationNumber);
   }
 
   /**
@@ -154,7 +176,13 @@ public record ClusterConfiguration(
 
     final var newMembers = mapBuilder.buildKeepingLast();
     return new ClusterConfiguration(
-        version, newMembers, lastChange, pendingChanges, routingState, clusterId);
+        version,
+        newMembers,
+        lastChange,
+        pendingChanges,
+        routingState,
+        clusterId,
+        incarnationNumber);
   }
 
   public ClusterConfiguration startConfigurationChange(
@@ -174,7 +202,8 @@ public record ClusterConfiguration(
           lastChange,
           Optional.of(ClusterChangePlan.init(newVersion, operations)),
           routingState,
-          clusterId);
+          clusterId,
+          incarnationNumber);
     }
   }
 
@@ -212,7 +241,8 @@ public record ClusterConfiguration(
           lastChange,
           mergedChanges,
           mergedRoutingState,
-          clusterId);
+          clusterId,
+          Math.max(incarnationNumber, other.incarnationNumber()));
     }
   }
 
@@ -267,7 +297,8 @@ public record ClusterConfiguration(
             lastChange,
             Optional.of(pendingChanges.orElseThrow().advance()),
             routingState,
-            clusterId);
+            clusterId,
+            incarnationNumber);
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -291,7 +322,8 @@ public record ClusterConfiguration(
           Optional.of(completedChange),
           Optional.empty(),
           routingState,
-          clusterId);
+          clusterId,
+          incarnationNumber);
     }
 
     return result;
@@ -372,9 +404,130 @@ public record ClusterConfiguration(
           Optional.of(cancelledChange),
           Optional.empty(),
           routingState,
-          clusterId);
+          clusterId,
+          incarnationNumber);
     } else {
       return this;
+    }
+  }
+
+  /** Returns a new builder for creating ClusterConfiguration instances. */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /** Builder class for creating ClusterConfiguration instances. */
+  public static class Builder {
+    private long version = INITIAL_VERSION;
+    private Map<MemberId, MemberState> members = Map.of();
+    private Optional<CompletedChange> lastChange = Optional.empty();
+    private Optional<ClusterChangePlan> pendingChanges = Optional.empty();
+    private Optional<RoutingState> routingState = Optional.empty();
+    private Optional<String> clusterId = Optional.empty();
+    private long incarnationNumber = INITIAL_INCARNATION_NUMBER;
+
+    /**
+     * Copies all properties from the given ClusterConfiguration.
+     *
+     * @param config the ClusterConfiguration to copy from
+     * @return this builder
+     */
+    public Builder from(final ClusterConfiguration config) {
+      version = config.version;
+      members = config.members;
+      lastChange = config.lastChange;
+      pendingChanges = config.pendingChanges;
+      routingState = config.routingState;
+      clusterId = config.clusterId;
+      incarnationNumber = config.incarnationNumber;
+      return this;
+    }
+
+    /**
+     * Sets the version.
+     *
+     * @param version the version
+     * @return this builder
+     */
+    public Builder version(final long version) {
+      this.version = version;
+      return this;
+    }
+
+    /**
+     * Sets the members.
+     *
+     * @param members the members map
+     * @return this builder
+     */
+    public Builder members(final Map<MemberId, MemberState> members) {
+      this.members = members;
+      return this;
+    }
+
+    /**
+     * Sets the last change.
+     *
+     * @param lastChange the last completed change
+     * @return this builder
+     */
+    public Builder lastChange(final Optional<CompletedChange> lastChange) {
+      this.lastChange = lastChange;
+      return this;
+    }
+
+    /**
+     * Sets the pending changes.
+     *
+     * @param pendingChanges the pending changes
+     * @return this builder
+     */
+    public Builder pendingChanges(final Optional<ClusterChangePlan> pendingChanges) {
+      this.pendingChanges = pendingChanges;
+      return this;
+    }
+
+    /**
+     * Sets the routing state.
+     *
+     * @param routingState the routing state
+     * @return this builder
+     */
+    public Builder routingState(final Optional<RoutingState> routingState) {
+      this.routingState = routingState;
+      return this;
+    }
+
+    /**
+     * Sets the cluster ID.
+     *
+     * @param clusterId the cluster ID
+     * @return this builder
+     */
+    public Builder clusterId(final Optional<String> clusterId) {
+      this.clusterId = clusterId;
+      return this;
+    }
+
+    /**
+     * Sets the incarnation number.
+     *
+     * @param incarnationNumber the incarnation number
+     * @return this builder
+     */
+    public Builder incarnationNumber(final long incarnationNumber) {
+      this.incarnationNumber = incarnationNumber;
+      return this;
+    }
+
+    /**
+     * Builds and returns a new ClusterConfiguration instance.
+     *
+     * @return the new ClusterConfiguration
+     */
+    public ClusterConfiguration build() {
+      return new ClusterConfiguration(
+          version, members, lastChange, pendingChanges, routingState, clusterId, incarnationNumber);
     }
   }
 }

@@ -52,7 +52,9 @@
         DECISION_EVALUATION_KEY,
         DEPLOYMENT_KEY,
         FORM_KEY,
-        RESOURCE_KEY
+        RESOURCE_KEY,
+        PARTITION_ID,
+        HISTORY_CLEANUP_DATE
       FROM ${prefix}AUDIT_LOG
       <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
     ) t
@@ -238,7 +240,9 @@
       DECISION_EVALUATION_KEY,
       DEPLOYMENT_KEY,
       FORM_KEY,
-      RESOURCE_KEY
+      RESOURCE_KEY,
+      PARTITION_ID,
+      HISTORY_CLEANUP_DATE
     )
     VALUES (
       #{auditLogKey},
@@ -250,7 +254,7 @@
       #{entityOperationIntent},
       #{batchOperationKey},
       #{batchOperationType},
-      #{timestamp},
+      #{timestamp, jdbcType=TIMESTAMP},
       #{actorType},
       #{actorId},
       #{tenantId},
@@ -271,13 +275,29 @@
       #{decisionEvaluationKey},
       #{deploymentKey},
       #{formKey},
-      #{resourceKey}
+      #{resourceKey},
+      #{partitionId},
+      #{historyCleanupDate, jdbcType=TIMESTAMP}
     )
   </insert>
+
+  <update id="updateProcessHistoryCleanupDate">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY IN
+    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </update>
 
   <delete id="deleteProcessInstanceRelatedData">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
+  </delete>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
 </mapper>

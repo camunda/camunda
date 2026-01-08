@@ -1499,9 +1499,11 @@ components:
         mapping:
           direct: '#/components/schemas/DirectAncestorKeyInstruction'
           inferred: '#/components/schemas/InferredAncestorKeyInstruction'
+          sourceParent: '#/components/schemas/UseSourceParentKeyInstruction'
       oneOf:
         - $ref: "#/components/schemas/DirectAncestorKeyInstruction"
         - $ref: "#/components/schemas/InferredAncestorKeyInstruction"
+        - $ref: "#/components/schemas/UseSourceParentKeyInstruction"
 
     DirectAncestorKeyInstruction:
       type: object
@@ -1534,6 +1536,18 @@ components:
           description: The type of ancestor scope instruction.
           type: string
           example: inferred
+      required:
+        - ancestorScopeType
+
+    UseSourceParentKeyInstruction:
+      type: object
+      description: |
+        Instructs the engine to use the source's direct parent key as the ancestor scope key for the target element. This is a simpler alternative to `inferred` that skips hierarchy traversal and directly uses the source's parent key. This is useful when the source and target elements are siblings within the same flow scope.
+      properties:
+        ancestorScopeType:
+          description: The type of ancestor scope instruction.
+          type: string
+          example: sourceParent
       required:
         - ancestorScopeType
 

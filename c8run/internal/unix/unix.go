@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"runtime/debug"
 	"syscall"
+
+	"github.com/camunda/camunda/c8run/internal/connectors"
 )
 
 func (w *UnixC8Run) OpenBrowser(ctx context.Context, url string) error {
@@ -55,9 +57,12 @@ func (w *UnixC8Run) ElasticsearchCmd(ctx context.Context, elasticsearchVersion s
 	return elasticsearchCmd
 }
 
-func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string, camundaPort int) *exec.Cmd {
+func (w *UnixC8Run) ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, connectorsVersion string, camundaPort int) *exec.Cmd {
 	classPath := parentDir + "/*:" + parentDir + "/custom_connectors/*"
 	mainClass := "io.camunda.connector.runtime.app.ConnectorRuntimeApplication"
+	if connectors.UsePropertiesLauncher(connectorsVersion) {
+		mainClass = "org.springframework.boot.loader.launch.PropertiesLauncher"
+	}
 	springConfigLocation := "--spring.config.additional-location=" + parentDir + "/connectors-application.properties"
 	connectorsCmd := exec.CommandContext(ctx, javaBinary, "-cp", classPath, mainClass, springConfigLocation)
 	connectorsCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

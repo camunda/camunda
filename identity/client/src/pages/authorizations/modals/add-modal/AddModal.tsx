@@ -44,6 +44,7 @@ type ResourcePermissionsType = {
 };
 
 const resourcePermissions: ResourcePermissionsType = {
+  AUDIT_LOG: [PermissionType.READ],
   AUTHORIZATION: [
     PermissionType.CREATE,
     PermissionType.DELETE,

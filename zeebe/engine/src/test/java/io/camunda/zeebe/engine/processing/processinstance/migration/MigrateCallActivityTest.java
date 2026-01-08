@@ -337,6 +337,7 @@ public class MigrateCallActivityTest {
             List.of(
                 List.of(processInstanceKey, callActivityElementInstanceKey),
                 List.of(childProcessInstanceKey)))
+        .hasRootProcessInstanceKey(processInstanceKey)
         .hasProcessDefinitionPath(List.of(targetProcessDefinitionKey))
         .hasCallingElementPath(List.of(0));
   }
@@ -686,9 +687,11 @@ public class MigrateCallActivityTest {
             RecordingExporter.processInstanceMigrationRecords(
                     ProcessInstanceMigrationIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .exists())
+                .findFirst())
         .describedAs("Expect that process instance is migrated")
-        .isTrue();
+        .isPresent()
+        .map(record -> record.getValue().getRootProcessInstanceKey())
+        .hasValue(processInstanceKey);
   }
 
   @Test
@@ -806,8 +809,10 @@ public class MigrateCallActivityTest {
             RecordingExporter.processInstanceMigrationRecords(
                     ProcessInstanceMigrationIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .exists())
+                .findFirst())
         .describedAs("Expect that process instance is migrated")
-        .isTrue();
+        .isPresent()
+        .map(record -> record.getValue().getRootProcessInstanceKey())
+        .hasValue(processInstanceKey);
   }
 }

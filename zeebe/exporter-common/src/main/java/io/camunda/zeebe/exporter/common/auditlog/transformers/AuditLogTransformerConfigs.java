@@ -10,9 +10,12 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
@@ -29,19 +32,22 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import java.util.Set;
 
 public class AuditLogTransformerConfigs {
   public static final TransformerConfig AUTHORIZATION_CONFIG =
@@ -55,21 +61,30 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(BATCH_OPERATION_CREATION).withIntents(BatchOperationIntent.CREATED);
 
   public static final TransformerConfig BATCH_OPERATION_LIFECYCLE_MANAGEMENT_CONFIG =
-      new TransformerConfig(
-          BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-          Set.of(
+      TransformerConfig.with(BATCH_OPERATION_LIFECYCLE_MANAGEMENT)
+          .withIntents(
               BatchOperationIntent.RESUMED,
               BatchOperationIntent.SUSPENDED,
-              BatchOperationIntent.CANCELED),
-          Set.of(
+              BatchOperationIntent.CANCELED)
+          .withRejections(
               BatchOperationIntent.RESUME,
               BatchOperationIntent.SUSPEND,
-              BatchOperationIntent.CANCEL),
-          Set.of(RejectionType.INVALID_STATE));
+              BatchOperationIntent.CANCEL)
+          .withRejectionTypes(RejectionType.INVALID_STATE);
 
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
           .withIntents(DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED);
+
+  public static final TransformerConfig DECISION_CONFIG =
+      TransformerConfig.with(DECISION).withIntents(DecisionIntent.CREATED, DecisionIntent.DELETED);
+
+  public static final TransformerConfig DECISION_REQUIREMENTS_CONFIG =
+      TransformerConfig.with(DECISION_REQUIREMENTS)
+          .withIntents(DecisionRequirementsIntent.CREATED, DecisionRequirementsIntent.DELETED);
+
+  public static final TransformerConfig FORM_CONFIG =
+      TransformerConfig.with(ValueType.FORM).withIntents(FormIntent.CREATED, FormIntent.DELETED);
 
   public static final TransformerConfig GROUP_CONFIG =
       TransformerConfig.with(GROUP)
@@ -88,6 +103,9 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(MAPPING_RULE)
           .withIntents(
               MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED);
+
+  public static final TransformerConfig PROCESS_CONFIG =
+      TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DELETED);
 
   public static final TransformerConfig PROCESS_INSTANCE_CANCEL_CONFIG =
       TransformerConfig.with(ValueType.PROCESS_INSTANCE)
@@ -133,11 +151,10 @@ public class AuditLogTransformerConfigs {
           .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED);
 
   public static final TransformerConfig USER_TASK_CONFIG =
-      new TransformerConfig(
-          USER_TASK,
-          Set.of(UserTaskIntent.UPDATED, UserTaskIntent.ASSIGNED, UserTaskIntent.COMPLETED),
-          Set.of(UserTaskIntent.UPDATE, UserTaskIntent.ASSIGN, UserTaskIntent.COMPLETE),
-          Set.of(RejectionType.INVALID_STATE));
+      TransformerConfig.with(USER_TASK)
+          .withIntents(UserTaskIntent.UPDATED, UserTaskIntent.ASSIGNED, UserTaskIntent.COMPLETED)
+          .withRejections(UserTaskIntent.UPDATE, UserTaskIntent.ASSIGN, UserTaskIntent.COMPLETE)
+          .withRejectionTypes(RejectionType.INVALID_STATE);
 
   public static final TransformerConfig VARIABLE_ADD_UPDATE_CONFIG =
       TransformerConfig.with(VARIABLE).withIntents(VariableIntent.CREATED, VariableIntent.UPDATED);

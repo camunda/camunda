@@ -74,6 +74,16 @@ public class UserTaskSelectors {
     return new UserTaskProcessInstanceSelector(processInstanceKey);
   }
 
+  /**
+   * Select the BPMN user task by its process definition ID.
+   *
+   * @param processDefinitionId the process definition ID
+   * @return the selector
+   */
+  public static UserTaskSelector byProcessDefinitionId(final String processDefinitionId) {
+    return new UserTaskProcessDefinitionSelector(processDefinitionId);
+  }
+
   private static final class UserTaskElementIdSelector implements UserTaskSelector {
 
     private final String elementId;
@@ -142,6 +152,7 @@ public class UserTaskSelectors {
 
     @Override
     public void applyFilter(final UserTaskFilter filter) {
+      filter.name(taskName);
       if (processInstanceKey != null) {
         filter.processInstanceKey(processInstanceKey);
       }
@@ -169,6 +180,30 @@ public class UserTaskSelectors {
     @Override
     public void applyFilter(final UserTaskFilter filter) {
       filter.processInstanceKey(processInstanceKey);
+    }
+  }
+
+  private static final class UserTaskProcessDefinitionSelector implements UserTaskSelector {
+
+    private final String processDefinitionId;
+
+    private UserTaskProcessDefinitionSelector(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
+    }
+
+    @Override
+    public boolean test(final UserTask userTask) {
+      return processDefinitionId.equals(userTask.getBpmnProcessId());
+    }
+
+    @Override
+    public String describe() {
+      return String.format("processDefinitionId: %s", processDefinitionId);
+    }
+
+    @Override
+    public void applyFilter(final UserTaskFilter filter) {
+      filter.bpmnProcessId(processDefinitionId);
     }
   }
 }

@@ -10,27 +10,29 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.authentication.ConditionalOnInternalUserManagement;
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserSearchQueryRequest;
+import io.camunda.gateway.protocol.model.UserSearchResult;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
-import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,7 +80,7 @@ public class UserController {
 
   @CamundaDeleteMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final String username) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             userServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -86,12 +88,13 @@ public class UserController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             userServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createUser(request),
-        ResponseMapper::toUserCreateResponse);
+        ResponseMapper::toUserCreateResponse,
+        HttpStatus.CREATED);
   }
 
   @CamundaPutMapping(path = "/{username}")
@@ -102,12 +105,13 @@ public class UserController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             userServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateUser(request),
-        ResponseMapper::toUserUpdateResponse);
+        ResponseMapper::toUserUpdateResponse,
+        HttpStatus.OK);
   }
 
   @CamundaPostMapping(path = "/search")

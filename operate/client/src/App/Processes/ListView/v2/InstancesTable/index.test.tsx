@@ -15,9 +15,6 @@ import {useEffect} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processesStore} from 'modules/stores/processes/processes.list';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
-import {mockProcessDefinitions} from 'modules/testUtils';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 vi.mock('modules/utils/bpmn');
@@ -54,7 +51,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
     useEffect(() => {
       return () => {
         processInstancesSelectionStore.reset();
-        processesStore.reset();
+
         batchModificationStore.reset();
       };
     }, []);
@@ -75,11 +72,6 @@ function getWrapper(initialPath: string = Paths.processes()) {
 }
 
 describe('<InstancesTable />', () => {
-  beforeEach(() => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
-    processesStore.fetchProcesses();
-  });
-
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {

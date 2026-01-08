@@ -57,13 +57,15 @@ public final class ClusterTopologyDomain extends DomainContextBase {
         Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
     final var arbitraryRoutingState = routingStates().optional();
     final var arbitraryClusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
+    final var arbitraryIncarnationNumber = Arbitraries.longs().greaterOrEqual(0);
     return Combinators.combine(
             arbitraryVersion,
             arbitraryMembers,
             arbitraryCompletedChange,
             arbitraryChangePlan,
             arbitraryRoutingState,
-            arbitraryClusterId)
+            arbitraryClusterId,
+            arbitraryIncarnationNumber)
         .as(ClusterConfiguration::new);
   }
 

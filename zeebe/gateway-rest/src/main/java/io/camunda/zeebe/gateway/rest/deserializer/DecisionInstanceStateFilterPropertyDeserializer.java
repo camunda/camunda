@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedDecisionInstanceStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateFilterProperty;
+import io.camunda.gateway.protocol.model.AdvancedDecisionInstanceStateFilter;
+import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
+import io.camunda.gateway.protocol.model.DecisionInstanceStateFilterProperty;
 
 public class DecisionInstanceStateFilterPropertyDeserializer
     extends FilterDeserializer<DecisionInstanceStateFilterProperty, DecisionInstanceStateEnum> {

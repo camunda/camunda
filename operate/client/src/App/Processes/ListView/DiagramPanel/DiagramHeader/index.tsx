@@ -7,6 +7,9 @@
  */
 
 import {observer} from 'mobx-react';
+import {Button} from '@carbon/react';
+import {ClassicBatch} from '@carbon/react/icons';
+import {useNavigate} from 'react-router-dom';
 import isNil from 'lodash/isNil';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
@@ -15,8 +18,10 @@ import {
   Description,
   DescriptionTitle,
   DescriptionData,
+  HeaderActions,
 } from './styled';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {Paths} from 'modules/Routes';
 
 type ProcessDetails = {
   bpmnProcessId?: string;
@@ -37,6 +42,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
     const hasVersionTag = !isNil(versionTag);
     const hasSelectedProcess = bpmnProcessId !== undefined;
     const hasSelectedVersion = version !== undefined && version !== 'all';
+    const navigate = useNavigate();
 
     return (
       <PanelHeader
@@ -60,7 +66,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
             <Description>
               <DescriptionTitle>Process ID</DescriptionTitle>
               <DescriptionData>
-                <CopiableProcessID bpmnProcessId={bpmnProcessId} />
+                <CopiableProcessID processDefinitionId={bpmnProcessId} />
               </DescriptionData>
             </Description>
 
@@ -74,14 +80,26 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
             )}
           </>
         )}
-
-        {hasSelectedVersion && processDefinitionId !== undefined && (
-          <ProcessOperations
-            processDefinitionId={processDefinitionId}
-            processName={processName}
-            processVersion={version}
-          />
-        )}
+        <HeaderActions>
+          {hasSelectedVersion && processDefinitionId !== undefined && (
+            <ProcessOperations
+              processDefinitionId={processDefinitionId}
+              processName={processName}
+              processVersion={version}
+            />
+          )}
+          <Button
+            kind="tertiary"
+            onClick={() => navigate(Paths.batchOperations())}
+            iconDescription="View batch operations"
+            renderIcon={ClassicBatch}
+            title="View batch operations"
+            aria-label="View batch operations"
+            size="sm"
+          >
+            View batch operations
+          </Button>
+        </HeaderActions>
       </PanelHeader>
     );
   },

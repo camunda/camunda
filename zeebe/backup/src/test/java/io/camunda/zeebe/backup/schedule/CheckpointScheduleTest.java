@@ -8,6 +8,12 @@
 package io.camunda.zeebe.backup.schedule;
 
 import static io.camunda.zeebe.backup.schedule.CheckpointScheduler.SKIP_CHECKPOINT_THRESHOLD;
+import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.LAST_CHECKPOINT_GAUGE_NAME;
+import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.LAST_CHECKPOINT_ID_GAUGE_NAME;
+import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.NEXT_CHECKPOINT_GAUGE_NAME;
+import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.TYPE_TAG;
+import static org.assertj.core.api.Assertions.within;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -19,16 +25,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
@@ -47,10 +57,12 @@ public class CheckpointScheduleTest {
   public final ControlledActorSchedulerExtension actorScheduler =
       new ControlledActorSchedulerExtension();
 
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private CheckpointScheduler checkpointScheduler;
 
   @BeforeEach
   void setup() {
+    meterRegistry.clear();
     backupRequestHandler = mock(BackupRequestHandler.class);
     brokerClient = mock(BrokerClient.class);
     final var topologyManager = mock(BrokerTopologyManager.class);
@@ -95,6 +107,20 @@ public class CheckpointScheduleTest {
     verify(backupRequestHandler, times(1))
         .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
     verifyNoMoreInteractions(backupRequestHandler);
+
+    final var recordedTimestampValue =
+        getGaugeValue(LAST_CHECKPOINT_GAUGE_NAME, CheckpointType.MARKER);
+    final var recordedCheckpointIdValue =
+        getGaugeValue(LAST_CHECKPOINT_ID_GAUGE_NAME, CheckpointType.MARKER);
+    final var nextCheckpointTimestampValue =
+        getGaugeValue(NEXT_CHECKPOINT_GAUGE_NAME, CheckpointType.MARKER);
+
+    assertThat(recordedTimestampValue).isEqualTo(now.plusSeconds(5).toEpochMilli());
+    assertThat(nextCheckpointTimestampValue).isEqualTo(now.plusSeconds(10).toEpochMilli());
+    // id generation is not bound to the actor clock, so the value must be close to when we
+    // initially stopped the clock
+    assertThat(Instant.ofEpochMilli(recordedCheckpointIdValue))
+        .isCloseTo(now, within(1, ChronoUnit.SECONDS));
   }
 
   @Test
@@ -120,6 +146,25 @@ public class CheckpointScheduleTest {
     verify(backupRequestHandler, times(1))
         .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
     verifyNoMoreInteractions(backupRequestHandler);
+
+    var recordedTimestampValue = getGaugeValue(LAST_CHECKPOINT_GAUGE_NAME, CheckpointType.MARKER);
+    var recordedCheckpointIdValue =
+        getGaugeValue(LAST_CHECKPOINT_ID_GAUGE_NAME, CheckpointType.MARKER);
+
+    assertThat(recordedTimestampValue).isEqualTo(now.plusSeconds(5).toEpochMilli());
+    assertThat(Instant.ofEpochMilli(recordedCheckpointIdValue))
+        .isCloseTo(now, within(1, ChronoUnit.SECONDS));
+
+    recordedTimestampValue =
+        getGaugeValue(LAST_CHECKPOINT_GAUGE_NAME, CheckpointType.SCHEDULED_BACKUP);
+    recordedCheckpointIdValue =
+        getGaugeValue(LAST_CHECKPOINT_ID_GAUGE_NAME, CheckpointType.SCHEDULED_BACKUP);
+    final var nextCheckpointTimestampValue =
+        getGaugeValue(NEXT_CHECKPOINT_GAUGE_NAME, CheckpointType.SCHEDULED_BACKUP);
+    assertThat(recordedTimestampValue).isEqualTo(now.plusSeconds(5).toEpochMilli());
+    assertThat(nextCheckpointTimestampValue).isEqualTo(now.plusSeconds(10).toEpochMilli());
+    assertThat(Instant.ofEpochMilli(recordedCheckpointIdValue))
+        .isCloseTo(now, within(1, ChronoUnit.SECONDS));
   }
 
   @Test
@@ -306,6 +351,55 @@ public class CheckpointScheduleTest {
     verifyNoMoreInteractions(backupRequestHandler);
   }
 
+  @Test
+  void shouldRegisterMetricsOnStartup() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
+
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(
+            CompletableFuture.completedStage(
+                checkpointState(0L, now.minus(1, ChronoUnit.DAYS).toEpochMilli())));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(getGauge(LAST_CHECKPOINT_GAUGE_NAME, CheckpointType.MARKER)).isNotNull();
+    assertThat(getGauge(LAST_CHECKPOINT_ID_GAUGE_NAME, CheckpointType.MARKER)).isNotNull();
+    assertThat(getGauge(NEXT_CHECKPOINT_GAUGE_NAME, CheckpointType.MARKER)).isNotNull();
+    assertThat(getGauge(LAST_CHECKPOINT_GAUGE_NAME, CheckpointType.SCHEDULED_BACKUP)).isNotNull();
+    assertThat(getGauge(LAST_CHECKPOINT_ID_GAUGE_NAME, CheckpointType.SCHEDULED_BACKUP))
+        .isNotNull();
+    assertThat(getGauge(NEXT_CHECKPOINT_GAUGE_NAME, CheckpointType.SCHEDULED_BACKUP)).isNotNull();
+  }
+
+  @Test
+  void shouldRemoveMetricsOnShutdown() {
+    // given
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler =
+        createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
+
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(
+            CompletableFuture.completedStage(
+                checkpointState(0L, now.minus(1, ChronoUnit.DAYS).toEpochMilli())));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    assertThat(meterRegistry.getMeters()).isNotEmpty();
+    checkpointScheduler.closeAsync();
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(meterRegistry.getMeters()).isEmpty();
+  }
+
   private CheckpointStateResponse checkpointState(
       final long checkpointTimestamp, final long backupTimestamp) {
     final var response = new CheckpointStateResponse();
@@ -330,7 +424,7 @@ public class CheckpointScheduleTest {
       final Schedule checkpointSchedule, final Schedule backupSchedule) {
     try {
       final var scheduler =
-          new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient);
+          new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient, meterRegistry);
       final Field checkpointCreatorField =
           CheckpointScheduler.class.getDeclaredField("backupRequestHandler");
       checkpointCreatorField.setAccessible(true);
@@ -341,5 +435,13 @@ public class CheckpointScheduleTest {
     } catch (final NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private Gauge getGauge(final String gaugeName, final CheckpointType type) {
+    return meterRegistry.get(gaugeName).tag(TYPE_TAG, type.name()).gauge();
+  }
+
+  private long getGaugeValue(final String gaugeName, final CheckpointType type) {
+    return (long) getGauge(gaugeName, type).value();
   }
 }

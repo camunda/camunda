@@ -8,20 +8,23 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.protocol.model.DocumentLinkRequest;
+import io.camunda.gateway.protocol.model.DocumentMetadata;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DocumentServices;
+import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.Part;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,23 +76,26 @@ public class DocumentController {
   private CompletableFuture<ResponseEntity<Object>> createDocument(
       final DocumentServices.DocumentCreateRequest request) {
 
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             documentServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createDocument(request),
-        ResponseMapper::toDocumentReference);
+        ResponseMapper::toDocumentReference,
+        HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentBatch(
       final List<DocumentServices.DocumentCreateRequest> requests) {
 
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             documentServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createDocumentBatch(requests),
-        ResponseMapper::toDocumentReferenceBatch);
+        ResponseMapper::toDocumentReferenceBatch,
+        response ->
+            response.getFailedDocuments().isEmpty() ? HttpStatus.CREATED : HttpStatus.MULTI_STATUS);
   }
 
   @CamundaGetMapping(
@@ -106,15 +112,28 @@ public class DocumentController {
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .getDocumentContent(documentId, storeId, contentHash)
         // Any service exception that can occur is handled by the GlobalControllerExceptionHandler
-        .thenApply(ResponseMapper::toDocumentContentResponse)
+        .thenApply(DocumentController::toDocumentContentResponse)
         .join();
+  }
+
+  private static ResponseEntity<StreamingResponseBody> toDocumentContentResponse(
+      final DocumentContentResponse response) {
+    final MediaType mediaType = ResponseMapper.resolveMediaType(response);
+    return ResponseEntity.ok()
+        .contentType(mediaType)
+        .body(
+            bodyStream -> {
+              try (final var contentInputStream = response.content()) {
+                contentInputStream.transferTo(bodyStream);
+              }
+            });
   }
 
   @CamundaDeleteMapping(path = "/{documentId}")
   public CompletableFuture<ResponseEntity<Object>> deleteDocument(
       @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             documentServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -140,11 +159,12 @@ public class DocumentController {
       final String contentHash,
       final DocumentLinkParams params) {
 
-    return RequestMapper.executeServiceMethod(
+    return RequestExecutor.executeServiceMethod(
         () ->
             documentServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createLink(documentId, storeId, contentHash, params),
-        ResponseMapper::toDocumentLinkResponse);
+        ResponseMapper::toDocumentLinkResponse,
+        HttpStatus.OK);
   }
 }

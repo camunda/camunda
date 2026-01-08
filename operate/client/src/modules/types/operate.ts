@@ -55,6 +55,7 @@ interface ProcessInstanceEntity {
   processId: string;
   processName: string;
   processVersion: number;
+  processVersionTag?: string | null;
   startDate: string;
   endDate: null | string;
   state: InstanceEntityState;

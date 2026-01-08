@@ -39,15 +39,18 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
   private final LongProperty ancestorScopeKeyProperty = new LongProperty("ancestorScopeKey", -1);
   private final BooleanProperty inferAncestorScopeFromSourceHierarchy =
       new BooleanProperty("inferAncestorScopeFromSourceHierarchy", false);
+  private final BooleanProperty useSourceParentKeyAsAncestorScopeKey =
+      new BooleanProperty("useSourceParentKeyAsAncestorScopeKey", false);
 
   public ProcessInstanceModificationMoveInstruction() {
-    super(6);
+    super(7);
     declareProperty(sourceElementIdProperty)
         .declareProperty(sourceElementInstanceKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variableInstructionsProperty)
         .declareProperty(ancestorScopeKeyProperty)
-        .declareProperty(inferAncestorScopeFromSourceHierarchy);
+        .declareProperty(inferAncestorScopeFromSourceHierarchy)
+        .declareProperty(useSourceParentKeyAsAncestorScopeKey);
   }
 
   @Override
@@ -105,6 +108,17 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
     return this;
   }
 
+  @Override
+  public boolean isUseSourceParentKeyAsAncestorScopeKey() {
+    return useSourceParentKeyAsAncestorScopeKey.getValue();
+  }
+
+  public ProcessInstanceModificationMoveInstruction setUseSourceParentKeyAsAncestorScopeKey(
+      final boolean useSourceParentKey) {
+    useSourceParentKeyAsAncestorScopeKey.setValue(useSourceParentKey);
+    return this;
+  }
+
   public ProcessInstanceModificationMoveInstruction setTargetElementId(
       final String targetElementId) {
     targetElementIdProperty.setValue(targetElementId);
@@ -155,6 +169,7 @@ public final class ProcessInstanceModificationMoveInstruction extends ObjectValu
         .forEach(this::addVariableInstruction);
     setAncestorScopeKey(object.getAncestorScopeKey());
     setInferAncestorScopeFromSourceHierarchy(object.isInferAncestorScopeFromSourceHierarchy());
+    setUseSourceParentKeyAsAncestorScopeKey(object.isUseSourceParentKeyAsAncestorScopeKey());
     return this;
   }
 

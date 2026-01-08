@@ -40,7 +40,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-rest</artifactId>
+      <artifactId>camunda-gateway-mapping-http</artifactId>
     </dependency>
 
     <dependency>

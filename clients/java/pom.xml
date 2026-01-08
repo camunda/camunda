@@ -317,8 +317,8 @@
           <generateModelDocumentation>false</generateModelDocumentation>
           <generateModelTests>false</generateModelTests>
           <templateDirectory>${project.basedir}/src/main/resources/templates</templateDirectory>
-          <!-- validate the spec on every generation -->
-          <skipValidateSpec>false</skipValidateSpec>
+          <!-- no need to validate the spec here - this happens in zeebe-gateway-rest already -->
+          <skipValidateSpec>true</skipValidateSpec>
           <configOptions>
             <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
             <documentationProvider>none</documentationProvider>

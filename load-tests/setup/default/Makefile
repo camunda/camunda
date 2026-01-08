@@ -3,6 +3,15 @@ secondary_storage ?= elasticsearch
 helm_chart ?= camunda-platform-8.9
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
+# Optional: additional Helm configuration for the Camunda Platform release.
+# Use this to pass extra `--set`/`-f` flags, for example:
+#   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
+# See the load test README for more examples and details.
+additional_platform_configuration ?=
+# Optional: additional Helm configuration for the load test release.
+# Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
+# See the load test README for example values and guidance.
+additional_load_test_configuration ?=
 
 # Conditional values file based on secondary_storage
 ifeq ($(secondary_storage),postgresql)
@@ -16,6 +25,9 @@ all: install
 
 .PHONY: install
 install: install-storage install-platform install-load-test
+
+.PHONY: install-stable
+install-stable: install-storage install-platform-stable install-load-test
 
 # Install PostgreSQL database if secondary_storage is postgresql
 .PHONY: install-storage
@@ -46,7 +58,8 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
-		$(if $(storage_values_file),-f $(storage_values_file))
+		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(additional_platform_configuration)
 
 # Install/upgrade Camunda Platform on stable VMs
 .PHONY: install-platform-stable
@@ -58,7 +71,8 @@ install-platform-stable: setup-leader-balancer
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
 		-f values-stable.yaml \
-		$(if $(storage_values_file),-f $(storage_values_file))
+		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(additional_platform_configuration)
 
 # Install/upgrade load test helm chart
 .PHONY: install-load-test
@@ -67,7 +81,8 @@ install-load-test:
 		--install \
 		--namespace $(namespace) \
 		--reuse-values \
-		--render-subchart-notes
+		--render-subchart-notes \
+		$(additional_load_test_configuration)
 
 # Setup leader balancing cronjob
 .PHONY: setup-leader-balancer

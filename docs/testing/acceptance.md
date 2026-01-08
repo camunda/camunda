@@ -137,7 +137,6 @@ We want to highlight some special features for the authentication tests here.
 
 ```java
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class ProcessAuthorizationIT {
 
   @MultiDbTestApplication

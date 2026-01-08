@@ -407,7 +407,10 @@ const TopPanel: React.FC = observer(() => {
                     if (modificationsStore.state.status !== 'adding-token') {
                       if (IS_ELEMENT_SELECTION_V2) {
                         if (flowNodeId !== undefined) {
-                          selectElement(flowNodeId, isMultiInstance);
+                          selectElement({
+                            elementId: flowNodeId,
+                            isMultiInstanceBody: isMultiInstance,
+                          });
                         } else {
                           clearSelection();
                         }

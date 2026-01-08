@@ -450,7 +450,8 @@ public final class BpmnJobBehavior {
         .setElementId(context.getElementId())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
-        .setTags(getTagsFromProcessInstance(context));
+        .setTags(getTagsFromProcessInstance(context))
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);

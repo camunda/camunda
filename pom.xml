@@ -33,6 +33,8 @@
     <module>schema-manager</module>
     <module>search</module>
     <module>service</module>
+    <module>gateways/gateway-model</module>
+    <module>gateways/gateway-mapping-http</module>
     <module>spring-utils</module>
     <module>clients/java</module>
     <module>clients/java-deprecated</module>

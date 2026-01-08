@@ -312,6 +312,7 @@ abstract class AbstractBatchOperationTest {
         processInstanceKey,
         null,
         null,
+        null,
         -1,
         null,
         -1L,
@@ -333,6 +334,7 @@ abstract class AbstractBatchOperationTest {
         -1L, // processDefinitionKey
         null, // processDefinitionId
         processInstanceKey, // processInstanceKey
+        null, // rootProcessInstanceKey
         IncidentEntity.ErrorType.UNSPECIFIED,
         "Fake incident message",
         "flowNodeId",

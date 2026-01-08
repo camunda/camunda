@@ -7,24 +7,23 @@
  */
 package io.camunda.zeebe.backup.management;
 
-import java.nio.file.Path;
-import java.util.Collection;
+import io.camunda.zeebe.journal.SegmentInfo;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Get the some information from the journal from an outside thread. All APIs are thread safe and
- * can be safely used from a different thread then the one used by Raft.
+ * Get some information from the journal from an outside thread. All APIs are thread safe and can be
+ * safely used from a different thread then the one used by Raft.
  */
 public interface JournalInfoProvider {
 
   /**
    * Get the segment files that are after or equal to an index.
    *
-   * <p>As an example, it can Useful for getting all the segment files >= commit_index or
+   * <p>As an example, it can be useful for getting all the segment files >= commit_index or
    * checkpoint_index.
    *
    * @param index the index in the log to select the segments
-   * @return a future containing a collection of segment files
+   * @return a future containing the tail segments with paths and the first ASQN
    */
-  CompletableFuture<Collection<Path>> getTailSegments(long index);
+  CompletableFuture<SegmentInfo> getTailSegments(long index);
 }

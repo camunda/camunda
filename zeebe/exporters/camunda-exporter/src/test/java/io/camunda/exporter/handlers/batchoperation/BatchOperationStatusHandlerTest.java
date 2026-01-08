@@ -39,8 +39,12 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class BatchOperationStatusHandlerTest {
@@ -409,6 +413,32 @@ class BatchOperationStatusHandlerTest {
                           .build())
                   .withIntent(ProcessInstanceIntent.CANCEL)
                   .withBatchOperationReference(batchOperationKey));
+    }
+
+    @ParameterizedTest
+    @MethodSource("recordProviderStream")
+    void shouldUpdateEntitySetRootProcessInstanceKey(
+        final Function<
+                ProcessInstanceCancellationOperationHandlerTest, Record<ProcessInstanceRecordValue>>
+            recordProvider) {
+      final var record = recordProvider.apply(this);
+      final var entity = new OperationEntity();
+
+      handler.updateEntity(record, entity);
+
+      assertThat(entity.getRootProcessInstanceKey())
+          .isPositive()
+          .isEqualTo(record.getValue().getRootProcessInstanceKey());
+    }
+
+    static Stream<
+            Function<
+                ProcessInstanceCancellationOperationHandlerTest,
+                Record<ProcessInstanceRecordValue>>>
+        recordProviderStream() {
+      return Stream.of(
+          ProcessInstanceCancellationOperationHandlerTest::createSuccessRecord,
+          ProcessInstanceCancellationOperationHandlerTest::createFailureRecord);
     }
   }
 

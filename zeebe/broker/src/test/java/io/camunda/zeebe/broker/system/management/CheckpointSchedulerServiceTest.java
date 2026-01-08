@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Set;
@@ -81,7 +82,11 @@ public class CheckpointSchedulerServiceTest {
 
     schedulingService =
         new CheckpointSchedulingService(
-            membershipService, scheduler, brokerConfig.getData().getBackup(), brokerClient);
+            membershipService,
+            scheduler,
+            brokerConfig.getData().getBackup(),
+            brokerClient,
+            new SimpleMeterRegistry());
   }
 
   @Test
@@ -235,7 +240,11 @@ public class CheckpointSchedulerServiceTest {
 
     schedulingService =
         new CheckpointSchedulingService(
-            membershipService, scheduler, brokerConfig.getData().getBackup(), brokerClient);
+            membershipService,
+            scheduler,
+            brokerConfig.getData().getBackup(),
+            brokerClient,
+            new SimpleMeterRegistry());
 
     final var member = mock(Member.class);
     doReturn(Set.of(member)).when(membershipService).getMembers();

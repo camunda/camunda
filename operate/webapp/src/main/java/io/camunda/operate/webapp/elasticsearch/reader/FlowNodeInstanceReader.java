@@ -34,14 +34,15 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.FlowNodeInstanceMetadataBuilder;
-import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -254,94 +255,28 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   @Override
-  public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(
-      final Long processInstanceId) {
-    try {
-      final SearchRequest request =
-          ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-              .source(
-                  new SearchSourceBuilder()
-                      .query(
-                          constantScoreQuery(
-                              termQuery(
-                                  FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY,
-                                  processInstanceId)))
-                      .aggregation(
-                          terms(FLOW_NODE_ID_AGG)
-                              .field(FLOW_NODE_ID)
-                              .size(TERMS_AGG_SIZE)
-                              .subAggregation(
-                                  filter(
-                                      COUNT_INCIDENT,
-                                      boolQuery()
-                                          // Need to count when MULTI_INSTANCE_BODY itself has an
-                                          // incident
-                                          // .mustNot(termQuery(TYPE,
-                                          // FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(INCIDENT, true))))
-                              .subAggregation(
-                                  filter(
-                                      COUNT_CANCELED,
-                                      boolQuery()
-                                          .mustNot(
-                                              termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(STATE, TERMINATED))))
-                              .subAggregation(
-                                  filter(
-                                      COUNT_COMPLETED,
-                                      boolQuery()
-                                          .mustNot(
-                                              termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(STATE, COMPLETED))))
-                              .subAggregation(
-                                  filter(
-                                      COUNT_ACTIVE,
-                                      boolQuery()
-                                          .mustNot(
-                                              termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
-                                          .must(termQuery(STATE, ACTIVE))
-                                          .must(termQuery(INCIDENT, false)))))
-                      .size(0));
-      final SearchResponse response = tenantAwareClient.search(request);
-      final Aggregations aggregations = response.getAggregations();
-      final Terms flowNodeAgg = aggregations.get(FLOW_NODE_ID_AGG);
-      return flowNodeAgg.getBuckets().stream()
-          .map(
-              bucket ->
-                  new FlowNodeStatisticsDto()
-                      .setActivityId(bucket.getKeyAsString())
-                      .setCanceled(
-                          ((Filter) bucket.getAggregations().get(COUNT_CANCELED)).getDocCount())
-                      .setIncidents(
-                          ((Filter) bucket.getAggregations().get(COUNT_INCIDENT)).getDocCount())
-                      .setCompleted(
-                          ((Filter) bucket.getAggregations().get(COUNT_COMPLETED)).getDocCount())
-                      .setActive(
-                          ((Filter) bucket.getAggregations().get(COUNT_ACTIVE)).getDocCount()))
-          .collect(Collectors.toList());
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining statistics for process instance flow nodes: %s",
-              e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  @Override
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
-    final TermQueryBuilder processInstanceKeyQuery =
-        termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(processInstanceKeyQuery))
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    final var query =
+        ElasticsearchUtil.constantScoreQuery(
+            ElasticsearchUtil.termsQuery(
+                FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(flowNodeInstanceTemplate, QueryType.ALL))
+            .query(query)
+            .sort(
+                ElasticsearchUtil.sortOrder(
+                    FlowNodeInstanceTemplate.POSITION,
+                    co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+
     try {
-      return ElasticsearchUtil.scroll(
-          searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollAllStream(
+              es8client, searchRequestBuilder, FlowNodeInstanceEntity.class)
+          .flatMap(res -> res.hits().hits().stream())
+          .map(Hit::source)
+          .toList();
+    } catch (final ScrollException e) {
       throw new OperateRuntimeException(e);
     }
   }

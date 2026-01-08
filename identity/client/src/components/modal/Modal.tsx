@@ -43,21 +43,35 @@ const FooterButtonSet = styled(ButtonSet)`
   width: 100%;
 `;
 
-export type ModalProps = {
+type BaseModalProps = {
   open: boolean;
   headline: string;
   onClose: () => void;
   children?: ReactNode;
   danger?: boolean;
   overflowVisible?: boolean;
-  confirmLabel: string;
   onSubmit?: () => unknown;
   submitDisabled?: boolean;
   loading?: boolean;
   loadingDescription?: string | null;
   buttons?: ReactNode[];
   size?: "xs" | "sm" | "md" | "lg";
+  preventCloseOnClickOutside?: boolean;
 };
+
+// Confirm label is optional here since it will be ignored
+type PassiveModalProps = BaseModalProps & {
+  passiveModal: true;
+  confirmLabel?: string;
+};
+
+// Confirm label is required for an active modal
+type ActiveModalProps = BaseModalProps & {
+  passiveModal?: false;
+  confirmLabel: string;
+};
+
+export type ModalProps = PassiveModalProps | ActiveModalProps;
 
 const Modal: FC<ModalProps> = ({
   children,
@@ -73,6 +87,8 @@ const Modal: FC<ModalProps> = ({
   loadingDescription,
   buttons,
   size,
+  passiveModal = false,
+  preventCloseOnClickOutside = false,
 }) => {
   const { t } = useTranslate("components");
   const submitLoading = (
@@ -104,6 +120,8 @@ const Modal: FC<ModalProps> = ({
         modalHeading={headline}
         aria-label={headline}
         open={open}
+        passiveModal={passiveModal}
+        preventCloseOnClickOutside={preventCloseOnClickOutside}
         primaryButtonText={loading ? submitLoading : confirmLabel}
         primaryButtonDisabled={submitDisabled || loading}
         closeButtonLabel={t("close")}

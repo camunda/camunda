@@ -24,6 +24,7 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Incidents} from './Incidents';
+import {useElementInstancesCount} from 'modules/hooks/useElementInstancesCount';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -34,7 +35,6 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const selection = flowNodeSelectionStore.state.selection;
   const elementId = selection?.flowNodeId;
   const elementInstanceKey = selection?.flowNodeInstanceId;
-  const isMultiInstance = selection?.isMultiInstance ?? false;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {data} = useProcessInstanceXml({
@@ -44,33 +44,16 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
   const {data: statistics} = useFlownodeInstancesStatistics();
 
-  const instanceCount = useMemo(() => {
-    if (!statistics?.items || !elementId) {
-      return null;
-    }
-    const elementStats = statistics.items.find(
-      (stat) => stat.elementId === elementId,
-    );
-    if (!elementStats) {
-      return 0;
-    }
-    if (isMultiInstance) {
-      return 1;
-    }
-    return (
-      elementStats.active +
-      elementStats.completed +
-      elementStats.canceled +
-      elementStats.incidents
-    );
-  }, [statistics, elementId, isMultiInstance]);
-
+  let elementInstancesCount = useElementInstancesCount(elementId);
+  if (selection?.isMultiInstance) {
+    elementInstancesCount = 1;
+  }
   const incidentCount =
     statistics?.items.find((stat) => stat.elementId === elementId)?.incidents ??
     0;
 
   const shouldFetchElementInstances =
-    instanceCount === 1 &&
+    elementInstancesCount === 1 &&
     !elementInstanceKey &&
     !!processInstance?.processInstanceKey &&
     !!elementId;
@@ -97,7 +80,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
     if (
       !elementInstanceKey &&
-      instanceCount === 1 &&
+      elementInstancesCount === 1 &&
       elementInstancesSearchResult?.items?.length === 1
     ) {
       return elementInstancesSearchResult.items[0];
@@ -107,7 +90,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   }, [
     elementInstanceKey,
     elementInstance,
-    instanceCount,
+    elementInstancesCount,
     elementInstancesSearchResult,
   ]);
 
@@ -131,17 +114,19 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       variant="arrow"
     >
       <Stack gap={3}>
-        {instanceCount !== null && instanceCount > 1 && !elementInstanceKey && (
-          <>
-            <Header
-              title={`This element instance triggered ${instanceCount} times`}
-            />
-            <Content>
-              To view details for any of these, select one Instance in the
-              Instance History.
-            </Content>
-          </>
-        )}
+        {elementInstancesCount !== null &&
+          elementInstancesCount > 1 &&
+          !elementInstanceKey && (
+            <>
+              <Header
+                title={`This element instance triggered ${elementInstancesCount} times`}
+              />
+              <Content>
+                To view details for any of these, select one Instance in the
+                Instance History.
+              </Content>
+            </>
+          )}
 
         {elementInstanceMetadata && (
           <>

@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 
 public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppliers {
@@ -116,6 +117,8 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
           };
       case final UpdateRoutingState updateRoutingState ->
           new UpdateRoutingStateApplier(updateRoutingState, partitionScalingChangeExecutor);
+      case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
+          new UpdateIncarnationNumberApplier();
     };
   }
 }

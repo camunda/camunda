@@ -47,7 +47,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -125,7 +124,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 snapshotStore,
                 dataDirectory,
                 // RaftPartitions implements this interface, but the RaftServer is not started
-                index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
+                index -> CompletableFuture.completedFuture(journal.getTailSegments(index)),
                 meterRegistry,
                 (context, entries, source) -> Either.left(WriteFailure.CLOSED)));
     actorScheduler.submitActor(backupService);
@@ -145,12 +144,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     final var backupIdx = 3L;
     final var descriptor =
         new BackupDescriptorImpl(
-            Optional.of(snapshot.getId()),
-            3L,
-            1,
-            "1.0.0",
-            Instant.now(),
-            CheckpointType.MANUAL_BACKUP);
+            snapshot.getId(), 3L, 1, "1.0.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
     logCompactor.compactFromSnapshots(snapshotStore);
     Awaitility.await("compaction is done")
         .until(() -> logCompactor.getCompactableIndex() == snapshot.getIndex());
@@ -184,8 +178,8 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
       assertThat(files.toList().size()).isEqualTo(4L);
     }
     // all segments needed are still in the file system
-    final var activeSegmentPaths = journal.getTailSegments(backupIdx);
-    activeSegmentPaths.values().forEach(p -> assertThat(p).exists());
+    final var tailSegments = journal.getTailSegments(backupIdx);
+    tailSegments.segmentPaths().forEach(path -> assertThat(path).exists());
 
     assertThat(backupResultFut.isDone()).isFalse();
 

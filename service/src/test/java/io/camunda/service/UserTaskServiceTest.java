@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.auditLogSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -14,12 +15,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_SELF;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UserTaskSearchClient;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -27,7 +30,6 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -51,14 +53,16 @@ public class UserTaskServiceTest {
   private FormServices formServices;
   private ElementInstanceServices elementInstanceServices;
   private VariableServices variableServices;
+  private AuditLogServices auditLogServices;
   private ProcessCache processCache;
 
   @BeforeEach
   public void before() {
-    client = mock(UserTaskSearchClient.class);
-    formServices = mock(FormServices.class);
-    elementInstanceServices = mock(ElementInstanceServices.class);
-    variableServices = mock(VariableServices.class);
+    client = mock(UserTaskSearchClient.class, RETURNS_SELF);
+    formServices = mock(FormServices.class, RETURNS_SELF);
+    elementInstanceServices = mock(ElementInstanceServices.class, RETURNS_SELF);
+    variableServices = mock(VariableServices.class, RETURNS_SELF);
+    auditLogServices = mock(AuditLogServices.class, RETURNS_SELF);
     processCache = mock(ProcessCache.class);
     services =
         new UserTaskServices(
@@ -68,18 +72,12 @@ public class UserTaskServiceTest {
             formServices,
             elementInstanceServices,
             variableServices,
+            auditLogServices,
             processCache,
             null,
             mock(ApiServicesExecutorProvider.class),
             null);
 
-    when(client.withSecurityContext(any())).thenReturn(client);
-    when(formServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(formServices);
-    when(elementInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(elementInstanceServices);
-    when(variableServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(variableServices);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
   }
 
@@ -89,8 +87,6 @@ public class UserTaskServiceTest {
     @Test
     public void searchVariablesShouldThrowExceptionWhenNotAuthorized() {
       // given
-      final var entity = Instancio.create(UserTaskEntity.class);
-
       when(client.getUserTask(any(Long.class)))
           .thenThrow(
               new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
@@ -133,6 +129,49 @@ public class UserTaskServiceTest {
 
       // then
       assertThat(searchQueryResult.items()).containsOnly(variable);
+    }
+  }
+
+  @Nested
+  class SearchUserTaskAuditLog {
+
+    @Test
+    public void searchAuditLogsShouldThrowExceptionWhenNotAuthorized() {
+      // given
+      when(client.getUserTask(any(Long.class)))
+          .thenThrow(
+              new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
+
+      // when
+      final ThrowingCallable executable =
+          () -> services.searchUserTaskAuditLogs(1L, auditLogSearchQuery().build());
+
+      // then
+      final var exception =
+          (ServiceException)
+              assertThatThrownBy(executable).isInstanceOf(ServiceException.class).actual();
+      assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+      verify(client).getUserTask(any(Long.class));
+      verify(elementInstanceServices, never()).search(any());
+      verify(auditLogServices, never()).search(any());
+    }
+
+    @Test
+    public void shouldReturnUserTaskAuditLogs() {
+      // given
+      final var entity = Instancio.create(UserTaskEntity.class);
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      final var outputEntity = Instancio.create(AuditLogEntity.class);
+      when(auditLogServices.search(
+              auditLogSearchQuery(q -> q.filter(f -> f.userTaskKeys(entity.userTaskKey())))))
+          .thenReturn(SearchQueryResult.of(outputEntity));
+
+      // when
+      final SearchQueryResult<AuditLogEntity> searchQueryResult =
+          services.searchUserTaskAuditLogs(entity.userTaskKey(), auditLogSearchQuery().build());
+
+      // then
+      assertThat(searchQueryResult.items()).containsOnly(outputEntity);
     }
   }
 

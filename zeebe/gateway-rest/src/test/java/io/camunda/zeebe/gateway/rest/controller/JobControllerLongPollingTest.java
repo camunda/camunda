@@ -12,6 +12,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -28,11 +31,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
-import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -413,9 +413,9 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               .setMaxMessageSize(DataSize.ofMegabytes(4L).toBytes())
               .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
               .setResourceExhaustedExceptionProvider(
-                  RestErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
+                  GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
               .setRequestCanceledExceptionProvider(
-                  RestErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
+                  GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
               .setMetrics(LongPollingMetrics.noop())
               .build();
       final var future = new CompletableFuture<>();

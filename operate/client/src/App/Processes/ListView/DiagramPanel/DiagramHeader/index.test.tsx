@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {MemoryRouter} from 'react-router-dom';
 import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 
@@ -16,6 +17,10 @@ vi.mock('modules/stores/processInstances', () => ({
     setRunningInstancesCount: vi.fn(),
   },
 }));
+
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return <MemoryRouter>{children}</MemoryRouter>;
+};
 
 describe('DiagramHeader', () => {
   it('should render header with full data', async () => {
@@ -29,6 +34,7 @@ describe('DiagramHeader', () => {
         }}
         processDefinitionId=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -55,6 +61,7 @@ describe('DiagramHeader', () => {
         }}
         processDefinitionId=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.getByText(/^process name$/i)).toBeInTheDocument();
@@ -78,6 +85,7 @@ describe('DiagramHeader', () => {
         }}
         processDefinitionId=""
       />,
+      {wrapper: Wrapper},
     );
 
     expect(screen.queryByText(/^process name$/i)).not.toBeInTheDocument();

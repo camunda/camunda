@@ -45,7 +45,7 @@ test.beforeAll(async ({request}) => {
       bpmnProcessId: 'operationsProcessB',
     })),
   };
-  await sleep(1000);
+  await sleep(2000);
   await createDemoOperations(
     request,
     initialData.singleOperationInstance.processInstanceKey,

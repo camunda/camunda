@@ -28,4 +28,8 @@ public interface BatchOperationSort extends SearchRequestSort<BatchOperationSort
   BatchOperationSort startDate();
 
   BatchOperationSort endDate();
+
+  BatchOperationSort actorType();
+
+  BatchOperationSort actorId();
 }

@@ -88,8 +88,8 @@ public class OpenSearchTestExtension
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
     if (!failed) {
-      final String indexPrefix = tasklistProperties.getOpenSearch().getIndexPrefix();
-      TestUtil.removeAllIndices(osClient, indexPrefix);
+      indexPrefixHolder.cleanupIndicesIfNeeded(
+          prefix -> TestUtil.removeAllIndices(osClient, prefix));
     }
     tasklistProperties
         .getOpenSearch()
