@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
+import io.atomix.cluster.Member;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public interface NodeIdProvider extends AutoCloseable {
@@ -26,6 +28,20 @@ public interface NodeIdProvider extends AutoCloseable {
    *     within a predefined time.
    */
   CompletableFuture<Boolean> isValid();
+
+  /**
+   * Sets the current known cluster members.
+   *
+   * @param currentMembers the current members of the cluster
+   */
+  void setMembers(Set<Member> currentMembers);
+
+  /**
+   * Awaits until the NodeIdProvider is ready and other services can start safely.
+   *
+   * @return A CompletableFuture completed with true when the provider is ready.
+   */
+  CompletableFuture<Boolean> awaitReadiness();
 
   /**
    * NodeIdProvider to be used when the nodeId is static, i.e. it's defined in the configuration.
@@ -53,6 +69,16 @@ public interface NodeIdProvider extends AutoCloseable {
 
       @Override
       public CompletableFuture<Boolean> isValid() {
+        return CompletableFuture.completedFuture(true);
+      }
+
+      @Override
+      public void setMembers(final Set<Member> currentMembers) {
+        // no-op
+      }
+
+      @Override
+      public CompletableFuture<Boolean> awaitReadiness() {
         return CompletableFuture.completedFuture(true);
       }
     };
