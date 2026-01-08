@@ -10,7 +10,6 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.cache.ProcessCache;
-import io.camunda.search.clients.cache.ProcessCacheItem;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -73,25 +72,6 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
     if (processDefinitionKeys.isEmpty()) {
       return items;
     }
-
-    // Seed cache with already-present values where possible, then load all required keys
-    items.forEach(
-        item -> {
-          final Long key = item.processDefinitionKey();
-          if (key == null) {
-            return;
-          }
-
-          if (item.processDefinitionId() != null || item.processDefinitionName() != null) {
-            processCache.seedCacheItem(
-                key,
-                new ProcessCacheItem(
-                    item.processDefinitionId(),
-                    item.processDefinitionName(),
-                    item.processDefinitionVersion(),
-                    item.tenantId()));
-          }
-        });
 
     final var cacheResult = processCache.getCacheItems(processDefinitionKeys);
 

@@ -15,13 +15,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.Cache;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.entities.ProcessEntity;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import org.junit.jupiter.api.AfterEach;
@@ -51,12 +50,11 @@ class ProcessCacheTest {
 
   @AfterEach
   void tearDown() {
-    getCache().cleanUp();
     getCache().invalidateAll();
     getCache().cleanUp();
   }
 
-  private LoadingCache<Long, ProcessCacheItem> getCache() {
+  private Cache<Long, ProcessCacheItem> getCache() {
     return processCache.getRawCache();
   }
 
@@ -80,7 +78,7 @@ class ProcessCacheTest {
   void shouldNotPopulateCacheWhenNotFound() {
     // given
     when(searchExecutor.search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled())))
-        .thenThrow(new NoSuchElementException());
+        .thenReturn(SearchQueryResult.of());
 
     // when
     final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
@@ -89,45 +87,38 @@ class ProcessCacheTest {
     verify(searchExecutor, times(1))
         .search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled()));
     assertThat(cacheItem).isEqualTo(ProcessCacheItem.EMPTY);
+
+    assertThat(getCacheMap()).doesNotContainKey(entity.processDefinitionKey());
   }
 
   @Test
-  void shouldNotRepopulateWhenAlreadyCached() {
-    // when
-    processCache.getCacheItem(entity.processDefinitionKey());
-    getCache().cleanUp();
-    processCache.getCacheItem(entity.processDefinitionKey());
-
-    // then
-    verify(searchExecutor, times(1))
-        .search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled()));
-  }
-
-  @Test
-  void shouldPopulateCacheWithMultiple() {
+  void shouldEventuallyPopulateAfterInitiallyMissing() {
     // given
-    final var otherEntity =
-        new ProcessDefinitionEntity(2L, "name2", "d2", null, null, 1, null, "tenant2", null);
+    final long missingKey = 42L;
 
     when(searchExecutor.search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled())))
-        .thenReturn(SearchQueryResult.of(entity, otherEntity));
+        .thenReturn(SearchQueryResult.of())
+        .thenReturn(
+            SearchQueryResult.of(
+                new ProcessDefinitionEntity(
+                    missingKey, "later", "laterId", null, null, 1, null, "tenant", null)));
 
-    // when
-    final var cacheResult =
-        processCache.getCacheItems(
-            Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()));
+    // when - first attempt: missing in secondary storage
+    final var first = processCache.getCacheItem(missingKey);
 
     // then
-    verify(searchExecutor, times(1))
+    assertThat(first).isEqualTo(ProcessCacheItem.EMPTY);
+    assertThat(getCacheMap()).doesNotContainKey(missingKey);
+
+    // when - second attempt: appears in secondary storage
+    final var second = processCache.getCacheItem(missingKey);
+
+    // then
+    assertThat(second).isNotEqualTo(ProcessCacheItem.EMPTY);
+    assertThat(second.processName()).isEqualTo("later");
+
+    verify(searchExecutor, times(2))
         .search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled()));
-
-    assertThat(cacheResult.getProcessItem(entity.processDefinitionKey()))
-        .isNotEqualTo(ProcessCacheItem.EMPTY);
-    assertThat(cacheResult.getProcessItem(otherEntity.processDefinitionKey()))
-        .isNotEqualTo(ProcessCacheItem.EMPTY);
-
-    assertThat(getCacheMap())
-        .containsOnlyKeys(entity.processDefinitionKey(), otherEntity.processDefinitionKey());
   }
 
   @Test
@@ -139,11 +130,20 @@ class ProcessCacheTest {
     when(searchExecutor.search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled())))
         .thenAnswer(
             invocation -> {
-              // Return a single ProcessDefinitionEntity matching the requested key if possible.
-              // The provider queries in bulk for LRU test, so just return 1 item with the first key
-              // and let the cache fill others as EMPTY.
+              // We don't inspect the query object here, but we can model the scenario with a
+              // predictable sequence matching the order of cache loads below.
+              final int call =
+                  org.mockito.Mockito.mockingDetails(searchExecutor).getInvocations().size();
+              if (call == 1) {
+                return SearchQueryResult.of(
+                    new ProcessDefinitionEntity(1L, "n1", "d1", null, null, 1, null, "t", null));
+              }
+              if (call == 2) {
+                return SearchQueryResult.of(
+                    new ProcessDefinitionEntity(2L, "n2", "d2", null, null, 1, null, "t", null));
+              }
               return SearchQueryResult.of(
-                  new ProcessDefinitionEntity(1L, "n", "d", null, null, 1, null, "t", null));
+                  new ProcessDefinitionEntity(3L, "n3", "d3", null, null, 1, null, "t", null));
             });
 
     processCache.getCacheItem(1L);
@@ -158,5 +158,45 @@ class ProcessCacheTest {
 
     // then - 2 should be removed (LRU)
     assertThat(getCacheMap().keySet()).containsExactlyInAnyOrder(1L, 3L);
+  }
+
+  @Test
+  void shouldNotPersistEmptyResultsForBulkLoad() {
+    // given
+    final long presentKey = 1L;
+    final long missingKey = 2L;
+
+    when(searchExecutor.search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled())))
+        .thenReturn(
+            SearchQueryResult.of(
+                new ProcessDefinitionEntity(
+                    presentKey, "name1", "d1", null, null, 1, null, "tenant", null)))
+        .thenReturn(
+            SearchQueryResult.of(
+                new ProcessDefinitionEntity(
+                    presentKey, "name1", "d1", null, null, 1, null, "tenant", null),
+                new ProcessDefinitionEntity(
+                    missingKey, "name2", "d2", null, null, 1, null, "tenant", null)));
+
+    // when - first bulk request: missingKey not yet visible
+    final var first = processCache.getCacheItems(Set.of(presentKey, missingKey));
+
+    // then
+    assertThat(first.getProcessItem(presentKey)).isNotEqualTo(ProcessCacheItem.EMPTY);
+    assertThat(first.getProcessItem(missingKey)).isEqualTo(ProcessCacheItem.EMPTY);
+
+    // Only presentKey should be cached (no negative caching)
+    assertThat(getCacheMap()).containsKey(presentKey);
+    assertThat(getCacheMap()).doesNotContainKey(missingKey);
+
+    // when - second bulk request: missingKey now visible
+    final var second = processCache.getCacheItems(Set.of(presentKey, missingKey));
+
+    // then
+    assertThat(second.getProcessItem(missingKey)).isNotEqualTo(ProcessCacheItem.EMPTY);
+    assertThat(getCacheMap()).containsKey(missingKey);
+
+    verify(searchExecutor, times(2))
+        .search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled()));
   }
 }
