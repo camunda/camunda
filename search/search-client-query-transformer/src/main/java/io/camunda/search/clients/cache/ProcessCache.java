@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.jspecify.annotations.NonNull;
 
 /**
  * Process cache uses a Caffeine {@link LoadingCache} to store process definition metadata.
@@ -78,8 +77,7 @@ public final class ProcessCache {
     }
 
     @Override
-    public @NonNull Map<Long, ProcessCacheItem> loadAll(
-        final @NonNull Set<? extends Long> processDefinitionKeys) {
+    public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> processDefinitionKeys) {
       //noinspection unchecked
       return provider.extractProcessData((Set<Long>) processDefinitionKeys);
     }

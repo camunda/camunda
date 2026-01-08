@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends DocumentBasedReader
     implements IncidentProcessInstanceStatisticsByDefinitionReader {
@@ -30,7 +29,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionDocumentReader extends
   public IncidentProcessInstanceStatisticsByDefinitionDocumentReader(
       final SearchClientBasedQueryExecutor executor,
       final IndexDescriptor indexDescriptor,
-      final @Qualifier("searchClientProcessCache") ProcessCache processCache) {
+      final ProcessCache processCache) {
     super(executor, indexDescriptor);
     this.processCache = processCache;
   }
