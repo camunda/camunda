@@ -66,12 +66,12 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
   @Override
   public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(
       final Long processInstanceKey) {
-    final var incidentFilter =
+    final var incidentCountAgg =
         new Aggregation.Builder()
             .filter(f -> f.bool(b -> b.must(ElasticsearchUtil.termsQuery(INCIDENT, true))))
             .build();
 
-    final var canceledFilter =
+    final var cancelledCountAgg =
         new Aggregation.Builder()
             .filter(
                 f ->
@@ -83,7 +83,7 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
                                 .must(ElasticsearchUtil.termsQuery(STATE, TERMINATED))))
             .build();
 
-    final var completedFilter =
+    final var completedCountAgg =
         new Aggregation.Builder()
             .filter(
                 f ->
@@ -95,7 +95,7 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
                                 .must(ElasticsearchUtil.termsQuery(STATE, COMPLETED))))
             .build();
 
-    final var activeFilter =
+    final var activeCountAgg =
         new Aggregation.Builder()
             .filter(
                 f ->
@@ -110,10 +110,10 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
 
     final var subAggs =
         Map.of(
-            COUNT_INCIDENT, incidentFilter,
-            COUNT_CANCELED, canceledFilter,
-            COUNT_COMPLETED, completedFilter,
-            COUNT_ACTIVE, activeFilter);
+            COUNT_INCIDENT, incidentCountAgg,
+            COUNT_CANCELED, cancelledCountAgg,
+            COUNT_COMPLETED, completedCountAgg,
+            COUNT_ACTIVE, activeCountAgg);
 
     final var query =
         ElasticsearchUtil.constantScoreQuery(
