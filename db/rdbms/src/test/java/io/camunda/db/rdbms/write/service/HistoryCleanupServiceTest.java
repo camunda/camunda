@@ -44,6 +44,7 @@ class HistoryCleanupServiceTest {
   private CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
   private UsageMetricWriter usageMetricWriter;
   private UsageMetricTUWriter usageMetricTUWriter;
+  private AuditLogWriter auditLogWriter;
 
   private HistoryCleanupService historyCleanupService;
 
@@ -63,6 +64,7 @@ class HistoryCleanupServiceTest {
     correlatedMessageSubscriptionWriter = mock(CorrelatedMessageSubscriptionWriter.class);
     usageMetricWriter = mock(UsageMetricWriter.class);
     usageMetricTUWriter = mock(UsageMetricTUWriter.class);
+    auditLogWriter = mock(AuditLogWriter.class);
 
     when(processInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(flowNodeInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
@@ -79,6 +81,7 @@ class HistoryCleanupServiceTest {
         .thenReturn(0);
     when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
     when(usageMetricTUWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
@@ -113,6 +116,7 @@ class HistoryCleanupServiceTest {
     when(rdbmsWriters.getUsageMetricTUWriter()).thenReturn(usageMetricTUWriter);
     when(rdbmsWriters.getMetrics())
         .thenReturn(mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
+    when(rdbmsWriters.getAuditLogWriter()).thenReturn(auditLogWriter);
 
     historyCleanupService = new HistoryCleanupService(config, rdbmsWriters);
   }
@@ -133,6 +137,7 @@ class HistoryCleanupServiceTest {
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
     when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt()))
         .thenReturn(1);
+    when(auditLogWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -152,6 +157,7 @@ class HistoryCleanupServiceTest {
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
     verify(messageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(correlatedMessageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
 
   @Test
@@ -187,6 +193,7 @@ class HistoryCleanupServiceTest {
     numDeletedRecords.put("batchOperation", 0);
     numDeletedRecords.put("messageSubscription", 0);
     numDeletedRecords.put("correlatedMessageSubscription", 0);
+    numDeletedRecords.put("auditLog", 0);
 
     // when
     final Duration nextDuration =
@@ -213,6 +220,7 @@ class HistoryCleanupServiceTest {
     numDeletedRecords.put("batchOperation", 100);
     numDeletedRecords.put("messageSubscription", 100);
     numDeletedRecords.put("correlatedMessageSubscription", 100);
+    numDeletedRecords.put("auditLog", 100);
 
     // when
     final Duration nextDuration =
@@ -238,6 +246,7 @@ class HistoryCleanupServiceTest {
     numDeletedRecords.put("batchOperation", 50);
     numDeletedRecords.put("messageSubscription", 50);
     numDeletedRecords.put("correlatedMessageSubscription", 50);
+    numDeletedRecords.put("auditLog", 50);
 
     // when
     final Duration nextDuration =
@@ -263,6 +272,7 @@ class HistoryCleanupServiceTest {
     numDeletedRecords.put("batchOperation", 20);
     numDeletedRecords.put("messageSubscription", 20);
     numDeletedRecords.put("correlatedMessageSubscription", 20);
+    numDeletedRecords.put("auditLog", 20);
 
     // when
     final Duration nextDuration =

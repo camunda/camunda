@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -26,8 +27,9 @@ class AuditLogWriterTest {
   private final AuditLogMapper mapper = mock(AuditLogMapper.class);
   private final VendorDatabaseProperties vendorDatabaseProperties =
       mock(VendorDatabaseProperties.class);
+  private final RdbmsWriterConfig config = mock(RdbmsWriterConfig.class);
   private final AuditLogWriter writer =
-      new AuditLogWriter(executionQueue, mapper, vendorDatabaseProperties);
+      new AuditLogWriter(executionQueue, mapper, vendorDatabaseProperties, config);
 
   @Test
   void shouldCreateAuditLog() {
@@ -41,7 +43,7 @@ class AuditLogWriterTest {
                 new QueueItem(
                     ContextType.AUDIT_LOG,
                     WriteStatementType.INSERT,
-                    model.entityKey(),
+                    model.auditLogKey(),
                     "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
                     model)));
   }
