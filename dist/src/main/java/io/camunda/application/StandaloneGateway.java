@@ -9,6 +9,7 @@ package io.camunda.application;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
+import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
@@ -44,7 +45,7 @@ public class StandaloneGateway {
                 GatewayModuleConfiguration.class,
                 GatewayRestPropertiesOverride.class)
             .profiles(Profile.GATEWAY.getId(), Profile.STANDALONE.getId())
-            .initializers(new HealthConfigurationInitializer())
+            .initializers(new HealthConfigurationInitializer(), new McpGatewayInitializer())
             .build(args);
 
     standaloneGatewayApplication.run();
