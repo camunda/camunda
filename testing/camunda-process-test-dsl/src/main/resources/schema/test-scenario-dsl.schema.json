@@ -72,6 +72,9 @@
           "$ref": "#/definitions/CreateProcessInstanceInstruction"
         },
         {
+          "$ref": "#/definitions/MockChildProcessInstruction"
+        },
+        {
           "$ref": "#/definitions/MockDmnDecisionInstruction"
         },
         {
@@ -567,6 +570,30 @@
       "required": [
         "type",
         "decisionDefinitionId"
+      ],
+      "additionalProperties": false
+    },
+    "MockChildProcessInstruction": {
+      "description": "An instruction to mock a child process.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "MOCK_CHILD_PROCESS"
+        },
+        "processDefinitionId": {
+          "description": "The ID of the child process to mock.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to set for the mocked child process.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "processDefinitionId"
       ],
       "additionalProperties": false
     },
