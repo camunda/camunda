@@ -242,4 +242,53 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletion"/>
   </delete>
 
+  <select id="processInstanceStatisticsByErrorCount" parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery"
+          resultType="long">
+    SELECT COUNT(*)
+    FROM (
+      SELECT i.ERROR_MESSAGE_HASH
+      FROM ${prefix}INCIDENT i
+      <include refid="processInstanceStatisticsByErrorWhere"/>
+      <include refid="processInstanceStatisticsByErrorGroupBy"/>
+    ) t
+  </select>
+
+  <select id="processInstanceStatisticsByError" parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery"
+          resultType="io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity">
+    SELECT * FROM (
+      SELECT
+        i.ERROR_MESSAGE_HASH AS ERROR_HASH_CODE,
+        i.ERROR_MESSAGE AS ERROR_MESSAGE,
+        COUNT(DISTINCT i.PROCESS_INSTANCE_KEY) AS ACTIVE_INSTANCES_WITH_ERROR_COUNT
+      FROM ${prefix}INCIDENT i
+      <include refid="processInstanceStatisticsByErrorWhere"/>
+      <include refid="processInstanceStatisticsByErrorGroupBy"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="processInstanceStatisticsByErrorWhere">
+    <where>
+      i.STATE = 'ACTIVE'
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND i.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND i.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+    </where>
+  </sql>
+
+  <sql id="processInstanceStatisticsByErrorGroupBy">
+    GROUP BY i.ERROR_MESSAGE_HASH, i.ERROR_MESSAGE
+  </sql>
+
 </mapper>

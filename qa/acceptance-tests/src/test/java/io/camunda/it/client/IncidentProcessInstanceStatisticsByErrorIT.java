@@ -39,10 +39,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 public class IncidentProcessInstanceStatisticsByErrorIT {
 
   private static final String PASSWORD = "password";

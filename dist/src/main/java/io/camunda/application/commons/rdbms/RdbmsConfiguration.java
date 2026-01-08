@@ -408,7 +408,9 @@ public class RdbmsConfiguration {
       final ProcessDefinitionInstanceStatisticsDbReader processDefinitionInstanceStatisticsReader,
       final ProcessDefinitionInstanceVersionStatisticsDbReader
           processDefinitionInstanceVersionStatisticsReader,
-      final HistoryDeletionDbReader historyDeletionDbReader) {
+      final HistoryDeletionDbReader historyDeletionDbReader,
+      final IncidentProcessInstanceStatisticsByErrorDbReader
+          incidentProcessInstanceStatisticsByErrorReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -443,7 +445,8 @@ public class RdbmsConfiguration {
         correlatedMessageSubscriptionReader,
         processDefinitionInstanceStatisticsReader,
         processDefinitionInstanceVersionStatisticsReader,
-        historyDeletionDbReader);
+        historyDeletionDbReader,
+        incidentProcessInstanceStatisticsByErrorReader);
   }
 
   @Bean
