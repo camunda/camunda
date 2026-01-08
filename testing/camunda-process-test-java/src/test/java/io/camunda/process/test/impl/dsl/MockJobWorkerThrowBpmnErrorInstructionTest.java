@@ -117,7 +117,8 @@ public class MockJobWorkerThrowBpmnErrorInstructionTest {
 
     // then
     verify(processTestContext).mockJobWorker(JOB_TYPE);
-    verify(jobWorkerMockBuilder).thenThrowBpmnError(ERROR_CODE, errorMessage, Collections.emptyMap());
+    verify(jobWorkerMockBuilder)
+        .thenThrowBpmnError(ERROR_CODE, errorMessage, Collections.emptyMap());
 
     verifyNoMoreInteractions(
         processTestContext, camundaClient, assertionFacade, jobWorkerMockBuilder);
