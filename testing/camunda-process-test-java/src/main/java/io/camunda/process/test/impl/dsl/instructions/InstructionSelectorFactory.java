@@ -179,13 +179,23 @@ final class InstructionSelectorFactory {
    */
   static DecisionSelector buildDecisionSelector(
       final io.camunda.process.test.api.dsl.DecisionSelector dslSelector) {
+    DecisionSelector selector = null;
+
     if (dslSelector.getDecisionDefinitionId().isPresent()) {
-      return DecisionSelectors.byId(dslSelector.getDecisionDefinitionId().get());
-    } else if (dslSelector.getDecisionDefinitionName().isPresent()) {
-      return DecisionSelectors.byName(dslSelector.getDecisionDefinitionName().get());
-    } else {
+      selector = DecisionSelectors.byId(dslSelector.getDecisionDefinitionId().get());
+    }
+
+    if (dslSelector.getDecisionDefinitionName().isPresent()) {
+      final DecisionSelector nameSelector =
+          DecisionSelectors.byName(dslSelector.getDecisionDefinitionName().get());
+      selector = selector != null ? selector.and(nameSelector) : nameSelector;
+    }
+
+    if (selector == null) {
       throw new IllegalArgumentException(
           "Decision selector must have either decisionDefinitionId or decisionDefinitionName");
     }
+
+    return selector;
   }
 }

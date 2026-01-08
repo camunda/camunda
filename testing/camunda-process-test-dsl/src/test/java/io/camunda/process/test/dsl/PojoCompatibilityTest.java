@@ -256,7 +256,7 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== ASSERT_DECISION =====
         Arguments.of(
-            "assert decision: by id",
+            "assert decision: minimal with id",
             singleTestCase(
                 ImmutableAssertDecisionInstruction.builder()
                     .decisionSelector(
@@ -265,7 +265,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .build())),
         Arguments.of(
-            "assert decision: by name",
+            "assert decision: minimal with name",
             singleTestCase(
                 ImmutableAssertDecisionInstruction.builder()
                     .decisionSelector(
@@ -274,7 +274,7 @@ public class PojoCompatibilityTest {
                             .build())
                     .build())),
         Arguments.of(
-            "assert decision: with output",
+            "assert decision: with string output",
             singleTestCase(
                 ImmutableAssertDecisionInstruction.builder()
                     .decisionSelector(
@@ -284,34 +284,40 @@ public class PojoCompatibilityTest {
                     .output("valid")
                     .build())),
         Arguments.of(
-            "assert decision: with matched rules",
+            "assert decision: with integer output",
             singleTestCase(
                 ImmutableAssertDecisionInstruction.builder()
                     .decisionSelector(
                         ImmutableDecisionSelector.builder()
                             .decisionDefinitionId("my-decision")
                             .build())
-                    .matchedRules(Arrays.asList(1, 3))
+                    .output(42)
                     .build())),
         Arguments.of(
-            "assert decision: with not matched rules",
+            "assert decision: with list output",
             singleTestCase(
                 ImmutableAssertDecisionInstruction.builder()
                     .decisionSelector(
                         ImmutableDecisionSelector.builder()
                             .decisionDefinitionId("my-decision")
                             .build())
-                    .notMatchedRules(Arrays.asList(2, 4))
+                    .output(Arrays.asList("value1", "value2"))
                     .build())),
         Arguments.of(
-            "assert decision: no matched rules",
+            "assert decision: with map output",
             singleTestCase(
                 ImmutableAssertDecisionInstruction.builder()
                     .decisionSelector(
                         ImmutableDecisionSelector.builder()
                             .decisionDefinitionId("my-decision")
                             .build())
-                    .noMatchedRules(true)
+                    .output(
+                        new java.util.HashMap<String, Object>() {
+                          {
+                            put("status", "approved");
+                            put("amount", 1000);
+                          }
+                        })
                     .build())),
         Arguments.of(
             "assert decision: full",
@@ -324,6 +330,7 @@ public class PojoCompatibilityTest {
                     .output("valid")
                     .matchedRules(Arrays.asList(1, 3))
                     .notMatchedRules(Arrays.asList(2, 4))
+                    .noMatchedRules(false)
                     .build())),
         // ===== ASSERT_ELEMENT_INSTANCES =====
         Arguments.of(

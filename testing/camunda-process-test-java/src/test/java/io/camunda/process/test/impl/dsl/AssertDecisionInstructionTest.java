@@ -112,6 +112,8 @@ public class AssertDecisionInstructionTest {
     // then
     verify(assertionFacade).assertThatDecision(any());
     verify(assertionFacade.assertThatDecision(any())).hasOutput("valid");
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
   @Test
@@ -130,6 +132,8 @@ public class AssertDecisionInstructionTest {
     // then
     verify(assertionFacade).assertThatDecision(any());
     verify(assertionFacade.assertThatDecision(any())).hasMatchedRules(1, 3, 5);
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
   @Test
@@ -148,6 +152,8 @@ public class AssertDecisionInstructionTest {
     // then
     verify(assertionFacade).assertThatDecision(any());
     verify(assertionFacade.assertThatDecision(any())).hasNotMatchedRules(2, 4);
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
   @Test
@@ -166,6 +172,8 @@ public class AssertDecisionInstructionTest {
     // then
     verify(assertionFacade).assertThatDecision(any());
     verify(assertionFacade.assertThatDecision(any())).hasNoMatchedRules();
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 
   @Test
@@ -188,5 +196,7 @@ public class AssertDecisionInstructionTest {
     verify(decisionAssert).hasOutput("valid");
     verify(decisionAssert).hasMatchedRules(1, 3);
     verify(decisionAssert).hasNotMatchedRules(2, 4);
+
+    verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
 }
