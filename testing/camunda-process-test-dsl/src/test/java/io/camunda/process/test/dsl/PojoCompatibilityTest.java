@@ -26,6 +26,7 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import io.camunda.process.test.api.dsl.ImmutableElementSelector;
+import io.camunda.process.test.api.dsl.ImmutableMessageSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.ImmutableTestCase;
@@ -36,6 +37,7 @@ import io.camunda.process.test.api.dsl.TestScenario;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
@@ -45,6 +47,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstr
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
+import io.camunda.process.test.api.dsl.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
 import io.camunda.process.test.api.dsl.instructions.assertUserTask.UserTaskState;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.dsl.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
@@ -347,6 +350,61 @@ public class PojoCompatibilityTest {
                     .addVariableNames("var1", "var2")
                     .putVariables("x", 3)
                     .putVariables("y", "okay")
+                    .build())),
+        // ===== ASSERT_PROCESS_INSTANCE_MESSAGE_SUBSCRIPTION =====
+        Arguments.of(
+            "assert process instance message subscription: IS_WAITING",
+            singleTestCase(
+                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .messageSelector(
+                        ImmutableMessageSelector.builder().messageName("update").build())
+                    .state(MessageSubscriptionState.IS_WAITING)
+                    .build())),
+        Arguments.of(
+            "assert process instance message subscription: IS_WAITING with correlation key",
+            singleTestCase(
+                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .messageSelector(
+                        ImmutableMessageSelector.builder()
+                            .messageName("update")
+                            .correlationKey("key-1")
+                            .build())
+                    .state(MessageSubscriptionState.IS_WAITING)
+                    .build())),
+        Arguments.of(
+            "assert process instance message subscription: IS_NOT_WAITING",
+            singleTestCase(
+                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .messageSelector(
+                        ImmutableMessageSelector.builder().messageName("update").build())
+                    .state(MessageSubscriptionState.IS_NOT_WAITING)
+                    .build())),
+        Arguments.of(
+            "assert process instance message subscription: IS_CORRELATED",
+            singleTestCase(
+                ImmutableAssertProcessInstanceMessageSubscriptionInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .messageSelector(
+                        ImmutableMessageSelector.builder()
+                            .messageName("update")
+                            .correlationKey("key-1")
+                            .build())
+                    .state(MessageSubscriptionState.IS_CORRELATED)
                     .build()))
         // add new instructions here
         );
