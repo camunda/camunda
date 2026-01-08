@@ -53,7 +53,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 @Testcontainers
 @Timeout(value = 120)
-public class RepositoryNodeIdProviderIT {
+class RepositoryNodeIdProviderIT {
 
   private static final Duration EXPIRY_DURATION = Duration.ofSeconds(5);
 
@@ -73,7 +73,7 @@ public class RepositoryNodeIdProviderIT {
   private volatile boolean leaseFailed = false;
 
   @BeforeAll
-  public static void setUpAll() {
+  static void setUpAll() {
     client =
         S3NodeIdRepository.buildClient(
             new S3ClientConfig(
@@ -83,7 +83,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     final var bucketName = UUID.randomUUID().toString();
     taskId = UUID.randomUUID().toString();
     config = new Config(bucketName, EXPIRY_DURATION, Duration.ofMinutes(2));
@@ -95,8 +95,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldAcquireALease()
-      throws ExecutionException, InterruptedException, TimeoutException {
+  void shouldAcquireALease() throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -117,7 +116,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldAcquireAnExpiredLease()
+  void shouldAcquireAnExpiredLease()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
@@ -154,7 +153,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldBlockInitializationIfAllLeasesAreTaken()
+  void shouldBlockInitializationIfAllLeasesAreTaken()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
@@ -192,7 +191,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldRenewTheLeaseBeforeExpiration()
+  void shouldRenewTheLeaseBeforeExpiration()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
@@ -255,7 +254,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldInvokeFailureListenerWhenFailsToRenew()
+  void shouldInvokeFailureListenerWhenFailsToRenew()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given
     clusterSize = 3;
@@ -276,7 +275,7 @@ public class RepositoryNodeIdProviderIT {
   }
 
   @Test
-  public void shouldReleaseGracefullyWhenClosed() {
+  void shouldReleaseGracefullyWhenClosed() {
     // given
     clusterSize = 3;
     repository.initialize(clusterSize);
@@ -298,15 +297,15 @@ public class RepositoryNodeIdProviderIT {
         .isEqualTo(lease.lease().nodeInstance().nextVersion());
   }
 
-  public void assertLeaseIsReady() {
+  private void assertLeaseIsReady() {
     assertLeaseIs(true);
   }
 
-  public void assertLeaseIsNotReady() {
+  private void assertLeaseIsNotReady() {
     assertLeaseIs(false);
   }
 
-  public void assertLeaseIs(final boolean status) {
+  private void assertLeaseIs(final boolean status) {
     Awaitility.await("Until the lease is acquired")
         .untilAsserted(
             () ->
