@@ -3,7 +3,7 @@
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.6.24-SNAPSHOT</version>
+  <version>8.6.23</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -814,7 +814,7 @@
     <developerConnection>
       scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
     </developerConnection>
-    <tag>HEAD</tag>
+    <tag>8.6.23-optimize</tag>
   </scm>
 
   <issueManagement>
