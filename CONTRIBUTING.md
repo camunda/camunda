@@ -176,6 +176,19 @@ docker build \
   .
 ```
 
+If you don't have access to [Minimus hardened base images](https://minimus.io/), you can use public base images instead at your own risk by running:
+
+```
+docker build \
+  --tag camunda/zeebe:local \
+  --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
+  --build-arg BASE_IMAGE='eclipse-temurin:21-jre-noble' \
+  --build-arg BASE_DIGEST='sha256:67fc762eabacb56e5444b367889e04ce8c839b8f4b3d8ef3e459c5579fbefd8a' \
+  --target app \
+  --file ./camunda.Dockerfile
+  .
+```
+
 #### Build on macOS with an Apple Silicon chip
 
 > [!NOTE]
