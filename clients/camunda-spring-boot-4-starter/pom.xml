@@ -30,7 +30,7 @@
     <!-- JUnit 6.x is required for Spring Boot 4.0 compatibility -->
     <version.junit>6.0.1</version.junit>
     <version.roaster>2.30.3.Final</version.roaster>
-    <version.aspectjweaver>1.9.24</version.aspectjweaver>
+    <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
     <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>
   </properties>
