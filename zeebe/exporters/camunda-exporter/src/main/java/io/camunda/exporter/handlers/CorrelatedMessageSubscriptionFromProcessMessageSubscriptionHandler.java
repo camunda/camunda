@@ -67,5 +67,10 @@ public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setSubscriptionType("PROCESS_EVENT")
         .setTenantId(tenantOrDefault(value.getTenantId()));
+
+    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 }
