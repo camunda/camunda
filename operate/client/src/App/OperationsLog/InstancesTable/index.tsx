@@ -10,7 +10,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs';
 import {SortableTable} from 'modules/components/SortableTable';
-import {Information} from '@carbon/react/icons';
+import {Information, ClassicBatch} from '@carbon/react/icons';
 import {Button, Link} from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
@@ -26,7 +26,6 @@ import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Container, OperationLogName} from './styled';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
-import {BatchJob} from '@carbon/icons-react';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {
   DetailsModal,
@@ -129,7 +128,7 @@ const InstancesTable: React.FC = observer(() => {
       <>
         <OperationLogName>
           {item.entityType === 'BATCH' && item.batchOperationType ? (
-            <BatchJob />
+            <ClassicBatch />
           ) : undefined}
           {spaceAndCapitalize(item.operationType.toString())}&nbsp;
           {spaceAndCapitalize(item.entityType.toString())}
@@ -141,7 +140,7 @@ const InstancesTable: React.FC = observer(() => {
         </OperationLogName>
         {item.entityType !== 'BATCH' && item.batchOperationKey ? (
           <OperationLogName>
-            <BatchJob />
+            <ClassicBatch />
             <Link
               href={`/batch-operations/${item.batchOperationKey}`}
               target="_self"
