@@ -267,14 +267,12 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final IncidentSearchClient incidentSearchClient,
-      final ProcessDefinitionServices processDefinitionServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new IncidentServices(
         brokerClient,
         securityContextProvider,
         incidentSearchClient,
-        processDefinitionServices,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);
