@@ -17,7 +17,6 @@ import {ProcessInstanceHeader} from '../index';
 import {
   mockInstance,
   mockInstanceWithParentInstance,
-  mockOperationCreated,
   Wrapper,
 } from './index.setup';
 
@@ -27,7 +26,6 @@ import {
   mockProcessXML,
 } from 'modules/testUtils';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
@@ -35,6 +33,7 @@ import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/c
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -297,7 +296,8 @@ describe('InstanceHeader', () => {
     });
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
 
-    mockApplyOperation().withSuccess(mockOperationCreated);
+    mockDeleteProcessInstance().withSuccess(null, {expectPolling: false});
+    mockFetchProcessInstanceV2().withServerError(404);
 
     mockQueryBatchOperationItems().withSuccess({
       items: [],

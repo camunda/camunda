@@ -16,9 +16,9 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
-import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -189,7 +189,7 @@ describe('ProcessInstanceOperations', () => {
   });
 
   it('should show notification on delete operation error', async () => {
-    mockApplyOperation().withServerError();
+    mockDeleteProcessInstance().withServerError();
     const terminatedInstance = createProcessInstance({
       state: 'TERMINATED',
     });
@@ -207,7 +207,8 @@ describe('ProcessInstanceOperations', () => {
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'error',
-        title: 'Operation could not be created',
+        title: 'Failed to delete process instance',
+        subtitle: 'Internal Server Error',
         isDismissable: true,
       }),
     );
