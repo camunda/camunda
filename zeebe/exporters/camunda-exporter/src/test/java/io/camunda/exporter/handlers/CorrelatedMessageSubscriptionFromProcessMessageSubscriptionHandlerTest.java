@@ -194,7 +194,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     // given
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
-            .withRootProcessInstanceKey(0L)
+            .withRootProcessInstanceKey(-1L)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
