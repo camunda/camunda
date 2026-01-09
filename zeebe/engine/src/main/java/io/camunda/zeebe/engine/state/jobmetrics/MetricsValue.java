@@ -95,6 +95,20 @@ public final class MetricsValue implements DbValue {
     return copy;
   }
 
+  /**
+   * Creates a deep copy of this MetricsValue.
+   *
+   * @return a new MetricsValue with copied data
+   */
+  public MetricsValue copy() {
+    final MetricsValue copy = new MetricsValue();
+    for (int i = 0; i < metrics.length; i++) {
+      copy.metrics[i].setCount(metrics[i].getCount());
+      copy.metrics[i].setLastUpdatedAt(metrics[i].getLastUpdatedAt());
+    }
+    return copy;
+  }
+
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder("MetricsValue{");

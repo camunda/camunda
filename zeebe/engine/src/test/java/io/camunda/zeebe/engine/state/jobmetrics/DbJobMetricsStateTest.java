@@ -137,7 +137,7 @@ class DbJobMetricsStateTest {
     assertThat(counter).isEqualTo(6); // 6 unique strings
 
     final long totalEncodedStringsSize =
-        state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_SIZE);
+        state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_BYTE_SIZE);
     assertThat(totalEncodedStringsSize)
         .isEqualTo(
             "jobType1".length()
@@ -167,7 +167,7 @@ class DbJobMetricsStateTest {
 
     assertThat(state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB)).isZero();
     assertThat(state.getMetadata(DbJobMetricsState.META_COUNTER)).isZero();
-    assertThat(state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_SIZE)).isZero();
+    assertThat(state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_BYTE_SIZE)).isZero();
     assertThat(state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE)).isZero();
   }
 
@@ -196,7 +196,7 @@ class DbJobMetricsStateTest {
     // then
     final long jobMetricsNb = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
     final long totalEncodedStringsSize =
-        state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_SIZE);
+        state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_BYTE_SIZE);
     final long batchRecordTotalSize =
         state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE);
 
@@ -216,7 +216,7 @@ class DbJobMetricsStateTest {
     // then
     final long jobMetricsNb = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
     final long totalEncodedStringsSize =
-        state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_SIZE);
+        state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_BYTE_SIZE);
     final long batchRecordTotalSize =
         state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE);
 
@@ -291,7 +291,7 @@ class DbJobMetricsStateTest {
   }
 
   @Test
-  void shouldCalculateSizeImpactInBytesCorrectlyForNewStrings() {
+  void shouldCalculateSizeImpactInBytesInBytesCorrectlyForNewStrings() {
     // when - first insert with all new strings
     state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
 
