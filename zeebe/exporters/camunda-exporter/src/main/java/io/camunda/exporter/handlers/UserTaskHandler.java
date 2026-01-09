@@ -272,6 +272,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           .get(formKey)
           .ifPresent(c -> entity.setFormId(c.formId()).setFormVersion(c.formVersion()));
     }
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   private boolean refersToPreviousVersionRecord(final long key) {
