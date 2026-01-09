@@ -148,6 +148,10 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     joinRelation.setName(TaskJoinRelationshipType.TASK.getType());
     joinRelation.setParent(Long.valueOf(entity.getProcessInstanceId()));
     entity.setJoin(joinRelation);
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

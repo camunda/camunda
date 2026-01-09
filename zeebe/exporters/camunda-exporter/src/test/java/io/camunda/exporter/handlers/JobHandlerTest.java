@@ -142,6 +142,7 @@ final class JobHandlerTest {
     final int partitionId = 10;
     final int processInstanceKey = 123;
     final long processDefinitionKey = 555L;
+    final long rootProcessInstanceKey = 999L;
     final int elementInstanceKey = 456;
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
@@ -157,6 +158,7 @@ final class JobHandlerTest {
     final var recordValue =
         ImmutableJobRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
+            .withRootProcessInstanceKey(rootProcessInstanceKey)
             .withElementInstanceKey(elementInstanceKey)
             .withElementId(elementId)
             .withBpmnProcessId(bpmnProcessId)
@@ -216,6 +218,33 @@ final class JobHandlerTest {
     // these values are only updated on JobIntent.COMPLETED
     assertThat(entity.isDenied()).isEqualTo(null);
     assertThat(entity.getDeniedReason()).isEqualTo(null);
+    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withRootProcessInstanceKey(-1L)
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
