@@ -168,6 +168,12 @@ export class OperateFiltersPanelPage {
     await this.page.getByLabel(`Remove ${filterName} Filter`).click();
   }
 
+  async isOptionalFilterDisplayed(filterName: OptionalFilter): Promise<boolean> {
+    return await this.page
+      .getByLabel(filterName, {exact: true})
+      .isVisible();
+  }
+
   async selectProcess(option: string) {
     await waitForAssertion({
       assertion: async () => {

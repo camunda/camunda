@@ -49,3 +49,40 @@ export async function grantUserResourceAuthorization(
     authorizationKey: authBody.authorizationKey,
   };
 }
+
+export async function cleanupAuthorizations(
+  request: APIRequestContext,
+  authorizationKeys: string[],
+): Promise<void> {
+  if (authorizationKeys.length === 0) return;
+
+  console.log(
+    `Cleaning up ${authorizationKeys.length} authorizations via API...`,
+  );
+
+  await Promise.allSettled(
+    authorizationKeys.map(async (authorizationKey) => {
+      try {
+        const response = await request.delete(
+          buildUrl('/authorizations/{authorizationKey}', {
+            authorizationKey: authorizationKey,
+          }),
+          {headers: jsonHeaders()},
+        );
+        if (response.status() === 204) {
+          console.log(
+            `Successfully deleted an authorization: ${authorizationKey}`,
+          );
+        } else if (response.status() === 404) {
+          console.log(
+            `Authorization already deleted or doesn't exist: ${authorizationKey}`,
+          );
+        } else {
+          console.warn(
+            `Unexpected response status ${response.status()} for authorization ${authorizationKey}`,
+          );
+        }
+      } catch {}
+    }),
+  );
+}
