@@ -214,6 +214,10 @@ public abstract class ElasticsearchUtil {
     return Query.of(q -> q.ids(i -> i.values(Arrays.asList(ids))));
   }
 
+  public static Query matchAllQuery() {
+    return Query.of(q -> q.matchAll(m -> m));
+  }
+
   /**
    * A query that wraps another query and simply returns a constant score equal to the query boost
    * for every document in the query.
