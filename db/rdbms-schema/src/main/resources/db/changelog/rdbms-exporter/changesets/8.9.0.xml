@@ -1018,6 +1018,7 @@
       <column name="DECISION_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
       <column name="JOB_KEY" type="BIGINT"/>
       <column name="USER_TASK_KEY" type="BIGINT"/>
@@ -1034,6 +1035,14 @@
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_HIST">
       <column name="PARTITION_ID" />
       <column name="HISTORY_CLEANUP_DATE" />
+    </createIndex>
+
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
     </createIndex>
 
     <modifySql dbms="mariadb,mysql">

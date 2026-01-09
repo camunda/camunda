@@ -50,6 +50,7 @@ public final class AuditLogFixtures extends CommonFixtures {
             .decisionDefinitionId("decision-" + generateRandomString(10))
             .processDefinitionKey(nextKey())
             .processInstanceKey(nextKey())
+            .rootProcessInstanceKey(nextKey())
             .elementInstanceKey(nextKey())
             .jobKey(nextKey())
             .userTaskKey(nextKey())
