@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.getScopedVariables;
 import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
@@ -82,6 +83,7 @@ public class BatchOperationDeleteProcessInstanceIT {
 
     // and check that batch operation has been created with correct operation count
     waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 2);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 2, 0);
 
     // and check that process instances have been deleted
     waitForProcessInstances(camundaClient, f -> f.variables(getScopedVariables(testScopeId)), 0);
