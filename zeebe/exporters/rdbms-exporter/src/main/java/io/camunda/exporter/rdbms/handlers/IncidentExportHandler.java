@@ -76,6 +76,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .flowNodeInstanceKey(value.getElementInstanceKey())
         .flowNodeId(value.getElementId())
         .processInstanceKey(mapIfGreaterZero(value.getProcessInstanceKey()))
+        .rootProcessInstanceKey(mapIfGreaterZero(value.getRootProcessInstanceKey()))
         .processDefinitionKey(mapIfGreaterZero(value.getProcessDefinitionKey()))
         .processDefinitionId(value.getBpmnProcessId())
         .state(IncidentState.ACTIVE)
@@ -89,7 +90,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .build();
   }
 
-  private Long mapIfGreaterZero(final Long key) {
+  private Long mapIfGreaterZero(final long key) {
     return key > 0 ? key : null;
   }
 
