@@ -7,6 +7,8 @@
  */
 
 import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import {spaceAndCapitalize} from '../spaceAndCapitalize.ts';
 
 const formatBatchTitle = (batchOperationType?: BatchOperationType) => {
   switch (batchOperationType) {
@@ -29,4 +31,10 @@ const formatBatchTitle = (batchOperationType?: BatchOperationType) => {
   }
 };
 
-export {formatBatchTitle};
+const formatModalHeading = (auditLog: AuditLog) => {
+  return `${spaceAndCapitalize(
+    auditLog.operationType,
+  )} ${spaceAndCapitalize(auditLog.entityType)}`;
+};
+
+export {formatBatchTitle, formatModalHeading};

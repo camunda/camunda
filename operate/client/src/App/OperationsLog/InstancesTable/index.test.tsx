@@ -263,7 +263,6 @@ describe('OperationsLog InstancesTable', () => {
 
     await user.click(detailsButton);
 
-    // Modal should be visible after clicking
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 

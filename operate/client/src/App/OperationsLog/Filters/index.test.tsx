@@ -187,7 +187,6 @@ describe('OperationsLog Filters', () => {
       ),
     });
 
-    // Verify the component renders without errors
     await waitFor(() => {
       expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
         'Process 1',

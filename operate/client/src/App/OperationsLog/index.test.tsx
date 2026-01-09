@@ -53,9 +53,7 @@ describe('OperationsLog', () => {
       wrapper: Wrapper,
     });
 
-    // Check that filters panel is rendered
     expect(screen.getByText('Process')).toBeInTheDocument();
-    // Check that operations log header is rendered
     expect(screen.getByText('Operations Log')).toBeInTheDocument();
   });
 

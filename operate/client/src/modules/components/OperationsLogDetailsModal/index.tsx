@@ -31,7 +31,10 @@ import {
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
-import {formatBatchTitle} from 'modules/utils/operationsLog';
+import {
+  formatBatchTitle,
+  formatModalHeading,
+} from 'modules/utils/operationsLog';
 
 type Props = {
   isOpen: boolean;
@@ -45,18 +48,12 @@ type DetailsModalState = {
 };
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
-  const formatModalHeading = () => {
-    return `${spaceAndCapitalize(
-      auditLog.operationType.toString(),
-    )} ${spaceAndCapitalize(auditLog.entityType.toString())}`;
-  };
-
   return (
     <Modal
       size="md"
       open={isOpen}
       onRequestClose={onClose}
-      modalHeading={formatModalHeading()}
+      modalHeading={formatModalHeading(auditLog)}
       primaryButtonDisabled
       secondaryButtonText="Close"
     >
