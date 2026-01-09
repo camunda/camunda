@@ -209,7 +209,7 @@
     <!--    <mockito.version>5.5.0</mockito.version>-->
 
     <!-- maven plugins -->
-    <plugin.version.antrun>3.1.0</plugin.version.antrun>
+    <plugin.version.antrun>3.2.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.assembly>3.8.0</plugin.version.assembly>
     <plugin.version.build-helper>3.6.1</plugin.version.build-helper>
