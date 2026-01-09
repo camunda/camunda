@@ -568,7 +568,7 @@ public abstract class ElasticsearchUtil {
 
     if (value.getClass().isArray()) {
       throw new IllegalStateException(
-          "Cannot pass an array to the singleton terms query, must pass a collection");
+          "Cannot pass an array to the singleton terms query, must pass a single value");
     }
 
     return termsQuery(name, Collections.singletonList(value));
