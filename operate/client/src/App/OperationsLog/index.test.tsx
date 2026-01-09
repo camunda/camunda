@@ -57,19 +57,16 @@ describe('OperationsLog', () => {
     expect(screen.getByText('Operations Log')).toBeInTheDocument();
   });
 
-  it('should initialize stores on mount', async () => {
-    const initSpy = vi.spyOn(processInstancesSelectionStore, 'init');
-    const processInstancesInitSpy = vi.spyOn(processInstancesStore, 'init');
+  it('should fetch processes on mount', async () => {
+    const processesStoreSpy = vi.spyOn(processesStore, 'fetchProcesses');
 
     render(<OperationsLog />, {
       wrapper: Wrapper,
     });
 
-    expect(initSpy).toHaveBeenCalled();
-    expect(processInstancesInitSpy).toHaveBeenCalled();
+    expect(processesStoreSpy).toHaveBeenCalled();
 
-    initSpy.mockRestore();
-    processInstancesInitSpy.mockRestore();
+    processesStoreSpy.mockRestore();
   });
 
   it('should set page title to instances', () => {

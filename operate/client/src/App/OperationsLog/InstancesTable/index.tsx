@@ -10,8 +10,6 @@ import {useEffect, useMemo, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs';
 import {SortableTable} from 'modules/components/SortableTable';
-import {Information, ClassicBatch} from '@carbon/react/icons';
-import {Button, Link} from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {
@@ -23,15 +21,13 @@ import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
-import {Container, OperationLogName} from './styled';
-import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
+import {Container} from './styled';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {
   DetailsModal,
   type DetailsModalState,
 } from 'modules/components/OperationsLogDetailsModal';
-import {formatBatchTitle} from 'modules/utils/operationsLog';
 import {
   AUDIT_LOG_FILTER_FIELDS,
   type OperationsLogFilterField,
@@ -39,6 +35,10 @@ import {
 } from '../shared';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {observer} from 'mobx-react';
+import {CellAppliedTo} from './CellAppliedTo';
+import {CellOperationType} from './CellOperationType';
+import {CellResult} from './CellResult';
+import {CellComment} from './CellComment.tsx';
 
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -160,118 +160,17 @@ const InstancesTable: React.FC = observer(() => {
     }
   }, [error]);
 
-  const formatOperationType = (item: AuditLog) => {
-    return (
-      <>
-        <OperationLogName>
-          {item.entityType === 'BATCH' && item.batchOperationType ? (
-            <ClassicBatch />
-          ) : undefined}
-          {spaceAndCapitalize(item.operationType)}&nbsp;
-          {spaceAndCapitalize(item.entityType)}
-          {item.entityType === 'BATCH' && item.batchOperationType ? (
-            <div>&nbsp;({spaceAndCapitalize(item.batchOperationType)})</div>
-          ) : undefined}
-        </OperationLogName>
-        {item.entityType !== 'BATCH' && item.batchOperationKey ? (
-          <OperationLogName>
-            <ClassicBatch />
-            <Link
-              href={`/batch-operations/${item.batchOperationKey}`}
-              target="_self"
-            >
-              {item.batchOperationKey}
-            </Link>
-          </OperationLogName>
-        ) : undefined}
-      </>
-    );
-  };
-
-  const formatAppliedTo = (item: AuditLog) => {
-    if (item.entityType === 'BATCH' && item.batchOperationKey) {
-      return (
-        <>
-          <div>Multiple {formatBatchTitle(item.batchOperationType)}</div>
-          <div>
-            <Link
-              href={`/batch-operations/${item.batchOperationKey}`}
-              target="_self"
-            >
-              {item.batchOperationKey}
-            </Link>
-          </div>
-        </>
-      );
-    } else if (item.entityType === 'RESOURCE') {
-      return (
-        <>
-          <div>Deployed resource</div>
-          <div>{item.entityKey}</div>
-        </>
-      );
-    } else if (item.entityType === 'PROCESS_INSTANCE') {
-      return (
-        <>
-          <div>
-            {
-              processesStore.getProcess({
-                bpmnProcessId: item.processDefinitionId,
-              })?.name
-            }
-          </div>
-          <div>
-            <Link href={`/processes/${item.entityKey}`} target="_self">
-              {item.entityKey}
-            </Link>
-          </div>
-        </>
-      );
-    } else if (item.entityType === 'DECISION') {
-      return (
-        <>
-          <div>
-            <Link href={`/decisions/${item.entityKey}`} target="_self">
-              {item.entityKey}
-            </Link>
-          </div>
-        </>
-      );
-    } else {
-      return <>{item.entityKey}</>;
-    }
-  };
-
   const rows = useMemo(
     () =>
       data?.auditLogs.map((item: AuditLog) => ({
         id: item.auditLogKey,
         entityType: spaceAndCapitalize(item.entityType),
-        operationType: formatOperationType(item),
-        result: (
-          <OperationLogName>
-            <OperationsLogStateIcon
-              state={item.result}
-              data-testid={`${item.auditLogKey}-icon`}
-            />
-            {spaceAndCapitalize(item.result)}
-          </OperationLogName>
-        ),
-        appliedTo: formatAppliedTo(item),
+        operationType: <CellOperationType item={item} />,
+        result: <CellResult item={item} />,
+        appliedTo: <CellAppliedTo item={item} />,
         user: item.actorId,
         timestamp: formatDate(item.timestamp),
-        comment: (
-          <Button
-            kind="ghost"
-            size="sm"
-            tooltipPosition="left"
-            iconDescription="Open details"
-            aria-label="Open details"
-            onClick={() => setDetailsModal({isOpen: true, auditLog: item})}
-            hasIconOnly
-            renderIcon={Information}
-          />
-        ),
+        comment: <CellComment item={item} setDetailsModal={setDetailsModal} />,
       })) || [],
     [data],
   );
