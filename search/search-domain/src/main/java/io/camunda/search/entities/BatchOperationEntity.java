@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -22,11 +23,11 @@ public record BatchOperationEntity(
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     /**
-     * The type of the actor who started the batch operation (USER or CLIENT).
+     * The type of the actor who started the batch operation (USER, CLIENT, ANONYMOUS, or UNKNOWN).
      *
      * @since 8.9.0
      */
-    BatchOperationActorType actorType,
+    AuditLogActorType actorType,
     /**
      * The id of the actor who started the batch operation.
      *
@@ -88,10 +89,5 @@ public record BatchOperationEntity(
     SKIPPED,
     CANCELED,
     FAILED
-  }
-
-  public enum BatchOperationActorType {
-    USER,
-    CLIENT
   }
 }

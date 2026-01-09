@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -183,7 +183,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
                         .batchOperationKey("123")
                         .startDate(dateTime.toString())
                         .endDate(dateTime.toString())
-                        .actorType(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER)
+                        .actorType(io.camunda.client.protocol.rest.AuditLogActorTypeEnum.USER)
                         .actorId("demo-user")));
 
     gatewayService.onSearchBatchOperationsRequest(searchResult);
@@ -197,7 +197,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
     assertThat(result.items()).hasSize(1);
 
     final BatchOperation mapped = result.items().get(0);
-    assertThat(mapped.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(mapped.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(mapped.getActorId()).isEqualTo("demo-user");
   }
 
@@ -206,7 +206,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
     // when
     client
         .newBatchOperationSearchRequest()
-        .filter(f -> f.actorType(BatchOperationActorTypeEnum.USER).actorId("demo-user"))
+        .filter(f -> f.actorType(AuditLogActorTypeEnum.USER).actorId("demo-user"))
         .send()
         .join();
 
@@ -216,7 +216,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
 
     assertThat(request.getFilter()).isNotNull();
     assertThat(request.getFilter().getActorType())
-        .isEqualTo(io.camunda.client.protocol.rest.BatchOperationActorTypeEnum.USER);
+        .isEqualTo(io.camunda.client.protocol.rest.AuditLogActorTypeEnum.USER);
     assertThat(request.getFilter().getActorId().get$Eq()).isEqualTo("demo-user");
   }
 

@@ -16,7 +16,6 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
@@ -73,11 +72,6 @@ public class SearchColumnTest {
                       BatchOperationType.MIGRATE_PROCESS_INSTANCE),
                   Tuple.of(
                       BatchOperationType.MIGRATE_PROCESS_INSTANCE, "MIGRATE_PROCESS_INSTANCE"))),
-          Map.entry(
-              BatchOperationActorType.class,
-              List.of(
-                  Tuple.of(BatchOperationActorType.USER, BatchOperationActorType.USER),
-                  Tuple.of(BatchOperationActorType.USER, "USER"))),
           Map.entry(
               ProcessInstanceState.class,
               List.of(

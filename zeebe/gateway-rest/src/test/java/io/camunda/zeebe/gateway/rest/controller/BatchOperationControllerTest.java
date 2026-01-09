@@ -14,8 +14,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationActorType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
@@ -230,8 +230,8 @@ class BatchOperationControllerTest extends RestControllerTest {
                 .actorTypeOperations(ops)
                 .build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(BatchOperationActorType.USER))),
-            List.of(Operation.eq(String.valueOf(BatchOperationActorType.CLIENT)))),
+            List.of(Operation.eq(String.valueOf(AuditLogEntity.AuditLogActorType.USER))),
+            List.of(Operation.eq(String.valueOf(AuditLogEntity.AuditLogActorType.CLIENT)))),
         true);
 
     customOperationTestCases(
@@ -363,9 +363,9 @@ class BatchOperationControllerTest extends RestControllerTest {
     final var entityAragorn = getBatchOperationEntityWithActorId("3", "aragorn@fellowship");
     final var entityFrodo = getBatchOperationEntityWithActorId("4", "frodo@fellowship");
     final var entityActorClient =
-        getBatchOperationEntityWithActorType("5", BatchOperationActorType.CLIENT);
+        getBatchOperationEntityWithActorType("5", AuditLogEntity.AuditLogActorType.CLIENT);
     final var entityActorUser =
-        getBatchOperationEntityWithActorType("6", BatchOperationActorType.USER);
+        getBatchOperationEntityWithActorType("6", AuditLogEntity.AuditLogActorType.USER);
 
     return Stream.of(
         Arguments.of(
@@ -444,7 +444,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
+        AuditLogEntity.AuditLogActorType.USER,
         "frodo.baggins@fellowship",
         10,
         0,
@@ -460,7 +460,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         startDate,
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
+        AuditLogEntity.AuditLogActorType.USER,
         "frodo@fellowship",
         10,
         0,
@@ -476,7 +476,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
+        AuditLogEntity.AuditLogActorType.USER,
         actorId,
         10,
         0,
@@ -485,7 +485,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   }
 
   private static BatchOperationEntity getBatchOperationEntityWithActorType(
-      final String batchOperationKey, final BatchOperationActorType actorType) {
+      final String batchOperationKey, final AuditLogEntity.AuditLogActorType actorType) {
     return new BatchOperationEntity(
         batchOperationKey,
         BatchOperationState.COMPLETED,
@@ -512,7 +512,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        BatchOperationActorType.USER,
+        AuditLogEntity.AuditLogActorType.USER,
         "frodo.baggins@fellowship",
         operationsTotalCount,
         operationsFailedCount,

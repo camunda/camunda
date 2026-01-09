@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.entities.operation.BatchOperationActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.auth.Authorization;
@@ -132,7 +132,7 @@ class BatchOperationCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getActorType()).isEqualTo(BatchOperationActorType.USER);
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.USER);
     assertThat(entity.getActorId()).isEqualTo("username");
   }
 
@@ -155,7 +155,7 @@ class BatchOperationCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getActorType()).isEqualTo(BatchOperationActorType.CLIENT);
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.CLIENT);
     assertThat(entity.getActorId()).isEqualTo("client-id");
   }
 
@@ -178,7 +178,7 @@ class BatchOperationCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getActorType()).isNull();
+    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.UNKNOWN);
     assertThat(entity.getActorId()).isNull();
   }
 
