@@ -8,6 +8,7 @@
 package io.camunda.zeebe.journal.fs;
 
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Map;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.LibraryOption;
@@ -36,11 +37,14 @@ public interface LibC {
    * @return an instance of this library
    */
   static LibC ofNativeLibrary() {
+    return ofNativeLibrary(Platform.getNativePlatform().getStandardCLibraryName());
+  }
+
+  @VisibleForTesting
+  static LibC ofNativeLibrary(final String libraryName) {
     try {
       return LibraryLoader.loadLibrary(
-          LibC.class,
-          Map.of(LibraryOption.LoadNow, true),
-          Platform.getNativePlatform().getStandardCLibraryName());
+          LibC.class, Map.of(LibraryOption.LoadNow, true), libraryName);
     } catch (final UnsatisfiedLinkError e) {
       Loggers.FILE_LOGGER.warn(
           "Failed to load C library; any native calls will not be available", e);
