@@ -233,7 +233,7 @@
     <plugin.version.surefire>3.5.4</plugin.version.surefire>
     <plugin.version.versions>2.18.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.4</plugin.version.frontend-maven>
-    <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
+    <plugin.version.maven-source>3.4.0</plugin.version.maven-source>
     <plugin.version.japicmp>0.23.1</plugin.version.japicmp>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
