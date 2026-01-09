@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.mcp;
+package io.camunda.it.mcp.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,6 +16,8 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
+import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,29 @@ abstract class McpServerAuthenticationTest {
     if (mcpClient != null) {
       mcpClient.close();
     }
+  }
+
+  @Test
+  void returnsConfiguredInfoAndCapabilities() {
+    final var initializeResult = mcpClient.initialize();
+    assertThat(initializeResult).isNotNull();
+
+    assertThat(initializeResult.serverInfo().name())
+        .isEqualTo("Camunda 8 Orchestration API MCP Server");
+    assertThat(initializeResult.serverInfo().version()).startsWith("8.");
+
+    assertThat(initializeResult.capabilities())
+        .extracting(
+            ServerCapabilities::completions,
+            ServerCapabilities::experimental,
+            ServerCapabilities::logging,
+            ServerCapabilities::prompts,
+            ServerCapabilities::resources)
+        .allMatch(Objects::isNull);
+
+    assertThat(initializeResult.capabilities().tools())
+        .isNotNull()
+        .satisfies(tools -> assertThat(tools.listChanged()).isFalse());
   }
 
   @Test
