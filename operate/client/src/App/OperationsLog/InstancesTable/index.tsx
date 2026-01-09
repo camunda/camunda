@@ -37,8 +37,8 @@ import {observer} from 'mobx-react';
 import {CellAppliedTo} from './CellAppliedTo';
 import {CellOperationType} from './CellOperationType';
 import {CellResult} from './CellResult';
-import {CellComment} from './CellComment.tsx';
-import {useProcessDefinitionKeyContext} from '../../Processes/ListView/processDefinitionKeyContext.ts';
+import {CellComment} from './CellComment';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;

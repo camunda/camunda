@@ -14,8 +14,8 @@ import {Field, Form} from 'react-final-form';
 import {TextInputField} from 'modules/components/TextInputField';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {FiltersPanel} from 'modules/components/FiltersPanel/index';
-import {ProcessField} from '../../Processes/ListView/Filters/ProcessField';
-import {ProcessVersionField} from '../../Processes/ListView/Filters/ProcessVersionField';
+import {ProcessField} from 'App/Processes/ListView/Filters/ProcessField';
+import {ProcessVersionField} from 'App/Processes/ListView/Filters/ProcessVersionField';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {
   getDefinitionIdentifier,

@@ -8,15 +8,15 @@
 
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {Link} from '@carbon/react';
-import {OperationLogName} from './styled.tsx';
+import {OperationLogName} from './styled';
 import {ClassicBatch} from '@carbon/react/icons';
-import {spaceAndCapitalize} from '../../../modules/utils/spaceAndCapitalize.ts';
+import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 
 type Props = {
   item: AuditLog;
 };
 
-const CellOperationType: React.FC<Props> = ({item}: Props) => {
+const CellOperationType: React.FC<Props> = ({item}) => {
   return (
     <>
       <OperationLogName>

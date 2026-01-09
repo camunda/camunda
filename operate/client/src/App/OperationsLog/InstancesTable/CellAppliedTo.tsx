@@ -9,15 +9,15 @@
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {formatBatchTitle} from 'modules/utils/operationsLog';
 import {Link} from '@carbon/react';
-import {processesStore} from 'modules/stores/processes/processes.list.ts';
+import {processesStore} from 'modules/stores/processes/processes.list';
 
 type Props = {
   item: AuditLog;
 };
 
-const CellAppliedTo: React.FC<Props> = ({item}: Props) => {
+const CellAppliedTo: React.FC<Props> = ({item}) => {
   if (!item) {
-    return <></>;
+    return null;
   }
 
   switch (item.entityType) {

@@ -9,7 +9,7 @@
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {Information} from '@carbon/react/icons';
 import {Button} from '@carbon/react';
-import type {DetailsModalState} from '../../../modules/components/OperationsLogDetailsModal';
+import type {DetailsModalState} from 'modules/components/OperationsLogDetailsModal';
 
 type Props = {
   item: AuditLog;

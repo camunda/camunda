@@ -31,4 +31,14 @@ const ParagraphWithIcon = styled.p`
   gap: var(--cds-spacing-02);
 `;
 
-export {IconText, FirstColumn, VerticallyAlignedRow, ParagraphWithIcon};
+const TitleListCell = styled.h5`
+  padding: 15px 0;
+`;
+
+export {
+  IconText,
+  FirstColumn,
+  VerticallyAlignedRow,
+  ParagraphWithIcon,
+  TitleListCell,
+};
