@@ -37,8 +37,13 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new StringValue("activatedElementInstanceKeys");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -59,14 +64,15 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
 
   public ProcessInstanceModificationRecord() {
-    super(7);
+    super(8);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
         .declareProperty(moveInstructionsProperty)
         .declareProperty(activatedElementInstanceKeys)
         .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProperty);
+        .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty);
   }
 
   /**
@@ -199,6 +205,17 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
 
   public ProcessInstanceModificationRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public ProcessInstanceModificationRecord setProcessDefinitionKey(
+      final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
   }
 

@@ -162,4 +162,10 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
+
+  @JsonIgnore
+  @Override
+  public long getProcessDefinitionKey() {
+    return -1L;
+  }
 }

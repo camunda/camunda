@@ -243,5 +243,10 @@ public final class BanInstanceTest {
     public long getProcessInstanceKey() {
       return processInstanceKey;
     }
+
+    @Override
+    public long getProcessDefinitionKey() {
+      return -1L;
+    }
   }
 }

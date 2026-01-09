@@ -51,6 +51,12 @@ public class RuntimeInstructionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
+  @Override
+  public long getProcessDefinitionKey() {
+    return -1L;
+  }
+
   @Override
   public String getTenantId() {
     return bufferAsString(tenantIdProperty.getValue());

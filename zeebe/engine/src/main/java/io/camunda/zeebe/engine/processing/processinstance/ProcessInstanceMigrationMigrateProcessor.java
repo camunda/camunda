@@ -139,14 +139,15 @@ public class ProcessInstanceMigrationMigrateProcessor
     final ElementInstance processInstance = elementInstanceState.getInstance(processInstanceKey);
 
     requireNonNullProcessInstance(processInstance, processInstanceKey);
+    final ProcessInstanceRecord processInstanceRecord = processInstance.getValue();
 
     final var authorizationRequest =
         AuthorizationRequest.builder()
             .command(command)
             .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstance.getValue().getTenantId())
-            .addResourceId(processInstance.getValue().getBpmnProcessId())
+            .tenantId(processInstanceRecord.getTenantId())
+            .addResourceId(processInstanceRecord.getBpmnProcessId())
             .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
@@ -155,7 +156,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           RejectionType.NOT_FOUND.equals(rejection.type())
               ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
                   "migrate a process instance",
-                  processInstance.getValue().getProcessInstanceKey(),
+                  processInstanceRecord.getProcessInstanceKey(),
                   "such process instance")
               : rejection.reason();
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
@@ -167,11 +168,10 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final DeployedProcess targetProcessDefinition =
         processState.getProcessByKeyAndTenant(
-            targetProcessDefinitionKey, processInstance.getValue().getTenantId());
+            targetProcessDefinitionKey, processInstanceRecord.getTenantId());
     final DeployedProcess sourceProcessDefinition =
         processState.getProcessByKeyAndTenant(
-            processInstance.getValue().getProcessDefinitionKey(),
-            processInstance.getValue().getTenantId());
+            processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
@@ -194,8 +194,9 @@ public class ProcessInstanceMigrationMigrateProcessor
       elementInstances.addAll(children);
     }
 
-    value.setTenantId(processInstance.getValue().getTenantId());
-    value.setRootProcessInstanceKey(processInstance.getValue().getRootProcessInstanceKey());
+    value.setTenantId(processInstanceRecord.getTenantId());
+    value.setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+    value.setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey());
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
     responseWriter.writeEventOnCommand(
