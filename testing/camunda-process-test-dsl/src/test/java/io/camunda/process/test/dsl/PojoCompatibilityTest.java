@@ -44,6 +44,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInst
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
@@ -435,6 +436,14 @@ public class PojoCompatibilityTest {
                     .jobSelector(
                         ImmutableJobSelector.builder().processDefinitionId("my-process").build())
                     .useExampleData(true)
+                    .build())),
+        // ===== EVALUATE_CONDITIONAL_START_EVENT =====
+        Arguments.of(
+            "evaluate conditional start event",
+            singleTestCase(
+                ImmutableEvaluateConditionalStartEventInstruction.builder()
+                    .putVariables("x", 1)
+                    .putVariables("status", "active")
                     .build()))
         // add new instructions here
         );
