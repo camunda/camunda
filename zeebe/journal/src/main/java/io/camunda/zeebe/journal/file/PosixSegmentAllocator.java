@@ -40,7 +40,7 @@ final class PosixSegmentAllocator implements SegmentAllocator {
 
     try {
       posixFs.posixFallocate(fileDescriptor, 0, segmentSize);
-    } catch (final UnsupportedOperationException e) {
+    } catch (final LinkageError | UnsupportedOperationException e) {
       LOGGER.warn(
           "Failed to use native system call to pre-allocate file, will use fallback from now on {}",
           fallback,
