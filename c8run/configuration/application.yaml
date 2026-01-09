@@ -28,6 +28,8 @@ camunda:
       unprotected-api: true
     authorizations:
       enabled: false
+  mcp:
+    enabled: true
 
 zeebe:
   broker:
