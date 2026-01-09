@@ -21,6 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.sort.AuditLogSort;
 import org.junit.jupiter.api.Tag;
@@ -106,19 +107,22 @@ public class AuditLogIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
-    final var original = AuditLogFixtures.createRandomized(b -> b);
+    final var original = AuditLogFixtures.createRandomProcessInstance();
     createAndSaveAuditLog(rdbmsWriters, original);
-    createAndSaveRandomAuditLogs(rdbmsWriters);
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.tenantScope(AuditLogTenantScope.TENANT));
 
     final var searchResult =
-        auditLogReader.search(
-            AuditLogQuery.of(b -> b), resourceAccessChecksFromTenantIds(original.tenantId()));
+        auditLogReader
+            .search(
+                AuditLogQuery.of(b -> b), resourceAccessChecksFromTenantIds(original.tenantId()))
+            .items()
+            .stream()
+            .toList();
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.size()).isEqualTo(1);
 
-    compareAuditLog(searchResult.items().getFirst(), original);
+    compareAuditLog(searchResult.getFirst(), original);
   }
 
   @TestTemplate

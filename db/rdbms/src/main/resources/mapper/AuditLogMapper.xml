@@ -68,10 +68,10 @@
     <where>
       <!-- authorization filters -->
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND TENANT_ID IN
+        AND (TENANT_SCOPE = 'GLOBAL' OR TENANT_ID IN
         <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
           #{tenantId}
-        </foreach>
+        </foreach>)
       </if>
       <!-- basic filters -->
       <if test="filter.auditLogKeyOperations != null and !filter.auditLogKeyOperations.isEmpty()">
