@@ -41,6 +41,11 @@ public class ProcessInstanceModificationBatchOperationExportHandler
   }
 
   @Override
+  long getRootProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
+    return record.getValue().getRootProcessInstanceKey();
+  }
+
+  @Override
   protected boolean isCompleted(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceModificationIntent.MODIFIED);
   }

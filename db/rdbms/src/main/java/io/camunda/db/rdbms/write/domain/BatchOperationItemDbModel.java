@@ -18,6 +18,7 @@ public record BatchOperationItemDbModel(
     String batchOperationKey,
     long itemKey,
     long processInstanceKey,
+    long rootProcessInstanceKey,
     BatchOperationEntity.BatchOperationItemState state,
     OffsetDateTime processedDate,
     String errorMessage) {
@@ -41,6 +42,12 @@ public record BatchOperationItemDbModel(
     }
 
     return new BatchOperationItemDbModel(
-        batchOperationKey, itemKey, processInstanceKey, state, processedDate, truncatedValue);
+        batchOperationKey,
+        itemKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        state,
+        processedDate,
+        truncatedValue);
   }
 }

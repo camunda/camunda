@@ -41,6 +41,11 @@ public class ProcessInstanceMigrationBatchOperationExportHandler
   }
 
   @Override
+  long getRootProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
+    return record.getValue().getRootProcessInstanceKey();
+  }
+
+  @Override
   boolean isCompleted(final Record<ProcessInstanceMigrationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceMigrationIntent.MIGRATED);
   }

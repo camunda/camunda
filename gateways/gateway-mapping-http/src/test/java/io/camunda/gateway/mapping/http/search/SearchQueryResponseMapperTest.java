@@ -29,6 +29,7 @@ class SearchQueryResponseMapperTest {
             BatchOperationType.MIGRATE_PROCESS_INSTANCE,
             1234L,
             4321L,
+            4320L,
             BatchOperationItemState.COMPLETED,
             OffsetDateTime.parse("2025-01-15T11:53:00Z"),
             "errorMessage");
@@ -52,7 +53,7 @@ class SearchQueryResponseMapperTest {
   void shouldHandleNullFieldsInBatchOperationItemEntity() {
     // given
     final BatchOperationItemEntity item =
-        new BatchOperationItemEntity(null, null, null, null, null, null, null);
+        new BatchOperationItemEntity(null, null, null, null, null, null, null, null);
 
     // when
     final BatchOperationItemResponse response =

@@ -97,6 +97,7 @@ public final class BatchOperationFixtures {
                         batchOperationKey,
                         itemKey,
                         itemKey,
+                        itemKey,
                         BatchOperationItemState.ACTIVE,
                         NOW,
                         null))
