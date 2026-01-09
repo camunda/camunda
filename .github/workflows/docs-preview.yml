@@ -38,16 +38,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      
-      - name: Detect docs changes
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+
+      # Detect changes against the base branch
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
         id: filter
-        with:
-          filters: |
-            docs-changes:
-              - 'docs/monorepo-docs/**'
-              - 'monorepo-docs-site/**'
-              - '.github/workflows/docs-preview.yml'
 
   build-preview:
     if: |
