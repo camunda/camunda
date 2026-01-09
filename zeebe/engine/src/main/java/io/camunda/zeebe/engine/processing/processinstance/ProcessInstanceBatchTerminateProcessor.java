@@ -83,7 +83,8 @@ public final class ProcessInstanceBatchTerminateProcessor
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
             .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
-            .setIndex(childInstance.getKey());
+            .setIndex(childInstance.getKey())
+            .setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
 
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(), ProcessInstanceBatchIntent.TERMINATE, nextBatchRecord);

@@ -101,7 +101,8 @@ public final class ProcessInstanceBatchActivateProcessor
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
             .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
-            .setIndex(remainingChildrenToActivate);
+            .setIndex(remainingChildrenToActivate)
+            .setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
 
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(), ProcessInstanceBatchIntent.ACTIVATE, nextBatchRecord);
