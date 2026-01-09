@@ -16,6 +16,20 @@ import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import java.time.InstantSource;
 import java.util.List;
 
+/**
+ * Wraps records for exporting. This class is designed for single-threaded use within the
+ * ExporterDirector actor. It optimizes performance by lazily deserializing record values only
+ * when at least one exporter needs to export them.
+ *
+ * <p>The typical usage pattern is:
+ *
+ * <ol>
+ *   <li>Call {@link #wrap(LoggedEvent)} to read metadata and check if any exporter wants the
+ *       record
+ *   <li>Call {@link #export()} to lazily deserialize the value and export to all interested
+ *       exporters
+ * </ol>
+ */
 class RecordExporter {
 
   private final RecordValues recordValues = new RecordValues();
@@ -67,9 +81,14 @@ class RecordExporter {
   /**
    * Ensures the record value is deserialized. This is called lazily, only when we actually need
    * to export the record. Returns false if the value cannot be read (unsupported value type).
+   *
+   * <p>This method must only be called after wrap() has been invoked.
    */
   private boolean ensureValueRead() {
     if (!valueRead) {
+      if (currentEvent == null) {
+        throw new IllegalStateException("ensureValueRead() called before wrap()");
+      }
       final UnifiedRecordValue recordValue =
           recordValues.readRecordValue(currentEvent, rawMetadata.getValueType());
       // If recordValue is null, it means the value type is not supported/known
