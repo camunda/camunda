@@ -58,6 +58,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerComple
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
@@ -340,6 +341,67 @@ public class PojoCompatibilityTest {
                             .processDefinitionId("my-process")
                             .elementId("task1")
                             .build())
+                    .build())),
+        // ===== THROW_BPMN_ERROR_FROM_JOB =====
+        Arguments.of(
+            "throw bpmn error from job: minimal with jobType",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
+                    .errorCode("invalid")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: with elementId",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("task1").build())
+                    .errorCode("VALIDATION_FAILED")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: with processDefinitionId",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder().processDefinitionId("my-process").build())
+                    .errorCode("ERROR_CODE")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: with combined selector",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobType("validate-order")
+                            .elementId("task1")
+                            .processDefinitionId("my-process")
+                            .build())
+                    .errorCode("invalid")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: with variables",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
+                    .errorCode("invalid")
+                    .putVariables("x", 1)
+                    .putVariables("reason", "Data validation failed")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: with error message",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
+                    .errorCode("invalid")
+                    .errorMessage("Nope.")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: full",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
+                    .errorCode("invalid")
+                    .errorMessage("Nope.")
+                    .putVariables("x", 1)
                     .build())),
         // ===== MOCK_CHILD_PROCESS =====
         Arguments.of(

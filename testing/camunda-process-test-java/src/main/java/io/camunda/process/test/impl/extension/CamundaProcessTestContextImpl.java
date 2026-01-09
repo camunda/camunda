@@ -337,6 +337,66 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void throwBpmnErrorFromJob(final JobSelector jobSelector, final String errorCode) {
+    throwBpmnErrorFromJob(jobSelector, errorCode, Collections.emptyMap());
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final JobSelector jobSelector, final String errorCode, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          LOGGER.debug(
+              "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              errorCode,
+              variables);
+
+          client
+              .newThrowErrorCommand(job.getJobKey())
+              .errorCode(errorCode)
+              .variables(variables)
+              .send()
+              .join();
+        });
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final JobSelector jobSelector,
+      final String errorCode,
+      final String errorMessage,
+      final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          LOGGER.debug(
+              "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {}, message '{}' and variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              errorCode,
+              errorMessage,
+              variables);
+
+          client
+              .newThrowErrorCommand(job.getJobKey())
+              .errorCode(errorCode)
+              .errorMessage(errorMessage)
+              .variables(variables)
+              .send()
+              .join();
+        });
+  }
+
+  @Override
   public void completeUserTask(final String elementId) {
     completeUserTask(UserTaskSelectors.byElementId(elementId), Collections.emptyMap());
   }

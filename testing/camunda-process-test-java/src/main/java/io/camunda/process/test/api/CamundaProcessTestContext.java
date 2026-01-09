@@ -205,6 +205,40 @@ public interface CamundaProcessTestContext {
       final String jobType, final String errorCode, final Map<String, Object> variables);
 
   /**
+   * Throws a BPMN error from a job that matches the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to throw the error from
+   * @param errorCode the error code to throw
+   */
+  void throwBpmnErrorFromJob(final JobSelector jobSelector, final String errorCode);
+
+  /**
+   * Throws a BPMN error from a job that matches the specified selector and sets the provided
+   * variables.
+   *
+   * @param jobSelector the selector to identify the job to throw the error from
+   * @param errorCode the error code to throw
+   * @param variables a map of variables to set when throwing the error
+   */
+  void throwBpmnErrorFromJob(
+      final JobSelector jobSelector, final String errorCode, final Map<String, Object> variables);
+
+  /**
+   * Throws a BPMN error from a job that matches the specified selector with an error message and
+   * sets the provided variables.
+   *
+   * @param jobSelector the selector to identify the job to throw the error from
+   * @param errorCode the error code to throw
+   * @param errorMessage the error message to throw
+   * @param variables a map of variables to set when throwing the error
+   */
+  void throwBpmnErrorFromJob(
+      final JobSelector jobSelector,
+      final String errorCode,
+      final String errorMessage,
+      final Map<String, Object> variables);
+
+  /**
    * Completes a user task with the given BPMN element ID.
    *
    * @param elementId the BPMN element ID of the user task to complete
