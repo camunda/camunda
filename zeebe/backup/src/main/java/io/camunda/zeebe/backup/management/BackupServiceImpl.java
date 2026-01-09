@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -343,9 +344,17 @@ final class BackupServiceImpl {
       // In progress backups cannot be deleted. So first mark it as failed
       return backupStore
           .markFailed(backupStatus.id(), "The backup is going to be deleted.")
-          .thenCompose(ignore -> backupStore.delete(backupStatus.id()));
+          .thenCompose(
+              ignored ->
+                  backupStore.storeRangeMarker(
+                      backupStatus.id().partitionId(),
+                      new Deletion(backupStatus.id().checkpointId())))
+          .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
     } else {
-      return backupStore.delete(backupStatus.id());
+      return backupStore
+          .storeRangeMarker(
+              backupStatus.id().partitionId(), new Deletion(backupStatus.id().checkpointId()))
+          .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
     }
   }
 
