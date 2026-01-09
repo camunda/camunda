@@ -26,6 +26,7 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import io.camunda.process.test.api.dsl.ImmutableElementSelector;
+import io.camunda.process.test.api.dsl.ImmutableJobSelector;
 import io.camunda.process.test.api.dsl.ImmutableMessageSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
@@ -40,6 +41,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockChildProcessInstruction;
@@ -410,6 +412,29 @@ public class PojoCompatibilityTest {
                             .correlationKey("key-1")
                             .build())
                     .state(MessageSubscriptionState.IS_CORRELATED)
+                    .build())),
+        // ===== COMPLETE_JOB =====
+        Arguments.of(
+            "complete job: minimal with jobType",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder().jobType("send-notification").build())
+                    .build())),
+        Arguments.of(
+            "complete job: with variables and elementId",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("task1").build())
+                    .putVariables("x", 1)
+                    .build())),
+        Arguments.of(
+            "complete job: with example data and processDefinitionId",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder().processDefinitionId("my-process").build())
+                    .useExampleData(true)
                     .build()))
         // add new instructions here
         );

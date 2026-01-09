@@ -21,12 +21,17 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.JobSelector;
+import io.camunda.process.test.api.assertions.JobSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
@@ -63,6 +68,20 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   // We can complete only created user tasks. Ignore other states.
   private static final Consumer<UserTaskFilter> DEFAULT_USER_TASK_COMPLETION_FILTER =
       filter -> filter.state(UserTaskState.CREATED);
+
+  // We can complete only jobs that are in CREATED, FAILED, RETRIES_UPDATED, or TIMED_OUT states
+  // and have retries >= 1
+  private static final Consumer<JobFilter> DEFAULT_JOB_COMPLETION_FILTER =
+      filter ->
+          filter
+              .state(
+                  state ->
+                      state.in(
+                          JobState.CREATED,
+                          JobState.FAILED,
+                          JobState.RETRIES_UPDATED,
+                          JobState.TIMED_OUT))
+              .retries(retries -> retries.gte(1));
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -213,44 +232,77 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeJob(final String jobType) {
-    completeJob(jobType, Collections.emptyMap());
+    completeJob(JobSelectors.byJobType(jobType), Collections.emptyMap());
   }
 
   @Override
   public void completeJobWithExampleData(final String jobType) {
-    final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType, client);
-
-    final String logPrefix =
-        String.format("Mock: Complete job [jobType: '%s', jobKey: '%s']", jobType, job.getKey());
-    final BpmnExampleDataReader exampleDataReader =
-        new BpmnExampleDataReader(client, awaitBehavior);
-
-    try {
-      final String exampleDataVariables =
-          exampleDataReader.readExampleData(
-              job.getProcessDefinitionKey(), job.getBpmnProcessId(), job.getElementId());
-
-      LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
-      client.newCompleteCommand(job).variables(exampleDataVariables).send().join();
-    } catch (final BpmnExampleDataReaderException e) {
-
-      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
-      client.newCompleteCommand(job).send().join();
-    }
+    completeJobWithExampleData(JobSelectors.byJobType(jobType));
   }
 
   @Override
   public void completeJob(final String jobType, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType, client);
+    completeJob(JobSelectors.byJobType(jobType), variables);
+  }
 
-    LOGGER.debug(
-        "Mock: Complete job [jobType: '{}', jobKey: '{}'] with variables {}",
-        jobType,
-        job.getKey(),
-        variables);
-    client.newCompleteCommand(job).variables(variables).send().join();
+  @Override
+  public void completeJob(final JobSelector jobSelector) {
+    completeJob(jobSelector, Collections.emptyMap());
+  }
+
+  @Override
+  public void completeJob(final JobSelector jobSelector, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    // completing the job inside the await block to handle the eventual consistency of the API
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          LOGGER.debug(
+              "Mock: Complete job [{}, jobKey: '{}'] with variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              variables);
+
+          client.newCompleteCommand(job.getJobKey()).variables(variables).send().join();
+        });
+  }
+
+  @Override
+  public void completeJobWithExampleData(final JobSelector jobSelector) {
+    final CamundaClient client = createClient();
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehavior);
+
+    // completing the job inside the await block to handle the eventual consistency of the API
+    awaitJob(
+        jobSelector,
+        client,
+        job -> {
+          final String logPrefix =
+              String.format(
+                  "Mock: Complete job [%s, jobKey: '%s']", jobSelector.describe(), job.getJobKey());
+
+          try {
+            final String exampleDataVariables =
+                exampleDataReader.readExampleData(
+                    job.getProcessDefinitionKey(),
+                    job.getProcessDefinitionId(),
+                    job.getElementId());
+
+            LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
+            client
+                .newCompleteCommand(job.getJobKey())
+                .variables(exampleDataVariables)
+                .send()
+                .join();
+          } catch (final BpmnExampleDataReaderException e) {
+
+            LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
+            client.newCompleteCommand(job.getJobKey()).send().join();
+          }
+        });
   }
 
   @Override
@@ -427,6 +479,35 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .items()
         .stream()
         .filter(userTaskSelector::test)
+        .findFirst();
+  }
+
+  private void awaitJob(
+      final JobSelector jobSelector, final CamundaClient client, final Consumer<Job> jobConsumer) {
+
+    awaitBehavior.untilAsserted(
+        () -> findJob(jobSelector, client),
+        job -> {
+          assertThat(job)
+              .withFailMessage(
+                  "Expected to complete job [%s] but no job is available.", jobSelector.describe())
+              .isPresent();
+
+          job.ifPresent(jobConsumer);
+        });
+  }
+
+  private Optional<Job> findJob(final JobSelector jobSelector, final CamundaClient client) {
+    return client
+        .newJobSearchRequest()
+        .filter(
+            filter ->
+                DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter).accept(filter))
+        .send()
+        .join()
+        .items()
+        .stream()
+        .filter(jobSelector::test)
         .findFirst();
   }
 
