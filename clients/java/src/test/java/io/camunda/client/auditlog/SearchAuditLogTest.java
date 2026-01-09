@@ -90,7 +90,7 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .tenantId("tenantId")
                     .category(AuditLogCategoryEnum.ADMIN)
                     .deploymentKey("deploymentKey")
-                    .formKey("deploymentKey")
+                    .formKey("formKey")
                     .resourceKey("resourceKey"))
         .send()
         .join();
@@ -112,10 +112,9 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getEntityType().get$Eq().getValue()).isEqualTo("BATCH");
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenantId");
     assertThat(filter.getCategory().get$Eq().getValue()).isEqualTo("ADMIN");
-    // TODO: enable when implemented
-    //    assertThat(filter.getDeploymentKey().get$Eq()).isEqualTo("deploymentKey");
-    //    assertThat(filter.getFormKey().get$Eq()).isEqualTo("formKey");
-    //    assertThat(filter.getResourceKey().get$Eq()).isEqualTo("resourceKey");
+    assertThat(filter.getDeploymentKey().get$Eq()).isEqualTo("deploymentKey");
+    assertThat(filter.getFormKey().get$Eq()).isEqualTo("formKey");
+    assertThat(filter.getResourceKey().get$Eq()).isEqualTo("resourceKey");
   }
 
   @Test

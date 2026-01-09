@@ -205,8 +205,7 @@ public class AuditLogFilterImpl
   public AuditLogFilter deploymentKey(final Consumer<BasicStringProperty> fn) {
     final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
-    // TODO: Uncomment and implement once deploymentKey is supported
-    //    filter.setDeploymentKey(provideSearchRequestProperty(property));
+    filter.setDeploymentKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -220,8 +219,7 @@ public class AuditLogFilterImpl
   public AuditLogFilter formKey(final Consumer<BasicStringProperty> fn) {
     final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
-    // TODO: Uncomment and implement once formKey is supported
-    //    filter.setFormKey(provideSearchRequestProperty(property));
+    filter.setFormKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -235,8 +233,7 @@ public class AuditLogFilterImpl
   public AuditLogFilter resourceKey(final Consumer<BasicStringProperty> fn) {
     final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
-    // TODO: Uncomment and implement once resourceKey is supported
-    //    filter.setResourceKey(provideSearchRequestProperty(property));
+    filter.setResourceKey(provideSearchRequestProperty(property));
     return this;
   }
 

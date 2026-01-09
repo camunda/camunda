@@ -155,6 +155,18 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
           description: The key of the decision evaluation.
+        deploymentKey:
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/DeploymentKey'
+          description: The key of the deployment.
+        formKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKey'
+          description: The key of the form.
+        resourceKey:
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/ResourceKey'
+          description: The system-assigned key for this resource.
 
     AuditLogSearchQuerySortRequest:
       type: object
@@ -262,6 +274,18 @@ components:
           description: The category search filter.
           allOf:
             - $ref: '#/components/schemas/CategoryFilterProperty'
+        deploymentKey:
+          description: The deployment key filter.
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/DeploymentKeyFilterProperty'
+        formKey:
+          description: The form key filter.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/FormKeyFilterProperty'
+        resourceKey:
+          description: The resource key filter.
+          allOf:
+            - $ref: 'deployments.yaml#/components/schemas/ResourceKeyFilterProperty'
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
