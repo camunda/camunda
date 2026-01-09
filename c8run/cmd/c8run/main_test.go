@@ -187,3 +187,25 @@ func TestValidatePort(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyDockerVersionOverridesUsesOverrides(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9.0-alpha3")
+	t.Setenv("CONNECTORS_DOCKER_VERSION", "8.9.0-alpha4")
+
+	settings := types.C8RunSettings{Docker: true}
+	camundaVersion, connectorsVersion := applyDockerVersionOverrides(settings, "8.9.0-SNAPSHOT", "8.9.0-SNAPSHOT")
+
+	assert.Equal(t, "8.9.0-alpha3", camundaVersion)
+	assert.Equal(t, "8.9.0-alpha4", connectorsVersion)
+}
+
+func TestApplyDockerVersionOverridesKeepsNonDockerValues(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9.0-alpha3")
+	t.Setenv("CONNECTORS_DOCKER_VERSION", "8.9.0-alpha4")
+
+	settings := types.C8RunSettings{Docker: false}
+	camundaVersion, connectorsVersion := applyDockerVersionOverrides(settings, "8.9.0-SNAPSHOT", "8.9.0-SNAPSHOT")
+
+	assert.Equal(t, "8.9.0-SNAPSHOT", camundaVersion)
+	assert.Equal(t, "8.9.0-SNAPSHOT", connectorsVersion)
+}

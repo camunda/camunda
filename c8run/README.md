@@ -44,3 +44,5 @@ To build and run C8Run locally run `./package.sh` followed by `./start.sh`
 ### Connectors launcher
 
 C8Run automatically starts the connectors runtime through Spring Boot's `PropertiesLauncher` for connector bundles versioned 8.9.0 or newer (including snapshots). Older bundles continue to run via the legacy `JarLauncher`, so you can switch versions in `.env` without extra configuration.
+
+When using `./start.sh --docker`, C8Run reads `CAMUNDA_DOCKER_VERSION` and `CONNECTORS_DOCKER_VERSION` from `.env` to decide which container images to launch. Set those variables to the exact release tags you want Docker Compose to pull (e.g., `8.9.0-alpha3`) without impacting the runtime versions used for local, non-Docker starts.

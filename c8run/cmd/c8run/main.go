@@ -319,6 +319,9 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		os.Exit(1)
 	}
 
+	camundaVersion, connectorsVersion = applyDockerVersionOverrides(settings, camundaVersion, connectorsVersion)
+	propagateRuntimeVersions(elasticsearchVersion, camundaVersion, connectorsVersion)
+
 	err = handleDockerCommand(settings, baseCommand, composeExtractedFolder)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -523,5 +526,45 @@ func main() {
 		sh.ShutdownProcesses(state)
 		wg.Wait()
 		log.Info().Msg("All workers have stopped. Application has been gracefully shut down.")
+	}
+}
+
+func applyDockerVersionOverrides(settings types.C8RunSettings, camundaVersion string, connectorsVersion string) (string, string) {
+	if !settings.Docker {
+		return camundaVersion, connectorsVersion
+	}
+
+	if dockerCamunda := strings.TrimSpace(os.Getenv("CAMUNDA_DOCKER_VERSION")); dockerCamunda != "" {
+		camundaVersion = dockerCamunda
+	}
+
+	if dockerConnectors := strings.TrimSpace(os.Getenv("CONNECTORS_DOCKER_VERSION")); dockerConnectors != "" {
+		connectorsVersion = dockerConnectors
+	}
+
+	return camundaVersion, connectorsVersion
+}
+
+func propagateRuntimeVersions(elasticsearchVersion, camundaVersion, connectorsVersion string) {
+	if elasticsearchVersion != "" {
+		if err := os.Setenv("ELASTIC_VERSION", elasticsearchVersion); err != nil {
+			log.Error().Err(err).Msg("failed to update ELASTIC_VERSION environment variable")
+		}
+	}
+
+	if camundaVersion != "" {
+		if err := os.Setenv("CAMUNDA_VERSION", camundaVersion); err != nil {
+			log.Error().Err(err).Msg("failed to update CAMUNDA_VERSION environment variable")
+		}
+	}
+
+	if connectorsVersion == "" {
+		return
+	}
+
+	for _, key := range []string{"CONNECTORS_VERSION", "CAMUNDA_CONNECTORS_VERSION"} {
+		if err := os.Setenv(key, connectorsVersion); err != nil {
+			log.Error().Err(err).Str("key", key).Msg("failed to update connectors environment variable")
+		}
 	}
 }
