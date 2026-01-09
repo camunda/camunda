@@ -15,13 +15,12 @@ import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
 
 /**
- * Conditionally loads MCP configuration when {@code camunda.mcp.enabled=true}. This allows enabling
- * the Spring AI MCP server without relying on Spring profiles.
+ * Conditionally loads MCP configuration when {@code camunda.mcp.enabled=true}.
  *
  * <p>When enabled, this initializer loads {@code mcp/mcp-gateway.yaml} with higher priority than
  * {@code application.properties} to override the disabled defaults.
@@ -32,8 +31,6 @@ public class McpGatewayInitializer
   private static final Logger LOG = LoggerFactory.getLogger(McpGatewayInitializer.class);
 
   private static final String MCP_ENABLED_PROPERTY = "camunda.mcp.enabled";
-  private static final String SPRING_AI_MCP_ENABLED_PROPERTY = "spring.ai.mcp.server.enabled";
-
   private static final String MCP_CONFIG_FILE = "mcp/mcp-gateway.yaml";
 
   @Override
@@ -55,47 +52,17 @@ public class McpGatewayInitializer
       final ClassPathResource resource = new ClassPathResource(MCP_CONFIG_FILE);
       final List<PropertySource<?>> sources = loader.load("mcpConfig", resource);
 
-      addBeforeApplicationPropertiesSource(env, sources);
+      // add after system environment to ensure system properties and env vars can override values,
+      // but still override the disabled defaults from application.properties
+      for (final PropertySource<?> source : sources) {
+        env.getPropertySources()
+            .addAfter(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, source);
+      }
 
       LOG.debug("Successfully loaded MCP configuration from {}", MCP_CONFIG_FILE);
     } catch (final IOException e) {
       throw new IllegalStateException(
           "Failed to load MCP configuration from " + MCP_CONFIG_FILE, e);
     }
-  }
-
-  private void addBeforeApplicationPropertiesSource(
-      final ConfigurableEnvironment env, final List<PropertySource<?>> sources) {
-    final var propertySources = env.getPropertySources();
-    final var applicationPropertiesSource =
-        findMcpDisabledApplicationPropertiesSource(propertySources);
-
-    for (final var source : sources) {
-      propertySources.addBefore(applicationPropertiesSource.getName(), source);
-    }
-  }
-
-  /**
-   * Returns the property source disabling the Spring AI MCP server defaults
-   * (application.properties). This is needed as we need to insert the MCP configuration with a
-   * higher priority than the source containing these defaults.
-   *
-   * <p>The check on the name is important as a {@code ConfigurationPropertySourcesPropertySource}
-   * may be present with a high proiority, wrapping the actual application.properties source.
-   */
-  private PropertySource<?> findMcpDisabledApplicationPropertiesSource(
-      final MutablePropertySources propertySources) {
-    return propertySources.stream()
-        .filter(
-            p ->
-                p.getName().contains("application.properties")
-                    && p.containsProperty(SPRING_AI_MCP_ENABLED_PROPERTY)
-                    && "false".equals(p.getProperty(SPRING_AI_MCP_ENABLED_PROPERTY)))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    "Could not find application.properties source initializing property %s=false"
-                        .formatted(SPRING_AI_MCP_ENABLED_PROPERTY)));
   }
 }
