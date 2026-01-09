@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Uses three column families:
  *
  * <ul>
- *   <li>JOB_METRICS: stores aggregated job metrics per worker/tenant/type combination
+ *   <li>JOB_METRICS: stores aggregated job metrics per tenant/type/worker combination
  *   <li>JOB_METRICS_STRING_ENCODING: string-to-integer dictionary for space optimization
  *   <li>JOB_METRICS_META: stores metadata and statistics
  * </ul>

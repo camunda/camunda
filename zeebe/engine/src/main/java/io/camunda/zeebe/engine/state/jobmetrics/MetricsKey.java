@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.state.jobmetrics;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
-import java.nio.ByteOrder;
+import io.camunda.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -23,8 +23,6 @@ public final class MetricsKey implements DbKey, DbValue {
 
   /** Fixed size: 3 integers = 12 bytes */
   public static final int TOTAL_SIZE_BYTES = 3 * Integer.BYTES;
-
-  private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
   private int jobTypeIndex;
   private int tenantIdIndex;
@@ -70,9 +68,9 @@ public final class MetricsKey implements DbKey, DbValue {
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    jobTypeIndex = buffer.getInt(offset, BYTE_ORDER);
-    tenantIdIndex = buffer.getInt(offset + Integer.BYTES, BYTE_ORDER);
-    workerNameIndex = buffer.getInt(offset + 2 * Integer.BYTES, BYTE_ORDER);
+    jobTypeIndex = buffer.getInt(offset, Protocol.ENDIANNESS);
+    tenantIdIndex = buffer.getInt(offset + Integer.BYTES, Protocol.ENDIANNESS);
+    workerNameIndex = buffer.getInt(offset + 2 * Integer.BYTES, Protocol.ENDIANNESS);
   }
 
   @Override
@@ -82,9 +80,9 @@ public final class MetricsKey implements DbKey, DbValue {
 
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
-    buffer.putInt(offset, jobTypeIndex, BYTE_ORDER);
-    buffer.putInt(offset + Integer.BYTES, tenantIdIndex, BYTE_ORDER);
-    buffer.putInt(offset + 2 * Integer.BYTES, workerNameIndex, BYTE_ORDER);
+    buffer.putInt(offset, jobTypeIndex, Protocol.ENDIANNESS);
+    buffer.putInt(offset + Integer.BYTES, tenantIdIndex, Protocol.ENDIANNESS);
+    buffer.putInt(offset + 2 * Integer.BYTES, workerNameIndex, Protocol.ENDIANNESS);
   }
 
   @Override

@@ -17,8 +17,7 @@ public final class StatusMetrics {
   private long lastUpdatedAt;
 
   public StatusMetrics() {
-    count = 0;
-    lastUpdatedAt = -1L;
+    reset();
   }
 
   public StatusMetrics(final int count, final long lastUpdatedAt) {

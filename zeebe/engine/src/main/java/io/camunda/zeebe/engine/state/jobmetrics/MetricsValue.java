@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.jobmetrics;
 
 import io.camunda.zeebe.db.DbValue;
-import java.nio.ByteOrder;
+import io.camunda.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -23,8 +23,6 @@ public final class MetricsValue implements DbValue {
   /** Fixed size: 3 StatusMetrics = 36 bytes */
   public static final int TOTAL_SIZE_BYTES =
       JobMetricsState.count() * StatusMetrics.TOTAL_SIZE_BYTES;
-
-  private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
   private final StatusMetrics[] metrics;
 
@@ -57,9 +55,9 @@ public final class MetricsValue implements DbValue {
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     int currentOffset = offset;
     for (final StatusMetrics metric : metrics) {
-      final int count = buffer.getInt(currentOffset, BYTE_ORDER);
+      final int count = buffer.getInt(currentOffset, Protocol.ENDIANNESS);
       currentOffset += Integer.BYTES;
-      final long lastUpdatedAt = buffer.getLong(currentOffset, BYTE_ORDER);
+      final long lastUpdatedAt = buffer.getLong(currentOffset, Protocol.ENDIANNESS);
       currentOffset += Long.BYTES;
       metric.setCount(count);
       metric.setLastUpdatedAt(lastUpdatedAt);
@@ -75,9 +73,9 @@ public final class MetricsValue implements DbValue {
   public void write(final MutableDirectBuffer buffer, final int offset) {
     int currentOffset = offset;
     for (final StatusMetrics metric : metrics) {
-      buffer.putInt(currentOffset, metric.getCount(), BYTE_ORDER);
+      buffer.putInt(currentOffset, metric.getCount(), Protocol.ENDIANNESS);
       currentOffset += Integer.BYTES;
-      buffer.putLong(currentOffset, metric.getLastUpdatedAt(), BYTE_ORDER);
+      buffer.putLong(currentOffset, metric.getLastUpdatedAt(), Protocol.ENDIANNESS);
       currentOffset += Long.BYTES;
     }
   }
