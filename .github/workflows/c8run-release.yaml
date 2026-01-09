@@ -17,7 +17,7 @@ on:
         required: true
         default: ""
       camundaAppsRelease:
-        description: "Target Camunda apps version (matches release page name, e.g., 8.7.1 or 8.8.0-alpha4)"
+        description: "Name of the Camunda apps GitHub release page (e.g., 8.7.1, 8.8.0-alpha4, etc.)"
         type: string
         required: true
         default: ""
@@ -116,18 +116,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
-
-      - name: Resolve runtime versions
-        run: |
-          release_name='${{ inputs.camundaAppsRelease }}'
-          branch='${{ inputs.branch }}'
-          if [[ "$branch" == "main" && "$release_name" == *alpha* ]]; then
-            echo "Overriding runtime versions to ${release_name}"
-            {
-              echo "CAMUNDA_VERSION=${release_name}"
-              echo "CONNECTORS_VERSION=${release_name}"
-            } >> "$GITHUB_ENV"
-          fi
 
       - name: Import Secrets
         id: secrets
