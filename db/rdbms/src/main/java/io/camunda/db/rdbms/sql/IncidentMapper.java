@@ -8,12 +8,12 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.IncidentDbQuery;
-import io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery;
 import io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByDefinitionDbQuery;
+import io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.search.entities.IncidentEntity;
-import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import java.util.List;
 
 public interface IncidentMapper
