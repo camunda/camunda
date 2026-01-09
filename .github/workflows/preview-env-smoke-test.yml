@@ -9,36 +9,78 @@ on:
   - cron: '0 6 * * 1'
   workflow_dispatch:
     inputs:
+      version:
+        description: 'Version(s) to test'
+        required: false
+        type: choice
+        options:
+        - all
+        - '8.9'
+        - '8.8'
+        default: all
       skip-teardown:
         description: |
-          Skip teardown (keep environment for debugging)
+          Skip teardown (e.g. keep deployed preview env for debugging)
         required: false
         type: boolean
         default: false
 
 jobs:
-  deploy:
-    name: Deploy Smoke Test Preview Environment
-    uses: ./.github/workflows/preview-env-build-and-deploy.yml
+  deploy-8-8:
+    name: Deploy 8.8 Preview Environment
+    if: contains(fromJSON('["all", "8.8", ""]'), inputs.version)
+    uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.8
     secrets: inherit
     with:
-      app-name: smoke-${{ github.run_number }}
+      app-name: smoke88-${{ github.run_number }}
+      ref: stable/8.8
       labels: |
         preview=smoke-test
         repo=camunda_camunda
+        version=8.8
       helm-extra-args: |
         --helm-set global.preview.ingress.internalAuthBypass.enabled=true
-  
+
+  deploy-8-9:
+    name: Deploy 8.9 Preview Environment
+    if: contains(fromJSON('["all", "8.9", ""]'), inputs.version)
+    uses: ./.github/workflows/preview-env-build-and-deploy.yml
+    secrets: inherit
+    with:
+      app-name: smoke89-${{ github.run_number }}
+      labels: |
+        preview=smoke-test
+        repo=camunda_camunda
+        version=8.9
+      helm-extra-args: |
+        --helm-set global.preview.ingress.internalAuthBypass.enabled=true
+
   test:
-    name: Run Smoke Tests
+    name: Run ${{ matrix.deployment.version }} Smoke Tests
     needs:
-    - deploy
+    - deploy-8-8
+    - deploy-8-9
+    # Run if at least one deploy succeeded
+    if: always() && (needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       # Required for Teleport authentication
       id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        deployment:
+        - version: 8.8
+          host: ${{ needs.deploy-8-8.outputs.host-name }}
+          run: ${{ needs.deploy-8-8.result == 'success' }}
+        - version: 8.9
+          host: ${{ needs.deploy-8-9.outputs.host-name }}
+          run: ${{ needs.deploy-8-9.result == 'success' }}
+        exclude:
+        - deployment:
+            run: false
     steps:
       - name: Install Teleport
         uses: teleport-actions/setup@v1
@@ -59,10 +101,9 @@ jobs:
           token: infra-ci-prod-github-action-preview-env-infra
 
       - name: Start Teleport TCP Tunnel
-        shell: bash
         env:
           TELEPORT_APP: camunda-ci-ingress-gateway-443
-          PREVIEW_HOST: ${{ needs.deploy.outputs.host-name }}
+          PREVIEW_HOST: ${{ matrix.deployment.host }}
         run: |
           # Start TCP proxy on port 443 (requires sudo for privileged port)
           # Use full path since sudo doesn't inherit PATH
@@ -122,8 +163,8 @@ jobs:
         working-directory: e2e-tests
         env:
           LOCAL_TEST: true
-          MINOR_VERSION: SM-8.9
-          PLAYWRIGHT_BASE_URL: https://${{ needs.deploy.outputs.host-name }}
+          MINOR_VERSION: SM-${{ matrix.deployment.version }}
+          PLAYWRIGHT_BASE_URL: https://${{ matrix.deployment.host }}
           PROJECT: chromium
           CI: true
           DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
@@ -134,45 +175,67 @@ jobs:
           npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
             --project=chromium \
             --reporter=list,html \
-            --retries=2 \
-            --trace=on
+            --retries=2
 
       - name: Upload Test Artifacts
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-report-${{ github.run_number }}
+          name: playwright-report-${{ matrix.deployment.version }}-${{ github.run_number }}
           path: |
             e2e-tests/html-report/
             e2e-tests/test-results/
           retention-days: 7
 
-  teardown-smoke-test:
-    name: Teardown Smoke Test Preview Environment
-    # Only run if deploy and test didn't fail and teardown is not skipped (via workflow_dispatch)
+  teardown-8-8:
+    name: Teardown 8.8 Preview Environment
     if: >
-      !failure() && !cancelled() && !inputs.skip-teardown
+      always() &&
+      needs.deploy-8-8.result == 'success' &&
+      needs.test.result == 'success' &&
+      !inputs.skip-teardown
     needs:
-    - deploy
+    - deploy-8-8
+    - test
+    uses: camunda/camunda/.github/workflows/preview-env-teardown.yml@stable/8.8
+    secrets: inherit
+    with:
+      app-name: smoke88-${{ github.run_number }}
+      ref: stable/8.8
+  teardown-8-9:
+    name: Teardown 8.9 Preview Environment
+    if: >
+      always() &&
+      needs.deploy-8-9.result == 'success' &&
+      needs.test.result == 'success' &&
+      !inputs.skip-teardown
+    needs:
+    - deploy-8-9
     - test
     uses: ./.github/workflows/preview-env-teardown.yml
     secrets: inherit
     with:
-      app-name: smoke-${{ github.run_number }}
+      app-name: smoke89-${{ github.run_number }}
 
   notify-failure:
     name: Notify on Failure
     # Notify on failure for scheduled runs only
     if: >
       always() &&
-      (needs.deploy.result == 'failure' || needs.test.result == 'failure') &&
-      github.event_name == 'schedule'
+      github.event_name == 'schedule' &&
+      (
+        needs.deploy-8-8.result == 'failure' ||
+        needs.deploy-8-9.result == 'failure' ||
+        needs.test.result == 'failure'
+      )
     needs:
-    - deploy
+    - deploy-8-8
+    - deploy-8-9
     - test
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      actions: read
     steps:
       - name: Import secrets
         id: secrets
@@ -184,6 +247,29 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/camunda SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+
+      - name: Get failed jobs
+        id: failed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          # shellcheck disable=SC2016
+          {
+            echo "jobs<<EOF"
+            gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --jq '
+              .jobs
+              | map(select(.conclusion == "failure"))
+              | map(
+                  (.name | capture("(?<v>8\\.[0-9]+)").v) as $ver |
+                  (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
+                  "• *\($ver)* <\(.html_url)|\($type) failed>"
+                )
+              | join("\n")
+            '
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Notify Slack on Failure
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
@@ -197,7 +283,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: *Preview Environment Smoke Test* failed!\n"
+                    "text": ":alarm: *Preview Environment Smoke Test* failed:\n${{ steps.failed.outputs.jobs }}"
                   }
                 },
                 {
