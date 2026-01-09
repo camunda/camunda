@@ -297,6 +297,69 @@ class RepositoryNodeIdProviderIT {
         .isEqualTo(lease.lease().nodeInstance().nextVersion());
   }
 
+  @Test
+  public void shouldReturnTrueWhenPreviousNodeGracefullyShutdown() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+    final var lease = nodeIdProvider.getCurrentLease();
+
+    // when - gracefully shutdown first provider
+    assertThatNoException().isThrownBy(nodeIdProvider::close);
+
+    // verify the lease was gracefully released
+    final var releasedLease = repository.getLease(lease.lease().nodeInstance().id());
+    assertThat(releasedLease).isInstanceOf(StoredLease.Uninitialized.class);
+
+    // when - second provider acquires the gracefully released lease
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+
+    // then
+    assertThat(nodeIdProvider.previousNodeGracefullyShutdown())
+        .succeedsWithin(Duration.ofSeconds(30))
+        .isEqualTo(true);
+  }
+
+  @Test
+  public void shouldReturnFalseWhenPreviousLeaseExpired() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+
+    // Acquire a lease that will expire
+    final var lease = repository.getLease(0);
+    final var expiredLeaseTimestamp = clock.millis();
+    final var expiredLease =
+        repository.acquire(
+            new Lease(
+                taskId + "-old",
+                expiredLeaseTimestamp + EXPIRY_DURATION.toMillis(),
+                new NodeInstance(0, lease.version().next()),
+                VersionMappings.empty()),
+            lease.eTag());
+    assertThat(expiredLease).isNotNull().isInstanceOf(StoredLease.Initialized.class);
+
+    // when - advance clock to expire the lease
+    clock.advance(EXPIRY_DURATION.plusSeconds(1));
+
+    // verify the lease is expired (still initialized but not valid)
+    final var storedLease = repository.getLease(0);
+    assertThat(storedLease).isInstanceOf(StoredLease.Initialized.class);
+    assertThat(storedLease.isStillValid(clock.millis())).isFalse();
+
+    // when - new provider acquires the expired lease
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+
+    // then
+    assertThat(nodeIdProvider.previousNodeGracefullyShutdown())
+        .succeedsWithin(Duration.ofSeconds(1))
+        .isEqualTo(false);
+  }
+
   private void assertLeaseIsReady() {
     assertLeaseIs(true);
   }

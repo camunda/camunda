@@ -44,7 +44,11 @@ public final class BrokerDataDirectoryCopier {
 
   private static final String RUNTIME_DIRECTORY = "runtime";
 
-  public void copy(final Path source, final Path target, final String markerFileName)
+  public void copy(
+      final Path source,
+      final Path target,
+      final String markerFileName,
+      final boolean gracefulShutdown)
       throws IOException {
     Files.walkFileTree(
         source,
@@ -71,7 +75,7 @@ public final class BrokerDataDirectoryCopier {
             final var targetFile = target.resolve(relative);
             Files.createDirectories(targetFile.getParent());
 
-            if (isSnapshotFile(relative)) {
+            if (gracefulShutdown || isSnapshotFile(relative)) {
               hardLinkOrCopy(file, targetFile);
             } else {
               Files.copy(file, targetFile, StandardCopyOption.COPY_ATTRIBUTES);

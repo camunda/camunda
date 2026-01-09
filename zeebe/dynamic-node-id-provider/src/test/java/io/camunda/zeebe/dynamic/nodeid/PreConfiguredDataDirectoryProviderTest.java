@@ -25,7 +25,7 @@ class PreConfiguredDataDirectoryProviderTest {
     final DataDirectoryProvider initializer = new ConfiguredDataDirectoryProvider();
 
     // when
-    final CompletableFuture<Path> result = initializer.initialize(dataDirectory);
+    final CompletableFuture<Path> result = initializer.initialize(dataDirectory, true);
 
     // then
     assertThat(result).isCompleted();

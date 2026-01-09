@@ -32,7 +32,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
 
     // when
-    final CompletableFuture<Path> result = initializer.initialize(baseDirectory);
+    final CompletableFuture<Path> result = initializer.initialize(baseDirectory, false);
 
     // then
     assertThat(result).isCompleted();
@@ -49,7 +49,7 @@ class NodeIdBasedDataDirectoryProviderTest {
     final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
 
     // when
-    final CompletableFuture<Path> result = initializer.initialize(baseDirectory);
+    final CompletableFuture<Path> result = initializer.initialize(baseDirectory, false);
 
     // then
     assertThat(result).isCompletedExceptionally();

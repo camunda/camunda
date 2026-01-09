@@ -17,7 +17,8 @@ public interface DataDirectoryCopier {
    *
    * @param markerFileName a marker file name that should not be copied
    */
-  void copy(Path source, Path target, String markerFileName) throws IOException;
+  void copy(Path source, Path target, String markerFileName, boolean gracefulShutdown)
+      throws IOException;
 
   void validate(final Path source, final Path target, final String markerFileName)
       throws IOException;

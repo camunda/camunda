@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class VersionedNodeIdBasedDataDirectoryProviderTest {
 
@@ -46,7 +48,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
         new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
-    final var result = initializer.initialize(rootDirectory);
+    final var result = initializer.initialize(rootDirectory, true);
 
     // then
     assertThat(result).isCompleted();
@@ -62,8 +64,9 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(initInfo.get("initializedFrom").isNull()).isTrue();
   }
 
-  @Test
-  void shouldCopyFromPreviousInitializedVersion() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldCopyFromPreviousInitializedVersion(final boolean gracefulShutdown) throws Exception {
     // given
     final var nodeId = 2;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(4L));
@@ -86,7 +89,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
         new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
-    final var newDirectory = initializer.initialize(rootDirectory).join();
+    final var newDirectory = initializer.initialize(rootDirectory, gracefulShutdown).join();
 
     // then
     assertThat(newDirectory).isEqualTo(rootDirectory.resolve("node-2").resolve("v4"));
@@ -104,14 +107,16 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
         .isEqualTo(rootDirectory.resolve("node-2").resolve("v4"));
     assertThat(copier.invocations().getFirst().markerFileName())
         .isEqualTo(DIRECTORY_INITIALIZED_FILE);
+    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(newDirectory);
     assertThat(initInfo.get("initialized")).isNotNull();
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(3L);
   }
 
-  @Test
-  void shouldCopyFromLatestValidPreviousVersion() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldCopyFromLatestValidPreviousVersion(final boolean gracefulShutdown) throws Exception {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(3L));
@@ -127,7 +132,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
         new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
-    final var result = initializer.initialize(rootDirectory).join();
+    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
 
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v3"));
@@ -137,13 +142,16 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.invocations()).hasSize(1);
     assertThat(copier.invocations().getFirst().source()).isEqualTo(nodeDirectory.resolve("v2"));
     assertThat(copier.invocations().getFirst().target()).isEqualTo(nodeDirectory.resolve("v3"));
+    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(2L);
   }
 
-  @Test
-  void shouldSkipInvalidPreviousVersionsAndUseLatestValid() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldSkipInvalidPreviousVersionsAndUseLatestValid(final boolean gracefulShutdown)
+      throws Exception {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(4L));
@@ -160,12 +168,12 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     createValidVersionDirectory(nodeDirectory, 3L, "file3.txt", "content3");
 
+    final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
+        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
-    final var result = initializer.initialize(rootDirectory).join();
+    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
 
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v4"));
@@ -174,12 +182,15 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(Files.readString(result.resolve("file3.txt"))).isEqualTo("content3");
     assertThat(result.resolve("file2.txt")).doesNotExist();
 
+    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(3L);
   }
 
-  @Test
-  void shouldThrowExceptionIfAlreadyInitialized() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldThrowExceptionIfAlreadyInitialized(final boolean gracefulShutdown) throws Exception {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(1L));
@@ -196,7 +207,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
             OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
 
     // when
-    final var result = initializer.initialize(rootDirectory);
+    final var result = initializer.initialize(rootDirectory, gracefulShutdown);
 
     // then
     assertThat(result)
@@ -206,8 +217,9 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
             "Expected directory to not be initialized, but found valid init file in directory");
   }
 
-  @Test
-  void shouldCopyDirectoryStructureRecursively() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldCopyDirectoryStructureRecursively(final boolean gracefulShutdown) throws Exception {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(2L));
@@ -221,12 +233,12 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     Files.writeString(previousVersion.resolve("subdir1/subdir2/file2.txt"), "file2 content");
     writeInitializationFile(previousVersion, null);
 
+    final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
+        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
-    final var result = initializer.initialize(rootDirectory).join();
+    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
 
     // then
     assertThat(result.resolve("root-file.txt")).exists();
@@ -238,12 +250,15 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(Files.readString(result.resolve("subdir1/subdir2/file2.txt")))
         .isEqualTo("file2 content");
 
+    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(1L);
   }
 
-  @Test
-  void shouldHandleVersionZeroAsPrevious() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldHandleVersionZeroAsPrevious(final boolean gracefulShutdown) throws Exception {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(1L));
@@ -253,24 +268,28 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     createValidVersionDirectory(nodeDirectory, 0L, "file0.txt", "version 0 content");
 
+    final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
+        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
-    final var result = initializer.initialize(rootDirectory).join();
+    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
 
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v1"));
     assertThat(result.resolve("file0.txt")).exists();
     assertThat(Files.readString(result.resolve("file0.txt"))).isEqualTo("version 0 content");
 
+    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(0L);
   }
 
-  @Test
-  void shouldDeleteAndReinitializeWhenTargetExistsButNotInitialized() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldDeleteAndReinitializeWhenTargetExistsButNotInitialized(final boolean gracefulShutdown)
+      throws Exception {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(2L));
@@ -285,17 +304,19 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     Files.createDirectories(targetDirectory);
     Files.writeString(targetDirectory.resolve("garbage.txt"), "garbage");
 
+    final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
+        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
 
     // when
-    final var result = initializer.initialize(rootDirectory).join();
+    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
 
     // then
     assertThat(result).isEqualTo(targetDirectory);
     assertThat(result.resolve("garbage.txt")).doesNotExist();
     assertThat(result.resolve("file1.txt")).exists();
+
+    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(1L);
@@ -310,7 +331,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
             OBJECT_MAPPER, null, new RecordingDataDirectoryCopier());
 
     // when
-    final var result = initializer.initialize(baseDirectory);
+    final var result = initializer.initialize(baseDirectory, true);
 
     // then
     assertThat(result).isCompletedExceptionally();
@@ -353,6 +374,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
   private static final class RecordingDataDirectoryCopier implements DataDirectoryCopier {
 
+    volatile boolean gracefulShutdown = false;
     private final List<Invocation> invocations = new ArrayList<>();
 
     List<Invocation> invocations() {
@@ -360,8 +382,13 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     }
 
     @Override
-    public void copy(final Path source, final Path target, final String markerFileName)
+    public void copy(
+        final Path source,
+        final Path target,
+        final String markerFileName,
+        final boolean gracefulShutdown)
         throws IOException {
+      this.gracefulShutdown = gracefulShutdown;
       invocations.add(new Invocation(source, target, markerFileName));
 
       Files.walkFileTree(

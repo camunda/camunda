@@ -29,6 +29,8 @@ public interface NodeIdProvider extends AutoCloseable {
    */
   CompletableFuture<Boolean> isValid();
 
+  CompletableFuture<Boolean> previousNodeGracefullyShutdown();
+
   /**
    * Sets the current known cluster members.
    *
@@ -79,6 +81,7 @@ public interface NodeIdProvider extends AutoCloseable {
 
       @Override
       public CompletableFuture<Boolean> awaitReadiness() {
+      public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
         return CompletableFuture.completedFuture(true);
       }
     };

@@ -48,7 +48,8 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
   }
 
   @Override
-  public CompletableFuture<Path> initialize(final Path rootDataDirectory) {
+  public CompletableFuture<Path> initialize(
+      final Path rootDataDirectory, final boolean gracefulShutdown) {
     if (nodeInstance == null) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("Node instance is not available"));
@@ -87,7 +88,8 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
             dataDirectory,
             previousDataDirectory);
 
-        copier.copy(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
+        copier.copy(
+            previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE, gracefulShutdown);
 
         copier.validate(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
         writeDirectoryInitializedFile(dataDirectory, previousVersion.get());

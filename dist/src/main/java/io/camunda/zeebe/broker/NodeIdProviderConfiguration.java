@@ -138,7 +138,10 @@ public class NodeIdProviderConfiguration {
 
     final DataCfg data = brokerBasedConfiguration.config().getData();
     final var directory = Path.of(data.getDirectory());
-    final var configuredDirectory = initializer.initialize(directory).join();
+    final var configuredDirectory =
+        initializer
+            .initialize(directory, nodeIdProvider.previousNodeGracefullyShutdown().join())
+            .join();
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;

@@ -17,7 +17,8 @@ import java.util.concurrent.CompletableFuture;
 public class ConfiguredDataDirectoryProvider implements DataDirectoryProvider {
 
   @Override
-  public CompletableFuture<Path> initialize(final Path baseDataDirectory) {
+  public CompletableFuture<Path> initialize(
+      final Path baseDataDirectory, final boolean gracefulShutdown) {
     return CompletableFuture.completedFuture(baseDataDirectory);
   }
 }
