@@ -29,11 +29,7 @@ final class NameFilter {
     }
 
     // Exclusion: if any rules exist, name must not match any
-    if (!excludePredicates.isEmpty() && excludePredicates.stream().anyMatch(p -> p.test(name))) {
-      return false;
-    }
-
-    return true;
+    return excludePredicates.isEmpty() || excludePredicates.stream().noneMatch(p -> p.test(name));
   }
 
   private static List<Predicate<String>> toPredicates(final List<NameRule> rules) {
