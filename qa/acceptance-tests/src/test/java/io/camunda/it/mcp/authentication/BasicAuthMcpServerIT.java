@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 
-// TODO test with authorizations enabled
 @MultiDbTest
 public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
 

@@ -45,6 +45,4 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
     final ListToolsResult listToolsResult = mcpClient.listTools();
     assertThat(listToolsResult.tools()).isNotEmpty();
   }
-
-  // TODO add smoke tests for primary, secondary storage operations + authorizations
 }
