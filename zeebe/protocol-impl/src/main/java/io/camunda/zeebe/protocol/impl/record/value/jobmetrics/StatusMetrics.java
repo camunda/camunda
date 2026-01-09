@@ -10,9 +10,9 @@ package io.camunda.zeebe.protocol.impl.record.value.jobmetrics;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
 
-public final class StatusMetrics extends ObjectValue implements StatusMetricValue {
+public final class StatusMetrics extends ObjectValue implements StatusMetricsValue {
 
   private final IntegerProperty countProperty = new IntegerProperty("count", -1);
   private final LongProperty lastUpdatedAtProperty = new LongProperty("lastUpdatedAt", -1L);
@@ -43,8 +43,8 @@ public final class StatusMetrics extends ObjectValue implements StatusMetricValu
     return this;
   }
 
-  public void wrap(final StatusMetricValue statusMetricValue) {
-    setCount(statusMetricValue.getCount());
-    setLastUpdatedAt(statusMetricValue.getLastUpdatedAt());
+  public void wrap(final StatusMetricsValue statusMetricsValue) {
+    setCount(statusMetricsValue.getCount());
+    setLastUpdatedAt(statusMetricsValue.getLastUpdatedAt());
   }
 }

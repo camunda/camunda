@@ -84,7 +84,7 @@ public interface JobMetricsBatchRecordValue extends RecordValue {
      *     this job type, tenant, and worker combination The index in the list corresponds to the
      *     job status ordinal value.
      */
-    List<StatusMetricValue> getStatusMetrics();
+    List<StatusMetricsValue> getStatusMetrics();
   }
 
   /**
@@ -92,8 +92,8 @@ public interface JobMetricsBatchRecordValue extends RecordValue {
    * events for a specific job status and the timestamp when this metric was last updated.
    */
   @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableStatusMetricValue.Builder.class)
-  interface StatusMetricValue {
+  @ImmutableProtocol(builder = ImmutableStatusMetricsValue.Builder.class)
+  interface StatusMetricsValue {
 
     /**
      * @return the count of job events for this status (e.g., ACTIVATED, COMPLETED, FAILED,

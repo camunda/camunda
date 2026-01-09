@@ -11,7 +11,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
-import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -59,7 +59,7 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
   }
 
   @Override
-  public List<StatusMetricValue> getStatusMetrics() {
+  public List<StatusMetricsValue> getStatusMetrics() {
     return statusMetricsProperty.stream().collect(Collectors.toList());
   }
 
@@ -76,9 +76,10 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
     return this;
   }
 
-  public JobMetricsValue setStatusMetrics(final List<StatusMetricValue> statusMetrics) {
+  public JobMetricsValue setStatusMetrics(final List<StatusMetricsValue> statusMetrics) {
     statusMetricsProperty.reset();
-    statusMetrics.forEach(statusMetricValue -> statusMetricsProperty.add().wrap(statusMetricValue));
+    statusMetrics.forEach(
+        statusMetricsValue -> statusMetricsProperty.add().wrap(statusMetricsValue));
     return this;
   }
 }
