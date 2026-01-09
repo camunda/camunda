@@ -31,6 +31,8 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
       new StringValue("mappingInstructions");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty targetProcessDefinitionKeyProperty =
@@ -44,14 +46,17 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
 
   public ProcessInstanceMigrationRecord() {
-    super(5);
+    super(6);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(targetProcessDefinitionKeyProperty)
         .declareProperty(mappingInstructionsProperty)
         .declareProperty(tenantIdProperty)
-        .declareProperty(rootProcessInstanceKeyProperty);
+        .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(processDefinitionKeyProperty);
   }
 
   @Override
@@ -61,6 +66,16 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
 
   public ProcessInstanceMigrationRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public long getProcessDefinitionKey() {
+    return processDefinitionKeyProperty.getValue();
+  }
+
+  public ProcessInstanceMigrationRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
   }
 
