@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIndexFile;
 import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
+import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -166,6 +167,23 @@ public final class FilesystemBackupStore implements BackupStore {
           return BackupStatusCode.FAILED;
         },
         executor);
+  }
+
+  @Override
+  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
+    throw new UnsupportedOperationException("Range markers are not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Void> storeRangeMarker(
+      final int partitionId, final BackupRangeMarker marker) {
+    throw new UnsupportedOperationException("Range markers are not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarker(
+      final int partitionId, final BackupRangeMarker marker) {
+    throw new UnsupportedOperationException("Range markers are not yet supported");
   }
 
   @Override
