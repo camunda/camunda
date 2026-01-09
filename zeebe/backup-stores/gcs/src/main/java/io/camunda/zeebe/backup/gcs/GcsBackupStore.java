@@ -15,8 +15,6 @@ import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
-import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -53,7 +51,6 @@ public final class GcsBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
-  private final GcsIndexManager indexManager;
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
@@ -69,7 +66,6 @@ public final class GcsBackupStore implements BackupStore {
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
     fileSetManager = new FileSetManager(client, bucketInfo, basePath);
-    indexManager = new GcsIndexManager(client, bucketInfo, basePath);
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
@@ -203,25 +199,6 @@ public final class GcsBackupStore implements BackupStore {
           client.delete(blobInfo.getBlobId());
         },
         executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final GcsBackupIndexFile gcsBackupIndexFile)) {
-      throw new IllegalArgumentException(
-          "Expected index file of type %s but got %s: %s"
-              .formatted(
-                  GcsBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
-    }
-    return CompletableFuture.runAsync(() -> indexManager.upload(gcsBackupIndexFile), executor);
-  }
-
-  @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
-      final BackupIndexIdentifier id, final Path targetPath) {
-    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
   }
 
   @Override

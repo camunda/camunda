@@ -32,16 +32,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.agrona</groupId>
-      <artifactId>agrona</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>test</scope>
@@ -62,12 +52,6 @@
     <dependency>
       <groupId>net.jqwik</groupId>
       <artifactId>jqwik</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
       <scope>test</scope>
     </dependency>
 

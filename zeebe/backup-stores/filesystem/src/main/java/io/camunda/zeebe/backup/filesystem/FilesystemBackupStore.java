@@ -10,8 +10,6 @@ package io.camunda.zeebe.backup.filesystem;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
-import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -59,7 +57,6 @@ public final class FilesystemBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
-  private final FilesystemIndexManager indexManager;
   private final Path rangesDir;
 
   FilesystemBackupStore(final FilesystemBackupConfig config) {
@@ -73,12 +70,10 @@ public final class FilesystemBackupStore implements BackupStore {
 
     final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
     final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
-    final var indexDir = Path.of(config.basePath()).resolve("index");
     rangesDir = Path.of(config.basePath()).resolve(RANGES_PATH);
     try {
       FileUtil.ensureDirectoryExists(contentsDir);
       FileUtil.ensureDirectoryExists(manifestsDir);
-      FileUtil.ensureDirectoryExists(indexDir);
       FileUtil.ensureDirectoryExists(rangesDir);
     } catch (final IOException e) {
       throw new UncheckedIOException(
@@ -88,7 +83,6 @@ public final class FilesystemBackupStore implements BackupStore {
 
     fileSetManager = new FileSetManager(contentsDir);
     manifestManager = new ManifestManager(manifestsDir);
-    indexManager = new FilesystemIndexManager(indexDir);
   }
 
   @Override
@@ -234,25 +228,6 @@ public final class FilesystemBackupStore implements BackupStore {
           }
         },
         executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final FilesystemBackupIndexFile filesystemIndexFile)) {
-      throw new IllegalArgumentException(
-          "Expected index file of type %s but got %s: %s"
-              .formatted(
-                  FilesystemBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
-    }
-    return CompletableFuture.runAsync(() -> indexManager.upload(filesystemIndexFile), executor);
-  }
-
-  @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
-      final BackupIndexIdentifier id, final Path targetPath) {
-    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
   }
 
   @Override
