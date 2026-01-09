@@ -129,7 +129,9 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
         ElasticsearchUtil.termsQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
 
     if (filter == null) {
-      searchRequestBuilder.query(joinRelationQ);
+      final var finalQuery =
+          isTenantAware ? tenantHelper.makeQueryTenantAware(joinRelationQ) : joinRelationQ;
+      searchRequestBuilder.query(finalQuery);
       return;
     }
 

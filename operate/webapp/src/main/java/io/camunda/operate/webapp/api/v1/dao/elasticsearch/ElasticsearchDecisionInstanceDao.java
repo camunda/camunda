@@ -87,7 +87,13 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       final Builder searchRequestBuilder,
       final boolean isTenantAware) {
     final DecisionInstance filter = query.getFilter();
+
     if (filter == null) {
+      final var finalQuery =
+          isTenantAware
+              ? tenantHelper.makeQueryTenantAware(ElasticsearchUtil.matchAllQuery())
+              : ElasticsearchUtil.matchAllQuery();
+      searchRequestBuilder.query(finalQuery);
       return;
     }
 

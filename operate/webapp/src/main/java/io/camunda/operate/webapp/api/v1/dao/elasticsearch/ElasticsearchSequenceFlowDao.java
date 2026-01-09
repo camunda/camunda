@@ -35,7 +35,13 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
       final Builder searchRequestBuilder,
       final boolean isTenantAware) {
     final var filter = query.getFilter();
+
     if (filter == null) {
+      final var finalQuery =
+          isTenantAware
+              ? tenantHelper.makeQueryTenantAware(ElasticsearchUtil.matchAllQuery())
+              : ElasticsearchUtil.matchAllQuery();
+      searchRequestBuilder.query(finalQuery);
       return;
     }
 

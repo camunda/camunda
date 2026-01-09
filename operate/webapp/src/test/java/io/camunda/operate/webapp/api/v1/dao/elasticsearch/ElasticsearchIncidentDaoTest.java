@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -38,6 +39,7 @@ public class ElasticsearchIncidentDaoTest {
 
   @Mock private OperateDateTimeFormatter mockDateTimeFormatter;
   @InjectMocks private ElasticsearchIncidentDao underTest;
+  @Mock private ElasticsearchTenantHelper tenantHelper;
 
   @Captor
   private ArgumentCaptor<co.elastic.clients.elasticsearch._types.query_dsl.Query> queryCaptor;

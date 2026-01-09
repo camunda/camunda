@@ -42,7 +42,13 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       final Builder searchRequestBuilder,
       final boolean isTenantAware) {
     final FlowNodeInstance filter = query.getFilter();
+
     if (filter == null) {
+      final var finalQuery =
+          isTenantAware
+              ? tenantHelper.makeQueryTenantAware(ElasticsearchUtil.matchAllQuery())
+              : ElasticsearchUtil.matchAllQuery();
+      searchRequestBuilder.query(finalQuery);
       return;
     }
 

@@ -103,7 +103,13 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
       final SearchRequest.Builder searchRequestBuilder,
       final boolean isTenantAware) {
     final DecisionDefinition filter = query.getFilter();
+
     if (filter == null) {
+      final var finalQuery =
+          isTenantAware
+              ? tenantHelper.makeQueryTenantAware(ElasticsearchUtil.matchAllQuery())
+              : ElasticsearchUtil.matchAllQuery();
+      searchRequestBuilder.query(finalQuery);
       return;
     }
 
