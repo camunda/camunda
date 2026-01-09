@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.mcp.mapper;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -94,22 +94,10 @@ public class CallToolResultMapper {
   }
 
   public static CallToolResult mapErrorToResult(final Throwable error) {
-    return mapProblemToResult(McpErrorMapper.mapErrorToProblem(error));
+    return mapProblemToResult(GatewayErrorMapper.mapErrorToProblem(error));
   }
 
   public static CallToolResult mapProblemToResult(final ProblemDetail problemDetail) {
     return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
-  }
-
-  public static ProblemDetail mapViolationsToProblem(final List<String> violations) {
-    if (violations.isEmpty()) {
-      return ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-    }
-    String problems = String.join(". ", violations);
-    if (!problems.endsWith(".")) {
-      problems = problems + ".";
-    }
-    return ProblemDetail.forStatusAndDetail(
-        HttpStatus.BAD_REQUEST, "Validation errors: " + violations);
   }
 }

@@ -9,14 +9,15 @@ package io.camunda.zeebe.gateway.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions;
 import jakarta.validation.constraints.Positive;
-import java.time.OffsetDateTime;
 
-public record IncidentSearchFilter(
+public record McpIncidentSearchFilter(
     @JsonProperty @JsonPropertyDescription("The process definition ID associated to the incident.")
         String processDefinitionId,
-    @JsonProperty @JsonPropertyDescription("Incident error type.") IncidentErrorType errorType,
+    @JsonProperty @JsonPropertyDescription("Incident error type.") IncidentErrorTypeEnum errorType,
     @JsonProperty
         @JsonPropertyDescription(
             "The element ID associated to the incident - the BPMN element ID in the process.")
@@ -25,13 +26,13 @@ public record IncidentSearchFilter(
         @JsonPropertyDescription(
             "Date of incident creation - filter from this time (inclusive). "
                 + ToolDescriptions.DATE_TIME_FORMAT)
-        OffsetDateTime creationTimeFrom,
+        String creationTimeFrom,
     @JsonProperty
         @JsonPropertyDescription(
             "Date of incident creation - filter before this time (exclusive). "
                 + ToolDescriptions.DATE_TIME_FORMAT)
-        OffsetDateTime creationTimeTo,
-    @JsonProperty @JsonPropertyDescription("State of the incident.") IncidentState state,
+        String creationTimeTo,
+    @JsonProperty @JsonPropertyDescription("State of the incident.") IncidentStateEnum state,
     @JsonProperty
         @JsonPropertyDescription("The process definition key associated to the incident.")
         @Positive

@@ -10,10 +10,13 @@ package io.camunda.zeebe.gateway.mcp.tool.incident;
 import static io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.zeebe.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 
+import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.IncidentSearchQuery;
+import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.IncidentEntity;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
@@ -22,13 +25,9 @@ import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.zeebe.gateway.mcp.mapper.McpErrorMapper;
-import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryFilterMapper;
-import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQueryPageMapper;
-import io.camunda.zeebe.gateway.mcp.mapper.search.SearchQuerySortRequestMapper;
-import io.camunda.zeebe.gateway.mcp.model.IncidentSearchFilter;
-import io.camunda.zeebe.gateway.mcp.model.IncidentSearchQuerySortRequest;
-import io.camunda.zeebe.gateway.mcp.model.SearchQueryPageRequest;
+import io.camunda.zeebe.gateway.mcp.mapper.search.McpSearchQueryMapper;
+import io.camunda.zeebe.gateway.mcp.model.McpIncidentSearchFilter;
+import io.camunda.zeebe.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -67,30 +66,28 @@ public class IncidentTools {
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
       @McpToolParam(description = "Filter search by the given fields", required = false) @Valid
-          final IncidentSearchFilter filter,
+          final McpIncidentSearchFilter filter,
       @McpToolParam(description = "Sort criteria", required = false)
           final List<@Valid IncidentSearchQuerySortRequest> sort,
       @McpToolParam(description = "Pagination criteria", required = false) @Valid
-          final SearchQueryPageRequest page) {
+          final McpSearchQueryPageRequest page) {
     try {
-      final var sortRequest = SearchQuerySortRequestMapper.toIncidentSearchSort(sort);
-      if (sortRequest.isLeft()) {
-        return CallToolResultMapper.mapProblemToResult(
-            CallToolResultMapper.mapViolationsToProblem(sortRequest.getLeft()));
+      final var incidentSearchQuery =
+          SearchQueryRequestMapper.toIncidentQuery(
+              new IncidentSearchQuery()
+                  .filter(McpSearchQueryMapper.toIncidentFilter(filter))
+                  .page(McpSearchQueryMapper.toPageRequest(page))
+                  .sort(McpSearchQueryMapper.toSortRequest(sort)));
+
+      if (incidentSearchQuery.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(incidentSearchQuery.getLeft());
       }
 
-      final var result =
+      return CallToolResultMapper.from(
           SearchQueryResponseMapper.toIncidentSearchQueryResponse(
               incidentServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(
-                      SearchQueryBuilders.incidentSearchQuery()
-                          .filter(SearchQueryFilterMapper.toIncidentFilter(filter))
-                          .page(SearchQueryPageMapper.toSearchQueryPage(page))
-                          .sort(sortRequest.get())
-                          .build()));
-
-      return CallToolResultMapper.from(result);
+                  .search(incidentSearchQuery.get())));
     } catch (final Exception e) {
       return mapErrorToResult(e);
     }
@@ -125,7 +122,7 @@ public class IncidentTools {
           incidentServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .resolveIncident(incidentKey, null),
-          r -> "RESOLVED",
+          r -> "Incident with key %s resolved.".formatted(incidentKey),
           error ->
               isNoJobRetriesLeft(error)
                   ? resolveJobIncident(incidentKey)
@@ -136,7 +133,7 @@ public class IncidentTools {
   }
 
   private static boolean isNoJobRetriesLeft(final Throwable error) {
-    return McpErrorMapper.unwrapError(error) instanceof final ServiceException se
+    return GatewayErrorMapper.unwrapError(error) instanceof final ServiceException se
         && Status.INVALID_STATE.equals(se.getStatus())
         && se.getMessage().contains("no retries left");
   }

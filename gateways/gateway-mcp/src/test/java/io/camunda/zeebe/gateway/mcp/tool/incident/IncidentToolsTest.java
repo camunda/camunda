@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
@@ -112,8 +114,10 @@ class IncidentToolsTest extends ToolsTest {
     assertThat(result.structuredContent()).isNotNull();
 
     final var incident =
-        objectMapper.convertValue(result.structuredContent(), IncidentEntity.class);
-    assertThat(incident).usingRecursiveComparison().isEqualTo(INCIDENT_ENTITY);
+        objectMapper.convertValue(result.structuredContent(), IncidentResult.class);
+    assertThat(incident)
+        .usingRecursiveComparison()
+        .isEqualTo(SearchQueryResponseMapper.toIncident(INCIDENT_ENTITY));
 
     verify(incidentServices).getByKey(5L);
   }
@@ -266,7 +270,9 @@ class IncidentToolsTest extends ToolsTest {
         .hasSize(1)
         .first()
         .isInstanceOfSatisfying(
-            TextContent.class, textContent -> assertThat(textContent.text()).isEqualTo("RESOLVED"));
+            TextContent.class,
+            textContent ->
+                assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
     verify(incidentServices).resolveIncident(5L, null);
   }
