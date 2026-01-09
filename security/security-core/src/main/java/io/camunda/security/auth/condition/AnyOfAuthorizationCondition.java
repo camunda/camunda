@@ -27,4 +27,15 @@ public record AnyOfAuthorizationCondition(List<Authorization<?>> authorizations)
     }
     authorizations = List.copyOf(authorizations);
   }
+
+  public <T> List<Authorization<?>> applicableAuthorizations(final T document) {
+    return authorizations().stream()
+        .filter(
+            auth -> {
+              @SuppressWarnings("unchecked")
+              final Authorization<T> typedAuth = (Authorization<T>) auth;
+              return typedAuth.appliesTo(document);
+            })
+        .toList();
+  }
 }

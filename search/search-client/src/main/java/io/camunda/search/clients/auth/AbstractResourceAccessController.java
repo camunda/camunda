@@ -171,6 +171,11 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final T document,
       final SingleAuthorizationCondition single) {
     final Authorization authorization = single.authorization();
+
+    if (!authorization.appliesTo(document)) {
+      return;
+    }
+
     final var resourceAccess =
         getResourceAccessProvider()
             .hasResourceAccess(securityContext.authentication(), authorization, document);
@@ -183,7 +188,8 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final SecurityContext securityContext,
       final T document,
       final AnyOfAuthorizationCondition anyOf) {
-    final var authorizations = anyOf.authorizations();
+    final var authorizations = anyOf.applicableAuthorizations(document);
+
     for (final Authorization authorization : authorizations) {
       final var resourceAccess =
           getResourceAccessProvider()
