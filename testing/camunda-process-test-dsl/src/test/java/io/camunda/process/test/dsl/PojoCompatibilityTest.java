@@ -48,6 +48,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateConditional
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
@@ -444,6 +445,24 @@ public class PojoCompatibilityTest {
                 ImmutableEvaluateConditionalStartEventInstruction.builder()
                     .putVariables("x", 1)
                     .putVariables("status", "active")
+                    .build())),
+        // ===== MOCK_JOB_WORKER_THROW_BPMN_ERROR =====
+        Arguments.of(
+            "mock job worker throw BPMN error: minimal",
+            singleTestCase(
+                ImmutableMockJobWorkerThrowBpmnErrorInstruction.builder()
+                    .jobType("validate-order")
+                    .errorCode("invalid")
+                    .build())),
+        Arguments.of(
+            "mock job worker throw BPMN error: full",
+            singleTestCase(
+                ImmutableMockJobWorkerThrowBpmnErrorInstruction.builder()
+                    .jobType("validate-order")
+                    .errorCode("invalid")
+                    .errorMessage("Order validation failed")
+                    .putVariables("reason", "Missing required field")
+                    .putVariables("field", "email")
                     .build()))
         // add new instructions here
         );

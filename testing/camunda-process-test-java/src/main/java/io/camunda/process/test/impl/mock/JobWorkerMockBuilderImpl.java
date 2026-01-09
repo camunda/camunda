@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
@@ -98,20 +99,29 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   @Override
   public JobWorkerMock thenThrowBpmnError(
       final String errorCode, final Map<String, Object> variables) {
+    return thenThrowBpmnError(errorCode, null, variables);
+  }
+
+  @Override
+  public JobWorkerMock thenThrowBpmnError(
+      final String errorCode, final String errorMessage, final Map<String, Object> variables) {
     return withHandler(
         (jobClient, job) -> {
           LOGGER.debug(
-              "{} with error code {} and variables {}",
+              "{} with error code {}, error message {} and variables {}",
               logMessagePrefix.apply(ACTION_THROW_BPMN_ERROR, job),
               errorCode,
+              errorMessage,
               variables);
 
-          jobClient
-              .newThrowErrorCommand(job)
-              .errorCode(errorCode)
-              .variables(variables)
-              .send()
-              .join();
+          final ThrowErrorCommandStep2 command =
+              jobClient.newThrowErrorCommand(job).errorCode(errorCode).variables(variables);
+
+          if (errorMessage != null) {
+            command.errorMessage(errorMessage);
+          }
+
+          command.send().join();
         });
   }
 

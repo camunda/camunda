@@ -84,6 +84,9 @@
           "$ref": "#/definitions/MockJobWorkerCompleteJobInstruction"
         },
         {
+          "$ref": "#/definitions/MockJobWorkerThrowBpmnErrorInstruction"
+        },
+        {
           "$ref": "#/definitions/PublishMessageInstruction"
         },
         {
@@ -749,6 +752,39 @@
       "required": [
         "type",
         "variables"
+      ],
+      "additionalProperties": false
+    },
+    "MockJobWorkerThrowBpmnErrorInstruction": {
+      "description": "An instruction to mock a job worker who throws BPMN errors.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "MOCK_JOB_WORKER_THROW_BPMN_ERROR"
+        },
+        "jobType": {
+          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "type": "string"
+        },
+        "errorCode": {
+          "description": "The error code to throw. This should match the error code in an error catch event.",
+          "type": "string"
+        },
+        "errorMessage": {
+          "description": "The error message to include when throwing the error.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to include when throwing the error.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "jobType",
+        "errorCode"
       ],
       "additionalProperties": false
     }

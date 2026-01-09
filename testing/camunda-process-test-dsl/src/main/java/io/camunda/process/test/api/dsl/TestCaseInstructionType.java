@@ -32,5 +32,6 @@ public class TestCaseInstructionType {
   public static final String MOCK_CHILD_PROCESS = "MOCK_CHILD_PROCESS";
   public static final String MOCK_DMN_DECISION = "MOCK_DMN_DECISION";
   public static final String MOCK_JOB_WORKER_COMPLETE_JOB = "MOCK_JOB_WORKER_COMPLETE_JOB";
+  public static final String MOCK_JOB_WORKER_THROW_BPMN_ERROR = "MOCK_JOB_WORKER_THROW_BPMN_ERROR";
   public static final String PUBLISH_MESSAGE = "PUBLISH_MESSAGE";
 }

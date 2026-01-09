@@ -38,6 +38,7 @@ import io.camunda.process.test.impl.dsl.instructions.EvaluateConditionalStartEve
 import io.camunda.process.test.impl.dsl.instructions.MockChildProcessInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.MockDmnDecisionInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerCompleteJobInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerThrowBpmnErrorInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.PublishMessageInstructionHandler;
 import java.time.Duration;
 import java.time.Instant;
@@ -70,6 +71,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new MockChildProcessInstructionHandler());
     registerHandler(new MockDmnDecisionInstructionHandler());
     registerHandler(new MockJobWorkerCompleteJobInstructionHandler());
+    registerHandler(new MockJobWorkerThrowBpmnErrorInstructionHandler());
     registerHandler(new PublishMessageInstructionHandler());
   }
 
