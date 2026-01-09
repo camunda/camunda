@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -52,8 +51,6 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Autowired
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
-
-  @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ElasticsearchClient es8Client;
 
