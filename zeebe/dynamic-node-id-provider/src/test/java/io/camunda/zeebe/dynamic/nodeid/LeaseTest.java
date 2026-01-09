@@ -42,7 +42,7 @@ public class LeaseTest {
     final var renewalDuration = Duration.ofSeconds(5);
 
     // when
-    final var renewedLease = lease.renew(currentTime, renewalDuration);
+    final var renewedLease = lease.renew(currentTime, renewalDuration, VersionMappings.empty());
 
     // then
     assertThat(renewedLease.taskId()).isEqualTo("task1");
@@ -62,7 +62,7 @@ public class LeaseTest {
         String.format(
             "Lease is not valid anymore(%s), it expired at %s",
             Instant.ofEpochMilli(currentTime), Instant.ofEpochMilli(lease.timestamp()));
-    assertThatThrownBy(() -> lease.renew(currentTime, renewalDuration))
+    assertThatThrownBy(() -> lease.renew(currentTime, renewalDuration, VersionMappings.empty()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(expectedMessage);
   }

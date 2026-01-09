@@ -9,15 +9,15 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -42,9 +42,6 @@ import org.springframework.context.annotation.Import;
       UnifiedConfigurationHelper.class,
       UnifiedConfiguration.class,
       BrokerBasedPropertiesOverride.class,
-      // ---
-      NodeIdProviderConfiguration.class,
-      BrokerBasedConfiguration.class,
       RestorePropertiesOverride.class,
       WorkingDirectoryConfiguration.class
     })
@@ -63,14 +60,16 @@ public class RestoreApp implements ApplicationRunner {
 
   @Autowired
   public RestoreApp(
-      final BrokerBasedConfiguration configuration,
+      final BrokerBasedProperties configuration,
       final BackupStore backupStore,
       final RestoreProperties restoreConfiguration,
+      final WorkingDirectory workingDirectory,
       final MeterRegistry meterRegistry) {
-    this.configuration = configuration.config();
+    this.configuration = configuration;
     this.backupStore = backupStore;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
+    configuration.init(workingDirectory.path().toAbsolutePath().toString());
   }
 
   public static void main(final String[] args) {

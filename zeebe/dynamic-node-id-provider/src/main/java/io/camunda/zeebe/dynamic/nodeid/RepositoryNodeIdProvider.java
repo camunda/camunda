@@ -7,19 +7,26 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Initialized;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +44,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final Duration renewalDelay;
   private ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
+  private VersionMappings knownVersionMappings = VersionMappings.empty();
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -90,6 +98,17 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
             });
   }
 
+  @Override
+  public void setMembers(final Set<Member> currentMembers) {
+    executor.execute(() -> updateVersionMappings(currentMembers));
+  }
+
+  @Override
+  public CompletableFuture<Boolean> awaitReadiness() {
+    // TODO: Use the knownVersionMappings to verify other members have seen this node's version
+    return CompletableFuture.completedFuture(true);
+  }
+
   private void startRenewalTimer() {
     renewalTask =
         executor.scheduleAtFixedRate(
@@ -107,7 +126,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
           shutdownInitiated.get());
     }
     try {
-      final var newLease = currentLease.lease().renew(clock.millis(), leaseDuration);
+      final var newLease =
+          currentLease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
       LOG.trace("Renewing lease with {}", newLease);
       currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
     } catch (final Exception e) {
@@ -161,6 +181,25 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     } catch (final Exception e) {
       LOG.warn("Failed to acquire the lease {}", lease, e);
       return null;
+    }
+  }
+
+  private void updateVersionMappings(final Set<Member> currentMembers) {
+    final var nodeInstances =
+        currentMembers.stream()
+            .filter(m -> isBroker(m.id()))
+            .map(m -> Map.entry(Integer.parseInt(m.id().id()), Version.of(m.nodeVersion())))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    knownVersionMappings = new VersionMappings(nodeInstances);
+  }
+
+  private boolean isBroker(final MemberId memberId) {
+    // TODO improve the way we identify brokers vs gateways
+    try {
+      final var id = Integer.parseInt(memberId.id());
+      return id >= 0;
+    } catch (final NumberFormatException e) {
+      return false;
     }
   }
 
