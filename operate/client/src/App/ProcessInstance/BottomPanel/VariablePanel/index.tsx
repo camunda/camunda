@@ -127,7 +127,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         },
         {
           id: tabIds.operationsLog,
-          label: 'Operations log',
+          label: 'Operations Log',
           content: (
             <OperationsLog
               isRootNodeSelected={isRootNodeSelected}

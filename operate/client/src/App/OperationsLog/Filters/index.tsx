@@ -1,0 +1,135 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useLocation, useNavigate} from 'react-router-dom';
+import {Stack} from '@carbon/react';
+import {updateFiltersSearchString} from 'modules/utils/filter';
+import {Container} from './styled';
+import {Field, Form} from 'react-final-form';
+import {TextInputField} from 'modules/components/TextInputField';
+import {Title} from 'modules/components/FiltersPanel/styled';
+import {FiltersPanel} from 'modules/components/FiltersPanel/index';
+import {ProcessField} from 'App/Processes/ListView/Filters/ProcessField';
+import {ProcessVersionField} from 'App/Processes/ListView/Filters/ProcessVersionField';
+import {AutoSubmit} from 'modules/components/AutoSubmit';
+import {
+  getDefinitionIdentifier,
+  splitDefinitionIdentifier,
+} from 'modules/hooks/processDefinitions';
+import isEqual from 'lodash/isEqual';
+import {observer} from 'mobx-react';
+import {TenantField} from 'modules/components/TenantField';
+import {processesStore} from 'modules/stores/processes/processes.list';
+import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+import {
+  AUDIT_LOG_FILTER_FIELDS,
+  type OperationsLogFilterField,
+  type OperationsLogFilters,
+} from '../shared';
+
+const initialValues: OperationsLogFilters = {};
+
+const Filters: React.FC = observer(() => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const filterValues = getFilters<
+    OperationsLogFilterField,
+    OperationsLogFilters
+  >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
+  if (filterValues.process && filterValues.tenant !== 'all') {
+    filterValues.process = getDefinitionIdentifier(
+      filterValues.process,
+      filterValues.tenant,
+    );
+  }
+  if (filterValues.tenant === 'all') {
+    delete filterValues.process;
+    delete filterValues.version;
+  }
+
+  const setFilters = (filters: OperationsLogFilters) => {
+    navigate({
+      search: updateFiltersSearchString<OperationsLogFilters>(
+        new URLSearchParams(location.search),
+        filters,
+        AUDIT_LOG_FILTER_FIELDS,
+        [],
+      ),
+    });
+  };
+
+  return (
+    <>
+      <Form<OperationsLogFilters>
+        onSubmit={(values: OperationsLogFilters) => {
+          setFilters({
+            ...values,
+            process: splitDefinitionIdentifier(values.process).definitionId,
+          });
+        }}
+        initialValues={filterValues}
+      >
+        {({handleSubmit, form, values}) => (
+          <form onSubmit={handleSubmit}>
+            <FiltersPanel
+              localStorageKey="isAuditLogsFiltersCollapsed"
+              isResetButtonDisabled={isEqual(initialValues, values)}
+              onResetClick={() => {
+                form.reset();
+                setFilters(initialValues);
+              }}
+            >
+              <Container>
+                <AutoSubmit fieldsToSkipTimeout={['process', 'version']} />
+                <Stack gap={5}>
+                  {window.clientConfig?.multiTenancyEnabled && (
+                    <div>
+                      <Title>Tenant</Title>
+                      <Stack gap={5}>
+                        <TenantField
+                          onChange={(selectedItem) => {
+                            form.change('process', undefined);
+                            form.change('version', undefined);
+
+                            processesStore.fetchProcesses(selectedItem);
+                          }}
+                        />
+                      </Stack>
+                    </div>
+                  )}
+                  <div>
+                    <Title>Process</Title>
+                    <Stack gap={5}>
+                      <ProcessField />
+                      <ProcessVersionField />
+                      <Field name="processInstanceKey">
+                        {({input}) => (
+                          <TextInputField
+                            {...input}
+                            id="process-instance-key"
+                            size="sm"
+                            labelText="Process instance key"
+                            type="text"
+                            placeholder="Process instance key"
+                          />
+                        )}
+                      </Field>
+                    </Stack>
+                  </div>
+                </Stack>
+              </Container>
+            </FiltersPanel>
+          </form>
+        )}
+      </Form>
+    </>
+  );
+});
+
+export {Filters};
