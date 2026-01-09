@@ -472,6 +472,7 @@ public class RecordFixtures {
       final IncidentIntent intent,
       final long incidentKey,
       final long processInstanceKey,
+      final long rootProcessInstanceKey,
       final long elementInstanceKey) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.INCIDENT);
     return ImmutableRecord.builder()
@@ -485,6 +486,7 @@ public class RecordFixtures {
                 .from((IncidentRecordValue) recordValueRecord.getValue())
                 .withElementInstanceKey(elementInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
+                .withRootProcessInstanceKey(rootProcessInstanceKey)
                 .withElementInstancePath(List.of(List.of(processInstanceKey, elementInstanceKey)))
                 .build())
         .build();

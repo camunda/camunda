@@ -20,6 +20,7 @@ class IncidentDbModelTest {
         new IncidentDbModel.Builder()
             .incidentKey(123L)
             .processInstanceKey(456L)
+            .rootProcessInstanceKey(654L)
             .processDefinitionKey(789L)
             .errorMessage("errorMessage")
             .state(IncidentState.ACTIVE)
@@ -28,7 +29,18 @@ class IncidentDbModelTest {
             .truncateErrorMessage(10, null);
 
     assertThat(truncatedMessage.errorMessage().length()).isEqualTo(10);
-    assertThat(truncatedMessage.errorMessage()).isEqualTo("errorMessa");
+
+    assertThat(truncatedMessage)
+        .isEqualTo(
+            new IncidentDbModel.Builder()
+                .incidentKey(123L)
+                .processInstanceKey(456L)
+                .rootProcessInstanceKey(654L)
+                .processDefinitionKey(789L)
+                .errorMessage("errorMessa")
+                .state(IncidentState.ACTIVE)
+                .tenantId("tenantId")
+                .build());
   }
 
   @Test
@@ -37,6 +49,7 @@ class IncidentDbModelTest {
         new IncidentDbModel.Builder()
             .incidentKey(123L)
             .processInstanceKey(456L)
+            .rootProcessInstanceKey(654L)
             .processDefinitionKey(789L)
             .errorMessage("ääääääääää")
             .state(IncidentState.ACTIVE)
