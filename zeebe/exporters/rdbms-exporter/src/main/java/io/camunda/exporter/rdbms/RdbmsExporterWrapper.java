@@ -54,6 +54,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModifica
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuthorizationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationCreationAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.BatchOperationLifecycleManagementAuditLogTransformer;
@@ -87,6 +88,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import java.util.HashSet;
 import java.util.Set;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
@@ -196,7 +198,7 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createHandlers(
-      final long partitionId,
+      final int partitionId,
       final RdbmsWriters rdbmsWriters,
       final Builder builder,
       final ExporterConfiguration config,
@@ -224,7 +226,9 @@ public class RdbmsExporterWrapper implements Exporter {
           ValueType.DECISION_REQUIREMENTS,
           new DecisionRequirementsExportHandler(
               rdbmsWriters.getDecisionRequirementsWriter(), decisionRequirementsCache));
+      builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriters.getFormWriter()));
     }
+
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
         new DecisionInstanceExportHandler(rdbmsWriters.getDecisionInstanceWriter()));
@@ -253,7 +257,6 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.USER_TASK,
         new UserTaskExportHandler(rdbmsWriters.getUserTaskWriter(), processCache));
-    builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriters.getFormWriter()));
     builder.withHandler(ValueType.JOB, new JobExportHandler(rdbmsWriters.getJobWriter()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
@@ -277,7 +280,7 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.HISTORY_DELETION,
         new HistoryDeletionDeletedHandler(rdbmsWriters.getHistoryDeletionWriter()));
 
-    registerAuditLogHandlers(rdbmsWriters, builder, config);
+    registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
   }
 
   private void createBatchOperationHandlers(
@@ -316,40 +319,47 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void registerAuditLogHandlers(
-      final RdbmsWriters rdbmsWriters, final Builder builder, final ExporterConfiguration config) {
-    Set.of(
-            new AuthorizationAuditLogTransformer(),
-            new BatchOperationCreationAuditLogTransformer(),
-            new BatchOperationLifecycleManagementAuditLogTransformer(),
-            new DecisionAuditLogTransformer(),
-            new DecisionEvaluationAuditLogTransformer(),
-            new DecisionRequirementsRecordAuditLogTransformer(),
-            new FormAuditLogTransformer(),
-            new GroupAuditLogTransformer(),
-            new GroupEntityAuditLogTransformer(),
-            new IncidentResolutionAuditLogTransformer(),
-            new MappingRuleAuditLogTransformer(),
-            new ProcessAuditLogTransformer(),
-            new ProcessInstanceCancelAuditLogTransformer(),
-            new ProcessInstanceCreationAuditLogTransformer(),
-            new ProcessInstanceMigrationAuditLogTransformer(),
-            new ProcessInstanceModificationAuditLogTransformer(),
-            new ResourceAuditLogTransformer(),
-            new RoleAuditLogTransformer(),
-            new RoleEntityAuditLogTransformer(),
-            new TenantAuditLogTransformer(),
-            new TenantEntityAuditLogTransformer(),
-            new UserAuditLogTransformer(),
-            new UserTaskAuditLogTransformer(),
-            new VariableAddUpdateAuditLogTransformer())
-        .forEach(
-            transformer ->
-                builder.withHandler(
-                    transformer.config().valueType(),
-                    new AuditLogExportHandler<>(
-                        rdbmsWriters.getAuditLogWriter(),
-                        vendorDatabaseProperties,
-                        transformer,
-                        config.getAuditLog())));
+      final RdbmsWriters rdbmsWriters,
+      final Builder builder,
+      final ExporterConfiguration config,
+      final int partitionId) {
+    final Set<AuditLogTransformer<?>> transformers = new HashSet<>();
+    transformers.add(new BatchOperationLifecycleManagementAuditLogTransformer());
+    transformers.add(new DecisionEvaluationAuditLogTransformer());
+    transformers.add(new IncidentResolutionAuditLogTransformer());
+    transformers.add(new ProcessInstanceCancelAuditLogTransformer());
+    transformers.add(new ProcessInstanceCreationAuditLogTransformer());
+    transformers.add(new ProcessInstanceMigrationAuditLogTransformer());
+    transformers.add(new ProcessInstanceModificationAuditLogTransformer());
+    transformers.add(new UserTaskAuditLogTransformer());
+    transformers.add(new VariableAddUpdateAuditLogTransformer());
+
+    if (partitionId == PROCESS_DEFINITION_PARTITION) {
+      transformers.add(new AuthorizationAuditLogTransformer());
+      transformers.add(new BatchOperationCreationAuditLogTransformer());
+      transformers.add(new DecisionAuditLogTransformer());
+      transformers.add(new DecisionRequirementsRecordAuditLogTransformer());
+      transformers.add(new FormAuditLogTransformer());
+      transformers.add(new GroupAuditLogTransformer());
+      transformers.add(new GroupEntityAuditLogTransformer());
+      transformers.add(new MappingRuleAuditLogTransformer());
+      transformers.add(new ProcessAuditLogTransformer());
+      transformers.add(new ResourceAuditLogTransformer());
+      transformers.add(new RoleAuditLogTransformer());
+      transformers.add(new RoleEntityAuditLogTransformer());
+      transformers.add(new TenantAuditLogTransformer());
+      transformers.add(new TenantEntityAuditLogTransformer());
+      transformers.add(new UserAuditLogTransformer());
+    }
+
+    transformers.forEach(
+        transformer ->
+            builder.withHandler(
+                transformer.config().valueType(),
+                new AuditLogExportHandler<>(
+                    rdbmsWriters.getAuditLogWriter(),
+                    vendorDatabaseProperties,
+                    transformer,
+                    config.getAuditLog())));
   }
 }
