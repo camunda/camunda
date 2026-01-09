@@ -30,3 +30,12 @@
 /.github/workflows/retry-workflow.yml                    @camunda/monorepo-devops-team
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
+
+##########################
+## Reliability Testing  ##
+##########################
+
+# Performance + Load testing
+/load-tests/ @camunda/reliability-testing
+/zeebe/benchmarks/ @camunda/reliability-testing
+/.github/workflows/*load-test*.yml @camunda/reliability-testing
