@@ -101,10 +101,10 @@ public abstract class Authorizations {
       Authorization.of(a -> a.auditLog().read());
 
   public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION =
-      Authorization.of(a -> a.processDefinition().readProcessInstance());
+      Authorization.of(a -> a.processDefinition().readProcessInstance().transitive());
 
   public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_USER_TASK_AUTHORIZATION =
-      Authorization.of(a -> a.processDefinition().readUserTask());
+      Authorization.of(a -> a.processDefinition().readUserTask().transitive());
 
   public static final Authorization<ClusterVariableEntity> CLUSTER_VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.clusterVariable().read());

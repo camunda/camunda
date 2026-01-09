@@ -22,6 +22,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.S
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.DELETE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
@@ -112,6 +113,12 @@ public record Authorization<T>(
 
   public boolean appliesTo(final T document) {
     return condition.test(document);
+  }
+
+  @JsonIgnore
+  public boolean isWildcard() {
+    return resourceIds != null
+        && resourceIds.stream().anyMatch(id -> WILDCARD.getResourceId().equals(id));
   }
 
   public static class Builder<T> {
