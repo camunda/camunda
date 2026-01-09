@@ -23,12 +23,10 @@ final class NameFilter {
   }
 
   boolean test(final String name) {
-    // Inclusion: if any rules exist, name must match at least one
     if (!includePredicates.isEmpty() && includePredicates.stream().noneMatch(p -> p.test(name))) {
       return false;
     }
 
-    // Exclusion: if any rules exist, name must not match any
     return excludePredicates.isEmpty() || excludePredicates.stream().noneMatch(p -> p.test(name));
   }
 

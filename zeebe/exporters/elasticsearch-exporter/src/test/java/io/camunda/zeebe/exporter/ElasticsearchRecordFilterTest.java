@@ -9,8 +9,8 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
@@ -144,8 +144,9 @@ final class ElasticsearchRecordFilterTest {
     final var filter = createFilter(config);
 
     // when - acceptValue with a non-variable record value
-    final var accepted =
-        filter.acceptValue(factory.generateObject(ValueType.PROCESS_INSTANCE.getClass()));
+    final ProcessInstanceRecordValue value =
+        factory.generateObject(ProcessInstanceRecordValue.class);
+    final var accepted = filter.acceptValue(value);
 
     // then
     assertThat(accepted).isTrue();

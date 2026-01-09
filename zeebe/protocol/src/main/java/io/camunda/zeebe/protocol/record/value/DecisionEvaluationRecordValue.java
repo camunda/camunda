@@ -16,7 +16,6 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
 import org.immutables.value.Value;
@@ -25,7 +24,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDecisionEvaluationRecordValue.Builder.class)
 public interface DecisionEvaluationRecordValue
-    extends RecordValue, RecordValueWithVariables, TenantOwned {
+    extends RecordValueWithVariables, TenantOwned, BpmnProcessRelated {
 
   /**
    * @return the key of the evaluated decision
@@ -65,6 +64,7 @@ public interface DecisionEvaluationRecordValue
   /**
    * @return the BPMN process id in which context the decision was evaluated
    */
+  @Override
   String getBpmnProcessId();
 
   /**

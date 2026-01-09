@@ -95,17 +95,6 @@ public interface Context {
     }
 
     /**
-     * Should export records with the given value?
-     *
-     * @param value the value of the record.
-     * @return {@code true} if records with this value should be exported.
-     */
-    default boolean acceptValue(final RecordValue value) {
-      // default implementation accepts all values
-      return true;
-    }
-
-    /**
      * Should export records with the given intent?
      *
      * @param intent the intent of the record.

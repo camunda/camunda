@@ -8,7 +8,6 @@
 package io.camunda.zeebe.exporter;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
@@ -62,58 +61,6 @@ public class ElasticsearchExporterConfiguration {
         + ", interceptors="
         + interceptorPlugins
         + '}';
-  }
-
-  public boolean shouldIndexRecord(final Record<?> record) {
-    return shouldIndexRecordType(record.getRecordType())
-        && shouldIndexValueType(record.getValueType());
-  }
-
-  public boolean shouldIndexValueType(final ValueType valueType) {
-    return switch (valueType) {
-      // case DEPLOYMENT -> index.deployment;
-      case PROCESS -> index.process;
-      // case ERROR -> index.error;
-      case INCIDENT -> index.incident;
-      // case JOB -> index.job;
-      // case JOB_BATCH -> index.jobBatch;
-      // case MESSAGE -> index.message;
-      // case MESSAGE_BATCH -> index.messageBatch;
-      // case MESSAGE_SUBSCRIPTION -> index.messageSubscription;
-      case VARIABLE -> index.variable;
-      // case VARIABLE_DOCUMENT -> index.variableDocument;
-      case PROCESS_INSTANCE -> index.processInstance;
-      // case PROCESS_INSTANCE_BATCH -> index.processInstanceBatch;
-      // case PROCESS_INSTANCE_CREATION -> index.processInstanceCreation;
-      // case PROCESS_INSTANCE_MIGRATION -> index.processInstanceMigration;
-      // case PROCESS_INSTANCE_MODIFICATION -> index.processInstanceModification;
-      // case PROCESS_MESSAGE_SUBSCRIPTION -> index.processMessageSubscription;
-      // case DECISION_REQUIREMENTS -> index.decisionRequirements;
-      // case DECISION -> index.decision;
-      // case DECISION_EVALUATION -> index.decisionEvaluation;
-      // case CHECKPOINT -> index.checkpoint;
-      // case TIMER -> index.timer;
-      // case MESSAGE_START_EVENT_SUBSCRIPTION -> index.messageStartEventSubscription;
-      // case PROCESS_EVENT -> index.processEvent;
-      // case DEPLOYMENT_DISTRIBUTION -> index.deploymentDistribution;
-      // case ESCALATION -> index.escalation;
-      // case SIGNAL -> index.signal;
-      // case SIGNAL_SUBSCRIPTION -> index.signalSubscription;
-      // case RESOURCE_DELETION -> index.resourceDeletion;
-      // case COMMAND_DISTRIBUTION -> index.commandDistribution;
-      // case FORM -> index.form;
-      case USER_TASK -> index.userTask;
-      // case COMPENSATION_SUBSCRIPTION -> index.compensationSubscription;
-      // case MESSAGE_CORRELATION -> index.messageCorrelation;
-      // case AD_HOC_SUB_PROCESS_INSTRUCTION -> index.adHocSubProcessInstruction;
-      // case ASYNC_REQUEST -> index.asyncRequest;
-      // case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
-      // case CLUSTER_VARIABLE -> index.clusterVariable;
-      // case CONDITIONAL_SUBSCRIPTION -> index.conditionalSubscription;
-      // case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
-      // case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
-      default -> false;
-    };
   }
 
   /**
@@ -214,6 +161,14 @@ public class ElasticsearchExporterConfiguration {
     // variable value type filtering
     public String variableValueTypeInclusion = "";
     public String variableValueTypeExclusion = "";
+
+    // variable flow type filtering
+    public String flowTypeInclusion = "";
+    public String flowTypeExclusion = "";
+
+    // bpmnProcessId filtering
+    public String bpmnProcessIdInclusion = "";
+    public String bpmnProcessIdExclusion = "";
 
     public boolean checkpoint = false;
     public boolean timer = true;

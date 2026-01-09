@@ -209,7 +209,7 @@ final class ElasticsearchExporterIT {
   void shouldPutIndexTemplate(final ValueType valueType) {
     // assuming
     Assumptions.assumeTrue(
-        config.shouldIndexValueType(valueType),
+        config.shouldIndexRequiredValueType(valueType),
         "no template is created because the exporter is configured filter out records of this type");
 
     // given

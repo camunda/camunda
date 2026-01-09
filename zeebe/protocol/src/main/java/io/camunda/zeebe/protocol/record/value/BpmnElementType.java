@@ -70,13 +70,17 @@ public enum BpmnElementType {
   }
 
   public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
+    return findBpmnElementTypeFor(elementTypeName)
+        .orElseThrow(
+            () -> new RuntimeException("Unsupported BPMN element of type " + elementTypeName));
+  }
+
+  public static Optional<BpmnElementType> findBpmnElementTypeFor(final String elementTypeName) {
     return Arrays.stream(values())
         .filter(
             bpmnElementType ->
                 bpmnElementType.elementTypeName != null
                     && bpmnElementType.elementTypeName.equals(elementTypeName))
-        .findFirst()
-        .orElseThrow(
-            () -> new RuntimeException("Unsupported BPMN element of type " + elementTypeName));
+        .findFirst();
   }
 }

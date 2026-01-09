@@ -28,7 +28,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageStartEventSubscriptionRecordValue.Builder.class)
 public interface MessageStartEventSubscriptionRecordValue
-    extends RecordValueWithVariables, TenantOwned {
+    extends RecordValueWithVariables, TenantOwned, BpmnProcessRelated {
 
   /**
    * @return the process key tied to the subscription
@@ -38,6 +38,7 @@ public interface MessageStartEventSubscriptionRecordValue
   /**
    * @return the BPMN process id tied to the subscription
    */
+  @Override
   String getBpmnProcessId();
 
   /**

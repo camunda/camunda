@@ -28,7 +28,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessMessageSubscriptionRecordValue.Builder.class)
 public interface ProcessMessageSubscriptionRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
+    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned, BpmnProcessRelated {
   /**
    * @return the process instance key
    */
@@ -48,6 +48,7 @@ public interface ProcessMessageSubscriptionRecordValue
   /**
    * @return the BPMN process id
    */
+  @Override
   String getBpmnProcessId();
 
   /**

@@ -21,7 +21,7 @@ import java.util.Set;
 
 public final class VariableValueTypeFilter implements RecordValueFilter {
 
-  public static final String LIST_SEPARATOR = ";";
+  private static final String LIST_SEPARATOR = ";";
   private final ObjectMapper objectMapper;
   private final Set<VariableValueType> inclusion;
   private final Set<VariableValueType> exclusion;
@@ -48,17 +48,11 @@ public final class VariableValueTypeFilter implements RecordValueFilter {
 
     final VariableValueType inferredType = inferValueType(variableRecordValue.getValue());
 
-    // Inclusion: if configured, type must be in the inclusion set
     if (!inclusion.isEmpty() && !inclusion.contains(inferredType)) {
       return false;
     }
 
-    // Exclusion: if configured, type must not be in the exclusion set
-    if (!exclusion.isEmpty() && exclusion.contains(inferredType)) {
-      return false;
-    }
-
-    return true;
+    return exclusion.isEmpty() || !exclusion.contains(inferredType);
   }
 
   /**
@@ -91,10 +85,6 @@ public final class VariableValueTypeFilter implements RecordValueFilter {
     }
   }
 
-  /**
-   * Convenience helper to parse a semicolon-separated list of type names into a ValueType set, e.g.
-   * "string;double;boolean".
-   */
   public static Set<VariableValueType> parseTypes(final String raw) {
     if (raw == null || raw.trim().isEmpty()) {
       return Collections.emptySet();

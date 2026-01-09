@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.exporter.common.filter;
 
-import static io.camunda.zeebe.exporter.common.filter.NameRule.Type.*;
-
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.Arrays;
@@ -17,7 +15,7 @@ import java.util.List;
 
 public final class VariableNameFilter implements RecordValueFilter {
 
-  public static final String LIST_SEPARATOR = ";";
+  private static final String LIST_SEPARATOR = ";";
 
   private final NameFilter nameFilter;
 
@@ -35,7 +33,7 @@ public final class VariableNameFilter implements RecordValueFilter {
     return nameFilter.test(variableRecordValue.getName());
   }
 
-  public static List<NameRule> addRules(final String raw, final NameRule.Type type) {
+  public static List<NameRule> parseRules(final String raw, final NameRule.Type type) {
 
     if (raw == null || raw.trim().isEmpty()) {
       return Collections.emptyList();

@@ -28,7 +28,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableIncidentRecordValue.Builder.class)
-public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated, TenantOwned {
+public interface IncidentRecordValue
+    extends RecordValue, ProcessInstanceRelated, TenantOwned, BpmnProcessRelated {
   /**
    * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
    *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
@@ -45,6 +46,7 @@ public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated
    * @return the BPMN process id this incident belongs to. Can be empty if the incident record is
    *     part of a {@link IncidentIntent#RESOLVE} command.
    */
+  @Override
   String getBpmnProcessId();
 
   /**

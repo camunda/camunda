@@ -124,7 +124,7 @@ final class ElasticsearchExporterVariableFilterIT {
     final Map<String, Object> indexArgs = new HashMap<>();
     indexArgs.put("prefix", configurator.zeebeIndexPrefix());
     indexArgs.put("variable", true);
-    indexArgs.put("variableNameInclusion", inclusion);
+    indexArgs.put("variableNameInclusionRegex", inclusion);
 
     testCamundaApplication.withExporter(
         ElasticsearchExporter.class.getSimpleName().toLowerCase(),
