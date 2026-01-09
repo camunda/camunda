@@ -11,6 +11,7 @@ import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertConflictRequest,
+  assertInvalidState,
   assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -74,7 +75,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
 
     await test.step('Suspend already suspended batch operation', async () => {
       const doubleRes = await suspendBatchOperation(request, key, 409);
-      await assertConflictRequest(doubleRes, 'INVALID_STATE');
+      await assertInvalidState(doubleRes);
     });
 
     await test.step('resume batch operation', async () => {

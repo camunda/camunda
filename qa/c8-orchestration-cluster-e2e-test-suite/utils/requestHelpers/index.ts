@@ -38,7 +38,10 @@ export {assertUserNameInResponse} from './user-requestHelpers';
 export {createUser} from './user-requestHelpers';
 export {assignRoleToUsers} from './user-requestHelpers';
 export {createUsersAndStoreResponseFields} from './user-requestHelpers';
-export {createComponentAuthorization} from './authorization-requestHelpers';
+export {
+  createComponentAuthorization,
+  grantUserResourceAuthorization
+} from './authorization-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';
 export {setupProcessInstanceForTests} from './job-requestHelpers';
