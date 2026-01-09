@@ -23,14 +23,12 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ScrollException;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -42,12 +40,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -60,13 +56,6 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   public static final Query ACTIVE_INCIDENT_QUERY_ES8 =
       ElasticsearchUtil.termsQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
-  @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-
-  @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
 
   @Autowired private ElasticsearchClient es8Client;
 
