@@ -23,7 +23,7 @@ import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
@@ -465,7 +465,7 @@ public class BatchOperationSearchIT {
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_1.size());
     assertThat(batch.getOperationsCompletedCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_1.size());
     assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
-    assertThat(batch.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(batch.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batch.getActorId()).isEqualTo(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }
 
@@ -477,7 +477,7 @@ public class BatchOperationSearchIT {
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_2.size());
     assertThat(batch.getOperationsCompletedCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_2.size());
     assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
-    assertThat(batch.getActorType()).isEqualTo(BatchOperationActorTypeEnum.USER);
+    assertThat(batch.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(batch.getActorId()).isEqualTo(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }
 

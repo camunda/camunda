@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
 import io.camunda.webapps.schema.entities.SinceVersion;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -24,9 +25,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   @BeforeVersion880 private OffsetDateTime endDate;
   @BeforeVersion880 private String username;
 
-  // the type of the actor that performed the operation, (USER or CLIENT)
+  // the type of the actor that performed the operation, (USER, CLIENT, ANONYMOUS, or UNKNOWN)
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private BatchOperationActorType actorType;
+  private AuditLogActorType actorType;
 
   // the id of the actor that performed the operation
   @SinceVersion(value = "8.9.0", requireDefault = false)
@@ -165,11 +166,11 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
-  public BatchOperationActorType getActorType() {
+  public AuditLogActorType getActorType() {
     return actorType;
   }
 
-  public BatchOperationEntity setActorType(final BatchOperationActorType actorType) {
+  public BatchOperationEntity setActorType(final AuditLogActorType actorType) {
     this.actorType = actorType;
     return this;
   }

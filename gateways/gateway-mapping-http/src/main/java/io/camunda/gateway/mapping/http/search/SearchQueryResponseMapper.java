@@ -23,7 +23,6 @@ import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
-import io.camunda.gateway.protocol.model.BatchOperationActorTypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
@@ -743,7 +742,7 @@ public final class SearchQueryResponseMapper {
         .actorType(
             ofNullable(entity.actorType())
                 .map(Enum::name)
-                .map(BatchOperationActorTypeEnum::fromValue)
+                .map(AuditLogActorTypeEnum::fromValue)
                 .orElse(null))
         .actorId(entity.actorId())
         .operationsTotalCount(entity.operationsTotalCount())

@@ -15,7 +15,7 @@
       <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="ACTOR_TYPE"
-        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationActorType"/>
+        javaType="io.camunda.search.entities.AuditLogEntity$AuditLogActorType"/>
       <arg column="ACTOR_ID" javaType="java.lang.String"/>
       <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
       <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>

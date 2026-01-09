@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.enums.BatchOperationActorTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import java.time.OffsetDateTime;
@@ -50,7 +50,7 @@ public interface BatchOperation {
    *
    * @since 8.9.0 - on older batch operations, this value is always {@code null}.
    */
-  BatchOperationActorTypeEnum getActorType();
+  AuditLogActorTypeEnum getActorType();
 
   /**
    * The ID of the actor that created the batch operation. Is {@code null} if no actor information
