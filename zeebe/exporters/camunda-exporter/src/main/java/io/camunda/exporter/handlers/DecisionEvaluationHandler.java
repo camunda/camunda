@@ -120,6 +120,10 @@ public class DecisionEvaluationHandler
     if (state.equals(DecisionInstanceState.FAILED)) {
       entity.setEvaluationFailureMessage(decisionEvaluation.getEvaluationFailureMessage());
     }
+    final var rootProcessInstanceKey = decisionEvaluation.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override
