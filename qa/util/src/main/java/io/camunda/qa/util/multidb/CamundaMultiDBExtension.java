@@ -22,7 +22,6 @@ import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -234,7 +233,7 @@ public class CamundaMultiDBExtension
   private static final String EXTENSION_COORDINATION_KEY = "extension-running";
   private static final String EXTENSION_NAME = "CamundaMultiDBExtension";
   private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
-  private static final String PREFERRED_EXTENSION_COMPATIBILITY = "compatibility";
+  private static final String PREFERRED_EXTENSION_MULTIDB = "multi-db";
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
@@ -307,8 +306,9 @@ public class CamundaMultiDBExtension
     final Class<?> testClass = context.getRequiredTestClass();
 
     final String preferredExtension = System.getProperty(PREFERRED_EXTENSION_PROPERTY);
-    if (PREFERRED_EXTENSION_COMPATIBILITY.equals(preferredExtension)
-        && testClass.isAnnotationPresent(CompatibilityTest.class)) {
+    if (preferredExtension != null
+        && !preferredExtension.isBlank()
+        && !PREFERRED_EXTENSION_MULTIDB.equals(preferredExtension)) {
       LOGGER.info(
           "Skipping CamundaMultiDBExtension - preferred extension is {}", preferredExtension);
       return;
