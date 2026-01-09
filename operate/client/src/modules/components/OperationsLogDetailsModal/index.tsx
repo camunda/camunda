@@ -23,6 +23,7 @@ import {
   UserAvatar,
 } from '@carbon/react/icons';
 import {
+  TitleListCell,
   FirstColumn,
   IconText,
   ParagraphWithIcon,
@@ -111,13 +112,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
           {auditLog.entityType === 'BATCH' && (
             <>
               <VerticallyAlignedRow>
-                <div
-                  style={{
-                    padding: '15px 0',
-                  }}
-                >
-                  <h5>Applied to:</h5>
-                </div>
+                <TitleListCell>Applied to:</TitleListCell>
               </VerticallyAlignedRow>
               <VerticallyAlignedRow>
                 <FirstColumn noWrap>

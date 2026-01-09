@@ -7,15 +7,15 @@
  */
 
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {OperationsLogStateIcon} from '../../../modules/components/OperationsLogStateIcon';
-import {spaceAndCapitalize} from '../../../modules/utils/spaceAndCapitalize.ts';
-import {OperationLogName} from './styled.tsx';
+import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
+import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
+import {OperationLogName} from './styled';
 
 type Props = {
   item: AuditLog;
 };
 
-const CellResult: React.FC<Props> = ({item}: Props) => {
+const CellResult: React.FC<Props> = ({item}) => {
   return (
     <OperationLogName>
       <OperationsLogStateIcon
