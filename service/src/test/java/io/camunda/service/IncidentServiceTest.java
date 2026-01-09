@@ -42,16 +42,13 @@ public final class IncidentServiceTest {
 
   private IncidentServices services;
   private IncidentSearchClient client;
-  private ProcessDefinitionServices processDefinitionServices;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(IncidentSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    securityContextProvider = mock(SecurityContextProvider.class);
-    authentication = mock(CamundaAuthentication.class);
+    final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
+    final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
 
     services =
         new IncidentServices(
@@ -147,7 +144,7 @@ public final class IncidentServiceTest {
     final var searchQueryResult =
         services.searchIncidentProcessInstanceStatisticsByDefinition(
             SearchQueryBuilders.incidentProcessInstanceStatisticsByDefinitionQuery()
-                .filter(f -> f.states(state).errorMessageHashes(errorHashCode))
+                .filter(f -> f.state(state).errorHashCode(errorHashCode))
                 .build());
 
     // then
@@ -159,8 +156,8 @@ public final class IncidentServiceTest {
     final var capturedQuery = queryCaptor.getValue();
     final var filter = capturedQuery.filter();
 
-    assertThat(filter.errorMessageHashOperations()).containsExactly(Operation.eq(errorHashCode));
-    assertThat(filter.stateOperations()).containsExactly(Operation.eq(state));
+    assertThat(filter.errorHashCode()).isEqualTo(errorHashCode);
+    assertThat(filter.state()).isEqualTo(state);
   }
 
   @Test

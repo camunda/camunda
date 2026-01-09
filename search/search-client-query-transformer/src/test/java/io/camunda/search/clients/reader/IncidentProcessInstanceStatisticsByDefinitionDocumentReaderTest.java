@@ -15,6 +15,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.cache.ProcessCache;
+import io.camunda.search.clients.cache.ProcessCacheItem;
+import io.camunda.search.clients.cache.ProcessCacheResult;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
@@ -23,6 +26,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class IncidentProcessInstanceStatisticsByDefinitionDocumentReaderTest {
@@ -31,12 +35,20 @@ class IncidentProcessInstanceStatisticsByDefinitionDocumentReaderTest {
   void shouldEnrichItemsWithProcessDefinitionData() {
     final var executor = mock(SearchClientBasedQueryExecutor.class);
     final var indexDescriptor = mock(IndexDescriptor.class);
+    final var processCache = mock(ProcessCache.class);
 
     final var reader =
-        new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(executor, indexDescriptor);
+        new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(
+            executor, indexDescriptor, processCache);
 
     final var rawItem =
-        new IncidentProcessInstanceStatisticsByDefinitionEntity(null, 1L, null, null, "t1", 3L);
+        new IncidentProcessInstanceStatisticsByDefinitionEntity(null, 1L, null, null, null, 3L);
+
+    final ProcessCacheResult processCacheResult =
+        new ProcessCacheResult(
+            Map.of(1L, new ProcessCacheItem("order-process-id", "Order Process", 1, "tenant1")));
+
+    when(processCache.getCacheItems(any())).thenReturn(processCacheResult);
 
     when(executor.aggregateWithQueryResult(
             any(IncidentProcessInstanceStatisticsByDefinitionQuery.class),
@@ -47,7 +59,15 @@ class IncidentProcessInstanceStatisticsByDefinitionDocumentReaderTest {
 
     final var procDef =
         new ProcessDefinitionEntity(
-            1L, "Order process", "order-process-id", null, null, 1, null, "t1", null);
+            1L,
+            "Order Process",
+            "order-process-id",
+            "<xml>order-process</xml>",
+            "order-process.bpmn",
+            1,
+            null,
+            "tenant1",
+            null);
 
     when(executor.search(
             any(ProcessDefinitionQuery.class),
@@ -63,10 +83,10 @@ class IncidentProcessInstanceStatisticsByDefinitionDocumentReaderTest {
     assertThat(result.items()).hasSize(1);
     final var enriched = result.items().getFirst();
     assertThat(enriched.processDefinitionId()).isEqualTo("order-process-id");
-    assertThat(enriched.processDefinitionName()).isEqualTo("Order process");
+    assertThat(enriched.processDefinitionName()).isEqualTo("Order Process");
     assertThat(enriched.processDefinitionVersion()).isEqualTo(1);
     assertThat(enriched.processDefinitionKey()).isEqualTo(1L);
-    assertThat(enriched.tenantId()).isEqualTo("t1");
+    assertThat(enriched.tenantId()).isEqualTo("tenant1");
     assertThat(enriched.activeInstancesWithErrorCount()).isEqualTo(3L);
   }
 }
