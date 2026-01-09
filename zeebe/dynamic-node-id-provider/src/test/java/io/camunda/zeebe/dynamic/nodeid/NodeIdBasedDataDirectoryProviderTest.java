@@ -9,8 +9,6 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -25,11 +23,10 @@ class NodeIdBasedDataDirectoryProviderTest {
   void shouldAppendNodeIdToBaseDirectory() {
     // given
     final int nodeId = 5;
-    final NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(nodeId, Version.of(3L)));
+    final var nodeInstance = new NodeInstance(nodeId, Version.of(3L));
 
     final Path baseDirectory = tempDir.resolve("base");
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeInstance);
 
     // when
     final CompletableFuture<Path> result = initializer.initialize(baseDirectory, false);
@@ -42,11 +39,10 @@ class NodeIdBasedDataDirectoryProviderTest {
   @Test
   void shouldFailWhenNodeInstanceIsNull() {
     // given
-    final NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
-    when(nodeIdProvider.currentNodeInstance()).thenReturn(null);
+    final NodeInstance nodeInstance = null;
 
     final Path baseDirectory = tempDir.resolve("base");
-    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+    final DataDirectoryProvider initializer = new NodeIdBasedDataDirectoryProvider(nodeInstance);
 
     // when
     final CompletableFuture<Path> result = initializer.initialize(baseDirectory, false);

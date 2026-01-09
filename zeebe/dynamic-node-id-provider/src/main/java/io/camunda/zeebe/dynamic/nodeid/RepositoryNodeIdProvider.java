@@ -100,6 +100,11 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   @Override
+  public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
+    return previousNodeGracefullyShutdown;
+  }
+
+  @Override
   public void setMembers(final Set<Member> currentMembers) {
     executor.execute(() -> updateVersionMappings(currentMembers));
   }
@@ -108,8 +113,6 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   public CompletableFuture<Boolean> awaitReadiness() {
     // TODO: Use the knownVersionMappings to verify other members have seen this node's version
     return CompletableFuture.completedFuture(true);
-  public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
-    return previousNodeGracefullyShutdown;
   }
 
   private void startRenewalTimer() {

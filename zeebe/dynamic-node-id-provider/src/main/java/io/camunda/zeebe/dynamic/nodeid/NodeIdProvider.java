@@ -75,13 +75,17 @@ public interface NodeIdProvider extends AutoCloseable {
       }
 
       @Override
+      public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
+        return CompletableFuture.completedFuture(true);
+      }
+
+      @Override
       public void setMembers(final Set<Member> currentMembers) {
         // no-op
       }
 
       @Override
       public CompletableFuture<Boolean> awaitReadiness() {
-      public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
         return CompletableFuture.completedFuture(true);
       }
     };

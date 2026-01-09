@@ -7,20 +7,25 @@
  */
 package io.camunda.zeebe.broker;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.ConfiguredDataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.DataDirectoryCopier;
 import io.camunda.zeebe.dynamic.nodeid.DataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
+import io.camunda.zeebe.dynamic.nodeid.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -41,13 +46,19 @@ import software.amazon.awssdk.regions.Region;
 @DependsOn("unifiedConfigurationHelper")
 @Import(BrokerShutdownHelper.class)
 public class NodeIdProviderConfiguration {
-  private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
 
+  private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
   private final Cluster cluster;
+  private final boolean disableVersionedDirectory;
+  private final ObjectMapper objectMapper;
 
   @Autowired
-  public NodeIdProviderConfiguration(final UnifiedConfiguration configuration) {
+  public NodeIdProviderConfiguration(
+      final UnifiedConfiguration configuration, final ObjectMapper objectMapper) {
     cluster = configuration.getCamunda().getCluster();
+    disableVersionedDirectory =
+        configuration.getCamunda().getData().getPrimaryStorage().disableVersionedDirectory();
+    this.objectMapper = objectMapper;
   }
 
   @Bean
@@ -133,7 +144,14 @@ public class NodeIdProviderConfiguration {
     final var initializer =
         switch (cluster.getNodeIdProvider().getType()) {
           case FIXED -> new ConfiguredDataDirectoryProvider();
-          case S3 -> new NodeIdBasedDataDirectoryProvider(nodeIdProvider);
+          case S3 -> {
+            final var brokerCopier = new BrokerDataDirectoryCopier();
+            final var nodeInstance = nodeIdProvider.currentNodeInstance();
+            yield disableVersionedDirectory
+                ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
+                : new VersionedNodeIdBasedDataDirectoryProvider(
+                    objectMapper, nodeInstance, fromBrokerCopier(brokerCopier));
+          }
         };
 
     final DataCfg data = brokerBasedConfiguration.config().getData();
@@ -167,6 +185,28 @@ public class NodeIdProviderConfiguration {
 
     final var isReady = nodeIdProvider.awaitReadiness().join();
     return new NodeIdProviderReadinessAwaiter(isReady);
+  }
+
+  // brokerCopier does not implement the interface because it's defined in zeebe-broker module
+  // which does not depend on dynamic-node-id-provider module.
+  private DataDirectoryCopier fromBrokerCopier(final BrokerDataDirectoryCopier brokerCopier) {
+    return new DataDirectoryCopier() {
+      @Override
+      public void copy(
+          final Path source,
+          final Path target,
+          final String markerFileName,
+          final boolean gracefulShutdown)
+          throws IOException {
+        brokerCopier.copy(source, target, markerFileName, gracefulShutdown);
+      }
+
+      @Override
+      public void validate(final Path source, final Path target, final String markerFileName)
+          throws IOException {
+        brokerCopier.validate(source, target, markerFileName);
+      }
+    };
   }
 
   public record NodeIdProviderReadinessAwaiter(boolean isReady) {}
