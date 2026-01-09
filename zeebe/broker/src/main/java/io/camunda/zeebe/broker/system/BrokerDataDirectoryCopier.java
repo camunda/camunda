@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system;
 
+import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -41,8 +42,6 @@ import org.slf4j.LoggerFactory;
 public final class BrokerDataDirectoryCopier {
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerDataDirectoryCopier.class);
-
-  private static final String RUNTIME_DIRECTORY = "runtime";
 
   public void copy(
       final Path source,
@@ -105,7 +104,7 @@ public final class BrokerDataDirectoryCopier {
   private boolean isRuntimeDirectory(final Path root, final Path path) {
     final var relative = root.relativize(path);
     for (final var part : relative) {
-      if (part.toString().equals(RUNTIME_DIRECTORY)) {
+      if (part.toString().equals(ZeebePartitionFactory.DEFAULT_RUNTIME_DIRECTORY)) {
         return true;
       }
     }
