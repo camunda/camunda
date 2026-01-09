@@ -43,6 +43,43 @@ import {observer} from 'mobx-react';
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
 
+const headerColumns = [
+  {
+    header: 'Operation',
+    key: 'operationType',
+    sortKey: 'operationType',
+  },
+  {
+    header: 'Entity',
+    key: 'entityType',
+    sortKey: 'entityType',
+  },
+  {
+    header: 'Status',
+    key: 'result',
+  },
+  {
+    header: 'Applied to',
+    key: 'appliedTo',
+    isDisabled: true,
+  },
+  {
+    header: 'Actor',
+    key: 'user',
+    sortKey: 'actorId',
+  },
+  {
+    header: 'Time',
+    key: 'timestamp',
+    sortKey: 'timestamp',
+  },
+  {
+    header: '',
+    key: 'comment',
+    isDisabled: true,
+  },
+];
+
 const InstancesTable: React.FC = observer(() => {
   const location = useLocation();
   const sortParams = getSortParams(location.search) || {
@@ -130,12 +167,10 @@ const InstancesTable: React.FC = observer(() => {
           {item.entityType === 'BATCH' && item.batchOperationType ? (
             <ClassicBatch />
           ) : undefined}
-          {spaceAndCapitalize(item.operationType.toString())}&nbsp;
-          {spaceAndCapitalize(item.entityType.toString())}
+          {spaceAndCapitalize(item.operationType)}&nbsp;
+          {spaceAndCapitalize(item.entityType)}
           {item.entityType === 'BATCH' && item.batchOperationType ? (
-            <div>
-              &nbsp;({spaceAndCapitalize(item.batchOperationType.toString())})
-            </div>
+            <div>&nbsp;({spaceAndCapitalize(item.batchOperationType)})</div>
           ) : undefined}
         </OperationLogName>
         {item.entityType !== 'BATCH' && item.batchOperationKey ? (
@@ -211,7 +246,7 @@ const InstancesTable: React.FC = observer(() => {
     () =>
       data?.auditLogs.map((item: AuditLog) => ({
         id: item.auditLogKey,
-        entityType: `${spaceAndCapitalize(item.entityType.toString())}`,
+        entityType: spaceAndCapitalize(item.entityType),
         operationType: formatOperationType(item),
         result: (
           <OperationLogName>
@@ -219,7 +254,7 @@ const InstancesTable: React.FC = observer(() => {
               state={item.result}
               data-testid={`${item.auditLogKey}-icon`}
             />
-            {spaceAndCapitalize(item.result.toString())}
+            {spaceAndCapitalize(item.result)}
           </OperationLogName>
         ),
         appliedTo: formatAppliedTo(item),
@@ -273,42 +308,7 @@ const InstancesTable: React.FC = observer(() => {
             fetchNextPage();
           }
         }}
-        headerColumns={[
-          {
-            header: 'Operation',
-            key: 'operationType',
-            sortKey: 'operationType',
-          },
-          {
-            header: 'Entity',
-            key: 'entityType',
-            sortKey: 'entityType',
-          },
-          {
-            header: 'Status',
-            key: 'result',
-          },
-          {
-            header: 'Applied to',
-            key: 'appliedTo',
-            isDisabled: true,
-          },
-          {
-            header: 'Actor',
-            key: 'user',
-            sortKey: 'actorId',
-          },
-          {
-            header: 'Time',
-            key: 'timestamp',
-            sortKey: 'timestamp',
-          },
-          {
-            header: '',
-            key: 'comment',
-            isDisabled: true,
-          },
-        ]}
+        headerColumns={headerColumns}
       />
       {detailsModal.auditLog && (
         <DetailsModal
