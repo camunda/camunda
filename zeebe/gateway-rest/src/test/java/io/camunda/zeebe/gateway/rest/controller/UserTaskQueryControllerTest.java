@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.query.SearchQueryBuilders.auditLogSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
@@ -157,6 +159,28 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       }
       """;
 
+  private static final String EXPECTED_AUDIT_LOG_RESULT_JSON =
+      """
+      {
+        "items": [
+          {
+            "auditLogKey": "1",
+            "actorId": "1"
+          },
+          {
+            "auditLogKey": "2",
+            "actorId": "2"
+          }
+        ],
+        "page": {
+          "totalItems": 2,
+          "hasMoreTotalItems": false,
+          "startCursor": "0",
+          "endCursor": "1"
+        }
+      }
+      """;
+
   private static final String USER_TASK_ITEM_JSON =
       """
             {
@@ -242,6 +266,17 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       0L, "name", "value", null, false, 1L, 2L, 3L, "bpid", "<default>"),
                   new VariableEntity(
                       1L, "name2", "value", "valueLong", true, 1L, 2L, 3L, "bpid", "<default>")))
+          .startCursor("0")
+          .endCursor("1")
+          .build();
+
+  private static final SearchQueryResult<AuditLogEntity> SEARCH_AUDIT_LOG_QUERY_RESULT =
+      new Builder<AuditLogEntity>()
+          .total(2L)
+          .items(
+              List.of(
+                  new AuditLogEntity.Builder().auditLogKey("1").actorId("1").build(),
+                  new AuditLogEntity.Builder().auditLogKey("2").actorId("2").build()))
           .startCursor("0")
           .endCursor("1")
           .build();
@@ -962,5 +997,38 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  public void shouldReturnAuditLogsForValidUserTaskKey() {
+    final var request =
+        """
+                {
+                    "filter":
+                        {
+                            "actorId": "1"
+                        }
+
+                }""";
+
+    when(userTaskServices.searchUserTaskAuditLogs(
+            VALID_USER_TASK_KEY, auditLogSearchQuery().filter(f -> f.actorIds("1")).build()))
+        .thenReturn(SEARCH_AUDIT_LOG_QUERY_RESULT);
+    // when and then
+    webClient
+        .post()
+        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/audit-logs/search")
+        .accept(APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_AUDIT_LOG_RESULT_JSON, JsonCompareMode.STRICT);
+
+    verify(userTaskServices)
+        .searchUserTaskAuditLogs(
+            VALID_USER_TASK_KEY, auditLogSearchQuery().filter(f -> f.actorIds("1")).build());
   }
 }

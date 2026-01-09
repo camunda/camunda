@@ -90,7 +90,7 @@ components:
           description: Key of the batch operation.
         batchOperationType:
           allOf:
-            - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationTypeEnum'
+            - $ref: '#/components/schemas/BatchOperationTypeEnum'
           description: The type of batch operation performed, if this is part of a batch.
         timestamp:
           type: string
@@ -361,6 +361,20 @@ components:
         - ADMIN
         - DEPLOYED_RESOURCES
         - USER_TASKS
+
+    BatchOperationTypeEnum:
+      description: The type of the batch operation.
+      type: string
+      enum:
+        - ADD_VARIABLE
+        - CANCEL_PROCESS_INSTANCE
+        - DELETE_DECISION_DEFINITION
+        - DELETE_PROCESS_DEFINITION
+        - DELETE_PROCESS_INSTANCE
+        - MIGRATE_PROCESS_INSTANCE
+        - MODIFY_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - UPDATE_VARIABLE
 
     ## Filters
 

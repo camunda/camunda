@@ -15,10 +15,10 @@ import io.camunda.gateway.mapping.http.RequestMapper.CompleteUserTaskRequest;
 import io.camunda.gateway.mapping.http.RequestMapper.UpdateUserTaskRequest;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
-import io.camunda.gateway.protocol.model.AuditLogSearchQueryRequest;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskAuditLogSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
@@ -151,8 +151,9 @@ public class UserTaskController {
   @CamundaPostMapping(path = "/{userTaskKey}/audit-logs/search")
   public ResponseEntity<AuditLogSearchQueryResult> searchAuditLogs(
       @PathVariable final long userTaskKey,
-      @RequestBody(required = false) final AuditLogSearchQueryRequest auditLogSearchQueryRequest) {
-    return SearchQueryRequestMapper.toAuditLogQuery(auditLogSearchQueryRequest)
+      @RequestBody(required = false)
+          final UserTaskAuditLogSearchQueryRequest auditLogSearchQueryRequest) {
+    return SearchQueryRequestMapper.toUserTaskAuditLogQuery(auditLogSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             query -> searchUserTaskAuditLogQuery(userTaskKey, query));

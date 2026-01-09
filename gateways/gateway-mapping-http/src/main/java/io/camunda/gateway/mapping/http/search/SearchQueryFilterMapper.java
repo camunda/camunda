@@ -26,11 +26,13 @@ import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.ClusterVariableFilter;
@@ -1015,6 +1017,30 @@ public class SearchQueryFilterMapper {
                         f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
         .orElse(null);
+  }
+
+  static AuditLogFilter toUserTaskAuditLogFilter(final UserTaskAuditLogFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.auditLog().build();
+    }
+
+    final var builder = FilterBuilders.auditLog();
+    ofNullable(filter.getOperationType())
+        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()));
+    ofNullable(filter.getResult())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::resultOperations);
+    ofNullable(filter.getTimestamp())
+        .map(mapToOperations(OffsetDateTime.class))
+        .ifPresent(builder::timestampOperations);
+    ofNullable(filter.getActorId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::actorIdOperations);
+    ofNullable(filter.getActorType())
+        .map(io.camunda.gateway.protocol.model.AuditLogActorTypeEnum::getValue)
+        .map(String::toUpperCase)
+        .ifPresent(builder::actorTypes);
+    return builder.build();
   }
 
   static VariableFilter toUserTaskVariableFilter(final UserTaskVariableFilter filter) {
