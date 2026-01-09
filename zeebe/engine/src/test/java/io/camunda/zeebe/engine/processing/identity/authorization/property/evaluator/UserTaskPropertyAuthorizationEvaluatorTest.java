@@ -11,12 +11,13 @@ import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_ASSIGNEE;
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_GROUPS;
-import static io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator.PROP_CANDIDATE_USERS;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_ASSIGNEE;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
@@ -61,7 +62,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
   @ParameterizedTest
   @MethodSource("emptyResourcePropertiesInputs")
   void shouldReturnEmptySetWhenEmptyResourcePropertiesProvided(
-      final Map<String, Object> resourceProperties) {
+      final UserTaskAuthorizationProperties resourceProperties) {
     // given
     final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "testUser");
 
@@ -73,7 +74,10 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
   }
 
   static Stream<Arguments> emptyResourcePropertiesInputs() {
-    return Stream.of(Arguments.of((Map) null), Arguments.of(Collections.emptyMap()));
+    return Stream.of(
+        Arguments.of((UserTaskAuthorizationProperties) null),
+        Arguments.of(new UserTaskAuthorizationProperties(null, null, null)),
+        Arguments.of(new UserTaskAuthorizationProperties("", List.of(), List.of())));
   }
 
   @Test
@@ -84,10 +88,11 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
     final var claims =
         Map.of(AUTHORIZED_USERNAME, username, USER_GROUPS_CLAIMS, List.of(userGroup));
     final var resourceProperties =
-        Map.of(
-            PROP_ASSIGNEE, username,
-            PROP_CANDIDATE_USERS, List.of(username, "otherUser"),
-            PROP_CANDIDATE_GROUPS, List.of(userGroup, "otherGroup"));
+        UserTaskAuthorizationProperties.builder()
+            .assignee(username)
+            .candidateUsers(List.of(username, "otherUser"))
+            .candidateGroups(List.of(userGroup, "otherGroup"))
+            .build();
 
     // when
     final var result = evaluator.matches(claims, resourceProperties);
@@ -105,7 +110,8 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       // given
       final var username = "testUser";
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
-      final var resourceProperties = Map.<String, Object>of(PROP_ASSIGNEE, username);
+      final var resourceProperties =
+          UserTaskAuthorizationProperties.builder().assignee(username).build();
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);
@@ -118,20 +124,8 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
     void shouldNotMatchAssigneeWhenUsernameDoesNotEqualAssignee() {
       // given
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "testUser");
-      final var resourceProperties = Map.<String, Object>of(PROP_ASSIGNEE, "differentUser");
-
-      // when
-      final var result = evaluator.matches(claims, resourceProperties);
-
-      // then
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    void shouldNotMatchAssigneeWhenAssigneeIsNotString() {
-      // given
-      final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "testUser");
-      final var resourceProperties = Map.<String, Object>of(PROP_ASSIGNEE, 123);
+      final var resourceProperties =
+          UserTaskAuthorizationProperties.builder().assignee("differentUser").build();
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);
@@ -144,7 +138,8 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
     void shouldNotMatchAssigneeWhenNoUserId() {
       // given
       final var claims = Map.<String, Object>of();
-      final var resourceProperties = Map.<String, Object>of(PROP_ASSIGNEE, "testUser");
+      final var resourceProperties =
+          UserTaskAuthorizationProperties.builder().assignee("testUser").build();
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);
@@ -163,9 +158,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       final var username = "testUser";
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
       final var resourceProperties =
-          Map.<String, Object>of(
-              PROP_CANDIDATE_USERS, List.of("otherUser", username, "anotherUser"));
-
+          UserTaskAuthorizationProperties.builder()
+              .candidateUsers(List.of("otherUser", username, "anotherUser"))
+              .build();
       // when
       final var result = evaluator.matches(claims, resourceProperties);
 
@@ -178,7 +173,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       // given
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "testUser");
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_USERS, List.of("user1", "user2", "user3"));
+          UserTaskAuthorizationProperties.builder()
+              .candidateUsers(List.of("user1", "user2", "user3"))
+              .build();
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);
@@ -192,20 +189,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       // given
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "testUser");
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_USERS, Collections.emptyList());
-
-      // when
-      final var result = evaluator.matches(claims, resourceProperties);
-
-      // then
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    void shouldNotMatchCandidateUsersWhenNotAList() {
-      // given
-      final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "testUser");
-      final var resourceProperties = Map.<String, Object>of(PROP_CANDIDATE_USERS, "testUser");
+          UserTaskAuthorizationProperties.builder().candidateUsers(Collections.emptyList()).build();
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);
@@ -219,7 +203,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       // given
       final var claims = Map.<String, Object>of();
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_USERS, List.of("user1", "user2"));
+          UserTaskAuthorizationProperties.builder()
+              .candidateUsers(List.of("user1", "user2"))
+              .build();
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);
@@ -239,7 +225,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       final var userGroup = "userGroup";
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_GROUPS, List.of("group1", userGroup, "group2"));
+          UserTaskAuthorizationProperties.builder()
+              .candidateGroups(List.of("group1", userGroup, "group2"))
+              .build();
 
       when(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
           .thenReturn(List.of(userGroup));
@@ -258,7 +246,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       final var clientGroup = "clientGroup";
       final var claims = Map.<String, Object>of(AUTHORIZED_CLIENT_ID, clientId);
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_GROUPS, List.of("group1", clientGroup));
+          UserTaskAuthorizationProperties.builder()
+              .candidateGroups(List.of("group1", clientGroup))
+              .build();
 
       when(membershipState.getMemberships(EntityType.CLIENT, clientId, RelationType.GROUP))
           .thenReturn(List.of(clientGroup));
@@ -279,7 +269,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       final var mappingGroup = "mappingGroup";
       final var claims = Map.<String, Object>of(USER_TOKEN_CLAIMS, Map.of("role", claimValue));
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_GROUPS, List.of("group1", mappingGroup));
+          UserTaskAuthorizationProperties.builder()
+              .candidateGroups(List.of("group1", mappingGroup))
+              .build();
 
       final var mappingRule =
           new PersistedMappingRule()
@@ -312,7 +304,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           Map.<String, Object>of(
               AUTHORIZED_USERNAME, username, USER_TOKEN_CLAIMS, Map.of("role", claimValue));
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_GROUPS, List.of(mappingGroup, userGroup));
+          UserTaskAuthorizationProperties.builder()
+              .candidateGroups(List.of(mappingGroup, userGroup))
+              .build();
 
       when(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
           .thenReturn(List.of(userGroup));
@@ -341,7 +335,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       final var username = "testUser";
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_GROUPS, List.of("group1", "group2"));
+          UserTaskAuthorizationProperties.builder()
+              .candidateGroups(List.of("group1", "group2"))
+              .build();
 
       when(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
           .thenReturn(List.of("differentGroup"));
@@ -359,27 +355,12 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       final var username = "testUser";
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_GROUPS, List.of("group1", "group2"));
+          UserTaskAuthorizationProperties.builder()
+              .candidateGroups(List.of("group1", "group2"))
+              .build();
 
       when(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
           .thenReturn(Collections.emptyList());
-
-      // when
-      final var result = evaluator.matches(claims, resourceProperties);
-
-      // then
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    void shouldNotMatchCandidateGroupsWhenNotAList() {
-      // given
-      final var username = "testUser";
-      final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
-      final var resourceProperties = Map.<String, Object>of(PROP_CANDIDATE_GROUPS, "group1");
-
-      when(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
-          .thenReturn(List.of("group1"));
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);
@@ -394,10 +375,9 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
       final var username = "testUser";
       final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
       final var resourceProperties =
-          Map.<String, Object>of(PROP_CANDIDATE_GROUPS, Collections.emptyList());
-
-      when(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
-          .thenReturn(List.of("group1"));
+          UserTaskAuthorizationProperties.builder()
+              .candidateGroups(Collections.emptyList())
+              .build();
 
       // when
       final var result = evaluator.matches(claims, resourceProperties);

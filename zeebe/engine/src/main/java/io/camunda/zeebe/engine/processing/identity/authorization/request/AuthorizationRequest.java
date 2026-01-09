@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.request;
 
+import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +42,7 @@ public final class AuthorizationRequest {
   private final PermissionType permissionType;
   private final String tenantId;
   private final Set<String> resourceIds;
-  private final Map<String, Object> resourceProperties;
+  private final ResourceAuthorizationProperties resourceProperties;
   private final boolean isNewResource;
   private final boolean isTenantOwnedResource;
   private final boolean isTriggeredByInternalCommand;
@@ -53,7 +53,7 @@ public final class AuthorizationRequest {
     permissionType = builder.permissionType;
     tenantId = builder.tenantId;
     resourceIds = Collections.unmodifiableSet(builder.resourceIds);
-    resourceProperties = Collections.unmodifiableMap(builder.resourceProperties);
+    resourceProperties = builder.resourceProperties;
     isNewResource = builder.isNewResource;
     isTenantOwnedResource = deriveTenantOwnedResource(builder);
     isTriggeredByInternalCommand = deriveTriggeredByInternalCommand(builder);
@@ -93,12 +93,12 @@ public final class AuthorizationRequest {
     return resourceIds;
   }
 
-  public Map<String, Object> resourceProperties() {
+  public ResourceAuthorizationProperties resourceProperties() {
     return resourceProperties;
   }
 
   public boolean hasResourceProperties() {
-    return !resourceProperties.isEmpty();
+    return resourceProperties != null && resourceProperties.hasProperties();
   }
 
   public boolean isNewResource() {
@@ -126,7 +126,9 @@ public final class AuthorizationRequest {
           permissionType,
           resourceType,
           resourceIds.stream().sorted().collect(Collectors.joining(", ")),
-          resourceProperties.keySet().stream().sorted().collect(Collectors.joining(", ")));
+          resourceProperties.getPropertyNames().stream()
+              .sorted()
+              .collect(Collectors.joining(", ")));
     }
 
     if (hasIds) {
@@ -139,7 +141,7 @@ public final class AuthorizationRequest {
     return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_PROPERTIES.formatted(
         permissionType,
         resourceType,
-        resourceProperties.keySet().stream().sorted().collect(Collectors.joining(", ")));
+        resourceProperties.getPropertyNames().stream().sorted().collect(Collectors.joining(", ")));
   }
 
   public String getTenantErrorMessage() {
@@ -159,7 +161,7 @@ public final class AuthorizationRequest {
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
     private final Set<String> resourceIds = new HashSet<>();
-    private final Map<String, Object> resourceProperties = new HashMap<>();
+    private ResourceAuthorizationProperties resourceProperties;
     private String tenantId;
     private boolean isNewResource;
 
@@ -209,10 +211,8 @@ public final class AuthorizationRequest {
       return this;
     }
 
-    public Builder addResourceProperty(final String propertyName, final Object propertyValue) {
-      if (StringUtils.isNotEmpty(propertyName) && propertyValue != null) {
-        resourceProperties.put(propertyName, propertyValue);
-      }
+    public Builder resourceProperties(final ResourceAuthorizationProperties resourceProperties) {
+      this.resourceProperties = resourceProperties;
       return this;
     }
 

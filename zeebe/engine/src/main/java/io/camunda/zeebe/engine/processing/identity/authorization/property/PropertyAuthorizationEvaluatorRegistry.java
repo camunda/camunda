@@ -15,16 +15,16 @@ import java.util.Optional;
 
 public final class PropertyAuthorizationEvaluatorRegistry {
 
-  private final Map<AuthorizationResourceType, PropertyAuthorizationEvaluator> evaluators =
+  private final Map<AuthorizationResourceType, PropertyAuthorizationEvaluator<?>> evaluators =
       new EnumMap<>(AuthorizationResourceType.class);
 
   public PropertyAuthorizationEvaluatorRegistry register(
-      final PropertyAuthorizationEvaluator evaluator) {
+      final PropertyAuthorizationEvaluator<?> evaluator) {
     evaluators.put(evaluator.resourceType(), evaluator);
     return this;
   }
 
-  public Optional<PropertyAuthorizationEvaluator> get(
+  public Optional<PropertyAuthorizationEvaluator<?>> get(
       final AuthorizationResourceType resourceType) {
     return Optional.ofNullable(evaluators.get(resourceType));
   }

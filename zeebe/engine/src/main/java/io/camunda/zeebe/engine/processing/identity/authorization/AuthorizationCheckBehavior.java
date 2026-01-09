@@ -17,6 +17,8 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.aggregator.RejectionAggregator;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.PropertyAuthorizationEvaluator;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.AuthorizationScopeResolver;
@@ -39,6 +41,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -294,9 +297,9 @@ public final class AuthorizationCheckBehavior {
       return false;
     }
 
-    // Check which properties the principal matches
     final Set<String> matchedProperties =
-        evaluator.get().matches(request.claims(), request.resourceProperties());
+        matchProperties(evaluator.get(), request.claims(), request.resourceProperties());
+
     if (matchedProperties.isEmpty()) {
       aggregatedRejections.add(authorizationRejection);
       return false;
@@ -313,6 +316,26 @@ public final class AuthorizationCheckBehavior {
     }
 
     return true;
+  }
+
+  private <T extends ResourceAuthorizationProperties> Set<String> matchProperties(
+      final PropertyAuthorizationEvaluator<T> evaluator,
+      final Map<String, Object> claims,
+      final ResourceAuthorizationProperties properties) {
+
+    final Class<T> expectedType = evaluator.propertiesType();
+
+    if (!expectedType.isInstance(properties)) {
+      throw new IllegalStateException(
+          "Evaluator %s expects %s but received %s"
+              .formatted(
+                  evaluator.getClass().getSimpleName(),
+                  expectedType.getSimpleName(),
+                  properties.getClass().getSimpleName()));
+    }
+
+    final T typedProperties = expectedType.cast(properties);
+    return evaluator.matches(claims, typedProperties);
   }
 
   private Set<AuthorizationScope> getPropertyAuthorizedScopes(final AuthorizationRequest request) {

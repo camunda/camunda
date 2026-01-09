@@ -18,6 +18,7 @@ import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.MappingRuleCreatedApplier;
@@ -267,7 +268,11 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateGroups", List.of("other-group", "group-b"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .assignee(user.getUsername())
+                    .candidateGroups(List.of("other-group", "group-b"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -298,7 +303,10 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateGroups", List.of("sales", "marketing"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateGroups(List.of("sales", "marketing"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -331,7 +339,10 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateGroups", List.of("mapping-group-1", "other-group"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateGroups(List.of("mapping-group-1", "other-group"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -360,7 +371,10 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateGroups", List.of("group1", "otherGroup"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateGroups(List.of("group1", "otherGroup"))
+                    .build())
             .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 

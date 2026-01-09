@@ -16,10 +16,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
@@ -143,7 +146,8 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("assignee", user.getUsername())
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder().assignee(user.getUsername()).build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -173,7 +177,10 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateUsers", List.of(user.getUsername(), "otherUser"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateUsers(List.of(user.getUsername(), "otherUser"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -204,7 +211,10 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateGroups", List.of(group.getGroupId(), "otherGroup"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateGroups(List.of(group.getGroupId(), "otherGroup"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -239,7 +249,10 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateGroups", List.of(group.getGroupId(), "otherGroup"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateGroups(List.of(group.getGroupId(), "otherGroup"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -266,7 +279,10 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateGroups", List.of(group.getGroupId(), "otherGroup"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateGroups(List.of(group.getGroupId(), "otherGroup"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -296,7 +312,10 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateUsers", List.of("anotherUser", "yetAnotherUser"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateUsers(List.of("anotherUser", "yetAnotherUser"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -327,7 +346,10 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateUsers", List.of(user.getUsername()))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateUsers(List.of(user.getUsername()))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -367,7 +389,10 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("candidateUsers", List.of(username, "otherUser"))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateUsers(List.of(username, "otherUser"))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
@@ -400,14 +425,46 @@ final class AuthorizationCheckBehaviorTest {
             .command(command)
             .resourceType(resourceType)
             .permissionType(permissionType)
-            .addResourceProperty("assignee", user.getUsername())
-            .addResourceProperty("candidateUsers", List.of(user.getUsername()))
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .assignee(user.getUsername())
+                    .candidateUsers(List.of(user.getUsername()))
+                    .build())
             .build();
 
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then: authorized because user matches assignee and has permission for assignee
     EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void shouldThrowIllegalStateExceptionWhenPropertyTypeDoesNotMatchEvaluator() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var command = mockCommand(user.getUsername());
+
+    // Create a mock ResourceAuthorizationProperties that is NOT UserTaskAuthorizationProperties
+    final var incompatibleProperties = mock(ResourceAuthorizationProperties.class);
+    when(incompatibleProperties.hasProperties()).thenReturn(true);
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .resourceProperties(incompatibleProperties)
+            .build();
+
+    // then
+    assertThatThrownBy(() -> authorizationCheckBehavior.isAuthorized(request))
+        .isInstanceOf(UncheckedExecutionException.class)
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(
+            "Evaluator UserTaskPropertyAuthorizationEvaluator expects UserTaskAuthorizationProperties but received ResourceAuthorizationProperties$MockitoMock");
   }
 
   @Test

@@ -7,7 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator;
 
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_ASSIGNEE;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
+import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS;
+
 import io.camunda.security.auth.MappingRuleMatcher;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
@@ -20,12 +25,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Evaluates property-based authorization for user tasks.
+ *
+ * <p>Supports matching against:
+ *
+ * <ul>
+ *   <li>{@code assignee} - matches when the requesting user is the task assignee
+ *   <li>{@code candidateUsers} - matches when the requesting user is in the candidate users list
+ *   <li>{@code candidateGroups} - matches when any of the requesting principal's groups overlap
+ *       with candidate groups
+ * </ul>
+ */
 public final class UserTaskPropertyAuthorizationEvaluator
-    implements PropertyAuthorizationEvaluator {
-
-  public static final String PROP_ASSIGNEE = "assignee";
-  public static final String PROP_CANDIDATE_USERS = "candidateUsers";
-  public static final String PROP_CANDIDATE_GROUPS = "candidateGroups";
+    implements PropertyAuthorizationEvaluator<UserTaskAuthorizationProperties> {
 
   private final ClaimsExtractor claimsExtractor;
   private final MappingRuleState mappingRuleState;
@@ -42,9 +55,14 @@ public final class UserTaskPropertyAuthorizationEvaluator
   }
 
   @Override
+  public Class<UserTaskAuthorizationProperties> propertiesType() {
+    return UserTaskAuthorizationProperties.class;
+  }
+
+  @Override
   public Set<String> matches(
-      final Map<String, Object> claims, final Map<String, Object> resourceProperties) {
-    if (resourceProperties == null || resourceProperties.isEmpty()) {
+      final Map<String, Object> claims, final UserTaskAuthorizationProperties properties) {
+    if (properties == null || !properties.hasProperties()) {
       return Collections.emptySet();
     }
 
@@ -55,18 +73,18 @@ public final class UserTaskPropertyAuthorizationEvaluator
         .getUsername(claims)
         .ifPresent(
             username -> {
-              if (matchesAssignee(username, resourceProperties.get(PROP_ASSIGNEE))) {
+              if (matchesAssignee(username, properties)) {
                 matched.add(PROP_ASSIGNEE);
               }
 
-              if (matchesCandidateUsers(username, resourceProperties.get(PROP_CANDIDATE_USERS))) {
+              if (matchesCandidateUsers(username, properties)) {
                 matched.add(PROP_CANDIDATE_USERS);
               }
             });
 
-    if (resourceProperties.containsKey(PROP_CANDIDATE_GROUPS)) {
+    if (properties.hasCandidateGroups()) {
       final var allGroups = collectAllGroups(claims);
-      if (matchesCandidateGroups(allGroups, resourceProperties.get(PROP_CANDIDATE_GROUPS))) {
+      if (matchesCandidateGroups(allGroups, properties.candidateGroups())) {
         matched.add(PROP_CANDIDATE_GROUPS);
       }
     }
@@ -114,25 +132,21 @@ public final class UserTaskPropertyAuthorizationEvaluator
         .map(PersistedMappingRule::getMappingRuleId);
   }
 
-  private boolean matchesAssignee(final String userId, final Object assigneeValue) {
-    return userId != null
-        && assigneeValue instanceof String assignee
-        && !assignee.isEmpty()
-        && userId.equals(assignee);
+  private boolean matchesAssignee(
+      final String userId, final UserTaskAuthorizationProperties properties) {
+    return properties.hasAssignee() && userId.equals(properties.assignee());
   }
 
-  private boolean matchesCandidateUsers(final String userId, final Object candidateUsersValue) {
-    if (userId == null || !(candidateUsersValue instanceof List<?> candidateUsers)) {
-      return false;
-    }
-    return candidateUsers.contains(userId);
+  private boolean matchesCandidateUsers(
+      final String userId, final UserTaskAuthorizationProperties properties) {
+    return properties.hasCandidateUsers() && properties.candidateUsers().contains(userId);
   }
 
   private boolean matchesCandidateGroups(
-      final Set<String> groups, final Object candidateGroupsValue) {
-    if (groups.isEmpty() || !(candidateGroupsValue instanceof List<?> candidateGroups)) {
+      final Set<String> groups, final List<String> candidateGroups) {
+    if (groups.isEmpty()) {
       return false;
     }
-    return candidateGroups.stream().anyMatch(g -> g instanceof String && groups.contains(g));
+    return candidateGroups.stream().anyMatch(groups::contains);
   }
 }

@@ -13,6 +13,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -117,28 +119,6 @@ class AuthorizationRequestTest {
       return Stream.of(Arguments.of((String) null), Arguments.of(""));
     }
 
-    @ParameterizedTest
-    @MethodSource("emptyResourcePropertyInputs")
-    void shouldIgnoreEmptyResourceProperties(
-        final String propertyName, final Object propertyValue) {
-      // given / when
-      final var request =
-          AuthorizationRequest.builder()
-              .authorizationClaims(Map.of())
-              .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-              .permissionType(PermissionType.READ_PROCESS_INSTANCE)
-              .addResourceProperty(propertyName, propertyValue)
-              .build();
-
-      // then
-      assertThat(request.resourceProperties()).isEmpty();
-    }
-
-    Stream<Arguments> emptyResourcePropertyInputs() {
-      return Stream.of(
-          Arguments.of(null, "value"), Arguments.of("", "value"), Arguments.of("property", null));
-    }
-
     @Test
     void shouldAddAllResourceIds() {
       // given / when
@@ -153,28 +133,6 @@ class AuthorizationRequestTest {
       // then
       assertThat(request.resourceIds()).containsExactlyInAnyOrder("id1", "id2", "id3");
     }
-
-    @Test
-    void shouldAddAllResourceProperties() {
-      // given / when
-      final var request =
-          AuthorizationRequest.builder()
-              .authorizationClaims(Map.of())
-              .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-              .permissionType(PermissionType.UPDATE_USER_TASK)
-              .addResourceProperty("assignee", "user-1")
-              .addResourceProperty("candidateUsers", List.of("user-2", "user-3"))
-              .addResourceProperty("candidateGroups", List.of("group-1", "group-2"))
-              .build();
-
-      // then
-      assertThat(request.resourceProperties())
-          .containsExactlyInAnyOrderEntriesOf(
-              Map.of(
-                  "assignee", "user-1",
-                  "candidateUsers", List.of("user-2", "user-3"),
-                  "candidateGroups", List.of("group-1", "group-2")));
-    }
   }
 
   @Nested
@@ -185,7 +143,7 @@ class AuthorizationRequestTest {
     @MethodSource("forbiddenErrorMessageInputs")
     void shouldReturnCorrectForbiddenErrorMessage(
         final Set<String> resourceIds,
-        final Map<String, Object> resourceProperties,
+        final ResourceAuthorizationProperties resourceProperties,
         final String expectedMessage) {
       // given
       final var builder =
@@ -195,7 +153,7 @@ class AuthorizationRequestTest {
               .permissionType(PermissionType.READ);
 
       resourceIds.forEach(builder::addResourceId);
-      resourceProperties.forEach(builder::addResourceProperty);
+      builder.resourceProperties(resourceProperties);
 
       final var request = builder.build();
 
@@ -211,34 +169,41 @@ class AuthorizationRequestTest {
           // No resource ids and no resource properties
           Arguments.of(
               Collections.emptySet(),
-              Collections.emptyMap(),
+              null,
               "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE'"),
           // With resource ids
           Arguments.of(
               Set.of("id1"),
-              Collections.emptyMap(),
+              null,
               "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE', required resource identifiers are one of '[*, id1]'"),
           // With multiple resource ids (sorted alphabetically)
           Arguments.of(
               Set.of("id2", "id1", "id3"),
-              Collections.emptyMap(),
+              null,
               "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE', required resource identifiers are one of '[*, id1, id2, id3]'"),
           // With resource properties
           Arguments.of(
               Collections.emptySet(),
-              Map.of("prop1", "value1"),
-              "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE', resource did not match property constraints '[prop1]'"),
+              UserTaskAuthorizationProperties.builder().assignee("demo").build(),
+              "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE', resource did not match property constraints '[assignee]'"),
           // With multiple resource properties (sorted alphabetically)
           Arguments.of(
               Collections.emptySet(),
-              Map.of("propB", "value2", "propA", "value1"),
-              "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE', resource did not match property constraints '[propA, propB]'"),
+              UserTaskAuthorizationProperties.builder()
+                  .candidateUsers(List.of("userA"))
+                  .assignee("demo")
+                  .build(),
+              "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE', resource did not match property constraints '[assignee, candidateUsers]'"),
           // With multiple resource ids and properties (sorted alphabetically)
           Arguments.of(
               Set.of("id5", "id1", "id9"),
-              Map.of("propD", "value2", "propY", "value1", "propA", "value1"),
+              UserTaskAuthorizationProperties.builder()
+                  .candidateUsers(List.of("userA"))
+                  .candidateGroups(List.of("groupB"))
+                  .assignee("demo")
+                  .build(),
               "Insufficient permissions to perform operation 'READ' on resource 'RESOURCE', required resource identifiers are one of '[*, id1, id5, id9]' "
-                  + "or resource must match property constraints '[propA, propD, propY]'"));
+                  + "or resource must match property constraints '[assignee, candidateGroups, candidateUsers]'"));
     }
 
     @ParameterizedTest
