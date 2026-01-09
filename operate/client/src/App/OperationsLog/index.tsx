@@ -14,7 +14,6 @@ import {PAGE_TITLE} from 'modules/constants';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 import {Container} from './styled';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {observer} from 'mobx-react';
 
@@ -36,7 +35,6 @@ const OperationsLog: React.FC = observer(() => {
     document.title = PAGE_TITLE.AUDIT_LOG;
 
     return () => {
-      processInstancesStore.reset();
       processesStore.reset();
     };
   }, []);
