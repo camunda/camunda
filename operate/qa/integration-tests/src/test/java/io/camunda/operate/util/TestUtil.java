@@ -12,6 +12,12 @@ import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndexTemplateRequest;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
 import io.camunda.webapps.operate.TreePath;
@@ -41,13 +47,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
-import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -447,26 +446,35 @@ public abstract class TestUtil {
     return variable;
   }
 
-  public static void removeAllIndices(final RestHighLevelClient esClient, final String prefix) {
+  public static void removeAllIndices(final ElasticsearchClient es8Client, final String prefix) {
     try {
-      LOGGER.info("Removing indices");
-      final var indexResponses =
-          esClient.indices().get(new GetIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
-      for (final String index : indexResponses.getIndices()) {
-        esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
+      LOGGER.info("Removing indices with ES8 client");
+
+      // Get all indices matching the prefix and delete in bulk
+      final var getIndexRequest = new GetIndexRequest.Builder().index(prefix + "*").build();
+      final var indexResponses = es8Client.indices().get(getIndexRequest);
+      final var indices = indexResponses.result().keySet().stream().toList();
+
+      if (!indices.isEmpty()) {
+        final var deleteIndexRequest = new DeleteIndexRequest.Builder().index(indices).build();
+        es8Client.indices().delete(deleteIndexRequest);
+        LOGGER.info("Deleted {} indices", indices.size());
       }
-      final var templateResponses =
-          esClient
-              .indices()
-              .getIndexTemplate(
-                  new GetComposableIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
-      for (final String template : templateResponses.getIndexTemplates().keySet()) {
-        esClient
-            .indices()
-            .deleteIndexTemplate(
-                new DeleteComposableIndexTemplateRequest(template), RequestOptions.DEFAULT);
+
+      // Get all templates matching the prefix and delete in bulk
+      final var getTemplateRequest =
+          new GetIndexTemplateRequest.Builder().name(prefix + "*").build();
+      final var templateResponses = es8Client.indices().getIndexTemplate(getTemplateRequest);
+      final var templateNames =
+          templateResponses.indexTemplates().stream().map(template -> template.name()).toList();
+
+      if (!templateNames.isEmpty()) {
+        final var deleteTemplateRequest =
+            new DeleteIndexTemplateRequest.Builder().name(templateNames).build();
+        es8Client.indices().deleteIndexTemplate(deleteTemplateRequest);
+        LOGGER.info("Deleted {} templates", templateNames.size());
       }
-    } catch (final ElasticsearchStatusException | IOException ex) {
+    } catch (final ElasticsearchException | IOException ex) {
       LOGGER.error(ex.getMessage(), ex);
     }
   }
