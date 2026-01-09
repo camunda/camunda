@@ -9,24 +9,18 @@
       "pluginName": "Prometheus"
     }
   ],
-  "__elements": {},
+  "__elements": [],
   "__requires": [
     {
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "12.1.0"
+      "version": ""
     },
     {
       "type": "datasource",
       "id": "prometheus",
       "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
       "version": ""
     }
   ],
@@ -171,6 +165,7 @@
       "type": "timeseries"
     }
   ],
+  "preload": false,
   "schemaVersion": 41,
   "tags": [],
   "templating": {
@@ -248,5 +243,5 @@
   "timezone": "browser",
   "title": "Identity Overview",
   "uid": "identity",
-  "version": 4
+  "version": 11
 }
