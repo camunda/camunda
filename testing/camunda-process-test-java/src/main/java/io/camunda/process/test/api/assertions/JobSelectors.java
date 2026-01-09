@@ -114,7 +114,7 @@ public class JobSelectors {
 
     @Override
     public String describe() {
-      return String.format("processDefinitionId: %s", processDefinitionId);
+      return "processDefinitionId: " + processDefinitionId;
     }
 
     @Override
