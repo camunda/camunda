@@ -17,7 +17,6 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -69,7 +68,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
               .toList();
 
       if (batchOperationRequestDto.getSearchBefore() != null) {
-        return ImmutableList.copyOf(batchOperationEntities).reverse();
+        return List.copyOf(batchOperationEntities).reversed();
       }
 
       return batchOperationEntities;
