@@ -131,6 +131,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final int processInstanceKey = 123;
     final int elementInstanceKey = 456;
     final int processDefinitionKey = 555;
+    final long rootProcessInstanceKey = 321;
     final long timestamp = Instant.now().toEpochMilli();
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
@@ -149,6 +150,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
             .withMessageName(messageName)
             .withProcessInstanceKey(processInstanceKey)
             .withTenantId(tenantId)
+            .withRootProcessInstanceKey(rootProcessInstanceKey)
             .build();
     final Record<ProcessMessageSubscriptionRecordValue> record =
         factory.generateRecord(
@@ -184,6 +186,29 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     assertThat(entity.getSubscriptionKey()).isEqualTo(recordKey);
     assertThat(entity.getSubscriptionType()).isEqualTo("PROCESS_EVENT");
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
+    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withRootProcessInstanceKey(-1L)
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CORRELATED).withValue(recordValue));
+
+    final CorrelatedMessageSubscriptionEntity entity =
+        underTest.createNewEntity(underTest.generateIds(record).getFirst());
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
