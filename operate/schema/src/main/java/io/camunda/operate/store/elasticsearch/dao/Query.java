@@ -82,7 +82,12 @@ public class Query {
 
   @Override
   public int hashCode() {
-    return Objects.hash(esQuery, groupName, aggregation);
+    // Use string representations for hashCode since ES8 client objects don't implement proper
+    // equals/hashCode
+    return Objects.hash(
+        esQuery != null ? esQuery.toString() : null,
+        groupName,
+        aggregation != null ? aggregation.toString() : null);
   }
 
   @Override
@@ -94,9 +99,14 @@ public class Query {
       return false;
     }
     final Query query = (Query) o;
-    return Objects.equals(esQuery, query.esQuery)
+    // Compare string representations since ES8 client objects don't implement proper equals()
+    return Objects.equals(
+            esQuery != null ? esQuery.toString() : null,
+            query.esQuery != null ? query.esQuery.toString() : null)
         && Objects.equals(groupName, query.groupName)
-        && Objects.equals(aggregation, query.aggregation);
+        && Objects.equals(
+            aggregation != null ? aggregation.toString() : null,
+            query.aggregation != null ? query.aggregation.toString() : null);
   }
 
   @Override
