@@ -112,7 +112,7 @@ public record Authorization<T>(
   }
 
   public boolean appliesTo(final T document) {
-    return condition.test(document);
+    return condition == null || condition.test(document);
   }
 
   @JsonIgnore
@@ -126,7 +126,7 @@ public record Authorization<T>(
     private PermissionType permissionType;
     private List<String> resourceIds;
     private Function<T, String> resourceIdSupplier;
-    private Predicate<T> condition = t -> true;
+    private Predicate<T> condition = null;
     private boolean transitive = false;
 
     public Builder<T> resourceType(final AuthorizationResourceType resourceType) {
