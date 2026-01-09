@@ -54,7 +54,7 @@ public record Lease(
         metadata.task().get(), expireAt, nodeInstance, VersionMappings.of(nodeInstance));
   }
 
-  public static Lease from(
+  public static Lease nextLease(
       final String taskId, final long expiry, final NodeInstance currentNodeInstance) {
     final var nodeInstance = currentNodeInstance.nextVersion();
     return new Lease(taskId, expiry, nodeInstance, VersionMappings.of(nodeInstance));
