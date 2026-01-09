@@ -56,6 +56,7 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   public static final String META_TOTAL_SIZE_EXCEEDED = "__total_size_exceeded__";
 
   public static final String META_BATCH_STARTING_TIME = "__batch_starting_time__";
+  public static final String META_BATCH_ENDING_TIME = "__batch_ending_time__";
 
   public static final long ZERO = 0L;
 
@@ -213,7 +214,8 @@ public class DbJobMetricsState implements MutableJobMetricsState {
     setMetadataValue(META_BATCH_RECORD_TOTAL_SIZE, 0L);
     setMetadataValue(META_COUNTER, 0L);
     setMetadataValue(META_TOTAL_SIZE_EXCEEDED, 0L);
-    setMetadataValue(META_BATCH_STARTING_TIME, clock.millis());
+    setMetadataValue(META_BATCH_STARTING_TIME, -1L);
+    setMetadataValue(META_BATCH_STARTING_TIME, -1L);
   }
 
   private void incrementVerifiedMetric(
@@ -243,13 +245,21 @@ public class DbJobMetricsState implements MutableJobMetricsState {
       copyMetricsValue(cachedValue, metricsValue);
     }
 
-    // Increment the metric for the specified status
-    metricsValue.incrementMetric(status, clock.millis());
+    // Get current epoch millis
+    final long currentEpochMillis = clock.millis();
 
+    // Increment the metric for the specified status
+    metricsValue.incrementMetric(status, currentEpochMillis);
     // Write back to column family
     metricsColumnFamily.upsert(metricsKey, metricsValue);
     // Update the cache
     metricsCache.put(cacheKey, metricsValue.copy());
+
+    if (metricsCache.size() == 1) {
+      // First entry, set batch starting time
+      setMetadataValue(META_BATCH_STARTING_TIME, currentEpochMillis);
+    }
+    setMetadataValue(META_BATCH_ENDING_TIME, currentEpochMillis);
   }
 
   /**

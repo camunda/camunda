@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BATCH_ENDING_TIME;
+import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BATCH_STARTING_TIME;
+
 import io.camunda.zeebe.engine.state.jobmetrics.MetricsConsumer;
 import java.util.List;
 
@@ -35,6 +38,24 @@ public interface JobMetricsState {
    * @return the metadata value, or 0 if not found
    */
   long getMetadata(String key);
+
+  /**
+   * Gets the start time of the current metrics batch.
+   *
+   * @return the batch start time in epoch milliseconds, or 0 if not set
+   */
+  default long getBatchStartTime() {
+    return getMetadata(META_BATCH_STARTING_TIME);
+  }
+
+  /**
+   * Gets the end time of the current metrics batch.
+   *
+   * @return the batch end time in epoch milliseconds, or 0 if not set
+   */
+  default long getBatchEndTime() {
+    return getMetadata(META_BATCH_ENDING_TIME);
+  }
 
   /**
    * Checks if the metrics collection has been truncated due to size limits.
