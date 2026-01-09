@@ -9,10 +9,14 @@ package io.camunda.zeebe.journal.fs;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.fs.LibC.InvalidLibC;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.RandomAccessFile;
@@ -38,11 +42,16 @@ final class PosixFsTest {
   @Test
   void shouldDisablePosixFallocate() {
     // given
-    final var posixFs = new PosixFs();
+    final var libC = mock(LibC.class);
+    final var posixFs = new PosixFs(libC);
     posixFs.disablePosixFallocate();
 
     // then
     assertThat(posixFs.isPosixFallocateEnabled()).isFalse();
+    assertThatThrownBy(() -> posixFs.posixFallocate(mock(FileDescriptor.class), 10, 10))
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessage("Failed to pre-allocate file natively: posix_fallocate is disabled");
+    verifyNoInteractions(libC);
   }
 
   @Test
