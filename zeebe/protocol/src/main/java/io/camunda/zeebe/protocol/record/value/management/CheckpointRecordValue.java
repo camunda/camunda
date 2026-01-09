@@ -38,4 +38,6 @@ public interface CheckpointRecordValue extends RecordValue {
    * @return the type of the checkpoint
    */
   CheckpointType getCheckpointType();
+
+  long getFirstLogPosition();
 }

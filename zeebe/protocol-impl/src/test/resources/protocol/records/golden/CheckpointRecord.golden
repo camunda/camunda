@@ -24,12 +24,14 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
       new LongProperty(CHECKPOINT_POSITION_KEY, -1L);
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
       new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MANUAL_BACKUP);
+  private final LongProperty firstLogPositionProperty = new LongProperty("firstLogPosition", -1L);
 
   public CheckpointRecord() {
-    super(3);
+    super(4);
     declareProperty(checkpointIdProperty)
         .declareProperty(checkpointPositionProperty)
-        .declareProperty(checkpointTypeProperty);
+        .declareProperty(checkpointTypeProperty)
+        .declareProperty(firstLogPositionProperty);
   }
 
   @Override
@@ -45,6 +47,16 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
   @Override
   public CheckpointType getCheckpointType() {
     return checkpointTypeProperty.getValue();
+  }
+
+  @Override
+  public long getFirstLogPosition() {
+    return firstLogPositionProperty.getValue();
+  }
+
+  public CheckpointRecord setFirstLogPosition(final long firstLogPosition) {
+    firstLogPositionProperty.setValue(firstLogPosition);
+    return this;
   }
 
   public CheckpointRecord setCheckpointType(final CheckpointType checkpointType) {

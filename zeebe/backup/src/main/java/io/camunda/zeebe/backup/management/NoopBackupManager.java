@@ -76,4 +76,14 @@ public class NoopBackupManager implements BackupManager {
       final String failureReason) {
     LOG.warn("Attempted to create failed backup, but cannot do it. {}", errorMessage);
   }
+
+  @Override
+  public void extendRange(final long previousCheckpointId, final long newCheckpointId) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void startNewRange(final long checkpointId) {
+    throw new UnsupportedOperationException();
+  }
 }

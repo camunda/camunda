@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -206,7 +207,8 @@ final class BackupServiceImpl {
                 new CheckpointRecord()
                     .setCheckpointId(checkpointId)
                     .setCheckpointPosition(checkpointPosition)
-                    .setCheckpointType(checkpointType)));
+                    .setCheckpointType(checkpointType)
+                    .setFirstLogPosition(inProgressBackup.getFirstLogPosition().orElse(-1L))));
     switch (confirmationWritten) {
       case Either.Left(final var error) ->
           LOG.atWarn()
@@ -400,5 +402,55 @@ final class BackupServiceImpl {
                     return null;
                   });
         });
+  }
+
+  public void extendRange(
+      final int partitionId, final long previousCheckpointId, final long newCheckpointId) {
+    backupStore
+        .storeRangeMarker(partitionId, new BackupRangeMarker.End(newCheckpointId))
+        .thenCompose(
+            ignored ->
+                backupStore.deleteRangeMarker(
+                    partitionId, new BackupRangeMarker.End(previousCheckpointId)))
+        .thenAccept(
+            ignored ->
+                LOG.atDebug()
+                    .addKeyValue("previousCheckpointId", previousCheckpointId)
+                    .addKeyValue("newCheckpointId", newCheckpointId)
+                    .setMessage("Extended backup range")
+                    .log())
+        .exceptionally(
+            error -> {
+              LOG.atWarn()
+                  .addKeyValue("previousCheckpointId", previousCheckpointId)
+                  .addKeyValue("newCheckpointId", newCheckpointId)
+                  .setCause(error)
+                  .setMessage("Failed to extend backup range")
+                  .log();
+              return null;
+            });
+  }
+
+  public void startNewRange(final int partitionId, final long checkpointId) {
+    backupStore
+        .storeRangeMarker(partitionId, new BackupRangeMarker.Start(checkpointId))
+        .thenCompose(
+            ignored ->
+                backupStore.storeRangeMarker(partitionId, new BackupRangeMarker.End(checkpointId)))
+        .thenAccept(
+            ignored ->
+                LOG.atDebug()
+                    .addKeyValue("checkpointId", checkpointId)
+                    .setMessage("Started new backup range")
+                    .log())
+        .exceptionally(
+            error -> {
+              LOG.atWarn()
+                  .addKeyValue("checkpointId", checkpointId)
+                  .setCause(error)
+                  .setMessage("Failed to start new backup range")
+                  .log();
+              return null;
+            });
   }
 }

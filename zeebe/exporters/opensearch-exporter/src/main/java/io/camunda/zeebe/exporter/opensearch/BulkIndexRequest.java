@@ -85,6 +85,7 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String AUTH_INFO_PROPERTY = "authInfo";
   private static final String CHECKPOINT_TIMESTAMP_PROPERTY = "checkpointTimestamp";
   private static final String CHECKPOINT_TYPE_PROPERTY = "checkpointType";
+  private static final String CHECKPOINT_FIRST_LOG_POSITION_PROPERTY = "firstLogPosition";
   private static final String MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY =
       "processDefinitionKey";
   private static final String PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY =
@@ -220,7 +221,11 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
 
-  @JsonIgnoreProperties({CHECKPOINT_TYPE_PROPERTY, CHECKPOINT_TIMESTAMP_PROPERTY})
+  @JsonIgnoreProperties({
+    CHECKPOINT_TYPE_PROPERTY,
+    CHECKPOINT_TIMESTAMP_PROPERTY,
+    CHECKPOINT_FIRST_LOG_POSITION_PROPERTY
+  })
   private static final class CheckpointRecordMixin {}
 
   @JsonIgnoreProperties({MESSAGE_SUBSCRIPTION_PROCESS_DEFINITION_KEY_PROPERTY})

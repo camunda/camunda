@@ -11,8 +11,11 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.OptionalLong;
 
 interface InProgressBackup {
+
+  OptionalLong getFirstLogPosition();
 
   BackupDescriptor backupDescriptor();
 

@@ -516,6 +516,56 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
+  void shouldStartNewRangeWhenFirstBackupConfirmed() {
+    // given
+    final var newCheckpointId = 5;
+    final var newCheckpointPosition = 50;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(newCheckpointId)
+            .setCheckpointPosition(newCheckpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(-1);
+    final var record =
+        new MockTypedCheckpointRecord(
+            newCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, times(1)).startNewRange(newCheckpointId);
+  }
+
+  @Test
+  void shouldExtendRangeWhenSubsequentBackupConfirmed() {
+    // given
+    final var currentBackupId = 5;
+    final var currentBackupPosition = 50;
+    final var timestamp = Instant.now().toEpochMilli();
+    state.setLatestBackupInfo(
+        currentBackupId, currentBackupPosition, timestamp, CheckpointType.MANUAL_BACKUP);
+
+    final var newCheckpointId = 10;
+    final var newCheckpointPosition = 100;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(newCheckpointId)
+            .setCheckpointPosition(newCheckpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(currentBackupPosition); // position 50, so 50 <= 50+1 is true
+    final var record =
+        new MockTypedCheckpointRecord(
+            newCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    verify(backupManager, times(1)).extendRange(currentBackupId, newCheckpointId);
+  }
+
+  @Test
   void shouldReplayConfirmedBackupRecord() {
     // given
     final var backupId = 15;

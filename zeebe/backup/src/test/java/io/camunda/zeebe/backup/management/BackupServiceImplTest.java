@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,6 +47,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -365,8 +367,8 @@ class BackupServiceImplTest {
     when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
 
     final BackupStatus backupNode2 = mock(BackupStatus.class);
-    when(backupNode1.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
-    when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
+    when(backupNode2.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backupNode2.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
 
     when(backupStore.list(
             new BackupIdentifierWildcardImpl(
@@ -374,6 +376,8 @@ class BackupServiceImplTest {
         .thenReturn(CompletableFuture.completedFuture(List.of(backupNode1, backupNode2)));
 
     when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
@@ -400,6 +404,8 @@ class BackupServiceImplTest {
     when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
     when(backupStore.markFailed(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
@@ -519,6 +525,11 @@ class BackupServiceImplTest {
       id = new BackupIdentifierImpl(1, 2, 3);
       checkpointDescriptor =
           new BackupDescriptorImpl(1L, 2, "1.2.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+    }
+
+    @Override
+    public OptionalLong getFirstLogPosition() {
+      return OptionalLong.empty();
     }
 
     @Override
