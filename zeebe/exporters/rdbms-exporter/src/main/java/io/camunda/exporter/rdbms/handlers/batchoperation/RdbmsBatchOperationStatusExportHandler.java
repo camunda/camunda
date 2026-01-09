@@ -77,6 +77,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
             String.valueOf(record.getBatchOperationReference()),
             getItemKey(record),
             getProcessInstanceKey(record),
+            getRootProcessInstanceKey(record),
             state,
             DateUtil.toOffsetDateTime(record.getTimestamp()),
             errorMessage));
@@ -122,6 +123,14 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
    * @return the process instance key
    */
   abstract long getProcessInstanceKey(Record<T> record);
+
+  /**
+   * Extract the root process instance key from the record.
+   *
+   * @param record the record
+   * @return the root process instance key
+   */
+  abstract long getRootProcessInstanceKey(Record<T> record);
 
   /** Checks if the batch operation item is completed */
   abstract boolean isCompleted(Record<T> record);
