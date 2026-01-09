@@ -51,6 +51,7 @@ public final class IncidentServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     securityContextProvider = mock(SecurityContextProvider.class);
     authentication = mock(CamundaAuthentication.class);
+
     services =
         new IncidentServices(
             mock(BrokerClient.class),
@@ -143,7 +144,7 @@ public final class IncidentServiceTest {
         .thenReturn(SearchQueryResult.of(entity));
 
     final var searchQueryResult =
-        client.searchIncidentProcessInstanceStatisticsByDefinition(
+        services.searchIncidentProcessInstanceStatisticsByDefinition(
             SearchQueryBuilders.incidentProcessInstanceStatisticsByDefinitionQuery()
                 .filter(f -> f.states(state).errorMessageHashes(errorHashCode))
                 .build());

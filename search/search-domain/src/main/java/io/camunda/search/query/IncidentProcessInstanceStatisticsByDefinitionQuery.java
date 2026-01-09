@@ -32,6 +32,11 @@ public record IncidentProcessInstanceStatisticsByDefinitionQuery(
     return fn.apply(new Builder()).build();
   }
 
+  @Override
+  public IncidentProcessInstanceStatisticsByDefinitionAggregation aggregation() {
+    return new IncidentProcessInstanceStatisticsByDefinitionAggregation(filter, sort, page);
+  }
+
   public static final class Builder
       extends SearchQueryBase.AbstractQueryBuilder<
           IncidentProcessInstanceStatisticsByDefinitionQuery.Builder>

@@ -295,7 +295,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>
       searchIncidentProcessInstanceStatisticsByDefinition(
           final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
-    return SearchQueryResult.empty();
+
+    return doSearchWithReader(readers.incidentProcessInstanceStatisticsByDefinitionReader(), query);
   }
 
   @Override

@@ -44,5 +44,6 @@ public record SearchClientReaders(
     VariableReader variableReader,
     ClusterVariableReader clusterVariableReader,
     AuditLogReader auditLogReader,
-    IncidentProcessInstanceStatisticsByErrorReader
-        incidentProcessInstanceStatisticsByErrorReader) {}
+    IncidentProcessInstanceStatisticsByErrorReader incidentProcessInstanceStatisticsByErrorReader,
+    IncidentProcessInstanceStatisticsByDefinitionReader
+        incidentProcessInstanceStatisticsByDefinitionReader) {}

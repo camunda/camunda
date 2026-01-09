@@ -668,24 +668,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               "order": "asc"
             },
             {
-              "field": "processDefinitionId",
-              "order": "desc"
-            },
-            {
-              "field": "processDefinitionVersion",
-              "order": "asc"
-            },
-            {
-              "field": "processDefinitionName",
-              "order": "desc"
-            },
-            {
               "field": "tenantId",
-              "order": "asc"
+              "order": "desc"
             },
             {
               "field": "activeInstancesWithErrorCount",
-              "order": "desc"
+              "order": "asc"
             }
           ]
         }
@@ -717,16 +705,10 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                     s ->
                         s.processDefinitionKey()
                             .asc()
-                            .processDefinitionId()
-                            .desc()
-                            .processDefinitionVersion()
-                            .asc()
-                            .processDefinitionName()
-                            .desc()
                             .tenantId()
-                            .asc()
+                            .desc()
                             .activeInstancesWithErrorCount()
-                            .desc())
+                            .asc())
                 .build());
   }
 

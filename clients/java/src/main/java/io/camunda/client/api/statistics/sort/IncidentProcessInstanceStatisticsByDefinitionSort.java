@@ -22,12 +22,6 @@ public interface IncidentProcessInstanceStatisticsByDefinitionSort
 
   IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionKey();
 
-  IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionId();
-
-  IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionName();
-
-  IncidentProcessInstanceStatisticsByDefinitionSort processDefinitionVersion();
-
   IncidentProcessInstanceStatisticsByDefinitionSort tenantId();
 
   IncidentProcessInstanceStatisticsByDefinitionSort activeInstancesWithErrorCount();
