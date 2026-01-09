@@ -288,6 +288,7 @@ public class UserTaskJobBasedHandlerTest {
     final long processDefinitionKey = 555;
     final long flowNodeInstanceKey = 456;
     final long recordKey = 110;
+    final long rootProcessInstanceKey = 999;
     exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final var assignee = "foo";
@@ -311,6 +312,7 @@ public class UserTaskJobBasedHandlerTest {
             .withProcessDefinitionKey(processDefinitionKey)
             .withElementInstanceKey(flowNodeInstanceKey)
             .withElementId(elementId)
+            .withRootProcessInstanceKey(rootProcessInstanceKey)
             .build();
 
     final Record<JobRecordValue> jobRecord =
@@ -368,6 +370,28 @@ public class UserTaskJobBasedHandlerTest {
         .isEqualTo(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(jobRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.JOB_WORKER);
+    assertThat(taskEntity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final JobRecordValue jobRecordValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withRootProcessInstanceKey(-1)
+            .build();
+
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB, r -> r.withIntent(JobIntent.CREATED).withValue(jobRecordValue));
+
+    // when
+    final TaskEntity taskEntity = new TaskEntity().setId("123");
+    underTest.updateEntity(jobRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
