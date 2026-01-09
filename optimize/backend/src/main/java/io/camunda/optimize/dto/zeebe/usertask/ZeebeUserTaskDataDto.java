@@ -151,6 +151,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     return tags;
   }
 
+  @Override
   public long getRootProcessInstanceKey() {
     return -1L; // not used in Optimize
   }

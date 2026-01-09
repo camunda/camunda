@@ -48,7 +48,7 @@
 
     <zeebe.version>${project.version}</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>8.9.0-alpha3</zeebe.docker.version>
+    <zeebe.docker.version>8.9</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
