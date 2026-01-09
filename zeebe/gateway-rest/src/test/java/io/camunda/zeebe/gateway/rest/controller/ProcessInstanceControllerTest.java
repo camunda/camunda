@@ -1924,7 +1924,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final long processInstanceKey = 1L;
     final var sequenceFlows =
-        List.of(new SequenceFlowEntity("pi1_sequenceFlow1", "node1", 1L, 1L, "pd1", "<default>"));
+        List.of(
+            new SequenceFlowEntity("pi1_sequenceFlow1", "node1", 1L, 37L, 1L, "pd1", "<default>"));
     when(processInstanceServices.sequenceFlows(processInstanceKey)).thenReturn(sequenceFlows);
     final var response =
         """

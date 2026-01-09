@@ -254,6 +254,46 @@ public class RecordFixtures {
         .build();
   }
 
+  protected static ImmutableRecord<RecordValue> getSequenceFlowTakenRecord(final Long position) {
+    return getSequenceFlowTakenRecord(position, FACTORY.generateObject(Long.class));
+  }
+
+  protected static ImmutableRecord<RecordValue> getSequenceFlowTakenRecord(
+      final Long position, final long elementKey) {
+    final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withKey(elementKey)
+        .withValue(
+            ImmutableProcessInstanceRecordValue.builder()
+                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(elementKey)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getSequenceFlowDeletedRecord(
+      final Long position, final long elementKey, final RecordValue recordValue) {
+    final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withKey(elementKey)
+        .withValue(recordValue)
+        .build();
+  }
+
   protected static ImmutableRecord<RecordValue> getUserTaskCreatingRecord(final Long position) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.USER_TASK);
 
