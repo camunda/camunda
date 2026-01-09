@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.PostgresqlSessionConfigMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -55,6 +56,7 @@ public class RdbmsWriterFactory {
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
   private final ClusterVariableMapper clusterVariableMapper;
   private final HistoryDeletionMapper historyDeletionMapper;
+  private final PostgresqlSessionConfigMapper postgresqlSessionConfigMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -78,7 +80,8 @@ public class RdbmsWriterFactory {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final PostgresqlSessionConfigMapper postgresqlSessionConfigMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -101,6 +104,7 @@ public class RdbmsWriterFactory {
     this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
     this.clusterVariableMapper = clusterVariableMapper;
     this.historyDeletionMapper = historyDeletionMapper;
+    this.postgresqlSessionConfigMapper = postgresqlSessionConfigMapper;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
@@ -134,6 +138,7 @@ public class RdbmsWriterFactory {
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
         clusterVariableMapper,
-        historyDeletionMapper);
+        historyDeletionMapper,
+        postgresqlSessionConfigMapper);
   }
 }

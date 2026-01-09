@@ -67,6 +67,7 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.PostgresqlSessionConfigMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -352,7 +353,8 @@ public class RdbmsConfiguration {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final PostgresqlSessionConfigMapper postgresqlSessionConfigMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -375,7 +377,8 @@ public class RdbmsConfiguration {
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
         clusterVariableMapper,
-        historyDeletionMapper);
+        historyDeletionMapper,
+        postgresqlSessionConfigMapper);
   }
 
   @Bean

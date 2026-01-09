@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.PostgresqlSessionConfigMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -68,6 +69,7 @@ public class RdbmsWriters {
   private final ExporterPositionService exporterPositionService;
 
   private final RdbmsWriterMetrics metrics;
+  private final PostgresqlSessionConfigMapper postgresqlSessionConfigMapper;
 
   private final Map<Class<?>, RdbmsWriter> writers = new HashMap<>();
 
@@ -94,10 +96,12 @@ public class RdbmsWriters {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final PostgresqlSessionConfigMapper postgresqlSessionConfigMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     this.metrics = metrics;
+    this.postgresqlSessionConfigMapper = postgresqlSessionConfigMapper;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
 
     writers.put(
@@ -289,6 +293,10 @@ public class RdbmsWriters {
 
   public RdbmsWriterMetrics getMetrics() {
     return metrics;
+  }
+
+  public PostgresqlSessionConfigMapper getPostgresqlSessionConfigMapper() {
+    return postgresqlSessionConfigMapper;
   }
 
   public void flush() {

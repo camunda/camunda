@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.PostgresqlSessionConfigMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -51,6 +52,8 @@ public class HistoryCleanupService {
   private final UsageMetricTUWriter usageMetricTUWriter;
   private final AuditLogWriter auditLogWriter;
 
+  private final PostgresqlSessionConfigMapper postgresqlSessionConfigMapper;
+
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
   public HistoryCleanupService(final RdbmsWriterConfig config, final RdbmsWriters rdbmsWriters) {
@@ -87,6 +90,7 @@ public class HistoryCleanupService {
     usageMetricWriter = rdbmsWriters.getUsageMetricWriter();
     usageMetricTUWriter = rdbmsWriters.getUsageMetricTUWriter();
     auditLogWriter = rdbmsWriters.getAuditLogWriter();
+    postgresqlSessionConfigMapper = rdbmsWriters.getPostgresqlSessionConfigMapper();
   }
 
   public void scheduleProcessForHistoryCleanup(
@@ -144,50 +148,69 @@ public class HistoryCleanupService {
     try (final var sample = metrics.measureHistoryCleanupDuration()) {
       final long start = System.currentTimeMillis();
 
-      final var numDeletedRecords = new HashMap<String, Integer>();
-      numDeletedRecords.put(
-          "processInstance",
-          processInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "flowNodeInstance",
-          flowNodeInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "incident", incidentWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "userTask", userTaskWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "variable",
-          variableInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "decisionInstance",
-          decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "job", jobWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "sequenceFlow",
-          sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "batchOperationItem",
-          batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "messageSubscription",
-          messageSubscriptionWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "correlatedMessageSubscription",
-          correlatedMessageSubscriptionWriter.cleanupHistory(
-              partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "auditLog", auditLogWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
-      final long end = System.currentTimeMillis();
-      logCleanUpInfo("", partitionId, numDeletedRecords, cleanupDate, end, start);
-      final var nextDuration =
-          calculateNewDuration(lastCleanupInterval.get(partitionId), numDeletedRecords);
-      LOG.trace("Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
+      // Disable sequential scans for PostgreSQL performance optimization
+      try {
+        postgresqlSessionConfigMapper.disableSequentialScan();
+      } catch (final Exception e) {
+        // Ignore if not PostgreSQL or if the command fails
+        LOG.trace("Failed to disable sequential scan (likely not PostgreSQL): {}", e.getMessage());
+      }
 
-      saveLastCleanupInterval(partitionId, nextDuration);
-      return nextDuration;
+      try {
+        final var numDeletedRecords = new HashMap<String, Integer>();
+        numDeletedRecords.put(
+            "processInstance",
+            processInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "flowNodeInstance",
+            flowNodeInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "incident", incidentWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "userTask", userTaskWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "variable",
+            variableInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "decisionInstance",
+            decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "job", jobWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "sequenceFlow",
+            sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "batchOperationItem",
+            batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "messageSubscription",
+            messageSubscriptionWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "correlatedMessageSubscription",
+            correlatedMessageSubscriptionWriter.cleanupHistory(
+                partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "auditLog", auditLogWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        final long end = System.currentTimeMillis();
+        logCleanUpInfo("", partitionId, numDeletedRecords, cleanupDate, end, start);
+        final var nextDuration =
+            calculateNewDuration(lastCleanupInterval.get(partitionId), numDeletedRecords);
+        LOG.trace(
+            "Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
+
+        saveLastCleanupInterval(partitionId, nextDuration);
+        return nextDuration;
+      } finally {
+        // Re-enable sequential scans for PostgreSQL
+        try {
+          postgresqlSessionConfigMapper.enableSequentialScan();
+        } catch (final Exception e) {
+          // Ignore if not PostgreSQL or if the command fails
+          LOG.trace("Failed to enable sequential scan (likely not PostgreSQL): {}", e.getMessage());
+        }
+      }
     }
   }
 
@@ -202,17 +225,35 @@ public class HistoryCleanupService {
     try (final var sample = metrics.measureUsageMetricsHistoryCleanupDuration()) {
       final long start = System.currentTimeMillis();
 
-      final var numDeletedRecords = new HashMap<String, Integer>();
-      numDeletedRecords.put(
-          "usageMetrics",
-          usageMetricWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
-          "usageMetricsTU",
-          usageMetricTUWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
+      // Disable sequential scans for PostgreSQL performance optimization
+      try {
+        postgresqlSessionConfigMapper.disableSequentialScan();
+      } catch (final Exception e) {
+        // Ignore if not PostgreSQL or if the command fails
+        LOG.trace("Failed to disable sequential scan (likely not PostgreSQL): {}", e.getMessage());
+      }
 
-      final long end = System.currentTimeMillis();
+      try {
+        final var numDeletedRecords = new HashMap<String, Integer>();
+        numDeletedRecords.put(
+            "usageMetrics",
+            usageMetricWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
+        numDeletedRecords.put(
+            "usageMetricsTU",
+            usageMetricTUWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
 
-      logCleanUpInfo("Usage Metrics", partitionId, numDeletedRecords, cleanupDate, end, start);
+        final long end = System.currentTimeMillis();
+
+        logCleanUpInfo("Usage Metrics", partitionId, numDeletedRecords, cleanupDate, end, start);
+      } finally {
+        // Re-enable sequential scans for PostgreSQL
+        try {
+          postgresqlSessionConfigMapper.enableSequentialScan();
+        } catch (final Exception e) {
+          // Ignore if not PostgreSQL or if the command fails
+          LOG.trace("Failed to enable sequential scan (likely not PostgreSQL): {}", e.getMessage());
+        }
+      }
     }
 
     return usageMetricsCleanup;
