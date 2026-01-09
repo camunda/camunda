@@ -640,7 +640,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     currentEvent.readMetadata(metadata);
     metrics.eventSkipped(metadata.getValueType());
-    metrics.incrementSkippedRecords(); // <--- new line
 
     // increase position of all up to date exporters - an up to date exporter is one which has
     // acknowledged the last record we passed to it
@@ -652,19 +651,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void readNextEvent() {
-    metrics.recordReadNextEventDuration(
-        () -> {
-          if (shouldExport()) {
-            final LoggedEvent currentEvent = logStreamReader.next();
-            if (eventFilter == null || eventFilter.applies(currentEvent)) {
-              inExportingPhase = true;
-              exportEvent(currentEvent);
-            } else {
-              skipRecord(currentEvent);
-            }
-          }
-          return null;
-        });
+    if (shouldExport()) {
+      final LoggedEvent currentEvent = logStreamReader.next();
+      if (eventFilter == null || eventFilter.applies(currentEvent)) {
+        inExportingPhase = true;
+        exportEvent(currentEvent);
+      } else {
+        skipRecord(currentEvent);
+      }
+    }
   }
 
   private boolean shouldExport() {
@@ -681,30 +676,19 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       recordExporter.wrap(event);
     } catch (final Exception exception) {
       LOG.warn(ERROR_MESSAGE_DESERIALIZATION_ERROR_EXPORTING_ABORTED, event, exception);
-      metrics.incrementError();
       updateHealthStatusWithError(new UnrecoverableException(exception));
       onFailure();
       return;
     }
 
-    final AtomicBoolean firstAttempt = new AtomicBoolean(true);
     final ActorFuture<Boolean> retryFuture =
-        exportingRetryStrategy.runWithRetry(
-            () -> {
-              // every time export() is called after the first, it’s a retry attempt
-              if (!firstAttempt.getAndSet(false)) {
-                metrics.incrementRetry();
-              }
-              return recordExporter.export();
-            },
-            this::isClosed);
+        exportingRetryStrategy.runWithRetry(recordExporter::export, this::isClosed);
 
     actor.runOnCompletion(
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
-            metrics.incrementError();
             onFailure();
           } else {
             logStream.getFlowControl().onExported(recordExporter.getTypedEvent().getPosition());
