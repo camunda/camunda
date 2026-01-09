@@ -10,6 +10,8 @@ package io.camunda.operate.util;
 import static io.camunda.operate.qa.util.TestContainerUtil.ELS_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.Topology;
@@ -24,7 +26,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetComponentTemplatesRequest;
@@ -54,6 +55,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Autowired
   @Qualifier("esClient")
   protected RestHighLevelClient esClient;
+
+  @Autowired protected ElasticsearchClient es8Client;
 
   protected TestStandaloneBroker zeebeBroker;
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -116,8 +119,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     try {
       final String date =
           DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
-      final RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
-      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      final var refreshRequest = new RefreshRequest.Builder().index(prefix + "*" + date).build();
+      es8Client.indices().refresh(refreshRequest);
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -131,7 +134,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       client = null;
     }
     if (!failed) {
-      TestUtil.removeAllIndices(esClient, prefix);
+      TestUtil.removeAllIndices(es8Client, prefix);
     }
   }
 

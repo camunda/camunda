@@ -12,7 +12,11 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ExpandWildcard;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -47,14 +51,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,7 +126,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void finished(final Description description) {
     if (!failed) {
       final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
-      TestUtil.removeAllIndices(esClient, indexPrefix);
+      TestUtil.removeAllIndices(es8Client, indexPrefix);
     }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
@@ -149,9 +148,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshOperateSearchIndices() {
     try {
-      final RefreshRequest refreshRequest =
-          new RefreshRequest(searchEngineConfiguration.connect().getIndexPrefix() + "*");
-      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      final var refreshRequest =
+          new RefreshRequest.Builder()
+              .index(searchEngineConfiguration.connect().getIndexPrefix() + "*")
+              .build();
+      es8Client.indices().refresh(refreshRequest);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Elasticsearch indices", t);
     }
@@ -257,8 +258,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public boolean indexExists(final String index) throws IOException {
-    final var request = new GetIndexRequest(index);
-    return esClient.indices().exists(request, RequestOptions.DEFAULT);
+    final var request = new ExistsRequest.Builder().index(index).build();
+    return es8Client.indices().exists(request).value();
   }
 
   private String getRoutingKey(final ExporterEntity entity) {
@@ -272,15 +273,15 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
       throws IOException {
-    final GetIndexResponse response =
-        esClient
-            .indices()
-            .get(
-                new GetIndexRequest(indexPrefix + "*")
-                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
-                RequestOptions.DEFAULT);
-    final String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices;
+    final var getIndexRequest =
+        new GetIndexRequest.Builder()
+            .index(indexPrefix + "*")
+            .ignoreUnavailable(true)
+            .allowNoIndices(false)
+            .expandWildcards(ExpandWildcard.Open)
+            .build();
+    final var response = es8Client.indices().get(getIndexRequest);
+    return response.result() != null && response.result().size() >= minCountOfIndices;
   }
 
   private int getIntValueForJSON(

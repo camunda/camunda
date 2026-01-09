@@ -10,6 +10,9 @@ package io.camunda.operate.util.j5templates;
 import static io.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ExpandWildcard;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -20,13 +23,9 @@ import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import java.io.IOException;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -45,17 +44,20 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
   private static final String PATH_SEARCH_STATISTICS =
       "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
+  protected final ElasticsearchClient es8Client;
   protected final RestHighLevelClient esClient;
 
   private final IndexPrefixHolder indexPrefixHolder;
 
   public ElasticsearchContainerManager(
+      final ElasticsearchClient es8Client,
       @Qualifier("esClient") final RestHighLevelClient esClient,
       final SearchEngineConfiguration searchEngineConfiguration,
       final OperateProperties operateProperties,
       final TestSchemaManager schemaManager,
       final IndexPrefixHolder indexPrefixHolder) {
     super(searchEngineConfiguration, operateProperties, schemaManager);
+    this.es8Client = es8Client;
     this.esClient = esClient;
     this.indexPrefixHolder = indexPrefixHolder;
   }
@@ -89,22 +91,22 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
   @Override
   protected boolean areIndicesCreated(final String indexPrefix, final int minCountOfIndices)
       throws IOException {
-    final GetIndexResponse response =
-        esClient
-            .indices()
-            .get(
-                new GetIndexRequest(indexPrefix + "*")
-                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
-                RequestOptions.DEFAULT);
-    final String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices;
+    final var getIndexRequest =
+        new GetIndexRequest.Builder()
+            .index(indexPrefix + "*")
+            .ignoreUnavailable(true)
+            .allowNoIndices(false)
+            .expandWildcards(ExpandWildcard.Open)
+            .build();
+    final var response = es8Client.indices().get(getIndexRequest);
+    return response.result() != null && response.result().size() >= minCountOfIndices;
   }
 
   @Override
   public void stopContainer() {
     // TestUtil.removeIlmPolicy(esClient);
     final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
-    TestUtil.removeAllIndices(esClient, indexPrefix);
+    TestUtil.removeAllIndices(es8Client, indexPrefix);
     searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
 
