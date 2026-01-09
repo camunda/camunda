@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 
 @MultiDbTest
 @CompatibilityTest
-class DecisionSearchIT {
+class DecisionSearchTest {
   private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
   private static final List<DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
       new ArrayList<>();

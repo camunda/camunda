@@ -7,6 +7,7 @@
  */
 package io.camunda.qa.util.multidb;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType.LOCAL;
 import static org.assertj.core.api.Fail.fail;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
@@ -224,11 +225,11 @@ public class CamundaMultiDBExtension
   public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   public static final String KEYCLOAK_REALM = "camunda";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
-  private final DatabaseType databaseType;
   private static final String EXTENSION_COORDINATION_KEY = "extension-running";
   private static final String EXTENSION_NAME = "CamundaMultiDBExtension";
   private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
   private static final String PREFERRED_EXTENSION_COMPATIBILITY = "compatibility";
+  private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final TestStandaloneApplication<?> defaultTestApplication;
 
@@ -266,7 +267,7 @@ public class CamundaMultiDBExtension
   public static DatabaseType currentMultiDbDatabaseType() {
     final String property =
         System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
-    return property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
+    return property == null ? LOCAL : DatabaseType.valueOf(property.toUpperCase());
   }
 
   private void setupTestApplication(final Class<?> testClass) {
@@ -304,8 +305,6 @@ public class CamundaMultiDBExtension
 
     // Mark this extension as running
     store.put(EXTENSION_COORDINATION_KEY, EXTENSION_NAME);
-
-    final var databaseType = getDatabaseType(context);
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
