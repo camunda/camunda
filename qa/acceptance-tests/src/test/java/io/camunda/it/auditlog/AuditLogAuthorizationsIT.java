@@ -18,9 +18,11 @@ import static io.camunda.it.auditlog.AuditLogUtils.PROCESS_C_ID;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
 import static io.camunda.it.auditlog.AuditLogUtils.TENANT_B;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
+import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -139,13 +141,36 @@ public class AuditLogAuthorizationsIT {
   }
 
   @Test
-  void shouldNotAuthorizeWithoutPermissions(
+  void shouldNotAuthorizeWithoutPermissionsSearch(
       @Authenticated(USER_UNAUTHORIZED_NAME) final CamundaClient client) {
     // when
     final var logs = client.newAuditLogSearchRequest().send().join();
 
     // then
     assertThat(logs.items()).isEmpty();
+  }
+
+  @Test
+  void shouldNotAuthorizeWithoutPermissionsGetByKey(
+      @Authenticated(USER_UNAUTHORIZED_NAME) final CamundaClient unauthorizedClient,
+      @Authenticated(USER_A_USERNAME) final CamundaClient authorizedClient) {
+    // when
+    final var logs = authorizedClient.newAuditLogSearchRequest().send().join();
+
+    // then - unauthorized client should throw exception when trying to get by key
+    assertThat(logs.items()).isNotEmpty();
+    assertThatThrownBy(
+            () ->
+                unauthorizedClient
+                    .newAuditLogGetRequest(logs.items().getFirst().getAuditLogKey())
+                    .send()
+                    .join())
+        .isInstanceOf(io.camunda.client.api.command.ProblemException.class)
+        .satisfies(
+            e -> {
+              final var problemException = (io.camunda.client.api.command.ProblemException) e;
+              assertThat(problemException.code()).isEqualTo(403);
+            });
   }
 
   @Test
@@ -160,6 +185,7 @@ public class AuditLogAuthorizationsIT {
                 .allMatch(
                     log -> Objects.isNull(log.getTenantId()) || TENANT_A.equals(log.getTenantId())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
   }
 
   @Test
@@ -182,6 +208,7 @@ public class AuditLogAuthorizationsIT {
             logs.items().stream()
                 .anyMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
   }
 
   @Test
@@ -195,6 +222,7 @@ public class AuditLogAuthorizationsIT {
             logs.items().stream()
                 .allMatch(log -> AuditLogCategoryEnum.ADMIN.equals(log.getCategory())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
   }
 
   // TODO: this one fails, due to the wildcard shortcut in the authorization checks
@@ -222,6 +250,7 @@ public class AuditLogAuthorizationsIT {
             logs.items().stream()
                 .anyMatch(log -> PROCESS_C_ID.equals(log.getProcessDefinitionId())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
   }
 
   @Test
@@ -235,6 +264,7 @@ public class AuditLogAuthorizationsIT {
             logs.items().stream()
                 .allMatch(log -> PROCESS_A_ID.equals(log.getProcessDefinitionId())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
   }
 
   // TODO: this one fails, due to the wildcard shortcut in the authorization checks
@@ -259,6 +289,7 @@ public class AuditLogAuthorizationsIT {
             logs.items().stream()
                 .anyMatch(log -> PROCESS_C_ID.equals(log.getProcessDefinitionId())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
   }
 
   @Test
@@ -277,6 +308,7 @@ public class AuditLogAuthorizationsIT {
             logs.items().stream()
                 .allMatch(log -> PROCESS_C_ID.equals(log.getProcessDefinitionId())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
   }
 
   @Test
@@ -299,5 +331,14 @@ public class AuditLogAuthorizationsIT {
                 .filter(log -> PROCESS_B_ID.equals(log.getProcessDefinitionId()))
                 .allMatch(log -> AuditLogCategoryEnum.USER_TASKS.equals(log.getCategory())))
         .isTrue();
+    assertGetByKeyAccess(client, logs.items().getFirst());
+  }
+
+  private void assertGetByKeyAccess(final CamundaClient client, final AuditLogResult log) {
+    final var fetchedLog = client.newAuditLogGetRequest(log.getAuditLogKey()).send().join();
+
+    // then
+    assertThat(fetchedLog).isNotNull();
+    assertThat(fetchedLog.getAuditLogKey()).isEqualTo(log.getAuditLogKey());
   }
 }
