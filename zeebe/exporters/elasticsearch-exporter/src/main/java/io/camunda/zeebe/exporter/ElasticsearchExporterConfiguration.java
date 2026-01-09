@@ -202,7 +202,18 @@ public class ElasticsearchExporterConfiguration {
     public boolean adHocSubProcessInstruction = true;
 
     // variable name filtering
-    public String variableNameInclusion = "";
+    public String variableNameInclusionExact = "";
+    public String variableNameInclusionStartWith = "";
+    public String variableNameInclusionEndWith = "";
+    public String variableNameInclusionRegex = "";
+    public String variableNameExclusionExact = "";
+    public String variableNameExclusionStartWith = "";
+    public String variableNameExclusionEndWith = "";
+    public String variableNameExclusionRegex = "";
+
+    // variable value type filtering
+    public String variableValueTypeInclusion = "";
+    public String variableValueTypeExclusion = "";
 
     public boolean checkpoint = false;
     public boolean timer = true;
@@ -321,8 +332,6 @@ public class ElasticsearchExporterConfiguration {
           + variable
           + ", variableDocument="
           + variableDocument
-          + ", variableNameInclusion="
-          + variableNameInclusion
           + ", checkpoint="
           + checkpoint
           + ", timer="
