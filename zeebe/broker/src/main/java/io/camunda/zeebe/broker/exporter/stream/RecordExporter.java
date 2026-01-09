@@ -27,7 +27,9 @@ class RecordExporter {
   private boolean shouldExport;
   private int exporterIndex;
   private final InstantSource clock;
+  // Holds the current event being processed. Set by wrap(), used by ensureValueRead().
   private LoggedEvent currentEvent;
+  // Tracks whether the record value has been deserialized. Reset by wrap(), set by ensureValueRead().
   private boolean valueRead;
 
   RecordExporter(
@@ -62,20 +64,25 @@ class RecordExporter {
     return false;
   }
 
-  private void ensureValueRead() {
+  /**
+   * Ensures the record value is deserialized. This is called lazily, only when we actually need
+   * to export the record. Returns false if the value cannot be read (unsupported value type).
+   */
+  private boolean ensureValueRead() {
     if (!valueRead) {
       final UnifiedRecordValue recordValue =
           recordValues.readRecordValue(currentEvent, rawMetadata.getValueType());
       // If recordValue is null, it means the value type is not supported/known
-      // In this case, we cannot export the record
       if (recordValue != null) {
         typedEvent.wrap(currentEvent, rawMetadata, recordValue);
         valueRead = true;
+        return true;
       } else {
-        // Mark as should not export if we can't read the value
-        shouldExport = false;
+        // Value cannot be read for this record type
+        return false;
       }
     }
+    return true;
   }
 
   boolean export() {
@@ -83,12 +90,9 @@ class RecordExporter {
       return true;
     }
 
-    // Ensure the record value is read before starting to export
-    ensureValueRead();
-
-    // After ensuring the value is read, check again if we should export
-    // (ensureValueRead might set shouldExport to false if the value cannot be read)
-    if (!shouldExport) {
+    // Lazily deserialize the record value only when we actually need to export
+    if (!ensureValueRead()) {
+      // Value cannot be read (unsupported value type), skip this record
       return true;
     }
 
