@@ -7,8 +7,8 @@
  * - Please do NOT modify this file.
  */
 
-const PACKAGE_VERSION = '2.12.7'
-const INTEGRITY_CHECKSUM = '4db4a41e972cec1b64cc569c66952d82'
+const PACKAGE_VERSION = '2.10.2'
+const INTEGRITY_CHECKSUM = 'f5825c521429caf22a4dd13b66e243af'
 const IS_MOCKED_RESPONSE = Symbol('isMockedResponse')
 const activeClientIds = new Set()
 
@@ -71,6 +71,11 @@ addEventListener('message', async function (event) {
       break
     }
 
+    case 'MOCK_DEACTIVATE': {
+      activeClientIds.delete(clientId)
+      break
+    }
+
     case 'CLIENT_CLOSED': {
       activeClientIds.delete(clientId)
 
@@ -89,8 +94,6 @@ addEventListener('message', async function (event) {
 })
 
 addEventListener('fetch', function (event) {
-  const requestInterceptedAt = Date.now()
-
   // Bypass navigation requests.
   if (event.request.mode === 'navigate') {
     return
@@ -99,37 +102,31 @@ addEventListener('fetch', function (event) {
   // Opening the DevTools triggers the "only-if-cached" request
   // that cannot be handled by the worker. Bypass such requests.
   if (
-    event.request.cache === 'only-if-cached' &&
-    event.request.mode !== 'same-origin'
+      event.request.cache === 'only-if-cached' &&
+      event.request.mode !== 'same-origin'
   ) {
     return
   }
 
   // Bypass all requests when there are no active clients.
   // Prevents the self-unregistered worked from handling requests
-  // after it's been terminated (still remains active until the next reload).
+  // after it's been deleted (still remains active until the next reload).
   if (activeClientIds.size === 0) {
     return
   }
 
   const requestId = crypto.randomUUID()
-  event.respondWith(handleRequest(event, requestId, requestInterceptedAt))
+  event.respondWith(handleRequest(event, requestId))
 })
 
 /**
  * @param {FetchEvent} event
  * @param {string} requestId
- * @param {number} requestInterceptedAt
  */
-async function handleRequest(event, requestId, requestInterceptedAt) {
+async function handleRequest(event, requestId) {
   const client = await resolveMainClient(event)
   const requestCloneForEvents = event.request.clone()
-  const response = await getResponse(
-    event,
-    client,
-    requestId,
-    requestInterceptedAt,
-  )
+  const response = await getResponse(event, client, requestId)
 
   // Send back the response clone for the "response:*" life-cycle events.
   // Ensure MSW is active and ready to handle the message, otherwise
@@ -141,25 +138,25 @@ async function handleRequest(event, requestId, requestInterceptedAt) {
     const responseClone = response.clone()
 
     sendToClient(
-      client,
-      {
-        type: 'RESPONSE',
-        payload: {
-          isMockedResponse: IS_MOCKED_RESPONSE in response,
-          request: {
-            id: requestId,
-            ...serializedRequest,
-          },
-          response: {
-            type: responseClone.type,
-            status: responseClone.status,
-            statusText: responseClone.statusText,
-            headers: Object.fromEntries(responseClone.headers.entries()),
-            body: responseClone.body,
+        client,
+        {
+          type: 'RESPONSE',
+          payload: {
+            isMockedResponse: IS_MOCKED_RESPONSE in response,
+            request: {
+              id: requestId,
+              ...serializedRequest,
+            },
+            response: {
+              type: responseClone.type,
+              status: responseClone.status,
+              statusText: responseClone.statusText,
+              headers: Object.fromEntries(responseClone.headers.entries()),
+              body: responseClone.body,
+            },
           },
         },
-      },
-      responseClone.body ? [serializedRequest.body, responseClone.body] : [],
+        responseClone.body ? [serializedRequest.body, responseClone.body] : [],
     )
   }
 
@@ -190,25 +187,24 @@ async function resolveMainClient(event) {
   })
 
   return allClients
-    .filter((client) => {
-      // Get only those clients that are currently visible.
-      return client.visibilityState === 'visible'
-    })
-    .find((client) => {
-      // Find the client ID that's recorded in the
-      // set of clients that have registered the worker.
-      return activeClientIds.has(client.id)
-    })
+      .filter((client) => {
+        // Get only those clients that are currently visible.
+        return client.visibilityState === 'visible'
+      })
+      .find((client) => {
+        // Find the client ID that's recorded in the
+        // set of clients that have registered the worker.
+        return activeClientIds.has(client.id)
+      })
 }
 
 /**
  * @param {FetchEvent} event
  * @param {Client | undefined} client
  * @param {string} requestId
- * @param {number} requestInterceptedAt
  * @returns {Promise<Response>}
  */
-async function getResponse(event, client, requestId, requestInterceptedAt) {
+async function getResponse(event, client, requestId) {
   // Clone the request because it might've been already used
   // (i.e. its body has been read and sent to the client).
   const requestClone = event.request.clone()
@@ -225,7 +221,7 @@ async function getResponse(event, client, requestId, requestInterceptedAt) {
     if (acceptHeader) {
       const values = acceptHeader.split(',').map((value) => value.trim())
       const filteredValues = values.filter(
-        (value) => value !== 'msw/passthrough',
+          (value) => value !== 'msw/passthrough',
       )
 
       if (filteredValues.length > 0) {
@@ -254,16 +250,15 @@ async function getResponse(event, client, requestId, requestInterceptedAt) {
   // Notify the client that a request has been intercepted.
   const serializedRequest = await serializeRequest(event.request)
   const clientMessage = await sendToClient(
-    client,
-    {
-      type: 'REQUEST',
-      payload: {
-        id: requestId,
-        interceptedAt: requestInterceptedAt,
-        ...serializedRequest,
+      client,
+      {
+        type: 'REQUEST',
+        payload: {
+          id: requestId,
+          ...serializedRequest,
+        },
       },
-    },
-    [serializedRequest.body],
+      [serializedRequest.body],
   )
 
   switch (clientMessage.type) {
