@@ -129,6 +129,10 @@ public class UserTaskCompletionVariableHandler
     } else {
       snapshotVariableEntity.setValue(variableValueAsString).setIsPreview(false);
     }
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      snapshotVariableEntity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
     return snapshotVariableEntity;
   }
 

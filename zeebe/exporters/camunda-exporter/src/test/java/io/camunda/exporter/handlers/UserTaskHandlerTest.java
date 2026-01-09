@@ -272,6 +272,7 @@ public class UserTaskHandlerTest {
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final var formKey = 456L;
     final var elementId = "elementId";
+    final var rootProcessInstanceKey = 999L;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
             .from(factory.generateObject(UserTaskRecordValue.class))
@@ -286,6 +287,7 @@ public class UserTaskHandlerTest {
             .withElementInstanceKey(flowNodeInstanceKey)
             .withFormKey(formKey)
             .withElementId(elementId)
+            .withRootProcessInstanceKey(rootProcessInstanceKey)
             .build();
 
     final Record<UserTaskRecordValue> taskCreatingRecord =
@@ -357,6 +359,7 @@ public class UserTaskHandlerTest {
             ExporterUtil.toZonedOffsetDateTime(
                 Instant.ofEpochMilli(taskCreatingRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+    assertThat(taskEntity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
   }
 
   @Test
@@ -1198,6 +1201,25 @@ public class UserTaskHandlerTest {
           .describedAs("Expect state to be updated to {}", expectedState)
           .containsEntry(TaskTemplate.STATE, expectedState);
     }
+  }
+
+  @Test
+  public void shouldNotSetRootProcessInstanceKeyWhenUndefined() {
+    // given
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder().withRootProcessInstanceKey(-1L).build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r -> r.withIntent(UserTaskIntent.CREATING).withValue(taskRecordValue));
+
+    // when
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity.getRootProcessInstanceKey()).isNull();
   }
 
   /**
