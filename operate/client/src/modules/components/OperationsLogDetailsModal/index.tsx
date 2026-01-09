@@ -21,7 +21,7 @@ import {
   CheckmarkOutline,
   EventSchedule,
   UserAvatar,
-} from '@carbon/icons-react';
+} from '@carbon/react/icons';
 import {
   FirstColumn,
   IconText,
