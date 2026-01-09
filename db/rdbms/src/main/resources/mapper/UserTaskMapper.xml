@@ -250,45 +250,44 @@
       </foreach>
     </if>
 
-
     <!-- Variables Filter -->
-    <if test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
-      AND EXISTS (Select * from ${prefix}VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
-      AND ( 1 = 1
-      <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter">
-        AND ( v.VAR_NAME = #{variableValueFilter.name}
-        <if
-          test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
-          <foreach collection="variableValueFilter.valueOperations" item="operation">
-            AND
-            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
-          </foreach>
-        </if>
-        )
+    <if
+      test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
+      AND
+      <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter" separator=" AND ">
+        EXISTS (Select * from ${prefix}VARIABLE v where v.PROCESS_INSTANCE_KEY =
+        ut.PROCESS_INSTANCE_KEY
+        AND (
+          ( v.VAR_NAME = #{variableValueFilter.name}
+          <if
+            test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+            <foreach collection="variableValueFilter.valueOperations" item="operation">
+              AND
+              <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+            </foreach>
+          </if>
+        )))
       </foreach>
-      ))
     </if>
 
     <!-- Local Variables Filter -->
     <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
-      AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
-      AND (
-      <foreach collection="filter.localVariableFilters" item="variableValueFilter" separator=" AND ">
-        ( v.VAR_NAME = #{variableValueFilter.name}
-        <if
-          test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
-          <foreach collection="variableValueFilter.valueOperations" item="operation">
-            AND
-            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
-          </foreach>
-        </if>
-        )
+      AND
+      <foreach collection="filter.localVariableFilters" item="variableValueFilter"
+        separator=" AND ">
+        EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
+        AND (
+          ( v.VAR_NAME = #{variableValueFilter.name}
+          <if
+            test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+            <foreach collection="variableValueFilter.valueOperations" item="operation">
+              AND
+              <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+            </foreach>
+          </if>
+          )))
       </foreach>
-      ))
     </if>
-
-
-
   </sql>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
