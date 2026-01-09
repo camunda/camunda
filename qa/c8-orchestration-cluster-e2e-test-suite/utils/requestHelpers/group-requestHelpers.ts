@@ -152,3 +152,26 @@ export function assertGroupsInResponse(
   assertRequiredFields(matchingItem, ['groupId']);
   assertEqualsForKeys(matchingItem, expectedBody, ['groupId']);
 }
+
+export async function createGroup(
+  request: APIRequestContext,
+  state?: Record<string, unknown>,
+  key?: string,
+) {
+  const body = CREATE_NEW_GROUP();
+
+  const res = await request.post(buildUrl('/groups'), {
+    headers: jsonHeaders(),
+    data: body,
+  });
+
+  await assertStatusCode(res, 201);
+  const json = await res.json();
+  assertRequiredFields(json, groupRequiredFields);
+  if (state && key) {
+    state[`groupId${key}`] = json.groupId;
+    state[`name${key}`] = json.name;
+    state[`description${key}`] = json.description;
+  }
+  return body;
+}

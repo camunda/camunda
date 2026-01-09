@@ -31,6 +31,7 @@ export {assertTenantInResponse} from './tenant-requestHelpers';
 export {assertDecisionDefinitionInResponse} from './decision-definition-requestHelpers';
 export {deployDecisionAndStoreResponse} from './decision-definition-requestHelpers';
 export {assertGroupsInResponse} from './group-requestHelpers';
+export {createGroup} from './group-requestHelpers';
 export {createGroupAndStoreResponseFields} from './group-requestHelpers';
 export {DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT} from '../beans/requestBeans';
 export {assertUserInResponse} from './user-requestHelpers';
@@ -40,7 +41,8 @@ export {assignRoleToUsers} from './user-requestHelpers';
 export {createUsersAndStoreResponseFields} from './user-requestHelpers';
 export {
   createComponentAuthorization,
-  grantUserResourceAuthorization
+  grantUserResourceAuthorization,
+  cleanupAuthorizations,
 } from './authorization-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';

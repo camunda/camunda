@@ -22,47 +22,56 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
+import {cleanupMappingRules} from '../../../../utils/mappingRuleCleanup';
+import {
+  createUser,
+  grantUserResourceAuthorization,
+  createMappingRule,
+} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
+  CREATE_NEW_MAPPING_RULE,
   authorizedComponentRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe.serial('Create Authorization API - Success and Conflict', () => {
-  let successUser: {
-    username: string;
+test.describe.serial('Create Authorization API for Mapping Rule - Success and Conflict', () => {
+  let successMappingRule: {
+    mappingRuleId: string;
+    claimName: string;
+    claimValue: string;
     name: string;
-    email: string;
-    password: string;
   };
   test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      successUser = await createUser(request);
-      console.log('Created user with username:', successUser.username);
+    await test.step('Setup - Create Mapping Rule for Authorization tests', async () => {
+      successMappingRule = await createMappingRule(request);
+      console.log(
+        'Created Mapping Rule with mappingRuleId:',
+        successMappingRule.mappingRuleId,
+      );
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step(
-      'Teardown - Delete user with username ' +
-        successUser.username +
+      'Teardown - Delete Mapping Rule with mappingRuleId ' +
+        successMappingRule.mappingRuleId +
         ' created for Authorization tests',
       async () => {
-        await cleanupUsers(request, [successUser.username]);
+        await cleanupMappingRules(request, [successMappingRule.mappingRuleId]);
       },
     );
   });
 
-  test('Create Authorization for user - Success', async ({request}) => {
+  test('Create Authorization for Mapping Rule - Success', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successMappingRule.mappingRuleId,
+      'MAPPING_RULE',
       '*',
-      'PROCESS_DEFINITION',
-      ['CREATE_PROCESS_INSTANCE'],
+      'DECISION_REQUIREMENTS_DEFINITION',
+      ['READ'],
     );
 
     await expect(async () => {
@@ -89,17 +98,17 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - Multiple permissionTypes - Success', async ({
+  test('Create Authorization for Mapping Rule - Multiple permissionTypes - Success', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successMappingRule.mappingRuleId,
+      'MAPPING_RULE',
       '*',
-      'SYSTEM',
+      'DOCUMENT',
       [
-        'READ_USAGE_METRIC',
-        'UPDATE'
+        'CREATE',
+        'READ'
       ],
     );
 
@@ -127,10 +136,12 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 409 Conflict', async ({request}) => {
+  test('Create Authorization for Mapping Rule - 409 Conflict', async ({
+    request,
+  }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successMappingRule.mappingRuleId,
+      'MAPPING_RULE',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -146,37 +157,47 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
       );
       await assertConflictRequest(
         authRes,
-        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successUser.username}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
+        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successMappingRule.mappingRuleId}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
       );
     }).toPass(defaultAssertionOptions);
   });
 });
 
-test.describe.parallel('Create Authorization API - Unhappy paths', () => {
-  let user: {username: string; name: string; email: string; password: string};
+test.describe.parallel('Create Authorization API for Mapping Rule - Unhappy paths', () => {
+  let unhappyPathMappingRule: {
+    mappingRuleId: string;
+    claimName: string;
+    claimValue: string;
+    name: string;
+  };
   test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      user = await createUser(request);
-      console.log('Created user with username:', user.username);
+    await test.step('Setup - Create Mapping Rule for Authorization tests', async () => {
+      unhappyPathMappingRule = await createMappingRule(request);
+      console.log(
+        'Created Mapping Rule with mappingRuleId:',
+        unhappyPathMappingRule.mappingRuleId,
+      );
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step(
-      'Teardown - Delete user with username ' +
-        user.username +
+      'Teardown - Delete Mapping Rule with mappingRuleId ' +
+        unhappyPathMappingRule.mappingRuleId +
         ' created for Authorization tests',
       async () => {
-        await cleanupUsers(request, [user.username]);
+        await cleanupMappingRules(request, [
+          unhappyPathMappingRule.mappingRuleId,
+        ]);
       },
     );
   });
 
-  test('Create Authorization for user - 400 Bad Request - wrong value for ownerType', async ({
+  test('Create Authorization for Mapping Rule - 400 Bad Request - wrong value for ownerType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
+      unhappyPathMappingRule.mappingRuleId,
       'WRONG_VALUE_FOR_TEST',
       '*',
       'PROCESS_DEFINITION',
@@ -198,12 +219,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Bad Request - wrong value for resourceType', async ({
+  test('Create Authorization for Mapping Rule - 400 Bad Request - wrong value for resourceType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      unhappyPathMappingRule.mappingRuleId,
+      'MAPPING_RULE',
       '*',
       'WRONG_VALUE_FOR_TEST',
       ['CREATE_PROCESS_INSTANCE'],
@@ -219,18 +240,18 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
       );
       await assertBadRequest(
         authRes,
-        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUDIT_LOG, AUTHORIZATION, BATCH, CLUSTER_VARIABLE, COMPONENT, DECISION_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DOCUMENT, EXPRESSION, GROUP, MAPPING_RULE, MESSAGE, PROCESS_DEFINITION, RESOURCE, ROLE, SYSTEM, TENANT, USER, USER_TASK]",
+        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUTHORIZATION, MAPPING_RULE, MESSAGE, BATCH, COMPONENT, SYSTEM, TENANT, RESOURCE, PROCESS_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DECISION_DEFINITION, GROUP, USER, ROLE, DOCUMENT]",
       );
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Invalid Argument - invalid resourceId', async ({
+  test('Create Authorization for Mapping Rule - 400 Invalid Argument - invalid resourceId', async ({
     request,
   }) => {
     const invalidResourceId = ';;;;';
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      unhappyPathMappingRule.mappingRuleId,
+      'MAPPING_RULE',
       invalidResourceId,
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -252,12 +273,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 401 Unauthorized', async ({
+  test('Create Authorization for Mapping Rule - 401 Unauthorized', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      unhappyPathMappingRule.mappingRuleId,
+      'MAPPING_RULE',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -277,13 +298,13 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 404 Not Found - not existing ownerId', async ({
+  test('Create Authorization for Mapping Rule - 404 Not Found - not existing ownerId', async ({
     request,
   }) => {
     const notExistingOwnerId = 'nonExistingOwnerId12345';
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
       notExistingOwnerId,
-      'USER',
+      'MAPPING_RULE',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -299,19 +320,15 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
       );
       await assertNotFoundRequest(
         authRes,
-        `Command 'CREATE' rejected with code 'NOT_FOUND': Expected to create or update authorization with ownerId or resourceId '${notExistingOwnerId}', but a user with this ID does not exist.`,
+        `Command 'CREATE' rejected with code 'NOT_FOUND': Expected to create or update authorization with ownerId or resourceId '${notExistingOwnerId}', but a mapping rule with this ID does not exist.`,
       );
     }).toPass(defaultAssertionOptions);
   });
 });
 
-test.describe('Create Authorization for User - Forbidden', () => {
-  let userToGrantAuthorization: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
-  };
+test.describe('Create Authorization for Mapping Rule - Forbidden', () => {
+  let forbiddenMappingRule = CREATE_NEW_MAPPING_RULE();
+
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
     name: string;
@@ -327,8 +344,6 @@ test.describe('Create Authorization for User - Forbidden', () => {
         request,
         userWithResourcesAuthorizationToSendRequest,
       );
-
-      userToGrantAuthorization = await createUser(request);
     },
   );
 
@@ -337,18 +352,19 @@ test.describe('Create Authorization for User - Forbidden', () => {
     async ({request}) => {
       await cleanupUsers(request, [
         userWithResourcesAuthorizationToSendRequest.username,
-        userToGrantAuthorization.username,
       ]);
     },
   );
-  test('Create Authorization for user - 403 Forbidden', async ({request}) => {
+  test('Create Authorization for Mapping Rule - 403 Forbidden', async ({
+    request,
+  }) => {
     await test.step('Test - Create Authorization with user credentials', async () => {
       const token = encode(
         `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
       );
       const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-        userToGrantAuthorization.username,
-        'USER',
+        forbiddenMappingRule.mappingRuleId,
+        'MAPPING_RULE',
         '*',
         'PROCESS_DEFINITION',
         ['CREATE_PROCESS_INSTANCE'],

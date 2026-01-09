@@ -20,9 +20,17 @@ import {
   assertRequiredFields,
   assertForbiddenRequest,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  generateUniqueId,
+} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
+import {cleanupRoles} from '../../../../utils/rolesCleanup';
+import {
+  createUser,
+  grantUserResourceAuthorization,
+  createRole,
+} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
@@ -31,38 +39,38 @@ import {
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe.serial('Create Authorization API - Success and Conflict', () => {
-  let successUser: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
+test.describe.serial('Create Authorization API for role - Success and Conflict', () => {
+  const uid = generateUniqueId();
+  let successRole = {
+    roleId: `role-create-authorization-${uid}`,
+    name: `authorization Role`,
+    description: 'Create Authorization Success API test role',
   };
   test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      successUser = await createUser(request);
-      console.log('Created user with username:', successUser.username);
+    await test.step('Setup - Create role for Authorization tests', async () => {
+      successRole = await createRole(request);
+      console.log('Created role with roleId:', successRole.roleId);
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step(
-      'Teardown - Delete user with username ' +
-        successUser.username +
+      'Teardown - Delete role with roleId ' +
+        successRole.roleId +
         ' created for Authorization tests',
       async () => {
-        await cleanupUsers(request, [successUser.username]);
+        await cleanupRoles(request, [successRole.roleId]);
       },
     );
   });
 
-  test('Create Authorization for user - Success', async ({request}) => {
+  test('Create Authorization for role - Success', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successRole.roleId,
+      'ROLE',
       '*',
-      'PROCESS_DEFINITION',
-      ['CREATE_PROCESS_INSTANCE'],
+      'GROUP',
+      ['DELETE'],
     );
 
     await expect(async () => {
@@ -89,17 +97,17 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - Multiple permissionTypes - Success', async ({
+  test('Create Authorization for role - Multiple permissionTypes - Success', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successRole.roleId,
+      'ROLE',
       '*',
-      'SYSTEM',
+      'MAPPING_RULE',
       [
-        'READ_USAGE_METRIC',
-        'UPDATE'
+        'CREATE',
+        'READ'
       ],
     );
 
@@ -127,10 +135,10 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 409 Conflict', async ({request}) => {
+  test('Create Authorization for role - 409 Conflict', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successRole.roleId,
+      'ROLE',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -146,37 +154,43 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
       );
       await assertConflictRequest(
         authRes,
-        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successUser.username}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
+        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successRole.roleId}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
       );
     }).toPass(defaultAssertionOptions);
   });
 });
 
-test.describe.parallel('Create Authorization API - Unhappy paths', () => {
-  let user: {username: string; name: string; email: string; password: string};
+test.describe
+  .parallel('Create Authorization API for role - Unhappy paths', () => {
+  const uid = generateUniqueId();
+  let failRole = {
+    roleId: `role-create-authorization-${uid}`,
+    name: `authorization fail role`,
+    description: 'Create Authorization Fail API test role',
+  };
   test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      user = await createUser(request);
-      console.log('Created user with username:', user.username);
+    await test.step('Setup - Create role for Authorization tests', async () => {
+      failRole = await createRole(request);
+      console.log('Created role with roleId:', failRole.roleId);
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step(
-      'Teardown - Delete user with username ' +
-        user.username +
+      'Teardown - Delete role with roleId ' +
+        failRole.roleId +
         ' created for Authorization tests',
       async () => {
-        await cleanupUsers(request, [user.username]);
+        await cleanupRoles(request, [failRole.roleId]);
       },
     );
   });
 
-  test('Create Authorization for user - 400 Bad Request - wrong value for ownerType', async ({
+  test('Create Authorization for role - 400 Bad Request - wrong value for ownerType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
+      failRole.roleId,
       'WRONG_VALUE_FOR_TEST',
       '*',
       'PROCESS_DEFINITION',
@@ -198,12 +212,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Bad Request - wrong value for resourceType', async ({
+  test('Create Authorization for role - 400 Bad Request - wrong value for resourceType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      failRole.roleId,
+      'ROLE',
       '*',
       'WRONG_VALUE_FOR_TEST',
       ['CREATE_PROCESS_INSTANCE'],
@@ -219,18 +233,18 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
       );
       await assertBadRequest(
         authRes,
-        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUDIT_LOG, AUTHORIZATION, BATCH, CLUSTER_VARIABLE, COMPONENT, DECISION_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DOCUMENT, EXPRESSION, GROUP, MAPPING_RULE, MESSAGE, PROCESS_DEFINITION, RESOURCE, ROLE, SYSTEM, TENANT, USER, USER_TASK]",
+        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUTHORIZATION, MAPPING_RULE, MESSAGE, BATCH, COMPONENT, SYSTEM, TENANT, RESOURCE, PROCESS_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DECISION_DEFINITION, GROUP, USER, ROLE, DOCUMENT]",
       );
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Invalid Argument - invalid resourceId', async ({
+  test('Create Authorization for role - 400 Invalid Argument - invalid resourceId', async ({
     request,
   }) => {
     const invalidResourceId = ';;;;';
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      failRole.roleId,
+      'ROLE',
       invalidResourceId,
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -252,12 +266,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 401 Unauthorized', async ({
+  test('Create Authorization for role - 401 Unauthorized', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      failRole.roleId,
+      'ROLE',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -277,13 +291,13 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 404 Not Found - not existing ownerId', async ({
+  test('Create Authorization for role - 404 Not Found - not existing ownerId', async ({
     request,
   }) => {
     const notExistingOwnerId = 'nonExistingOwnerId12345';
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
       notExistingOwnerId,
-      'USER',
+      'ROLE',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -299,18 +313,18 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
       );
       await assertNotFoundRequest(
         authRes,
-        `Command 'CREATE' rejected with code 'NOT_FOUND': Expected to create or update authorization with ownerId or resourceId '${notExistingOwnerId}', but a user with this ID does not exist.`,
+        `Command 'CREATE' rejected with code 'NOT_FOUND': Expected to create or update authorization with ownerId or resourceId '${notExistingOwnerId}', but a role with this ID does not exist.`,
       );
     }).toPass(defaultAssertionOptions);
   });
 });
 
-test.describe('Create Authorization for User - Forbidden', () => {
-  let userToGrantAuthorization: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
+test.describe('Create Authorization for role - Forbidden', () => {
+  const uid = generateUniqueId();
+  let forbiddenRole = {
+    roleId: `role-create-authorization-${uid}`,
+    name: `authorization forbidden role`,
+    description: 'Create Authorization forbidden API test role',
   };
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
@@ -327,8 +341,6 @@ test.describe('Create Authorization for User - Forbidden', () => {
         request,
         userWithResourcesAuthorizationToSendRequest,
       );
-
-      userToGrantAuthorization = await createUser(request);
     },
   );
 
@@ -337,36 +349,34 @@ test.describe('Create Authorization for User - Forbidden', () => {
     async ({request}) => {
       await cleanupUsers(request, [
         userWithResourcesAuthorizationToSendRequest.username,
-        userToGrantAuthorization.username,
       ]);
     },
   );
-  test('Create Authorization for user - 403 Forbidden', async ({request}) => {
-    await test.step('Test - Create Authorization with user credentials', async () => {
-      const token = encode(
-        `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
-      );
-      const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-        userToGrantAuthorization.username,
-        'USER',
-        '*',
-        'PROCESS_DEFINITION',
-        ['CREATE_PROCESS_INSTANCE'],
-      );
+  test('Create Authorization for role - 403 Forbidden', async ({request}) => {
+    const token = encode(
+      `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
+    );
 
-      await expect(async () => {
-        const authRes = await request.post(
-          buildUrl(CREATE_AUTHORIZATION_ENDPOINT),
-          {
-            headers: jsonHeaders(token), // overrides default demo:demo
-            data: authorizationBody,
-          },
-        );
-        await assertForbiddenRequest(
-          authRes,
-          "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'",
-        );
-      }).toPass(defaultAssertionOptions);
-    });
+    const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
+      forbiddenRole.roleId,
+      'ROLE',
+      '*',
+      'PROCESS_DEFINITION',
+      ['CREATE_PROCESS_INSTANCE'],
+    );
+
+    await expect(async () => {
+      const authRes = await request.post(
+        buildUrl(CREATE_AUTHORIZATION_ENDPOINT),
+        {
+          headers: jsonHeaders(token), // overrides default demo:demo
+          data: authorizationBody,
+        },
+      );
+      await assertForbiddenRequest(
+        authRes,
+        "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'",
+      );
+    }).toPass(defaultAssertionOptions);
   });
 });

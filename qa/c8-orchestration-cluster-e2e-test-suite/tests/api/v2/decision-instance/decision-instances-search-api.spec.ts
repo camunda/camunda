@@ -20,6 +20,7 @@ import {
   createMammalProcessInstanceAndDeployMammalDecision,
   DecisionInstance,
 } from '@requestHelpers';
+import {validateResponse} from '../../../../json-body-assertions';
 import {decisionInstanceRequiredFields} from 'utils/beans/requestBeans';
 
 const DECISION_INSTANCES_SEARCH_ENDPOINT = '/decision-instances/search';
