@@ -47,6 +47,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private VersionMappings knownVersionMappings = VersionMappings.empty();
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
+  private final CompletableFuture<Boolean> readinessFuture = new CompletableFuture<>();
+
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -70,7 +72,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   public CompletableFuture<Void> initialize(final int clusterSize) {
     nodeIdRepository.initialize(clusterSize);
     return CompletableFuture.runAsync(() -> acquireInitialLease(clusterSize), executor)
-        .thenRun(this::startRenewalTimer);
+        .thenRun(this::startRenewalTimer)
+        .thenRun(() -> scheduleReadinessCheck(clusterSize));
   }
 
   @Override
@@ -112,8 +115,31 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   @Override
   public CompletableFuture<Boolean> awaitReadiness() {
-    // TODO: Use the knownVersionMappings to verify other members have seen this node's version
-    return CompletableFuture.completedFuture(true);
+    return readinessFuture;
+  }
+
+  private void scheduleReadinessCheck(final int clusterSize) {
+    new RepositoryNodeIdProviderReadinessChecker(
+            clusterSize,
+            currentLease.node(),
+            nodeIdRepository,
+            executor, // TODO: May be use a different scheduler to not block lease renewal
+            Duration.ofSeconds(5))
+        .waitUntilAllNodesAreUpToDate()
+        .whenComplete(
+            (v, t) -> {
+              if (t != null) {
+                // This should never happen as the checker should wait indefinitely until the nodes
+                // are up-to-date
+                LOG.warn(
+                    "Failed to verify that all nodes are up to date. Marking readiness as failed.",
+                    t);
+                readinessFuture.complete(false);
+              } else {
+                LOG.info("All nodes are up to date. Marking readiness as successful.");
+                readinessFuture.complete(true);
+              }
+            });
   }
 
   private void startRenewalTimer() {
