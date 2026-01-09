@@ -88,9 +88,10 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
 
   private AuthorizationCheck createSingleAuthorizationCheck(
       final CamundaAuthentication authentication, final SingleAuthorizationCondition single) {
-    final var resourceAccess = resolveResourceAccess(authentication, single.authorization());
+    final var authorization = single.authorization();
+    final var resourceAccess = resolveResourceAccess(authentication, authorization);
 
-    if (resourceAccess.wildcard()) {
+    if (resourceAccess.wildcard() && !authorization.transitive()) {
       return AuthorizationCheck.disabled();
     }
 
@@ -103,8 +104,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     for (final Authorization authorization : anyOf.authorizations()) {
       final var resourceAccess = resolveResourceAccess(authentication, authorization);
 
-      if (resourceAccess.wildcard()) {
-        // here is the culprit for audit log authorizations
+      if (resourceAccess.wildcard() && !authorization.transitive()) {
         return AuthorizationCheck.disabled();
       }
 

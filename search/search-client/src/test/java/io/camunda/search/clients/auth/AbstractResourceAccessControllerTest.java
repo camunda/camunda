@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -18,11 +19,13 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.ResourceAccess;
+import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.security.reader.TenantAccessProvider;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,7 +47,7 @@ public class AbstractResourceAccessControllerTest {
   }
 
   @Nested
-  class DoGetWithConditionalAuthorizations {
+  class WithConditionalAuthorizations {
 
     @Test
     void withSingleAuthorization() {
@@ -99,6 +102,74 @@ public class AbstractResourceAccessControllerTest {
       // then
       verify(resourceAccessProvider, times(1))
           .hasResourceAccess(authentication, enabledAuthorization, resource);
+    }
+  }
+
+  @Nested
+  class WithTransitiveAuthorizations {
+
+    @Test
+    void withSingleAuthorization() {
+      // given
+      final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+      final var authorization =
+          Authorization.of(a -> a.processDefinition().readProcessDefinition().transitive());
+
+      final var securityContext =
+          SecurityContext.of(
+              s -> s.withAuthentication(authentication).withAuthorization(authorization));
+      when(resourceAccessProvider.resolveResourceAccess(authentication, authorization))
+          .thenReturn(ResourceAccess.wildcard(authorization));
+      when(tenantAccessProvider.resolveTenantAccess(authentication))
+          .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+      // when
+      final var reference = new AtomicReference<ResourceAccessChecks>();
+      controller.doSearch(
+          securityContext,
+          a -> {
+            reference.set(a);
+            return null;
+          });
+
+      // then
+      final var result = reference.get();
+      assertThat(result.authorizationCheck().enabled()).isTrue();
+      assertThat(result.authorizationCheck().authorizationCondition())
+          .isEqualTo(AuthorizationConditions.single(authorization));
+    }
+
+    @Test
+    void withAnyOfAuthorization() {
+      // given
+      final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+      final var authorization =
+          Authorization.of(a -> a.processDefinition().readProcessDefinition().transitive());
+
+      final var securityContext =
+          SecurityContext.of(
+              s ->
+                  s.withAuthentication(authentication)
+                      .withAuthorizationCondition(AuthorizationConditions.anyOf(authorization)));
+      when(resourceAccessProvider.resolveResourceAccess(authentication, authorization))
+          .thenReturn(ResourceAccess.wildcard(authorization));
+      when(tenantAccessProvider.resolveTenantAccess(authentication))
+          .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+      // when
+      final var reference = new AtomicReference<ResourceAccessChecks>();
+      controller.doSearch(
+          securityContext,
+          a -> {
+            reference.set(a);
+            return null;
+          });
+
+      // then
+      final var result = reference.get();
+      assertThat(result.authorizationCheck().enabled()).isTrue();
+      assertThat(result.authorizationCheck().authorizationCondition())
+          .isEqualTo(AuthorizationConditions.anyOf(authorization));
     }
   }
 
