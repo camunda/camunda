@@ -20,18 +20,7 @@
   <name>Camunda Gateway MCP server</name>
 
   <dependencies>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-service</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-domain</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-core</artifactId>
-    </dependency>
+    <!-- Camunda dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-model</artifactId>
@@ -40,9 +29,29 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-gateway-mapping-http</artifactId>
     </dependency>
+
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <!-- MCP dependencies -->
@@ -50,23 +59,18 @@
       <groupId>org.springframework.ai</groupId>
       <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.springaicommunity</groupId>
       <artifactId>mcp-annotations</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.modelcontextprotocol.sdk</groupId>
       <artifactId>mcp-core</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
-    </dependency>
+    <!-- utilities -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
@@ -77,38 +81,82 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
     </dependency>
 
     <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- test dependencies -->
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-test-autoconfigure</artifactId>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
