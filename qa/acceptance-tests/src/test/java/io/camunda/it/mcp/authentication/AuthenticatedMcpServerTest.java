@@ -17,7 +17,7 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
   void failsOnUnauthenticatedRequest() {
     assertThatThrownBy(
             () -> {
-              try (final var client = createMcpClient(null)) {
+              try (final var client = createMcpClient(testInstance(), null)) {
                 client.listTools();
               }
             })
