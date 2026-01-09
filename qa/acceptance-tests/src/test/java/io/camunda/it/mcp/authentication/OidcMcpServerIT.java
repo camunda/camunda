@@ -27,7 +27,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-// TODO test with authorizations enabled
 @MultiDbTest(setupKeycloak = true)
 public class OidcMcpServerIT extends AuthenticatedMcpServerTest {
 
