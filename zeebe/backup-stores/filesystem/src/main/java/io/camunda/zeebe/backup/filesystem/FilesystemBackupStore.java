@@ -23,8 +23,12 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,11 +54,13 @@ public final class FilesystemBackupStore implements BackupStore {
   private static final String SEGMENTS_FILESET_NAME = "segments";
   private static final String CONTENTS_PATH = "contents";
   private static final String MANIFESTS_PATH = "manifests";
+  private static final String RANGES_PATH = "ranges";
 
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
   private final FilesystemIndexManager indexManager;
+  private final Path rangesDir;
 
   FilesystemBackupStore(final FilesystemBackupConfig config) {
     this(config, Executors.newVirtualThreadPerTaskExecutor());
@@ -68,10 +74,12 @@ public final class FilesystemBackupStore implements BackupStore {
     final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
     final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
     final var indexDir = Path.of(config.basePath()).resolve("index");
+    rangesDir = Path.of(config.basePath()).resolve(RANGES_PATH);
     try {
       FileUtil.ensureDirectoryExists(contentsDir);
       FileUtil.ensureDirectoryExists(manifestsDir);
       FileUtil.ensureDirectoryExists(indexDir);
+      FileUtil.ensureDirectoryExists(rangesDir);
     } catch (final IOException e) {
       throw new UncheckedIOException(
           "Unable to create backup directory structure; do you have the right permissions or configuration?",
@@ -171,19 +179,61 @@ public final class FilesystemBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
-    throw new UnsupportedOperationException("Range markers are not yet supported");
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var partitionDir = rangesDir.resolve(String.valueOf(partitionId));
+          if (!Files.exists(partitionDir)) {
+            return List.of();
+          }
+          try (final var stream = Files.list(partitionDir)) {
+            return stream
+                .map(path -> path.getFileName().toString())
+                .map(BackupRangeMarker::fromName)
+                .filter(Objects::nonNull)
+                .toList();
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
   }
 
   @Override
   public CompletableFuture<Void> storeRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
-    throw new UnsupportedOperationException("Range markers are not yet supported");
+    return CompletableFuture.runAsync(
+        () -> {
+          final var partitionDir = rangesDir.resolve(String.valueOf(partitionId));
+          final var markerPath = partitionDir.resolve(BackupRangeMarker.toName(marker));
+          try {
+            FileUtil.ensureDirectoryExists(partitionDir);
+            Files.createFile(markerPath);
+            FileUtil.flushDirectory(partitionDir);
+          } catch (final FileAlreadyExistsException e) {
+            // Overwrite is allowed, file already exists is fine
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
   }
 
   @Override
   public CompletableFuture<Void> deleteRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
-    throw new UnsupportedOperationException("Range markers are not yet supported");
+    return CompletableFuture.runAsync(
+        () -> {
+          final var partitionDir = rangesDir.resolve(String.valueOf(partitionId));
+          final var markerPath = partitionDir.resolve(BackupRangeMarker.toName(marker));
+          try {
+            if (Files.deleteIfExists(markerPath)) {
+              FileUtil.flushDirectory(partitionDir);
+            }
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
   }
 
   @Override

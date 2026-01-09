@@ -14,4 +14,5 @@ public interface BackupStoreTestKit
         UpdatingBackupStatus,
         QueryingBackupStatus,
         ListingBackups,
-        StoringBackupIndex {}
+        StoringBackupIndex,
+        StoringRangeMarkers {}
