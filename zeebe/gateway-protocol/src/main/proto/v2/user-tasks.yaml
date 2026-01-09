@@ -749,8 +749,7 @@ components:
           items:
             $ref: '#/components/schemas/UserTaskAuditLogSearchQuerySortRequest'
         filter:
-          allOf:
-            - $ref: '#/components/schemas/UserTaskAuditLogFilter'
+          $ref: '#/components/schemas/UserTaskAuditLogFilter'
 
     ## Enums
 
@@ -767,31 +766,6 @@ components:
         - CANCELING
         - CANCELED
         - FAILED
-
-    AuditLogResultEnum:
-      type: string
-      description: The result status of the operation.
-      enum:
-        - FAIL
-        - SUCCESS
-
-    AuditLogOperationTypeEnum:
-      type: string
-      description: The type of operation performed.
-      enum:
-        - ASSIGN
-        - COMPLETE
-        - UNASSIGN
-        - UPDATE
-
-    AuditLogActorTypeEnum:
-      type: string
-      description: The type of actor who performed the operation.
-      enum:
-        - ANONYMOUS
-        - CLIENT
-        - UNKNOWN
-        - USER
 
     ## Filters
 
@@ -839,17 +813,19 @@ components:
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
 
+
+
     UserTaskAuditLogFilter:
       description: The user task audit log search filters.
       type: object
       properties:
         operationType:
           allOf:
-            - $ref: '#/components/schemas/AuditLogOperationTypeEnum'
+            - $ref: 'audit-logs.yaml#/components/schemas/OperationTypeFilterProperty'
           description: The audit log operation type search filter.
         result:
           allOf:
-            - $ref: '#/components/schemas/AuditLogResultEnum'
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogResultFilter'
           description: The audit log result search filter.
         timestamp:
           allOf:
@@ -857,7 +833,7 @@ components:
           description: The audit log timestamp filter.
         actorType:
           allOf:
-            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeFilter'
           description: The actor type search filter.
         actorId:
           allOf:
