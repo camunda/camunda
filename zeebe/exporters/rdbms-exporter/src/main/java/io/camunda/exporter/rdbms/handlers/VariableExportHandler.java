@@ -49,6 +49,7 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
         .value(value.getValue())
         .scopeKey(value.getScopeKey())
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .processDefinitionId(value.getBpmnProcessId())
         .tenantId(value.getTenantId())
         .partitionId(record.getPartitionId())
