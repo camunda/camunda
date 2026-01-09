@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect, APIResponse} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
@@ -22,47 +22,38 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser} from '@requestHelpers';
+import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
   authorizedComponentRequiredFields,
 } from '../../../../utils/beans/requestBeans';
-import {grantUserResourceAuthorization} from 'utils/grantUserAuthorization';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe('Create Authorization API', () => {
-  let user: {username: string; name: string; email: string; password: string};
-  let createdAutorizationKeys: string[] = [];
+test.describe.serial('Create Authorization API - Success and Conflict', () => {
+  let successUser: {username: string; name: string; email: string; password: string};
   test.beforeAll(async ({request}) => {
     await test.step('Setup - Create user for Authorization tests', async () => {
-      user = await createUser(request);
-      console.log('Created user with username:', user.username);
-      let userSearchRes = await request.post(buildUrl('/users/search', {}), {
-        headers: jsonHeaders(),
-        data: {
-          filter: {
-            username: user.name,
-          },
-        },
-      });
+      successUser = await createUser(request);
+      console.log('Created user with username:', successUser.username);
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step(
       'Teardown - Delete user with username ' +
-        user.username +
+        successUser.username +
         ' created for Authorization tests',
       async () => {
-        await cleanupUsers(request, [user.username]);
+        await cleanupUsers(request, [successUser.username]);
       },
     );
   });
+
   test('Create Authorization for user - Success', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
+      successUser.username,
       'USER',
       '*',
       'PROCESS_DEFINITION',
@@ -90,7 +81,6 @@ test.describe('Create Authorization API', () => {
 
       const authBody = await authRes.json();
       assertRequiredFields(authBody, authorizedComponentRequiredFields);
-      createdAutorizationKeys.push(authBody.authorizationKey);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -98,7 +88,7 @@ test.describe('Create Authorization API', () => {
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
+      successUser.username,
       'USER',
       '*',
       'BATCH',
@@ -129,8 +119,52 @@ test.describe('Create Authorization API', () => {
 
       const authBody = await authRes.json();
       assertRequiredFields(authBody, authorizedComponentRequiredFields);
-      createdAutorizationKeys.push(authBody.authorizationKey);
     }).toPass(defaultAssertionOptions);
+  });
+
+  test('Create Authorization for user - 409 Conflict', async ({request}) => {
+    const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
+      successUser.username,
+      'USER',
+      '*',
+      'PROCESS_DEFINITION',
+      ['CREATE_PROCESS_INSTANCE'],
+    );
+
+    await expect(async () => {
+      const authRes = await request.post(
+        buildUrl(CREATE_AUTHORIZATION_ENDPOINT),
+        {
+          headers: jsonHeaders(),
+          data: authorizationBody,
+        },
+      );
+      await assertConflictRequest(
+        authRes,
+        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successUser.username}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+});
+
+test.describe.parallel('Create Authorization API - Unhappy paths', () => {
+  let user: {username: string; name: string; email: string; password: string};
+  test.beforeAll(async ({request}) => {
+    await test.step('Setup - Create user for Authorization tests', async () => {
+      user = await createUser(request);
+      console.log('Created user with username:', user.username);
+    });
+  });
+
+  test.afterAll(async ({request}) => {
+    await test.step(
+      'Teardown - Delete user with username ' +
+        user.username +
+        ' created for Authorization tests',
+      async () => {
+        await cleanupUsers(request, [user.username]);
+      },
+    );
   });
 
   test('Create Authorization for user - 400 Bad Request - wrong value for ownerType', async ({
@@ -231,6 +265,7 @@ test.describe('Create Authorization API', () => {
           headers: {
             'Content-Type': 'application/json',
           },
+          data: authorizationBody,
         },
       );
       await assertUnauthorizedRequest(authRes);
@@ -263,30 +298,6 @@ test.describe('Create Authorization API', () => {
       );
     }).toPass(defaultAssertionOptions);
   });
-
-  test('Create Authorization for user - 409 Conflict', async ({request}) => {
-    const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
-      '*',
-      'PROCESS_DEFINITION',
-      ['CREATE_PROCESS_INSTANCE'],
-    );
-
-    await expect(async () => {
-      const authRes = await request.post(
-        buildUrl(CREATE_AUTHORIZATION_ENDPOINT),
-        {
-          headers: jsonHeaders(),
-          data: authorizationBody,
-        },
-      );
-      await assertConflictRequest(
-        authRes,
-        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${user.username}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
-      );
-    }).toPass(defaultAssertionOptions);
-  });
 });
 
 test.describe('Create Authorization for User - Forbidden', () => {
@@ -302,17 +313,15 @@ test.describe('Create Authorization for User - Forbidden', () => {
     email: string;
     password: string;
   };
-  let authorizationKey: string;
 
   test.beforeAll(
     'Setup - Create test user with Resource Authorization and user for granting Authorization',
     async ({request}) => {
       userWithResourcesAuthorizationToSendRequest = await createUser(request);
-      const obj = await grantUserResourceAuthorization(
+      await grantUserResourceAuthorization(
         request,
         userWithResourcesAuthorizationToSendRequest,
       );
-      authorizationKey = obj.authorizationKey;
 
       userToGrantAuthorization = await createUser(request);
     },
@@ -328,7 +337,7 @@ test.describe('Create Authorization for User - Forbidden', () => {
     },
   );
   test('Create Authorization for user - 403 Forbidden', async ({request}) => {
-    await test.step('Test - Create Authorization with limited user credentials', async ({}) => {
+    await test.step('Test - Create Authorization with user credentials', async () => {
       const token = encode(
         `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
       );
