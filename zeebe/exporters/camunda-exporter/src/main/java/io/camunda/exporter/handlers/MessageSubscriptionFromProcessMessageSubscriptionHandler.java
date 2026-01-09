@@ -102,6 +102,11 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
     eventMetadata.setCorrelationKey(recordValue.getCorrelationKey());
 
     entity.setMetadata(eventMetadata);
+
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override
