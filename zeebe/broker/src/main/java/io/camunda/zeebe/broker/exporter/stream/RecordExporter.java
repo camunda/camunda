@@ -27,6 +27,8 @@ class RecordExporter {
   private boolean shouldExport;
   private int exporterIndex;
   private final InstantSource clock;
+  private LoggedEvent currentEvent;
+  private boolean valueRead;
 
   RecordExporter(
       final ExporterMetrics exporterMetrics,
@@ -41,18 +43,51 @@ class RecordExporter {
 
   void wrap(final LoggedEvent rawEvent) {
     rawEvent.readMetadata(rawMetadata);
+    currentEvent = rawEvent;
+    valueRead = false;
 
-    final UnifiedRecordValue recordValue =
-        recordValues.readRecordValue(rawEvent, rawMetadata.getValueType());
-
-    shouldExport = recordValue != null;
+    // Check if any exporter wants to export this record based on metadata alone
+    shouldExport = anyExporterAccepts(rawMetadata, rawEvent.getPosition());
     if (shouldExport) {
-      typedEvent.wrap(rawEvent, rawMetadata, recordValue);
       exporterIndex = 0;
     }
   }
 
+  private boolean anyExporterAccepts(final RecordMetadata metadata, final long position) {
+    for (final ExporterContainer container : containers) {
+      if (container.shouldExportRecord(metadata, position)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void ensureValueRead() {
+    if (!valueRead) {
+      final UnifiedRecordValue recordValue =
+          recordValues.readRecordValue(currentEvent, rawMetadata.getValueType());
+      // If recordValue is null, it means the value type is not supported/known
+      // In this case, we cannot export the record
+      if (recordValue != null) {
+        typedEvent.wrap(currentEvent, rawMetadata, recordValue);
+        valueRead = true;
+      } else {
+        // Mark as should not export if we can't read the value
+        shouldExport = false;
+      }
+    }
+  }
+
   boolean export() {
+    if (!shouldExport) {
+      return true;
+    }
+
+    // Ensure the record value is read before starting to export
+    ensureValueRead();
+
+    // After ensuring the value is read, check again if we should export
+    // (ensureValueRead might set shouldExport to false if the value cannot be read)
     if (!shouldExport) {
       return true;
     }
