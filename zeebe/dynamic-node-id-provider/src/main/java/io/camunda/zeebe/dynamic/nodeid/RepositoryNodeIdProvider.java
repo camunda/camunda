@@ -45,7 +45,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
   private VersionMappings knownVersionMappings = VersionMappings.empty();
-  private volatile CompletableFuture<Boolean> previousNodeGracefullyShutdown;
+  private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
+      new CompletableFuture<>();
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -180,9 +181,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       LOG.info(
           "Acquired lease w/ nodeId={}.  {}", currentLease.lease().nodeInstance(), currentLease);
       // storedLease should always be non-null as currentLease is not null.
-      if (storedLease != null && previousNodeGracefullyShutdown == null) {
-        previousNodeGracefullyShutdown =
-            CompletableFuture.completedFuture(!storedLease.isInitialized());
+      if (storedLease != null) {
+        previousNodeGracefullyShutdown.complete(!storedLease.isInitialized());
       }
       backoff.reset();
     } else {
