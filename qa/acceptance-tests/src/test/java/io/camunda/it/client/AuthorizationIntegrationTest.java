@@ -26,6 +26,7 @@ import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
+@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class AuthorizationIntegrationTest {
 

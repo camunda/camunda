@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.UUID;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class RolesByGroupIntegrationTest {
 
   private static CamundaClient camundaClient;

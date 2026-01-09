@@ -17,6 +17,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class RoleIntegrationTest {
 
   private static CamundaClient camundaClient;

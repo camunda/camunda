@@ -15,12 +15,14 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.protocol.rest.DocumentReference;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.InputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class GetDocumentContentTest {
 
   private static final String DOCUMENT_CONTENT = "test";

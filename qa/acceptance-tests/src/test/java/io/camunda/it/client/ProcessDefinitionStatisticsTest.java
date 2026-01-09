@@ -27,6 +27,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.statistics.response.ProcessElementStatisticsImpl;
 import io.camunda.it.util.TestHelper;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 @MultiDbTest
+@CompatibilityTest
 public class ProcessDefinitionStatisticsTest {
 
   public static final String INCIDENT_ERROR_MESSAGE_V1 =

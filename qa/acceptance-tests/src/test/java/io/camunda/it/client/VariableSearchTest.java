@@ -17,6 +17,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 class VariableSearchTest {
 
   private static CamundaClient camundaClient;

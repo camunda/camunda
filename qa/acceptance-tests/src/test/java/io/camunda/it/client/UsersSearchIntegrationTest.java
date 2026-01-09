@@ -15,12 +15,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.User;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class UsersSearchIntegrationTest {
 
   private static CamundaClient camundaClient;

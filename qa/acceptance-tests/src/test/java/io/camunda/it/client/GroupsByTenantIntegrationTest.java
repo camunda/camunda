@@ -15,6 +15,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.TenantGroup;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class GroupsByTenantIntegrationTest {
   private static CamundaClient camundaClient;

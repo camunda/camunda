@@ -33,6 +33,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.lang.reflect.Method;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@CompatibilityTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationMigrateProcessInstanceTest {
 

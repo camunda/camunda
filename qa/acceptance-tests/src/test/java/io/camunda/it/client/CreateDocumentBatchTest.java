@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.within;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@CompatibilityTest
 public class CreateDocumentBatchTest {
 
   private static CamundaClient camundaClient;
