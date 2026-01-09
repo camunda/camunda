@@ -2530,12 +2530,32 @@ final class JsonSerializableToJsonTest {
 
               return new ResourceDeletionRecord()
                   .setResourceKey(resourceKey)
+                  .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                  .setDeleteHistory(true);
+            },
+        """
+                {
+                  "resourceKey":1,
+                  "tenantId": "<default>",
+                  "deleteHistory": true
+                }
+                """
+      },
+      {
+        "Empty ResourceDeletionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var resourceKey = 1L;
+
+              return new ResourceDeletionRecord()
+                  .setResourceKey(resourceKey)
                   .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
             },
         """
                 {
                   "resourceKey":1,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "deleteHistory": false
                 }
                 """
       },
