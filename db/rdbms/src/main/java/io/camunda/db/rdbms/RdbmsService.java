@@ -22,6 +22,7 @@ import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
@@ -89,6 +90,8 @@ public class RdbmsService {
   private final HistoryDeletionDbReader historyDeletionDbReader;
   private final IncidentProcessInstanceStatisticsByErrorDbReader
       incidentProcessInstanceStatisticsByErrorDbReader;
+  private final IncidentProcessInstanceStatisticsByDefinitionDbReader
+      incidentProcessInstanceStatisticsByDefinitionDbReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -128,7 +131,9 @@ public class RdbmsService {
           processDefinitionInstanceVersionStatisticsDbReader,
       final HistoryDeletionDbReader historyDeletionDbReader,
       final IncidentProcessInstanceStatisticsByErrorDbReader
-          incidentProcessInstanceStatisticsByErrorDbReader) {
+          incidentProcessInstanceStatisticsByErrorDbReader,
+      final IncidentProcessInstanceStatisticsByDefinitionDbReader
+          incidentProcessInstanceStatisticsByDefinitionDbReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -167,6 +172,8 @@ public class RdbmsService {
     this.historyDeletionDbReader = historyDeletionDbReader;
     this.incidentProcessInstanceStatisticsByErrorDbReader =
         incidentProcessInstanceStatisticsByErrorDbReader;
+    this.incidentProcessInstanceStatisticsByDefinitionDbReader =
+        incidentProcessInstanceStatisticsByDefinitionDbReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -311,6 +318,11 @@ public class RdbmsService {
 
   public HistoryDeletionDbReader getHistoryDeletionDbReader() {
     return historyDeletionDbReader;
+  }
+
+  public IncidentProcessInstanceStatisticsByDefinitionDbReader
+      getIncidentProcessInstanceStatisticsByDefinitionReader() {
+    return incidentProcessInstanceStatisticsByDefinitionDbReader;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {

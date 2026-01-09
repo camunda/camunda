@@ -24,7 +24,6 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
-import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
@@ -55,7 +54,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
     // given
     final var query =
         IncidentProcessInstanceStatisticsByDefinitionQuery.of(
-            q -> q.filter(f -> f.states(IncidentState.ACTIVE.name()).tenantIds(TENANT_ID)));
+            q -> q.filter(f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(123)));
 
     // when
     final var searchRequest = transformQuery(query);
@@ -93,16 +92,15 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
               assertThat(must.getLast())
                   .isInstanceOfSatisfying(
                       SearchQuery.class,
-                      tenantSearchQuery -> {
-                        final var tenantQueryOption = tenantSearchQuery.queryOption();
-                        assertThat(tenantQueryOption)
+                      hashSearchQuery -> {
+                        final var hashQueryOption = hashSearchQuery.queryOption();
+                        assertThat(hashQueryOption)
                             .isInstanceOfSatisfying(
                                 SearchTermQuery.class,
-                                tenantTermQuery -> {
-                                  assertThat(tenantTermQuery.field())
-                                      .isEqualTo(IncidentTemplate.TENANT_ID);
-                                  assertThat(tenantTermQuery.value().stringValue())
-                                      .isEqualTo(TENANT_ID);
+                                hashTermQuery -> {
+                                  assertThat(hashTermQuery.field())
+                                      .isEqualTo(IncidentTemplate.ERROR_MSG_HASH);
+                                  assertThat(hashTermQuery.value().intValue()).isEqualTo(123);
                                 });
                       });
 
@@ -181,7 +179,7 @@ public class IncidentProcessInstanceStatisticsByDefinitionQueryTransformerTest {
     final var query =
         IncidentProcessInstanceStatisticsByDefinitionQuery.of(
             q ->
-                q.filter(FilterBuilders.incident(f -> f.tenantIds(TENANT_ID)))
+                q.filter(f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(123))
                     .sort(sort)
                     .page(
                         new SearchQueryPage(

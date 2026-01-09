@@ -9,7 +9,7 @@ package io.camunda.search.query;
 
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import io.camunda.search.sort.SortOptionBuilders;
@@ -18,11 +18,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record IncidentProcessInstanceStatisticsByDefinitionQuery(
-    IncidentFilter filter,
+    IncidentProcessInstanceStatisticsByDefinitionFilter filter,
     IncidentProcessInstanceStatisticsByDefinitionSort sort,
     SearchQueryPage page)
     implements TypedSearchAggregationQuery<
-        IncidentFilter,
+        IncidentProcessInstanceStatisticsByDefinitionFilter,
         IncidentProcessInstanceStatisticsByDefinitionSort,
         IncidentProcessInstanceStatisticsByDefinitionAggregation> {
 
@@ -33,8 +33,10 @@ public record IncidentProcessInstanceStatisticsByDefinitionQuery(
   }
 
   @Override
-  public IncidentProcessInstanceStatisticsByDefinitionAggregation aggregation() {
-    return new IncidentProcessInstanceStatisticsByDefinitionAggregation(filter, sort, page);
+  public io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation
+      aggregation() {
+    return new io.camunda.search.aggregation
+        .IncidentProcessInstanceStatisticsByDefinitionAggregation(filter, sort, page);
   }
 
   public static final class Builder
@@ -43,18 +45,20 @@ public record IncidentProcessInstanceStatisticsByDefinitionQuery(
       implements TypedSearchQueryBuilder<
           IncidentProcessInstanceStatisticsByDefinitionQuery,
           IncidentProcessInstanceStatisticsByDefinitionQuery.Builder,
-          IncidentFilter,
+          IncidentProcessInstanceStatisticsByDefinitionFilter,
           IncidentProcessInstanceStatisticsByDefinitionSort> {
 
-    private static final IncidentFilter DEFAULT_FILTER = FilterBuilders.incident().build();
+    private static final IncidentProcessInstanceStatisticsByDefinitionFilter DEFAULT_FILTER =
+        FilterBuilders.incidentProcessInstanceStatisticsByDefinition().build();
+
     private static final IncidentProcessInstanceStatisticsByDefinitionSort DEFAULT_SORT =
         SortOptionBuilders.incidentProcessInstanceStatisticsByDefinition().build();
 
-    private IncidentFilter filter;
+    private IncidentProcessInstanceStatisticsByDefinitionFilter filter;
     private IncidentProcessInstanceStatisticsByDefinitionSort sort;
 
     @Override
-    public Builder filter(final IncidentFilter value) {
+    public Builder filter(final IncidentProcessInstanceStatisticsByDefinitionFilter value) {
       filter = value;
       return this;
     }
@@ -66,9 +70,11 @@ public record IncidentProcessInstanceStatisticsByDefinitionQuery(
     }
 
     public IncidentProcessInstanceStatisticsByDefinitionQuery.Builder filter(
-        final java.util.function.Function<IncidentFilter.Builder, ObjectBuilder<IncidentFilter>>
+        final java.util.function.Function<
+                IncidentProcessInstanceStatisticsByDefinitionFilter.Builder,
+                ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionFilter>>
             fn) {
-      return filter(FilterBuilders.incident(fn));
+      return filter(FilterBuilders.incidentProcessInstanceStatisticsByDefinition(fn));
     }
 
     public IncidentProcessInstanceStatisticsByDefinitionQuery.Builder sort(

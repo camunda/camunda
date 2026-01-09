@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
@@ -24,10 +25,14 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByErrorSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -548,5 +553,175 @@ public class IncidentIT {
                 .processInstanceKey(firstProcessInstanceKey)
                 .errorMessage(errorMessage)
                 .errorMessageHash(hash));
+  }
+
+  @TestTemplate
+  public void shouldFindIncidentProcessInstanceStatisticsByDefinition(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentProcessInstanceStatisticsByDefinitionDbReader reader =
+        rdbmsService.getIncidentProcessInstanceStatisticsByDefinitionReader();
+
+    final var errorHashCode = 1337;
+
+    final var definition1 =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(
+            rdbmsWriters, b -> b.processDefinitionId("def-1").name("Def 1").version(1));
+    final var definition2 =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(
+            rdbmsWriters, b -> b.processDefinitionId("def-2").name("Def 2").version(3));
+
+    // definition 1: 2 incidents (2 different process instances)
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(definition1.processDefinitionKey())
+                .processDefinitionId(definition1.processDefinitionId())
+                .tenantId(definition1.tenantId())
+                .state(IncidentEntity.IncidentState.ACTIVE)
+                .errorMessageHash(errorHashCode));
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(definition1.processDefinitionKey())
+                .processDefinitionId(definition1.processDefinitionId())
+                .tenantId(definition1.tenantId())
+                .state(IncidentEntity.IncidentState.ACTIVE)
+                .errorMessageHash(errorHashCode));
+
+    // definition 2: 1 incident
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(definition2.processDefinitionKey())
+                .processDefinitionId(definition2.processDefinitionId())
+                .tenantId(definition2.tenantId())
+                .state(IncidentEntity.IncidentState.ACTIVE)
+                .errorMessageHash(errorHashCode));
+
+    rdbmsWriters.flush();
+
+    final var result =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByDefinitionQuery.of(
+                q -> q.filter(f -> f.errorHashCode(errorHashCode).state("ACTIVE"))),
+            io.camunda.security.reader.ResourceAccessChecks.disabled());
+
+    assertThat(result).isNotNull();
+    assertThat(result.total()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting(
+            IncidentProcessInstanceStatisticsByDefinitionEntity::processDefinitionKey,
+            IncidentProcessInstanceStatisticsByDefinitionEntity::processDefinitionId,
+            IncidentProcessInstanceStatisticsByDefinitionEntity::processDefinitionName,
+            IncidentProcessInstanceStatisticsByDefinitionEntity::processDefinitionVersion,
+            IncidentProcessInstanceStatisticsByDefinitionEntity::tenantId,
+            IncidentProcessInstanceStatisticsByDefinitionEntity::activeInstancesWithErrorCount)
+        .containsExactlyInAnyOrder(
+            org.assertj.core.groups.Tuple.tuple(
+                definition1.processDefinitionKey(),
+                definition1.processDefinitionId(),
+                definition1.name(),
+                definition1.version(),
+                definition1.tenantId(),
+                2L),
+            org.assertj.core.groups.Tuple.tuple(
+                definition2.processDefinitionKey(),
+                definition2.processDefinitionId(),
+                definition2.name(),
+                definition2.version(),
+                definition2.tenantId(),
+                1L));
+  }
+
+  @TestTemplate
+  public void shouldFindIncidentProcessInstanceStatisticsByDefinitionWithSortAndPagination(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentProcessInstanceStatisticsByDefinitionDbReader reader =
+        rdbmsService.getIncidentProcessInstanceStatisticsByDefinitionReader();
+
+    final var errorHashCode = 7331;
+
+    final var defA =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(
+            rdbmsWriters, b -> b.processDefinitionId("def-a").name("A").version(1));
+    final var defB =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(
+            rdbmsWriters, b -> b.processDefinitionId("def-b").name("B").version(2));
+
+    // defA: 3
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(defA.processDefinitionKey())
+                .processDefinitionId(defA.processDefinitionId())
+                .tenantId(defA.tenantId())
+                .state(IncidentEntity.IncidentState.ACTIVE)
+                .errorMessageHash(errorHashCode));
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(defA.processDefinitionKey())
+                .processDefinitionId(defA.processDefinitionId())
+                .tenantId(defA.tenantId())
+                .state(IncidentEntity.IncidentState.ACTIVE)
+                .errorMessageHash(errorHashCode));
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(defA.processDefinitionKey())
+                .processDefinitionId(defA.processDefinitionId())
+                .tenantId(defA.tenantId())
+                .state(IncidentEntity.IncidentState.ACTIVE)
+                .errorMessageHash(errorHashCode));
+
+    // defB: 1
+    createAndSaveIncident(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionKey(defB.processDefinitionKey())
+                .processDefinitionId(defB.processDefinitionId())
+                .tenantId(defB.tenantId())
+                .state(IncidentEntity.IncidentState.ACTIVE)
+                .errorMessageHash(errorHashCode));
+
+    rdbmsWriters.flush();
+
+    final var sort =
+        IncidentProcessInstanceStatisticsByDefinitionSort.of(
+            s -> s.activeInstancesWithErrorCount().desc().processDefinitionKey().asc());
+
+    final var firstPage =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByDefinitionQuery.of(
+                q ->
+                    q.filter(f -> f.errorHashCode(errorHashCode).state(IncidentState.ACTIVE.name()))
+                        .sort(sort)
+                        .page(p -> p.from(0).size(1))),
+            io.camunda.security.reader.ResourceAccessChecks.disabled());
+
+    assertThat(firstPage.total()).isEqualTo(2);
+    assertThat(firstPage.items()).hasSize(1);
+    assertThat(firstPage.items().getFirst().processDefinitionKey())
+        .isEqualTo(defA.processDefinitionKey());
+    assertThat(firstPage.items().getFirst().activeInstancesWithErrorCount()).isEqualTo(3L);
+
+    final var secondPage =
+        reader.aggregate(
+            IncidentProcessInstanceStatisticsByDefinitionQuery.of(
+                q ->
+                    q.filter(f -> f.errorHashCode(errorHashCode).state(IncidentState.ACTIVE.name()))
+                        .sort(sort)
+                        .page(p -> p.from(1).size(1))),
+            io.camunda.security.reader.ResourceAccessChecks.disabled());
+
+    assertThat(secondPage.total()).isEqualTo(2);
+    assertThat(secondPage.items()).hasSize(1);
+    assertThat(secondPage.items().getFirst().processDefinitionKey())
+        .isEqualTo(defB.processDefinitionKey());
+    assertThat(secondPage.items().getFirst().activeInstancesWithErrorCount()).isEqualTo(1L);
   }
 }

@@ -530,6 +530,11 @@ public final class ServiceTransformers {
     mappers.put(
         IncidentFilter.class,
         new IncidentFilterTransformer(indexDescriptors.get(IncidentTemplate.class)));
+    mappers.put(
+        io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter.class,
+        new io.camunda.search.clients.transformers.filter
+            .IncidentProcessInstanceStatisticsByDefinitionFilterTransformer(
+            indexDescriptors.get(IncidentTemplate.class)));
     mappers.put(FormFilter.class, new FormFilterTransformer(indexDescriptors.get(FormIndex.class)));
     mappers.put(
         ProcessDefinitionFilter.class,

@@ -22,7 +22,7 @@ import io.camunda.search.clients.aggregator.SearchBucketSortAggregator;
 import io.camunda.search.clients.aggregator.SearchCardinalityAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -40,7 +40,9 @@ final class IncidentProcessInstanceStatisticsByDefinitionAggregationTransformerT
         transformers.getAggregationTransformer(
             IncidentProcessInstanceStatisticsByDefinitionAggregation.class);
 
-    final var filter = FilterBuilders.incident().build();
+    final var filter =
+        IncidentProcessInstanceStatisticsByDefinitionFilter.of(
+            f -> f.errorHashCode(123).state("ACTIVE"));
     final var sort = SortOptionBuilders.incidentProcessInstanceStatisticsByDefinition().build();
     final var page = SearchQueryPage.of((p) -> p.from(5).size(10));
 
