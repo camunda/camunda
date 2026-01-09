@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -21,15 +21,8 @@ import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -45,26 +38,82 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
 
   @Override
   protected void buildFiltering(
-      final Query<FlowNodeInstance> query, final SearchSourceBuilder searchSourceBuilder) {
+      final Query<FlowNodeInstance> query,
+      final Builder searchRequestBuilder,
+      final boolean isTenantAware) {
     final FlowNodeInstance filter = query.getFilter();
-    final List<QueryBuilder> queryBuilders = new ArrayList<>();
-    if (filter != null) {
-      queryBuilders.add(buildTermQuery(FlowNodeInstance.KEY, filter.getKey()));
-      queryBuilders.add(
-          buildTermQuery(FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
-      queryBuilders.add(
-          buildTermQuery(
-              FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
-      queryBuilders.add(buildMatchDateQuery(FlowNodeInstance.START_DATE, filter.getStartDate()));
-      queryBuilders.add(buildMatchDateQuery(FlowNodeInstance.END_DATE, filter.getEndDate()));
-      queryBuilders.add(buildTermQuery(FlowNodeInstance.STATE, filter.getState()));
-      queryBuilders.add(buildTermQuery(FlowNodeInstance.TYPE, filter.getType()));
-      queryBuilders.add(buildTermQuery(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()));
-      queryBuilders.add(buildTermQuery(FlowNodeInstance.INCIDENT, filter.getIncident()));
-      queryBuilders.add(buildTermQuery(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()));
-      queryBuilders.add(buildTermQuery(FlowNodeInstance.TENANT_ID, filter.getTenantId()));
+
+    if (filter == null) {
+      final var finalQuery =
+          isTenantAware
+              ? tenantHelper.makeQueryTenantAware(ElasticsearchUtil.matchAllQuery())
+              : ElasticsearchUtil.matchAllQuery();
+      searchRequestBuilder.query(finalQuery);
+      return;
     }
-    searchSourceBuilder.query(joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
+
+    final var keyQ =
+        buildIfPresent(FlowNodeInstance.KEY, filter.getKey(), ElasticsearchUtil::termsQuery);
+
+    final var processInstanceKeyQ =
+        buildIfPresent(
+            FlowNodeInstance.PROCESS_INSTANCE_KEY,
+            filter.getProcessInstanceKey(),
+            ElasticsearchUtil::termsQuery);
+
+    final var processDefinitionKeyQ =
+        buildIfPresent(
+            FlowNodeInstance.PROCESS_DEFINITION_KEY,
+            filter.getProcessDefinitionKey(),
+            ElasticsearchUtil::termsQuery);
+
+    final var startDateQ =
+        buildIfPresent(
+            FlowNodeInstance.START_DATE, filter.getStartDate(), this::buildMatchDateQuery);
+
+    final var endDateQ =
+        buildIfPresent(FlowNodeInstance.END_DATE, filter.getEndDate(), this::buildMatchDateQuery);
+
+    final var stateQ =
+        buildIfPresent(FlowNodeInstance.STATE, filter.getState(), ElasticsearchUtil::termsQuery);
+
+    final var typeQ =
+        buildIfPresent(FlowNodeInstance.TYPE, filter.getType(), ElasticsearchUtil::termsQuery);
+
+    final var flowNodeIdQ =
+        buildIfPresent(
+            FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId(), ElasticsearchUtil::termsQuery);
+
+    final var incidentQ =
+        buildIfPresent(
+            FlowNodeInstance.INCIDENT, filter.getIncident(), ElasticsearchUtil::termsQuery);
+
+    final var incidentKeyQ =
+        buildIfPresent(
+            FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey(), ElasticsearchUtil::termsQuery);
+
+    final var tenantIdQ =
+        buildIfPresent(
+            FlowNodeInstance.TENANT_ID, filter.getTenantId(), ElasticsearchUtil::termsQuery);
+
+    final var andOfAllQueries =
+        ElasticsearchUtil.joinWithAnd(
+            keyQ,
+            processInstanceKeyQ,
+            processDefinitionKeyQ,
+            startDateQ,
+            endDateQ,
+            stateQ,
+            typeQ,
+            flowNodeIdQ,
+            incidentQ,
+            incidentKeyQ,
+            tenantIdQ);
+
+    final var finalQuery =
+        isTenantAware ? tenantHelper.makeQueryTenantAware(andOfAllQueries) : andOfAllQueries;
+
+    searchRequestBuilder.query(finalQuery);
   }
 
   @Override
@@ -72,8 +121,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     logger.debug("byKey {}", key);
     final List<FlowNodeInstance> flowNodeInstances;
     try {
-      flowNodeInstances =
-          searchFor(new SearchSourceBuilder().query(termQuery(FlowNodeInstance.KEY, key)));
+      flowNodeInstances = searchFor(ElasticsearchUtil.termsQuery(FlowNodeInstance.KEY, key));
     } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading flownode instance for key %s", key), e);
@@ -92,50 +140,27 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
   @Override
   public Results<FlowNodeInstance> search(final Query<FlowNodeInstance> query) throws APIException {
     logger.debug("search {}", query);
-    final SearchSourceBuilder searchSourceBuilder =
-        buildQueryOn(query, FlowNodeInstance.KEY, new SearchSourceBuilder());
+    final var searchReqBuilder =
+        buildQueryOn(query, FlowNodeInstance.KEY, new SearchRequest.Builder(), true);
+
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest().indices(flowNodeInstanceIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final SearchHits searchHits = searchResponse.getHits();
-      final SearchHit[] searchHitArray = searchHits.getHits();
-      if (searchHitArray != null && searchHitArray.length > 0) {
-        final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        final List<FlowNodeInstance> flowNodeInstances =
-            ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToFlowNodeInstance);
-        return new Results<FlowNodeInstance>()
-            .setTotal(searchHits.getTotalHits().value)
-            .setItems(flowNodeInstances)
-            .setSortValues(sortValues);
-      } else {
-        return new Results<FlowNodeInstance>().setTotal(searchHits.getTotalHits().value);
-      }
+      final var searchReq = searchReqBuilder.index(flowNodeInstanceIndex.getAlias()).build();
+      final var results = searchWithResultsReturn(searchReq, FlowNodeInstance.class);
+
+      results.getItems().forEach(this::postProcessFlowNodeInstance);
+
+      return results;
+
     } catch (final Exception e) {
       throw new ServerException("Error in reading flownode instances", e);
     }
   }
 
-  private FlowNodeInstance searchHitToFlowNodeInstance(final SearchHit searchHit) {
-    final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
-    final FlowNodeInstance flowNodeInstance =
-        new FlowNodeInstance()
-            .setKey((Long) searchHitAsMap.get(FlowNodeInstance.KEY))
-            .setProcessInstanceKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_INSTANCE_KEY))
-            .setProcessDefinitionKey(
-                (Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_DEFINITION_KEY))
-            .setStartDate(
-                dateTimeFormatter.convertGeneralToApiDateTime(
-                    (String) searchHitAsMap.get(FlowNodeInstance.START_DATE)))
-            .setEndDate(
-                dateTimeFormatter.convertGeneralToApiDateTime(
-                    (String) searchHitAsMap.get(FlowNodeInstance.END_DATE)))
-            .setType((String) searchHitAsMap.get(FlowNodeInstance.TYPE))
-            .setState((String) searchHitAsMap.get(FlowNodeInstance.STATE))
-            .setFlowNodeId((String) searchHitAsMap.get(FlowNodeInstance.FLOW_NODE_ID))
-            .setIncident((Boolean) searchHitAsMap.get(FlowNodeInstance.INCIDENT))
-            .setIncidentKey((Long) searchHitAsMap.get(FlowNodeInstance.INCIDENT_KEY))
-            .setTenantId((String) searchHitAsMap.get(FlowNodeInstance.TENANT_ID));
+  private FlowNodeInstance postProcessFlowNodeInstance(final FlowNodeInstance flowNodeInstance) {
+    flowNodeInstance.setStartDate(
+        dateTimeFormatter.convertGeneralToApiDateTime(flowNodeInstance.getStartDate()));
+    flowNodeInstance.setEndDate(
+        dateTimeFormatter.convertGeneralToApiDateTime(flowNodeInstance.getEndDate()));
 
     if (flowNodeInstance.getFlowNodeId() != null) {
       final String flowNodeName =
@@ -147,18 +172,22 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     return flowNodeInstance;
   }
 
-  protected List<FlowNodeInstance> searchFor(final SearchSourceBuilder searchSourceBuilder) {
+  protected List<FlowNodeInstance> searchFor(
+      final co.elastic.clients.elasticsearch._types.query_dsl.Query query) {
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest(flowNodeInstanceIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final SearchHits searchHits = searchResponse.getHits();
-      final SearchHit[] searchHitArray = searchHits.getHits();
-      if (searchHitArray != null && searchHitArray.length > 0) {
-        return ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToFlowNodeInstance);
-      } else {
-        return List.of();
-      }
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+      final var res =
+          es8Client.search(
+              s -> s.index(flowNodeInstanceIndex.getAlias()).query(tenantAwareQuery),
+              FlowNodeInstance.class);
+
+      return res.hits().hits().stream()
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .map(this::postProcessFlowNodeInstance)
+          .toList();
+
     } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }

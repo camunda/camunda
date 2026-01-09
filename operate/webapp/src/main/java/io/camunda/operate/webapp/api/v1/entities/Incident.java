@@ -42,6 +42,7 @@ public class Incident {
   private String type;
 
   private String message;
+
   private String creationTime;
 
   @Schema(implementation = IncidentState.class)

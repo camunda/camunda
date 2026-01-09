@@ -7,26 +7,24 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
+import io.camunda.operate.webapp.api.v1.entities.Results;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.Operator;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,9 +34,9 @@ public abstract class ElasticsearchDao<T> {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  @Qualifier("esClient")
-  protected RestHighLevelClient elasticsearch;
+  @Autowired protected ElasticsearchClient es8Client;
+
+  @Autowired protected ElasticsearchTenantHelper tenantHelper;
 
   @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -48,96 +46,97 @@ public abstract class ElasticsearchDao<T> {
 
   @Autowired protected OperateDateTimeFormatter dateTimeFormatter;
 
+  private SortOptions toFieldSort(final Sort sort) {
+    final var order =
+        (sort.getOrder() == Order.DESC)
+            ? co.elastic.clients.elasticsearch._types.SortOrder.Desc
+            : co.elastic.clients.elasticsearch._types.SortOrder.Asc;
+
+    return SortOptions.of(s -> s.field(f -> f.field(sort.getField()).order(order)));
+  }
+
   protected void buildSorting(
       final Query<T> query,
       final String uniqueSortKey,
-      final SearchSourceBuilder searchSourceBuilder) {
+      final SearchRequest.Builder searchRequestBuilder) {
     final List<Sort> sorts = query.getSort();
     if (sorts != null) {
-      searchSourceBuilder.sort(
-          sorts.stream()
-              .map(
-                  sort -> {
-                    final Order order = sort.getOrder();
-                    final FieldSortBuilder sortBuilder = SortBuilders.fieldSort(sort.getField());
-                    if (order.equals(Order.DESC)) {
-                      return sortBuilder.order(SortOrder.DESC);
-                    } else {
-                      // if not specified always assume ASC order
-                      return sortBuilder.order(SortOrder.ASC);
-                    }
-                  })
-              .collect(Collectors.toList()));
+      searchRequestBuilder.sort(sorts.stream().map(this::toFieldSort).toList());
     }
-    // always sort at least by key - needed for searchAfter method of paging
-    searchSourceBuilder.sort(SortBuilders.fieldSort(uniqueSortKey).order(SortOrder.ASC));
+
+    final var uniqueKeySort =
+        SortOptions.of(
+            s ->
+                s.field(
+                    f ->
+                        f.field(uniqueSortKey)
+                            .order(co.elastic.clients.elasticsearch._types.SortOrder.Asc)));
+
+    searchRequestBuilder.sort(uniqueKeySort);
   }
 
-  protected void buildPaging(final Query<T> query, final SearchSourceBuilder searchSourceBuilder) {
+  protected void buildPaging(
+      final Query<T> query, final SearchRequest.Builder searchRequestBuilder) {
     final Object[] searchAfter = query.getSearchAfter();
     if (searchAfter != null) {
-      searchSourceBuilder.searchAfter(searchAfter);
+      searchRequestBuilder.searchAfter(Arrays.stream(searchAfter).map(FieldValue::of).toList());
     }
-    searchSourceBuilder.size(query.getSize());
+    searchRequestBuilder.size(query.getSize());
   }
 
-  protected SearchSourceBuilder buildQueryOn(
-      final Query<T> query, final String uniqueKey, final SearchSourceBuilder searchSourceBuilder) {
+  protected SearchRequest.Builder buildQueryOn(
+      final Query<T> query,
+      final String uniqueKey,
+      final SearchRequest.Builder searchRequestBuilder,
+      final boolean isTenantAware) {
     logger.debug("Build query for Elasticsearch from query {}", query);
-    buildSorting(query, uniqueKey, searchSourceBuilder);
-    buildPaging(query, searchSourceBuilder);
-    buildFiltering(query, searchSourceBuilder);
-    return searchSourceBuilder;
+    buildSorting(query, uniqueKey, searchRequestBuilder);
+    buildPaging(query, searchRequestBuilder);
+    buildFiltering(query, searchRequestBuilder, isTenantAware);
+    return searchRequestBuilder;
+  }
+
+  protected <ResultType> Results<ResultType> searchWithResultsReturn(
+      final SearchRequest searchRequest, final Class<ResultType> clazz) throws IOException {
+
+    final var res = es8Client.search(searchRequest, clazz);
+
+    final var hits = res.hits().hits();
+
+    if (hits.isEmpty()) {
+      return new Results<ResultType>().setTotal(res.hits().total().value());
+    }
+
+    final Object[] sortValues = hits.getLast().sort().stream().map(FieldValue::_get).toArray();
+
+    final var items = hits.stream().map(Hit::source).toList();
+
+    return new Results<ResultType>()
+        .setTotal(res.hits().total().value())
+        .setItems(items)
+        .setSortValues(sortValues);
   }
 
   protected abstract void buildFiltering(
-      final Query<T> query, final SearchSourceBuilder searchSourceBuilder);
+      final Query<T> query,
+      final SearchRequest.Builder searchRequestBuilder,
+      final boolean isTenantAware);
 
-  protected QueryBuilder buildTermQuery(final String name, final String value) {
-    if (!stringIsEmpty(value)) {
-      return termQuery(name, value);
-    }
-    return null;
+  protected <V> co.elastic.clients.elasticsearch._types.query_dsl.Query buildIfPresent(
+      final String field,
+      final V value,
+      final BiFunction<String, V, co.elastic.clients.elasticsearch._types.query_dsl.Query>
+          builder) {
+    return value == null ? null : builder.apply(field, value);
   }
 
-  protected QueryBuilder buildTermQuery(final String name, final Integer value) {
-    if (value != null) {
-      return termQuery(name, value);
+  protected co.elastic.clients.elasticsearch._types.query_dsl.Query buildMatchDateQuery(
+      final String name, final String dateAsString) {
+    if (dateAsString == null) {
+      return null;
     }
-    return null;
-  }
 
-  protected QueryBuilder buildTermQuery(final String name, final Long value) {
-    if (value != null) {
-      return termQuery(name, value);
-    }
-    return null;
-  }
-
-  protected QueryBuilder buildTermQuery(final String name, final Boolean value) {
-    if (value != null) {
-      return termQuery(name, value);
-    }
-    return null;
-  }
-
-  protected QueryBuilder buildMatchQuery(final String name, final String value) {
-    if (value != null) {
-      return matchQuery(name, value).operator(Operator.AND);
-    }
-    return null;
-  }
-
-  protected QueryBuilder buildMatchDateQuery(final String name, final String dateAsString) {
-    if (dateAsString != null) {
-      // Used to match in different time ranges like hours, minutes etc
-      // See:
-      // https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
-      return rangeQuery(name)
-          .gte(dateAsString)
-          .lte(dateAsString)
-          .format(dateTimeFormatter.getApiDateTimeFormatString());
-    }
-    return null;
+    return RangeQuery.of(r -> r.term(t -> t.field(name).gte(dateAsString).lte(dateAsString)))
+        ._toQuery();
   }
 }

@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.VariableDao;
@@ -20,15 +20,9 @@ import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -41,20 +35,50 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
 
   @Override
   protected void buildFiltering(
-      final Query<Variable> query, final SearchSourceBuilder searchSourceBuilder) {
-    final Variable filter = query.getFilter();
-    final List<QueryBuilder> queryBuilders = new ArrayList<>();
-    if (filter != null) {
-      queryBuilders.add(buildTermQuery(Variable.KEY, filter.getKey()));
-      queryBuilders.add(buildTermQuery(Variable.TENANT_ID, filter.getTenantId()));
-      queryBuilders.add(
-          buildTermQuery(Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
-      queryBuilders.add(buildTermQuery(Variable.SCOPE_KEY, filter.getScopeKey()));
-      queryBuilders.add(buildTermQuery(Variable.NAME, filter.getName()));
-      queryBuilders.add(buildTermQuery(Variable.VALUE, filter.getValue()));
-      queryBuilders.add(buildTermQuery(Variable.TRUNCATED, filter.getTruncated()));
+      final Query<Variable> query,
+      final Builder searchRequestBuilder,
+      final boolean isTenantAware) {
+    final var filter = query.getFilter();
+
+    if (filter == null) {
+      final var finalQuery =
+          isTenantAware
+              ? tenantHelper.makeQueryTenantAware(ElasticsearchUtil.matchAllQuery())
+              : ElasticsearchUtil.matchAllQuery();
+      searchRequestBuilder.query(finalQuery);
+      return;
     }
-    searchSourceBuilder.query(joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
+
+    final var keyQ = buildIfPresent(Variable.KEY, filter.getKey(), ElasticsearchUtil::termsQuery);
+
+    final var tenantIdQ =
+        buildIfPresent(Variable.TENANT_ID, filter.getTenantId(), ElasticsearchUtil::termsQuery);
+
+    final var processInstanceKeyQ =
+        buildIfPresent(
+            Variable.PROCESS_INSTANCE_KEY,
+            filter.getProcessInstanceKey(),
+            ElasticsearchUtil::termsQuery);
+
+    final var scopeKeyQ =
+        buildIfPresent(Variable.SCOPE_KEY, filter.getScopeKey(), ElasticsearchUtil::termsQuery);
+
+    final var nameQ =
+        buildIfPresent(Variable.NAME, filter.getName(), ElasticsearchUtil::termsQuery);
+
+    final var valueQ =
+        buildIfPresent(Variable.VALUE, filter.getValue(), ElasticsearchUtil::termsQuery);
+
+    final var truncatedQ =
+        buildIfPresent(Variable.TRUNCATED, filter.getTruncated(), ElasticsearchUtil::termsQuery);
+
+    final var andOfAllQ =
+        ElasticsearchUtil.joinWithAnd(
+            keyQ, tenantIdQ, processInstanceKeyQ, scopeKeyQ, nameQ, valueQ, truncatedQ);
+
+    final var finalQuery = isTenantAware ? tenantHelper.makeQueryTenantAware(andOfAllQ) : andOfAllQ;
+
+    searchRequestBuilder.query(finalQuery);
   }
 
   @Override
@@ -62,7 +86,22 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
     logger.debug("byKey {}", key);
     final List<Variable> variables;
     try {
-      variables = searchFor(new SearchSourceBuilder().query(termQuery(Variable.KEY, key)));
+      final var query = ElasticsearchUtil.termsQuery(Variable.KEY, key);
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+      final var searchReq =
+          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+              .index(variableIndex.getAlias())
+              .query(tenantAwareQuery)
+              .build();
+
+      variables =
+          es8Client.search(searchReq, ElasticsearchUtil.MAP_CLASS).hits().hits().stream()
+              .map(Hit::source)
+              .filter(Objects::nonNull)
+              .map(src -> postProcessVariableDocument(src, true))
+              .toList();
+
     } catch (final Exception e) {
       throw new ServerException(String.format("Error in reading variable for key %s", key), e);
     }
@@ -78,75 +117,44 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
   @Override
   public Results<Variable> search(final Query<Variable> query) throws APIException {
     logger.debug("search {}", query);
-    final SearchSourceBuilder searchSourceBuilder =
-        buildQueryOn(query, Variable.KEY, new SearchSourceBuilder());
+    final var searchReqBuilder =
+        buildQueryOn(query, Variable.KEY, new SearchRequest.Builder(), true);
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest().indices(variableIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final SearchHits searchHits = searchResponse.getHits();
-      final SearchHit[] searchHitArray = searchHits.getHits();
-      if (searchHitArray != null && searchHitArray.length > 0) {
-        final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        final List<Variable> variables =
-            ElasticsearchUtil.mapSearchHits(
-                searchHitArray, this::searchHitToVariableWithoutFullValue);
-        return new Results<Variable>()
-            .setTotal(searchHits.getTotalHits().value)
-            .setItems(variables)
-            .setSortValues(sortValues);
-      } else {
-        return new Results<Variable>().setTotal(searchHits.getTotalHits().value);
-      }
+      final var searchReq = searchReqBuilder.index(variableIndex.getAlias()).build();
+
+      final var results = searchWithResultsReturn(searchReq, ElasticsearchUtil.MAP_CLASS);
+      final var processedVariables =
+          results.getItems().stream().map(src -> postProcessVariableDocument(src, false)).toList();
+
+      return new Results<Variable>()
+          .setItems(processedVariables)
+          .setTotal(results.getTotal())
+          .setSortValues(results.getSortValues());
+
     } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }
   }
 
-  protected Variable searchHitToVariableWithoutFullValue(final SearchHit searchHit) {
-    return searchHitToVariable(searchHit, false);
-  }
-
-  protected Variable searchHitToVariableWithFullValue(final SearchHit searchHit) {
-    return searchHitToVariable(searchHit, true);
-  }
-
-  protected Variable searchHitToVariable(final SearchHit searchHit, final boolean isFullValue) {
-    final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
-    final Variable variable =
+  protected Variable postProcessVariableDocument(
+      final Map<String, Object> varMap, final boolean isFullValue) {
+    final var var =
         new Variable()
-            .setKey((Long) searchHitAsMap.get(Variable.KEY))
-            .setProcessInstanceKey((Long) searchHitAsMap.get(Variable.PROCESS_INSTANCE_KEY))
-            .setScopeKey((Long) searchHitAsMap.get(Variable.SCOPE_KEY))
-            .setTenantId((String) searchHitAsMap.get(Variable.TENANT_ID))
-            .setName((String) searchHitAsMap.get(Variable.NAME))
-            .setValue((String) searchHitAsMap.get(Variable.VALUE))
-            .setTruncated((Boolean) searchHitAsMap.get(Variable.TRUNCATED));
-    if (isFullValue) {
-      final String fullValue = (String) searchHitAsMap.get(Variable.FULL_VALUE);
-      if (fullValue != null) {
-        variable.setValue(fullValue);
-      }
-      variable.setTruncated(false);
-    }
-    return variable;
-  }
+            .setKey((Long) varMap.get(Variable.KEY))
+            .setProcessInstanceKey((Long) varMap.get(Variable.PROCESS_INSTANCE_KEY))
+            .setScopeKey((Long) varMap.get(Variable.SCOPE_KEY))
+            .setTenantId((String) varMap.get(Variable.TENANT_ID))
+            .setName((String) varMap.get(Variable.NAME))
+            .setValue((String) varMap.get(Variable.VALUE))
+            .setTruncated((Boolean) varMap.get(Variable.TRUNCATED));
 
-  protected List<Variable> searchFor(final SearchSourceBuilder searchSourceBuilder) {
-    try {
-      final SearchRequest searchRequest =
-          new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final SearchHits searchHits = searchResponse.getHits();
-      final SearchHit[] searchHitArray = searchHits.getHits();
-      if (searchHitArray != null && searchHitArray.length > 0) {
-        return ElasticsearchUtil.mapSearchHits(
-            searchHitArray, this::searchHitToVariableWithFullValue);
-      } else {
-        return List.of();
+    if (isFullValue) {
+      final String fullValue = (String) varMap.get(Variable.FULL_VALUE);
+      if (fullValue != null) {
+        var.setValue(fullValue);
       }
-    } catch (final Exception e) {
-      throw new ServerException("Error in reading variables", e);
+      var.setTruncated(false);
     }
+    return var;
   }
 }

@@ -8,8 +8,9 @@
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_XML;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
@@ -21,15 +22,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -45,25 +38,17 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
   public Results<ProcessDefinition> search(final Query<ProcessDefinition> query)
       throws APIException {
     logger.debug("search {}", query);
-    final SearchSourceBuilder searchSourceBuilder =
-        buildQueryOn(query, ProcessDefinition.KEY, new SearchSourceBuilder());
+    final var searchReqBuilder =
+        buildQueryOn(
+            query,
+            ProcessDefinition.KEY,
+            new co.elastic.clients.elasticsearch.core.SearchRequest.Builder(),
+            true);
+
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest().indices(processIndex.getAlias()).source(searchSourceBuilder);
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final SearchHits searchHits = searchResponse.getHits();
-      final SearchHit[] searchHitArray = searchHits.getHits();
-      if (searchHitArray != null && searchHitArray.length > 0) {
-        final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        return new Results<ProcessDefinition>()
-            .setTotal(searchHits.getTotalHits().value)
-            .setItems(
-                ElasticsearchUtil.mapSearchHits(
-                    searchHitArray, objectMapper, ProcessDefinition.class))
-            .setSortValues(sortValues);
-      } else {
-        return new Results<ProcessDefinition>().setTotal(searchHits.getTotalHits().value);
-      }
+      final var searchReq = searchReqBuilder.index(processIndex.getAlias()).build();
+
+      return searchWithResultsReturn(searchReq, ProcessDefinition.class);
     } catch (final Exception e) {
       throw new ServerException("Error in reading process definitions", e);
     }
@@ -74,8 +59,14 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     logger.debug("byKey {}", key);
     final List<ProcessDefinition> processDefinitions;
     try {
+      final var searchReqBuilder = processDefinitionKeySearchReq(key);
+
       processDefinitions =
-          searchFor(new SearchSourceBuilder().query(termQuery(ProcessIndex.KEY, key)));
+          ElasticsearchUtil.scrollAllStream(es8Client, searchReqBuilder, ProcessDefinition.class)
+              .flatMap(res -> res.hits().hits().stream())
+              .map(Hit::source)
+              .toList();
+
     } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading process definition for key %s", key), e);
@@ -94,16 +85,13 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
   @Override
   public String xmlByKey(final Long key) throws APIException {
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest(processIndex.getAlias())
-              .source(
-                  new SearchSourceBuilder()
-                      .query(termQuery(ProcessIndex.KEY, key))
-                      .fetchSource(BPMN_XML, null));
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      if (response.getHits().getTotalHits().value == 1) {
-        final Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
-        return (String) result.get(BPMN_XML);
+      final var searchReqBuilder =
+          processDefinitionKeySearchReq(key).source(s -> s.filter(f -> f.includes(BPMN_XML)));
+
+      final var res = es8Client.search(searchReqBuilder.build(), ElasticsearchUtil.MAP_CLASS);
+
+      if (res.hits().total().value() == 1) {
+        return (String) res.hits().hits().get(0).source().get(BPMN_XML);
       }
     } catch (final IOException e) {
       throw new ServerException(
@@ -115,31 +103,61 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
 
   @Override
   protected void buildFiltering(
-      final Query<ProcessDefinition> query, final SearchSourceBuilder searchSourceBuilder) {
-    final ProcessDefinition filter = query.getFilter();
-    if (filter != null) {
-      final List<QueryBuilder> queryBuilders = new ArrayList<>();
-      queryBuilders.add(buildTermQuery(ProcessDefinition.NAME, filter.getName()));
-      queryBuilders.add(
-          buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
-      queryBuilders.add(buildTermQuery(ProcessDefinition.TENANT_ID, filter.getTenantId()));
-      queryBuilders.add(buildTermQuery(ProcessDefinition.VERSION, filter.getVersion()));
-      queryBuilders.add(buildTermQuery(ProcessDefinition.VERSION_TAG, filter.getVersionTag()));
-      queryBuilders.add(buildTermQuery(ProcessDefinition.KEY, filter.getKey()));
-      searchSourceBuilder.query(
-          ElasticsearchUtil.joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
+      final Query<ProcessDefinition> query,
+      final Builder searchRequestBuilder,
+      final boolean isTenantAware) {
+    final var filter = query.getFilter();
+
+    if (filter == null) {
+      final var finalQuery =
+          isTenantAware
+              ? tenantHelper.makeQueryTenantAware(ElasticsearchUtil.matchAllQuery())
+              : ElasticsearchUtil.matchAllQuery();
+      searchRequestBuilder.query(finalQuery);
+      return;
     }
+
+    final var nameQ =
+        buildIfPresent(ProcessDefinition.NAME, filter.getName(), ElasticsearchUtil::termsQuery);
+
+    final var bpmnProcessIdQ =
+        buildIfPresent(
+            ProcessDefinition.BPMN_PROCESS_ID,
+            filter.getBpmnProcessId(),
+            ElasticsearchUtil::termsQuery);
+
+    final var tenantIdQ =
+        buildIfPresent(
+            ProcessDefinition.TENANT_ID, filter.getTenantId(), ElasticsearchUtil::termsQuery);
+
+    final var versionQ =
+        buildIfPresent(
+            ProcessDefinition.VERSION, filter.getVersion(), ElasticsearchUtil::termsQuery);
+
+    final var versionTagQ =
+        buildIfPresent(
+            ProcessDefinition.VERSION_TAG, filter.getVersionTag(), ElasticsearchUtil::termsQuery);
+
+    final var keyQ =
+        buildIfPresent(ProcessDefinition.KEY, filter.getKey(), ElasticsearchUtil::termsQuery);
+
+    final var andOfAllQueries =
+        ElasticsearchUtil.joinWithAnd(
+            nameQ, bpmnProcessIdQ, tenantIdQ, versionQ, versionTagQ, keyQ);
+
+    final var finalQuery =
+        isTenantAware ? tenantHelper.makeQueryTenantAware(andOfAllQueries) : andOfAllQueries;
+
+    searchRequestBuilder.query(finalQuery);
   }
 
-  protected List<ProcessDefinition> searchFor(final SearchSourceBuilder searchSource)
-      throws IOException {
-    final SearchRequest searchRequest =
-        new SearchRequest(processIndex.getAlias()).source(searchSource);
-    return tenantAwareClient.search(
-        searchRequest,
-        () -> {
-          return ElasticsearchUtil.scroll(
-              searchRequest, ProcessDefinition.class, objectMapper, elasticsearch);
-        });
+  private co.elastic.clients.elasticsearch.core.SearchRequest.Builder processDefinitionKeySearchReq(
+      final Long key) {
+    final var query = ElasticsearchUtil.termsQuery(ProcessIndex.KEY, key);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    return new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        .index(processIndex.getAlias())
+        .query(tenantAwareQuery);
   }
 }
