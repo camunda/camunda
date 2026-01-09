@@ -186,15 +186,15 @@ const AppHeader: React.FC = observer(() => {
                 },
               },
               {
-                key: 'audit-log',
+                key: 'operations-log',
                 label: 'Operations Log',
-                isCurrentPage: currentPage === 'audit-log',
+                isCurrentPage: currentPage === 'operations-log',
                 routeProps: {
-                  to: Locations.auditLog(),
+                  to: Paths.operationsLog(),
                   onClick: () => {
                     tracking.track({
                       eventName: 'navigation',
-                      link: 'header-audit-log',
+                      link: 'header-operations-log',
                       currentPage,
                     });
                   },

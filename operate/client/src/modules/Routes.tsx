@@ -29,8 +29,8 @@ const Paths = {
   decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
     return `/decisions/${decisionInstanceId}`;
   },
-  auditLog() {
-    return '/audit-log';
+  operationsLog() {
+    return '/operations-log';
   },
   forbidden() {
     return '/forbidden';
@@ -73,11 +73,6 @@ const Locations = {
     return {
       pathname: Paths.decisions(),
       search: params.toString(),
-    };
-  },
-  auditLog(): To {
-    return {
-      pathname: Paths.auditLog(),
     };
   },
 } as const;

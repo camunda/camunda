@@ -116,7 +116,7 @@ const routes = createRoutesFromElements(
         }}
       />
       <Route
-        path={Paths.auditLog()}
+        path={Paths.operationsLog()}
         lazy={async () => {
           const {OperationsLog} = await import('./OperationsLog/index');
           return {Component: OperationsLog};
