@@ -15,7 +15,11 @@ public interface DataDirectoryCopier {
   /**
    * Copies the contents of {@code source} to {@code target}.
    *
+   * @param source the source data directory to copy from
+   * @param target the target data directory to copy to
    * @param markerFileName a marker file name that should not be copied
+   * @param gracefulShutdown {@code true} if the previous node shut down gracefully and all files
+   *     can be hard-linked; {@code false} if only snapshot files should be hard-linked
    */
   void copy(Path source, Path target, String markerFileName, boolean gracefulShutdown)
       throws IOException;

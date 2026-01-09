@@ -35,8 +35,13 @@ public class PrimaryStorage {
   private String runtimeDirectory;
 
   /**
-   * Disable using a versioned directory pattern for S3 based node id provider is used. Temporary
-   * for testing.
+   * Disable using a versioned directory pattern when an S3-based node ID provider is used.
+   *
+   * <p>Intended for testing and temporary troubleshooting only.
+   *
+   * <p>TODO: Remove this flag and its usages once S3-based garbage collection disk usage has been
+   * validated and is acceptable for release, and versioned directories are enabled by default for
+   * the node ID provider.
    */
   private boolean disableVersionedDirectory = false;
 

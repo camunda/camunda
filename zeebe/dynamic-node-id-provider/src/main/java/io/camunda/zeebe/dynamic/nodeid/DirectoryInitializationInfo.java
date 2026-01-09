@@ -9,7 +9,8 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 /**
  * @param initialized epoch in milliseconds
- * @param initializedFrom nullable if it's the first time it's been initialized
+ * @param initializedFrom the version from which this directory was initialized, or null if this is
+ *     the first initialization
  */
 public record DirectoryInitializationInfo(long initialized, Version initializedFrom) {
   public DirectoryInitializationInfo {
