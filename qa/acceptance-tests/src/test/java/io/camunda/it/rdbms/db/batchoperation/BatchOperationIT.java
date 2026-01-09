@@ -138,6 +138,7 @@ public class BatchOperationIT {
                 batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
+                items.getFirst().rootProcessInstanceKey(),
                 BatchOperationItemState.COMPLETED,
                 NOW,
                 null));
@@ -205,6 +206,7 @@ public class BatchOperationIT {
                 batchOperation.batchOperationKey(),
                 item.itemKey(),
                 item.processInstanceKey(),
+                item.rootProcessInstanceKey(),
                 BatchOperationItemState.COMPLETED,
                 NOW,
                 "x".repeat(9000)));
@@ -256,6 +258,7 @@ public class BatchOperationIT {
                 batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
+                items.getFirst().rootProcessInstanceKey(),
                 BatchOperationItemState.COMPLETED,
                 NOW,
                 null));
@@ -309,6 +312,7 @@ public class BatchOperationIT {
                 batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
+                items.getFirst().rootProcessInstanceKey(),
                 BatchOperationItemState.FAILED,
                 NOW,
                 "error"));
@@ -373,6 +377,7 @@ public class BatchOperationIT {
                 batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
+                items.getFirst().rootProcessInstanceKey(),
                 BatchOperationItemState.SKIPPED,
                 NOW,
                 null));
@@ -431,6 +436,7 @@ public class BatchOperationIT {
                 batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
+                items.getFirst().rootProcessInstanceKey(),
                 BatchOperationItemState.COMPLETED,
                 NOW,
                 null));

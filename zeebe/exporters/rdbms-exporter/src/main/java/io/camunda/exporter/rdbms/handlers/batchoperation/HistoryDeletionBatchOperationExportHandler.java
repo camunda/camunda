@@ -33,7 +33,12 @@ public class HistoryDeletionBatchOperationExportHandler
 
   @Override
   long getProcessInstanceKey(final Record<HistoryDeletionRecordValue> record) {
-    return -1;
+    return -1L;
+  }
+
+  @Override
+  long getRootProcessInstanceKey(final Record<HistoryDeletionRecordValue> record) {
+    return -1L;
   }
 
   @Override

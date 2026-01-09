@@ -66,6 +66,7 @@ public record BatchOperationEntity(
       BatchOperationType operationType,
       Long itemKey,
       Long processInstanceKey,
+      Long rootProcessInstanceKey,
       BatchOperationItemState state,
       OffsetDateTime processedDate,
       String errorMessage) {}
