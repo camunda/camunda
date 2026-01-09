@@ -72,7 +72,9 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedIte
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationInitializedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessDefinitionHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ResolveIncidentOperationHandler;
@@ -81,6 +83,7 @@ import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromIncident
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceModificationOperationHandler;
+import io.camunda.exporter.handlers.operation.OperationFromHistoryDeletionHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
@@ -317,6 +320,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+            new OperationFromHistoryDeletionHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new MappingRuleCreatedUpdatedHandler(
                 indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new MappingRuleDeletedHandler(
@@ -344,6 +349,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new ResolveIncidentOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ProcessInstanceHistoryDeletionOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ProcessDefinitionHistoryDeletionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new ListViewFromProcessInstanceCancellationOperationHandler(
