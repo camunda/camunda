@@ -9,11 +9,15 @@ package io.camunda.zeebe.engine.state.jobmetrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.nio.charset.StandardCharsets;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +39,8 @@ class DbJobMetricsStateTest {
 
   public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private TransactionContext transactionContext;
   private MutableProcessingState processingState;
   private MutableJobMetricsState state;
 
@@ -320,5 +326,106 @@ class DbJobMetricsStateTest {
     // then - size should remain the same (no new key or strings added)
     assertThat(state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE))
         .isEqualTo(sizeAfterFirstInsert);
+  }
+
+  @Test
+  void shouldPopulateCachesOnRestart() {
+    // given - insert data before "restart"
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.COMPLETED);
+    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsState.FAILED);
+
+    final long jobMetricsNbBeforeRestart = state.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB);
+    final long counterBeforeRestart = state.getMetadata(DbJobMetricsState.META_COUNTER);
+    final long totalEncodedStringsSizeBeforeRestart =
+        state.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_BYTE_SIZE);
+    final long batchRecordTotalSizeBeforeRestart =
+        state.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE);
+
+    // Collect metrics data before restart
+    final List<int[]> keysBeforeRestart = new ArrayList<>();
+    final List<int[]> metricsBeforeRestart = new ArrayList<>();
+    state.forEach(
+        (jobTypeIdx, tenantIdx, workerIdx, metrics) -> {
+          keysBeforeRestart.add(new int[] {jobTypeIdx, tenantIdx, workerIdx});
+          metricsBeforeRestart.add(
+              new int[] {
+                metrics[JobMetricsState.CREATED.getIndex()].getCount(),
+                metrics[JobMetricsState.COMPLETED.getIndex()].getCount(),
+                metrics[JobMetricsState.FAILED.getIndex()].getCount()
+              });
+        });
+
+    // when - simulate restart by creating a new DbJobMetricsState instance
+    final MutableJobMetricsState restartedState =
+        new DbJobMetricsState(zeebeDb, transactionContext, InstantSource.system());
+
+    // then - verify metadata is correctly loaded
+    assertThat(restartedState.getMetadata(DbJobMetricsState.META_JOB_METRICS_NB))
+        .isEqualTo(jobMetricsNbBeforeRestart);
+    assertThat(restartedState.getMetadata(DbJobMetricsState.META_COUNTER))
+        .isEqualTo(counterBeforeRestart);
+    assertThat(restartedState.getMetadata(DbJobMetricsState.META_TOTAL_ENCODED_STRINGS_BYTE_SIZE))
+        .isEqualTo(totalEncodedStringsSizeBeforeRestart);
+    assertThat(restartedState.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE))
+        .isEqualTo(batchRecordTotalSizeBeforeRestart);
+
+    // Verify metrics data is correctly loaded into cache
+    final List<int[]> keysAfterRestart = new ArrayList<>();
+    final List<int[]> metricsAfterRestart = new ArrayList<>();
+    restartedState.forEach(
+        (jobTypeIdx, tenantIdx, workerIdx, metrics) -> {
+          keysAfterRestart.add(new int[] {jobTypeIdx, tenantIdx, workerIdx});
+          metricsAfterRestart.add(
+              new int[] {
+                metrics[JobMetricsState.CREATED.getIndex()].getCount(),
+                metrics[JobMetricsState.COMPLETED.getIndex()].getCount(),
+                metrics[JobMetricsState.FAILED.getIndex()].getCount()
+              });
+        });
+
+    assertThat(keysAfterRestart).hasSameSizeAs(keysBeforeRestart);
+    for (int i = 0; i < keysBeforeRestart.size(); i++) {
+      assertThat(keysAfterRestart.get(i)).containsExactly(keysBeforeRestart.get(i));
+      assertThat(metricsAfterRestart.get(i)).containsExactly(metricsBeforeRestart.get(i));
+    }
+
+    // Verify string encoding cache is populated
+    final List<String> encodedStrings = restartedState.getEncodedStrings();
+    assertThat(encodedStrings).hasSize(6); // jobType1, tenant1, worker1, jobType2, tenant2, worker2
+  }
+
+  @Test
+  void shouldContinueIncrementingAfterRestart() {
+    // given - insert data before "restart"
+    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.CREATED);
+
+    // when - simulate restart
+    final MutableJobMetricsState restartedState =
+        new DbJobMetricsState(zeebeDb, transactionContext, InstantSource.system());
+
+    // then - should be able to continue incrementing existing key
+    restartedState.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsState.COMPLETED);
+
+    final List<StatusMetrics[]> values = new ArrayList<>();
+    restartedState.forEach((jobTypeIdx, tenantIdx, workerIdx, metrics) -> values.add(metrics));
+
+    assertThat(values).hasSize(1);
+    assertThat(values.getFirst()[JobMetricsState.CREATED.getIndex()].getCount()).isEqualTo(1);
+    assertThat(values.getFirst()[JobMetricsState.COMPLETED.getIndex()].getCount()).isEqualTo(1);
+
+    // and - should be able to add new keys using existing strings (no size increase for strings)
+    final long sizeBeforeNewKey =
+        restartedState.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE);
+    restartedState.incrementMetric("jobType1", "tenant1", "worker2", JobMetricsState.CREATED);
+    final long sizeAfterNewKey =
+        restartedState.getMetadata(DbJobMetricsState.META_BATCH_RECORD_TOTAL_SIZE);
+
+    // Size increase should only be for new string "worker2" + new key/value
+    final long expectedIncrease =
+        "worker2".getBytes(StandardCharsets.UTF_8).length
+            + MetricsKey.TOTAL_SIZE_BYTES
+            + MetricsValue.TOTAL_SIZE_BYTES;
+    assertThat(sizeAfterNewKey - sizeBeforeNewKey).isEqualTo(expectedIncrease);
   }
 }
