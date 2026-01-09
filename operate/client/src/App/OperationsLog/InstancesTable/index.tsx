@@ -7,15 +7,15 @@
  */
 
 import {useEffect, useMemo, useState} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useLocation, useSearchParams} from 'react-router-dom';
 import {useAuditLogs} from 'modules/queries/auditLog/useAuditLogs';
 import {SortableTable} from 'modules/components/SortableTable';
 import {formatDate} from 'modules/utils/date';
-import {getSortParams} from 'modules/utils/filter';
+import {parseSortParamsV2} from 'modules/utils/filter';
 import {
   type AuditLog,
-  auditLogSortFieldEnum,
   type QueryAuditLogsRequestBody,
+  queryAuditLogsRequestBodySchema,
 } from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -23,7 +23,6 @@ import {logger} from 'modules/logger';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Container} from './styled';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {
   DetailsModal,
   type DetailsModalState,
@@ -39,6 +38,7 @@ import {CellAppliedTo} from './CellAppliedTo';
 import {CellOperationType} from './CellOperationType';
 import {CellResult} from './CellResult';
 import {CellComment} from './CellComment.tsx';
+import {useProcessDefinitionKeyContext} from '../../Processes/ListView/processDefinitionKeyContext.ts';
 
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -80,31 +80,33 @@ const headerColumns = [
   },
 ];
 
+const AuditLogsSearchSortFieldSchema =
+  queryAuditLogsRequestBodySchema.shape.sort.unwrap().unwrap().shape.field;
+
 const InstancesTable: React.FC = observer(() => {
+  const [params] = useSearchParams();
+  const sort = parseSortParamsV2(params, AuditLogsSearchSortFieldSchema, {
+    field: 'timestamp',
+    order: 'desc',
+  });
   const location = useLocation();
-  const sortParams = getSortParams(location.search) || {
-    sortBy: 'timestamp',
-    sortOrder: 'desc',
-  };
-  const sortByParsed = auditLogSortFieldEnum.safeParse(sortParams.sortBy);
-  const sortBy = sortByParsed.success ? sortByParsed.data : 'timestamp';
   const filterValues = getFilters<
     OperationsLogFilterField,
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
-  const processId = processesStore.getProcessIdByLocation(location);
+  const processDefinitionKey = useProcessDefinitionKeyContext();
 
   const request: QueryAuditLogsRequestBody = useMemo(() => {
     return {
       sort: [
         {
-          field: sortBy,
-          order: sortParams.sortOrder,
+          field: sort[0].field,
+          order: sort[0].order,
         },
       ],
       filter: {
         category: {$neq: 'ADMIN'},
-        processDefinitionKey: processId,
+        processDefinitionKey: processDefinitionKey,
         processInstanceKey: filterValues.processInstanceKey,
         tenantId: filterValues.tenant,
       },
@@ -112,9 +114,8 @@ const InstancesTable: React.FC = observer(() => {
   }, [
     filterValues.processInstanceKey,
     filterValues.tenant,
-    processId,
-    sortBy,
-    sortParams.sortOrder,
+    processDefinitionKey,
+    sort,
   ]);
 
   const {
