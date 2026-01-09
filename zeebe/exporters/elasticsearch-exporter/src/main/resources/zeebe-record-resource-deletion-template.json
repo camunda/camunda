@@ -24,6 +24,9 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "deleteHistory": {
+              "type": "boolean"
             }
           }
         }

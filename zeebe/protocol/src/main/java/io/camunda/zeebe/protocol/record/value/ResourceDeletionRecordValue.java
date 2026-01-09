@@ -33,4 +33,9 @@ public interface ResourceDeletionRecordValue extends RecordValue, TenantOwned {
    * @return the key of the resource that will be deleted
    */
   long getResourceKey();
+
+  /**
+   * @return whether resource history should be deleted
+   */
+  boolean isDeleteHistory();
 }
