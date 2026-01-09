@@ -9,18 +9,14 @@ package io.camunda.operate.elasticsearch.dao;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.store.elasticsearch.dao.GenericDAO;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import java.io.IOException;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class GenericDAOTest {
 
-  @Mock private RestHighLevelClient esClient;
+  @Mock private ElasticsearchClient es8Client;
   @Mock private ObjectMapper objectMapper;
   @Mock private MetricIndex index;
   @Mock private MetricEntity entity;
@@ -41,7 +37,7 @@ public class GenericDAOTest {
         .isThrownBy(
             () ->
                 new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                    .esClient(esClient)
+                    .es8Client(es8Client)
                     .index(index)
                     .build());
   }
@@ -64,12 +60,12 @@ public class GenericDAOTest {
             () ->
                 new GenericDAO.Builder<MetricEntity, MetricIndex>()
                     .objectMapper(objectMapper)
-                    .esClient(esClient)
+                    .es8Client(es8Client)
                     .build());
   }
 
   @Test
-  @Disabled("Skipping this test as we can't mock esClient final methods")
+  @Disabled("Skipping this test as we can't mock es8Client final methods")
   public void insertShouldReturnExpectedResponse() throws IOException {
     // Given
     final GenericDAO<MetricEntity, MetricIndex> dao = instantiateDao();
@@ -79,19 +75,17 @@ public class GenericDAOTest {
     when(entity.getId()).thenReturn(null);
     when(objectMapper.writeValueAsString(any())).thenReturn(json);
 
-    final IndexRequest request =
-        new IndexRequest(indexName).id(null).source(json, XContentType.JSON);
-
     // When
     dao.insert(entity);
 
     // Then
-    verify(esClient).index(request, RequestOptions.DEFAULT);
+    // Note: Cannot verify ES8 client calls due to final methods
+    // This test is disabled as mocking ES8 client is not straightforward
   }
 
   private GenericDAO<MetricEntity, MetricIndex> instantiateDao() {
     return new GenericDAO.Builder<MetricEntity, MetricIndex>()
-        .esClient(esClient)
+        .es8Client(es8Client)
         .index(index)
         .objectMapper(objectMapper)
         .build();
