@@ -1,4 +1,4 @@
-# We connot use .Values.global.ingress.annotations to include "infrapreviewenvironmentsingress.annotations" due
+# We cannot use .Values.global.ingress.annotations to include "infrapreviewenvironmentsingress.annotations" due
 # to the "toYaml" function used before "tpl". A similar custom ingress must be used instead.
 # https://github.com/camunda/camunda-platform-helm/blob/1814ba5e3ad4c012288dcaf7b0f8a3ceff860b4e/charts/camunda-platform/templates/camunda/ingress.yaml#L9
 ---
@@ -31,10 +31,10 @@ spec:
         pathType: Prefix
       - backend:
           service:
-            name: {{ template "core.fullname" $camundaPlatform }}
+            name: {{ template "orchestration.fullname" $camundaPlatform }}-gateway
             port:
-              number: {{ .Values.camundaPlatform.core.service.httpPort }}
-        path: {{ .Values.camundaPlatform.core.contextPath }}
+              number: {{ .Values.camundaPlatform.orchestration.service.httpPort }}
+        path: {{ .Values.camundaPlatform.orchestration.contextPath }}
         pathType: Prefix
       - backend:
           service:

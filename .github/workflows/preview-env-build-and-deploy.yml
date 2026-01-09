@@ -43,7 +43,7 @@ jobs:
     - uses: ./.github/actions/build-zeebe
       id: build-camunda
       with:
-        maven-extra-args: -PskipFrontendBuild
+        maven-extra-args: -Dskip.fe.build=false
 
     - uses: ./.github/actions/build-platform-docker
       id: build-camunda-docker
@@ -123,7 +123,7 @@ jobs:
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
           --helm-set global.preview.ingress.domain=camunda.camunda.cloud \
-          --helm-set camunda-platform.core.image.tag=${docker_tag} \
+          --helm-set camunda-platform.orchestration.image.tag=${docker_tag} \
           --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
           --name ${app_name} \
           --revision ${revision} \
