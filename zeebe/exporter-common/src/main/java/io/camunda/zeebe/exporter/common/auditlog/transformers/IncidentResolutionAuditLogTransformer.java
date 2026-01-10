@@ -27,5 +27,9 @@ public class IncidentResolutionAuditLogTransformer
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setElementInstanceKey(value.getElementInstanceKey())
         .setJobKey(value.getJobKey());
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      log.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 }

@@ -65,5 +65,8 @@ class IncidentResolutionAuditLogTransformerTest {
     assertThat(entity.getElementInstanceKey()).isEqualTo(789L);
     assertThat(entity.getJobKey()).isEqualTo(222L);
     assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(record.getValue().getRootProcessInstanceKey());
   }
 }

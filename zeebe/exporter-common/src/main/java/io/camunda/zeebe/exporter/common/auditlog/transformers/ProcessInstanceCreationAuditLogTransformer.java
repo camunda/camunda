@@ -26,5 +26,9 @@ public class ProcessInstanceCreationAuditLogTransformer
     log.setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionId(value.getBpmnProcessId())
         .setProcessDefinitionKey(value.getProcessDefinitionKey());
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      log.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 }

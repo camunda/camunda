@@ -31,8 +31,7 @@ public class ResolveIncidentOperationHandler
 
   @Override
   long getRootProcessInstanceKey(final Record<IncidentRecordValue> record) {
-    return -1; // TODO implement when available in the record
-    // https://github.com/camunda/camunda/pull/43320
+    return record.getValue().getRootProcessInstanceKey();
   }
 
   @Override
