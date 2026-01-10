@@ -59,5 +59,8 @@ class ProcessInstanceMigrationAuditLogTransformerTest {
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(123L);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(234L);
     assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(record.getValue().getRootProcessInstanceKey());
   }
 }

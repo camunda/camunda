@@ -27,5 +27,9 @@ public class ProcessInstanceMigrationAuditLogTransformer
     final var value = record.getValue();
     log.setProcessDefinitionKey(value.getTargetProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey());
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      log.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 }

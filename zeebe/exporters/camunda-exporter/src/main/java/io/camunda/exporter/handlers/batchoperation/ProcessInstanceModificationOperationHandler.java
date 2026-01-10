@@ -41,8 +41,7 @@ public class ProcessInstanceModificationOperationHandler
 
   @Override
   long getRootProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
-    return -1; // TODO implement when available in the record
-    // https://github.com/camunda/camunda/pull/43315
+    return record.getValue().getRootProcessInstanceKey();
   }
 
   @Override
