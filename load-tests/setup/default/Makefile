@@ -24,10 +24,10 @@ endif
 all: install
 
 .PHONY: install
-install: install-storage install-platform install-load-test
+install: install-storage install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: install-storage install-platform-stable install-load-test
+install-stable: install-storage install-platform-stable install-load-test install-elasticsearch-exporter
 
 # Install PostgreSQL database if secondary_storage is postgresql
 .PHONY: install-storage
@@ -52,6 +52,20 @@ ifeq ($(secondary_storage),postgresql)
 		--set primary.persistence.size=128Gi
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
+endif
+
+# Install Elasticsearch prometheus exporter if secondary_storage is elasticsearch
+.PHONY: install-elasticsearch-exporter
+install-elasticsearch-exporter:
+ifeq ($(secondary_storage),elasticsearch)
+	@echo "Installing Elasticsearch Prometheus Exporter for namespace $(namespace)..."
+	helm upgrade --install elasticsearch-exporter oci://ghcr.io/prometheus-community/charts/prometheus-elasticsearch-exporter \
+    --namespace $(namespace) \
+    --wait --timeout 5m0s \
+    -f camunda-platform-values-elasticsearch-exporter.yaml \
+    --set es.uri="http://$(namespace)-elasticsearch:9200"
+else
+	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
 
 # Install/upgrade Camunda Platform helm chart
@@ -123,6 +137,7 @@ template-stable:
 clean:
 	-helm --namespace $(namespace) uninstall $(namespace)
 	-helm --namespace $(namespace) uninstall $(namespace)-test
+	-helm --namespace $(namespace) uninstall elasticsearch-exporter
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
