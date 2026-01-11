@@ -52,6 +52,7 @@ public final class RdbmsExporter {
   // volatile runtime properties
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
+  private long lastFlushedPosition = -1;
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
   private ScheduledTask currentUsageMetricsCleanupTask = null;
@@ -124,6 +125,7 @@ public final class RdbmsExporter {
             lastPosition);
       }
     }
+    lastFlushedPosition = lastPosition;
 
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
@@ -173,7 +175,11 @@ public final class RdbmsExporter {
           "[RDBMS Exporter P{}] Failed to flush records before closing exporter.", partitionId, e);
     }
 
-    LOG.info("[RDBMS Exporter P{}] Exporter closed at position {}", partitionId, lastPosition);
+    LOG.info(
+        "[RDBMS Exporter P{}] Exporter closed at positions Broker {}, RDBMS {}",
+        partitionId,
+        lastPosition,
+        exporterRdbmsPosition.lastExportedPosition());
   }
 
   public void export(final Record<?> record) {
@@ -237,8 +243,9 @@ public final class RdbmsExporter {
         }
       } catch (final Exception e) {
         LOG.warn(
-            "[RDBMS Exporter P{}] Failed to flush record for position {} to the database.",
+            "[RDBMS Exporter P{}] Failed to flush record for positions {} to {} to the database.",
             partitionId,
+            lastFlushedPosition + 1,
             lastPosition);
         throw e;
       }
@@ -283,6 +290,7 @@ public final class RdbmsExporter {
 
   private void updatePositionInBroker() {
     LOG.trace("[RDBMS Exporter P{}] Updating position to {} in broker", partitionId, lastPosition);
+    lastFlushedPosition = lastPosition;
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
@@ -348,8 +356,9 @@ public final class RdbmsExporter {
       flushExecutionQueue();
     } catch (final Exception e) {
       LOG.warn(
-          "[RDBMS Exporter P{}] Failed to flush records for position {}",
+          "[RDBMS Exporter P{}] Failed to flush records for positions {} to {} to the database",
           partitionId,
+          lastFlushedPosition + 1,
           lastPosition);
       throw e;
     } finally {
