@@ -60,10 +60,12 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
   protected <T> T doPreFiltering(
       final SecurityContext securityContext, final Function<ResourceAccessChecks, T> applier) {
     final var authorizationCheck = determineAuthorizationCheck(securityContext);
-    final var tenantCheck = determineTenantCheck(securityContext.authentication());
+    final var authentication = securityContext.authentication();
+    final var tenantCheck = determineTenantCheck(authentication);
 
     // read with resource access checks
-    final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, tenantCheck, authentication);
     return applier.apply(resourceAccessChecks);
   }
 
