@@ -81,7 +81,6 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
-import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
@@ -306,11 +305,6 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
-    return new RdbmsWriterMetrics(meterRegistry);
-  }
-
-  @Bean
   public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
       final TableMetricsMapper tableMetricsMapper, final Camunda configuration) {
     final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
@@ -343,7 +337,7 @@ public class RdbmsConfiguration {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
-      final RdbmsWriterMetrics metrics,
+      final MeterRegistry meterRegistry,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -367,7 +361,7 @@ public class RdbmsConfiguration {
         purgeMapper,
         userTaskMapper,
         variableMapper,
-        metrics,
+        meterRegistry,
         batchOperationReader,
         jobMapper,
         sequenceFlowMapper,
