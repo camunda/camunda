@@ -187,6 +187,19 @@ public class RdbmsWriterMetrics {
     recordExportingLatency.record(Duration.ofMillis(latencyMs));
   }
 
+  /**
+   * Records which trigger caused the queue flush.
+   *
+   * @param trigger the flush trigger type (e.g., "count_limit", "memory_limit", "flush_interval")
+   */
+  public void recordQueueFlush(final FlushTrigger trigger) {
+    Counter.builder(meterName("flush"))
+        .tags("trigger", trigger.name())
+        .description("Count of queue flushes")
+        .register(meterRegistry)
+        .increment();
+  }
+
   private String meterName(final String name) {
     return NAMESPACE + "." + name;
   }
@@ -196,5 +209,12 @@ public class RdbmsWriterMetrics {
       return statementId.substring("io.camunda.db.rdbms.sql.".length());
     }
     return statementId;
+  }
+
+  public enum FlushTrigger {
+    COUNT_LIMIT,
+    MEMORY_LIMIT,
+    FLUSH_INTERVAL,
+    SHUTDOWN
   }
 }

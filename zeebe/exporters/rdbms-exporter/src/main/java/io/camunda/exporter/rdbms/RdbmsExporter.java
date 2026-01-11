@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -370,6 +371,7 @@ public final class RdbmsExporter {
       LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
+    rdbmsWriters.getMetrics().recordQueueFlush(FlushTrigger.FLUSH_INTERVAL);
     rdbmsWriters.flush(true);
   }
 
