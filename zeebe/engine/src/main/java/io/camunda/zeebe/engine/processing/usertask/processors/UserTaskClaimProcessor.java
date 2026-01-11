@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionUpdateUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
+
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -115,45 +115,11 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    final var processDefinitionUpdateUserTaskRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_USER_TASK)
-            .tenantId(persistedUserTask.getTenantId())
-            .addResourceId(persistedUserTask.getBpmnProcessId())
-            .build();
-
-    final var userTaskKey = String.valueOf(persistedUserTask.getUserTaskKey());
-    final var userTaskProperties =
-        UserTaskAuthorizationProperties.builder()
-            .assignee(persistedUserTask.getAssignee())
-            .candidateUsers(persistedUserTask.getCandidateUsersList())
-            .candidateGroups(persistedUserTask.getCandidateGroupsList())
-            .build();
-
-    final var userTaskUpdateRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.USER_TASK)
-            .permissionType(PermissionType.UPDATE)
-            .tenantId(persistedUserTask.getTenantId())
-            .addResourceId(userTaskKey)
-            .resourceProperties(userTaskProperties)
-            .build();
-    final var userTaskClaimRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.USER_TASK)
-            .permissionType(PermissionType.CLAIM)
-            .tenantId(persistedUserTask.getTenantId())
-            .addResourceId(userTaskKey)
-            .resourceProperties(userTaskProperties)
-            .build();
-
     return authCheckBehavior
         .isAnyAuthorizedOrInternalCommand(
-            processDefinitionUpdateUserTaskRequest, userTaskUpdateRequest, userTaskClaimRequest)
+            buildProcessDefinitionUpdateUserTaskRequest(command, persistedUserTask),
+            buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
+            buildUserTaskRequest(command, persistedUserTask, PermissionType.CLAIM))
         .map(ignored -> persistedUserTask);
   }
 
