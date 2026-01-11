@@ -8,6 +8,7 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -16,15 +17,26 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, TenantCheck tenantCheck) {
+public record ResourceAccessChecks(
+    AuthorizationCheck authorizationCheck,
+    TenantCheck tenantCheck,
+    CamundaAuthentication authentication) {
 
   public static ResourceAccessChecks disabled() {
-    return new ResourceAccessChecks(AuthorizationCheck.disabled(), TenantCheck.disabled());
+    return new ResourceAccessChecks(
+        AuthorizationCheck.disabled(), TenantCheck.disabled(), CamundaAuthentication.none());
   }
 
   public static ResourceAccessChecks of(
       final AuthorizationCheck authorizationCheck, final TenantCheck tenantCheck) {
-    return new ResourceAccessChecks(authorizationCheck, tenantCheck);
+    return new ResourceAccessChecks(authorizationCheck, tenantCheck, CamundaAuthentication.none());
+  }
+
+  public static ResourceAccessChecks of(
+      final AuthorizationCheck authorizationCheck,
+      final TenantCheck tenantCheck,
+      final CamundaAuthentication authentication) {
+    return new ResourceAccessChecks(authorizationCheck, tenantCheck, authentication);
   }
 
   /**
