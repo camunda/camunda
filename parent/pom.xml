@@ -195,7 +195,7 @@
     <version.jwks-rsa>0.23.0</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.7</version.nimbus-jose-jwt>
-    <version.nimbus-sdk>11.31</version.nimbus-sdk>
+    <version.nimbus-sdk>11.31.1</version.nimbus-sdk>
     <version.keycloak>26.3.2</version.keycloak>
     <version.keycloak-client>26.0.7</version.keycloak-client>
     <version.jna>5.17.0</version.jna>
