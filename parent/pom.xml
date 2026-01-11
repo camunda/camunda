@@ -139,7 +139,7 @@
     <version.jnr-constants>0.10.4</version.jnr-constants>
     <version.zpt>8.8.9</version.zpt>
     <version.feign>13.6</version.feign>
-    <version.google-sdk>26.64.0</version.google-sdk>
+    <version.google-sdk>26.73.0</version.google-sdk>
     <version.azure-sdk>1.3.3</version.azure-sdk>
     <version.awssdk>2.41.14</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
