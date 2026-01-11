@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
 
 public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
@@ -138,9 +140,48 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
             .resourceProperties(userTaskProperties)
             .build();
 
-    return authCheckBehavior
-        .isAnyAuthorizedOrInternalCommand(
-            processDefinitionUpdateUserTaskRequest, userTaskUpdateRequest)
-        .map(ignored -> persistedUserTask);
+    // First check: PROCESS_DEFINITION[UPDATE_USER_TASK] or USER_TASK[UPDATE]
+    final var primaryAuthResult =
+        authCheckBehavior.isAnyAuthorizedOrInternalCommand(
+            processDefinitionUpdateUserTaskRequest, userTaskUpdateRequest);
+
+    if (primaryAuthResult.isRight()) {
+      return Either.right(persistedUserTask);
+    }
+
+    // Second check: self-unassigning case
+    // If the new assignee is empty (unassigning) and the current task assignee matches
+    // the current user, allow via USER_TASK[CLAIM] permission with any of:
+    // - Wildcard scope (*)
+    // - Resource ID scope (userTaskKey)
+    // - Property scope ("assignee")
+    final var newAssignee = command.getValue().getAssignee();
+    final var currentAssignee = persistedUserTask.getAssignee();
+    final var currentUsername = getCurrentUsername(command);
+
+    if (newAssignee.isEmpty() && currentUsername.filter(currentAssignee::equals).isPresent()) {
+      final var userTaskClaimRequest =
+          AuthorizationRequest.builder()
+              .command(command)
+              .resourceType(AuthorizationResourceType.USER_TASK)
+              .permissionType(PermissionType.CLAIM)
+              .tenantId(persistedUserTask.getTenantId())
+              .addResourceId(userTaskKey)
+              .resourceProperties(
+                  UserTaskAuthorizationProperties.builder().assignee(currentAssignee).build())
+              .build();
+
+      return authCheckBehavior
+          .isAuthorizedOrInternalCommand(userTaskClaimRequest)
+          .map(ignored -> persistedUserTask);
+    }
+
+    // Return the original rejection from primary auth check
+    return primaryAuthResult.map(ignored -> persistedUserTask);
+  }
+
+  private Optional<String> getCurrentUsername(final TypedRecord<?> command) {
+    return Optional.ofNullable(
+        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
   }
 }

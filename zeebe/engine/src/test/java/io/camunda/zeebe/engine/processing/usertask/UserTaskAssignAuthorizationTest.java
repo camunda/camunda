@@ -339,6 +339,216 @@ public class UserTaskAssignAuthorizationTest {
                 .formatted(PROCESS_ID, userTaskKey));
   }
 
+  @Test
+  public void shouldBeAuthorizedToSelfUnassignUserTaskWithUserTaskClaimResourceIdPermission() {
+    // given
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(process(t -> t.zeebeAssignee(user.getUsername())));
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    authorizationHelper.addPermissionsToUser(
+        user.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.USER_TASK,
+        PermissionType.CLAIM,
+        AuthorizationScope.id(String.valueOf(userTaskKey)));
+
+    // when
+    engine.userTask().ofInstance(processInstanceKey).unassign(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToSelfUnassignUserTaskWithUserTaskClaimWildcardPermission() {
+    // given
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(process(t -> t.zeebeAssignee(user.getUsername())));
+    authorizationHelper.addPermissionsToUser(
+        user.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.USER_TASK,
+        PermissionType.CLAIM,
+        AuthorizationScope.WILDCARD);
+
+    // when - user unassigns themselves (self-unassignment)
+    engine.userTask().ofInstance(processInstanceKey).unassign(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void
+      shouldBeAuthorizedToSelfUnassignUserTaskWithUserTaskClaimAssigneePropertyPermission() {
+    // given
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(process(t -> t.zeebeAssignee(user.getUsername())));
+    authorizationHelper.addPermissionsToUser(
+        user.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.USER_TASK,
+        PermissionType.CLAIM,
+        AuthorizationScope.property(PROP_ASSIGNEE));
+
+    // when - user unassigns themselves (self-unassignment)
+    engine.userTask().ofInstance(processInstanceKey).unassign(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToSelfUnassignIfNotAssignedToTask() {
+    // given - user is NOT assigned to the task, but another user is
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(process(t -> t.zeebeAssignee("anotherUser")));
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    authorizationHelper.addPermissionsToUser(
+        user.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.USER_TASK,
+        PermissionType.CLAIM,
+        AuthorizationScope.property(PROP_ASSIGNEE));
+
+    // when - user tries to unassign but they are not the assignee
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .expectRejection()
+            .unassign(user.getUsername());
+
+    // then - should be rejected because self-unassignment requires user to be the current assignee
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            """
+                Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'UPDATE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
+                or resource must match property constraints '[assignee]'"""
+                .formatted(PROCESS_ID, userTaskKey));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToSelfUnassignWithOnlyCandidateUsersPropertyPermission() {
+    // given - user has CLAIM permission on candidateUsers but not assignee
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(process(t -> t.zeebeAssignee(user.getUsername())));
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    authorizationHelper.addPermissionsToUser(
+        user.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.USER_TASK,
+        PermissionType.CLAIM,
+        AuthorizationScope.property(PROP_CANDIDATE_USERS));
+
+    // when - user tries to self-unassign with only candidateUsers permission
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .expectRejection()
+            .unassign(user.getUsername());
+
+    // then - should be rejected because self-unassignment requires assignee property permission
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            """
+                Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
+                or resource must match property constraints '[assignee]'"""
+                .formatted(userTaskKey));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToSelfUnassignWithOnlyCandidateGroupsPropertyPermission() {
+    // given - user has CLAIM permission on candidateGroups but not assignee
+    final var user = createUser();
+    final var groupId = createGroupWithUser(user);
+    final var processInstanceKey =
+        createProcessInstance(
+            process(
+                t ->
+                    t.zeebeAssignee(user.getUsername())
+                        .zeebeCandidateGroups("men, %s, ents".formatted(groupId))));
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    authorizationHelper.addPermissionsToUser(
+        user.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.USER_TASK,
+        PermissionType.CLAIM,
+        AuthorizationScope.property(PROP_CANDIDATE_GROUPS));
+
+    // when - user tries to self-unassign with only candidateGroups permission
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .expectRejection()
+            .unassign(user.getUsername());
+
+    // then - should be rejected because self-unassignment requires assignee property permission
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            """
+                Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
+                or resource must match property constraints '[assignee]'"""
+                .formatted(userTaskKey));
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToAssignOtherUserWithOnlyClaimPermission() {
+    // given - user has CLAIM permission but tries to assign someone else (not unassign)
+    final var user = createUser();
+    final var processInstanceKey =
+        createProcessInstance(process(t -> t.zeebeAssignee(user.getUsername())));
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    authorizationHelper.addPermissionsToUser(
+        user.getUsername(),
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.USER_TASK,
+        PermissionType.CLAIM,
+        AuthorizationScope.property(PROP_ASSIGNEE));
+
+    // when - user tries to assign a different user (not self-unassignment)
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withAssignee("anotherUser")
+            .expectRejection()
+            .assign(user.getUsername());
+
+    // then - should be rejected because CLAIM permission only allows self-unassignment
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            """
+                Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'UPDATE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
+                or resource must match property constraints '[assignee]'"""
+                .formatted(PROCESS_ID, userTaskKey));
+  }
+
   private UserRecordValue createUser() {
     return engine
         .user()
