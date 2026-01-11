@@ -183,7 +183,7 @@
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.14.0</version.joda-time>
     <version.commons-collections4>4.5.0</version.commons-collections4>
-    <version.xmlunit-core>2.10.3</version.xmlunit-core>
+    <version.xmlunit-core>2.11.0</version.xmlunit-core>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
