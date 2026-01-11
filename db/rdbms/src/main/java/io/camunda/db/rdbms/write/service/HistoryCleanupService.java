@@ -245,7 +245,7 @@ public class HistoryCleanupService {
   private void saveLastCleanupInterval(final int partitionId, final Duration nextDuration) {
     if (lastCleanupInterval.put(partitionId, nextDuration) == null) {
       metrics.registerCleanupBackoffDurationGauge(
-          partitionId, () -> lastCleanupInterval.get(partitionId).toMillis());
+          () -> lastCleanupInterval.get(partitionId).toMillis());
     }
   }
 
