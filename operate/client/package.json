@@ -75,7 +75,7 @@
     "@types/carbon-components-react": "7.55.13",
     "@types/carbon__elements": "11.10.3",
     "@types/jest": "29.5.14",
-    "@types/lodash": "4.17.21",
+    "@types/lodash": "4.17.23",
     "@types/mixpanel-browser": "2.50.2",
     "@types/node": "20.16.15",
     "@types/react": "18.3.27",
