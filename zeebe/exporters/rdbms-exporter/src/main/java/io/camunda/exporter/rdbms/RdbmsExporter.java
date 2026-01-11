@@ -218,7 +218,10 @@ public final class RdbmsExporter {
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here.
       try {
-        rdbmsWriters.flush(flushAfterEachRecord());
+        final boolean flushed = rdbmsWriters.flush(flushAfterEachRecord());
+        if (flushed) {
+          resetIntervalFlush();
+        }
       } catch (final Exception e) {
         LOG.warn(
             "[RDBMS Exporter P{}] Failed to flush record for position {} to the database.",
@@ -233,6 +236,18 @@ public final class RdbmsExporter {
           record.getKey(),
           Protocol.decodePartitionId(record.getKey()),
           record);
+    }
+  }
+
+  /**
+   * After a flush triggered not by an interval, we need to reset the interval flush task to avoid
+   * too many flushes.
+   */
+  private void resetIntervalFlush() {
+    if (!flushAfterEachRecord() && currentFlushTask != null) {
+      currentFlushTask.cancel();
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
     }
   }
 
