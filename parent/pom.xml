@@ -231,7 +231,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.9.8.2</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.4</plugin.version.surefire>
-    <plugin.version.versions>2.18.0</plugin.version.versions>
+    <plugin.version.versions>2.20.1</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.4</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.4.0</plugin.version.maven-source>
     <plugin.version.japicmp>0.23.1</plugin.version.japicmp>
