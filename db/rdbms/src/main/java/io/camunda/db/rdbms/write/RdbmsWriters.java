@@ -309,11 +309,12 @@ public class RdbmsWriters {
    * @param force if true, forces an immediate flush; if false, only flushes if queue limits are
    *     reached
    */
-  public void flush(final boolean force) {
+  public boolean flush(final boolean force) {
     if (force) {
       executionQueue.flush();
+      return true;
     } else {
-      executionQueue.checkQueueForFlush();
+      return executionQueue.checkQueueForFlush();
     }
   }
 }
