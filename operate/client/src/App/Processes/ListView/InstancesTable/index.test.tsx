@@ -22,6 +22,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
 
     return (
       <HistoryRouter
+        // @ts-expect-error - history v5.3.0 lacks encodeLocation required by react-router-dom
         history={createMemoryHistory({
           initialEntries: [initialPath],
         })}
