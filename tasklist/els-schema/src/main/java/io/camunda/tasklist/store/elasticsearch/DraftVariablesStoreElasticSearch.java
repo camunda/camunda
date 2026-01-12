@@ -8,10 +8,10 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -33,7 +34,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -105,24 +105,31 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   public List<DraftTaskVariableEntity> getVariablesByTaskIdAndVariableNames(
       final String taskId, final List<String> variableNames) {
     try {
-      final BoolQueryBuilder queryBuilder =
-          QueryBuilders.boolQuery()
-              .must(QueryBuilders.termQuery(DraftTaskVariableTemplate.TASK_ID, taskId));
+      final var taskIdQuery =
+          ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.TASK_ID, taskId);
 
-      // Add variable names to query only if the list is not empty
-      if (!CollectionUtils.isEmpty(variableNames)) {
-        queryBuilder.must(QueryBuilders.termsQuery(DraftTaskVariableTemplate.NAME, variableNames));
-      }
+      final var query =
+          CollectionUtils.isEmpty(variableNames)
+              ? taskIdQuery
+              : ElasticsearchUtil.joinWithAnd(
+                  taskIdQuery,
+                  ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.NAME, variableNames));
 
-      final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(queryBuilder);
+      final var searchRequestBuilder =
+          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+              .index(draftTaskVariableTemplate.getFullQualifiedName())
+              .query(query);
 
-      final SearchRequest searchRequest =
-          new SearchRequest(draftTaskVariableTemplate.getFullQualifiedName());
-      searchRequest.source(sourceBuilder);
+      final var scrollStream =
+          ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, DraftTaskVariableEntity.class);
 
-      return ElasticsearchUtil.scroll(
-          searchRequest, DraftTaskVariableEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
+      return scrollStream
+          .flatMap(response -> response.hits().hits().stream())
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .toList();
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error executing the query to get draft task variable instances for task [%s] with variable names %s",
@@ -162,15 +169,22 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
 
   @Override
   public List<String> getDraftVariablesIdsByTaskIds(final List<String> taskIds) {
-    final SearchRequest searchRequest =
-        new SearchRequest(draftTaskVariableTemplate.getFullQualifiedName())
-            .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termsQuery(DraftTaskVariableTemplate.TASK_ID, taskIds))
-                    .fetchField(DraftTaskVariableTemplate.ID));
     try {
-      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
-    } catch (final IOException e) {
+      final var query = ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.TASK_ID, taskIds);
+
+      final var searchRequestBuilder =
+          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+              .index(draftTaskVariableTemplate.getFullQualifiedName())
+              .query(query)
+              .source(s -> s.filter(f -> f.includes(DraftTaskVariableTemplate.ID)));
+
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+          .flatMap(response -> response.hits().hits().stream())
+          .map(Hit::id)
+          .filter(Objects::nonNull)
+          .toList();
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }

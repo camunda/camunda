@@ -9,7 +9,6 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
@@ -20,6 +19,7 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_U
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -54,14 +54,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -96,6 +92,8 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Autowired
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
+
+  @Autowired private ElasticsearchClient es8Client;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -777,59 +775,45 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private List<String> getTasksIdsCompletedWithMatchingVars(
       final List<String> varNames, final List<String> varValues) {
-    final List<Set<String>> tasksIdsMatchingAllVars = new ArrayList<>();
+    final var tasksIdsMatchingAllVars = new ArrayList<Set<String>>();
 
-    for (int i = 0; i < varNames.size(); i++) {
-      final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.NAME, varNames.get(i)));
-      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.VALUE, varValues.get(i)));
+    for (var i = 0; i < varNames.size(); i++) {
+      final var nameQuery =
+          ElasticsearchUtil.termsQuery(SnapshotTaskVariableTemplate.NAME, varNames.get(i));
+      final var valueQuery =
+          ElasticsearchUtil.termsQuery(SnapshotTaskVariableTemplate.VALUE, varValues.get(i));
+      final var boolQuery = ElasticsearchUtil.joinWithAnd(nameQuery, valueQuery);
 
-      final SearchSourceBuilder searchSourceBuilder =
-          new SearchSourceBuilder()
+      final var searchRequestBuilder =
+          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+              .index(taskVariableTemplate.getAlias())
               .query(boolQuery)
-              .fetchSource(SnapshotTaskVariableTemplate.TASK_ID, null);
+              .source(s -> s.filter(f -> f.includes(SnapshotTaskVariableTemplate.TASK_ID)));
 
-      final SearchRequest searchRequest =
-          new SearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
-      searchRequest.scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
-
-      final Set<String> taskIds = new HashSet<>();
+      final var taskIds = new HashSet<String>();
 
       try {
-        SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-        String scrollId = searchResponse.getScrollId();
+        final var scrollStream =
+            ElasticsearchUtil.scrollAllStream(
+                es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS);
 
-        List<String> scrollTaskIds =
-            Arrays.stream(searchResponse.getHits().getHits())
-                .map(hit -> (String) hit.getSourceAsMap().get(SnapshotTaskVariableTemplate.TASK_ID))
-                .collect(Collectors.toList());
-
-        taskIds.addAll(scrollTaskIds);
-
-        while (scrollTaskIds.size() > 0) {
-          final SearchScrollRequest scrollRequest =
-              new SearchScrollRequest(scrollId).scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
-
-          searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-          scrollId = searchResponse.getScrollId();
-          scrollTaskIds =
-              Arrays.stream(searchResponse.getHits().getHits())
-                  .map(
-                      hit ->
-                          (String) hit.getSourceAsMap().get(SnapshotTaskVariableTemplate.TASK_ID))
-                  .toList();
-          taskIds.addAll(scrollTaskIds);
-        }
-
-        // Finalize the scroll to free the resources
-        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-        clearScrollRequest.addScrollId(scrollId);
-        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+        scrollStream
+            .flatMap(response -> response.hits().hits().stream())
+            .forEach(
+                hit -> {
+                  final var source = hit.source();
+                  if (source != null) {
+                    final var taskId = (String) source.get(SnapshotTaskVariableTemplate.TASK_ID);
+                    if (taskId != null) {
+                      taskIds.add(taskId);
+                    }
+                  }
+                });
 
         tasksIdsMatchingAllVars.add(taskIds);
 
-      } catch (final IOException e) {
-        final String message =
+      } catch (final Exception e) {
+        final var message =
             String.format(
                 "Exception occurred while obtaining taskIds for variable %s: %s",
                 varNames.get(i), e.getMessage());
