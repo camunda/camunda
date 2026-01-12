@@ -8,14 +8,13 @@
 
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {useNavigate} from 'react-router-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
+import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
 import {tracking} from 'modules/tracking';
-import {Locations} from 'modules/Routes';
 import {useHasActiveOperationItems} from 'modules/queries/batch-operations/useHasActiveOperationItems';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
@@ -32,7 +31,8 @@ type Props = {
 
 const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const handleOperationSuccessUtil = useHandleOperationSuccess();
+
   const [
     isModificationModeHelperModalVisible,
     setIsModificationModeHelperModalVisible,
@@ -98,29 +98,11 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {
-    invalidateQueries();
-
-    tracking.track({
-      eventName: 'single-operation',
+    handleOperationSuccessUtil({
       operationType,
       source: 'instance-header',
+      onInvalidateQueries: invalidateQueries,
     });
-
-    if (operationType === 'DELETE_PROCESS_INSTANCE') {
-      navigate(
-        Locations.processes({
-          active: true,
-          incidents: true,
-        }),
-        {replace: true},
-      );
-
-      notificationsStore.displayNotification({
-        kind: 'success',
-        title: 'Instance deleted',
-        isDismissable: true,
-      });
-    }
   };
 
   const handleEnterModificationMode = () => {

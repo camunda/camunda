@@ -17,14 +17,17 @@ import {getProcessInstanceQueryKey} from 'modules/queries/processInstance/usePro
 
 function useDeleteProcessInstance(
   processInstanceKey: string,
-  options?: Partial<UseMutationOptions> & {
+  options?: Pick<
+    UseMutationOptions<Response, Error>,
+    'onSuccess' | 'onError'
+  > & {
     shouldSkipResultCheck?: boolean;
   },
 ) {
   const queryClient = useQueryClient();
   const {shouldSkipResultCheck, ...mutationOptions} = options ?? {};
 
-  return useMutation({
+  return useMutation<Response, Error, void>({
     mutationFn: async () => {
       const response = await deleteProcessInstance(processInstanceKey);
       if (!response.ok) {
@@ -35,13 +38,10 @@ function useDeleteProcessInstance(
         return response;
       }
 
-      // Clear the cache to ensure we don't get stale data during verification
       queryClient.removeQueries({
         queryKey: getProcessInstanceQueryKey(processInstanceKey),
       });
 
-      // Poll to verify the process instance is actually deleted
-      // This handles race conditions and eventual consistency
       await queryClient.fetchQuery({
         queryKey: getProcessInstanceQueryKey(processInstanceKey),
         queryFn: async () => {
@@ -49,18 +49,14 @@ function useDeleteProcessInstance(
             await fetchProcessInstance(processInstanceKey);
 
           if (error) {
-            // A 404 error means the process instance was successfully deleted
             if (error.response?.status === 404) {
               return null;
             }
-            // Any other error should be retried in case it's transient
             throw new Error(
               error.response?.statusText ?? 'Failed to verify deletion',
             );
           }
 
-          // If we still get a process instance, it hasn't been deleted yet
-          // Throw to trigger a retry
           if (processInstance) {
             throw new Error(
               'Process instance still exists, retrying verification...',
@@ -69,11 +65,8 @@ function useDeleteProcessInstance(
 
           return null;
         },
-        // Retry for up to 5 minutes with exponential backoff
-        // Attempts: 1s, 2s, 4s, 8s, then 10s each (total ~5 min)
         retry: 30,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-        // Force fresh data - don't use cache
         staleTime: 0,
       });
 

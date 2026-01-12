@@ -10,7 +10,7 @@ import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {tracking} from 'modules/tracking';
+import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
@@ -30,6 +30,8 @@ const InstanceOperations: React.FC<Props> = ({
   isInstanceActive,
   activeOperations,
 }) => {
+  const handleOperationSuccess = useHandleOperationSuccess();
+
   const {
     mutate: cancelProcessInstance,
     isPending: isCancelProcessInstancePending,
@@ -62,7 +64,10 @@ const InstanceOperations: React.FC<Props> = ({
       handleOperationError(error.status);
     },
     onSuccess: () => {
-      handleOperationSuccess('RESOLVE_INCIDENT');
+      handleOperationSuccess({
+        operationType: 'RESOLVE_INCIDENT',
+        source: 'instances-list',
+      });
     },
   });
 
@@ -70,7 +75,6 @@ const InstanceOperations: React.FC<Props> = ({
     mutate: deleteProcessInstance,
     isPending: isDeleteProcessInstancePending,
   } = useDeleteProcessInstance(processInstanceKey, {
-    shouldSkipResultCheck: true,
     onError: (error) => {
       processInstancesStore.unmarkProcessInstancesWithActiveOperations({
         instanceIds: [processInstanceKey],
@@ -84,17 +88,12 @@ const InstanceOperations: React.FC<Props> = ({
       });
     },
     onSuccess: () => {
-      handleOperationSuccess('DELETE_PROCESS_INSTANCE');
+      handleOperationSuccess({
+        operationType: 'DELETE_PROCESS_INSTANCE',
+        source: 'instances-list',
+      });
     },
   });
-
-  const handleOperationSuccess = (operationType: OperationEntityType) => {
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source: 'instances-list',
-    });
-  };
 
   const operations: OperationConfig[] = [];
 
