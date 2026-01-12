@@ -15,10 +15,9 @@ import static org.elasticsearch.action.support.IndicesOptions.Option.IGNORE_UNAV
 import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.CLOSED;
 import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.OPEN;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
@@ -36,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -118,11 +118,13 @@ public abstract class ElasticsearchUtil {
       final QueryType queryType,
       final TenantAwareElasticsearchClient tenantAwareClient)
       throws IOException {
-    final QueryBuilder query = idsQuery().addIds(id);
+    final QueryBuilder query = org.elasticsearch.index.query.QueryBuilders.idsQuery().addIds(id);
 
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(descriptor, queryType)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
+            .source(
+                new SearchSourceBuilder()
+                    .query(org.elasticsearch.index.query.QueryBuilders.constantScoreQuery(query)));
 
     final SearchResponse response = tenantAwareClient.search(request);
     if (response.getHits().getTotalHits().value == 1) {
@@ -700,6 +702,27 @@ public abstract class ElasticsearchUtil {
     return Query.of(q -> q.matchAll(m -> m));
   }
 
+  /**
+   * Creates an ES8 ids query for the given document IDs.
+   *
+   * @param ids Document IDs to match
+   * @return Query that matches documents with the specified IDs
+   */
+  public static Query idsQuery(final String... ids) {
+    return Query.of(q -> q.ids(i -> i.values(Arrays.asList(ids))));
+  }
+
+  /**
+   * Wraps a query in a constant_score query, which assigns all matching documents a relevance score
+   * equal to the boost parameter (default 1.0).
+   *
+   * @param query The query to wrap
+   * @return Query with constant scoring applied
+   */
+  public static Query constantScoreQuery(final Query query) {
+    return Query.of(q -> q.constantScore(cs -> cs.filter(query)));
+  }
+
   // ===========================================================================================
   // ES8 Scroll Helper Methods
   // ===========================================================================================
@@ -781,6 +804,41 @@ public abstract class ElasticsearchUtil {
       }
     }
   }
+
+  // ===========================================================================================
+  // ES8 Sort Helper Methods
+  // ===========================================================================================
+
+  /**
+   * Creates an ES8 SortOptions for a field with specified order.
+   *
+   * @param field The field name to sort by
+   * @param sortOrder The sort order (Asc or Desc)
+   * @return SortOptions configured for the field
+   */
+  public static SortOptions sortOrder(
+      final String field, final co.elastic.clients.elasticsearch._types.SortOrder sortOrder) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder)));
+  }
+
+  /**
+   * Creates an ES8 SortOptions for a field with specified order and missing value handling.
+   *
+   * @param field The field name to sort by
+   * @param sortOrder The sort order (Asc or Desc)
+   * @param missing How to handle missing values ("_first", "_last", or a custom value)
+   * @return SortOptions configured for the field with missing value handling
+   */
+  public static SortOptions sortOrder(
+      final String field,
+      final co.elastic.clients.elasticsearch._types.SortOrder sortOrder,
+      final String missing) {
+    return SortOptions.of(s -> s.field(f -> f.field(field).order(sortOrder).missing(missing)));
+  }
+
+  // ===========================================================================================
+  // Inner Classes
+  // ===========================================================================================
 
   private static final class DelegatingActionListener<Response>
       implements ActionListener<Response> {
