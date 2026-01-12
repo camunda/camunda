@@ -307,6 +307,41 @@ public class AuditLogAuthorizationsIT {
   }
 
   @Test
+  void shouldNotAuthorizeNonUserTaskAuditLogsGetByKey(
+      @Authenticated(USER_CC_USERNAME) final CamundaClient client) {
+    // given (workaround as filter for processDefinitionId is not implemented yet)
+    final var processDefinitionKey =
+        client
+            .newAuditLogSearchRequest()
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final var nonUserTaskLogs =
+        adminClient
+            .newAuditLogSearchRequest()
+            .filter(
+                f ->
+                    f.category(c -> c.neq(AuditLogCategoryEnum.USER_TASKS))
+                        .processDefinitionKey(processDefinitionKey))
+            .send()
+            .join();
+
+    // then
+    final var unauthorizedLog = nonUserTaskLogs.items().getFirst();
+    assertThatThrownBy(
+            () -> client.newAuditLogGetRequest(unauthorizedLog.getAuditLogKey()).send().join())
+        .isInstanceOf(io.camunda.client.api.command.ProblemException.class)
+        .satisfies(
+            e -> {
+              final var problemException = (io.camunda.client.api.command.ProblemException) e;
+              assertThat(problemException.code()).isEqualTo(403);
+            });
+  }
+
+  @Test
   void shouldAuthorizeWithCompositePermissions(
       @Authenticated(USER_D_USERNAME) final CamundaClient client) {
     // when

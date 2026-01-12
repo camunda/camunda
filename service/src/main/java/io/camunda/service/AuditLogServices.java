@@ -13,6 +13,7 @@ import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_USE
 
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -34,7 +35,10 @@ public class AuditLogServices
               .withCondition(al -> al.processDefinitionId() != null),
           AUDIT_LOG_READ_USER_TASK_AUTHORIZATION
               .with(AuditLogEntity::processDefinitionId)
-              .withCondition(al -> al.processDefinitionId() != null));
+              .withCondition(
+                  al ->
+                      al.processDefinitionId() != null
+                          && al.category() == AuditLogOperationCategory.USER_TASKS));
 
   private final AuditLogSearchClient auditLogSearchClient;
 
