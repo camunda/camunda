@@ -121,9 +121,14 @@ jobs:
         run: |
           release_name='${{ inputs.camundaAppsRelease }}'
           branch='${{ inputs.branch }}'
-          if [[ "$branch" == "main" && "$release_name" == *alpha* ]]; then
+          echo "Preparing runtime versions for branch=${branch}, release=${release_name}"
+          if [[ "$release_name" == *alpha* ]]; then
             echo "Overriding .env runtime versions to ${release_name}"
             ./c8run/ci/prebuild.sh "${release_name}"
+            echo "Updated runtime versions:"
+            grep -E '^CAMUNDA_VERSION=|^CONNECTORS_VERSION=' ./c8run/.env
+          else
+            echo "Release ${release_name} is not an alpha. No .env changes applied."
           fi
 
       - name: Import Secrets
