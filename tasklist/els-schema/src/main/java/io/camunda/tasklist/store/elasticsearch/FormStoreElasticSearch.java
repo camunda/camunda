@@ -7,20 +7,17 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
-import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
@@ -31,9 +28,6 @@ import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,17 +47,11 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Autowired private ProcessIndex processIndex;
 
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
-
-  @Autowired
-  @Qualifier("tasklistEsClient")
-  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistEs8Client")
@@ -91,15 +79,23 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Override
   public List<String> getFormIdsByProcessDefinitionId(final String processDefinitionId) {
-    final SearchRequest searchRequest =
-        new SearchRequest(formIndex.getFullQualifiedName())
-            .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termQuery(FormIndex.PROCESS_DEFINITION_ID, processDefinitionId))
-                    .fetchField(FormIndex.ID));
+    final var query =
+        ElasticsearchUtil.termsQuery(FormIndex.PROCESS_DEFINITION_ID, processDefinitionId);
+
+    final var searchRequestBuilder =
+        new SearchRequest.Builder()
+            .index(formIndex.getFullQualifiedName())
+            .query(query)
+            .source(s -> s.filter(f -> f.includes(FormIndex.ID)));
+
     try {
-      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+          .flatMap(response -> response.hits().hits().stream())
+          .map(Hit::id)
+          .filter(java.util.Objects::nonNull)
+          .toList();
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -129,10 +125,29 @@ public class FormStoreElasticSearch implements FormStore {
   private FormEntity getFormEmbedded(final String id, final String processDefinitionId) {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
-      final var formSearchHit =
-          getRawResponseWithTenantCheck(
-              formId, formIndex, QueryType.ONLY_RUNTIME, tenantAwareClient);
-      return fromSearchHit(formSearchHit.getSourceAsString(), objectMapper, FormEntity.class);
+      final var idsQuery = ElasticsearchUtil.idsQuery(formId);
+      final var query = ElasticsearchUtil.constantScoreQuery(idsQuery);
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+      final var searchRequest =
+          new SearchRequest.Builder()
+              .index(
+                  ElasticsearchUtil.whereToSearch(
+                      formIndex, ElasticsearchUtil.QueryType.ONLY_RUNTIME))
+              .query(tenantAwareQuery)
+              .build();
+
+      final var response = es8Client.search(searchRequest, FormEntity.class);
+
+      if (response.hits().total().value() == 1) {
+        return response.hits().hits().get(0).source();
+      } else if (response.hits().total().value() > 1) {
+        throw new NotFoundException(
+            String.format("Unique %s with id %s was not found", formIndex.getIndexName(), formId));
+      } else {
+        throw new NotFoundException(
+            String.format("%s with id %s was not found", formIndex.getIndexName(), formId));
+      }
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     } catch (final NotFoundException e) {

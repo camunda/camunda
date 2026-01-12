@@ -13,11 +13,12 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.scrollInChunks;
 import static java.util.stream.Collectors.toList;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -56,7 +57,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
@@ -232,19 +232,18 @@ public class TaskStoreElasticSearch implements TaskStore {
       updateFields.put(TaskTemplate.STATE, completedTask.getState());
       updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
 
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(taskTemplate.getFullQualifiedName())
-              .id(taskBeforeHit.id())
-              .doc(jsonMap)
-              .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskBeforeHit.seqNo())
-              .setIfPrimaryTerm(taskBeforeHit.primaryTerm())
-              .routing(getRoutingToUpsertTask(completedTask));
-      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+      final var updateRequest =
+          UpdateRequest.of(
+              u ->
+                  u.index(taskTemplate.getFullQualifiedName())
+                      .id(taskBeforeHit.id())
+                      .doc(updateFields)
+                      .ifSeqNo(taskBeforeHit.seqNo())
+                      .ifPrimaryTerm(taskBeforeHit.primaryTerm())
+                      .routing(getRoutingToUpsertTask(completedTask))
+                      .refresh(Refresh.WaitFor));
+
+      es8Client.update(updateRequest, Object.class);
     } catch (final Exception e) {
       // we're OK with not updating the task here, it will be marked as completed within import
       LOGGER.error(e.getMessage(), e);
@@ -264,19 +263,18 @@ public class TaskStoreElasticSearch implements TaskStore {
       updateFields.put(TaskTemplate.STATE, completedTask.getState());
       updateFields.put(TaskTemplate.COMPLETION_TIME, null);
 
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(taskTemplate.getFullQualifiedName())
-              .id(taskBeforeHit.id())
-              .doc(jsonMap)
-              .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskBeforeHit.seqNo())
-              .setIfPrimaryTerm(taskBeforeHit.primaryTerm())
-              .routing(getRoutingToUpsertTask(completedTask));
-      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+      final var updateRequest =
+          UpdateRequest.of(
+              u ->
+                  u.index(taskTemplate.getFullQualifiedName())
+                      .id(taskBeforeHit.id())
+                      .doc(updateFields)
+                      .ifSeqNo(taskBeforeHit.seqNo())
+                      .ifPrimaryTerm(taskBeforeHit.primaryTerm())
+                      .routing(getRoutingToUpsertTask(completedTask))
+                      .refresh(Refresh.WaitFor));
+
+      es8Client.update(updateRequest, Object.class);
     } catch (final Exception e) {
       LOGGER.error("Error when trying to rollback Task to CREATED state: {}", e.getMessage());
     }
@@ -735,20 +733,20 @@ public class TaskStoreElasticSearch implements TaskStore {
     try {
       final Hit<TaskEntity> taskHit = getRawTaskByUserTaskKey(taskId);
       final var taskEntity = taskHit.source();
+
       // update task with optimistic locking
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(taskTemplate.getFullQualifiedName())
-              .id(taskHit.id())
-              .doc(jsonMap)
-              .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskHit.seqNo())
-              .setIfPrimaryTerm(taskHit.primaryTerm())
-              .routing(getRoutingToUpsertTask(taskEntity));
-      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+      final var updateRequest =
+          UpdateRequest.of(
+              u ->
+                  u.index(taskTemplate.getFullQualifiedName())
+                      .id(taskHit.id())
+                      .doc(updateFields)
+                      .ifSeqNo(taskHit.seqNo())
+                      .ifPrimaryTerm(taskHit.primaryTerm())
+                      .routing(getRoutingToUpsertTask(taskEntity))
+                      .refresh(co.elastic.clients.elasticsearch._types.Refresh.WaitFor));
+
+      es8Client.update(updateRequest, Object.class);
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
