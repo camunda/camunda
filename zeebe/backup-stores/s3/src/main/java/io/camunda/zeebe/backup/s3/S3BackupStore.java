@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -92,7 +91,7 @@ public final class S3BackupStore implements BackupStore {
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
-  private final Set<Pattern> backupIdentifierPatterns;
+  private final Pattern backupIdentifierPattern;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
@@ -107,11 +106,9 @@ public final class S3BackupStore implements BackupStore {
     fileSetManager = new FileSetManager(client, config);
     final var basePath = config.basePath();
     final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
-    final var identifierSuffix = "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*";
-    backupIdentifierPatterns =
-        Set.of(
-            Pattern.compile("^" + basePrefix + identifierSuffix),
-            Pattern.compile("^" + basePrefix + "manifests/" + identifierSuffix));
+    final var identifierSuffix =
+        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*";
+    backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
   }
 
   public static BackupStore of(final S3BackupConfig config) {
@@ -119,17 +116,15 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
-    for (final var pattern : backupIdentifierPatterns) {
-      final var matcher = pattern.matcher(key);
-      if (matcher.matches()) {
-        try {
-          final var nodeId = Integer.parseInt(matcher.group("nodeId"));
-          final var partitionId = Integer.parseInt(matcher.group("partitionId"));
-          final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
-          return Optional.of(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
-        } catch (final NumberFormatException e) {
-          LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key, e);
-        }
+    final var matcher = backupIdentifierPattern.matcher(key);
+    if (matcher.matches()) {
+      try {
+        final var nodeId = Integer.parseInt(matcher.group("nodeId"));
+        final var partitionId = Integer.parseInt(matcher.group("partitionId"));
+        final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
+        return Optional.of(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
+      } catch (final NumberFormatException e) {
+        LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key, e);
       }
     }
     return Optional.empty();
