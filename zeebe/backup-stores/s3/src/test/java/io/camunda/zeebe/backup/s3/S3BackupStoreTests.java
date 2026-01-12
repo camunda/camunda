@@ -85,7 +85,9 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   @MethodSource("provideBackups")
   default void snapshotFilesExist(final Backup backup) {
     // given
-    final var prefix = getStore().objectPrefix(backup.id()) + S3BackupStore.SNAPSHOT_PREFIX;
+    final var prefix =
+        getStore().derivePath(backup.descriptor(), backup.id(), Directory.CONTENTS)
+            + S3BackupStore.SNAPSHOT_PREFIX;
 
     final var expectedObjects =
         backup.snapshot().names().stream().map(name -> prefix + name).toList();
@@ -107,7 +109,9 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   @MethodSource("provideBackups")
   default void segmentFilesExist(final Backup backup) {
     // given
-    final var prefix = getStore().objectPrefix(backup.id()) + S3BackupStore.SEGMENTS_PREFIX;
+    final var prefix =
+        getStore().derivePath(backup.descriptor(), backup.id(), Directory.CONTENTS)
+            + S3BackupStore.SEGMENTS_PREFIX;
 
     final var expectedObjects =
         backup.segments().names().stream().map(name -> prefix + name).toList();
