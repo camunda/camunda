@@ -188,15 +188,15 @@ public final class S3BackupStore implements BackupStore {
           "Configuration for S3 backup store is incomplete. bucketName must not be empty.");
     }
     if (config.region().isEmpty()) {
-      LOG.warn(
+      LOG.debug(
           "No region configured for S3 backup store. Region will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment)");
     }
     if (config.endpoint().isEmpty()) {
-      LOG.warn(
+      LOG.debug(
           "No endpoint configured for S3 backup store. Endpoint will be determined from the region");
     }
     if (config.credentials().isEmpty()) {
-      LOG.warn(
+      LOG.debug(
           "Access credentials (accessKey, secretKey) not configured for S3 backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
     }
     // Create a throw away client to verify if all configurations are available. This will throw an
@@ -415,6 +415,10 @@ public final class S3BackupStore implements BackupStore {
         .thenApplyAsync(
             response -> {
               if (!response.errors().isEmpty()) {
+                LOG.atError()
+                    .addKeyValue("errors", response.errors())
+                    .setMessage("Failed to delete some backup objects")
+                    .log();
                 throw new BackupDeletionIncomplete(
                     "Not all objects belonging to the backup were deleted successfully: "
                         + response.errors());
@@ -426,7 +430,10 @@ public final class S3BackupStore implements BackupStore {
   SdkPublisher<BackupIdentifier> findBackupIds(
       final BackupIdentifierWildcard wildcard, final boolean legacyStructure) {
     final var prefix = legacyStructure ? wildcardPrefix(wildcard) : wildcardPrefixV2(wildcard);
-    LOG.debug("Using prefix {} to search for manifest files matching {}", prefix, wildcard);
+    LOG.atTrace()
+        .addKeyValue("pattern", wildcard)
+        .setMessage("Searching for matching manifest files")
+        .log();
     return client
         .listObjectsV2Paginator(cfg -> cfg.bucket(config.bucketName()).prefix(prefix))
         .contents()
@@ -452,6 +459,7 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<ResponseBytes<GetObjectResponse>> findManifestForBackup(
       final BackupIdentifier id) {
+    LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
     return client
         .getObject(
             req ->
@@ -472,16 +480,19 @@ public final class S3BackupStore implements BackupStore {
   }
 
   CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
-    LOG.debug("Reading manifest object of {}", id);
+    LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
     return findManifestForBackup(id)
         .thenApply(
             response -> {
               try {
-                final var manifest =
-                    (Manifest)
-                        MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
-                return manifest;
+                return (Manifest)
+                    MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
               } catch (final IOException e) {
+                LOG.atError()
+                    .addKeyValue("backup", id)
+                    .setCause(e)
+                    .setMessage("Failed to parse manifest object")
+                    .log();
                 throw new ManifestParseException(
                     "Failed to read manifest object: %s".formatted(response.asUtf8String()), e);
               }
@@ -490,12 +501,22 @@ public final class S3BackupStore implements BackupStore {
             throwable -> {
               // throwable is a `CompletionException`, `getCause` to handle the underlying exception
               if (throwable.getCause() instanceof NoSuchKeyException) {
-                LOG.debug("Found no manifest for backup {}", id);
+                LOG.atTrace().addKeyValue("backup", id).setMessage("Found no manifest").log();
                 return new NoBackupManifest(BackupIdentifierImpl.from(id));
               } else if (throwable.getCause() instanceof final S3BackupStoreException e) {
+                LOG.atError()
+                    .addKeyValue("backup", id)
+                    .setCause(e)
+                    .setMessage("Failed to read manifest")
+                    .log();
                 // Exception was already wrapped, no need to re-wrap
                 throw e;
               } else {
+                LOG.atError()
+                    .addKeyValue("backup", id)
+                    .setCause(throwable)
+                    .setMessage("Failed to read manifest")
+                    .log();
                 throw new BackupReadException(
                     "Failed to read manifest of %s".formatted(id), throwable);
               }
@@ -515,7 +536,11 @@ public final class S3BackupStore implements BackupStore {
   }
 
   CompletableFuture<ValidBackupManifest> writeManifestObject(final ValidBackupManifest manifest) {
-    LOG.debug("Updating manifest of {} to {}", manifest.id(), manifest);
+    LOG.atTrace()
+        .addKeyValue("backup", manifest.id())
+        .addKeyValue("status", manifest.statusCode())
+        .setMessage("Updating manifest")
+        .log();
     final AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(manifest));
@@ -540,14 +565,14 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
-    LOG.debug("Saving snapshot files for {}", backup.id());
+    LOG.atTrace().addKeyValue("backup", backup.id()).setMessage("Saving snapshot files").log();
     final var prefix =
         derivePath(backup.descriptor(), backup.id(), Directory.CONTENTS) + SNAPSHOT_PREFIX;
     return fileSetManager.save(prefix, backup.snapshot());
   }
 
   private CompletableFuture<FileSet> saveSegmentFiles(final Backup backup) {
-    LOG.debug("Saving segment files for {}", backup.id());
+    LOG.atTrace().addKeyValue("backup", backup.id()).setMessage("Saving segment files").log();
     final var prefix =
         derivePath(backup.descriptor(), backup.id(), Directory.CONTENTS) + SEGMENTS_PREFIX;
     return fileSetManager.save(prefix, backup.segments());
