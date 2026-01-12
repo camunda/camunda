@@ -24,14 +24,15 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
-import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.VariableStore;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -53,17 +54,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,8 +77,6 @@ public class VariableStoreElasticSearch implements VariableStore {
   @Autowired
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired private ElasticsearchClient es8Client;
 
@@ -184,15 +179,25 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Override
   public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables) {
-    final BulkRequest bulkRequest = new BulkRequest();
-    for (final SnapshotTaskVariableEntity variableEntity : finalVariables) {
-      bulkRequest.add(createUpsertRequest(variableEntity));
-    }
     try {
-      ElasticsearchUtil.processBulkRequest(
-          esClient, bulkRequest, WriteRequest.RefreshPolicy.WAIT_UNTIL);
-    } catch (final PersistenceException ex) {
-      throw new TasklistRuntimeException(ex);
+      final var bulkOperations = finalVariables.stream().map(this::createUpsertRequest).toList();
+
+      final var bulkRequest =
+          BulkRequest.of(b -> b.operations(bulkOperations).refresh(Refresh.WaitFor));
+
+      final var bulkResponse = es8Client.bulk(bulkRequest);
+
+      if (bulkResponse.errors()) {
+        final var errorMessages =
+            bulkResponse.items().stream()
+                .filter(item -> item.error() != null)
+                .map(item -> item.error().reason())
+                .collect(java.util.stream.Collectors.joining(", "));
+        throw new TasklistRuntimeException(
+            "Failed to persist task variables. Errors: " + errorMessages);
+      }
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException("Error persisting task variables", e);
     }
   }
 
@@ -378,33 +383,6 @@ public class VariableStoreElasticSearch implements VariableStore {
     return new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
   }
 
-  private UpdateRequest createUpsertRequest(final SnapshotTaskVariableEntity variableEntity) {
-    try {
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(SnapshotTaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
-      updateFields.put(SnapshotTaskVariableTemplate.NAME, variableEntity.getName());
-      updateFields.put(SnapshotTaskVariableTemplate.VALUE, variableEntity.getValue());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return new UpdateRequest()
-          .index(taskVariableTemplate.getFullQualifiedName())
-          .id(variableEntity.getId())
-          .upsert(objectMapper.writeValueAsString(variableEntity), XContentType.JSON)
-          .doc(jsonMap)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(
-          String.format(
-              "Error preparing the query to upsert task variable instance [%s]",
-              variableEntity.getId()),
-          e);
-    }
-  }
-
   private void applyFetchSourceForVariableIndex(
       final SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
@@ -459,5 +437,21 @@ public class VariableStoreElasticSearch implements VariableStore {
       final var includesFields = elsFieldNames.toArray(new String[0]);
       requestBuilder.source(s -> s.filter(f -> f.includes(List.of(includesFields))));
     }
+  }
+
+  private BulkOperation createUpsertRequest(final SnapshotTaskVariableEntity variableEntity) {
+    final var updateFields = new HashMap<String, Object>();
+    updateFields.put(SnapshotTaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
+    updateFields.put(SnapshotTaskVariableTemplate.NAME, variableEntity.getName());
+    updateFields.put(SnapshotTaskVariableTemplate.VALUE, variableEntity.getValue());
+
+    return BulkOperation.of(
+        op ->
+            op.update(
+                u ->
+                    u.index(taskVariableTemplate.getFullQualifiedName())
+                        .id(variableEntity.getId())
+                        .retryOnConflict(UPDATE_RETRY_COUNT)
+                        .action(a -> a.doc(updateFields).upsert(variableEntity))));
   }
 }
