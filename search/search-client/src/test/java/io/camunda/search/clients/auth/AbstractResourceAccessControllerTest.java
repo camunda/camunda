@@ -8,12 +8,14 @@
 package io.camunda.search.clients.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -65,10 +67,10 @@ public class AbstractResourceAccessControllerTest {
       when(tenantAccessProvider.hasTenantAccess(authentication, resource))
           .thenReturn(TenantAccess.allowed(List.of("baz")));
 
-      // when
-      controller.doGet(securityContext, a -> resource);
-
       // then
+      assertThatThrownBy(() -> controller.doGet(securityContext, a -> resource))
+          .isInstanceOf(ResourceAccessDeniedException.class)
+          .hasMessageContaining("not applicable");
       verify(resourceAccessProvider, never()).hasResourceAccess(any(), any(), any());
     }
 

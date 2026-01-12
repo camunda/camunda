@@ -18,12 +18,22 @@ public class ResourceAccessDeniedException extends CamundaSearchException {
   private final List<MissingAuthorization> missingAuthorizations;
 
   public ResourceAccessDeniedException(final MissingAuthorization missingAuthorization) {
-    super(missingSingleAuthMessage(missingAuthorization), Reason.FORBIDDEN);
-    this.missingAuthorizations = List.of(missingAuthorization);
+    this(missingAuthorization, "");
+  }
+
+  public ResourceAccessDeniedException(
+      final MissingAuthorization missingAuthorization, final String customMessage) {
+    super(missingSingleAuthMessage(missingAuthorization) + customMessage, Reason.FORBIDDEN);
+    missingAuthorizations = List.of(missingAuthorization);
   }
 
   public ResourceAccessDeniedException(final Authorization<?> authorization) {
     this(MissingAuthorization.from(authorization));
+  }
+
+  public ResourceAccessDeniedException(
+      final Authorization<?> authorization, final String customMessage) {
+    this(MissingAuthorization.from(authorization), customMessage);
   }
 
   /**
@@ -32,7 +42,7 @@ public class ResourceAccessDeniedException extends CamundaSearchException {
    */
   public ResourceAccessDeniedException(final List<Authorization<?>> authorizations) {
     super(missingMultipleAuthMessage(MissingAuthorization.from(authorizations)), Reason.FORBIDDEN);
-    this.missingAuthorizations = MissingAuthorization.from(authorizations);
+    missingAuthorizations = MissingAuthorization.from(authorizations);
   }
 
   public List<MissingAuthorization> getMissingAuthorizations() {

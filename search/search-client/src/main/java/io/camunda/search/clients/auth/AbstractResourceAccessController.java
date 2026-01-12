@@ -173,7 +173,9 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     final Authorization authorization = single.authorization();
 
     if (!authorization.appliesTo(document)) {
-      return;
+      throw new ResourceAccessDeniedException(
+          authorization,
+          "Authorization is not applicable - which does not make sense for single authorizations.");
     }
 
     final var resourceAccess =
