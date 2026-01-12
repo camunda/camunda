@@ -43,6 +43,8 @@ public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExpor
         .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
+        // processes started via message are always root process instances
+        .rootProcessInstanceKey(value.getProcessInstanceKey())
         .subscriptionType(MessageSubscriptionType.START_EVENT)
         .tenantId(tenantOrDefault(value.getTenantId()));
   }
