@@ -23,9 +23,7 @@ import {useNewScopeKeyForElement} from 'modules/hooks/modifications';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
-import {getScopeId} from 'modules/utils/variables';
 import {useVariables} from 'modules/queries/variables/useVariables';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 
@@ -82,9 +80,8 @@ const Variables: React.FC<Props> = observer(
         Object.values(initialValues).length === 0;
 
     useEffect(() => {
-      const isSelectedElementInstanceRunning = IS_ELEMENT_SELECTION_V2
-        ? resolvedElementInstance?.state === 'ACTIVE'
-        : flowNodeMetaDataStore.isSelectedInstanceRunning;
+      const isSelectedElementInstanceRunning =
+        resolvedElementInstance?.state === 'ACTIVE';
 
       if (!isProcessInstanceRunning) {
         setFooterVariant('disabled');
