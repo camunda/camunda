@@ -30,6 +30,7 @@ public class CorrelatedMessageSubscriptionEntityTransformer
         value.getBpmnProcessId(),
         value.getProcessDefinitionKey(),
         value.getProcessInstanceKey(),
+        value.getRootProcessInstanceKey(),
         value.getSubscriptionKey(),
         toMessageSubscriptionType(value.getSubscriptionType()),
         value.getTenantId());

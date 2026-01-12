@@ -22,6 +22,7 @@ public record CorrelatedMessageSubscriptionEntity(
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long subscriptionKey,
     MessageSubscriptionType subscriptionType,
     String tenantId)
@@ -41,6 +42,7 @@ public record CorrelatedMessageSubscriptionEntity(
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long subscriptionKey;
     private MessageSubscriptionType subscriptionType;
     private String tenantId;
@@ -95,6 +97,11 @@ public record CorrelatedMessageSubscriptionEntity(
       return this;
     }
 
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public Builder subscriptionKey(final Long subscriptionKey) {
       this.subscriptionKey = subscriptionKey;
       return this;
@@ -122,6 +129,7 @@ public record CorrelatedMessageSubscriptionEntity(
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           subscriptionKey,
           subscriptionType,
           tenantId);

@@ -43,6 +43,7 @@ public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHa
         .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .subscriptionType(MessageSubscriptionType.PROCESS_EVENT)
         .tenantId(tenantOrDefault(value.getTenantId()));
   }

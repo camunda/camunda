@@ -64,6 +64,7 @@ public class MessageSubscriptionExportHandler
         .messageSubscriptionKey(record.getKey())
         .processDefinitionId(value.getBpmnProcessId())
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .flowNodeId(value.getElementId())
         .flowNodeInstanceKey(value.getElementInstanceKey())
         .processDefinitionKey(value.getProcessDefinitionKey())
