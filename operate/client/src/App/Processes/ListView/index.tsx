@@ -24,7 +24,6 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
-import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
 
@@ -133,7 +132,6 @@ const ListView: React.FC = observer(() => {
         leftPanel={<Filters />}
         topPanel={<DiagramPanel />}
         bottomPanel={<InstancesTable />}
-        rightPanel={<OperationsPanel />}
         frame={{
           isVisible: batchModificationStore.state.isEnabled,
           headerTitle: 'Batch Modification Mode',

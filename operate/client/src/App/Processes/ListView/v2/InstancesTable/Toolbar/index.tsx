@@ -10,7 +10,6 @@ import {TableToolbar, Modal, TableBatchAction} from '@carbon/react';
 import {TableBatchActions} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useState} from 'react';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {MigrateAction} from './MigrateAction';
 import {MoveAction} from './MoveAction';
@@ -47,7 +46,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
     onSuccess: () => {
-      panelStatesStore.expandOperationsPanel();
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'CANCEL_PROCESS_INSTANCE',
@@ -55,14 +53,12 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       processInstancesSelectionStore.reset();
     },
     onError: (error) => {
-      panelStatesStore.expandOperationsPanel();
       handleOperationError(error.response?.status);
     },
   });
 
   const resolveMutation = useResolveProcessInstancesIncidentsBatchOperation({
     onSuccess: () => {
-      panelStatesStore.expandOperationsPanel();
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'RESOLVE_INCIDENT',
@@ -70,7 +66,6 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
       processInstancesSelectionStore.reset();
     },
     onError: (error) => {
-      panelStatesStore.expandOperationsPanel();
       handleOperationError(error.response?.status);
     },
   });
