@@ -217,6 +217,11 @@ describe('Footer', () => {
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
 
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'success',
+      }),
+    );
     expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith(
       expect.objectContaining({kind: 'error'}),
     );

@@ -24,6 +24,7 @@ import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {buildMutationRequestBody} from './buildMutationRequestBody';
 import {handleOperationError} from 'modules/utils/notifications';
+import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 
 type Props = {
   selectedInstancesCount: number;
@@ -37,6 +38,7 @@ const ACTION_NAMES: Readonly<
 };
 
 const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
+  const displaySuccessNotification = useBatchOperationSuccessNotification();
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
@@ -45,7 +47,8 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   };
 
   const cancelMutation = useCancelProcessInstancesBatchOperation({
-    onSuccess: () => {
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       panelStatesStore.expandOperationsPanel();
       tracking.track({
         eventName: 'batch-operation',
@@ -60,7 +63,8 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   });
 
   const resolveMutation = useResolveProcessInstancesIncidentsBatchOperation({
-    onSuccess: () => {
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       panelStatesStore.expandOperationsPanel();
       tracking.track({
         eventName: 'batch-operation',

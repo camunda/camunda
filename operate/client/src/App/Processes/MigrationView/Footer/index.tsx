@@ -21,14 +21,15 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody.ts';
+import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification.ts';
 
 const Footer: React.FC = observer(() => {
   const [searchParams] = useSearchParams();
-
+  const displaySuccessNotification = useBatchOperationSuccessNotification();
   const navigate = useNavigate();
-
   const {mutate: migrateProcess} = useMigrateProcessInstancesBatchOperation({
-    onSuccess: () => {
+    onSuccess: ({batchOperationKey, batchOperationType}) => {
+      displaySuccessNotification(batchOperationType, batchOperationKey);
       tracking.track({
         eventName: 'batch-operation',
         operationType: 'MIGRATE_PROCESS_INSTANCE',

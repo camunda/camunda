@@ -22,7 +22,7 @@ import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {useBatchOperation} from 'modules/queries/batch-operations/useBatchOperation';
 import {BatchItemsCount} from 'App/BatchOperations/BatchItemsCount';
-import {formatOperationType} from 'App/BatchOperations/formatOperationType';
+import {formatOperationType} from 'modules/utils/formatOperationType';
 import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {
   PageContainer,
