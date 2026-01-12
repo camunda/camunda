@@ -62,6 +62,37 @@ jobs:
       - name: Push Changes to the target branch
         if: ${{ steps.update-identity-version.outcome == 'success' && inputs.dryRun == false }}
         run: git push origin "${{ inputs.targetBranch }}"
+      - name: Import Camunda Secrets
+        if: success()
+        id: camunda-secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG;
+      - name: Notify Camunda of completion
+        if: success()
+        uses: camunda-community-hub/camunda-platform-8-github-action@787c775abd971a613cea6026a5525f504613f9ae
+        with:
+          clientConfig: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
+          operation: publishMessage
+          messageName: 'identity-workflow-completed'
+          correlationKey: 'identity-update-${{ inputs.identityVersion }}'
+          timeToLive: '240000'
+          variables: |
+            {
+              "workflow_run": {
+                "name": "Update Identity Version",
+                "conclusion": "success",
+                "head_branch": "${{ github.head_ref || github.ref_name }}",
+                "target_branch": "${{ inputs.targetBranch }}"
+              },
+              "action": "completed"
+            }
       - name: Observe build status
         if: always()
         continue-on-error: true
