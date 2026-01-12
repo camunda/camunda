@@ -9,8 +9,6 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
-import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.scroll;
 import static io.camunda.tasklist.util.ElasticsearchUtil.scrollInChunks;
@@ -23,9 +21,9 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -34,6 +32,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
@@ -56,7 +55,6 @@ import java.util.Set;
 import java.util.function.Function;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -84,6 +82,10 @@ public class VariableStoreElasticSearch implements VariableStore {
   private RestHighLevelClient esClient;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
+
+  @Autowired private ElasticsearchClient es8Client;
+
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Autowired private VariableTemplate variableIndex;
 
@@ -213,19 +215,21 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Override
   public VariableEntity getRuntimeVariable(final String variableId, final Set<String> fieldNames) {
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(idsQuery().addIds(variableId));
-    applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
-    final SearchRequest request =
-        new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
+    final var query = ElasticsearchUtil.idsQuery(variableId);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var requestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(variableIndex.getFullQualifiedName())
+            .query(tenantAwareQuery);
+
+    applyFetchSourceForVariableIndexEs8(requestBuilder, fieldNames);
+
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value == 1) {
-        return fromSearchHit(
-            response.getHits().getHits()[0].getSourceAsString(),
-            objectMapper,
-            VariableEntity.class);
-      } else if (response.getHits().getTotalHits().value > 1) {
+      final var response = es8Client.search(requestBuilder.build(), VariableEntity.class);
+      if (response.hits().total().value() == 1) {
+        return response.hits().hits().get(0).source();
+      } else if (response.hits().total().value() > 1) {
         throw new NotFoundException(
             String.format("Unique variable with id %s was not found", variableId));
       } else {
@@ -241,19 +245,22 @@ public class VariableStoreElasticSearch implements VariableStore {
   @Override
   public SnapshotTaskVariableEntity getTaskVariable(
       final String variableId, final Set<String> fieldNames) {
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(idsQuery().addIds(variableId));
-    applyFetchSourceForTaskVariableTemplate(searchSourceBuilder, fieldNames);
-    final SearchRequest request =
-        createSearchRequest(taskVariableTemplate).source(searchSourceBuilder);
+    final var query = ElasticsearchUtil.idsQuery(variableId);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var requestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(taskVariableTemplate.getAlias())
+            .query(tenantAwareQuery);
+
+    applyFetchSourceForTaskVariableTemplateEs8(requestBuilder, fieldNames);
+
     try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value == 1) {
-        return fromSearchHit(
-            response.getHits().getHits()[0].getSourceAsString(),
-            objectMapper,
-            SnapshotTaskVariableEntity.class);
-      } else if (response.getHits().getTotalHits().value > 1) {
+      final var response =
+          es8Client.search(requestBuilder.build(), SnapshotTaskVariableEntity.class);
+      if (response.hits().total().value() == 1) {
+        return response.hits().hits().get(0).source();
+      } else if (response.hits().total().value() > 1) {
         throw new NotFoundException(
             String.format("Unique task variable with id %s was not found", variableId));
       } else {
@@ -423,6 +430,34 @@ public class VariableStoreElasticSearch implements VariableStore {
       elsFieldNames.add(SnapshotTaskVariableTemplate.TASK_ID);
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
       searchSourceBuilder.fetchSource(includesFields, null);
+    }
+  }
+
+  private void applyFetchSourceForVariableIndexEs8(
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder requestBuilder,
+      final Set<String> fieldNames) {
+    if (isNotEmpty(fieldNames)) {
+      final Set<String> elsFieldNames =
+          VariableStore.getVariableTemplateElsFieldsByGraphqlFields(fieldNames);
+      elsFieldNames.add(ID);
+      elsFieldNames.add(NAME);
+      elsFieldNames.add(SCOPE_KEY);
+      final var includesFields = elsFieldNames.toArray(new String[0]);
+      requestBuilder.source(s -> s.filter(f -> f.includes(List.of(includesFields))));
+    }
+  }
+
+  private void applyFetchSourceForTaskVariableTemplateEs8(
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder requestBuilder,
+      final Set<String> fieldNames) {
+    if (isNotEmpty(fieldNames)) {
+      final Set<String> elsFieldNames =
+          VariableStore.getTaskVariableElsFieldsByGraphqlFields(fieldNames);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.ID);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.NAME);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.TASK_ID);
+      final var includesFields = elsFieldNames.toArray(new String[0]);
+      requestBuilder.source(s -> s.filter(f -> f.includes(List.of(includesFields))));
     }
   }
 }

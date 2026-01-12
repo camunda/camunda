@@ -18,6 +18,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
@@ -29,15 +30,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +50,8 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       LoggerFactory.getLogger(DraftVariablesStoreElasticSearch.class);
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
+
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -143,24 +140,22 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   @Override
   public Optional<DraftTaskVariableEntity> getById(final String variableId) {
     try {
-      final SearchRequest searchRequest =
-          new SearchRequest(draftTaskVariableTemplate.getFullQualifiedName());
-      final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-      sourceBuilder.query(QueryBuilders.termQuery(DraftTaskVariableTemplate.ID, variableId));
-      searchRequest.source(sourceBuilder);
+      final var query = ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.ID, variableId);
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final var searchRequest =
+          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+              .index(draftTaskVariableTemplate.getFullQualifiedName())
+              .query(tenantAwareQuery)
+              .build();
 
-      final SearchHits hits = searchResponse.getHits();
-      if (hits.getTotalHits().value == 0) {
+      final var response = es8Client.search(searchRequest, DraftTaskVariableEntity.class);
+
+      if (response.hits().total().value() == 0) {
         return Optional.empty();
       }
 
-      final SearchHit hit = hits.getAt(0);
-      final String sourceAsString = hit.getSourceAsString();
-      final DraftTaskVariableEntity entity =
-          objectMapper.readValue(sourceAsString, DraftTaskVariableEntity.class);
-      return Optional.of(entity);
+      return Optional.ofNullable(response.hits().hits().get(0).source());
     } catch (final IOException e) {
       LOGGER.error(
           String.format("Error retrieving draft task variable instance with ID [%s]", variableId),

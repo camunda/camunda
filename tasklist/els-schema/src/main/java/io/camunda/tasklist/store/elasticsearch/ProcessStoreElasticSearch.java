@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -15,6 +18,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
@@ -42,9 +46,7 @@ import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuil
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -67,28 +69,32 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
+  @Autowired private ElasticsearchClient es8Client;
+
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
   @Override
   public ProcessEntity getProcessByProcessDefinitionKey(final String processDefinitionKey) {
-    final QueryBuilder qb = QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey);
+    final var query = ElasticsearchUtil.termsQuery(ProcessIndex.KEY, processDefinitionKey);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final SearchRequest searchRequest =
-        new SearchRequest(processIndex.getAlias())
-            .source(
-                new SearchSourceBuilder()
-                    .query(qb)
-                    .collapse(new CollapseBuilder(ProcessIndex.KEY))
-                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
-                    .size(1));
+    final var request =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(processIndex.getAlias())
+            .query(tenantAwareQuery)
+            .collapse(c -> c.field(ProcessIndex.KEY))
+            .sort(ElasticsearchUtil.sortOrder(ProcessIndex.VERSION, SortOrder.Desc))
+            .size(1)
+            .build();
+
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      if (response.getHits().getTotalHits().value > 0) {
-        final ProcessEntity processEntity =
-            fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-        return processEntity;
+      final var response = es8Client.search(request, ProcessEntity.class);
+      if (response.hits().total().value() > 0) {
+        return response.hits().hits().get(0).source();
       } else {
         throw new NotFoundException(
             String.format("Process with key %s not found", processDefinitionKey));
@@ -107,31 +113,32 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Override
   public ProcessEntity getProcessByBpmnProcessId(
       final String bpmnProcessId, final String tenantId) {
-    final QueryBuilder qb;
+    final Query query;
     if (securityConfiguration.getMultiTenancy().isChecksEnabled()
         && StringUtils.isNotBlank(tenantId)) {
-      qb =
-          ElasticsearchUtil.joinWithAnd(
-              QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, bpmnProcessId),
-              QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId));
+      final var bpmnProcessIdQuery =
+          ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, bpmnProcessId);
+      final var tenantIdQuery = ElasticsearchUtil.termsQuery(ProcessIndex.TENANT_ID, tenantId);
+      query = ElasticsearchUtil.joinWithAnd(bpmnProcessIdQuery, tenantIdQuery);
     } else {
-      qb = QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, bpmnProcessId);
+      query = ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, bpmnProcessId);
     }
 
-    final SearchRequest searchRequest =
-        new SearchRequest(processIndex.getAlias())
-            .source(
-                new SearchSourceBuilder()
-                    .query(qb)
-                    .collapse(new CollapseBuilder(ProcessIndex.BPMN_PROCESS_ID))
-                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
-                    .size(1));
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var request =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(processIndex.getAlias())
+            .query(tenantAwareQuery)
+            .collapse(c -> c.field(ProcessIndex.BPMN_PROCESS_ID))
+            .sort(ElasticsearchUtil.sortOrder(ProcessIndex.VERSION, SortOrder.Desc))
+            .size(1)
+            .build();
+
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      if (response.getHits().getTotalHits().value > 0) {
-        final ProcessEntity processEntity =
-            fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-        return processEntity;
+      final var response = es8Client.search(request, ProcessEntity.class);
+      if (response.hits().total().value() > 0) {
+        return response.hits().hits().get(0).source();
       } else {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
@@ -145,17 +152,20 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
   @Override
   public ProcessEntity getProcess(final String processId) {
-    final SearchRequest searchRequest =
-        new SearchRequest(processIndex.getAlias())
-            .source(
-                new SearchSourceBuilder()
-                    .query(QueryBuilders.termQuery(ProcessIndex.KEY, processId)));
+    final var query = ElasticsearchUtil.termsQuery(ProcessIndex.KEY, processId);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+
+    final var request =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(processIndex.getAlias())
+            .query(tenantAwareQuery)
+            .build();
 
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      if (response.getHits().getTotalHits().value == 1) {
-        return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-      } else if (response.getHits().getTotalHits().value > 1) {
+      final var response = es8Client.search(request, ProcessEntity.class);
+      if (response.hits().total().value() == 1) {
+        return response.hits().hits().get(0).source();
+      } else if (response.hits().total().value() > 1) {
         throw new TasklistRuntimeException(
             String.format("Could not find unique process with id '%s'.", processId));
       } else {
@@ -288,7 +298,9 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
     final AggregationBuilder topHitsAggregate =
         AggregationBuilders.topHits(TOP_HITS_AGG_NAME)
-            .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
+            .sort(
+                SortBuilders.fieldSort(ProcessIndex.VERSION)
+                    .order(org.elasticsearch.search.sort.SortOrder.DESC))
             .size(1);
 
     final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(qb).size(0);

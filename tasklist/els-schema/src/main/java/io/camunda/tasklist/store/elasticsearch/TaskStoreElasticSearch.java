@@ -10,9 +10,7 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
-import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static io.camunda.tasklist.util.ElasticsearchUtil.scrollInChunks;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
@@ -20,6 +18,7 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -34,6 +33,7 @@ import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
 import io.camunda.tasklist.views.TaskSearchView;
@@ -65,7 +65,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder.ScriptSortType;
@@ -99,6 +98,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
+  @Autowired private ElasticsearchTenantHelper tenantHelper;
+
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
 
   @Autowired private TaskTemplate taskTemplate;
@@ -113,18 +114,21 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  private SearchHit getRawTaskByUserTaskKey(final String userTaskKey) {
-    try {
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(taskTemplate)
-              .source(
-                  SearchSourceBuilder.searchSource()
-                      .query(termQuery(TaskTemplate.KEY, userTaskKey)));
+  private Hit<TaskEntity> getRawTaskByUserTaskKey(final String userTaskKey) {
+    final var query = ElasticsearchUtil.termsQuery(TaskTemplate.KEY, userTaskKey);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-      final var response = tenantAwareClient.search(searchRequest);
-      if (response.getHits().getHits().length == 1) {
-        return response.getHits().getHits()[0];
-      } else if (response.getHits().getTotalHits().value > 1) {
+    final var request =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(taskTemplate, QueryType.ALL))
+            .query(tenantAwareQuery)
+            .build();
+
+    try {
+      final var response = es8Client.search(request, TaskEntity.class);
+      if (response.hits().hits().size() == 1) {
+        return response.hits().hits().get(0);
+      } else if (response.hits().total().value() > 1) {
         throw new NotFoundException(
             String.format(
                 "Unique %s with id %s was not found", taskTemplate.getIndexName(), userTaskKey));
@@ -150,7 +154,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Override
   public TaskEntity getTask(final String id) {
     final var rawTask = getRawTaskByUserTaskKey(id);
-    return fromSearchHit(rawTask.getSourceAsString(), objectMapper, TaskEntity.class);
+    return rawTask.source();
   }
 
   @Override
@@ -214,7 +218,7 @@ public class TaskStoreElasticSearch implements TaskStore {
    */
   @Override
   public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
-    final SearchHit taskBeforeSearchHit =
+    final Hit<TaskEntity> taskBeforeHit =
         getRawTaskByUserTaskKey(String.valueOf(taskBefore.getKey()));
 
     final TaskEntity completedTask =
@@ -234,11 +238,11 @@ public class TaskStoreElasticSearch implements TaskStore {
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(taskTemplate.getFullQualifiedName())
-              .id(taskBeforeSearchHit.getId())
+              .id(taskBeforeHit.id())
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
-              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm())
+              .setIfSeqNo(taskBeforeHit.seqNo())
+              .setIfPrimaryTerm(taskBeforeHit.primaryTerm())
               .routing(getRoutingToUpsertTask(completedTask));
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (final Exception e) {
@@ -250,7 +254,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Override
   public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
-    final SearchHit taskBeforeSearchHit =
+    final Hit<TaskEntity> taskBeforeHit =
         getRawTaskByUserTaskKey(String.valueOf(taskBefore.getKey()));
     final TaskEntity completedTask = makeCopyOf(taskBefore).setCompletionTime(null);
 
@@ -266,11 +270,11 @@ public class TaskStoreElasticSearch implements TaskStore {
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(taskTemplate.getFullQualifiedName())
-              .id(taskBeforeSearchHit.getId())
+              .id(taskBeforeHit.id())
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
-              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm())
+              .setIfSeqNo(taskBeforeHit.seqNo())
+              .setIfPrimaryTerm(taskBeforeHit.primaryTerm())
               .routing(getRoutingToUpsertTask(completedTask));
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (final Exception e) {
@@ -295,9 +299,26 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Override
   public List<TaskEntity> getTasksById(final List<String> ids) {
+    final var query = ElasticsearchUtil.termsQuery(TaskTemplate.KEY, ids);
+    final var wrappedQuery = ElasticsearchUtil.constantScoreQuery(query);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(wrappedQuery);
+
+    final var request =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(taskTemplate.getAlias())
+            .query(tenantAwareQuery)
+            .build();
+
     try {
-      final SearchHit[] response = getTasksRawResponse(ids);
-      return mapSearchHits(response, objectMapper, TaskEntity.class);
+      final var response = es8Client.search(request, TaskEntity.class);
+      if (response.hits().total().value() > 0) {
+        return response.hits().hits().stream()
+            .map(hit -> hit.source())
+            .filter(java.util.Objects::nonNull)
+            .toList();
+      } else {
+        throw new NotFoundException(String.format("No tasks were found for ids %s", ids));
+      }
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -338,22 +359,6 @@ public class TaskStoreElasticSearch implements TaskStore {
                         .must(termQuery(TaskTemplate.STATE, TaskState.CREATED))
                         .must(existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID)))
                 .size(tasklistProperties.getElasticsearch().getBatchSize()));
-  }
-
-  private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {
-
-    final QueryBuilder query = termsQuery(TaskTemplate.KEY, ids);
-
-    final SearchRequest request =
-        createSearchRequest(taskTemplate)
-            .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
-
-    final SearchResponse response = tenantAwareClient.search(request);
-    if (response.getHits().getTotalHits().value > 0) {
-      return response.getHits().getHits();
-    } else {
-      throw new NotFoundException(String.format("No tasks were found for ids %s", ids));
-    }
   }
 
   private List<TaskSearchView> mapTasksFromEntity(final SearchResponse response) {
@@ -728,9 +733,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
     try {
-      final SearchHit searchHit = getRawTaskByUserTaskKey(taskId);
-      final var taskEntity =
-          fromSearchHit(searchHit.getSourceAsString(), objectMapper, TaskEntity.class);
+      final Hit<TaskEntity> taskHit = getRawTaskByUserTaskKey(taskId);
+      final var taskEntity = taskHit.source();
       // update task with optimistic locking
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -738,11 +742,11 @@ public class TaskStoreElasticSearch implements TaskStore {
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(taskTemplate.getFullQualifiedName())
-              .id(searchHit.getId())
+              .id(taskHit.id())
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(searchHit.getSeqNo())
-              .setIfPrimaryTerm(searchHit.getPrimaryTerm())
+              .setIfSeqNo(taskHit.seqNo())
+              .setIfPrimaryTerm(taskHit.primaryTerm())
               .routing(getRoutingToUpsertTask(taskEntity));
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (final Exception e) {
