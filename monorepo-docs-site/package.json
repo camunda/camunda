@@ -11,7 +11,12 @@
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
-    "write-heading-ids": "docusaurus write-heading-ids"
+    "write-heading-ids": "docusaurus write-heading-ids",
+    "prepare": "cd ../ && husky ./monorepo-docs-site/.husky",
+    "lint-staged": "lint-staged"
+  },
+  "lint-staged": {
+    "**/package.json": [ "bash -c 'cd \"$(dirname \"$1\")\" && npm install --package-lock-only && git add package-lock.json'" ]
   },
   "dependencies": {
     "@docusaurus/core": "3.9.2",
@@ -27,7 +32,9 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.9.2",
-    "@docusaurus/types": "3.9.2"
+    "@docusaurus/types": "3.9.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
   },
   "browserslist": {
     "production": [
