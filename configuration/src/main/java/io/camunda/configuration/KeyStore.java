@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 
 public class KeyStore implements Cloneable {
-  private static final String PREFIX = "camunda.api.grpc.ssl.key-store";
   private static final Map<String, String> LEGACY_GATEWAY_KEY_STORE_PROPERTIES =
       Map.of(
           "filePath", "zeebe.gateway.security.keyStore.filePath",
@@ -22,7 +21,16 @@ public class KeyStore implements Cloneable {
       Map.of(
           "filePath", "zeebe.broker.gateway.security.keyStore.filePath",
           "password", "zeebe.broker.gateway.security.keyStore.password");
+  private static final Map<String, String> LEGACY_BROKER_NETWORK_SECURITY_KEY_STORE_PROPERTIES =
+      Map.of(
+          "filePath", "zeebe.broker.network.security.keyStore.filePath",
+          "password", "zeebe.broker.network.security.keyStore.password");
+  private static final Map<String, String> LEGACY_GATEWAY_CLUSTER_SECURITY_KEY_STORE_PROPERTIES =
+      Map.of(
+          "filePath", "zeebe.gateway.cluster.security.keyStore.filePath",
+          "password", "zeebe.gateway.cluster.security.keyStore.password");
 
+  private String prefix = "camunda.api.grpc.ssl.key-store";
   private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_KEY_STORE_PROPERTIES;
 
   /** The path for keystore file */
@@ -33,7 +41,7 @@ public class KeyStore implements Cloneable {
 
   public File getFilePath() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".file-path",
+        prefix + ".file-path",
         filePath,
         File.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -46,7 +54,7 @@ public class KeyStore implements Cloneable {
 
   public String getPassword() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".password",
+        prefix + ".password",
         password,
         String.class,
         BackwardsCompatibilityMode.SUPPORTED,
@@ -68,13 +76,30 @@ public class KeyStore implements Cloneable {
 
   public KeyStore withBrokerKeyStoreProperties() {
     final var copy = (KeyStore) clone();
+    copy.prefix = "camunda.api.grpc.ssl.key-store";
     copy.legacyPropertiesMap = LEGACY_BROKER_KEY_STORE_PROPERTIES;
+
     return copy;
   }
 
   public KeyStore withGatewayKeyStoreProperties() {
     final var copy = (KeyStore) clone();
+    copy.prefix = "camunda.api.grpc.ssl.key-store";
     copy.legacyPropertiesMap = LEGACY_GATEWAY_KEY_STORE_PROPERTIES;
+    return copy;
+  }
+
+  public KeyStore withBrokerTlsClusterKeyStoreProperties() {
+    final var copy = (KeyStore) clone();
+    copy.prefix = "camunda.security.transport-layer-security.cluster.key-store";
+    copy.legacyPropertiesMap = LEGACY_BROKER_NETWORK_SECURITY_KEY_STORE_PROPERTIES;
+    return copy;
+  }
+
+  public KeyStore withGatewayTlsClusterKeyStoreProperties() {
+    final var copy = (KeyStore) clone();
+    copy.prefix = "camunda.security.transport-layer-security.cluster.key-store";
+    copy.legacyPropertiesMap = LEGACY_GATEWAY_CLUSTER_SECURITY_KEY_STORE_PROPERTIES;
     return copy;
   }
 }

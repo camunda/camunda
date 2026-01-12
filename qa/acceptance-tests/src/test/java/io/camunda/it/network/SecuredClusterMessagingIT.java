@@ -69,9 +69,13 @@ final class SecuredClusteredMessagingIT {
       new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
           .withNetwork(NETWORK)
           .withNetworkAliases("zeebe")
-          .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_ENABLED", "true")
-          .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH", "/tmp/certificate.pem")
-          .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH", "/tmp/key.pem")
+          .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
+          .withEnv(
+              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
+              "/tmp/certificate.pem")
+          .withEnv(
+              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
+              "/tmp/key.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.certificate().toPath(), 0777),
               "/tmp/certificate.pem")
@@ -107,9 +111,13 @@ final class SecuredClusteredMessagingIT {
           .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe:26502")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "operate")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", "operate")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED", "true")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_CERTIFICATECHAINPATH", "/tmp/certificate.pem")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH", "/tmp/key.pem")
+          .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
+          .withEnv(
+              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
+              "/tmp/certificate.pem")
+          .withEnv(
+              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
+              "/tmp/key.pem")
           .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.certificate().toPath(), 0777),
@@ -148,9 +156,13 @@ final class SecuredClusteredMessagingIT {
           .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe:26502")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "tasklist")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", "tasklist")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED", "true")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_CERTIFICATECHAINPATH", "/tmp/certificate.pem")
-          .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH", "/tmp/key.pem")
+          .withEnv("CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_ENABLED", "true")
+          .withEnv(
+              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATECHAINPATH",
+              "/tmp/certificate.pem")
+          .withEnv(
+              "CAMUNDA_SECURITY_TRANSPORTLAYERSECURITY_CLUSTER_CERTIFICATEPRIVATEKEYPATH",
+              "/tmp/key.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.certificate().toPath(), 0777),
               "/tmp/certificate.pem")
