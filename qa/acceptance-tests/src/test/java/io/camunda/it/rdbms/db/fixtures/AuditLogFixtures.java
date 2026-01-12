@@ -64,6 +64,44 @@ public final class AuditLogFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
+  public static AuditLogDbModel createRandomProcessInstance() {
+    final var builder =
+        new AuditLogDbModel.Builder()
+            .auditLogKey("audit-" + generateRandomString(15))
+            .entityKey(String.valueOf(nextKey()))
+            .entityType(AuditLogEntityType.PROCESS_INSTANCE)
+            .operationType(AuditLogOperationType.CREATE)
+            .entityVersion(RANDOM.nextInt(100))
+            .entityValueType((short) RANDOM.nextInt(10))
+            .entityOperationIntent((short) RANDOM.nextInt(10))
+            .batchOperationKey(nextKey())
+            .batchOperationType(randomEnum(BatchOperationType.class))
+            .timestamp(OffsetDateTime.now())
+            .actorType(randomEnum(AuditLogActorType.class))
+            .actorId("actor-" + generateRandomString(10))
+            .tenantId("tenant-" + generateRandomString(10))
+            .tenantScope(AuditLogTenantScope.TENANT)
+            .result(randomEnum(AuditLogOperationResult.class))
+            .annotation("annotation-" + generateRandomString(20))
+            .category(randomEnum(AuditLogOperationCategory.class))
+            .processDefinitionId("process-" + generateRandomString(10))
+            .decisionRequirementsId("decision-req-" + generateRandomString(10))
+            .decisionDefinitionId("decision-" + generateRandomString(10))
+            .processDefinitionKey(nextKey())
+            .processInstanceKey(nextKey())
+            .elementInstanceKey(nextKey())
+            .jobKey(nextKey())
+            .userTaskKey(nextKey())
+            .decisionRequirementsKey(nextKey())
+            .decisionDefinitionKey(nextKey())
+            .decisionEvaluationKey(nextKey())
+            .deploymentKey(nextKey())
+            .formKey(nextKey())
+            .resourceKey(nextKey());
+
+    return builder.build();
+  }
+
   public static void createAndSaveRandomAuditLogs(final RdbmsWriters rdbmsWriters) {
     createAndSaveRandomAuditLogs(rdbmsWriters, b -> b);
   }
