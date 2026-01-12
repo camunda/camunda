@@ -16,7 +16,9 @@ public class AuthenticationDisabledMcpServerIT extends McpServerAuthenticationTe
 
   @MultiDbTestApplication
   static final TestCamundaApplication TEST_INSTANCE =
-      new TestCamundaApplication().withProperty("camunda.mcp.enabled", true);
+      new TestCamundaApplication()
+          .withProperty("camunda.mcp.enabled", true)
+          .withUnauthenticatedAccess();
 
   @Override
   protected TestCamundaApplication testInstance() {
