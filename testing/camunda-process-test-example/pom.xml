@@ -71,9 +71,11 @@
             <ignoredUsedUndeclaredDependencies>
               <dependency>com.fasterxml.jackson.core:jackson-databind</dependency>
               <dependency>io.camunda:camunda-process-test-java</dependency>
+              <dependency>io.camunda:camunda-process-test-dsl</dependency>
               <dependency>io.camunda:camunda-client-java</dependency>
               <dependency>org.assertj:assertj-core</dependency>
               <dependency>org.junit.jupiter:junit-jupiter-api</dependency>
+              <dependency>org.junit.jupiter:junit-jupiter-params</dependency>
               <dependency>org.springframework.boot:spring-boot-autoconfigure</dependency>
               <dependency>org.springframework.boot:spring-boot-test</dependency>
               <dependency>org.springframework:spring-beans</dependency>
