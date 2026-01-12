@@ -30,7 +30,7 @@ public interface EventApplier {
    * @param recordValue the value of the event
    * @param recordVersion the record version of the event
    * @throws NoSuchEventApplier if no event applier is found for the given intent and record
-   *     version. The event is not applied and it is up to the caller to decide what to do.
+   *     version. The event is not applied, and it is up to the caller to decide what to do.
    */
   void applyState(long key, Intent intent, RecordValue recordValue, final int recordVersion)
       throws NoSuchEventApplier;

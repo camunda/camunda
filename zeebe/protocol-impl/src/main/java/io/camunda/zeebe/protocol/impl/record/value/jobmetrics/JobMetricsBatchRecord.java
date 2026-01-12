@@ -114,4 +114,9 @@ public final class JobMetricsBatchRecord extends UnifiedRecordValue
     encodedStrings.forEach(str -> encodedStringsProperty.add().wrap(BufferUtil.wrapString(str)));
     return this;
   }
+
+  public JobMetricsBatchRecord addJobMetrics(final JobMetricsValue jobMetrics) {
+    jobMetricsProperty.add().wrap(jobMetrics);
+    return this;
+  }
 }
