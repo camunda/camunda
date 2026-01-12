@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -78,7 +78,7 @@ public final class CatchEventBehavior {
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
   private final ConditionalSubscriptionRecord conditionalSubscription =
       new ConditionalSubscriptionRecord();
-  private final DueDateTimerChecker timerChecker;
+  private final DueDateTimerCheckScheduler timerChecker;
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
@@ -89,7 +89,7 @@ public final class CatchEventBehavior {
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker,
+      final DueDateTimerCheckScheduler timerChecker,
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {

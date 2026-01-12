@@ -42,7 +42,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final VariableBehavior variableBehavior;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final UserTaskCommandPreconditionValidator preconditionChecker;
 
   public UserTaskUpdateProcessor(
       final ProcessingState state,
@@ -57,7 +57,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     this.asyncRequestBehavior = asyncRequestBehavior;
     responseWriter = writers.response();
     preconditionChecker =
-        new UserTaskCommandPreconditionChecker(
+        new UserTaskCommandPreconditionValidator(
             List.of(LifecycleState.CREATED), "update", state.getUserTaskState(), authCheckBehavior);
   }
 

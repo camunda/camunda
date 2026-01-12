@@ -42,7 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, ProcessingStateExtension.class})
-public class CommandRedistributorTest {
+public class CommandRedistributionSchedulerTest {
 
   /** Injected by {@link ProcessingStateExtension} */
   private MutableProcessingState processingState;
@@ -52,7 +52,7 @@ public class CommandRedistributorTest {
   @Mock private InterPartitionCommandSender mockCommandSender;
   @Mock private ReadonlyStreamProcessorContext mockContext;
 
-  private CommandRedistributor commandRedistributor;
+  private CommandRedistributionScheduler commandRedistributor;
   private long distributionKey;
   private UserRecord recordValue;
   private MutableDistributionState distributionState;
@@ -65,7 +65,7 @@ public class CommandRedistributorTest {
 
     final var commandDistributionPaused = false;
     commandRedistributor =
-        getCommandRedistributor(
+        getCommandRedistributionScheduler(
             commandDistributionPaused,
             EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
             EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
@@ -121,7 +121,7 @@ public class CommandRedistributorTest {
             1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
   }
 
-  private CommandRedistributor getCommandRedistributor(
+  private CommandRedistributionScheduler getCommandRedistributionScheduler(
       final boolean commandDistributionPaused,
       final Duration redistributionInterval,
       final Duration maxBackoffDuration) {
@@ -149,7 +149,7 @@ public class CommandRedistributorTest {
             .setCommandRedistributionInterval(redistributionInterval)
             .setCommandRedistributionMaxBackoff(maxBackoffDuration);
 
-    return new CommandRedistributor(behavior, routingInfo, config);
+    return new CommandRedistributionScheduler(behavior, routingInfo, config);
   }
 
   @Nested
@@ -223,7 +223,7 @@ public class CommandRedistributorTest {
       // Simulate command distribution paused
       final var commandDistributionPaused = true;
       commandRedistributor =
-          getCommandRedistributor(
+          getCommandRedistributionScheduler(
               commandDistributionPaused,
               EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL,
               EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
@@ -248,7 +248,8 @@ public class CommandRedistributorTest {
       // Set up routing state for configuration tests
       final var customInterval = Duration.ofSeconds(2);
       final var customMaxBackoff = Duration.ofSeconds(8); // Only 4 cycles until max backoff
-      commandRedistributor = getCommandRedistributor(false, customInterval, customMaxBackoff);
+      commandRedistributor =
+          getCommandRedistributionScheduler(false, customInterval, customMaxBackoff);
     }
 
     @Test

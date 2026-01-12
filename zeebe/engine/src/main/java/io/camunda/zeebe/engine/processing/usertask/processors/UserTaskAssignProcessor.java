@@ -32,7 +32,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final UserTaskCommandPreconditionValidator preconditionChecker;
 
   public UserTaskAssignProcessor(
       final ProcessingState state,
@@ -44,7 +44,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
     preconditionChecker =
-        new UserTaskCommandPreconditionChecker(
+        new UserTaskCommandPreconditionValidator(
             List.of(LifecycleState.CREATED), "assign", state.getUserTaskState(), authCheckBehavior);
   }
 
