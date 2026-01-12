@@ -6,8 +6,51 @@
   ~ Licensed under the Camunda License 1.0. You may not use this file
   ~ except in compliance with the Camunda License 1.0.
   -->
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.TableMetricsMapper">
+
+  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
+    databaseId="postgresql">
+    SELECT COALESCE(c.reltuples::BIGINT, -1) AS estimate
+    FROM pg_class c
+           JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE LOWER(c.relname) = LOWER('${prefix}${tableName}')
+      AND n.nspname = 'public'
+  </select>
+
+  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
+    databaseId="oracle">
+    SELECT NVL(num_rows, -1)
+    FROM user_tables
+    WHERE UPPER(table_name) = UPPER('${prefix}${tableName}')
+  </select>
+
+  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
+    databaseId="mariadb">
+    SELECT IFNULL(table_rows, -1)
+    FROM information_schema.tables
+    WHERE table_schema = DATABASE()
+      AND LOWER(table_name) = LOWER('${prefix}${tableName}')
+  </select>
+
+  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
+    databaseId="mysql">
+    SELECT IFNULL(table_rows, -1)
+    FROM information_schema.tables
+    WHERE table_schema = DATABASE()
+      AND LOWER(table_name) = LOWER('${prefix}${tableName}')
+  </select>
+
+  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
+    databaseId="mssql">
+    SELECT ISNULL(SUM(p.rows), -1) AS estimate
+    FROM sys.tables t
+           INNER JOIN sys.partitions p ON t.object_id = p.object_id
+    WHERE t.name = '${prefix}${tableName}'
+      AND p.index_id IN (0, 1)
+    GROUP BY t.object_id
+  </select>
 
   <select id="countTableRows" parameterType="java.lang.String" resultType="long">
     SELECT COUNT(*) FROM ${prefix}${tableName}
