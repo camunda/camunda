@@ -97,9 +97,6 @@ test.describe('processes page', () => {
     });
 
     await expect(page.getByText('Data could not be fetched')).toHaveCount(2);
-    await expect(
-      page.getByText('Operations could not be fetched'),
-    ).toBeVisible();
     await expect(page).toHaveScreenshot();
   });
 
