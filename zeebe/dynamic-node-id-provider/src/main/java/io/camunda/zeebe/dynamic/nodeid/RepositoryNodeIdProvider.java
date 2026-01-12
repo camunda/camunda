@@ -122,6 +122,12 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   private void scheduleReadinessCheck(final int clusterSize) {
+    if (previousNodeGracefullyShutdown.join()) {
+      // if the previous node shut down gracefully, we can consider ourselves ready immediately
+      readinessFuture.complete(true);
+      return;
+    }
+
     final var readinessCheckExecutor =
         Executors.newSingleThreadScheduledExecutor(
             r -> new Thread(r, "NodeIdProvider-readiness-checker"));
