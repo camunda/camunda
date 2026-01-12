@@ -308,7 +308,7 @@ describe('InstanceHeader', () => {
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         kind: 'success',
-        title: 'Instance deleted',
+        title: 'Instance is scheduled for deletion',
         isDismissable: true,
       }),
     );
