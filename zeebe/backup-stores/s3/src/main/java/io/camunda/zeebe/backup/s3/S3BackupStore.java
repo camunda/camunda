@@ -449,14 +449,24 @@ public final class S3BackupStore implements BackupStore {
 
   CompletableFuture<Collection<Manifest>> readManifestObjects(
       final BackupIdentifierWildcard wildcard) {
-    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
-    final var publisherV2 = findBackupIds(wildcard, true).map(this::readManifestObject);
-    publisher.subscribe(aggregator);
-    publisherV2.subscribe(aggregator);
 
-    // Transform result to a set to remove potential duplicates between backups due to prefix
-    return aggregator.result().thenApply(Set::copyOf);
+    final var legacyAggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+    final var legacyPublisher = findBackupIds(wildcard, true).map(this::readManifestObject);
+    legacyPublisher.subscribe(legacyAggregator);
+
+    final var v2Aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+    final var v2Publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
+    v2Publisher.subscribe(v2Aggregator);
+
+    return legacyAggregator
+        .result()
+        .thenCombine(
+            v2Aggregator.result(),
+            (legacyManifests, v2Manifests) -> {
+              final var combined = new HashSet<>(legacyManifests);
+              combined.addAll(v2Manifests);
+              return combined;
+            });
   }
 
   private CompletableFuture<ResponseBytes<GetObjectResponse>> findManifestForBackup(
