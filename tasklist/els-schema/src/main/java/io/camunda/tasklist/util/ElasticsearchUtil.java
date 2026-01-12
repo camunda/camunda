@@ -18,6 +18,9 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -35,6 +38,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -598,6 +602,95 @@ public abstract class ElasticsearchUtil {
     } catch (final Exception ex) {
       LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
     }
+  }
+
+  // ============ ES8 Query Helper Methods ============
+
+  /**
+   * Creates a match-none query for ES8 that returns no results.
+   *
+   * @return BoolQuery.Builder configured to match no documents
+   */
+  public static co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder
+      createMatchNoneQueryEs8() {
+    return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.bool()
+        .must(m -> m.matchNone(mn -> mn));
+  }
+
+  /**
+   * Creates a terms query for ES8 with a collection of values.
+   *
+   * @param name Field name
+   * @param values Collection of values to match
+   * @return Query with terms condition
+   */
+  public static Query termsQuery(final String name, final Collection<?> values) {
+    if (values.stream().anyMatch(Objects::isNull)) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query ["
+              + name
+              + "] where terms field is "
+              + values);
+    }
+
+    return co.elastic.clients.elasticsearch._types.query_dsl.Query.of(
+        q ->
+            q.terms(
+                t ->
+                    t.field(name)
+                        .terms(
+                            TermsQueryField.of(
+                                tf -> tf.value(values.stream().map(FieldValue::of).toList())))));
+  }
+
+  /**
+   * Creates a terms query for ES8 with a single value.
+   *
+   * @param name Field name
+   * @param value Single value to match
+   * @return Query with terms condition
+   */
+  public static <T> Query termsQuery(final String name, final T value) {
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query [" + name + "] with null value");
+    }
+
+    if (value.getClass().isArray()) {
+      throw new IllegalStateException(
+          "Cannot pass an array to the singleton terms query, must pass a single value");
+    }
+
+    return termsQuery(name, List.of(value));
+  }
+
+  /**
+   * Joins multiple ES8 queries with AND logic. Returns null if no queries provided, single query if
+   * only one provided, or a bool query with must clauses for multiple queries.
+   *
+   * @param queries Queries to join
+   * @return Combined query or null
+   */
+  public static Query joinWithAnd(final Query... queries) {
+    final var notNullQueries = throwAwayNullElements(queries);
+
+    if (notNullQueries.isEmpty()) {
+      return null;
+    } else if (notNullQueries.size() == 1) {
+      return notNullQueries.get(0);
+    } else {
+      return co.elastic.clients.elasticsearch._types.query_dsl.Query.of(
+          q -> q.bool(b -> b.must(notNullQueries)));
+    }
+  }
+
+  /**
+   * Creates a match-all query for ES8.
+   *
+   * @return Query that matches all documents
+   */
+  public static Query matchAllQueryEs8() {
+    return Query.of(q -> q.matchAll(m -> m));
   }
 
   private static final class DelegatingActionListener<Response>
