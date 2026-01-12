@@ -244,13 +244,6 @@ test.describe('process instance migration', () => {
     await expect(
       page.getByTestId('state-overlay-checkPayment-active'),
     ).toBeVisible();
-    await expect(
-      page.getByText(mockMigrationOperation.batchOperationKey),
-    ).toHaveCount(1);
-
-    await page.screenshot({
-      path: path.join(baseDirectory, 'operations-panel.png'),
-    });
   });
 
   test('migrate ad hoc subprocess process instances', async ({
@@ -462,11 +455,13 @@ test.describe('process instance migration', () => {
       processesPage.processInstancesTable.getByRole('row'),
     ).not.toHaveCount(0);
 
-    await processesPage.diagram.moveCanvasHorizontally(-200);
+    // Navigate to batch operations page
+    await page.getByRole('button', {name: /view batch operations/i}).click();
+    await page.waitForURL('**/batch-operations');
 
-    // Verify success message
+    // Verify migration operation appears in the table
     await expect(
-      page.getByText(mockMigrationOperation.batchOperationKey),
-    ).toHaveCount(1);
+      page.getByRole('cell', {name: 'Migrate Process Instance'}),
+    ).toBeVisible();
   });
 });
