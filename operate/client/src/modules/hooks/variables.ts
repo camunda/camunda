@@ -18,7 +18,7 @@ import {useHasMultipleInstances} from './flowNodeMetadata';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {TOKEN_OPERATIONS} from 'modules/constants';
-import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {useElementSelectionInstanceKey} from './useElementSelectionInstanceKey';
 
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -33,18 +33,9 @@ const useHasNoContent = () => {
 };
 
 const useVariableScopeKey = (fallback?: string | null) => {
-  const {
-    resolvedElementInstance,
-    selectedElementInstanceKey,
-    selectedElementId,
-    isFetchingElement,
-  } = useProcessInstanceElementSelection();
-  const {processInstanceId: processInstanceKey = null} =
-    useProcessInstancePageParams();
+  const selectedInstanceKey = useElementSelectionInstanceKey();
+  const {selectedElementId} = useProcessInstanceElementSelection();
 
-  // First try to get actual instance ID
-  const selectedInstanceKey =
-    selectedElementInstanceKey ?? resolvedElementInstance?.elementInstanceKey;
   if (selectedInstanceKey) {
     return selectedInstanceKey;
   }
@@ -62,7 +53,7 @@ const useVariableScopeKey = (fallback?: string | null) => {
     }
   }
 
-  return fallback ?? (!isFetchingElement ? processInstanceKey : null);
+  return fallback ?? null;
 };
 
 const useDisplayStatus = ({
