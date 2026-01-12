@@ -97,11 +97,11 @@ public class NodeIdProvider {
     private Duration leaseAcquireMaxDelay = Duration.ofSeconds(30);
 
     /**
-     * Timeout for updating node ID version mappings in S3. If a node's mapping is not updated
-     * within this timeout, the node is assumed to be down and its mapping may be ignored. Must be
-     * greater than leaseDuration.
+     * Timeout for waiting until node ID version mappings is updated. If a node's mapping is not
+     * updated within this timeout, the node is assumed to be down and its mapping may be ignored.
+     * Must be greater than leaseDuration.
      */
-    private Duration nodeIdMappingUpdateTimeout = Duration.ofMinutes(2);
+    private Duration readinessCheckTimeout = Duration.ofMinutes(2);
 
     /**
      * Name of the bucket where the leases will be stored. The bucket must be already created. The
@@ -239,14 +239,13 @@ public class NodeIdProvider {
       this.leaseAcquireMaxDelay = leaseAcquireMaxDelay;
     }
 
-    public Duration getNodeIdMappingUpdateTimeout() {
-      return nodeIdMappingUpdateTimeout;
+    public Duration getReadinessCheckTimeout() {
+      return readinessCheckTimeout;
     }
 
-    public void setNodeIdMappingUpdateTimeout(final Duration nodeIdMappingUpdateTimeout) {
-      this.nodeIdMappingUpdateTimeout =
-          Objects.requireNonNull(
-              nodeIdMappingUpdateTimeout, "nodeIdMappingUpdateTimeout cannot be null");
+    public void setReadinessCheckTimeout(final Duration readinessCheckTimeout) {
+      this.readinessCheckTimeout =
+          Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
     }
   }
 

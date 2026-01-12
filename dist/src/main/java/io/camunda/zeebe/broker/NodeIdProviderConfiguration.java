@@ -73,7 +73,7 @@ public class NodeIdProviderConfiguration {
             new S3NodeIdRepository.Config(
                 s3Config.getBucketName(),
                 s3Config.getLeaseDuration(),
-                s3Config.getNodeIdMappingUpdateTimeout());
+                s3Config.getReadinessCheckTimeout());
         yield S3NodeIdRepository.of(clientConfig, config, Clock.systemUTC());
       }
     };
@@ -102,7 +102,7 @@ public class NodeIdProviderConfiguration {
                 Clock.systemUTC(),
                 config.getLeaseDuration(),
                 config.getLeaseAcquireMaxDelay(),
-                config.getNodeIdMappingUpdateTimeout(),
+                config.getReadinessCheckTimeout(),
                 taskId,
                 () -> {
                   LOG.warn("NodeIdProvider terminating the process");
