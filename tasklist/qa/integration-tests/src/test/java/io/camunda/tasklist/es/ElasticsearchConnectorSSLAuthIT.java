@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
@@ -67,7 +68,9 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
           .waitingFor(
               Wait.forHttps("/").allowInsecure().withBasicCredentials("elastic", "elastic"));
 
-  @Autowired ElasticsearchClient es8Client;
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  ElasticsearchClient es8Client;
 
   @BeforeAll
   static void beforeAll() {

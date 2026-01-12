@@ -60,7 +60,9 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  private ElasticsearchClient es8Client;
 
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
 

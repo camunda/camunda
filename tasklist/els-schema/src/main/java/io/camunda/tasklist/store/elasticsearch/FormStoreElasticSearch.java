@@ -65,7 +65,9 @@ public class FormStoreElasticSearch implements FormStore {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  private ElasticsearchClient es8Client;
 
   @Override
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {

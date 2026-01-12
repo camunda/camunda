@@ -131,7 +131,7 @@ public class ElasticsearchConnector {
   }
 
   @Bean
-  public ElasticsearchClient es8Client() {
+  public ElasticsearchClient tasklistEs8Client() {
     esClientRepository.load(tasklistProperties.getElasticsearch().getInterceptorPlugins());
     return createEs8Client(tasklistProperties.getElasticsearch(), esClientRepository);
   }

@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -34,9 +35,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
-import org.elasticsearch.action.DocWriteResponse.Result;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -48,7 +46,6 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,6 +60,7 @@ public class TaskMetricsStoreElasticSearchTest {
   private static final String METRIC_INDEX_NAME = "usage_metric_tu_x.0.0";
   @Mock private UsageMetricTUTemplate template;
   @Mock private RestHighLevelClient esClient;
+  @Mock private ElasticsearchClient es8Client;
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
   @InjectMocks private TaskMetricsStoreElasticSearch instance;
@@ -87,19 +85,22 @@ public class TaskMetricsStoreElasticSearchTest {
             .setEndTime(now)
             .setTenantId("<default>")
             .setPartitionId(0);
-    final var indexResponse = mock(IndexResponse.class);
-    final IndexRequest expectedIndexRequest =
-        new IndexRequest(METRIC_INDEX_NAME)
-            .id(expectedEntry.getId())
-            .source(objectMapper.writeValueAsString(expectedEntry), XContentType.JSON);
-    when(esClient.index(any(), eq(RequestOptions.DEFAULT))).thenReturn(indexResponse);
-    when(indexResponse.getResult()).thenReturn(Result.CREATED);
+    final var indexRes = mock(co.elastic.clients.elasticsearch.core.IndexResponse.class);
+    final var expectedReq =
+        co.elastic.clients.elasticsearch.core.IndexRequest.of(
+            b ->
+                b.index(template.getFullQualifiedName())
+                    .id(expectedEntry.getId())
+                    .document(expectedEntry));
+    when(es8Client.index(any(co.elastic.clients.elasticsearch.core.IndexRequest.class)))
+        .thenReturn(indexRes);
+    when(indexRes.result()).thenReturn(co.elastic.clients.elasticsearch._types.Result.Created);
 
     // When
     instance.registerTaskAssigned(task);
 
     // Then
-    verify(esClient).index(refEq(expectedIndexRequest), eq(RequestOptions.DEFAULT));
+    verify(es8Client).index(refEq(expectedReq));
   }
 
   @Test

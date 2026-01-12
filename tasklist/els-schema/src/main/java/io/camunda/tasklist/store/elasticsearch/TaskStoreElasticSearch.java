@@ -93,7 +93,9 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  private ElasticsearchClient es8Client;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 

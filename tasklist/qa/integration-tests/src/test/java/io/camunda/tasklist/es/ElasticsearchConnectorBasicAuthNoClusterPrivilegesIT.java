@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -76,7 +77,9 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
           .withExposedPorts(9200);
 
-  @Autowired ElasticsearchClient es8Client;
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  ElasticsearchClient es8Client;
 
   @Autowired private TestRestTemplate testRestTemplate;
 
