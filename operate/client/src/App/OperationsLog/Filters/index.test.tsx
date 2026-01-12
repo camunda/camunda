@@ -98,15 +98,17 @@ describe('OperationsLog Filters', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render process instance key input field', () => {
+  it('should render all filter fields', () => {
     render(<Filters />, {
       wrapper: Wrapper,
     });
 
-    const processInstanceKeyInput =
-      screen.getByLabelText(/process instance key/i);
-    expect(processInstanceKeyInput).toBeInTheDocument();
-    expect(processInstanceKeyInput).toHaveAttribute('type', 'text');
+    expect(screen.getByText('Process instance key')).toBeInTheDocument();
+    expect(screen.getByText('Operation type')).toBeInTheDocument();
+    expect(screen.getByText('Entity type')).toBeInTheDocument();
+    expect(screen.getByText('Operations status')).toBeInTheDocument();
+    expect(screen.getByText('Actor')).toBeInTheDocument();
+    expect(screen.getByText('Timestamp date range')).toBeInTheDocument();
   });
 
   it('should have reset button disabled when filters are empty', () => {

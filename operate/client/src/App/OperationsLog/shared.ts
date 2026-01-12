@@ -13,6 +13,9 @@ type OperationsLogFilterField =
   | 'operationType'
   | 'entityType'
   | 'actorId'
+  | 'result'
+  | 'timestampBefore'
+  | 'timestampAfter'
   | 'tenant';
 
 type OperationsLogFilters = {
@@ -22,6 +25,9 @@ type OperationsLogFilters = {
   operationType?: string;
   entityType?: string;
   actorId?: string;
+  result?: string;
+  timestampBefore?: string;
+  timestampAfter?: string;
   tenant?: string;
 };
 
@@ -32,6 +38,9 @@ const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
   'operationType',
   'entityType',
   'actorId',
+  'result',
+  'timestampBefore',
+  'timestampAfter',
   'tenant',
 ];
 

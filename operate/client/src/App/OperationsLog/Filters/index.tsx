@@ -7,7 +7,7 @@
  */
 
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Stack} from '@carbon/react';
+import {Dropdown, Stack} from '@carbon/react';
 import {updateFiltersSearchString} from 'modules/utils/filter';
 import {Container} from './styled';
 import {Field, Form} from 'react-final-form';
@@ -31,12 +31,23 @@ import {
   type OperationsLogFilterField,
   type OperationsLogFilters,
 } from '../shared';
+import {
+  auditLogEntityTypeSchema,
+  auditLogOperationTypeSchema,
+  auditLogResultSchema,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
+import {DateRangeField} from 'modules/components/DateRangeField';
+import {useState} from 'react';
+import {FilterMultiselect} from './FilterMultiselect';
 
 const initialValues: OperationsLogFilters = {};
 
 const Filters: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
+    useState<boolean>(false);
 
   const filterValues = getFilters<
     OperationsLogFilterField,
@@ -86,7 +97,15 @@ const Filters: React.FC = observer(() => {
               }}
             >
               <Container>
-                <AutoSubmit fieldsToSkipTimeout={['process', 'version']} />
+                <AutoSubmit
+                  fieldsToSkipTimeout={[
+                    'process',
+                    'version',
+                    'operationType',
+                    'entityType',
+                    'result',
+                  ]}
+                />
                 <Stack gap={5}>
                   {window.clientConfig?.multiTenancyEnabled && (
                     <div>
@@ -120,6 +139,66 @@ const Filters: React.FC = observer(() => {
                           />
                         )}
                       </Field>
+                    </Stack>
+                  </div>
+                  <div>
+                    <Title>Operation</Title>
+                    <Stack gap={5}>
+                      <FilterMultiselect
+                        name="operationType"
+                        titleText="Operation type"
+                        items={auditLogOperationTypeSchema.options}
+                      />
+                      <FilterMultiselect
+                        name="entityType"
+                        titleText="Entity type"
+                        items={auditLogEntityTypeSchema.options}
+                      />
+                      <Field name="result">
+                        {({input}) => (
+                          <Dropdown
+                            label="Choose option"
+                            aria-label="Choose option"
+                            titleText="Operations status"
+                            id="-result"
+                            onChange={({selectedItem}) =>
+                              input.onChange(
+                                selectedItem === 'all'
+                                  ? undefined
+                                  : selectedItem,
+                              )
+                            }
+                            items={['all', ...auditLogResultSchema.options]}
+                            itemToString={(item) =>
+                              item === 'all' ? 'All' : spaceAndCapitalize(item)
+                            }
+                            selectedItem={input.value}
+                            size="sm"
+                          />
+                        )}
+                      </Field>
+                      <Field name="actorId">
+                        {({input}) => (
+                          <TextInputField
+                            {...input}
+                            id="actorId"
+                            size="sm"
+                            labelText="Actor"
+                            type="text"
+                            placeholder="Username or client ID"
+                          />
+                        )}
+                      </Field>
+                      <DateRangeField
+                        isModalOpen={isDateRangeModalOpen}
+                        onModalClose={() => setIsDateRangeModalOpen(false)}
+                        onClick={() => setIsDateRangeModalOpen(true)}
+                        filterName="timestamp"
+                        popoverTitle="Filter by timestamp date range"
+                        label="Timestamp date range"
+                        fromDateTimeKey="timestampAfter"
+                        toDateTimeKey="timestampBefore"
+                      />
                     </Stack>
                   </div>
                 </Stack>

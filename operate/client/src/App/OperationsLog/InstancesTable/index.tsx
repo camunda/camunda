@@ -39,6 +39,12 @@ import {CellOperationType} from './CellOperationType';
 import {CellResult} from './CellResult';
 import {CellComment} from './CellComment';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {
+  auditLogEntityTypeSchema,
+  auditLogOperationTypeSchema,
+  auditLogResultSchema,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+import {formatToISO} from 'modules/utils/date/formatDate';
 
 const ROW_HEIGHT = 46;
 const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
@@ -109,14 +115,34 @@ const InstancesTable: React.FC = observer(() => {
         processDefinitionKey: processDefinitionKey,
         processInstanceKey: filterValues.processInstanceKey,
         tenantId: filterValues.tenant,
+        operationType: filterValues.operationType
+          ? {
+              $in: filterValues.operationType
+                .split(',')
+                .map((v) => auditLogOperationTypeSchema.parse(v)),
+            }
+          : undefined,
+        entityType: filterValues.entityType
+          ? {
+              $in: filterValues.entityType
+                .split(',')
+                .map((v) => auditLogEntityTypeSchema.parse(v)),
+            }
+          : undefined,
+        result: filterValues.result
+          ? auditLogResultSchema.parse(filterValues.result)
+          : undefined,
+        timestamp:
+          filterValues.timestampBefore || filterValues.timestampAfter
+            ? {
+                $gt: formatToISO(filterValues.timestampAfter),
+                $lt: formatToISO(filterValues.timestampBefore),
+              }
+            : undefined,
+        actorId: filterValues.actorId,
       },
     };
-  }, [
-    filterValues.processInstanceKey,
-    filterValues.tenant,
-    processDefinitionKey,
-    sort,
-  ]);
+  }, [filterValues, processDefinitionKey, sort]);
 
   const {
     data,
