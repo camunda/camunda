@@ -13,7 +13,9 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -1363,19 +1365,20 @@ public final class ConditionalBoundaryEventTriggerTest {
             .getKey();
 
     // service task scope is already left, so subscription DELETED is already applied to the state
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.TRIGGER)
                 .onlyCommandRejections()
                 .withProcessInstanceKey(piKey)
                 .withCatchEventId("boundary")
-                .limit(1))
-        .withFailMessage(
+                .limit(1)
+                .getFirst())
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
             String.format(
                 "Expected to trigger condition subscription with key '%d', but no such"
                     + " subscription was found for process instance with key '%d' and catch"
                     + " event id '%s'.",
-                subscriptionKey, subscriptionKey, "boundary"))
-        .hasSize(1);
+                subscriptionKey, piKey, "boundary"));
   }
 
   @Test
@@ -1975,6 +1978,59 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .withProcessInstanceKey(piKey)
                 .withElementId(TASK_ID)
                 .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limit(1))
+        .hasSize(1);
+  }
+
+  @Test
+  public void
+      shouldTriggerBoundaryOnLocalVariableUpdateWhenConditionMatchesAfterPartialVariableUpdate() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .serviceTask(TASK_ID, t -> t.zeebeJobType("task"))
+            .boundaryEvent("boundary")
+            .cancelActivity(true)
+            .condition(c -> c.condition("=x + y > 10").zeebeVariableNames("x,y"))
+            .endEvent("afterBoundary")
+            .moveToActivity(TASK_ID)
+            .endEvent("normalEnd")
+            .done();
+
+    engine.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).withVariables(Map.of("x", 6)).create();
+
+    final long taskInstanceKey = awaitElementInstance(processInstanceKey, TASK_ID);
+
+    // when (variables created in task scope, condition becomes true)
+    engine
+        .variables()
+        .ofScope(taskInstanceKey)
+        .withDocument(Map.of("y", 5))
+        .withLocalSemantic()
+        .update();
+
+    // then
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords(
+                    ConditionalSubscriptionIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withCatchEventId("boundary")
+                .withCondition("=x + y > 10")
+                .withVariableNames("x", "y")
+                .withVariableEvents(List.of())
+                .limit(1))
+        .hasSize(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ID)
                 .limit(1))
         .hasSize(1);
   }
