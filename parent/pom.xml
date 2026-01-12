@@ -223,7 +223,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
-    <plugin.version.shade>3.6.0</plugin.version.shade>
+    <plugin.version.shade>3.6.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.9.8.2</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.4</plugin.version.surefire>
