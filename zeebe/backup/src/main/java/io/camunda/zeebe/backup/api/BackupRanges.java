@@ -14,17 +14,26 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.SequencedCollection;
+import java.util.stream.Collectors;
 import org.agrona.collections.LongHashSet;
 
 public interface BackupRanges {
+  Comparator<BackupRangeMarker> MARKER_ORDERING =
+      Comparator.comparingLong(BackupRangeMarker::checkpointId)
+          .thenComparingInt(
+              marker ->
+                  switch (marker) {
+                    case final Start ignored -> 0;
+                    case final Deletion ignored -> 1;
+                    case final End ignored -> 2;
+                  });
 
   /**
    * Constructs backup ranges from the given markers. Invalid ranges (e.g., missing start or end)
    * are silently dropped.
    */
   static SequencedCollection<BackupRange> fromMarkers(final Collection<BackupRangeMarker> markers) {
-    final var sortedMarkers =
-        markers.stream().sorted(Comparator.comparingLong(BackupRangeMarker::checkpointId)).toList();
+    final var sortedMarkers = markers.stream().sorted(MARKER_ORDERING).toList();
     // Ideally we have one start and one end per range
     final var estimatedSize = markers.size() / 2;
     final var ranges = new ArrayList<BackupRange>(estimatedSize);
@@ -59,20 +68,23 @@ public interface BackupRanges {
   }
 
   private static BackupRange finalizeRange(
-      final Start currentRangeStart,
-      final End currentRangeEnd,
-      final LongHashSet deletionsInCurrentRange) {
+      final Start currentRangeStart, final End currentRangeEnd, final LongHashSet deletions) {
     if (currentRangeStart == null || currentRangeEnd == null) {
       return null;
     }
-    if (deletionsInCurrentRange.isEmpty()) {
+    final var validDeletions =
+        deletions.stream()
+            .filter(
+                checkpointId ->
+                    checkpointId >= currentRangeStart.checkpointId()
+                        && checkpointId <= currentRangeEnd.checkpointId())
+            .collect(Collectors.toSet());
+    if (validDeletions.isEmpty()) {
       return new BackupRange.Complete(
           currentRangeStart.checkpointId(), currentRangeEnd.checkpointId());
     } else {
       return new BackupRange.Incomplete(
-          currentRangeStart.checkpointId(),
-          currentRangeEnd.checkpointId(),
-          deletionsInCurrentRange);
+          currentRangeStart.checkpointId(), currentRangeEnd.checkpointId(), validDeletions);
     }
   }
 }
