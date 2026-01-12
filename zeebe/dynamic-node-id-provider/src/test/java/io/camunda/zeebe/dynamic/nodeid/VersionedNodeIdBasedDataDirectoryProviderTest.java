@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.nodeid;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -59,9 +58,9 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.invocations()).isEmpty();
 
     final var initInfo = readInitializationInfo(directory);
-    assertThat(initInfo.get("initializedAt")).isNotNull();
-    assertThat(initInfo.get("version").asLong()).isEqualTo(3L);
-    assertThat(initInfo.get("initializedFrom").isNull()).isTrue();
+    assertThat(initInfo.initializedAt()).isGreaterThan(0L);
+    assertThat(initInfo.version().version()).isEqualTo(3L);
+    assertThat(initInfo.initializedFrom()).isNull();
   }
 
   @ParameterizedTest
@@ -111,9 +110,9 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(newDirectory);
-    assertThat(initInfo.get("initializedAt")).isNotNull();
-    assertThat(initInfo.get("version").asLong()).isEqualTo(4L);
-    assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(3L);
+    assertThat(initInfo.initializedAt()).isGreaterThan(0L);
+    assertThat(initInfo.version().version()).isEqualTo(4L);
+    assertThat(initInfo.initializedFrom().version()).isEqualTo(3L);
   }
 
   @ParameterizedTest
@@ -148,8 +147,8 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
-    assertThat(initInfo.get("version").asLong()).isEqualTo(3L);
-    assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(2L);
+    assertThat(initInfo.version().version()).isEqualTo(3L);
+    assertThat(initInfo.initializedFrom().version()).isEqualTo(2L);
   }
 
   @ParameterizedTest
@@ -180,8 +179,8 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
-    assertThat(initInfo.get("version").asLong()).isEqualTo(1L);
-    assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(0L);
+    assertThat(initInfo.version().version()).isEqualTo(1L);
+    assertThat(initInfo.initializedFrom().version()).isEqualTo(0L);
   }
 
   @ParameterizedTest
@@ -229,8 +228,8 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
-    assertThat(initInfo.get("version").asLong()).isEqualTo(4L);
-    assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(1L);
+    assertThat(initInfo.version().version()).isEqualTo(4L);
+    assertThat(initInfo.initializedFrom().version()).isEqualTo(1L);
   }
 
   @ParameterizedTest
@@ -267,8 +266,8 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
-    assertThat(initInfo.get("version").asLong()).isEqualTo(2L);
-    assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(1L);
+    assertThat(initInfo.version().version()).isEqualTo(2L);
+    assertThat(initInfo.initializedFrom().version()).isEqualTo(1L);
   }
 
   @Test
@@ -316,9 +315,10 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     OBJECT_MAPPER.writeValue(initFile.toFile(), initInfo);
   }
 
-  private static JsonNode readInitializationInfo(final Path directory) throws IOException {
+  private static DirectoryInitializationInfo readInitializationInfo(final Path directory)
+      throws IOException {
     final Path initFile = directory.resolve(DIRECTORY_INITIALIZED_FILE);
-    return OBJECT_MAPPER.readTree(initFile.toFile());
+    return OBJECT_MAPPER.readValue(initFile.toFile(), DirectoryInitializationInfo.class);
   }
 
   private static final class RecordingDataDirectoryCopier implements DataDirectoryCopier {
