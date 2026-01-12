@@ -410,6 +410,7 @@ class RepositoryNodeIdProviderIT {
             clock,
             EXPIRY_DURATION,
             Duration.ofSeconds(30),
+            Duration.ofSeconds(60),
             taskId,
             () -> leaseFailed = true);
     final var future = provider.initialize(clusterSize);

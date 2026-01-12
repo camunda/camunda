@@ -35,12 +35,11 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepositoryNodeIdProvider.class);
 
-  private static final Duration READINESS_CHECK_TIMEOUT = Duration.ofMinutes(5);
-
   private final NodeIdRepository nodeIdRepository;
   private final InstantSource clock;
   private volatile StoredLease.Initialized currentLease;
   private final Duration leaseDuration;
+  private final Duration readinessCheckTimeout;
   private final String taskId;
   private final Runnable onLeaseFailure;
   private final ScheduledExecutorService executor;
@@ -58,12 +57,14 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final InstantSource clock,
       final Duration expiryDuration,
       final Duration leaseAcquireMaxDelay,
+      final Duration readinessCheckTimeout,
       final String taskId,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
     this.clock = Objects.requireNonNull(clock, "clock cannot be null");
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
+    this.readinessCheckTimeout = readinessCheckTimeout;
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
@@ -139,13 +140,13 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
             readinessCheckExecutor,
             Duration.ofSeconds(5))
         .waitUntilAllNodesAreUpToDate()
-        .orTimeout(READINESS_CHECK_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+        .orTimeout(readinessCheckTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .exceptionally(
             t -> {
               if (t instanceof TimeoutException) {
                 LOG.warn(
                     "Timed out waiting for all nodes to be up to date after {}. Marking the node as ready.",
-                    READINESS_CHECK_TIMEOUT);
+                    readinessCheckTimeout);
                 return true;
               } else {
                 // This should never happen as the checker should wait indefinitely until timeout

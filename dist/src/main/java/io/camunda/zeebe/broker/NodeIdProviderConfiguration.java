@@ -102,6 +102,7 @@ public class NodeIdProviderConfiguration {
                 Clock.systemUTC(),
                 config.getLeaseDuration(),
                 config.getLeaseAcquireMaxDelay(),
+                config.getNodeIdMappingUpdateTimeout(),
                 taskId,
                 () -> {
                   LOG.warn("NodeIdProvider terminating the process");
