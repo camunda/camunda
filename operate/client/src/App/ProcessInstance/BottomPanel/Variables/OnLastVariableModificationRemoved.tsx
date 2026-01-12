@@ -15,9 +15,13 @@ import {reaction} from 'mobx';
 import {type VariableFormValues} from 'modules/types/variables';
 import {useFieldArray} from 'react-final-form-arrays';
 import {getScopeId} from 'modules/utils/variables';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useVariableScopeKey} from 'modules/hooks/variables';
 
 const OnLastVariableModificationRemoved: React.FC = observer(() => {
-  const scopeId = getScopeId();
+  const scopeKey = IS_ELEMENT_SELECTION_V2
+    ? useVariableScopeKey()
+    : getScopeId();
   const form = useForm();
   const formState = useFormState<VariableFormValues>();
   const fieldArray = useFieldArray('newVariables');
@@ -39,13 +43,13 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
         if (payload.operation === 'EDIT_VARIABLE') {
           const {scopeId: removedVariableScopeId, id, name, oldValue} = payload;
 
-          if (removedVariableScopeId !== scopeId) {
+          if (removedVariableScopeId !== scopeKey) {
             return;
           }
 
           const lastEditModification =
             modificationsStore.getLastVariableModification(
-              scopeId,
+              scopeKey,
               id,
               'EDIT_VARIABLE',
             );
@@ -60,7 +64,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
           const {scopeId: removedVariableScopeId, id} = payload;
 
           if (
-            removedVariableScopeId !== scopeId ||
+            removedVariableScopeId !== scopeKey ||
             newVariables === undefined
           ) {
             return;
@@ -68,7 +72,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
 
           const lastAddModification =
             modificationsStore.getLastVariableModification(
-              scopeId,
+              scopeKey,
               id,
               'ADD_VARIABLE',
             );
@@ -93,7 +97,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
     return () => {
       disposer();
     };
-  }, [scopeId, form, fieldArray, newVariables]);
+  }, [scopeKey, form, fieldArray, newVariables]);
 
   return null;
 });

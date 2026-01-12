@@ -19,14 +19,14 @@ import {useElementInstanceVariables} from 'modules/mutations/elementInstances/us
 import {handleMutationError} from 'modules/utils/notifications';
 
 type Props = {
-  scopeId: string;
+  scopeKey: string;
 };
 
-const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
+const VariablesFinalForm: React.FC<Props> = ({scopeKey}) => {
   const queryClient = useQueryClient();
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {mutateAsync: mutateAsyncVariables} = useElementInstanceVariables(
-    scopeId,
+    scopeKey,
     processInstanceId,
   );
 
@@ -40,7 +40,7 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
           });
         },
       }}
-      key={scopeId}
+      key={scopeKey}
       render={(props) => <VariablesForm {...props} />}
       onSubmit={async (values, form) => {
         const {initialValues} = form.getState();
