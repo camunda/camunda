@@ -32,7 +32,6 @@ import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
-import {ModificationDropdown as ModificationDropdownV1} from './ModificationDropdown/indexV1';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
@@ -41,11 +40,6 @@ import {useSelectableFlowNodes} from 'modules/queries/flownodeInstancesStatistic
 import {useExecutedFlowNodes} from 'modules/queries/flownodeInstancesStatistics/useExecutedFlowNodes';
 import {useModificationsByFlowNode} from 'modules/hooks/modifications';
 import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagram';
-import {
-  clearSelection as clearSelectionV1,
-  getSelectedRunningInstanceCount,
-  selectFlowNode,
-} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
@@ -64,10 +58,6 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
-import {
-  useIsRootNodeSelected,
-  useRootNode,
-} from 'modules/hooks/flowNodeSelection';
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
@@ -75,7 +65,6 @@ import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/usePro
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
@@ -98,7 +87,6 @@ type ModificationBadgePayload = {
 const TopPanel: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
-  const currentSelection = flowNodeSelectionStore.state.selection;
   const {
     sourceFlowNodeIdForMoveOperation,
     sourceFlowNodeInstanceKeyForMoveOperation,
@@ -108,9 +96,6 @@ const TopPanel: React.FC = observer(() => {
   const {data: statistics} = useFlownodeStatistics();
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
   const {data: executedFlowNodes} = useExecutedFlowNodes();
-  const {data: totalRunningInstancesV1} = useTotalRunningInstancesForFlowNode(
-    currentSelection?.flowNodeId,
-  );
   const {data: totalRunningInstancesByFlowNode} =
     useTotalRunningInstancesByFlowNode();
   const {data: businessObjects} = useBusinessObjects();
@@ -134,7 +119,6 @@ const TopPanel: React.FC = observer(() => {
   const {data: processedSequenceFlowsFromHook} =
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
-  const rootNode = useRootNode();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
   const {clearSelection, selectedElementId, selectElement} =
     useProcessInstanceElementSelection();
@@ -144,12 +128,6 @@ const TopPanel: React.FC = observer(() => {
   const hasSelectedElementMultipleRunningInstances =
     selectedElementRunningInstancesCount !== undefined &&
     selectedElementRunningInstancesCount > 1;
-
-  const isRootNodeSelected = useIsRootNodeSelected();
-  const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
-    totalRunningInstancesForFlowNode: totalRunningInstancesV1 ?? 0,
-    isRootNodeSelected,
-  });
 
   const {
     data: processDefinitionData,
@@ -351,13 +329,9 @@ const TopPanel: React.FC = observer(() => {
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        (IS_ELEMENT_SELECTION_V2
-          ? hasSelectedElementMultipleRunningInstances && (
-              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
-            )
-          : selectedRunningInstanceCount > 1 && (
-              <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
-            ))}
+        hasSelectedElementMultipleRunningInstances && (
+          <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+        )}
       {modificationsStore.state.status === 'adding-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -390,11 +364,7 @@ const TopPanel: React.FC = observer(() => {
                       totalRunningInstancesByFlowNode,
                     );
 
-                    if (IS_ELEMENT_SELECTION_V2) {
-                      clearSelection();
-                    } else {
-                      clearSelectionV1(rootNode);
-                    }
+                    clearSelection();
                     finishMovingToken(
                       affectedTokenCount,
                       visibleAffectedTokenCount,
@@ -405,17 +375,13 @@ const TopPanel: React.FC = observer(() => {
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {
-                      if (IS_ELEMENT_SELECTION_V2) {
-                        if (flowNodeId !== undefined) {
-                          selectElement({
-                            elementId: flowNodeId,
-                            isMultiInstanceBody: isMultiInstance,
-                          });
-                        } else {
-                          clearSelection();
-                        }
+                      if (flowNodeId !== undefined) {
+                        selectElement({
+                          elementId: flowNodeId,
+                          isMultiInstanceBody: isMultiInstance,
+                        });
                       } else {
-                        selectFlowNode(rootNode, {flowNodeId, isMultiInstance});
+                        clearSelection();
                       }
                     }
                   }
@@ -430,11 +396,7 @@ const TopPanel: React.FC = observer(() => {
                 }
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (
-                    IS_ELEMENT_SELECTION_V2 ? (
-                      <ModificationDropdown />
-                    ) : (
-                      <ModificationDropdownV1 />
-                    )
+                    <ModificationDropdown />
                   ) : (
                     !isIncidentBarOpen && <MetadataPopover />
                   )
@@ -447,11 +409,8 @@ const TopPanel: React.FC = observer(() => {
                     : undefined
                 }
                 hasOuterBorderOnSelection={
-                  IS_ELEMENT_SELECTION_V2
-                    ? !isModificationModeEnabled ||
-                      hasSelectedElementMultipleRunningInstances
-                    : !isModificationModeEnabled ||
-                      selectedRunningInstanceCount > 1
+                  !isModificationModeEnabled ||
+                  hasSelectedElementMultipleRunningInstances
                 }
               >
                 {stateOverlays.map((overlay) => {
