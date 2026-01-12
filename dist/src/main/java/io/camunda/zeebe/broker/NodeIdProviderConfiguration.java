@@ -196,9 +196,9 @@ public class NodeIdProviderConfiguration {
           final Path source,
           final Path target,
           final String markerFileName,
-          final boolean gracefulShutdown)
+          final boolean useHardLinks)
           throws IOException {
-        brokerCopier.copy(source, target, markerFileName, gracefulShutdown);
+        brokerCopier.copy(source, target, markerFileName, useHardLinks);
       }
 
       @Override

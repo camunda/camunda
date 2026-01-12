@@ -28,11 +28,11 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *   <li>Skips any directory subtree containing a {@code runtime} segment.
  *   <li>Skips the configured initialization marker file.
- *   <li>when gracefulShutdown=true:
+ *   <li>when useHardLinks=true:
  *       <ul>
  *         <li>Hard-links the entire folder if possible, falls back to copying if it fails.
  *       </ul>
- *   <li>when gracefulShutdown=false:
+ *   <li>when useHardLinks=false:
  *       <ul>
  *         <li>Hard-links snapshot files under {@code snapshots} and {@code bootstrap-snapshots}
  *             when possible; otherwise falls back to copying.
@@ -44,10 +44,7 @@ public final class BrokerDataDirectoryCopier {
   private static final Logger LOG = LoggerFactory.getLogger(BrokerDataDirectoryCopier.class);
 
   public void copy(
-      final Path source,
-      final Path target,
-      final String markerFileName,
-      final boolean gracefulShutdown)
+      final Path source, final Path target, final String markerFileName, final boolean useHardLinks)
       throws IOException {
     Files.walkFileTree(
         source,
@@ -74,7 +71,7 @@ public final class BrokerDataDirectoryCopier {
             final var targetFile = target.resolve(relative);
             Files.createDirectories(targetFile.getParent());
 
-            if (gracefulShutdown || isSnapshotFile(relative)) {
+            if (useHardLinks || isSnapshotFile(relative)) {
               hardLinkOrCopy(file, targetFile);
             } else {
               Files.copy(file, targetFile, StandardCopyOption.COPY_ATTRIBUTES);
@@ -93,10 +90,7 @@ public final class BrokerDataDirectoryCopier {
       Files.createLink(targetFile, sourceFile);
     } catch (final IOException e) {
       LOG.warn(
-          "Failed to hard-link snapshot file {} to {}; falling back to copy",
-          sourceFile,
-          targetFile,
-          e);
+          "Failed to hard-link file {} to {}; falling back to copy", sourceFile, targetFile, e);
       Files.copy(sourceFile, targetFile, StandardCopyOption.COPY_ATTRIBUTES);
     }
   }
