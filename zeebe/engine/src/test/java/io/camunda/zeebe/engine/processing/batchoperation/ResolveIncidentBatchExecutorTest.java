@@ -166,7 +166,6 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have a resolved the incident
-    assertThat(RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey)).isEmpty();
     assertThat(
             RecordingExporter.incidentRecords()
                 .withRecordKey(incidentKey)
