@@ -148,6 +148,33 @@ final class BrokerDataDirectoryCopierTest {
     assertThat(Files.readAllBytes(target)).isEqualTo(Files.readAllBytes(source));
   }
 
+  @Test
+  void shouldCopyDirectoryStructureRecursively() throws Exception {
+    // given
+    final var source = tempDir.resolve("source");
+    final var target = tempDir.resolve("target");
+
+    Files.createDirectories(source.resolve("subdir1/subdir2"));
+    Files.writeString(source.resolve("root-file.txt"), "root content");
+    Files.writeString(source.resolve("subdir1/file1.txt"), "file1 content");
+    Files.writeString(source.resolve("subdir1/subdir2/file2.txt"), "file2 content");
+
+    final var copier = new BrokerDataDirectoryCopier();
+
+    // when
+    copier.copy(source, target, MARKER_FILE, false);
+
+    // then
+    assertThat(target.resolve("root-file.txt")).exists();
+    assertThat(target.resolve("subdir1/file1.txt")).exists();
+    assertThat(target.resolve("subdir1/subdir2/file2.txt")).exists();
+
+    assertThat(Files.readString(target.resolve("root-file.txt"))).isEqualTo("root content");
+    assertThat(Files.readString(target.resolve("subdir1/file1.txt"))).isEqualTo("file1 content");
+    assertThat(Files.readString(target.resolve("subdir1/subdir2/file2.txt")))
+        .isEqualTo("file2 content");
+  }
+
   private static boolean areHardLinked(final Path source, final Path target) throws IOException {
     final var sourceKey = Files.readAttributes(source, BasicFileAttributes.class).fileKey();
     final var targetKey = Files.readAttributes(target, BasicFileAttributes.class).fileKey();
