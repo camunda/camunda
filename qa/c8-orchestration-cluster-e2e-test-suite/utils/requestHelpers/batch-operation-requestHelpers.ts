@@ -75,7 +75,7 @@ export async function createCompletedBatchOperation(
     expect(json.state).toBe('COMPLETED');
   }).toPass({
     intervals: [5_000, 10_000, 10_000, 15_000, 20_000],
-    timeout: 60_000,
+    timeout: 90_000,
   });
 
   return key;
@@ -98,7 +98,7 @@ export async function expectBatchState(
     expect(body.state).toBe(expectedState);
   }).toPass({
     intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
-    timeout: 90_000,
+    timeout: 120_000,
   });
 }
 

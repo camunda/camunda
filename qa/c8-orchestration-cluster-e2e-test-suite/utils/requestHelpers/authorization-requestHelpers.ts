@@ -25,3 +25,27 @@ export async function createComponentAuthorization(
   const json = await res.json();
   assertRequiredFields(json, authorizedComponentRequiredFields);
 }
+
+export async function grantUserResourceAuthorization(
+  request: APIRequestContext,
+  user: {username: string; password: string; name: string; email: string},
+) {
+  const USER_RESOURCE_AUTHORIZATION = {
+    ownerId: user.username,
+    ownerType: 'USER',
+    resourceId: '*',
+    resourceType: 'RESOURCE',
+    permissionTypes: ['READ'],
+  };
+
+  const authRes = await request.post(buildUrl('/authorizations'), {
+    headers: jsonHeaders(),
+    data: USER_RESOURCE_AUTHORIZATION,
+  });
+  expect(authRes.status()).toBe(201);
+  const authBody = await authRes.json();
+  assertRequiredFields(authBody, ['authorizationKey']);
+  return {
+    authorizationKey: authBody.authorizationKey,
+  };
+}
