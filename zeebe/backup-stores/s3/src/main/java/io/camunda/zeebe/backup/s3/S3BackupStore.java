@@ -259,14 +259,16 @@ public final class S3BackupStore implements BackupStore {
                 return manifest;
               }
             })
-        .thenComposeAsync(this::listBackupObjects)
-        .thenCombine(
-            readManifestObject(id).thenComposeAsync(this::listBackupManifestObjects),
-            (contentsObjects, manifestObjects) -> {
-              final var allObjects = new ArrayList<>(contentsObjects);
-              allObjects.addAll(manifestObjects);
-              return allObjects;
-            })
+        .thenComposeAsync(
+            manifest ->
+                listBackupObjects(manifest)
+                    .thenCombine(
+                        readManifestObject(id).thenComposeAsync(this::listBackupManifestObjects),
+                        (contentsObjects, manifestObjects) -> {
+                          final var allObjects = new ArrayList<>(contentsObjects);
+                          allObjects.addAll(manifestObjects);
+                          return allObjects;
+                        }))
         .thenComposeAsync(this::deleteBackupObjects);
   }
 
