@@ -35,7 +35,7 @@ public class JobMetricsChecker implements Task {
   private ReadonlyStreamProcessorContext processingContext;
   private volatile boolean shouldReschedule = false;
   private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
-  private long lastExportTime = -1;
+  private final long lastExportTime = -1;
 
   public JobMetricsChecker(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
@@ -60,20 +60,10 @@ public class JobMetricsChecker implements Task {
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     LOG.trace("JobMetricsChecker running...");
-
-    final long now = clock.millis();
     final JobMetricsBatchRecord record = new JobMetricsBatchRecord();
-
-    // Set the batch start time to the last export time (or now if first export)
-    if (lastExportTime > 0) {
-      record.setBatchStartTime(lastExportTime);
-    } else {
-      record.setBatchStartTime(now);
-    }
-
+    // trigger the export by writing the EXPORT command with an empty record
+    // the JobMetricsBatchExportProcessor will use the JobMetricsState to fill in the data
     taskResultBuilder.appendCommandRecord(JobMetricsBatchIntent.EXPORT, record);
-
-    lastExportTime = now;
 
     if (shouldReschedule) {
       schedule(false);
