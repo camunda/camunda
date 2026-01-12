@@ -125,6 +125,12 @@ public final class ProtocolFactory {
     registerRandomizers();
   }
 
+  public ProtocolFactory registerRandomizer(
+      final Predicate<Field> predicate, final Function<EasyRandom, ?> randomizer) {
+    randomizerRegistry.registerRandomizer(predicate, () -> randomizer.apply(random));
+    return this;
+  }
+
   /**
    * @return a stream of random records
    */

@@ -65,6 +65,7 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
             .jobKey(record.getKey())
             .partitionId(record.getPartitionId())
             .processInstanceKey(value.getProcessInstanceKey())
+            .rootProcessInstanceKey(value.getRootProcessInstanceKey())
             .elementInstanceKey(value.getElementInstanceKey())
             .processDefinitionId(value.getBpmnProcessId())
             .processDefinitionKey(value.getProcessDefinitionKey())
