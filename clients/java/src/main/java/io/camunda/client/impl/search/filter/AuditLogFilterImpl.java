@@ -21,22 +21,25 @@ import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.filter.AuditLogFilter;
+import io.camunda.client.api.search.filter.builder.AuditLogActorTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogCategoryFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogEntityTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogKeyFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogOperationTypeFilterProperty;
+import io.camunda.client.api.search.filter.builder.AuditLogResultFilterProperty;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.AuditLogActorTypeFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogCategoryFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogEntityTypeFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogKeyFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogOperationTypeFilterPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.AuditLogResultFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.util.EnumUtil;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
@@ -118,7 +121,7 @@ public class AuditLogFilterImpl
 
   @Override
   public AuditLogFilter timestamp(final OffsetDateTime value) {
-    return timestamp(b -> b.eq(OffsetDateTime.from(value)));
+    return timestamp(b -> b.eq(value));
   }
 
   @Override
@@ -143,9 +146,15 @@ public class AuditLogFilterImpl
   }
 
   @Override
-  public AuditLogFilter actorType(final AuditLogActorTypeEnum actorId) {
-    filter.setActorType(
-        EnumUtil.convert(actorId, io.camunda.client.protocol.rest.AuditLogActorTypeEnum.class));
+  public AuditLogFilter actorType(final AuditLogActorTypeEnum fn) {
+    return actorType(b -> b.eq(fn));
+  }
+
+  @Override
+  public AuditLogFilter actorType(final Consumer<AuditLogActorTypeFilterProperty> fn) {
+    final AuditLogActorTypeFilterProperty property = new AuditLogActorTypeFilterPropertyImpl();
+    fn.accept(property);
+    filter.setActorType(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -177,8 +186,14 @@ public class AuditLogFilterImpl
 
   @Override
   public AuditLogFilter result(final AuditLogResultEnum result) {
-    filter.setResult(
-        EnumUtil.convert(result, io.camunda.client.protocol.rest.AuditLogResultEnum.class));
+    return result(b -> b.eq(result));
+  }
+
+  @Override
+  public AuditLogFilter result(final Consumer<AuditLogResultFilterProperty> fn) {
+    final AuditLogResultFilterProperty property = new AuditLogResultFilterPropertyImpl();
+    fn.accept(property);
+    filter.setResult(provideSearchRequestProperty(property));
     return this;
   }
 

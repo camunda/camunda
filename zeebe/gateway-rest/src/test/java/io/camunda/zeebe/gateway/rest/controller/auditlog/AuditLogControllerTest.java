@@ -13,13 +13,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.util.AuditLogCategoryConverter;
-import io.camunda.gateway.mapping.http.util.AuditLogEntityTypeConverter;
-import io.camunda.gateway.mapping.http.util.AuditLogOperationTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogCategoryConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
 import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
+import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.AuditLogFilter;
@@ -29,7 +32,6 @@ import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -203,6 +205,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         {
             "filter": {
                 "actorId": "actor",
+                "actorType": "USER",
                 "operationType": "CREATE",
                 "entityType": "USER",
                 "result": "SUCCESS",
@@ -228,6 +231,7 @@ public class AuditLogControllerTest extends RestControllerTest {
     final var filter =
         new AuditLogFilter.Builder()
             .actorIds("actor")
+            .actorTypes(AuditLogActorType.USER.name())
             .operationTypes(
                 AuditLogOperationTypeConverter.toInternalOperationTypeAsString(
                     AuditLogOperationTypeEnum.CREATE))
@@ -237,7 +241,7 @@ public class AuditLogControllerTest extends RestControllerTest {
             .categories(
                 AuditLogCategoryConverter.toInternalCategoryAsString(
                     AuditLogCategoryEnum.DEPLOYED_RESOURCES))
-            .results(AuditLogOperationResult.SUCCESS.name())
+            .results(AuditLogResultConverter.toInternalResultAsString(AuditLogResultEnum.SUCCESS))
             .build();
     verify(auditLogServices).search(new AuditLogQuery.Builder().filter(filter).build());
   }

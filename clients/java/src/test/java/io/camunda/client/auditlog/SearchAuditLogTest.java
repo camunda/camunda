@@ -105,10 +105,10 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("processDefinitionKey");
     assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("elementInstanceKey");
     assertThat(filter.getOperationType().get$Eq().getValue()).isEqualTo("CREATE");
-    assertThat(filter.getResult().getValue()).isEqualTo("SUCCESS");
+    assertThat(filter.getResult().get$Eq().getValue()).isEqualTo("SUCCESS");
     assertThat(filter.getTimestamp().get$Eq()).isEqualTo(OffsetDateTime.MIN.toString());
     assertThat(filter.getActorId().get$Eq()).isEqualTo("actorId");
-    assertThat(filter.getActorType().getValue()).isEqualTo("CLIENT");
+    assertThat(filter.getActorType().get$Eq().getValue()).isEqualTo("CLIENT");
     assertThat(filter.getEntityType().get$Eq().getValue()).isEqualTo("BATCH");
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenantId");
     assertThat(filter.getCategory().get$Eq().getValue()).isEqualTo("ADMIN");

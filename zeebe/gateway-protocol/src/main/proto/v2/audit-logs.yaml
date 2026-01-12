@@ -100,7 +100,7 @@ components:
           type: string
           description: The ID of the actor who performed the operation.
         actorType:
-          $ref: '#/components/schemas/AuditLogActorTypeFilter'
+          $ref: '#/components/schemas/AuditLogActorTypeEnum'
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -249,7 +249,7 @@ components:
         result:
           description: The result search filter.
           allOf:
-            - $ref: '#/components/schemas/AuditLogResultFilter'
+            - $ref: '#/components/schemas/AuditLogResultFilterProperty'
         timestamp:
           description: The timestamp search filter.
           allOf:
@@ -261,7 +261,7 @@ components:
         actorType:
           description: The actor type search filter.
           allOf:
-            - $ref: '#/components/schemas/AuditLogActorTypeFilter'
+            - $ref: '#/components/schemas/AuditLogActorTypeFilterProperty'
         entityType:
           description: The entity type search filter.
           allOf:
@@ -469,7 +469,7 @@ components:
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
-    AuditLogResultFilter:
+    AuditLogResultFilterProperty:
       description: AuditLogResultEnum property with full advanced search capabilities.
       type: object
       oneOf:
@@ -478,9 +478,9 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: '#/components/schemas/AuditLogResultEnum'
-        - $ref: '#/components/schemas/AdvancedAuditLogResultFilter'
+        - $ref: '#/components/schemas/AdvancedResultFilter'
 
-    AdvancedAuditLogResultFilter:
+    AdvancedResultFilter:
       title: Advanced filter
       description: Advanced AuditLogResultEnum filter.
       type: object
@@ -504,7 +504,7 @@ components:
         $like:
           $ref: 'filters.yaml#/components/schemas/LikeFilter'
 
-    AuditLogActorTypeFilter:
+    AuditLogActorTypeFilterProperty:
       description: AuditLogActorTypeEnum property with full advanced search capabilities.
       type: object
       oneOf:
@@ -513,9 +513,9 @@ components:
           description: Matches the value exactly.
           allOf:
             - $ref: '#/components/schemas/AuditLogActorTypeEnum'
-        - $ref: '#/components/schemas/AdvancedAuditLogActorTypeFilter'
+        - $ref: '#/components/schemas/AdvancedActorTypeFilter'
 
-    AdvancedAuditLogActorTypeFilter:
+    AdvancedActorTypeFilter:
       title: Advanced filter
       description: Advanced AuditLogActorTypeEnum filter.
       type: object

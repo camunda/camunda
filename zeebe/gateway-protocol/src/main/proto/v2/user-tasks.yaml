@@ -825,7 +825,7 @@ components:
           description: The audit log operation type search filter.
         result:
           allOf:
-            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogResultFilter'
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogResultFilterProperty'
           description: The audit log result search filter.
         timestamp:
           allOf:
@@ -833,7 +833,7 @@ components:
           description: The audit log timestamp filter.
         actorType:
           allOf:
-            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeFilter'
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeFilterProperty'
           description: The actor type search filter.
         actorId:
           allOf:

@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.util;
 
+import io.camunda.gateway.mapping.http.converters.CustomConverter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import java.lang.reflect.InvocationTargetException;

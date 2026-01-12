@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mapping.http.util;
+package io.camunda.gateway.mapping.http.converters;
 
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.search.entities.DecisionInstanceEntity;

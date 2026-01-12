@@ -14,12 +14,14 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.util.AuditLogCategoryConverter;
-import io.camunda.gateway.mapping.http.util.AuditLogEntityTypeConverter;
-import io.camunda.gateway.mapping.http.util.AuditLogOperationTypeConverter;
-import io.camunda.gateway.mapping.http.util.DecisionInstanceStateConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogActorTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogCategoryConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
+import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
+import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.mapping.http.util.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
@@ -922,9 +924,8 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
     ofNullable(filter.getResult())
-        .map(io.camunda.gateway.protocol.model.AuditLogResultEnum::getValue)
-        .map(String::toUpperCase)
-        .ifPresent(builder::results);
+        .map(mapToOperations(String.class, new AuditLogResultConverter()))
+        .ifPresent(builder::resultOperations);
     ofNullable(filter.getTimestamp())
         .map(mapToOperations(OffsetDateTime.class))
         .ifPresent(builder::timestampOperations);
@@ -932,9 +933,8 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class))
         .ifPresent(builder::actorIdOperations);
     ofNullable(filter.getActorType())
-        .map(io.camunda.gateway.protocol.model.AuditLogActorTypeEnum::getValue)
-        .map(String::toUpperCase)
-        .ifPresent(builder::actorTypes);
+        .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
+        .ifPresent(builder::actorTypeOperations);
     ofNullable(filter.getEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);
@@ -1026,7 +1026,8 @@ public class SearchQueryFilterMapper {
 
     final var builder = FilterBuilders.auditLog();
     ofNullable(filter.getOperationType())
-        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()));
+        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
+        .ifPresent(builder::operationTypeOperations);
     ofNullable(filter.getResult())
         .map(mapToOperations(String.class))
         .ifPresent(builder::resultOperations);
@@ -1037,9 +1038,8 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class))
         .ifPresent(builder::actorIdOperations);
     ofNullable(filter.getActorType())
-        .map(io.camunda.gateway.protocol.model.AuditLogActorTypeEnum::getValue)
-        .map(String::toUpperCase)
-        .ifPresent(builder::actorTypes);
+        .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
+        .ifPresent(builder::actorTypeOperations);
     return builder.build();
   }
 
