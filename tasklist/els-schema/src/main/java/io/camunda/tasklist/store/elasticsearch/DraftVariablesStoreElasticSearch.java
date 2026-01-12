@@ -10,6 +10,8 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -30,12 +32,9 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -61,6 +60,8 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
+  @Autowired private ElasticsearchClient es8Client;
+
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
 
   @Autowired
@@ -83,13 +84,14 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
 
   @Override
   public long deleteAllByTaskId(final String taskId) {
-    final DeleteByQueryRequest request =
-        new DeleteByQueryRequest(draftTaskVariableTemplate.getFullQualifiedName());
-    request.setQuery(QueryBuilders.termQuery(DraftTaskVariableTemplate.TASK_ID, taskId));
+    final var query = ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.TASK_ID, taskId);
+    final var request =
+        DeleteByQueryRequest.of(
+            b -> b.index(draftTaskVariableTemplate.getFullQualifiedName()).query(query));
 
     try {
-      final BulkByScrollResponse response = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-      return response.getDeleted(); // Return the count of deleted documents
+      final var response = es8Client.deleteByQuery(request);
+      return response.deleted(); // Return the count of deleted documents
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
           String.format(

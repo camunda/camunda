@@ -14,6 +14,9 @@ import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTempla
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -27,9 +30,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.DocWriteResponse.Result;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -41,7 +41,6 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +61,8 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   @Autowired
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
+
+  @Autowired private ElasticsearchClient es8Client;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -125,15 +126,14 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
 
   private boolean insert(final UsageMetricsTUEntity entity) {
     try {
-      final IndexRequest request =
-          new IndexRequest(template.getFullQualifiedName())
-              .id(entity.getId())
-              .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+      final var request =
+          IndexRequest.of(
+              b -> b.index(template.getFullQualifiedName()).id(entity.getId()).document(entity));
 
-      final IndexResponse response = esClient.index(request, RequestOptions.DEFAULT);
-      final Result result = response.getResult();
+      final var response = es8Client.index(request);
+      final var result = response.result();
 
-      return Result.CREATED.equals(result) || Result.UPDATED.equals(result);
+      return Result.Created.equals(result) || Result.Updated.equals(result);
     } catch (final IOException e) {
       LOGGER.error(e.getMessage(), e);
       throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
