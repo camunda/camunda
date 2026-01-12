@@ -102,6 +102,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-testkit</artifactId>
       <classifier>tests</classifier>
       <type>test-jar</type>

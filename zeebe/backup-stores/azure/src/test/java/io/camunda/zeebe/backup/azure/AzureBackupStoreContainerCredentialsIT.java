@@ -22,10 +22,13 @@ import com.azure.storage.common.sas.AccountSasSignatureValues;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
+import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -162,5 +165,9 @@ public class AzureBackupStoreContainerCredentialsIT {
     store.save(backup).join();
     final var status = store.getStatus(backup.id()).join();
     assertThat(status.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
+  }
+
+  private static Stream<? extends Arguments> provideBackups() throws Exception {
+    return TestBackupProvider.provideArguments();
   }
 }
