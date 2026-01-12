@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,13 +53,12 @@ public class UsageMetricsCheckerTest {
     recordCaptor = ArgumentCaptor.forClass(UnifiedRecordValue.class);
 
     checker = new UsageMetricsChecker(Duration.ofMillis(1), mockClock);
-    checker.setProcessingContext(mockProcessingContext);
   }
 
   @Test
-  public void shouldScheduleImmediately() {
+  public void shouldScheduleImmediatelyOnRecovered() {
     // when
-    checker.schedule(true);
+    checker.onRecovered(mockProcessingContext);
 
     // then
     verify(mockProcessingContext).getScheduleService();
@@ -70,19 +69,25 @@ public class UsageMetricsCheckerTest {
   public void shouldScheduleToExportedInterval() {
     // given
     when(mockClock.millis()).thenReturn(1L);
+    // Use lifecycle method to set up the checker
+    checker.onRecovered(mockProcessingContext);
+    clearInvocations(mockProcessingScheduleService);
 
-    // when
-    checker.schedule(false);
+    // when - execute to trigger the normal (non-immediate) scheduling
+    checker.execute(mockTaskResultBuilder);
 
-    // then
-    verify(mockProcessingContext).getScheduleService();
+    // then - schedule service is stored during onRecovered, so context is not accessed again
     verify(mockProcessingScheduleService).runAt(2L, checker);
   }
 
   @Test
-  public void shouldCreateMetricsRecordAndNotReschedule() {
+  public void shouldCreateMetricsRecordAndNotRescheduleWhenPaused() {
     // given
     when(mockClock.millis()).thenReturn(1L);
+    // Initialize then pause (so shouldReschedule = false)
+    checker.onRecovered(mockProcessingContext);
+    checker.onPaused();
+    clearInvocations(mockProcessingScheduleService);
 
     // when
     checker.execute(mockTaskResultBuilder);
@@ -90,7 +95,6 @@ public class UsageMetricsCheckerTest {
     // then
     verify(mockTaskResultBuilder)
         .appendCommandRecord(eq(UsageMetricIntent.EXPORT), recordCaptor.capture());
-    verify(mockProcessingContext, never()).getScheduleService();
     verify(mockProcessingScheduleService, never()).runAt(anyLong(), same(checker));
     assertThat(recordCaptor.getValue())
         .isEqualTo(new UsageMetricRecord().setIntervalType(IntervalType.ACTIVE));
@@ -100,34 +104,39 @@ public class UsageMetricsCheckerTest {
   public void shouldCreateMetricsRecordAndReschedule() {
     // given
     when(mockClock.millis()).thenReturn(1L);
+    // Use lifecycle method to set up the checker
+    checker.onRecovered(mockProcessingContext);
+    clearInvocations(mockProcessingScheduleService);
 
     // when
-    checker.setShouldReschedule(true);
     checker.execute(mockTaskResultBuilder);
 
     // then
     verify(mockTaskResultBuilder)
         .appendCommandRecord(eq(UsageMetricIntent.EXPORT), recordCaptor.capture());
-    verify(mockProcessingContext).getScheduleService();
     verify(mockProcessingScheduleService).runAt(2, checker);
     assertThat(recordCaptor.getValue())
         .isEqualTo(new UsageMetricRecord().setIntervalType(IntervalType.ACTIVE));
   }
 
   @Test
-  public void shouldCancelPreviousTaskWhenRescheduled() {
+  public void shouldCancelPreviousTaskWhenResumed() {
     // given
     when(mockClock.millis()).thenReturn(1L);
     final var task1 = mock(ScheduledTask.class);
-    when(mockProcessingScheduleService.runAt(2, checker)).thenReturn(task1);
-    checker.schedule(false);
+    when(mockProcessingScheduleService.runAt(2L, checker)).thenReturn(task1);
+    // Use lifecycle methods to set up and execute
+    checker.onRecovered(mockProcessingContext);
+    clearInvocations(mockProcessingScheduleService);
+    // Execute to schedule at normal interval
+    checker.execute(mockTaskResultBuilder);
+    clearInvocations(mockProcessingScheduleService);
 
-    // when
-    checker.schedule(true);
+    // when - resume triggers immediate scheduling
+    checker.onPaused();
+    checker.onResumed();
 
     // then
-    verify(mockProcessingContext, times(2)).getScheduleService();
-    verify(mockProcessingScheduleService).runAt(2, checker);
     verify(mockProcessingScheduleService).runAtAsync(0, checker);
     verify(task1).cancel();
   }
