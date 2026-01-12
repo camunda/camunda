@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.jobmetrics;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobMetricsState;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
@@ -32,10 +33,10 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
 
   public JobMetricsBatchExportProcessor(
       final JobMetricsState jobMetricsState,
-      final StateWriter stateWriter,
+      final Writers writers,
       final KeyGenerator keyGenerator) {
     this.jobMetricsState = jobMetricsState;
-    this.stateWriter = stateWriter;
+    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
   }
 

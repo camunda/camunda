@@ -19,6 +19,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ValidatorsCfg validators = new ValidatorsCfg();
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
+  private final JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
@@ -152,6 +153,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
         .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
+        .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())

@@ -32,6 +32,7 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
+  public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
@@ -85,6 +86,8 @@ public final class EngineConfiguration {
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
 
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
+
+  private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
 
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
@@ -308,6 +311,15 @@ public final class EngineConfiguration {
   public EngineConfiguration setUsageMetricsExportInterval(
       final Duration usageMetricsExportInterval) {
     this.usageMetricsExportInterval = usageMetricsExportInterval;
+    return this;
+  }
+
+  public Duration getJobMetricsExportInterval() {
+    return jobMetricsExportInterval;
+  }
+
+  public EngineConfiguration setJobMetricsExportInterval(final Duration jobMetricsExportInterval) {
+    this.jobMetricsExportInterval = jobMetricsExportInterval;
     return this;
   }
 
