@@ -15,7 +15,9 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.IdentityInitializationException;
+import io.camunda.security.validation.TenantValidator;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
@@ -46,7 +48,9 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
+import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TlsConfigUtil;
@@ -477,13 +481,18 @@ public final class SystemContext {
   // actually initializing the entities will be done in IdentitySetupInitializer.
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
+    final IdentifierValidator identifierValidator =
+        new IdentifierValidator(securityConfiguration.getCompiledIdValidationPattern());
     final AuthorizationConfigurer authorizationConfigurer =
-        new AuthorizationConfigurer(
-            new AuthorizationValidator(securityConfiguration.getCompiledIdValidationPattern()));
+        new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
+    final TenantConfigurer tenantConfigurer =
+        new TenantConfigurer(new TenantValidator(identifierValidator));
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
         authorizationConfigurer.configureEntities(
             securityConfiguration.getInitialization().getAuthorizations());
+    final Either<List<String>, List<TenantRecord>> configuredTenants =
+        tenantConfigurer.configureEntities(securityConfiguration.getInitialization().getTenants());
 
     // TODO: after adding more entity types, change this, so it accounts for all violations all
     //   together.
@@ -491,6 +500,13 @@ public final class SystemContext {
         (violations) -> {
           throw new IdentityInitializationException(
               "Cannot initialize configured entities: %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+        });
+
+    configuredTenants.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Cannot initialize configured tenants: %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
   }

@@ -30,24 +30,26 @@ public class IdentifierValidator {
   private static final int MAX_LENGTH = 256;
   private static final int TENANT_ID_MAX_LENGTH = 31;
 
-  public static void validateId(
-      final String id,
-      final String propertyName,
-      final List<String> violations,
-      final Pattern idPattern) {
-    validateId(id, propertyName, violations, idPattern, s -> false);
+  private final Pattern idPattern;
+
+  public IdentifierValidator(final Pattern idPattern) {
+    this.idPattern = idPattern;
   }
 
-  public static void validateId(
+  public void validateId(
+      final String id, final String propertyName, final List<String> violations) {
+    validateId(id, propertyName, violations, s -> false);
+  }
+
+  public void validateId(
       final String id,
       final String propertyName,
       final List<String> violations,
-      final Pattern idPattern,
       final Function<String, Boolean> alternativeCheck) {
     validateIdInternal(id, propertyName, violations, idPattern, alternativeCheck, MAX_LENGTH);
   }
 
-  public static void validateTenantId(
+  public void validateTenantId(
       final String id,
       final List<String> violations,
       final Function<String, Boolean> alternativeCheck) {
