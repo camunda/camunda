@@ -17,15 +17,14 @@ import java.util.concurrent.CompletableFuture;
  */
 public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
 
-  private final NodeIdProvider nodeIdProvider;
+  private final NodeInstance nodeInstance;
 
-  public NodeIdBasedDataDirectoryProvider(final NodeIdProvider nodeIdProvider) {
-    this.nodeIdProvider = nodeIdProvider;
+  public NodeIdBasedDataDirectoryProvider(final NodeInstance nodeInstance) {
+    this.nodeInstance = nodeInstance;
   }
 
   @Override
   public CompletableFuture<Path> initialize(final Path baseDataDirectory) {
-    final NodeInstance nodeInstance = nodeIdProvider.currentNodeInstance();
     if (nodeInstance == null) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("Node instance is not available"));

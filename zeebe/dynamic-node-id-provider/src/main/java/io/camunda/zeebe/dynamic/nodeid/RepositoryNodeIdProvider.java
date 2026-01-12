@@ -45,6 +45,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
   private VersionMappings knownVersionMappings = VersionMappings.empty();
+  private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
+      new CompletableFuture<>();
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -99,6 +101,11 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   @Override
+  public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
+    return previousNodeGracefullyShutdown;
+  }
+
+  @Override
   public void setMembers(final Set<Member> currentMembers) {
     executor.execute(() -> updateVersionMappings(currentMembers));
   }
@@ -143,8 +150,13 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
    * the other operations (including health checks)
    */
   private void acquireInitialLease(final int clusterSize) {
+    if (currentLease != null) {
+      throw new IllegalStateException(
+          "Expected to acquire initial lease, but lease is already acquired: " + currentLease);
+    }
     var i = 0;
     var retryRound = 0;
+    NodeIdRepository.StoredLease storedLease = null;
     while (currentLease == null) {
       if (i % clusterSize == 0) {
         retryRound++;
@@ -162,12 +174,16 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         }
       }
       final var nodeId = i++ % clusterSize;
-      final var storedLease = nodeIdRepository.getLease(nodeId);
+      storedLease = nodeIdRepository.getLease(nodeId);
       currentLease = tryAcquireInitialLease(storedLease);
     }
     if (currentLease != null) {
       LOG.info(
           "Acquired lease w/ nodeId={}.  {}", currentLease.lease().nodeInstance(), currentLease);
+      // storedLease should always be non-null as currentLease is not null.
+      if (storedLease != null) {
+        previousNodeGracefullyShutdown.complete(!storedLease.isInitialized());
+      }
       backoff.reset();
     } else {
       throw new IllegalStateException("Failed to acquire a lease");

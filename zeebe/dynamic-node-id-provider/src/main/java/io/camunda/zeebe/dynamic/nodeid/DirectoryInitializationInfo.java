@@ -1,0 +1,32 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.dynamic.nodeid;
+
+/**
+ * @param initializedAt epoch in milliseconds when the directory was initialized
+ * @param version the version of this directory
+ * @param initializedFrom the version from which this directory was initialized, or null if this is
+ *     the first initialization
+ */
+public record DirectoryInitializationInfo(
+    long initializedAt, Version version, Version initializedFrom) {
+  public DirectoryInitializationInfo {
+    if (initializedAt < 0L) {
+      throw new IllegalArgumentException("initializedAt cannot be negative");
+    }
+    if (version == null) {
+      throw new IllegalArgumentException("version cannot be null");
+    }
+  }
+
+  static DirectoryInitializationInfo copiedFrom(
+      final Version currentVersion, final Version copiedFromVersion) {
+    return new DirectoryInitializationInfo(
+        System.currentTimeMillis(), currentVersion, copiedFromVersion);
+  }
+}

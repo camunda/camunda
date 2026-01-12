@@ -30,6 +30,20 @@ public interface NodeIdProvider extends AutoCloseable {
   CompletableFuture<Boolean> isValid();
 
   /**
+   * Indicates whether the previous node instance holding this node's identity shut down gracefully.
+   *
+   * <p>The information is available once the provider has been initialized and has determined the
+   * shutdown state of the previous holder of the lease for this node ID. Implementations may always
+   * return {@code true} when there is no prior holder (for example, for static node IDs) or when
+   * graceful shutdown is guaranteed by design.
+   *
+   * @return a {@link CompletableFuture} completed with {@code true} if the previous node instance
+   *     gracefully released its lease before this node started, or {@code false} if it crashed, its
+   *     lease expired, or the provider cannot confirm a graceful shutdown
+   */
+  CompletableFuture<Boolean> previousNodeGracefullyShutdown();
+
+  /**
    * Sets the current known cluster members.
    *
    * @param currentMembers the current members of the cluster
@@ -69,6 +83,12 @@ public interface NodeIdProvider extends AutoCloseable {
 
       @Override
       public CompletableFuture<Boolean> isValid() {
+        return CompletableFuture.completedFuture(true);
+      }
+
+      @Override
+      public CompletableFuture<Boolean> previousNodeGracefullyShutdown() {
+        // not important for static node assignment
         return CompletableFuture.completedFuture(true);
       }
 
