@@ -24,6 +24,8 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.time.Duration;
@@ -336,6 +338,27 @@ public class BackupRequestHandlerTest extends GatewayTest {
     assertThat(backups)
         .extracting(BackupStatus::status)
         .containsExactly(State.COMPLETED, State.IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldGetCheckpointState() {
+    // given
+    brokerClient.registerHandler(
+        io.camunda.zeebe.backup.client.api.BrokerCheckpointStateRequest.class,
+        request -> {
+          final var response = new CheckpointStateResponse();
+          response.setRanges(List.of(new PartitionBackupRange(1, 1, 10, java.util.Set.of(5L))));
+          return new BrokerResponse<>(response);
+        });
+
+    // when
+    final var future = requestHandler.getCheckpointState();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var state = future.toCompletableFuture().join();
+    assertThat(state.getRanges()).hasSize(1);
+    assertThat(state.getRanges().getFirst().startId()).isEqualTo(1L);
   }
 
   @Test

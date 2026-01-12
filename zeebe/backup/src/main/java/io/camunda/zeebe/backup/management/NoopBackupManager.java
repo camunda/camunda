@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -46,6 +47,12 @@ public class NoopBackupManager implements BackupManager {
 
   @Override
   public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupRange>> listBackupRanges() {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }

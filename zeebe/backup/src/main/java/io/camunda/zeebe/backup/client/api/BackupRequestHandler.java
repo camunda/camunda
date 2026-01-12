@@ -398,8 +398,11 @@ public final class BackupRequestHandler implements BackupApi {
     final var backupStates =
         responses.stream().flatMap(r -> r.getBackupStates().stream()).collect(Collectors.toSet());
 
+    final var ranges = responses.stream().flatMap(r -> r.getRanges().stream()).toList();
+
     response.setCheckpointStates(checkpointStates);
     response.setBackupStates(backupStates);
+    response.setRanges(ranges);
     return response;
   }
 

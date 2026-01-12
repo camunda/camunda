@@ -37,6 +37,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -692,6 +693,7 @@ final class BackupEndpointTest {
       final var stateResponse = new CheckpointStateResponse();
       stateResponse.setCheckpointStates(
           Set.of(new PartitionCheckpointState(1, 1L, CheckpointType.MARKER, 20L, 10L)));
+      stateResponse.setRanges(List.of(new PartitionBackupRange(1, 1, 10, Set.of())));
 
       when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
 

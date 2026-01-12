@@ -9,8 +9,10 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
+import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -194,6 +196,7 @@ final class BackupServiceImpl {
 
   private void confirmBackup(final InProgressBackup inProgressBackup) {
     final var checkpointId = inProgressBackup.id().checkpointId();
+    LOG.info("Confirming backup for checkpoint {}", checkpointId);
     final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
     final var checkpointType = inProgressBackup.backupDescriptor().checkpointType();
     final var confirmationWritten =
@@ -378,6 +381,24 @@ final class BackupServiceImpl {
                       return null;
                     }));
     return availableBackupsFuture;
+  }
+
+  ActorFuture<Collection<BackupRange>> listBackupRanges(
+      final int partitionId, final ConcurrencyControl executor) {
+    final ActorFuture<Collection<BackupRange>> future = executor.createFuture();
+    executor.run(
+        () ->
+            backupStore
+                .rangeMarkers(partitionId)
+                .whenComplete(
+                    (markers, throwable) -> {
+                      if (throwable != null) {
+                        future.completeExceptionally(throwable);
+                      } else {
+                        future.complete(BackupRanges.fromMarkers(markers));
+                      }
+                    }));
+    return future;
   }
 
   void createFailedBackup(

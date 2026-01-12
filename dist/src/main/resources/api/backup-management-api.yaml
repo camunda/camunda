@@ -595,6 +595,11 @@ components:
             description: List of partition backup states
             items:
               $ref: '#/components/schemas/PartitionBackupState'
+          ranges:
+            type: array
+            description: List of partition ranges
+            items:
+              $ref: '#/components/schemas/PartitionBackupRange'
 
     PartitionCheckpointState:
       title: Partition Checkpoint State
@@ -643,6 +648,27 @@ components:
           type: integer
           format: int64
           example: 1765208671134
+
+    PartitionBackupRange:
+      title: Partition Backup Range
+      description: Information about one backup range for a partition.
+      type: object
+      properties:
+        partitionId:
+          allOf:
+            - $ref: '#/components/schemas/PartitionId'
+        start:
+          allOf:
+            - $ref: '#/components/schemas/CheckpointId'
+        end:
+          allOf:
+            - $ref: '#/components/schemas/CheckpointId'
+        missingCheckpoints:
+          type: array
+          description: List of missing checkpoint IDs within the backup range
+          items:
+            allOf:
+              - $ref: '#/components/schemas/CheckpointId'
 
     BackupType:
       title: Backup Type
