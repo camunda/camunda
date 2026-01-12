@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
-// TODO add authorization checks with https://github.com/camunda/camunda/issues/41771
 @ExcludeAuthorizationCheck
 public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<HistoryDeletionRecord> {
 
