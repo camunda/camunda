@@ -39,6 +39,7 @@
 /.github/workflows/ci*                                   @camunda/monorepo-devops-team
 /.github/workflows/commitlint.yml                        @camunda/monorepo-devops-team
 /.github/workflows/dispatch-release*                     @camunda/monorepo-devops-team
+/.github/workflows/docs*                                 @camunda/monorepo-devops-team
 /.github/workflows/issue-add-support-label.yml           @camunda/monorepo-devops-team
 /.github/workflows/labeler.yml                           @camunda/monorepo-devops-team
 /.github/workflows/preview-env*                          @camunda/monorepo-devops-team

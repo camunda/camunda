@@ -1,0 +1,123 @@
+# description: Build and deploy Docusaurus documentation previews for pull requests
+# type: preview
+# owner: @camunda/monorepo-devops-team
+---
+name: Docs PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  pull_request_target:
+    types: [closed] # triggers cleanup when the PR is being closed
+
+# Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  # renovate: datasource=node-version depName=node
+  NODE_VERSION: '24.6.0'
+
+jobs:
+  # Detect changes to avoid unnecessary builds
+  detect-changes:
+    if: github.event.action != 'closed'
+    outputs:
+      docs-changes: ${{ steps.filter.outputs.docs-changes }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Detect changes against the base branch
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
+        id: filter
+
+  build-preview:
+    if: |
+      github.event.action != 'closed' && 
+      needs.detect-changes.outputs.docs-changes == 'true'
+    name: Build Documentation Preview
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: monorepo-docs-site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: monorepo-docs-site
+        run: npm ci
+
+      - name: Build documentation with PR preview base URL
+        working-directory: monorepo-docs-site
+        run: npm run build
+        env:
+          BASE_URL: /camunda/pr-preview/pr-${{ github.event.pull_request.number }}/
+
+      - name: Deploy PR Preview
+        uses: rossjrw/pr-preview-action@f31d5aa7b364955ea86228b9dcd346dc3f29c408 # v1.4.7
+        with:
+          source-dir: ./monorepo-docs-site/build/
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          action: auto
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    name: Cleanup PR Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Cleanup PR Preview
+        uses: rossjrw/pr-preview-action@f31d5aa7b364955ea86228b9dcd346dc3f29c408 # v1.4.7
+        with:
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          action: remove
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

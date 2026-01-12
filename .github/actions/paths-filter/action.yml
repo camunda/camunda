@@ -201,6 +201,15 @@ outputs:
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-client-components.outputs.client-components-change == 'true'
       }}
+  docs-changes:
+    description: Output whether Documentation tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-docs.outputs.docs-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -341,6 +350,16 @@ runs:
       filters: |
         client-components-change:
           - 'client-components/**'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-docs
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        docs-change:
+          - 'docs/monorepo-docs/**'
+          - 'monorepo-docs-site/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch
