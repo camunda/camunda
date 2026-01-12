@@ -122,7 +122,10 @@
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 /zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 
-# Identity
+###############
+## Identity  ##
+###############
+
 /identity/        @camunda/identity
 /authentication/  @camunda/identity
 /security/        @camunda/identity
@@ -135,3 +138,10 @@
 # Performance + Load testing
 /load-tests/ @camunda/reliability-testing
 /.github/workflows/*load-test*.yml @camunda/reliability-testing
+
+#################
+## Agentic AI  ##
+#################
+
+# MCP gateway
+/gateways/gateway-mcp @camunda/connectors-agentic-ai
