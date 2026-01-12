@@ -653,7 +653,7 @@ public final class ConditionalBoundaryEventTriggerTest {
 
     final long taskInstanceKey = awaitElementInstance(processInstanceKey, TASK_ID);
 
-    // when (change variable z; since there is no filter, evaluation must run and trigger)
+    // when (change variable y; since there is no filter, evaluation must run and trigger)
     engine.variables().ofScope(taskInstanceKey).withDocument(Map.of("x", 11)).update();
     engine.variables().ofScope(taskInstanceKey).withDocument(Map.of("y", 0)).update();
 
@@ -1148,7 +1148,7 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .limit(1))
         .hasSize(1);
 
-    // then - inner boundary not triggered (condition false)
+    // then - inner boundary not triggered (never evaluated)
     assertThat(
             RecordingExporter.records()
                 .between(
@@ -1459,11 +1459,13 @@ public final class ConditionalBoundaryEventTriggerTest {
         .hasSize(1);
 
     // assert process completed
-    RecordingExporter.processInstanceRecords()
-        .withProcessInstanceKey(piKey)
-        .withElementId(processId)
-        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .getFirst();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(piKey)
+                .withElementId(processId)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .exists())
+        .isEqualTo(true);
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
@@ -1471,7 +1473,7 @@ public final class ConditionalBoundaryEventTriggerTest {
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(ProcessInstanceRecordValue::getElementId)
-        .containsExactlyInAnyOrder(SUBPROCESS_ID, INNER_TASK_ID)
+        .containsExactly(INNER_TASK_ID, SUBPROCESS_ID)
         .hasSize(2);
   }
 
