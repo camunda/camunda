@@ -658,6 +658,8 @@ class RdbmsExporterIT {
     final var processInstanceRecord = getProcessInstanceStartedRecord(1L);
     final var processInstanceKey =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
+    final var rootProcessInstanceKey =
+        getProcessInstanceRootProcessInstanceKey(processInstanceRecord);
     exporter.export(processInstanceRecord);
     final var elementRecord = getElementActivatingRecord(1L, processInstanceKey);
     final var elementInstanceKey = elementRecord.getKey();
@@ -667,7 +669,11 @@ class RdbmsExporterIT {
     final var incidentKey = 42L;
     final var incidentRecord =
         getIncidentRecord(
-            IncidentIntent.CREATED, incidentKey, processInstanceKey, elementInstanceKey);
+            IncidentIntent.CREATED,
+            incidentKey,
+            processInstanceKey,
+            rootProcessInstanceKey,
+            elementInstanceKey);
     exporter.export(incidentRecord);
 
     // then
@@ -675,18 +681,26 @@ class RdbmsExporterIT {
     assertThat(element).isNotEmpty();
     assertThat(element.get().incidentKey()).isEqualTo(incidentKey);
     assertThat(element.get().hasIncident()).isTrue();
+
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance).isNotEmpty();
     assertThat(processInstance.get().hasIncident()).isTrue();
+
     final var incident = rdbmsService.getIncidentReader().findOne(incidentKey);
     assertThat(incident).isNotEmpty();
     assertThat(incident.get().incidentKey()).isEqualTo(incidentKey);
     assertThat(incident.get().state()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incident.get().processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(incident.get().rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
 
     // given
     final var incidentResolvedRecord =
         getIncidentRecord(
-            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, elementInstanceKey);
+            IncidentIntent.RESOLVED,
+            incidentKey,
+            processInstanceKey,
+            rootProcessInstanceKey,
+            elementInstanceKey);
 
     // when
     exporter.export(incidentResolvedRecord);
@@ -696,12 +710,16 @@ class RdbmsExporterIT {
     assertThat(element2).isNotEmpty();
     assertThat(element2.get().incidentKey()).isNull();
     assertThat(element2.get().hasIncident()).isFalse();
+
     final var processInstance2 =
         rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance2).isNotEmpty();
     assertThat(processInstance2.get().hasIncident()).isFalse();
+
     final var incident2 = rdbmsService.getIncidentReader().findOne(incidentKey).orElseThrow();
     assertThat(incident2.state()).isEqualTo(IncidentState.RESOLVED);
+    assertThat(incident2.processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(incident2.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
   }
 
   @Test
