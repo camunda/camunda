@@ -771,9 +771,9 @@
       <testResource>
         <filtering>false</filtering>
         <directory>src/it/resources</directory>
-        <includes>
-          <include>**/*</include>
-        </includes>
+        <excludes>
+          <exclude>**/*.properties</exclude>
+        </excludes>
       </testResource>
       <testResource>
         <directory>src/test/resources</directory>
