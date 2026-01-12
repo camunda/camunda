@@ -22,6 +22,7 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
 import io.camunda.security.auth.condition.SingleAuthorizationCondition;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -55,7 +56,7 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
 
     final var authorizationSearchQuery =
         Optional.of(resourceAccessChecks.authorizationCheck())
-            .map(this::applyAuthorizationChecks)
+            .map(check -> applyAuthorizationChecks(check, resourceAccessChecks.authentication()))
             .orElseThrow(
                 () -> {
                   final var message =
@@ -81,7 +82,8 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
         List.of(filterSearchQuery, authorizationSearchQuery, tenantSearchQuery));
   }
 
-  private SearchQuery applyAuthorizationChecks(final AuthorizationCheck authorizationCheck) {
+  private SearchQuery applyAuthorizationChecks(
+      final AuthorizationCheck authorizationCheck, final CamundaAuthentication authentication) {
     if (!authorizationCheck.enabled()) {
       return matchAll();
     }
@@ -89,26 +91,40 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     final var condition = authorizationCheck.authorizationCondition();
     return switch (condition) {
       case final SingleAuthorizationCondition single ->
-          applyAuthorizationCheck(single.authorization());
-      case final AnyOfAuthorizationCondition anyOf -> applyAnyOfAuthorizationCheck(anyOf);
+          applyAuthorizationCheck(single.authorization(), authentication);
+      case final AnyOfAuthorizationCondition anyOf ->
+          applyAnyOfAuthorizationCheck(anyOf, authentication);
       default ->
           throw new IllegalStateException(
               "Unsupported AuthorizationCondition type: " + condition.getClass().getSimpleName());
     };
   }
 
-  private SearchQuery applyAuthorizationCheck(final Authorization<?> authorization) {
-    if (!authorization.hasAnyResourceIds()) {
-      return matchNone();
+  private SearchQuery applyAuthorizationCheck(
+      final Authorization<?> authorization, final CamundaAuthentication authentication) {
+    if (authorization.hasAnyResourceIds()) {
+      return toAuthorizationCheckSearchQuery(authorization);
     }
 
-    return toAuthorizationCheckSearchQuery(authorization);
+    if (authorization.hasAnyResourcePropertyNames()) {
+      if (authentication == null) {
+        LOG.warn(
+            "Property-based authorization requires authentication context, "
+                + "but none was provided; returning a match-none query.");
+        return matchNone();
+      }
+
+      return toAuthorizationCheckSearchQueryByProperties(authorization, authentication);
+    }
+
+    return matchNone();
   }
 
-  private SearchQuery applyAnyOfAuthorizationCheck(final AnyOfAuthorizationCondition anyOf) {
+  private SearchQuery applyAnyOfAuthorizationCheck(
+      final AnyOfAuthorizationCondition anyOf, final CamundaAuthentication authentication) {
     final var queries =
         anyOf.authorizations().stream()
-            .map(this::applyAuthorizationCheck)
+            .map(auth -> applyAuthorizationCheck(auth, authentication))
             .filter(Objects::nonNull)
             .filter(q -> !(q.queryOption() instanceof SearchMatchNoneQuery))
             .toList();
@@ -160,6 +176,14 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   }
 
   protected abstract SearchQuery toAuthorizationCheckSearchQuery(Authorization<?> authorization);
+
+  protected SearchQuery toAuthorizationCheckSearchQueryByProperties(
+      Authorization<?> authorization, final CamundaAuthentication authentication) {
+    LOG.warn(
+        "Authorization check by resource properties is not supported by '{}'; returning match-none query.",
+        this.getClass().getSimpleName());
+    return matchNone();
+  }
 
   @Override
   public IndexDescriptor getIndex() {
