@@ -241,6 +241,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       0L, // formKey (adjusted to match expected value)
                       2L, // processDefinitionId
                       1L, // processInstanceId
+                      37L, // rootProcessInstanceId
                       3L, // elementInstanceId
                       "t", // tenantId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // dueDate
@@ -307,6 +308,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 0L,
                 2L,
                 1L,
+                37L,
                 3L,
                 "t",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),

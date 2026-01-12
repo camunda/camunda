@@ -27,6 +27,7 @@ public class UserTaskEntityMapper {
         dbModel.formKey(),
         dbModel.processDefinitionKey(),
         dbModel.processInstanceKey(),
+        dbModel.rootProcessInstanceKey(),
         dbModel.elementInstanceKey(),
         dbModel.tenantId(),
         dbModel.dueDate(),

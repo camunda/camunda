@@ -402,9 +402,13 @@ class RdbmsExporterIT {
     exporter.export(userTaskRecord);
 
     // then
-    final var key = ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
+    final UserTaskRecordValue recordValue = (UserTaskRecordValue) userTaskRecord.getValue();
+    final var key = recordValue.getUserTaskKey();
     final var userTask = rdbmsService.getUserTaskReader().findOne(key);
     assertThat(userTask).isNotEmpty();
+    assertThat(userTask.get().processInstanceKey()).isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(userTask.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
   }
 
   @Test
