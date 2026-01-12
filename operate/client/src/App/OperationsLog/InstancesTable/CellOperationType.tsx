@@ -9,7 +9,7 @@
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {Link} from '@carbon/react';
 import {OperationLogName} from './styled';
-import {ClassicBatch} from '@carbon/react/icons';
+import {BatchJob} from '@carbon/react/icons';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 
 type Props = {
@@ -21,7 +21,7 @@ const CellOperationType: React.FC<Props> = ({item}) => {
     <>
       <OperationLogName>
         {item.entityType === 'BATCH' && item.batchOperationType ? (
-          <ClassicBatch />
+          <BatchJob />
         ) : undefined}
         {spaceAndCapitalize(item.operationType)}&nbsp;
         {spaceAndCapitalize(item.entityType)}
@@ -31,7 +31,7 @@ const CellOperationType: React.FC<Props> = ({item}) => {
       </OperationLogName>
       {item.entityType !== 'BATCH' && item.batchOperationKey ? (
         <OperationLogName>
-          <ClassicBatch />
+          <BatchJob />
           <Link
             href={`/batch-operations/${item.batchOperationKey}`}
             target="_self"
