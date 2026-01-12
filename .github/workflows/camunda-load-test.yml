@@ -31,7 +31,7 @@ on:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
       platform-helm-values:
-        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which is deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set console.resources.memory=2Gi'
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
         type: string
         default: ""
         required: false
@@ -78,7 +78,7 @@ on:
         type: string
         required: false
       platform-helm-values:
-        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which is deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set console.resources.memory=2Gi'
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
         type: string
         default: ""
         required: false
