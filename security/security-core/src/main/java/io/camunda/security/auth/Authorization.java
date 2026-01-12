@@ -117,6 +117,17 @@ public record Authorization<T>(
         transitive());
   }
 
+  public Authorization<T> with(final Set<String> resourcePropertyNames) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        resourceIds(),
+        resourceIdSupplier(),
+        resourcePropertyNames,
+        condition(),
+        transitive());
+  }
+
   public Authorization<T> withCondition(final Predicate<T> condition) {
     return new Authorization<>(
         resourceType(),

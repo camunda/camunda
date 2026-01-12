@@ -19,6 +19,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,6 +101,85 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.allowed()).isFalse();
     assertThat(result.wildcard()).isFalse();
     assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  @Test
+  void shouldResolveResourceAccessForAllPropertyNames() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            a ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourcePropertyNames(Set.of("propA", "propB", "propC")));
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(
+            List.of(
+                AuthorizationScope.property("propA"),
+                AuthorizationScope.property("propB"),
+                AuthorizationScope.property("propC")));
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourceType()).isEqualTo(authorization.resourceType());
+    assertThat(result.authorization().permissionType()).isEqualTo(authorization.permissionType());
+    assertThat(result.authorization().resourcePropertyNames())
+        .containsExactlyInAnyOrder("propA", "propB", "propC");
+  }
+
+  @Test
+  void shouldResolvePartialResourceAccessByPropertyNames() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            a ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourcePropertyNames(Set.of("propA", "propB", "propC")));
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of(AuthorizationScope.property("propB")));
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames()).containsExactly("propB");
+  }
+
+  @Test
+  void shouldDenyResourceAccessByPropertyNamesWhenNoneRetrieved() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            a -> a.processDefinition().readProcessDefinition().authorizedByProperty("propB"));
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of());
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames()).isEmpty();
   }
 
   @Test

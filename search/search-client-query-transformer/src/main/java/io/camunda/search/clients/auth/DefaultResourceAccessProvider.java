@@ -15,9 +15,11 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
@@ -30,10 +32,23 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   @Override
   public <T> ResourceAccess resolveResourceAccess(
       final CamundaAuthentication authentication, final Authorization<T> authorization) {
+    if (authorization.hasAnyResourcePropertyNames()) {
+      return resolveResourceAccessByPropertyNames(authentication, authorization);
+    }
+
+    return resolveResourceAccessByResourceId(authentication, authorization);
+  }
+
+  private <T> ResourceAccess resolveResourceAccessByResourceId(
+      final CamundaAuthentication authentication, final Authorization<T> authorization) {
 
     // fetch the authorization entities for the authenticated user
     final var authorizationScopes =
         authorizationChecker.retrieveAuthorizedAuthorizationScopes(authentication, authorization);
+
+    if (authorizationScopes.isEmpty()) {
+      return ResourceAccess.denied(authorization);
+    }
 
     if (authorizationScopes.contains(WILDCARD)) {
       // no authorization check required, user can access
@@ -41,13 +56,42 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
       return ResourceAccess.wildcard(authorization.with(WILDCARD.getResourceId()));
     }
 
-    if (authorizationScopes.isEmpty()) {
+    final var authorizedResourceIds =
+        authorizationScopes.stream()
+            .filter(scope -> scope.getMatcher() == AuthorizationResourceMatcher.ID)
+            .map(AuthorizationScope::getResourceId)
+            .distinct()
+            .toList();
+
+    if (authorizedResourceIds.isEmpty()) {
       return ResourceAccess.denied(authorization);
     }
 
-    final var resourceIds =
-        authorizationScopes.stream().map(AuthorizationScope::getResourceId).distinct().toList();
-    return ResourceAccess.allowed(authorization.with(resourceIds));
+    return ResourceAccess.allowed(authorization.with(authorizedResourceIds));
+  }
+
+  private <T> ResourceAccess resolveResourceAccessByPropertyNames(
+      final CamundaAuthentication authentication, final Authorization<T> authorization) {
+
+    final var authorizedResourcePropertyNames =
+        authorizationChecker
+            .retrieveAuthorizedAuthorizationScopes(authentication, authorization)
+            .stream()
+            .filter(scope -> scope.getMatcher() == AuthorizationResourceMatcher.PROPERTY)
+            .map(AuthorizationScope::getResourcePropertyName)
+            .collect(Collectors.toSet());
+
+    final var resolvedResourcePropertyNames =
+        authorization.resourcePropertyNames().stream()
+            .filter(authorizedResourcePropertyNames::contains)
+            .collect(Collectors.toSet());
+    final var resolvedAuthorization = authorization.with(resolvedResourcePropertyNames);
+
+    if (resolvedResourcePropertyNames.isEmpty()) {
+      return ResourceAccess.denied(resolvedAuthorization);
+    }
+
+    return ResourceAccess.allowed(resolvedAuthorization);
   }
 
   @Override
