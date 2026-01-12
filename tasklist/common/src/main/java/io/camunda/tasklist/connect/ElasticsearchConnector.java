@@ -296,7 +296,9 @@ public class ElasticsearchConnector {
     try {
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(50)
-          .retryOn(IOException.class, ElasticsearchException.class)
+          .retryOn(
+              IOException.class,
+              co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
           .message(
               String.format(
