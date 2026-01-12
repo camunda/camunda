@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.job;
 
+import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.scheduler.Actor;
@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.unit.DataSize;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
+@ConditionalOnAnyHttpGatewayEnabled
 public class JobHandlerConfiguration {
 
   private final ActivateJobHandlerConfiguration config;

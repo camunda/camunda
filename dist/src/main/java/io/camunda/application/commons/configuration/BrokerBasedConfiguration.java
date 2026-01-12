@@ -10,6 +10,7 @@ package io.camunda.application.commons.configuration;
 import io.atomix.cluster.ClusterConfig;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
@@ -79,7 +79,7 @@ public class BrokerBasedConfiguration {
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }
 
-  @ConditionalOnRestGatewayEnabled
+  @ConditionalOnAnyHttpGatewayEnabled
   @Bean
   public CompositeFilter restApiCompositeFilter() {
     final List<FilterCfg> filterCfgs = properties.getGateway().getFilters();
