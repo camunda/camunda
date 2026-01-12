@@ -140,32 +140,27 @@ public final class S3BackupStore implements BackupStore {
    * BackupIdentifierWildcard#matches(BackupIdentifier id)} to ensure that the listed object
    * matches.
    */
-  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+  private String legacyWildcardPrefix(final BackupIdentifierWildcard wildcard) {
     return config.basePath().map(base -> base + "/").orElse("")
         + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
-  private String wildcardPrefixV2(final BackupIdentifierWildcard wildcard) {
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
     return config.basePath().map(base -> base + "/").orElse("")
         + Directory.MANIFESTS.name
         + "/"
         + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
-  /**
-   * @deprecated use {@link S3BackupStore#objectPrefixV2(BackupIdentifier, Directory)} and {@link
-   *     S3BackupStore#objectPrefixV2(BackupIdentifier, Directory)} instead. Maintained only for
-   *     querying older backups.
-   */
-  @Deprecated(since = "8.9")
-  public String objectPrefix(final BackupIdentifier id) {
+  /** Backwards compatible object path for backups generated prior to 8.9 */
+  public String legacyObjectPrefix(final BackupIdentifier id) {
     final var base = config.basePath();
     return base.map(
             s -> "%s/%s/%s/%s/".formatted(s, id.partitionId(), id.checkpointId(), id.nodeId()))
         .orElseGet(() -> "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
   }
 
-  public String objectPrefixV2(final BackupIdentifier id, final Directory directory) {
+  public String objectPrefix(final BackupIdentifier id, final Directory directory) {
     final var base = config.basePath();
     return base.map(
             s ->
@@ -371,14 +366,14 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<List<ObjectIdentifier>> listObjectsBasedOnId(
       final Manifest manifest, final Directory directory) {
-    final var prefix = objectPrefix(manifest.id());
-    final var prefixV2 = objectPrefixV2(manifest.id(), directory);
-    return listBackupObjects(prefixV2)
+    final var legacyPrefix = legacyObjectPrefix(manifest.id());
+    final var prefix = objectPrefix(manifest.id(), directory);
+    return listBackupObjects(prefix)
         .thenCombine(
-            listBackupObjects(prefix),
-            (v2Objects, objects) -> {
-              final var allObjects = new HashSet<>(v2Objects);
-              allObjects.addAll(objects);
+            listBackupObjects(legacyPrefix),
+            (objects, legacyObjects) -> {
+              final var allObjects = new HashSet<>(objects);
+              allObjects.addAll(legacyObjects);
               return allObjects.stream().toList();
             });
   }
@@ -426,7 +421,7 @@ public final class S3BackupStore implements BackupStore {
 
   SdkPublisher<BackupIdentifier> findBackupIds(
       final BackupIdentifierWildcard wildcard, final boolean legacyStructure) {
-    final var prefix = legacyStructure ? wildcardPrefix(wildcard) : wildcardPrefixV2(wildcard);
+    final var prefix = legacyStructure ? legacyWildcardPrefix(wildcard) : wildcardPrefix(wildcard);
     LOG.atTrace()
         .addKeyValue("pattern", wildcard)
         .setMessage("Searching for matching manifest files")
@@ -449,17 +444,17 @@ public final class S3BackupStore implements BackupStore {
     final var legacyPublisher = findBackupIds(wildcard, true).map(this::readManifestObject);
     legacyPublisher.subscribe(legacyAggregator);
 
-    final var v2Aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var v2Publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
-    v2Publisher.subscribe(v2Aggregator);
+    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+    final var publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
+    publisher.subscribe(aggregator);
 
     return legacyAggregator
         .result()
         .thenCombine(
-            v2Aggregator.result(),
-            (legacyManifests, v2Manifests) -> {
+            aggregator.result(),
+            (legacyManifests, manifests) -> {
               final var combined = new HashSet<>(legacyManifests);
-              combined.addAll(v2Manifests);
+              combined.addAll(manifests);
               return combined;
             });
   }
@@ -471,15 +466,16 @@ public final class S3BackupStore implements BackupStore {
         .getObject(
             req ->
                 req.bucket(config.bucketName())
-                    .key(objectPrefixV2(id, Directory.MANIFESTS) + MANIFEST_OBJECT_KEY),
+                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_KEY),
             AsyncResponseTransformer.toBytes())
         .exceptionallyCompose(
             throwable -> {
               if (throwable.getCause() instanceof NoSuchKeyException) {
-                LOG.debug("Manifest not found in v2 location for backup {}, trying v1", id);
+                LOG.debug("Manifest not found for backup {}, trying legacy path", id);
                 return client.getObject(
                     req ->
-                        req.bucket(config.bucketName()).key(objectPrefix(id) + MANIFEST_OBJECT_KEY),
+                        req.bucket(config.bucketName())
+                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_KEY),
                     AsyncResponseTransformer.toBytes());
               }
               return CompletableFuture.failedFuture(throwable);
@@ -587,7 +583,7 @@ public final class S3BackupStore implements BackupStore {
 
   public String derivePath(
       final BackupDescriptor descriptor, final BackupIdentifier id, final Directory directory) {
-    return isLegacyBackup(descriptor) ? objectPrefix(id) : objectPrefixV2(id, directory);
+    return isLegacyBackup(descriptor) ? legacyObjectPrefix(id) : objectPrefix(id, directory);
   }
 
   private boolean isLegacyBackup(final BackupDescriptor descriptor) {

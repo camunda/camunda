@@ -144,13 +144,13 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
 
     final var prefix =
         brokerVersion.minor() <= 8
-            ? getStore().objectPrefix(backup.id())
-            : getStore().objectPrefixV2(backup.id(), Directory.CONTENTS);
+            ? getStore().legacyObjectPrefix(backup.id())
+            : getStore().objectPrefix(backup.id(), Directory.CONTENTS);
 
     final var manifestPrefix =
         brokerVersion.minor() <= 8
-            ? getStore().objectPrefix(backup.id())
-            : getStore().objectPrefixV2(backup.id(), Directory.MANIFESTS);
+            ? getStore().legacyObjectPrefix(backup.id())
+            : getStore().objectPrefix(backup.id(), Directory.MANIFESTS);
 
     final var manifest = manifestPrefix + S3BackupStore.MANIFEST_OBJECT_KEY;
     final var snapshotObjects =
@@ -205,7 +205,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
                       .listObjectsV2(
                           req ->
                               req.bucket(getConfig().bucketName())
-                                  .prefix(getStore().objectPrefix(backup.id())))
+                                  .prefix(getStore().legacyObjectPrefix(backup.id())))
                       .join();
               Assertions.assertThat(listed.contents()).isEmpty();
             });
@@ -248,7 +248,9 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
             delete ->
                 delete
                     .bucket(getConfig().bucketName())
-                    .key(getStore().objectPrefix(backup.id()) + S3BackupStore.MANIFEST_OBJECT_KEY))
+                    .key(
+                        getStore().legacyObjectPrefix(backup.id())
+                            + S3BackupStore.MANIFEST_OBJECT_KEY))
         .join();
 
     // then
