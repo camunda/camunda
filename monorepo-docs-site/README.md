@@ -16,19 +16,21 @@ This site automatically generates documentation from markdown files in the `../d
 **First time setup:**
 
 1. **Install dependencies:**
+
    ```bash
    cd monorepo-docs-site
    npm install
    ```
-
 2. **Start local development:**
+
    ```bash
    npm start
    ```
-   
+
    🎉 Your docs site will open at `http://localhost:3000/camunda/` with live reload!
 
 3. **Build for production:**
+
    ```bash
    npm run build
    ```
@@ -74,11 +76,13 @@ Check that your page appears in the navigation and renders correctly.
 ## 🗂️ Organizing Content
 
 ### Simple Pages
+
 ```javascript
 'filename',  // References filename.md
 ```
 
 ### Creating Sections
+
 ```javascript
 {
   type: 'category',
@@ -88,6 +92,7 @@ Check that your page appears in the navigation and renders correctly.
 ```
 
 ### External Links
+
 ```javascript
 {
   type: 'link',
@@ -96,7 +101,6 @@ Check that your page appears in the navigation and renders correctly.
 }
 ```
 
-
 ## 🔄 Migrating from GitHub Wiki
 
 Need to move content from the GitHub wiki to this documentation site? Here's a comprehensive approach:
@@ -104,16 +108,14 @@ Need to move content from the GitHub wiki to this documentation site? Here's a c
 ### Quick Migration Steps
 
 1. **Extract wiki content:**
+
    ```bash
    # Replace 'PageName' with your actual wiki page
    curl "https://raw.githubusercontent.com/wiki/camunda/camunda/PageName.md" \
      -o "../docs/monorepo-docs/migrated-page.md"
    ```
-
 2. **Fix links:** Convert wiki-style links to standard markdown (see detailed section below)
-
 3. **Update sidebar:** Add your migrated page to `sidebars.js`
-
 4. **Test locally:** Run `npm start` to verify everything works
 
 ### Comparing Wiki vs Documentation Content
@@ -160,13 +162,13 @@ Use these Copilot prompts to efficiently fix link issues in your migrated conten
 
 ### Advanced Link Patterns to Fix
 
-| Wiki Format | Docusaurus Format | Example |
-|------------|------------|---------|
-| `[[Page Name]]` | `[Page Name](./page-name.md)` | `[[Installation Guide]]` → `[Installation Guide](./installation-guide.md)` |
-| `[[Page\|Custom]]` | `[Custom](./page.md)` | `[[Setup\|Quick Setup]]` → `[Quick Setup](./setup.md)` |
-| `https://github.com/camunda/camunda/wiki/API-Reference` | `[API Reference](./api-reference.md)` | Full URL → relative link |
-| `../wiki/Page-Name` | `./page-name.md` | Relative wiki path → docs path |
-| `![](uploads/image.png)` | `![](../assets/image.png)` | Wiki uploads → docs assets |
+|                       Wiki Format                       |           Docusaurus Format           |                                  Example                                   |
+|---------------------------------------------------------|---------------------------------------|----------------------------------------------------------------------------|
+| `[[Page Name]]`                                         | `[Page Name](./page-name.md)`         | `[[Installation Guide]]` → `[Installation Guide](./installation-guide.md)` |
+| `[[Page\|Custom]]`                                      | `[Custom](./page.md)`                 | `[[Setup\|Quick Setup]]` → `[Quick Setup](./setup.md)`                     |
+| `https://github.com/camunda/camunda/wiki/API-Reference` | `[API Reference](./api-reference.md)` | Full URL → relative link                                                   |
+| `../wiki/Page-Name`                                     | `./page-name.md`                      | Relative wiki path → docs path                                             |
+| `![](uploads/image.png)`                                | `![](../assets/image.png)`            | Wiki uploads → docs assets                                                 |
 
 ### Validation Checklist
 
@@ -179,12 +181,14 @@ Use these Copilot prompts to efficiently fix link issues in your migrated conten
 ## ⚙️ Configuration & Features
 
 ### Key Files
+
 - `docusaurus.config.js` - Main site configuration
 - `sidebars.js` - **Controls page navigation** (manual setup required)
 - `src/css/custom.css` - Camunda styling and themes
 - `package.json` - Dependencies and build scripts
 
 ### What's Included
+
 - 🔍 **Smart Search** - Full-text search with Lunr
 - 🎨 **Code Highlighting** - GitHub-style code blocks
 - 📊 **Diagrams** - Mermaid diagram support
@@ -193,11 +197,11 @@ Use these Copilot prompts to efficiently fix link issues in your migrated conten
 
 ### Useful Commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm start` | Start development server with hot reload |
-| `npm run build` | Build static site for production |
-| `npm run serve` | Preview the built site locally |
+|     Command     |                   Purpose                    |
+|-----------------|----------------------------------------------|
+| `npm start`     | Start development server with hot reload     |
+| `npm run build` | Build static site for production             |
+| `npm run serve` | Preview the built site locally               |
 | `npm run clear` | Clear Docusaurus cache (if things act weird) |
 
 ## 🚀 Deployment
