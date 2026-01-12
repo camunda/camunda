@@ -16,6 +16,8 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.modelcontextprotocol.client.McpSyncClient;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -26,13 +28,48 @@ public class McpServerConfigurationIT {
   class McpServerEnabledIT {
 
     @MultiDbTestApplication
-    static final TestCamundaApplication MCP_SERVER_ENABLED_INSTANCE =
+    static final TestCamundaApplication TEST_INSTANCE =
         new TestCamundaApplication().withProperty("camunda.mcp.enabled", true);
 
     @Test
     public void mcpInitializeRequestReturnsInitializationResponse() {
       try (final McpSyncClient mcpClient =
-          createMcpClient(MCP_SERVER_ENABLED_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+
+        final var initializeResult = mcpClient.initialize();
+        assertThat(initializeResult).isNotNull();
+      }
+    }
+  }
+
+  @Nested
+  @MultiDbTest
+  class McpServerEnabledWithRestGatewayDisabledIT {
+
+    @MultiDbTestApplication(managedLifecycle = false)
+    static final TestCamundaApplication TEST_INSTANCE =
+        new TestCamundaApplication()
+            .withProperty("camunda.mcp.enabled", true)
+            .withProperty("camunda.rest.enabled", false);
+
+    @BeforeEach
+    void setUp() {
+      if (!TEST_INSTANCE.isStarted()) {
+        TEST_INSTANCE.start();
+        final var grpcClient = TEST_INSTANCE.newClientBuilder().preferRestOverGrpc(false).build();
+        TEST_INSTANCE.awaitCompleteTopology(TEST_INSTANCE.unifiedConfig(), grpcClient);
+      }
+    }
+
+    @AfterEach
+    void tearDown() {
+      TEST_INSTANCE.stop();
+    }
+
+    @Test
+    public void mcpInitializeRequestReturnsInitializationResponse() {
+      try (final McpSyncClient mcpClient =
+          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final var initializeResult = mcpClient.initialize();
         assertThat(initializeResult).isNotNull();
@@ -45,12 +82,12 @@ public class McpServerConfigurationIT {
   class McpServerDisabledIT {
 
     @MultiDbTestApplication
-    static final TestCamundaApplication MCP_SERVER_DISABLED_INSTANCE = new TestCamundaApplication();
+    static final TestCamundaApplication TEST_INSTANCE = new TestCamundaApplication();
 
     @Test
     public void mcpInitializeRequestReturnsNotFoundResponse() {
       try (final McpSyncClient mcpClient =
-          createMcpClient(MCP_SERVER_DISABLED_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
 
         final Throwable throwable = catchThrowable(mcpClient::initialize);
         assertThat(throwable.getCause())
