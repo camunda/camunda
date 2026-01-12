@@ -33,6 +33,7 @@ public class AuditLogActorTypeFilterPropertyImpl
 
   @Override
   public AuditLogActorTypeFilterProperty like(final String value) {
+    filterProperty.set$Like(value);
     return this;
   }
 
