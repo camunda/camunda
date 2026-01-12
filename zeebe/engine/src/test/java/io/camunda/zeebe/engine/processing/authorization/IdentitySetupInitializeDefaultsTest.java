@@ -90,6 +90,7 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(
                         PermissionType.READ,
                         PermissionType.READ_USAGE_METRIC,
+                        PermissionType.READ_JOB_METRIC,
                         PermissionType.UPDATE),
             auth ->
                 Assertions.assertThat(auth)
@@ -246,7 +247,10 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SYSTEM)
-                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.READ_USAGE_METRIC),
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ,
+                        PermissionType.READ_USAGE_METRIC,
+                        PermissionType.READ_JOB_METRIC),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.TENANT)

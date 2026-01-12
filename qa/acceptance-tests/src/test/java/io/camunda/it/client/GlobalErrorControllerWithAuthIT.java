@@ -57,6 +57,7 @@ public class GlobalErrorControllerWithAuthIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
               new Permissions(SYSTEM, READ_USAGE_METRIC, List.of("*")),
+              new Permissions(SYSTEM, READ_JOB_METRIC, List.of("*")),
               new Permissions(TENANT, CREATE, List.of("*")),
               new Permissions(TENANT, UPDATE, List.of("*")),
               new Permissions(TENANT, READ, List.of("*"))));

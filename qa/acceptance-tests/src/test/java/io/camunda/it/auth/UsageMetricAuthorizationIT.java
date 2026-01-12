@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.READ_JOB_METRIC;
 import static io.camunda.client.api.search.enums.PermissionType.READ_USAGE_METRIC;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
@@ -79,6 +80,7 @@ public class UsageMetricAuthorizationIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(SYSTEM, READ_USAGE_METRIC, List.of("*")),
+              new Permissions(SYSTEM, READ_JOB_METRIC, List.of("*")),
               new Permissions(TENANT, CREATE, List.of("*")),
               new Permissions(TENANT, UPDATE, List.of("*")),
               new Permissions(TENANT, READ, List.of("*"))));
@@ -86,7 +88,11 @@ public class UsageMetricAuthorizationIT {
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
       new TestUser(
-          RESTRICTED, PASSWORD, List.of(new Permissions(SYSTEM, READ_USAGE_METRIC, List.of("*"))));
+          RESTRICTED,
+          PASSWORD,
+          List.of(
+              new Permissions(SYSTEM, READ_USAGE_METRIC, List.of("*")),
+              new Permissions(SYSTEM, READ_JOB_METRIC, List.of("*"))));
 
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());

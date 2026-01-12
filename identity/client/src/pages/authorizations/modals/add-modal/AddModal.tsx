@@ -119,6 +119,7 @@ const resourcePermissions: ResourcePermissionsType = {
   ],
   SYSTEM: [
     PermissionType.READ,
+    PermissionType.READ_JOB_METRIC,
     PermissionType.READ_USAGE_METRIC,
     PermissionType.UPDATE,
   ],

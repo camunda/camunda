@@ -534,7 +534,7 @@ Accept: application/json
     { resourceType: "PROCESS_DEFINITION", permissions: ["CREATE_PROCESS_INSTANCE","READ_PROCESS_DEFINITION","READ_PROCESS_INSTANCE","READ_USER_TASK","UPDATE_PROCESS_INSTANCE","UPDATE_USER_TASK","MODIFY_PROCESS_INSTANCE","CANCEL_PROCESS_INSTANCE","DELETE_PROCESS_INSTANCE"] },
     { resourceType: "RESOURCE", permissions: ["CREATE","READ","DELETE_DRD","DELETE_FORM","DELETE_PROCESS","DELETE_RESOURCE"] },
     { resourceType: "ROLE", permissions: ["CREATE","READ","UPDATE","DELETE"] },
-    { resourceType: "SYSTEM", permissions: ["READ","READ_USAGE_METRIC","UPDATE"] },
+    { resourceType: "SYSTEM", permissions: ["READ","READ_JOB_METRIC","READ_USAGE_METRIC","UPDATE"] },
     { resourceType: "TENANT", permissions: ["CREATE","READ","UPDATE","DELETE"] },
     { resourceType: "USER", permissions: ["CREATE","READ","UPDATE","DELETE"] }
   ];

@@ -40,6 +40,7 @@ public enum PermissionType {
   READ(true),
   READ_DECISION_DEFINITION(true),
   READ_DECISION_INSTANCE(true),
+  READ_JOB_METRIC(true),
   READ_PROCESS_DEFINITION(true),
   READ_PROCESS_INSTANCE(true),
   READ_USAGE_METRIC(true),
