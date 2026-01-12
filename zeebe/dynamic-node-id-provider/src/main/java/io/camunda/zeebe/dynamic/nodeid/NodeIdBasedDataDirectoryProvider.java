@@ -24,8 +24,7 @@ public class NodeIdBasedDataDirectoryProvider implements DataDirectoryProvider {
   }
 
   @Override
-  public CompletableFuture<Path> initialize(
-      final Path baseDataDirectory, final boolean gracefulShutdown) {
+  public CompletableFuture<Path> initialize(final Path baseDataDirectory) {
     if (nodeInstance == null) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("Node instance is not available"));

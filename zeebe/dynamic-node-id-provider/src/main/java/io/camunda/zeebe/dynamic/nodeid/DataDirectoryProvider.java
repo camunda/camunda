@@ -16,5 +16,5 @@ public interface DataDirectoryProvider {
    * Computes and returns the data directory path based on the base directory. The implementation
    * may also perform initialization of the data directory.
    */
-  CompletableFuture<Path> initialize(final Path baseDirectory, boolean gracefulShutdown);
+  CompletableFuture<Path> initialize(final Path baseDirectory);
 }

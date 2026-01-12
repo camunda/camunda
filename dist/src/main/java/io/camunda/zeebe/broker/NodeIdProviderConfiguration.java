@@ -147,19 +147,21 @@ public class NodeIdProviderConfiguration {
           case S3 -> {
             final var brokerCopier = new BrokerDataDirectoryCopier();
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
+            final var previousNodeGracefullyShutdown =
+                nodeIdProvider.previousNodeGracefullyShutdown().join();
             yield disableVersionedDirectory
                 ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
                 : new VersionedNodeIdBasedDataDirectoryProvider(
-                    objectMapper, nodeInstance, fromBrokerCopier(brokerCopier));
+                    objectMapper,
+                    nodeInstance,
+                    fromBrokerCopier(brokerCopier),
+                    previousNodeGracefullyShutdown);
           }
         };
 
     final DataCfg data = brokerBasedConfiguration.config().getData();
     final var directory = Path.of(data.getDirectory());
-    final var configuredDirectory =
-        initializer
-            .initialize(directory, nodeIdProvider.previousNodeGracefullyShutdown().join())
-            .join();
+    final var configuredDirectory = initializer.initialize(directory).join();
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;

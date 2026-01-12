@@ -45,10 +45,10 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var rootDirectory = tempDir.resolve("root");
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
+        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier, false);
 
     // when
-    final var result = initializer.initialize(rootDirectory, true);
+    final var result = initializer.initialize(rootDirectory);
 
     // then
     assertThat(result).isCompleted();
@@ -86,10 +86,11 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
+        new VersionedNodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown);
 
     // when
-    final var newDirectory = initializer.initialize(rootDirectory, gracefulShutdown).join();
+    final var newDirectory = initializer.initialize(rootDirectory).join();
 
     // then
     assertThat(newDirectory).isEqualTo(rootDirectory.resolve("node-2").resolve("v4"));
@@ -107,7 +108,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
         .isEqualTo(rootDirectory.resolve("node-2").resolve("v4"));
     assertThat(copier.invocations().getFirst().markerFileName())
         .isEqualTo(DIRECTORY_INITIALIZED_FILE);
-    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+    assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(newDirectory);
     assertThat(initInfo.get("initialized")).isNotNull();
@@ -129,10 +130,11 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
+        new VersionedNodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown);
 
     // when
-    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
+    final var result = initializer.initialize(rootDirectory).join();
 
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v3"));
@@ -142,7 +144,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.invocations()).hasSize(1);
     assertThat(copier.invocations().getFirst().source()).isEqualTo(nodeDirectory.resolve("v2"));
     assertThat(copier.invocations().getFirst().target()).isEqualTo(nodeDirectory.resolve("v3"));
-    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+    assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(2L);
@@ -170,10 +172,11 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
+        new VersionedNodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown);
 
     // when
-    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
+    final var result = initializer.initialize(rootDirectory).join();
 
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v4"));
@@ -182,7 +185,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(Files.readString(result.resolve("file3.txt"))).isEqualTo("content3");
     assertThat(result.resolve("file2.txt")).doesNotExist();
 
-    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+    assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(3L);
@@ -204,10 +207,10 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     final DataDirectoryProvider initializer =
         new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier());
+            OBJECT_MAPPER, nodeInstance, new RecordingDataDirectoryCopier(), gracefulShutdown);
 
     // when
-    final var result = initializer.initialize(rootDirectory, gracefulShutdown);
+    final var result = initializer.initialize(rootDirectory);
 
     // then
     assertThat(result)
@@ -235,10 +238,11 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
+        new VersionedNodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown);
 
     // when
-    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
+    final var result = initializer.initialize(rootDirectory).join();
 
     // then
     assertThat(result.resolve("root-file.txt")).exists();
@@ -250,7 +254,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(Files.readString(result.resolve("subdir1/subdir2/file2.txt")))
         .isEqualTo("file2 content");
 
-    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+    assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(1L);
@@ -270,17 +274,18 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
+        new VersionedNodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown);
 
     // when
-    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
+    final var result = initializer.initialize(rootDirectory).join();
 
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v1"));
     assertThat(result.resolve("file0.txt")).exists();
     assertThat(Files.readString(result.resolve("file0.txt"))).isEqualTo("version 0 content");
 
-    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+    assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(0L);
@@ -306,17 +311,18 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
     final var copier = new RecordingDataDirectoryCopier();
     final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(OBJECT_MAPPER, nodeInstance, copier);
+        new VersionedNodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown);
 
     // when
-    final var result = initializer.initialize(rootDirectory, gracefulShutdown).join();
+    final var result = initializer.initialize(rootDirectory).join();
 
     // then
     assertThat(result).isEqualTo(targetDirectory);
     assertThat(result.resolve("garbage.txt")).doesNotExist();
     assertThat(result.resolve("file1.txt")).exists();
 
-    assertThat(copier.gracefulShutdown).isEqualTo(gracefulShutdown);
+    assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(result);
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(1L);
@@ -328,10 +334,10 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var baseDirectory = tempDir.resolve("base");
     final DataDirectoryProvider initializer =
         new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, null, new RecordingDataDirectoryCopier());
+            OBJECT_MAPPER, null, new RecordingDataDirectoryCopier(), false);
 
     // when
-    final var result = initializer.initialize(baseDirectory, true);
+    final var result = initializer.initialize(baseDirectory);
 
     // then
     assertThat(result).isCompletedExceptionally();
@@ -374,7 +380,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
 
   private static final class RecordingDataDirectoryCopier implements DataDirectoryCopier {
 
-    volatile boolean gracefulShutdown = false;
+    volatile boolean useHardLinks = false;
     private final List<Invocation> invocations = new ArrayList<>();
 
     List<Invocation> invocations() {
@@ -386,9 +392,9 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
         final Path source,
         final Path target,
         final String markerFileName,
-        final boolean gracefulShutdown)
+        final boolean useHardLinks)
         throws IOException {
-      this.gracefulShutdown = gracefulShutdown;
+      this.useHardLinks = useHardLinks;
       invocations.add(new Invocation(source, target, markerFileName));
 
       Files.walkFileTree(

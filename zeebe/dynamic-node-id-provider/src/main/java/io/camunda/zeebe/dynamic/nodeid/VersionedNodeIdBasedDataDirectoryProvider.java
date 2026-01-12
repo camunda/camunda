@@ -37,19 +37,21 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
   private final ObjectMapper objectMapper;
   private final NodeInstance nodeInstance;
   private final DataDirectoryCopier copier;
+  private final boolean previousNodeGracefullyShutdown;
 
   public VersionedNodeIdBasedDataDirectoryProvider(
       final ObjectMapper objectMapper,
       final NodeInstance nodeInstance,
-      final DataDirectoryCopier copier) {
+      final DataDirectoryCopier copier,
+      final boolean previousNodeGracefullyShutdown) {
     this.objectMapper = objectMapper;
     this.nodeInstance = nodeInstance;
     this.copier = copier;
+    this.previousNodeGracefullyShutdown = previousNodeGracefullyShutdown;
   }
 
   @Override
-  public CompletableFuture<Path> initialize(
-      final Path rootDataDirectory, final boolean gracefulShutdown) {
+  public CompletableFuture<Path> initialize(final Path rootDataDirectory) {
     if (nodeInstance == null) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("Node instance is not available"));
@@ -89,7 +91,10 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
             previousDataDirectory);
 
         copier.copy(
-            previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE, gracefulShutdown);
+            previousDataDirectory,
+            dataDirectory,
+            DIRECTORY_INITIALIZED_FILE,
+            previousNodeGracefullyShutdown);
 
         copier.validate(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
         writeDirectoryInitializedFile(dataDirectory, previousVersion.get());
