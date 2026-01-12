@@ -1016,7 +1016,7 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to set when throwing the error. Defaults to an empty map.",
+          "description": "The variables to set when throwing the error. Optional.",
           "type": "object"
         }
       },

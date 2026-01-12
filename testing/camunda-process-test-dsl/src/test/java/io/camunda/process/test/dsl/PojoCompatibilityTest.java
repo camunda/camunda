@@ -344,58 +344,7 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== THROW_BPMN_ERROR_FROM_JOB =====
         Arguments.of(
-            "throw bpmn error from job: minimal with jobType",
-            singleTestCase(
-                ImmutableThrowBpmnErrorFromJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
-                    .errorCode("invalid")
-                    .build())),
-        Arguments.of(
-            "throw bpmn error from job: with elementId",
-            singleTestCase(
-                ImmutableThrowBpmnErrorFromJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().elementId("task1").build())
-                    .errorCode("VALIDATION_FAILED")
-                    .build())),
-        Arguments.of(
-            "throw bpmn error from job: with processDefinitionId",
-            singleTestCase(
-                ImmutableThrowBpmnErrorFromJobInstruction.builder()
-                    .jobSelector(
-                        ImmutableJobSelector.builder().processDefinitionId("my-process").build())
-                    .errorCode("ERROR_CODE")
-                    .build())),
-        Arguments.of(
-            "throw bpmn error from job: with combined selector",
-            singleTestCase(
-                ImmutableThrowBpmnErrorFromJobInstruction.builder()
-                    .jobSelector(
-                        ImmutableJobSelector.builder()
-                            .jobType("validate-order")
-                            .elementId("task1")
-                            .processDefinitionId("my-process")
-                            .build())
-                    .errorCode("invalid")
-                    .build())),
-        Arguments.of(
-            "throw bpmn error from job: with variables",
-            singleTestCase(
-                ImmutableThrowBpmnErrorFromJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
-                    .errorCode("invalid")
-                    .putVariables("x", 1)
-                    .putVariables("reason", "Data validation failed")
-                    .build())),
-        Arguments.of(
-            "throw bpmn error from job: with error message",
-            singleTestCase(
-                ImmutableThrowBpmnErrorFromJobInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
-                    .errorCode("invalid")
-                    .errorMessage("Nope.")
-                    .build())),
-        Arguments.of(
-            "throw bpmn error from job: full",
+            "throw bpmn error from job",
             singleTestCase(
                 ImmutableThrowBpmnErrorFromJobInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())

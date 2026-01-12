@@ -56,7 +56,7 @@ public interface ThrowBpmnErrorFromJobInstruction extends TestCaseInstruction {
   Optional<String> getErrorMessage();
 
   /**
-   * The variables to set when throwing the error. Defaults to an empty map.
+   * The variables to set when throwing the error. Optional.
    *
    * @return the variables
    */

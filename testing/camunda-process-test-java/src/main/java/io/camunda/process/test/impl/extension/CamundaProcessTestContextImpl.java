@@ -317,23 +317,23 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void throwBpmnErrorFromJob(final String jobType, final String errorCode) {
-    throwBpmnErrorFromJob(jobType, errorCode, Collections.emptyMap());
+    throwBpmnErrorFromJob(JobSelectors.byJobType(jobType), errorCode);
   }
 
   @Override
   public void throwBpmnErrorFromJob(
       final String jobType, final String errorCode, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType, client);
+    throwBpmnErrorFromJob(JobSelectors.byJobType(jobType), errorCode, variables);
+  }
 
-    LOGGER.debug(
-        "Mock: Throw BPMN error [jobType: '{}', jobKey: '{}'] with error code {} and variables {}",
-        jobType,
-        job.getKey(),
-        errorCode,
-        variables);
-
-    client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
+  @Override
+  public void throwBpmnErrorFromJob(
+      final String jobType,
+      final String errorCode,
+      final String errorMessage,
+      final Map<String, Object> variables) {
+    throwBpmnErrorFromJob(
+        JobSelectors.byJobType(jobType), errorCode, errorMessage, variables);
   }
 
   @Override
@@ -344,26 +344,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void throwBpmnErrorFromJob(
       final JobSelector jobSelector, final String errorCode, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-
-    awaitJob(
-        jobSelector,
-        client,
-        job -> {
-          LOGGER.debug(
-              "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
-              jobSelector.describe(),
-              job.getJobKey(),
-              errorCode,
-              variables);
-
-          client
-              .newThrowErrorCommand(job.getJobKey())
-              .errorCode(errorCode)
-              .variables(variables)
-              .send()
-              .join();
-        });
+    throwBpmnErrorFromJob(jobSelector, errorCode, null, variables);
   }
 
   @Override
@@ -378,21 +359,37 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         jobSelector,
         client,
         job -> {
-          LOGGER.debug(
-              "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {}, message '{}' and variables {}",
-              jobSelector.describe(),
-              job.getJobKey(),
-              errorCode,
-              errorMessage,
-              variables);
+          if (errorMessage == null) {
+            LOGGER.debug(
+                "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
+                jobSelector.describe(),
+                job.getJobKey(),
+                errorCode,
+                variables);
 
-          client
-              .newThrowErrorCommand(job.getJobKey())
-              .errorCode(errorCode)
-              .errorMessage(errorMessage)
-              .variables(variables)
-              .send()
-              .join();
+            client
+                .newThrowErrorCommand(job.getJobKey())
+                .errorCode(errorCode)
+                .variables(variables)
+                .send()
+                .join();
+          } else {
+            LOGGER.debug(
+                "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {}, message '{}' and variables {}",
+                jobSelector.describe(),
+                job.getJobKey(),
+                errorCode,
+                errorMessage,
+                variables);
+
+            client
+                .newThrowErrorCommand(job.getJobKey())
+                .errorCode(errorCode)
+                .errorMessage(errorMessage)
+                .variables(variables)
+                .send()
+                .join();
+          }
         });
   }
 
