@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
@@ -104,25 +105,33 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
    */
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    final var categoryQuery = stringTerms(CATEGORY, authorization.resourceIds());
-    final var processDefinitionQuery =
-        stringTerms(PROCESS_DEFINITION_ID, authorization.resourceIds());
-    final var userTaskQuery = term(CATEGORY, AuditLogOperationCategory.USER_TASKS.name());
-    final var userTaskAuditLogsQuery = and(userTaskQuery, processDefinitionQuery);
 
     final var resourceType = authorization.resourceType();
     if (AUDIT_LOG.equals(resourceType)) {
-      return categoryQuery;
+      return stringTerms(CATEGORY, authorization.resourceIds());
     }
-    if (PROCESS_DEFINITION.equals(resourceType)) {
-      if (READ_PROCESS_INSTANCE.equals(authorization.permissionType())) {
-        return processDefinitionQuery;
-      }
-      if (READ_USER_TASK.equals(authorization.permissionType())) {
-        return userTaskAuditLogsQuery;
+
+    if (PROCESS_DEFINITION.equals(resourceType)
+        && READ_PROCESS_INSTANCE.equals(authorization.permissionType())) {
+      if (authorization.isWildcard()) {
+        return exists(PROCESS_DEFINITION_ID);
+      } else {
+        return stringTerms(PROCESS_DEFINITION_ID, authorization.resourceIds());
       }
     }
 
+    if (PROCESS_DEFINITION.equals(resourceType)
+        && READ_USER_TASK.equals(authorization.permissionType())) {
+      if (authorization.isWildcard()) {
+        return term(CATEGORY, AuditLogOperationCategory.USER_TASKS.name());
+      } else {
+        return and(
+            term(CATEGORY, AuditLogOperationCategory.USER_TASKS.name()),
+            stringTerms(PROCESS_DEFINITION_ID, authorization.resourceIds()));
+      }
+    }
+
+    // in case unknown authorization, deny any access
     return matchNone();
   }
 }

@@ -29,33 +29,25 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
   @Override
   public <T> ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization) {
-    final var resultingAuthorization =
-        new Authorization.Builder<>()
-            .resourceType(requiredAuthorization.resourceType())
-            .permissionType(requiredAuthorization.permissionType());
+      final CamundaAuthentication authentication, final Authorization<T> authorization) {
 
     // fetch the authorization entities for the authenticated user
     final var authorizationScopes =
-        authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            authentication, requiredAuthorization);
+        authorizationChecker.retrieveAuthorizedAuthorizationScopes(authentication, authorization);
 
     if (authorizationScopes.contains(WILDCARD)) {
       // no authorization check required, user can access
       // the respective resources.
-      return ResourceAccess.wildcard(
-          resultingAuthorization.resourceId(WILDCARD.getResourceId()).build());
+      return ResourceAccess.wildcard(authorization.with(WILDCARD.getResourceId()));
     }
 
     if (authorizationScopes.isEmpty()) {
-      return ResourceAccess.denied(resultingAuthorization.build());
+      return ResourceAccess.denied(authorization);
     }
 
     final var resourceIds =
         authorizationScopes.stream().map(AuthorizationScope::getResourceId).distinct().toList();
-    final var authorizationWithResolvedResourceIds =
-        resultingAuthorization.resourceIds(resourceIds).build();
-    return ResourceAccess.allowed(authorizationWithResolvedResourceIds);
+    return ResourceAccess.allowed(authorization.with(resourceIds));
   }
 
   @Override

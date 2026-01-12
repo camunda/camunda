@@ -22,6 +22,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.S
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.DELETE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
@@ -41,13 +42,16 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record Authorization<T>(
     @JsonProperty("resource_type") AuthorizationResourceType resourceType,
     @JsonProperty("permission_type") PermissionType permissionType,
     @JsonProperty("resource_ids") List<String> resourceIds,
-    @JsonIgnore Function<T, String> resourceIdSupplier) {
+    @JsonIgnore Function<T, String> resourceIdSupplier,
+    @JsonIgnore Predicate<T> condition,
+    @JsonProperty("transitive") boolean transitive) {
 
   public boolean hasAnyResourceIds() {
     return resourceIds != null && !resourceIds.isEmpty();
@@ -55,24 +59,66 @@ public record Authorization<T>(
 
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final String resourceId) {
-    return of(
-        b ->
-            b.resourceType(authorization.resourceType())
-                .permissionType(authorization.permissionType())
-                .resourceIds(List.of(resourceId)));
+    return authorization.with(resourceId);
   }
 
   public static <T> Authorization<T> withAuthorization(
       final Authorization<T> authorization, final Function<T, String> resourceIdSupplier) {
-    return of(
-        b ->
-            b.resourceType(authorization.resourceType())
-                .permissionType(authorization.permissionType())
-                .resourceIdSupplier(resourceIdSupplier));
+    return authorization.with(resourceIdSupplier);
+  }
+
+  public Authorization<T> with(final String resourceId) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        List.of(resourceId),
+        resourceIdSupplier(),
+        condition(),
+        transitive());
+  }
+
+  public Authorization<T> with(final List<String> resourceIds) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        List.copyOf(resourceIds),
+        resourceIdSupplier(),
+        condition(),
+        transitive());
+  }
+
+  public Authorization<T> with(final Function<T, String> resourceIdSupplier) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        resourceIds(),
+        resourceIdSupplier,
+        condition(),
+        transitive());
+  }
+
+  public Authorization<T> withCondition(final Predicate<T> condition) {
+    return new Authorization<>(
+        resourceType(),
+        permissionType(),
+        resourceIds(),
+        resourceIdSupplier(),
+        condition,
+        transitive());
   }
 
   public static <T> Authorization<T> of(final Function<Builder<T>, Builder<T>> builderFunction) {
     return builderFunction.apply(new Builder<>()).build();
+  }
+
+  public boolean appliesTo(final T document) {
+    return condition == null || condition.test(document);
+  }
+
+  @JsonIgnore
+  public boolean isWildcard() {
+    return resourceIds != null
+        && resourceIds.stream().anyMatch(id -> WILDCARD.getResourceId().equals(id));
   }
 
   public static class Builder<T> {
@@ -80,6 +126,8 @@ public record Authorization<T>(
     private PermissionType permissionType;
     private List<String> resourceIds;
     private Function<T, String> resourceIdSupplier;
+    private Predicate<T> condition = null;
+    private boolean transitive = false;
 
     public Builder<T> resourceType(final AuthorizationResourceType resourceType) {
       this.resourceType = resourceType;
@@ -88,6 +136,16 @@ public record Authorization<T>(
 
     public Builder<T> permissionType(final PermissionType permissionType) {
       this.permissionType = permissionType;
+      return this;
+    }
+
+    public Builder<T> condition(final Predicate<T> condition) {
+      this.condition = condition;
+      return this;
+    }
+
+    public Builder<T> transitive() {
+      transitive = true;
       return this;
     }
 
@@ -210,7 +268,8 @@ public record Authorization<T>(
     }
 
     public Authorization<T> build() {
-      return new Authorization<>(resourceType, permissionType, resourceIds, resourceIdSupplier);
+      return new Authorization<>(
+          resourceType, permissionType, resourceIds, resourceIdSupplier, condition, transitive);
     }
   }
 }

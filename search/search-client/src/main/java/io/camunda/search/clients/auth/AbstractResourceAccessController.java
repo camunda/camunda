@@ -88,9 +88,10 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
 
   private AuthorizationCheck createSingleAuthorizationCheck(
       final CamundaAuthentication authentication, final SingleAuthorizationCondition single) {
-    final var resourceAccess = resolveResourceAccess(authentication, single.authorization());
+    final var authorization = single.authorization();
+    final var resourceAccess = resolveResourceAccess(authentication, authorization);
 
-    if (resourceAccess.wildcard()) {
+    if (resourceAccess.wildcard() && !authorization.transitive()) {
       return AuthorizationCheck.disabled();
     }
 
@@ -103,8 +104,7 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
     for (final Authorization authorization : anyOf.authorizations()) {
       final var resourceAccess = resolveResourceAccess(authentication, authorization);
 
-      if (resourceAccess.wildcard()) {
-        // here is the culprit for audit log authorizations
+      if (resourceAccess.wildcard() && !authorization.transitive()) {
         return AuthorizationCheck.disabled();
       }
 
@@ -171,6 +171,13 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final T document,
       final SingleAuthorizationCondition single) {
     final Authorization authorization = single.authorization();
+
+    if (!authorization.appliesTo(document)) {
+      throw new ResourceAccessDeniedException(
+          authorization,
+          "Authorization is not applicable - which does not make sense for single authorizations.");
+    }
+
     final var resourceAccess =
         getResourceAccessProvider()
             .hasResourceAccess(securityContext.authentication(), authorization, document);
@@ -183,7 +190,8 @@ public abstract class AbstractResourceAccessController implements ResourceAccess
       final SecurityContext securityContext,
       final T document,
       final AnyOfAuthorizationCondition anyOf) {
-    final var authorizations = anyOf.authorizations();
+    final var authorizations = anyOf.applicableAuthorizations(document);
+
     for (final Authorization authorization : authorizations) {
       final var resourceAccess =
           getResourceAccessProvider()
