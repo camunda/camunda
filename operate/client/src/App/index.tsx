@@ -74,6 +74,7 @@ const App: React.FC = () => {
       <Notifications />
       <NetworkStatusWatcher />
       <HistoryRouter
+        // @ts-expect-error - history v5.3.0 lacks encodeLocation required by react-router-dom
         history={createBrowserHistory({window})}
         basename={window.clientConfig?.baseName ?? '/'}
       >

@@ -52,7 +52,12 @@ function getWrapper() {
     });
 
     return (
-      <HistoryRouter history={createMemoryHistory()}>{children}</HistoryRouter>
+      <HistoryRouter
+        // @ts-expect-error - history v5.3.0 lacks encodeLocation required by react-router-dom
+        history={createMemoryHistory()}
+      >
+        {children}
+      </HistoryRouter>
     );
   };
 
