@@ -6,11 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState, useEffect} from 'react';
 import {OperationItems} from 'modules/components/OperationItems';
-import {InlineLoading} from '@carbon/react';
+import {InlineLoading, MenuButton, MenuItem} from '@carbon/react';
 import {OperationsContainer} from './styled';
 import {OperationRenderer} from './OperationRenderer';
-import type {OperationConfig} from './types';
+import type {OperationConfig, OperationType} from './types';
+import {BREAKPOINTS} from 'modules/constants';
+
+const OPERATION_LABELS: Record<OperationType, string> = {
+  RESOLVE_INCIDENT: 'Retry',
+  MIGRATE_PROCESS_INSTANCE: 'Migrate',
+  CANCEL_PROCESS_INSTANCE: 'Cancel',
+  DELETE_PROCESS_INSTANCE: 'Delete',
+  ENTER_MODIFICATION_MODE: 'Modify',
+};
 
 type Props = {
   operations: OperationConfig[];
@@ -27,6 +37,22 @@ const Operations: React.FC<Props> = ({
   loadingMessage,
   useIcons = false,
 }) => {
+  const [isTablet, setIsTablet] = useState(
+    window.innerWidth < BREAKPOINTS.lg && window.innerWidth >= BREAKPOINTS.md,
+  );
+
+  useEffect(() => {
+    const updateBreakpoint = () => {
+      setIsTablet(
+        window.innerWidth < BREAKPOINTS.lg &&
+          window.innerWidth >= BREAKPOINTS.md,
+      );
+    };
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, []);
+
   return (
     <OperationsContainer orientation="horizontal">
       {isLoading ? (
@@ -38,16 +64,33 @@ const Operations: React.FC<Props> = ({
           }
         />
       ) : null}
-      <OperationItems>
-        {operations.map((operation) => (
-          <OperationRenderer
-            key={operation.type}
-            operation={operation}
-            processInstanceKey={processInstanceKey}
-            useIcons={useIcons}
-          />
-        ))}
-      </OperationItems>
+      {isTablet ? (
+        <MenuButton
+          kind="ghost"
+          size="sm"
+          label="Actions"
+        >
+          {operations.map((operation) => (
+            <MenuItem
+              key={operation.type}
+              onClick={operation.onExecute}
+              disabled={operation.disabled}
+              label={operation.label || OPERATION_LABELS[operation.type]}
+            />
+          ))}
+        </MenuButton>
+      ) : (
+        <OperationItems>
+          {operations.map((operation) => (
+            <OperationRenderer
+              key={operation.type}
+              operation={operation}
+              processInstanceKey={processInstanceKey}
+              useIcons={useIcons}
+            />
+          ))}
+        </OperationItems>
+      )}
     </OperationsContainer>
   );
 };

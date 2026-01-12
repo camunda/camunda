@@ -20,5 +20,20 @@ const FilterContainer = styled.div`
   border-bottom: 1px solid var(--cds-border-subtle-01);
 `;
 
-export {Content, FilterContainer};
+const ViewAllIncidentsBar = styled.div`
+  margin-top: auto;
+  border-top: 1px solid var(--cds-border-subtle-01);
+  
+  .cds--layer {
+    width: 100%;
+    padding: var(--cds-spacing-02) var(--cds-spacing-07) var(--cds-spacing-02)
+      var(--cds-spacing-05);
+    display: grid;
+    grid-template-columns: 1fr 2fr auto;
+    grid-gap: var(--cds-spacing-05);
+    align-items: center;
+  }
+`;
+
+export {Content, FilterContainer, ViewAllIncidentsBar};
 

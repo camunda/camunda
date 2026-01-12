@@ -29,8 +29,8 @@ const backgroundColors = {
       fadedColor: '#cc8a8a',
     },
     completed: {
-      color: 'var(--cds-layer-02)',
-      fadedColor: 'var(--cds-layer-02)',
+      color: 'var(--cds-background-brand)',
+      fadedColor: '#8bb3d0',
     },
     completedEndEvents: {
       color: staticColors.completed,
@@ -59,8 +59,8 @@ const backgroundColors = {
       fadedColor: '#94595b',
     },
     completed: {
-      color: '#161616',
-      fadedColor: '#161616',
+      color: 'var(--cds-background-brand)',
+      fadedColor: '#5a8ba8',
     },
     completedEndEvents: {
       color: staticColors.completed,
@@ -113,10 +113,8 @@ const Container = styled(Stack)<ContainerProps>`
 
       ${$state === 'completed' &&
       css`
-        border: 1px solid var(--cds-border-inverse);
-        color: var(--cds-border-inverse);
-        font-weight: 400;
-        padding: var(--cds-spacing-02) var(--cds-spacing-05);
+        color: white;
+        font-weight: bold;
       `}
     `;
   }}

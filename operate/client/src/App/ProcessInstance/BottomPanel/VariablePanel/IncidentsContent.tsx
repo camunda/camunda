@@ -9,7 +9,7 @@
 import {observer} from 'mobx-react';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
-import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {useIsRootNodeSelected, useRootNode} from 'modules/hooks/flowNodeSelection';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useGetIncidentsByElementInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByElementInstancePaginated';
 import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByProcessInstancePaginated';
@@ -18,9 +18,12 @@ import {getIncidentsSearchFilter} from 'modules/utils/incidents';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {IncidentsTable} from '../../IncidentsWrapper/IncidentsTable';
 import {IncidentsFilter} from '../../IncidentsWrapper/IncidentsFilter';
-import {Content, FilterContainer} from './IncidentsContent.styled';
+import {Content, FilterContainer, ViewAllIncidentsBar} from './IncidentsContent.styled';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {Button} from '@carbon/react';
+import {Layer} from '@carbon/react';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import type {QueryIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -94,9 +97,13 @@ const IncidentsContent: React.FC = observer(() => {
     !modificationsStore.isModificationModeEnabled;
 
   const sort = useIncidentsSort();
+  const flowNodeId = selection?.flowNodeId;
+  const isElementInstanceSelected =
+    elementInstanceKey &&
+    elementInstanceKey !== processInstance?.processInstanceKey;
+  const isFlowNodeScoped = flowNodeId && !isRootNodeSelected;
 
   // For root node: show all process incidents with filters
-  // For selected element: show only that element's incidents without filters
   if (isRootNodeSelected && processInstance) {
     const filter = getIncidentsSearchFilter(
       incidentsPanelStore.state.selectedErrorTypes,
@@ -131,8 +138,65 @@ const IncidentsContent: React.FC = observer(() => {
     );
   }
 
-  // For selected element with incidents
-  if (elementInstanceKey && processInstance) {
+  // For selected flow node: show incidents filtered by flow node with filters
+  // Show bar when we have a flowNodeId filter (not root, not specific element instance)
+  if (isFlowNodeScoped && !isElementInstanceSelected && processInstance) {
+    const filter = getIncidentsSearchFilter(
+      incidentsPanelStore.state.selectedErrorTypes,
+      flowNodeId,
+    );
+
+    const result = useGetIncidentsByProcessInstancePaginated(
+      processInstance.processInstanceKey,
+      {
+        enabled: true,
+        enablePeriodicRefetch,
+        payload: {sort, filter},
+      },
+    );
+
+    const handle = mapQueryResultToIncidentsHandle(result);
+    const enhancedIncidents = useEnhancedIncidents(handle.incidents);
+    const rootNode = useRootNode();
+
+    const handleViewAllIncidents = () => {
+      selectFlowNode(rootNode, {
+        processInstanceId: processInstance.processInstanceKey,
+      });
+    };
+
+    return (
+      <Content>
+        <FilterContainer>
+          <IncidentsFilter />
+        </FilterContainer>
+        <IncidentsTable
+          state={handle.displayState}
+          onVerticalScrollStartReach={handle.handleScrollStartReach}
+          onVerticalScrollEndReach={handle.handleScrollEndReach}
+          processInstanceKey={processInstance.processInstanceKey}
+          incidents={enhancedIncidents}
+        />
+        <ViewAllIncidentsBar>
+          <Layer>
+            <div />
+            <div />
+            <Button
+              kind="ghost"
+              size="md"
+              onClick={handleViewAllIncidents}
+            >
+              View all incidents
+            </Button>
+          </Layer>
+        </ViewAllIncidentsBar>
+      </Content>
+    );
+  }
+
+  // For selected element instance: show only that element's incidents without filters
+  // But if it's scoped to a flow node, also show the bar
+  if (isElementInstanceSelected && processInstance) {
     const filter = getIncidentsSearchFilter(
       incidentsPanelStore.state.selectedErrorTypes,
     );
@@ -148,6 +212,13 @@ const IncidentsContent: React.FC = observer(() => {
 
     const handle = mapQueryResultToIncidentsHandle(result);
     const enhancedIncidents = useEnhancedIncidents(handle.incidents);
+    const rootNode = useRootNode();
+
+    const handleViewAllIncidents = () => {
+      selectFlowNode(rootNode, {
+        processInstanceId: processInstance.processInstanceKey,
+      });
+    };
 
     return (
       <Content>
@@ -158,6 +229,21 @@ const IncidentsContent: React.FC = observer(() => {
           processInstanceKey={processInstance.processInstanceKey}
           incidents={enhancedIncidents}
         />
+        {isFlowNodeScoped && (
+          <ViewAllIncidentsBar>
+            <Layer>
+              <div />
+              <div />
+              <Button
+                kind="ghost"
+                size="md"
+                onClick={handleViewAllIncidents}
+              >
+                View all incidents
+              </Button>
+            </Layer>
+          </ViewAllIncidentsBar>
+        )}
       </Content>
     );
   }

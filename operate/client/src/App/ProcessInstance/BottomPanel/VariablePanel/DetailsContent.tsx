@@ -12,13 +12,13 @@ import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Launch} from '@carbon/react/icons';
 import {
-  ViewMetadataButton,
   Content,
   StructuredList,
   EmptyMessageWrapper,
   FooterContainer,
   FooterLayer,
 } from './DetailsContent.styled';
+import {Button} from '@carbon/react';
 import {getExecutionDuration} from 'App/ProcessInstance/TopPanel/MetadataPopover/Details/getExecutionDuration';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DetailsModal} from 'App/ProcessInstance/TopPanel/MetadataPopover/Details/DetailsModal';
@@ -137,7 +137,10 @@ const DetailsContent: React.FC = observer(() => {
     if (!elementInstanceMetadata) {
       return [];
     }
-    const baseRows = [
+    const baseRows: Array<{
+      key: string;
+      columns: Array<{cellContent: React.ReactNode; width?: string}>;
+    }> = [
       {
         key: 'element-instance-key',
         columns: [
@@ -268,7 +271,7 @@ const DetailsContent: React.FC = observer(() => {
         {instanceKey !== null && (
           <FooterContainer>
             <FooterLayer>
-              <ViewMetadataButton
+              <Button
                 kind="ghost"
                 size="sm"
                 onClick={() => {
@@ -280,9 +283,10 @@ const DetailsContent: React.FC = observer(() => {
                 title="Show more metadata"
                 aria-label="Show more metadata"
                 renderIcon={Launch}
+                style={{alignSelf: 'flex-start'}}
               >
                 View metadata
-              </ViewMetadataButton>
+              </Button>
             </FooterLayer>
           </FooterContainer>
         )}

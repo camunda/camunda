@@ -25,12 +25,18 @@ describe('<DiagramControls />', () => {
   it('should render diagram controls', async () => {
     const handleZoomIn = vi.fn(),
       handleZoomOut = vi.fn(),
-      handleZoomReset = vi.fn();
+      handleZoomReset = vi.fn(),
+      handleFullscreen = vi.fn(),
+      handleMinimapToggle = vi.fn();
     const {user} = render(
       <DiagramControls
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleZoomReset={handleZoomReset}
+        handleFullscreen={handleFullscreen}
+        isFullscreen={false}
+        handleMinimapToggle={handleMinimapToggle}
+        isMinimapOpen={false}
         processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
       />,
       {wrapper: Wrapper},
@@ -62,13 +68,19 @@ describe('<DiagramControls />', () => {
   it('should not render download button', async () => {
     const handleZoomIn = vi.fn(),
       handleZoomOut = vi.fn(),
-      handleZoomReset = vi.fn();
+      handleZoomReset = vi.fn(),
+      handleFullscreen = vi.fn(),
+      handleMinimapToggle = vi.fn();
 
     render(
       <DiagramControls
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleZoomReset={handleZoomReset}
+        handleFullscreen={handleFullscreen}
+        isFullscreen={false}
+        handleMinimapToggle={handleMinimapToggle}
+        isMinimapOpen={false}
       />,
       {wrapper: Wrapper},
     );

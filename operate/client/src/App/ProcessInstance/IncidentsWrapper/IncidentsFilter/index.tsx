@@ -23,12 +23,12 @@ const IncidentsFilter: React.FC = observer(() => {
         data-testid="incidents-by-errorType"
         items={availableErrorTypes}
         selectedItems={incidentsPanelStore.state.selectedErrorTypes}
-        itemToString={(selectedItem) => getIncidentErrorName(selectedItem)}
+        itemToString={(selectedItem) => getIncidentErrorName(selectedItem as typeof availableErrorTypes[number])}
         label="Incident Type"
         titleText="Incident Type"
         hideLabel
         onChange={({selectedItems}) => {
-          incidentsPanelStore.setErrorTypeSelection(selectedItems);
+          incidentsPanelStore.setErrorTypeSelection(selectedItems as typeof availableErrorTypes);
         }}
         size="sm"
       />

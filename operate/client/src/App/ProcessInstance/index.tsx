@@ -227,7 +227,7 @@ const ProcessInstance: React.FC = observer(() => {
                 />
               ) : undefined
             }
-            header={<ProcessInstanceHeader processInstance={processInstance} />}
+            header={<ProcessInstanceHeader processInstance={processInstance} isBreadcrumbVisible={isBreadcrumbVisible} />}
             topPanel={<TopPanel />}
             bottomPanel={
               <BottomPanelContent

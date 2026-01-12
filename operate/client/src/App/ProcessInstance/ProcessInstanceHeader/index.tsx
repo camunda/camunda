@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState, useEffect} from 'react';
 import isNil from 'lodash/isNil';
 import {formatDate} from 'modules/utils/date';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
@@ -33,6 +34,7 @@ import {useNavigate} from 'react-router-dom';
 import {Button} from '@carbon/react';
 import {ArrowLeft} from '@carbon/react/icons';
 import {styles} from '@carbon/elements';
+import {BREAKPOINTS} from 'modules/constants';
 
 const headerColumns = [
   'Process Instance Key',
@@ -41,8 +43,7 @@ const headerColumns = [
   'Tenant',
   'Start Date',
   'End Date',
-  'Parent Process Instance Key',
-  'Called Process Instances',
+  'Called Instances',
 ] as const;
 
 const skeletonColumns: {
@@ -66,20 +67,17 @@ const skeletonColumns: {
     skeletonWidth: '142px',
   },
   {
-    name: 'Parent Process Instance Key',
-    skeletonWidth: '142px',
-  },
-  {
-    name: 'Called Process Instances',
+    name: 'Called Instances',
     skeletonWidth: '142px',
   },
 ] as const;
 
 type Props = {
   processInstance: ProcessInstance;
+  isBreadcrumbVisible?: boolean;
 };
 
-const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
+const ProcessInstanceHeader: React.FC<Props> = ({processInstance, isBreadcrumbVisible = false}) => {
   const {
     processInstanceKey,
     processDefinitionVersion,
@@ -95,6 +93,22 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
   const navigate = useNavigate();
+
+  const [isMedium, setIsMedium] = useState(
+    window.innerWidth >= BREAKPOINTS.md && window.innerWidth < BREAKPOINTS.lg,
+  );
+
+  useEffect(() => {
+    const updateBreakpoint = () => {
+      setIsMedium(
+        window.innerWidth >= BREAKPOINTS.md &&
+          window.innerWidth < BREAKPOINTS.lg,
+      );
+    };
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, []);
 
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
@@ -126,17 +140,19 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     <InstanceHeader
       state={processInstanceState}
       backButton={
-        <Button
-          kind="ghost"
-          size="sm"
-          hasIconOnly
-          iconDescription="Back"
-          tooltipPosition="bottom"
-          aria-label="Back to processes"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft />
-        </Button>
+        isBreadcrumbVisible ? undefined : (
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            iconDescription="Back"
+            tooltipPosition="bottom"
+            aria-label="Back to processes"
+            onClick={() => navigate(-1)}
+          >
+            <ArrowLeft />
+          </Button>
+        )
       }
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
@@ -147,6 +163,9 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         }
         if (name === 'End Date') {
           return hasEndDate;
+        }
+        if (name === 'Start Date' || name === 'Called Instances') {
+          return !isMedium;
         }
         return true;
       })}
@@ -200,11 +219,15 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               },
             ]
           : []),
-        {
-          title: formatDate(startDate) ?? '--',
-          content: formatDate(startDate),
-          dataTestId: 'start-date',
-        },
+        ...(!isMedium
+          ? [
+              {
+                title: formatDate(startDate) ?? '--',
+                content: formatDate(startDate),
+                dataTestId: 'start-date',
+              },
+            ]
+          : []),
         ...(hasEndDate
           ? [
               {
@@ -214,64 +237,45 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               },
             ]
           : []),
-        {
-          title: parentProcessInstanceKey ?? 'None',
-          hideOverflowingContent: false,
-          content: (
-            <>
-              {parentProcessInstanceKey ? (
-                <Link
-                  to={Paths.processInstance(parentProcessInstanceKey)}
-                  title={`View parent instance ${parentProcessInstanceKey}`}
-                  aria-label={`View parent instance ${parentProcessInstanceKey}`}
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'process-details-parent-details',
-                    });
-                  }}
-                >
-                  {parentProcessInstanceKey}
-                </Link>
-              ) : (
-                'None'
-              )}
-            </>
-          ),
-        },
-        {
-          hideOverflowingContent: false,
-          content: (
-            <>
-              {hasCalledProcessInstances(
-                Object.values(processInstanceXmlData?.businessObjects ?? {}),
-              ) ? (
-                <Link
-                  to={Locations.processes({
-                    parentInstanceId: processInstanceKey,
-                    active: true,
-                    incidents: true,
-                    canceled: true,
-                    completed: true,
-                  })}
-                  onClick={() => {
-                    panelStatesStore.expandFiltersPanel();
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'process-details-called-instances',
-                    });
-                  }}
-                  title="View all called instances"
-                  aria-label="View all called instances"
-                >
-                  View All
-                </Link>
-              ) : (
-                'None'
-              )}
-            </>
-          ),
-        },
+        ...(!isMedium
+          ? [
+              {
+                hideOverflowingContent: false,
+                content: (
+                  <>
+                    {hasCalledProcessInstances(
+                      Object.values(
+                        processInstanceXmlData?.businessObjects ?? {},
+                      ),
+                    ) ? (
+                      <Link
+                        to={Locations.processes({
+                          parentInstanceId: processInstanceKey,
+                          active: true,
+                          incidents: true,
+                          canceled: true,
+                          completed: true,
+                        })}
+                        onClick={() => {
+                          panelStatesStore.expandFiltersPanel();
+                          tracking.track({
+                            eventName: 'navigation',
+                            link: 'process-details-called-instances',
+                          });
+                        }}
+                        title="View all called instances"
+                        aria-label="View all called instances"
+                      >
+                        View All
+                      </Link>
+                    ) : (
+                      'None'
+                    )}
+                  </>
+                ),
+              },
+            ]
+          : []),
       ]}
       additionalContent={
         <ProcessInstanceOperations processInstance={processInstance} />

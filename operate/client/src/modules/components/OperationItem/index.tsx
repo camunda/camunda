@@ -7,11 +7,12 @@
  */
 
 import {Button, type ButtonSize, type Icon} from '@carbon/react';
-import {Error, Tools, RetryFailed} from '@carbon/react/icons';
+import {Error, Tools, RetryFailed, MigrateAlt} from '@carbon/react/icons';
 
 type ItemProps = {
   type:
     | 'RESOLVE_INCIDENT'
+    | 'MIGRATE_PROCESS_INSTANCE'
     | 'CANCEL_PROCESS_INSTANCE'
     | 'ENTER_MODIFICATION_MODE';
   onClick: React.ComponentProps<'button'>['onClick'];
@@ -36,6 +37,11 @@ const TYPE_DETAILS: Readonly<
     testId: 'retry-operation',
     label: 'Retry',
     icon: RetryFailed,
+  },
+  MIGRATE_PROCESS_INSTANCE: {
+    testId: 'migrate-operation',
+    label: 'Migrate',
+    icon: MigrateAlt,
   },
   CANCEL_PROCESS_INSTANCE: {
     testId: 'cancel-operation',

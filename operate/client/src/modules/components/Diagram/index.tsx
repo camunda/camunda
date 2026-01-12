@@ -169,7 +169,7 @@ const Diagram: React.FC<Props> = observer(
           }).webkitRequestFullscreen
         ) {
           (
-            diagramRef.current as HTMLElement & {
+            diagramRef.current as unknown as HTMLElement & {
               webkitRequestFullscreen: () => void;
             }
           ).webkitRequestFullscreen();
@@ -179,7 +179,7 @@ const Diagram: React.FC<Props> = observer(
           }).mozRequestFullScreen
         ) {
           (
-            diagramRef.current as HTMLElement & {
+            diagramRef.current as unknown as HTMLElement & {
               mozRequestFullScreen: () => void;
             }
           ).mozRequestFullScreen();
@@ -189,7 +189,7 @@ const Diagram: React.FC<Props> = observer(
           }).msRequestFullscreen
         ) {
           (
-            diagramRef.current as HTMLElement & {
+            diagramRef.current as unknown as HTMLElement & {
               msRequestFullscreen: () => void;
             }
           ).msRequestFullscreen();

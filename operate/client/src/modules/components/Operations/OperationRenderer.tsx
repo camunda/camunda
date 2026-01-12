@@ -33,6 +33,17 @@ const OperationRenderer: React.FC<Props> = ({
   switch (operation.type) {
     case 'RESOLVE_INCIDENT':
       return <ResolveIncident {...baseProps} />;
+    case 'MIGRATE_PROCESS_INSTANCE':
+      return (
+        <OperationItem
+          type="MIGRATE_PROCESS_INSTANCE"
+          onClick={operation.onExecute}
+          title={operation.label || `Migrate Instance ${processInstanceKey}`}
+          disabled={operation.disabled}
+          size="sm"
+          useIcons={useIcons}
+        />
+      );
     case 'CANCEL_PROCESS_INSTANCE':
       return <Cancel {...baseProps} />;
     case 'DELETE_PROCESS_INSTANCE':

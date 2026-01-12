@@ -361,4 +361,56 @@ describe('InstanceHeader', () => {
       screen.queryByRole('button', {name: /cancel instance/i}),
     ).not.toBeInTheDocument();
   });
+
+  it('should show back button when breadcrumb is not visible', async () => {
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(
+      <ProcessInstanceHeader
+        processInstance={mockInstance}
+        isBreadcrumbVisible={false}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Back to processes'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should hide back button when breadcrumb is visible', async () => {
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(
+      <ProcessInstanceHeader
+        processInstance={mockInstance}
+        isBreadcrumbVisible={true}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Back to processes'}),
+    ).not.toBeInTheDocument();
+  });
 });
