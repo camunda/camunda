@@ -159,12 +159,12 @@ jobs:
 #            secondary-database-type: 'elasticsearch'
           - name: 'cthiel-rdbms-benchmark'
             scenario-name: 'measure-cpu-usage'
-            load-test-load: '--set starter.rate=150'
+            load-test-load: '--set starter.rate=300'
             secondary-storage-type: 'postgresql'
- #         - name: 'cthiel-measure-cpu-es'
- #           scenario-name: 'measure-cpu-usage'
- #           load-test-load: '--set starter.rate=200'
- #           secondary-database-type: 'elasticsearch'
+          - name: 'cthiel-es-benchmark'
+            scenario-name: 'measure-cpu-usage'
+            load-test-load: '--set starter.rate=300'
+            secondary-database-type: 'elasticsearch'
     uses: camunda/camunda/.github/workflows/camunda-benchmark-scenario.yml@feat/camunda-db-benchmarks
     with:
       name: ${{ matrix.name }}
