@@ -723,6 +723,26 @@ public abstract class ElasticsearchUtil {
     return Query.of(q -> q.constantScore(cs -> cs.filter(query)));
   }
 
+  /**
+   * Creates an ES8 exists query that matches documents containing a value for the specified field.
+   *
+   * @param field The field name to check for existence
+   * @return Query that matches documents where the field exists
+   */
+  public static Query existsQuery(final String field) {
+    return Query.of(q -> q.exists(e -> e.field(field)));
+  }
+
+  /**
+   * Creates a bool query that must NOT match the provided query.
+   *
+   * @param query The query to negate
+   * @return Query that does not match the provided query
+   */
+  public static Query mustNotQuery(final Query query) {
+    return Query.of(q -> q.bool(b -> b.mustNot(query)));
+  }
+
   // ===========================================================================================
   // ES8 Scroll Helper Methods
   // ===========================================================================================

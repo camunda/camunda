@@ -13,28 +13,25 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.CommonUtils;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.search.TotalHits;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
-import org.apache.lucene.search.TotalHits;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -47,26 +44,31 @@ class FormStoreElasticSearchTest {
   @Mock private FormIndex formIndex = new FormIndex("test", true);
   @Mock private TaskTemplate taskTemplate = new TaskTemplate("test", true);
   @Mock private ProcessIndex processIndex = new ProcessIndex("test", true);
-  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
-  @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
+  @Mock private ElasticsearchTenantHelper tenantHelper;
+  @Mock private ElasticsearchClient es8Client;
   @InjectMocks private FormStoreElasticSearch instance;
 
   @BeforeEach
   void setUp() {
     when(formIndex.getFullQualifiedName()).thenReturn(FORM_INDEX_NAME);
+    when(tenantHelper.makeQueryTenantAware(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
   }
 
   @Test
   void getFormWhenFormNotFound() throws IOException {
     // given
     when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
-    final var response = mock(SearchResponse.class);
-    when(taskTemplate.getAlias()).thenReturn("tasklist-task-x.0.0");
-    when(processIndex.getFullQualifiedName()).thenReturn("tasklist-task-x.0.0");
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(response);
-    final var hits = mock(SearchHits.class);
-    when(response.getHits()).thenReturn(hits);
-    when(hits.getTotalHits()).thenReturn(new TotalHits(0L, TotalHits.Relation.EQUAL_TO));
+
+    // Mock ES8 response
+    final var es8Response = mock(SearchResponse.class);
+    final var es8HitsMetadata = mock(HitsMetadata.class);
+    final var es8TotalHits = mock(TotalHits.class);
+
+    when(es8Client.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
+    when(es8Response.hits()).thenReturn(es8HitsMetadata);
+    when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
+    when(es8TotalHits.value()).thenReturn(0L);
 
     // when - then
     assertThatThrownBy(() -> instance.getForm("id1", "processDefId1", null))
@@ -76,9 +78,9 @@ class FormStoreElasticSearchTest {
 
   @Test
   void getFormWhenIOExceptionOccurred() throws IOException {
-    // given
-    final var getForRequest = new GetRequest(FORM_INDEX_NAME).id("processDefId2_id2");
-    when(tenantAwareClient.search(any(SearchRequest.class)))
+    // given - Mock ES8 client to throw IOException
+    when(es8Client.search(
+            any(co.elastic.clients.elasticsearch.core.SearchRequest.class), any(Class.class)))
         .thenThrow(new IOException("some error"));
 
     // when - then
@@ -98,15 +100,18 @@ class FormStoreElasticSearchTest {
             .setFormId("bpmnId3")
             .setSchema("");
 
-    final var responseAsstring = objectMapper.writeValueAsString(providedFormEntity);
-    final var response = mock(SearchResponse.class);
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(response);
-    final var hits = mock(SearchHits.class);
-    when(response.getHits()).thenReturn(hits);
-    when(hits.getTotalHits()).thenReturn(new TotalHits(1L, TotalHits.Relation.EQUAL_TO));
-    final var hit = mock(SearchHit.class);
-    when(hits.getHits()).thenReturn(new SearchHit[] {hit});
-    when(hit.getSourceAsString()).thenReturn(responseAsstring);
+    // Mock ES8 response
+    final var es8Response = mock(SearchResponse.class);
+    final var es8HitsMetadata = mock(HitsMetadata.class);
+    final var es8TotalHits = mock(TotalHits.class);
+    final var es8Hit = mock(Hit.class);
+
+    when(es8Client.search(any(SearchRequest.class), any(Class.class))).thenReturn(es8Response);
+    when(es8Response.hits()).thenReturn(es8HitsMetadata);
+    when(es8HitsMetadata.total()).thenReturn(es8TotalHits);
+    when(es8TotalHits.value()).thenReturn(1L);
+    when(es8HitsMetadata.hits()).thenReturn(java.util.List.of(es8Hit));
+    when(es8Hit.source()).thenReturn(providedFormEntity);
 
     // when
     final var result = instance.getForm("id3", "processDefId3", null);

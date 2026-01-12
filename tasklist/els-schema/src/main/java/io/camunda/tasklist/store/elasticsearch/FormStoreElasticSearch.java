@@ -172,7 +172,7 @@ public class FormStoreElasticSearch implements FormStore {
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
       final var searchRequestBuilder =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(formIndex.getFullQualifiedName())
               .query(tenantAwareQuery)
               .size(1);
@@ -228,7 +228,7 @@ public class FormStoreElasticSearch implements FormStore {
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(combinedQuery);
 
       final var searchRequest =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(taskTemplate.getFullQualifiedName())
               .query(tenantAwareQuery)
               .size(0)
@@ -254,7 +254,7 @@ public class FormStoreElasticSearch implements FormStore {
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(combinedQuery);
 
       final var searchRequest =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(ElasticsearchUtil.whereToSearch(processIndex, QueryType.ONLY_RUNTIME))
               .query(tenantAwareQuery)
               .size(0)
