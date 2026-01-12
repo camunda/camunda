@@ -30,6 +30,11 @@ on:
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
+      platform-helm-values:
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
+        type: string
+        default: ""
+        required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -71,6 +76,11 @@ on:
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         type: string
+        required: false
+      platform-helm-values:
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
+        type: string
+        default: ""
         required: false
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
@@ -283,7 +293,7 @@ jobs:
           cd load-tests/setup/${{ inputs.name }}
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=gcr.io --set orchestration.image.repository=zeebe-io/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}" \
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=gcr.io --set orchestration.image.repository=zeebe-io/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
             additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
       - name: Summarize platform deployment
         if: success()
