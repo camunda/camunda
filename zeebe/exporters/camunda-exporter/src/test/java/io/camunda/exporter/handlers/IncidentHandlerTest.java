@@ -190,6 +190,28 @@ public class IncidentHandlerTest {
   }
 
   @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withRootProcessInstanceKey(-1L)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.CREATED).withValue(incidentRecordValue));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
   void shouldUpdateEntityFromFollowUpRecord() {
     // given
     final long recordKey = 123L;
@@ -561,5 +583,8 @@ public class IncidentHandlerTest {
         .isEqualTo(incidentRecordValue.getElementInstanceKey());
     assertThat(incidentEntity.getErrorMessageHash())
         .isEqualTo(incidentRecordValue.getErrorMessage().hashCode());
+    assertThat(incidentEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(incidentRecordValue.getRootProcessInstanceKey());
   }
 }

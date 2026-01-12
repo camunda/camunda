@@ -77,6 +77,10 @@ public class PostImporterQueueFromIncidentHandler
         .setCreationTime(OffsetDateTime.now())
         .setPartitionId(record.getPartitionId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

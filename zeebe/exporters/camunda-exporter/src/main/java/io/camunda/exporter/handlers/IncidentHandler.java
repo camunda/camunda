@@ -110,7 +110,12 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
     entity.setTreePath(buildTreePath(record));
 
-    final Intent intent = (record == null) ? null : record.getIntent();
+    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
+
+    final Intent intent = record.getIntent();
     if (intent == null) {
       LOGGER.warn("Intent is null for incident: id {}", entity.getId());
     }
