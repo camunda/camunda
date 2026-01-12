@@ -881,6 +881,8 @@ jobs:
         run: docker system prune -af
 
       - name: Verify Docker image
+        # Skip verification on fork PRs as there public base images are used that don't match our golden labels
+        if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
         uses: ./.github/actions/verify-platform-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
