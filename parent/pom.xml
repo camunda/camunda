@@ -107,6 +107,9 @@
     <version.spring>6.2.15</version.spring>
     <version.spring-security>6.5.7</version.spring-security>
     <version.spring-boot>3.5.9</version.spring-boot>
+    <version.spring-ai>1.1.2</version.spring-ai>
+    <version.spring-ai-community.mcp-annotations>0.8.0</version.spring-ai-community.mcp-annotations>
+    <version.mcp-sdk>0.17.0</version.mcp-sdk>
     <version.tomcat>10.1.50</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
@@ -604,6 +607,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-gateway-mcp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>dynamic-node-id-provider</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1023,6 +1032,30 @@
         <version>${version.spring-security}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-bom</artifactId>
+        <version>${version.spring-ai}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springaicommunity</groupId>
+        <artifactId>mcp-annotations</artifactId>
+        <version>${version.spring-ai-community.mcp-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.modelcontextprotocol.sdk</groupId>
+        <artifactId>mcp</artifactId>
+        <version>${version.mcp-sdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.modelcontextprotocol.sdk</groupId>
+        <artifactId>mcp-core</artifactId>
+        <version>${version.mcp-sdk}</version>
       </dependency>
 
       <dependency>

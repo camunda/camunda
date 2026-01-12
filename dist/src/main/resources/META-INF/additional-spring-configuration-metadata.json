@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "camunda.rest.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable the REST API gateway.",
+      "defaultValue": "true"
+    },
+    {
+      "name": "camunda.mcp.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable the MCP server gateway.",
+      "defaultValue": "false"
+    }
+  ]
+}
