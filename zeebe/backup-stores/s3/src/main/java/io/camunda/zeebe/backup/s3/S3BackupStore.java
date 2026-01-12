@@ -466,7 +466,7 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<ResponseBytes<GetObjectResponse>> findManifestForBackup(
       final BackupIdentifier id) {
-    LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
+    LOG.atTrace().addKeyValue("backup", id).setMessage("Finding manifest").log();
     return client
         .getObject(
             req ->
@@ -487,11 +487,11 @@ public final class S3BackupStore implements BackupStore {
   }
 
   CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
-    LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
     return findManifestForBackup(id)
         .thenApply(
             response -> {
               try {
+                LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
                 return (Manifest)
                     MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
               } catch (final IOException e) {
