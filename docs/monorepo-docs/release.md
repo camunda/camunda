@@ -19,7 +19,7 @@ There must not be 2 concurrent releases ongoing with the same major and minor ve
 
 _Caveat: Many places still refer to this process as “Zeebe release process” although with 8.6+ it is the monorepo release process also involving other components like C8 webapps._
 
-Not in scope of this process are [SNAPSHOT releases](https://github.com/camunda/camunda/wiki/CI-&-Automation#available-snapshot-artifacts).
+Not in scope of this process are [SNAPSHOT releases](./ci.md#available-snapshot-artifacts).
 
 ### Release Types
 
@@ -268,7 +268,7 @@ Zeebe Release Manager: can help with Zeebe-specific questions and tasks.
 
 We want the release process for all supported versions 8.6+ to be as similar as possible, to reduce maintenance effort, surprises and mental load. Improvements and fixes to the release process should always apply to all supported versions, if possible.
 
-For CI-related changes, refer to our [CI & Automation documentation](./ci.md) and the [GitHub wiki guidelines](https://github.com/camunda/camunda/wiki/CI-&-Automation#backporting-guidelines).
+For CI-related changes, refer to our [CI & Automation documentation](./ci.md) and the [backporting guidelines](./ci.md#backporting-guidelines).
 
 ## Minor Release Considerations
 

@@ -36,7 +36,7 @@ deny[msg] {
 
 deny[msg] {
     # This rule enforces the best practices listed and explained in
-    # https://github.com/camunda/camunda/wiki/CI-&-Automation#caching-strategy
+    # https://camunda.github.io/camunda/ci/#caching-strategy
 
     count(get_jobs_with_setupnodecaching(input.jobs)) > 0
 
