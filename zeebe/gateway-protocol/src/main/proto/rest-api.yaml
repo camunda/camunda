@@ -5701,14 +5701,6 @@ components:
       type: string
       allOf:
         - $ref: "#/components/schemas/LongKey"
-    MessageCorrelationKey:
-      description: System-generated key for a message correlation.
-      format: MessageCorrelationKey
-      x-semantic-type: MessageCorrelationKey
-      example: "2251799813634265"
-      type: string
-      allOf:
-        - $ref: "#/components/schemas/LongKey"
     DecisionDefinitionKey:
       description: System-generated key for a decision definition.
       format: DecisionDefinitionKey
@@ -8052,8 +8044,7 @@ components:
           description: The name of the message associated with the message subscription.
           type: string
         correlationKey:
-          allOf:
-            - $ref: "#/components/schemas/MessageCorrelationKey"
+          type: string
           description: The correlation key of the message subscription.
         tenantId:
           $ref: "#/components/schemas/TenantId"
@@ -11068,7 +11059,7 @@ components:
             - $ref: "#/components/schemas/TenantId"
         messageKey:
           allOf:
-            - $ref: "#/components/schemas/MessageCorrelationKey"
+            - $ref: "#/components/schemas/MessageKey"
           description: The key of the correlated message
         processInstanceKey:
           description: The key of the first process instance the message correlated with
