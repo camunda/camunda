@@ -66,6 +66,9 @@
           "$ref": "#/definitions/AssertVariablesInstruction"
         },
         {
+          "$ref": "#/definitions/BroadcastSignalInstruction"
+        },
+        {
           "$ref": "#/definitions/CompleteJobInstruction"
         },
         {
@@ -160,6 +163,30 @@
       "required": [
         "type",
         "processDefinitionSelector"
+      ],
+      "additionalProperties": false
+    },
+    "BroadcastSignalInstruction": {
+      "description": "An instruction to broadcast a signal.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "BROADCAST_SIGNAL"
+        },
+        "signalName": {
+          "description": "The name of the signal to broadcast.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to broadcast with the signal.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "signalName"
       ],
       "additionalProperties": false
     },

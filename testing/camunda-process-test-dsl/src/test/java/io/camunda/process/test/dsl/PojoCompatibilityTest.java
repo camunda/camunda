@@ -41,6 +41,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceMessageSubscriptionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableBroadcastSignalInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
@@ -463,6 +464,19 @@ public class PojoCompatibilityTest {
                     .errorMessage("Order validation failed")
                     .putVariables("reason", "Missing required field")
                     .putVariables("field", "email")
+                    .build())),
+        // ===== BROADCAST_SIGNAL =====
+        Arguments.of(
+            "broadcast signal: minimal",
+            singleTestCase(
+                ImmutableBroadcastSignalInstruction.builder().signalName("signal1").build())),
+        Arguments.of(
+            "broadcast signal: full",
+            singleTestCase(
+                ImmutableBroadcastSignalInstruction.builder()
+                    .signalName("signal1")
+                    .putVariables("key1", "value1")
+                    .putVariables("key2", 123)
                     .build()))
         // add new instructions here
         );
