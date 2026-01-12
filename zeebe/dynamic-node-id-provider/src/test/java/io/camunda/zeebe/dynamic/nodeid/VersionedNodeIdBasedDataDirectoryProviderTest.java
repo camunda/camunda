@@ -60,7 +60,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.invocations()).isEmpty();
 
     final var initInfo = readInitializationInfo(directory);
-    assertThat(initInfo.get("initialized")).isNotNull();
+    assertThat(initInfo.get("initializedAt")).isNotNull();
     assertThat(initInfo.get("initializedFrom").isNull()).isTrue();
   }
 
@@ -111,7 +111,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
     final var initInfo = readInitializationInfo(newDirectory);
-    assertThat(initInfo.get("initialized")).isNotNull();
+    assertThat(initInfo.get("initializedAt")).isNotNull();
     assertThat(initInfo.get("initializedFrom").asLong()).isEqualTo(3L);
   }
 
@@ -363,11 +363,11 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
         initializedFrom != null
             ? OBJECT_MAPPER
                 .createObjectNode()
-                .put("initialized", System.currentTimeMillis())
+                .put("initializedAt", System.currentTimeMillis())
                 .put("initializedFrom", initializedFrom)
             : OBJECT_MAPPER
                 .createObjectNode()
-                .put("initialized", System.currentTimeMillis())
+                .put("initializedAt", System.currentTimeMillis())
                 .putNull("initializedFrom");
 
     OBJECT_MAPPER.writeValue(initFile.toFile(), initInfo);

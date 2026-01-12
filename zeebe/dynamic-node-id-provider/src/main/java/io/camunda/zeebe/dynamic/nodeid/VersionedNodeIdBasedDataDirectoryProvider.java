@@ -155,7 +155,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
       try {
         final var file = initFile.toFile();
         final var info = objectMapper.readValue(file, DirectoryInitializationInfo.class);
-        return info.initialized() > 0;
+        return info.initializedAt() > 0;
       } catch (final Exception e) {
         LOG.warn(
             "Failed to open file at path {}, marking directory as not correctly initialized",

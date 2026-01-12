@@ -238,7 +238,7 @@ public class DynamicNodeIdIT {
 
     // Verify v0 initialization file
     final var v0InitInfo = readInitializationFile(v0Dir);
-    assertThat(v0InitInfo.initialized()).isGreaterThan(0);
+    assertThat(v0InitInfo.initializedAt()).isGreaterThan(0);
     assertThat(v0InitInfo.initializedFrom()).isNull();
 
     // when - gracefully restart broker
@@ -284,7 +284,7 @@ public class DynamicNodeIdIT {
 
     // Verify v1 initialization file
     final var v1InitInfo = readInitializationFile(v1Dir);
-    assertThat(v1InitInfo.initialized()).isGreaterThan(0);
+    assertThat(v1InitInfo.initializedAt()).isGreaterThan(0);
     assertThat(v1InitInfo.initializedFrom()).isNotNull();
     assertThat(v1InitInfo.initializedFrom().version()).isEqualTo(1L);
 

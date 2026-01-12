@@ -8,14 +8,14 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 /**
- * @param initialized epoch in milliseconds
+ * @param initializedAt epoch in milliseconds when the directory was initialized
  * @param initializedFrom the version from which this directory was initialized, or null if this is
  *     the first initialization
  */
-public record DirectoryInitializationInfo(long initialized, Version initializedFrom) {
+public record DirectoryInitializationInfo(long initializedAt, Version initializedFrom) {
   public DirectoryInitializationInfo {
-    if (initialized < 0L) {
-      throw new IllegalArgumentException("initialized cannot be negative");
+    if (initializedAt < 0L) {
+      throw new IllegalArgumentException("initializedAt cannot be negative");
     }
   }
 
