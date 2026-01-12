@@ -1,4 +1,4 @@
-fullnameOverride: "elasticsearch-exporter"
+fullnameOverride: "prom-els-exporter"
 
 image:
   # Set your specific exporter version here
