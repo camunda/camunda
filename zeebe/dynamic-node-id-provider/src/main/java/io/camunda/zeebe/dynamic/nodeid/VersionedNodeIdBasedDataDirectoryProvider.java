@@ -97,7 +97,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
             previousNodeGracefullyShutdown);
 
         copier.validate(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
-        writeDirectoryInitializedFile(dataDirectory, previousVersion.get());
+        writeDirectoryInitializedFile(dataDirectory, nodeInstance.version(), previousVersion.get());
       } else {
         LOG.info(
             "No valid previous version found for node {}, creating empty directory {}",
@@ -105,7 +105,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
             dataDirectory);
 
         Files.createDirectories(dataDirectory);
-        writeDirectoryInitializedFile(dataDirectory, null);
+        writeDirectoryInitializedFile(dataDirectory, nodeInstance.version(), null);
       }
 
       return CompletableFuture.completedFuture(dataDirectory);
@@ -121,15 +121,21 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
     }
 
     try (final var entries = Files.list(nodeDirectory)) {
-      return entries
-          .filter(Files::isDirectory)
-          .map(Path::getFileName)
-          .map(Path::toString)
-          .filter(name -> name.startsWith(VERSION_DIRECTORY_PREFIX))
-          .map(this::parseVersion)
-          .flatMap(Optional::stream)
-          .filter(version -> version < currentNodeVersion)
-          .sorted(Comparator.reverseOrder())
+      final var foundVersions =
+          entries
+              .filter(Files::isDirectory)
+              .map(Path::getFileName)
+              .map(Path::toString)
+              .filter(name -> name.startsWith(VERSION_DIRECTORY_PREFIX))
+              .map(this::parseVersion)
+              .flatMap(Optional::stream)
+              .filter(version -> version < currentNodeVersion)
+              .sorted(Comparator.reverseOrder())
+              .toList();
+
+      LOG.trace("Found {} version directories: {}", foundVersions.size(), foundVersions);
+
+      return foundVersions.stream()
           .filter(
               version ->
                   isDirectoryInitialized(nodeDirectory.resolve(VERSION_DIRECTORY_PREFIX + version)))
@@ -155,7 +161,32 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
       try {
         final var file = initFile.toFile();
         final var info = objectMapper.readValue(file, DirectoryInitializationInfo.class);
-        return info.initializedAt() > 0;
+
+        // Validate that initializedAt is set
+        if (info.initializedAt() <= 0) {
+          return false;
+        }
+
+        // Validate that the version in the file matches the directory's expected version
+        final var directoryName = directory.getFileName().toString();
+        if (directoryName.startsWith(VERSION_DIRECTORY_PREFIX)) {
+          final var expectedVersion =
+              parseVersion(directoryName)
+                  .orElseThrow(
+                      () ->
+                          new IllegalStateException(
+                              "Failed to parse version from directory name: " + directoryName));
+          if (info.version() == null || info.version().version() != expectedVersion) {
+            LOG.warn(
+                "Version mismatch in init file at {}: expected {}, found {}",
+                initFile,
+                expectedVersion,
+                info.version() != null ? info.version().version() : "null");
+            return false;
+          }
+        }
+
+        return true;
       } catch (final Exception e) {
         LOG.warn(
             "Failed to open file at path {}, marking directory as not correctly initialized",
@@ -167,8 +198,9 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
   }
 
   private void writeDirectoryInitializedFile(
-      final Path dataDirectory, final Version copiedFromVersion) throws IOException {
-    final var initInfo = DirectoryInitializationInfo.copiedFrom(copiedFromVersion);
+      final Path dataDirectory, final Version currentVersion, final Version copiedFromVersion)
+      throws IOException {
+    final var initInfo = DirectoryInitializationInfo.copiedFrom(currentVersion, copiedFromVersion);
 
     final var bytes = objectMapper.writeValueAsBytes(initInfo);
 
