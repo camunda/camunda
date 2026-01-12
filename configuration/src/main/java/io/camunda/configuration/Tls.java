@@ -9,16 +9,16 @@ package io.camunda.configuration;
 
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class Security {
+public class Tls {
 
-  /** TLS configuration. */
-  @NestedConfigurationProperty private Tls transportLayerSecurity = new Tls();
+  /** TLS configuration for the cluster. */
+  @NestedConfigurationProperty private TlsCluster cluster = new TlsCluster();
 
-  public Tls getTransportLayerSecurity() {
-    return transportLayerSecurity;
+  public TlsCluster getCluster() {
+    return cluster;
   }
 
-  public void setTransportLayerSecurity(final Tls transportLayerSecurity) {
-    this.transportLayerSecurity = transportLayerSecurity;
+  public void setCluster(final TlsCluster cluster) {
+    this.cluster = cluster;
   }
 }
