@@ -12,8 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.protocol.model.TopologyResponse;
 import io.camunda.it.mcp.McpServerTest;
-import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
@@ -85,13 +83,5 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
     assertThat(topology.getBrokers()).hasSize(1);
     assertThat(topology.getBrokers().getFirst().getNodeId().toString())
         .isEqualTo(testInstance().nodeId().id());
-  }
-
-  @Override
-  protected abstract TestCamundaApplication testInstance();
-
-  @Override
-  protected McpSyncHttpClientRequestCustomizer createMcpClientRequestCustomizer() {
-    return (builder, method, endpoint, body, context) -> {};
   }
 }
