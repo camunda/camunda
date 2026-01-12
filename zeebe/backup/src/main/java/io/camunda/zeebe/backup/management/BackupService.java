@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -165,6 +166,11 @@ public final class BackupService extends Actor implements BackupManager {
           }
         });
     return resultFuture;
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupRange>> listBackupRanges() {
+    return internalBackupManager.listBackupRanges(partitionId, actor);
   }
 
   @Override

@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupRange.Complete;
+import io.camunda.zeebe.backup.api.BackupRange.Incomplete;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -37,6 +40,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
@@ -98,7 +102,7 @@ public final class BackupApiRequestHandler
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
-      case QUERY_STATE -> handleQueryStateRequest(responseWriter);
+      case QUERY_STATE -> handleQueryStateRequest(responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -214,7 +218,7 @@ public final class BackupApiRequestHandler
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleQueryStateRequest(
-      final BackupApiResponseWriter responseWriter) {
+      final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
     final var response = new CheckpointStateResponse();
@@ -239,7 +243,34 @@ public final class BackupApiRequestHandler
               checkpointState.getLatestCheckpointPosition());
       response.getCheckpointStates().add(cpState);
     }
-    result.complete(Either.right(responseWriter.withCheckpointState(response)));
+
+    backupManager
+        .listBackupRanges()
+        .onComplete(
+            (ranges, error) -> {
+              if (error == null) {
+                response.setRanges(
+                    ranges.stream()
+                        .map(
+                            r ->
+                                switch (r) {
+                                  case Incomplete(
+                                          final var start,
+                                          final var end,
+                                          final var deleted) ->
+                                      new PartitionBackupRange(partitionId, start, end, deleted);
+                                  case Complete(final var start, final var end) ->
+                                      new PartitionBackupRange(
+                                          partitionId, start, end, Collections.emptySet());
+                                })
+                        .toList());
+                result.complete(Either.right(responseWriter.withCheckpointState(response)));
+              } else {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+              }
+            });
+
     return result;
   }
 

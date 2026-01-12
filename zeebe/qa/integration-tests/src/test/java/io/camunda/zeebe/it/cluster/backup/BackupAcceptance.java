@@ -125,6 +125,18 @@ public interface BackupAcceptance {
                     .asInstanceOf(InstanceOfAssertFactories.type(FeignException.class))
                     .extracting(FeignException::status)
                     .isEqualTo(404));
+
+    Awaitility.await("Backup range reflects deletion")
+        .timeout(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(actuator.state().getRanges())
+                    .anySatisfy(
+                        range -> {
+                          assertThat(range.startId()).isLessThanOrEqualTo(backupId);
+                          assertThat(range.endId()).isGreaterThanOrEqualTo(backupId);
+                          assertThat(range.missingCheckpoints()).contains(backupId);
+                        }));
   }
 
   @Test
@@ -160,6 +172,20 @@ public interface BackupAcceptance {
                         PartitionCheckpointState::checkpointId,
                         PartitionCheckpointState::checkpointType)
                     .containsExactly(backupId, CheckpointType.MANUAL_BACKUP));
+
+    Awaitility.await("until backup range is created")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(actuator.state().getRanges())
+                    .describedAs(
+                        "There should be at least one backup range containing the taken backup")
+                    .isNotEmpty()
+                    .anySatisfy(
+                        range -> {
+                          assertThat(range.startId()).isLessThanOrEqualTo(backupId);
+                          assertThat(range.endId()).isGreaterThanOrEqualTo(backupId);
+                        }));
   }
 
   @Test
