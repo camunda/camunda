@@ -48,8 +48,8 @@ public class RepositoryNodeIdProviderReadinessChecker {
    *
    * @return CompletableFuture that completes when all nodes are up to date
    */
-  public CompletableFuture<Void> waitUntilAllNodesAreUpToDate() {
-    final var result = new CompletableFuture<Void>();
+  public CompletableFuture<Boolean> waitUntilAllNodesAreUpToDate() {
+    final var result = new CompletableFuture<Boolean>();
     final var nodesToCheck = new HashSet<Integer>();
     for (int i = 0; i < clusterSize; i++) {
       if (i != currentNodeId) {
@@ -63,7 +63,9 @@ public class RepositoryNodeIdProviderReadinessChecker {
   }
 
   private void scheduleCheck(
-      final CompletableFuture<Void> result, final Set<Integer> nodesToCheck, final long startTime) {
+      final CompletableFuture<Boolean> result,
+      final Set<Integer> nodesToCheck,
+      final long startTime) {
     scheduler.schedule(
         () -> performCheck(result, nodesToCheck, startTime),
         checkInterval.toMillis(),
@@ -71,7 +73,9 @@ public class RepositoryNodeIdProviderReadinessChecker {
   }
 
   private void performCheck(
-      final CompletableFuture<Void> result, final Set<Integer> nodesToCheck, final long startTime) {
+      final CompletableFuture<Boolean> result,
+      final Set<Integer> nodesToCheck,
+      final long startTime) {
     try {
       nodesToCheck.removeIf(this::isNodeUpToDate);
     } catch (final Exception e) {
@@ -79,7 +83,7 @@ public class RepositoryNodeIdProviderReadinessChecker {
     }
 
     if (nodesToCheck.isEmpty()) {
-      result.complete(null);
+      result.complete(true);
     } else {
       scheduleCheck(result, nodesToCheck, startTime);
     }

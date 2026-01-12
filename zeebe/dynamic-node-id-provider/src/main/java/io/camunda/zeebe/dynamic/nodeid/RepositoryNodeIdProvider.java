@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -33,6 +34,9 @@ import org.slf4j.LoggerFactory;
 public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepositoryNodeIdProvider.class);
+
+  private static final Duration READINESS_CHECK_TIMEOUT = Duration.ofMinutes(5);
+
   private final NodeIdRepository nodeIdRepository;
   private final InstantSource clock;
   private volatile StoredLease.Initialized currentLease;
@@ -48,7 +52,6 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
   private final CompletableFuture<Boolean> readinessFuture = new CompletableFuture<>();
-
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -119,26 +122,38 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   private void scheduleReadinessCheck(final int clusterSize) {
+    final var readinessCheckExecutor =
+        Executors.newSingleThreadScheduledExecutor(
+            r -> new Thread(r, "NodeIdProvider-readiness-checker"));
     new RepositoryNodeIdProviderReadinessChecker(
             clusterSize,
             currentLease.node(),
             nodeIdRepository,
-            executor, // TODO: May be use a different scheduler to not block lease renewal
+            // use a different executor to not block lease renewal during readiness check
+            readinessCheckExecutor,
             Duration.ofSeconds(5))
         .waitUntilAllNodesAreUpToDate()
-        .whenComplete(
-            (v, t) -> {
-              if (t != null) {
-                // This should never happen as the checker should wait indefinitely until the nodes
-                // are up-to-date
+        .orTimeout(READINESS_CHECK_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
+        .exceptionally(
+            t -> {
+              if (t instanceof TimeoutException) {
+                LOG.warn(
+                    "Timed out waiting for all nodes to be up to date after {}. Marking the node as ready.",
+                    READINESS_CHECK_TIMEOUT);
+                return true;
+              } else {
+                // This should never happen as the checker should wait indefinitely until timeout
+                // until the nodes are up-to-date
                 LOG.warn(
                     "Failed to verify that all nodes are up to date. Marking readiness as failed.",
                     t);
-                readinessFuture.complete(false);
-              } else {
-                LOG.info("All nodes are up to date. Marking readiness as successful.");
-                readinessFuture.complete(true);
+                return false;
               }
+            })
+        .thenAccept(
+            isReady -> {
+              readinessFuture.complete(isReady);
+              readinessCheckExecutor.shutdown();
             });
   }
 
