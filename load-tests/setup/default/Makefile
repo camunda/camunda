@@ -54,7 +54,7 @@ else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
 
-# Install Elasticsearch prometheus exporter if secondary_storage is elasticsearch
+# Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter
 install-elasticsearch-exporter:
 ifeq ($(secondary_storage),elasticsearch)
