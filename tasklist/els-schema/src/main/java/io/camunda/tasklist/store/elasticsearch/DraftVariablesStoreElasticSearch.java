@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -114,7 +115,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
                   ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.NAME, variableNames));
 
       final var searchRequestBuilder =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(draftTaskVariableTemplate.getFullQualifiedName())
               .query(query);
 
@@ -143,7 +144,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
       final var searchRequest =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(draftTaskVariableTemplate.getFullQualifiedName())
               .query(tenantAwareQuery)
               .build();
@@ -169,7 +170,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       final var query = ElasticsearchUtil.termsQuery(DraftTaskVariableTemplate.TASK_ID, taskIds);
 
       final var searchRequestBuilder =
-          new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+          new SearchRequest.Builder()
               .index(draftTaskVariableTemplate.getFullQualifiedName())
               .query(query)
               .source(s -> s.filter(f -> f.includes(DraftTaskVariableTemplate.ID)));
