@@ -33,7 +33,6 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,7 +76,7 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
           .withExposedPorts(9200);
 
-  @Autowired RestHighLevelClient tasklistEsClient;
+  @Autowired ElasticsearchClient es8Client;
 
   @Autowired private TestRestTemplate testRestTemplate;
 
@@ -90,7 +89,7 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
 
   @Test
   public void canConnect() {
-    assertThat(tasklistEsClient).isNotNull();
+    assertThat(es8Client).isNotNull();
     final var healthCheck =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/health", Map.class);

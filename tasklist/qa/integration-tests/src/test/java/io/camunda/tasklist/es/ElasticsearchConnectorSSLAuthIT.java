@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARC
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
@@ -19,7 +20,6 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.Map;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,7 +67,7 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
           .waitingFor(
               Wait.forHttps("/").allowInsecure().withBasicCredentials("elastic", "elastic"));
 
-  @Autowired RestHighLevelClient tasklistEsClient;
+  @Autowired ElasticsearchClient es8Client;
 
   @BeforeAll
   static void beforeAll() {
@@ -76,7 +76,7 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   @Test
   public void canConnect() {
-    assertThat(tasklistEsClient).isNotNull();
+    assertThat(es8Client).isNotNull();
   }
 
   static class ElasticsearchStarter
