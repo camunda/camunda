@@ -45,17 +45,19 @@ function useHandleOperationSuccess() {
       });
 
       if (operationType === 'DELETE_PROCESS_INSTANCE') {
-        navigate(
-          Locations.processes({
-            active: true,
-            incidents: true,
-          }),
-          {replace: true},
-        );
+        if (source === 'instance-header') {
+          navigate(
+            Locations.processes({
+              active: true,
+              incidents: true,
+            }),
+            {replace: true},
+          );
+        }
 
         notificationsStore.displayNotification({
           kind: 'success',
-          title: 'Instance deleted',
+          title: 'Instance is scheduled for deletion',
           isDismissable: true,
         });
       }

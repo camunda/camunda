@@ -25,7 +25,7 @@ function useDeleteProcessInstance(
   },
 ) {
   const queryClient = useQueryClient();
-  const {shouldSkipResultCheck, ...mutationOptions} = options ?? {};
+  const {shouldSkipResultCheck = true, ...mutationOptions} = options ?? {};
 
   return useMutation<Response, Error, void>({
     mutationFn: async () => {
