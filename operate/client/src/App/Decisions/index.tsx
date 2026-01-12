@@ -14,7 +14,6 @@ import {InstancesTable} from './InstancesTable';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
 import {useLocation, type Location} from 'react-router-dom';
-import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from 'modules/queries/queryKeys';
 
@@ -46,7 +45,6 @@ const Decisions: React.FC = () => {
         type="decision"
         leftPanel={<Filters />}
         topPanel={<Decision />}
-        rightPanel={<OperationsPanel />}
         bottomPanel={<InstancesTable />}
       />
     </>

@@ -28,7 +28,6 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockModifyProcessInstancesBatchOperation} from 'modules/mocks/api/v2/processes/mockModifyProcessInstancesBatchOperation';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -160,8 +159,6 @@ describe('BatchModificationSummaryModal', () => {
         kind: 'success',
       }),
     );
-
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
   });
 
   it('should close the modal when cancel button is clicked', async () => {

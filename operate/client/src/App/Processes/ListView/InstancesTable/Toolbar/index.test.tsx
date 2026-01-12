@@ -203,8 +203,6 @@ describe('<ProcessOperations />', () => {
       operationType: 'CANCEL_PROCESS_INSTANCE',
     });
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
-
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'success',
@@ -275,8 +273,6 @@ describe('<ProcessOperations />', () => {
       eventName: 'batch-operation',
       operationType: 'RESOLVE_INCIDENT',
     });
-
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({

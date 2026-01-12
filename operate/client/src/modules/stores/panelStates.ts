@@ -11,23 +11,19 @@ import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 type State = {
   isFiltersCollapsed: boolean;
-  isOperationsCollapsed: boolean;
 };
 
 const DEFAULT_STATE: State = {
   isFiltersCollapsed: false,
-  isOperationsCollapsed: true,
 };
 
 class PanelStates {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
-    const {isFiltersCollapsed = false, isOperationsCollapsed = true} =
-      getStateLocally('panelStates');
+    const {isFiltersCollapsed = false} = getStateLocally('panelStates');
 
     this.state.isFiltersCollapsed = isFiltersCollapsed;
-    this.state.isOperationsCollapsed = isOperationsCollapsed;
     makeAutoObservable(this);
   }
 
@@ -42,25 +38,9 @@ class PanelStates {
     this.state.isFiltersCollapsed = !this.state.isFiltersCollapsed;
   };
 
-  toggleOperationsPanel = () => {
-    storeStateLocally(
-      {
-        isOperationsCollapsed: !this.state.isOperationsCollapsed,
-      },
-      'panelStates',
-    );
-
-    this.state.isOperationsCollapsed = !this.state.isOperationsCollapsed;
-  };
-
   expandFiltersPanel = () => {
     storeStateLocally({isFiltersCollapsed: false}, 'panelStates');
     this.state.isFiltersCollapsed = false;
-  };
-
-  expandOperationsPanel = () => {
-    storeStateLocally({isOperationsCollapsed: false}, 'panelStates');
-    this.state.isOperationsCollapsed = false;
   };
 
   reset = () => {

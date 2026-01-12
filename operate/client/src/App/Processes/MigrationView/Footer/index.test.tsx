@@ -215,8 +215,6 @@ describe('Footer', () => {
       operationType: 'MIGRATE_PROCESS_INSTANCE',
     });
 
-    expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
-
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'success',

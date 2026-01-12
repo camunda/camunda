@@ -13,7 +13,6 @@ import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled'
 import {InlineLoading, Link, ListItem, Stack} from '@carbon/react';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {operationsStore} from 'modules/stores/operations';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {StructuredList} from 'modules/components/StructuredList';
 import {UnorderedList} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
@@ -123,7 +122,6 @@ const DecisionOperations: React.FC<Props> = ({
             decisionDefinitionId: decisionDefinitionKey,
             onSuccess: () => {
               setIsOperationRunning(false);
-              panelStatesStore.expandOperationsPanel();
               notificationsStore.displayNotification({
                 kind: 'success',
                 title: 'Operation created',

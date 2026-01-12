@@ -17,7 +17,6 @@ import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {MigrationConfirmationModal} from '../MigrationConfirmationModal/index.tsx';
 import {useMigrateProcessInstancesBatchOperation} from 'modules/mutations/processes/useMigrateProcessInstancesBatchOperation';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {handleOperationError} from 'modules/utils/notifications';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {buildMutationRequestBody} from 'modules/utils/buildMutationRequestBody.ts';
@@ -180,7 +179,6 @@ const Footer: React.FC = observer(() => {
                     },
                   });
 
-                  panelStatesStore.expandOperationsPanel();
                   processInstanceMigrationStore.disable();
                   processInstancesSelectionStore.reset();
 

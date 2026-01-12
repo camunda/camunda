@@ -32,12 +32,6 @@ function getWrapper(initialPath: string = '/') {
   return Wrapper;
 }
 
-const OperationsPanelMock: React.FC = () => <div>OperationsPanelMock</div>;
-
-vi.mock('modules/components/OperationsPanel', () => ({
-  OperationsPanel: OperationsPanelMock,
-}));
-
 describe.skip('Layout', () => {
   it('should not display footer when modification mode is enabled', async () => {
     render(<Layout />, {wrapper: getWrapper('/processes/1')});
