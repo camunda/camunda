@@ -56,24 +56,6 @@ public class S3TestBackupProvider {
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }
 
-  public static Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
-    Files.write(seg1, RandomUtils.nextBytes(1));
-
-    return new BackupImpl(
-        id,
-        new BackupDescriptorImpl(
-            4,
-            5,
-            "test",
-            Instant.now().truncatedTo(ChronoUnit.MILLIS),
-            CheckpointType.MANUAL_BACKUP),
-        new NamedFileSetImpl(Map.of()),
-        new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
-  }
-
   public static Backup simpleBackup(final boolean legacy) throws IOException {
     return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), legacy);
   }
