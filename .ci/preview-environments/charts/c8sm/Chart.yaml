@@ -14,4 +14,4 @@ dependencies:
   version: 1.6.15
 - name: camunda-platform
   repository: https://helm.camunda.io
-  version: 13.0.0
+  version: 13.3.2

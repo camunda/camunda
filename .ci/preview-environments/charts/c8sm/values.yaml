@@ -32,6 +32,13 @@ global:
     ingress:
       # The domain name under which to expose the preview environment
       domain: camunda.camunda.cloud
+      # WARNING: When enabled, this bypasses Vouch/Okta authentication for all
+      # requests originating from the 10.0.0.0/8 internal IP range, granting
+      # unauthenticated access to any client within that network. This is
+      # intended only for tightly controlled CI/testing scenarios (for example,
+      # CI access via a Teleport TCP tunnel).
+      internalAuthBypass:
+        enabled: false
 
   # Camunda 8 Self-Managed global configurations
   elasticsearch:
@@ -47,23 +54,21 @@ global:
       publicIssuerUrl: https://{{ include "ingress.domain" . }}/auth/realms/camunda-platform
       admin:
         enabled: true
-        # fixed secret, to avoid generating a random one each time
-        existingSecret: admin
-      connectors:
-        # fixed secret, to avoid generating a random one each time
-        existingSecret: connectors
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-admin-client-token
       console:
-        # fixed secret, to avoid generating a random one each time
-        existingSecret: console
         redirectUrl: https://{{ include "ingress.domain" . }}/console
-      core:
-        # fixed secret, to avoid generating a random one each time
-        existingSecret: core
-        redirectUrl: https://{{ include "ingress.domain" . }}/core
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-console-client-token
+      orchestration:
+        redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
       optimize:
-        # fixed secret, to avoid generating a random one each time
-        existingSecret: optimize
         redirectUrl: https://{{ include "ingress.domain" . }}/optimize
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-optimize-client-token
       webModeler:
         redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
@@ -71,10 +76,6 @@ global:
 
   secrets:
     name: camunda-credentials
-
-  security:
-    authentication:
-      method: oidc
 
   zeebeClusterName: zeebe-cluster
 
@@ -90,6 +91,13 @@ camunda-platform:
     contextPath: /connectors
     # image:
     #   registry: camunda/connectors-bundle
+    security:
+      authentication:
+        method: oidc
+        oidc:
+          secret:
+            existingSecret: camunda-credentials
+            existingSecretKey: identity-connectors-client-token
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
@@ -138,16 +146,16 @@ camunda-platform:
               - id: optimize
                 url: https://{{ include "ingress.domain" . }}{{ .Values.optimize.contextPath }}
               - id: operate
-                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/operate
+                url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/operate
               - id: tasklist
-                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/tasklist
+                url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/tasklist
               - id: coreIdentity
-                url: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}/identity
+                url: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}/identity
               - id: connectors
                 url: https://{{ include "ingress.domain" . }}{{ .Values.connectors.contextPath }}
               - id: core
                 urls:
-                  http: https://{{ include "ingress.domain" . }}{{ .Values.core.contextPath }}
+                  http: https://{{ include "ingress.domain" . }}{{ .Values.orchestration.contextPath }}
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
@@ -165,10 +173,10 @@ camunda-platform:
       operator: "Exists"
       effect: "NoSchedule"
 
-  core:
+  orchestration:
     enabled: true
-    fullnameOverride: core
-    contextPath: /core
+    fullnameOverride: orchestration
+    contextPath: /orchestration
     image:
       registry: registry.camunda.cloud
       repository: team-camunda/camunda
@@ -183,6 +191,13 @@ camunda-platform:
       -XX:HeapDumpPath=/usr/local/zeebe/data
       -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
       -XX:+ExitOnOutOfMemoryError
+    security:
+      authentication:
+        method: oidc
+        oidc:
+          secret:
+            existingSecret: camunda-credentials
+            existingSecretKey: identity-orchestration-client-token
     data:
       disk:
         ## Adjustement required due to PVC size
@@ -302,6 +317,13 @@ camunda-platform:
     image:
       registry: registry.camunda.cloud
       repository: team-camunda/optimize
+    security:
+      authentication:
+        method: oidc
+        oidc:
+          secret:
+            existingSecret: camunda-credentials
+            existingSecretKey: identity-optimize-client-token
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
@@ -332,13 +354,28 @@ camunda-platform:
       mail:
         # This value is required, otherwise, the restapi pod won't start.
         fromAddress: noreply@example.com
+      # Override cluster configuration to provide valid version and complete config
+      # The Helm chart would auto-generate cluster config but uses the image tag as version
+      # which fails validation for PR builds (e.g., "pr-abc123...")
+      # When providing clusters override, ALL fields must be specified
+      clusters:
+        - id: "default-cluster"
+          name: "Default Cluster"
+          version: "8.8.0"
+          authentication: "BEARER_TOKEN"
+          authorizations:
+            enabled: true
+          url:
+            grpc: "grpc://orchestration-gateway:26500"
+            rest: "http://orchestration-gateway:8080/orchestration"
+            web-app: "https://{{ include \"ingress.domain\" . }}/orchestration"
       resources:
         limits:
           cpu: "1"
-          memory: 1Gi
+          memory: 2Gi
         requests:
           cpu: 500m
-          memory: 512Mi
+          memory: 1Gi
       nodeSelector:
         cloud.google.com/gke-nodepool: previews
       tolerations:
@@ -350,10 +387,10 @@ camunda-platform:
       #   repository: camunda/web-modeler-webapp
       resources:
         limits:
-          cpu: 100m
-          memory: 256Mi
+          cpu: 500m
+          memory: 1Gi
         requests:
-          cpu: 40m
+          cpu: 100m
           memory: 256Mi
       nodeSelector:
         cloud.google.com/gke-nodepool: previews

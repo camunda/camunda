@@ -6,27 +6,43 @@ name: Preview Environment Teardown
 on:
   pull_request:
     types: [unlabeled, closed]
+  workflow_call:
+    inputs:
+      app-name:
+        description: |
+          ArgoCD app name to tear down
+        required: true
+        type: string
+      ref:
+        description: |
+          Git ref for checkout and ArgoCD revision.
+          Required for cross-branch calls since reusable workflows inherit the caller's ref.
+        required: false
+        type: string
+        default: ''
 
 jobs:
   teardown-preview:
-    # check whether the unlabel name was deploy-preview || check whether the PR was closed / merged and whether deploy-preview was part of the array
+    # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
+    # For PR events: check whether the unlabel name was deploy-preview || 
+    #   check whether the PR was closed/merged with deploy-preview label
     if: >
-      github.event.label.name == 'deploy-preview' || (
-        github.event.action == 'closed' &&
-        contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+      inputs.app-name != '' || (
+        github.event.label.name == 'deploy-preview' || (
+          github.event.action == 'closed' &&
+          contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+        )
       )
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    env:
-      BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
-
     steps:
     #########################################################################
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
+      if: inputs.app-name == ''
       uses: camunda/infra-global-github-actions/sanitize-branch-name@main
       with:
-        branch: ${{ env.BRANCH_NAME }}
+        branch: ${{ github.head_ref }} # head_ref = branch on PR
         max_length: '15'
 
     #########################################################################
@@ -60,22 +76,28 @@ jobs:
     #########################################################################
     # Setup: checkout code. This is required because we are using
     # composite actions and deployment manifests.
+    # For workflow_call with ref input: checkout the specified ref
     - name: Checkout
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        ref: ${{ inputs.ref }}
 
     #########################################################################
     # Tear down preview environment
     - name: Tear down Preview Environment
       uses: camunda/infra-global-github-actions/preview-env/destroy@main
       with:
-        revision: ${{ env.BRANCH_NAME }}
+        revision: ${{ inputs.ref || github.head_ref || github.ref_name }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
+        app_name: camunda-${{ inputs.app-name || steps.sanitize.outputs.branch_name }}
         argocd_server: argocd.int.camunda.com
         github_token: ${{ steps.github-token.outputs.token }}
 
   clean:
-    if: always() && needs.teardown-preview.result != 'skipped'
+    if: >
+      always() &&
+      needs.teardown-preview.result != 'skipped' &&
+      github.event_name == 'pull_request'
     uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
     needs: [teardown-preview]
     secrets: inherit
@@ -83,7 +105,10 @@ jobs:
       pull-request: ${{ github.event.pull_request.number }}
 
   comment:
-    if: always() && needs.teardown-preview.result != 'skipped'
+    if: >
+      always() &&
+      needs.teardown-preview.result != 'skipped' &&
+      github.event_name == 'pull_request'
     name: Remove Deployment Result Summary
     runs-on: ubuntu-24.04
     needs: [teardown-preview]
