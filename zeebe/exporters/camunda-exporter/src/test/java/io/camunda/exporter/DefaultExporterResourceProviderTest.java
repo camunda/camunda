@@ -174,7 +174,7 @@ public class DefaultExporterResourceProviderTest {
     final var context = new ExporterTestContext();
     context.setPartitionId(partitionId);
 
-    // when)
+    // when
     final var provider = new DefaultExporterResourceProvider();
     provider.init(
         config,
