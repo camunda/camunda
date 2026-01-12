@@ -15,8 +15,10 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.*;
 import static java.util.Optional.ofNullable;
 
@@ -26,14 +28,17 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.util.NumberParsingUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +118,54 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
         yield matchNone();
       }
     };
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQueryByProperties(
+      final Authorization<?> authorization, final CamundaAuthentication authentication) {
+
+    if (authorization.resourceType() != AuthorizationResourceType.USER_TASK) {
+      LOG.warn(
+          "Property-based authorization is only supported for USER_TASK resource type, "
+              + "but received '{}'; returning a match-none query.",
+          authorization.resourceType());
+      return matchNone();
+    }
+
+    final var username = authentication.authenticatedUsername();
+    final var groups = authentication.authenticatedGroupIds();
+
+    final var queries = new ArrayList<SearchQuery>();
+
+    for (final var propertyName : authorization.resourcePropertyNames()) {
+      switch (propertyName) {
+        case Authorization.PROP_ASSIGNEE -> {
+          if (StringUtils.isNotEmpty(username)) {
+            queries.add(term(ASSIGNEE, username));
+          }
+        }
+        case Authorization.PROP_CANDIDATE_USERS -> {
+          if (StringUtils.isNotEmpty(username)) {
+            queries.add(stringTerms(CANDIDATE_USERS, List.of(username)));
+          }
+        }
+        case Authorization.PROP_CANDIDATE_GROUPS -> {
+          if (groups != null && !groups.isEmpty()) {
+            queries.add(stringTerms(CANDIDATE_GROUPS, groups));
+          }
+        }
+        default ->
+            LOG.warn(
+                "Unknown property name '{}' for USER_TASK property-based authorization; ignoring.",
+                propertyName);
+      }
+    }
+
+    if (queries.isEmpty()) {
+      return matchNone();
+    }
+
+    return or(queries);
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
