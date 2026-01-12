@@ -10,6 +10,7 @@ package io.camunda.security.reader;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
+import java.util.function.Predicate;
 
 /**
  * Enables or disables a {@link AuthorizationCheck}. If enabled, then the {@code
@@ -30,10 +31,18 @@ public record AuthorizationCheck(boolean enabled, AuthorizationCondition authori
   }
 
   public boolean hasAnyResourceAccess() {
-    return !enabled || hasAnyResourceIdAccess();
+    return !enabled || hasAnyResourceIdAccess() || hasAnyResourcePropertyAccess();
   }
 
   private boolean hasAnyResourceIdAccess() {
+    return anyAuthorizationMatches(Authorization::hasAnyResourceIds);
+  }
+
+  private boolean hasAnyResourcePropertyAccess() {
+    return anyAuthorizationMatches(Authorization::hasAnyResourcePropertyNames);
+  }
+
+  private boolean anyAuthorizationMatches(Predicate<Authorization<?>> predicate) {
     if (authorizationCondition == null) {
       return false;
     }
@@ -43,6 +52,6 @@ public record AuthorizationCheck(boolean enabled, AuthorizationCondition authori
       return false;
     }
 
-    return auths.stream().anyMatch(Authorization::hasAnyResourceIds);
+    return auths.stream().anyMatch(predicate);
   }
 }

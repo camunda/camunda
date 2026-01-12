@@ -180,7 +180,133 @@ class ResourceAccessChecksTest {
   }
 
   @Nested
-  class HasAnyResourceId {
+  class GetAuthorizedResourcePropertyNamesByType {
+
+    @Test
+    void shouldReturnEmptyMapWhenAuthorizationDisabled() {
+      // given
+      final var checks = ResourceAccessChecks.disabled();
+
+      // when
+      final var result = checks.getAuthorizedResourcePropertyNamesByType();
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnEmptyMapWhenNoResourcePropertyNamesProvided() {
+      // given
+      final var authorization = Authorization.of(b -> b.userTask().read());
+
+      final var checks =
+          ResourceAccessChecks.of(
+              AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
+      // when
+      final var result = checks.getAuthorizedResourcePropertyNamesByType();
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnEmptyMapWhenNullAuthorizationCondition() {
+      // given
+      final var checks =
+          ResourceAccessChecks.of(
+              AuthorizationCheck.enabled((AuthorizationCondition) null), TenantCheck.disabled());
+      // when
+      final var result = checks.getAuthorizedResourcePropertyNamesByType();
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnPropertyNamesGroupedByResourceTypeForSingleAuthorization() {
+      // given
+      final var authorization =
+          Authorization.of(
+              builder ->
+                  builder.userTask().read().authorizedByAssignee().authorizedByCandidateUsers());
+      final var condition = AuthorizationConditions.single(authorization);
+      final var checks =
+          ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
+
+      // when
+      final var result = checks.getAuthorizedResourcePropertyNamesByType();
+
+      // then
+      assertThat(result).containsOnlyKeys(AuthorizationResourceType.USER_TASK.name());
+      assertThat(result.get(AuthorizationResourceType.USER_TASK.name()))
+          .containsExactlyInAnyOrder(
+              Authorization.PROP_ASSIGNEE, Authorization.PROP_CANDIDATE_USERS);
+    }
+
+    @Test
+    void shouldMergePropertyNamesForSameResourceTypeFromMultipleAuthorizations() {
+      // given
+      final var first =
+          Authorization.of(
+              builder ->
+                  builder.userTask().read().authorizedByAssignee().authorizedByCandidateUsers());
+      final var second =
+          Authorization.of(
+              builder ->
+                  builder
+                      .userTask()
+                      .updateUserTask() // different permission
+                      .authorizedByCandidateUsers() // duplicate
+                      .authorizedByCandidateGroups());
+      final var condition = AuthorizationConditions.anyOf(first, second);
+      final var checks =
+          ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
+
+      // when
+      final var result = checks.getAuthorizedResourcePropertyNamesByType();
+
+      // then
+      assertThat(result).containsOnlyKeys(AuthorizationResourceType.USER_TASK.name());
+      assertThat(result.get(AuthorizationResourceType.USER_TASK.name()))
+          .containsExactlyInAnyOrder(
+              Authorization.PROP_ASSIGNEE,
+              Authorization.PROP_CANDIDATE_USERS,
+              Authorization.PROP_CANDIDATE_GROUPS);
+    }
+
+    @Test
+    void shouldGroupPropertyNamesByDifferentResourceTypes() {
+      // given
+      final var userTaskAuth =
+          Authorization.of(
+              builder ->
+                  builder.userTask().read().authorizedByAssignee().authorizedByCandidateUsers());
+      final var processDefAuth =
+          Authorization.of(
+              builder ->
+                  builder.processDefinition().readUserTask().authorizedByProperty("tenantId"));
+      final var condition = AuthorizationConditions.anyOf(userTaskAuth, processDefAuth);
+      final var checks =
+          ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
+
+      // when
+      final var result = checks.getAuthorizedResourcePropertyNamesByType();
+
+      // then
+      assertThat(result)
+          .containsOnlyKeys(
+              AuthorizationResourceType.USER_TASK.name(),
+              AuthorizationResourceType.PROCESS_DEFINITION.name());
+      assertThat(result.get(AuthorizationResourceType.USER_TASK.name()))
+          .containsExactlyInAnyOrder(
+              Authorization.PROP_ASSIGNEE, Authorization.PROP_CANDIDATE_USERS);
+      assertThat(result.get(AuthorizationResourceType.PROCESS_DEFINITION.name()))
+          .containsExactly("tenantId");
+    }
+  }
+
+  @Nested
+  class HasAnyResourceAccess {
 
     @Test
     void shouldReturnTrueWhenAuthorizationDisabled() {
@@ -203,7 +329,7 @@ class ResourceAccessChecksTest {
     }
 
     @Test
-    void shouldReturnFalseWhenNoResourceIdsProvided() {
+    void shouldReturnFalseWhenNeitherResourceIdsNorPropertyNamesProvided() {
       // given
       final var authorization = Authorization.of(b -> b.processDefinition().readUserTask());
       final var checks =
@@ -221,6 +347,20 @@ class ResourceAccessChecksTest {
       final var withIds =
           Authorization.of(b -> b.userTask().read().resourceIds(List.of("ut-1", "ut-2")));
       final var condition = AuthorizationConditions.anyOf(withoutIds, withIds);
+      final var checks =
+          ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
+
+      // when - then
+      assertThat(checks.authorizationCheck().hasAnyResourceAccess()).isTrue();
+    }
+
+    @Test
+    void shouldReturnTrueWhenAnyAuthorizationHasPropertyNames() {
+      // given
+      final var withoutPropertyNames = Authorization.of(b -> b.userTask().read());
+      final var withPropertyNames =
+          Authorization.of(b -> b.userTask().read().authorizedByAssignee());
+      final var condition = AuthorizationConditions.anyOf(withoutPropertyNames, withPropertyNames);
       final var checks =
           ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
 

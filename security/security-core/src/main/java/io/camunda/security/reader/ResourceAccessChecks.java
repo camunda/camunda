@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public record ResourceAccessChecks(
@@ -78,6 +79,38 @@ public record ResourceAccessChecks(
                         Collectors.toCollection(LinkedHashSet::new)),
                     // then convert that Set to an unmodifiable List for the API
                     List::copyOf)));
+  }
+
+  /**
+   * Returns a mapping from authorization resource type name to the set of all resource property
+   * names authorized by any branch of the current {@link AuthorizationCondition}.
+   *
+   * <p>If authorization checks are disabled, the condition is {@code null}, or no authorization
+   * branches are present, this method returns an empty map.
+   *
+   * <p>For composite authorization conditions (e.g., {@code AnyOfAuthorizationCondition}), multiple
+   * branches may reference the same resource type. In such cases, all resource property names for
+   * that type are merged into a single {@link Set}. Authorizations with {@code null} or empty
+   * resource property name lists are ignored.
+   *
+   * @return a map where each key is a resource type name and each value is the set of all resource
+   *     property names authorized for that type across all applicable authorization branches
+   */
+  public Map<String, Set<String>> getAuthorizedResourcePropertyNamesByType() {
+    if (!authorizationCheck.enabled() || !authorizationCheck.hasAnyResourceAccess()) {
+      return Collections.emptyMap();
+    }
+
+    final var auths = authorizationCheck.authorizationCondition().authorizations();
+    return auths.stream()
+        .filter(Objects::nonNull)
+        .filter(auth -> auth.resourceType() != null)
+        .filter(Authorization::hasAnyResourcePropertyNames)
+        .collect(
+            Collectors.groupingBy(
+                auth -> auth.resourceType().name(),
+                Collectors.flatMapping(
+                    auth -> auth.resourcePropertyNames().stream(), Collectors.toSet())));
   }
 
   public List<String> getAuthorizedTenantIds() {
