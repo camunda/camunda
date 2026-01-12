@@ -86,13 +86,6 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Operations', () => {
-  test('infinite scrolling', async ({page, commonPage}) => {
-    await commonPage.expandOperationsPanel();
-    await expect(page.getByTestId('operations-entry')).toHaveCount(20);
-    await page.getByTestId('operations-entry').nth(19).scrollIntoViewIfNeeded();
-    await expect(page.getByTestId('operations-entry')).toHaveCount(40);
-  });
-
   // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
   test.skip('Retry and Cancel single instance @roundtrip', async ({
     commonPage,
@@ -144,7 +137,6 @@ test.describe('Operations', () => {
     ).toBeVisible();
 
     await expect(commonPage.operationsList).toBeHidden();
-    await commonPage.expandOperationsPanel();
 
     await expect(commonPage.operationsList).toBeVisible();
 
@@ -171,8 +163,6 @@ test.describe('Operations', () => {
     await expect(
       instanceRow.getByText(instance.processInstanceKey),
     ).toBeVisible();
-
-    await commonPage.collapseOperationsPanel();
   });
 
   // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
@@ -257,7 +247,6 @@ test.describe('Operations', () => {
       ),
     );
 
-    await commonPage.collapseOperationsPanel();
     await page.getByRole('columnheader', {name: 'Select all rows'}).click();
 
     await page.getByRole('button', {name: 'Cancel', exact: true}).click();

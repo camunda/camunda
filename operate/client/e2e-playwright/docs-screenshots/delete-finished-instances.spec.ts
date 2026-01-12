@@ -127,16 +127,6 @@ test.describe('delete finished instances', () => {
     await filtersPanel.selectVersion('1');
     await filtersPanel.processVersionFilter.blur();
 
-    await commonPage.expandOperationsPanel();
-
-    await processesPage.diagram.moveCanvasHorizontally(-200);
-
-    await page.screenshot({
-      path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-operations-panel-delete-operation.png',
-    });
-
-    await commonPage.collapseOperationsPanel();
-
     await processesPage.diagram.moveCanvasHorizontally(200);
 
     await page.screenshot({
