@@ -11,7 +11,7 @@
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.8.4-SNAPSHOT</version>
+  <version>8.8.5-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -50,7 +50,7 @@
 
     <zeebe.version>8.8.9</zeebe.version>
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <identity.version>8.8.5</identity.version>
+    <identity.version>8.8.6</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 
