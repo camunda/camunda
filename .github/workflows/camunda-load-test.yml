@@ -30,6 +30,11 @@ on:
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
+      platform-helm-values:
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which is deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set console.resources.memory=2Gi'
+        type: string
+        default: ""
+        required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -58,6 +63,11 @@ on:
         required: false
       reuse-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
+      platform-helm-values:
+        description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which is deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set console.resources.memory=2Gi'
         type: string
         default: ""
         required: false
@@ -302,7 +312,7 @@ jobs:
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
-
+          ${{ inputs.platform-helm-values }}
 
       - name: Summarize deployment
         if: success()
