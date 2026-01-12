@@ -19,13 +19,17 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
+import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.ScrollException;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -42,6 +46,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -693,6 +698,88 @@ public abstract class ElasticsearchUtil {
    */
   public static Query matchAllQueryEs8() {
     return Query.of(q -> q.matchAll(m -> m));
+  }
+
+  // ===========================================================================================
+  // ES8 Scroll Helper Methods
+  // ===========================================================================================
+
+  /**
+   * Scrolls through all search results using the ES8 client and returns a stream of response
+   * bodies.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @param docClass Document class type
+   * @param <T> Type of documents
+   * @return Stream of response bodies containing hits
+   * @throws ScrollException if scroll operation fails
+   */
+  public static <T> Stream<ResponseBody<T>> scrollAllStream(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final Class<T> docClass) {
+    final AtomicReference<String> lastScrollId = new AtomicReference<>(null);
+
+    final var scrollKeepAlive = Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms"));
+
+    final co.elastic.clients.elasticsearch.core.SearchResponse<T> searchRes;
+    searchRequestBuilder.scroll(scrollKeepAlive);
+
+    try {
+      searchRes = client.search(searchRequestBuilder.build(), docClass);
+      lastScrollId.set(searchRes.scrollId());
+
+      if (searchRes.hits().hits().isEmpty()) {
+        clearScrollSilently(client, lastScrollId.get());
+        return Stream.of(searchRes);
+      }
+    } catch (final IOException e) {
+      throw new ScrollException("Error during scroll where initial search request failed", e);
+    }
+
+    final var scrollStream =
+        Stream.generate(
+                () -> {
+                  final ScrollResponse<T> response;
+                  try {
+                    response =
+                        client.scroll(
+                            r -> r.scrollId(lastScrollId.get()).scroll(scrollKeepAlive), docClass);
+
+                    lastScrollId.set(response.scrollId());
+
+                    if (response.hits().hits().isEmpty()) {
+                      clearScrollSilently(client, lastScrollId.get());
+                      return null;
+                    }
+                  } catch (final IOException e) {
+                    clearScrollSilently(client, lastScrollId.get());
+                    throw new ScrollException(
+                        "Error during scroll with id: " + lastScrollId.get(), e);
+                  }
+                  return response;
+                })
+            .takeWhile(Objects::nonNull);
+
+    return Stream.concat(Stream.of(searchRes), scrollStream);
+  }
+
+  /**
+   * Clears scroll context silently, logging any errors that occur.
+   *
+   * @param client ES8 client
+   * @param scrollId Scroll ID to clear
+   */
+  private static void clearScrollSilently(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client, final String scrollId) {
+    if (scrollId != null) {
+      try {
+        client.clearScroll(cs -> cs.scrollId(scrollId));
+      } catch (final Exception e) {
+        LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId, e);
+      }
+    }
   }
 
   private static final class DelegatingActionListener<Response>
