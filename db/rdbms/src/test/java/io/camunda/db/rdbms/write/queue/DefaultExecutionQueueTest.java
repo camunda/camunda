@@ -200,6 +200,42 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
+  public void whenPreFlushListenerAddsQueueItemTheItemIsAlsoFlushed() {
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    final var preFlushItem =
+        new QueueItem(
+            ContextType.EXPORTER_POSITION,
+            WriteStatementType.UPDATE,
+            1L,
+            "statement2",
+            "parameter2");
+    executionQueue.executeInQueue(item1);
+
+    final var preFlushListener = mock(PreFlushListener.class);
+    Mockito.doAnswer(
+            invocation -> {
+              executionQueue.executeInQueue(preFlushItem);
+              return null;
+            })
+        .when(preFlushListener)
+        .onPreFlush();
+
+    executionQueue.registerPreFlushListener(preFlushListener);
+
+    // when
+    executionQueue.flush();
+
+    // then
+    verify(session).update(preFlushItem.statementId(), preFlushItem.parameter());
+  }
+
+  @Test
   public void whenFlushIsExceptionalSessionIsRolledBack() {
     final var item1 =
         new QueueItem(
