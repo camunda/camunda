@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsState;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
 
 /** Mutable interface for managing job metrics state. */
 public interface MutableJobMetricsState
@@ -24,14 +24,13 @@ public interface MutableJobMetricsState
    *   <li>Updates META column family counters appropriately
    * </ul>
    *
-   * <p>IMPORTANT: If this creates a NEW key in METRICS column family, increments __job_metrics_nb
-   *
    * @param jobType the job type string
    * @param tenantId the tenant ID string
    * @param workerName the worker name string
    * @param status the job status to increment
    */
-  void incrementMetric(String jobType, String tenantId, String workerName, JobMetricsState status);
+  void incrementMetric(
+      String jobType, String tenantId, String workerName, JobMetricsExportState status);
 
   /**
    * Clears all data:
