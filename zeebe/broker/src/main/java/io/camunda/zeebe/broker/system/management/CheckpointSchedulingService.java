@@ -64,13 +64,15 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
       LOG.info("Backup scheduler initialized with interval {}", backupSchedule);
     }
 
-    checkpointScheduler =
-        new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient, meterRegistry);
+    if (checkpointSchedule != null || backupSchedule != null) {
+      checkpointScheduler =
+          new CheckpointScheduler(checkpointSchedule, backupSchedule, brokerClient, meterRegistry);
+    }
   }
 
   @Override
   protected void onActorStarted() {
-    if (shouldStartSchedulers()) {
+    if (checkpointScheduler != null && shouldStartSchedulers()) {
       actorScheduler.submitActor(checkpointScheduler);
     }
   }
