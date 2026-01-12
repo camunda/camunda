@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
@@ -49,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRec
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
@@ -208,6 +211,26 @@ public class RecordFixtures {
                 .from((ImmutableDecisionRecordValue) recordValueRecord.getValue())
                 .withVersion(1)
                 .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getDecisionEvaluationEvaluatedRecord(
+      final Long position, final List<EvaluatedDecisionValue> evaluationDecisions) {
+    final ImmutableDecisionEvaluationRecordValue value =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(FACTORY.generateObject(ImmutableDecisionEvaluationRecordValue.class))
+            .withEvaluatedDecisions(evaluationDecisions)
+            .build();
+    final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.DECISION_EVALUATION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(DecisionEvaluationIntent.EVALUATED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withValue(value)
         .build();
   }
 
