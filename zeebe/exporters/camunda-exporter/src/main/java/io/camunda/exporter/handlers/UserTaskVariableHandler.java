@@ -125,6 +125,10 @@ public class UserTaskVariableHandler
             .setName(record.getValue().getName());
     setVariableValues(record, variable);
 
+    final var rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      variable.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
     return variable;
   }
 

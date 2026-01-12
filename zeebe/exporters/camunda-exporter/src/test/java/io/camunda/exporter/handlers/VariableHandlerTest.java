@@ -167,6 +167,31 @@ public class VariableHandlerTest {
     assertThat(variableEntity.getValue()).isEqualTo(variableRecordValue.getValue());
     assertThat(variableEntity.getIsPreview()).isFalse();
     assertThat(variableEntity.getFullValue()).isNull();
+    assertThat(variableEntity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(variableRecordValue.getRootProcessInstanceKey());
+  }
+
+  @Test
+  void shouldNotSetRootProcessInstanceKeyWhenDefault() {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withRootProcessInstanceKey(-1L)
+                            .build()));
+
+    // when
+    final VariableEntity variableEntity = new VariableEntity();
+    underTest.updateEntity(variableRecord, variableEntity);
+
+    // then
+    assertThat(variableEntity.getRootProcessInstanceKey()).isNull();
   }
 
   @Test
