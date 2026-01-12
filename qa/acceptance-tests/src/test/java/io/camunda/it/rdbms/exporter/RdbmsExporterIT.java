@@ -238,6 +238,10 @@ class RdbmsExporterIT {
         (VariableRecordValue) variableCreatedRecord.getValue();
     assertThat(variable).isNotNull();
     assertThat(variable.value()).isEqualTo(variableRecordValue.getValue());
+    assertThat(variable.processInstanceKey())
+        .isEqualTo(variableRecordValue.getProcessInstanceKey());
+    assertThat(variable.rootProcessInstanceKey())
+        .isEqualTo(variableRecordValue.getRootProcessInstanceKey());
   }
 
   @Test

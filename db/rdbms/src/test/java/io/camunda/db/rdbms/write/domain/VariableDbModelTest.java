@@ -28,6 +28,7 @@ public class VariableDbModelTest {
             .value("123456")
             .scopeKey(2L)
             .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build();
 
@@ -42,6 +43,7 @@ public class VariableDbModelTest {
     assertThat(model.isPreview()).isFalse();
     assertThat(model.scopeKey()).isEqualTo(2L);
     assertThat(model.processInstanceKey()).isEqualTo(3L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
   }
 
@@ -59,6 +61,7 @@ public class VariableDbModelTest {
             .value("-123456")
             .scopeKey(2L)
             .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build();
 
@@ -73,6 +76,7 @@ public class VariableDbModelTest {
     assertThat(model.isPreview()).isFalse();
     assertThat(model.scopeKey()).isEqualTo(2L);
     assertThat(model.processInstanceKey()).isEqualTo(3L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
   }
 
@@ -90,6 +94,7 @@ public class VariableDbModelTest {
             .value("123.456")
             .scopeKey(2L)
             .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build();
 
@@ -104,6 +109,7 @@ public class VariableDbModelTest {
     assertThat(model.isPreview()).isFalse();
     assertThat(model.scopeKey()).isEqualTo(2L);
     assertThat(model.processInstanceKey()).isEqualTo(3L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
   }
 
@@ -121,6 +127,7 @@ public class VariableDbModelTest {
             .value("-123.456")
             .scopeKey(2L)
             .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build();
 
@@ -135,6 +142,7 @@ public class VariableDbModelTest {
     assertThat(model.isPreview()).isFalse();
     assertThat(model.scopeKey()).isEqualTo(2L);
     assertThat(model.processInstanceKey()).isEqualTo(3L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
   }
 
@@ -152,6 +160,7 @@ public class VariableDbModelTest {
             .value("\"non-numeric\"")
             .scopeKey(2L)
             .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build();
 
@@ -166,6 +175,7 @@ public class VariableDbModelTest {
     assertThat(model.isPreview()).isFalse();
     assertThat(model.scopeKey()).isEqualTo(2L);
     assertThat(model.processInstanceKey()).isEqualTo(3L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
   }
 
@@ -185,6 +195,7 @@ public class VariableDbModelTest {
             .value(largeValue)
             .scopeKey(2L)
             .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build()
             .truncateValue(variableSizeThreshold, null);
@@ -200,6 +211,7 @@ public class VariableDbModelTest {
     assertThat(model.isPreview()).isTrue();
     assertThat(model.scopeKey()).isEqualTo(2L);
     assertThat(model.processInstanceKey()).isEqualTo(3L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
   }
 
@@ -220,6 +232,7 @@ public class VariableDbModelTest {
             .value(largeValue)
             .scopeKey(2L)
             .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
             .build()
             .truncateValue(variableSizeThreshold, maxBytesThreshold);
@@ -235,6 +248,7 @@ public class VariableDbModelTest {
     assertThat(model.isPreview()).isTrue();
     assertThat(model.scopeKey()).isEqualTo(2L);
     assertThat(model.processInstanceKey()).isEqualTo(3L);
+    assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
   }
 }
