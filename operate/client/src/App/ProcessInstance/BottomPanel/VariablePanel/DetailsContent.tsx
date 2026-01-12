@@ -6,22 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useMemo} from 'react';
+import {useMemo} from 'react';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
-import {tracking} from 'modules/tracking';
-import {Launch} from '@carbon/react/icons';
+import {formatDate} from 'modules/utils/date';
 import {
   Content,
   StructuredList,
   EmptyMessageWrapper,
-  FooterContainer,
-  FooterLayer,
 } from './DetailsContent.styled';
-import {Button} from '@carbon/react';
 import {getExecutionDuration} from 'App/ProcessInstance/TopPanel/MetadataPopover/Details/getExecutionDuration';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import {DetailsModal} from 'App/ProcessInstance/TopPanel/MetadataPopover/Details/DetailsModal';
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useJobs} from 'modules/queries/jobs/useJobs';
@@ -37,7 +32,6 @@ import {observer} from 'mobx-react';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 
 const DetailsContent: React.FC = observer(() => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const {data: processInstance} = useProcessInstance();
   const selection = flowNodeSelectionStore.state.selection;
   const elementId = selection?.flowNodeId;
@@ -175,6 +169,56 @@ const DetailsContent: React.FC = observer(() => {
       });
     }
 
+    if (job?.worker) {
+      baseRows.push({
+        key: 'job-worker',
+        columns: [
+          {cellContent: 'Job Worker'},
+          {cellContent: job.worker},
+        ],
+      });
+    }
+
+    if (job?.type) {
+      baseRows.push({
+        key: 'job-type',
+        columns: [
+          {cellContent: 'Job Type'},
+          {cellContent: job.type},
+        ],
+      });
+    }
+
+    if (job?.jobKey) {
+      baseRows.push({
+        key: 'job-key',
+        columns: [
+          {cellContent: 'Job Key'},
+          {cellContent: job.jobKey},
+        ],
+      });
+    }
+
+    if (startDate) {
+      baseRows.push({
+        key: 'start-date',
+        columns: [
+          {cellContent: 'Start Date'},
+          {cellContent: formatDate(startDate)},
+        ],
+      });
+    }
+
+    if (endDate) {
+      baseRows.push({
+        key: 'end-date',
+        columns: [
+          {cellContent: 'End Date'},
+          {cellContent: formatDate(endDate)},
+        ],
+      });
+    }
+
     if (
       businessObject?.$type === 'bpmn:CallActivity' &&
       type !== 'MULTI_INSTANCE_BODY'
@@ -256,52 +300,18 @@ const DetailsContent: React.FC = observer(() => {
   }
 
   return (
-    <>
-      <Content>
-        <StructuredList
-          label="Element Instance Details"
-          headerSize="sm"
-          headerColumns={[
-            {cellContent: 'Property', width: '40%'},
-            {cellContent: 'Value', width: '60%'},
-          ]}
-          verticalCellPadding="var(--cds-spacing-02)"
-          rows={rows}
-        />
-        {instanceKey !== null && (
-          <FooterContainer>
-            <FooterLayer>
-              <Button
-                kind="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsModalVisible(true);
-                  tracking.track({
-                    eventName: 'flow-node-instance-details-opened',
-                  });
-                }}
-                title="Show more metadata"
-                aria-label="Show more metadata"
-                renderIcon={Launch}
-                style={{alignSelf: 'flex-start'}}
-              >
-                View metadata
-              </Button>
-            </FooterLayer>
-          </FooterContainer>
-        )}
-      </Content>
-      {instanceKey !== null && (
-        <DetailsModal
-          elementInstance={elementInstanceMetadata}
-          job={job}
-          calledProcessInstance={calledProcessInstance}
-          calledDecisionInstance={calledDecisionInstance}
-          isVisible={isModalVisible}
-          onClose={() => setIsModalVisible(false)}
-        />
-      )}
-    </>
+    <Content>
+      <StructuredList
+        label="Element Instance Details"
+        headerSize="sm"
+        headerColumns={[
+          {cellContent: 'Property', width: '40%'},
+          {cellContent: 'Value', width: '60%'},
+        ]}
+        verticalCellPadding="var(--cds-spacing-02)"
+        rows={rows}
+      />
+    </Content>
   );
 });
 
