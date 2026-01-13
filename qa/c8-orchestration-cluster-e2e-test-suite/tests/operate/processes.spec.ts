@@ -124,8 +124,15 @@ test.describe('Processes', () => {
         `${instanceWithoutAnIncident.processInstanceKey}, ${instanceWithAnIncident.processInstanceKey}`,
       );
 
-      await expect(operateProcessesPage.dataList).toBeVisible();
-      await expect(operateProcessesPage.processInstancesTable).toHaveCount(2);
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.dataList).toBeVisible();
+          await expect(operateProcessesPage.processInstancesTable).toHaveCount(2);
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
 
       await waitForAssertion({
         assertion: async () => {

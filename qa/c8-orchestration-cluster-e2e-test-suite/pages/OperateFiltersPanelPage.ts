@@ -154,6 +154,9 @@ export class OperateFiltersPanelPage {
   }
 
   async displayOptionalFilter(filterName: OptionalFilter) {
+    if (await this.isOptionalFilterDisplayed(filterName)) {
+      return;
+    }
     await this.moreFiltersButton.click();
     await this.moreFiltersMenu.waitFor({state: 'visible'});
     const menuitem = this.page.getByRole('menuitem', {
@@ -166,6 +169,12 @@ export class OperateFiltersPanelPage {
   async removeOptionalFilter(filterName: OptionalFilter) {
     await this.page.getByLabel(filterName, {exact: true}).hover();
     await this.page.getByLabel(`Remove ${filterName} Filter`).click();
+  }
+
+  async isOptionalFilterDisplayed(filterName: OptionalFilter): Promise<boolean> {
+    return await this.page
+      .getByLabel(filterName, {exact: true})
+      .isVisible();
   }
 
   async selectProcess(option: string) {

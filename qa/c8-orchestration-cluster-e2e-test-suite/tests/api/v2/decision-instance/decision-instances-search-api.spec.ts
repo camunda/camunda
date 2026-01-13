@@ -16,7 +16,10 @@ import {
   assertRequiredFields,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {createMammalProcessInstanceAndDeployMammalDecision, DecisionInstance} from '@requestHelpers';
+import {
+  createMammalProcessInstanceAndDeployMammalDecision,
+  DecisionInstance,
+} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {decisionInstanceRequiredFields} from 'utils/beans/requestBeans';
 
