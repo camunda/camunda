@@ -21,8 +21,8 @@ public interface GlobalListenersState {
    * one, given a version key.
    *
    * @param versionKey the version key of the desired configuration
-   * @return the global listeners configuration for the given version key, or {@link
-   *     Optional#empty()} if not found
+   * @return the global listeners configuration for the given version key, or {@code null} if not
+   *     found
    */
   GlobalListenerBatchRecord getVersionedConfig(final long versionKey);
 
