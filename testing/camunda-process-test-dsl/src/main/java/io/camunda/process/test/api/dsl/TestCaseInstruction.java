@@ -38,6 +38,7 @@ import io.camunda.process.test.api.dsl.instructions.MockJobWorkerCompleteJobInst
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.ResolveIncidentInstruction;
+import io.camunda.process.test.api.dsl.instructions.SetTimeInstruction;
 import io.camunda.process.test.api.dsl.instructions.ThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
 
@@ -108,6 +109,7 @@ import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
   @JsonSubTypes.Type(
       value = ResolveIncidentInstruction.class,
       name = TestCaseInstructionType.RESOLVE_INCIDENT),
+  @JsonSubTypes.Type(value = SetTimeInstruction.class, name = TestCaseInstructionType.SET_TIME),
   @JsonSubTypes.Type(
       value = ThrowBpmnErrorFromJobInstruction.class,
       name = TestCaseInstructionType.THROW_BPMN_ERROR_FROM_JOB),

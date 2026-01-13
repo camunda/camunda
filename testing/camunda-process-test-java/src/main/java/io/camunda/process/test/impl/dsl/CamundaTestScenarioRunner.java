@@ -45,6 +45,7 @@ import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerCompleteJobIns
 import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerThrowBpmnErrorInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.PublishMessageInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.ResolveIncidentInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.SetTimeInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.ThrowBpmnErrorFromJobInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.UpdateVariablesInstructionHandler;
 import java.time.Duration;
@@ -85,6 +86,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new MockJobWorkerThrowBpmnErrorInstructionHandler());
     registerHandler(new PublishMessageInstructionHandler());
     registerHandler(new ResolveIncidentInstructionHandler());
+    registerHandler(new SetTimeInstructionHandler());
     registerHandler(new ThrowBpmnErrorFromJobInstructionHandler());
     registerHandler(new UpdateVariablesInstructionHandler());
   }
