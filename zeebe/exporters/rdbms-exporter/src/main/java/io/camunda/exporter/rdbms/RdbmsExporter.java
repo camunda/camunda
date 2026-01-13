@@ -52,6 +52,7 @@ public final class RdbmsExporter {
   // volatile runtime properties
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
+  private long lastFlushedPosition = -1;
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
   private ScheduledTask currentUsageMetricsCleanupTask = null;
@@ -88,6 +89,10 @@ public final class RdbmsExporter {
 
   public void open(final Controller controller) {
     this.controller = controller;
+    LOG.info(
+        "[RDBMS Exporter P{}] Opening exporter with broker position {}",
+        partitionId,
+        controller.getLastExportedRecordPosition());
 
     if (!rdbmsSchemaManager.isInitialized()) {
       LOG.warn("[RDBMS Exporter P{}] Schema is not yet ready for use", partitionId);
@@ -106,7 +111,7 @@ public final class RdbmsExporter {
         // This is needed since the brokers last exported position is from its last snapshot and can
         // be different from ours.
         LOG.info(
-            "[RDBMS Exporter {}] Updating broker position {} to last exported position in rdbms {}",
+            "[RDBMS Exporter P{}] Updating broker position {} to last exported position in rdbms {}",
             partitionId,
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition());
@@ -114,12 +119,13 @@ public final class RdbmsExporter {
         updatePositionInBroker();
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
         LOG.info(
-            "[RDBMS Exporter {}] Position in Broker {} is more advanced than in rdbms {}",
+            "[RDBMS Exporter P{}] Position in Broker {} is more advanced than in rdbms {}",
             partitionId,
             exporterRdbmsPosition.lastExportedPosition(),
             lastPosition);
       }
     }
+    lastFlushedPosition = lastPosition;
 
     rdbmsWriters.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     rdbmsWriters.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
@@ -135,7 +141,7 @@ public final class RdbmsExporter {
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::deleteHistory);
 
     LOG.info(
-        "[RDBMS Exporter {}] Exporter opened with last exported position {}",
+        "[RDBMS Exporter P{}] Exporter opened with last exported position {}",
         partitionId,
         lastPosition);
   }
@@ -169,7 +175,11 @@ public final class RdbmsExporter {
           "[RDBMS Exporter P{}] Failed to flush records before closing exporter.", partitionId, e);
     }
 
-    LOG.info("[RDBMS Exporter P{}] Exporter closed at position {}", partitionId, lastPosition);
+    LOG.info(
+        "[RDBMS Exporter P{}] Exporter closed at positions Broker {}, RDBMS {}",
+        partitionId,
+        lastPosition,
+        exporterRdbmsPosition == null ? null : exporterRdbmsPosition.lastExportedPosition());
   }
 
   public void export(final Record<?> record) {
@@ -221,8 +231,9 @@ public final class RdbmsExporter {
         rdbmsWriters.flush(flushAfterEachRecord());
       } catch (final Exception e) {
         LOG.warn(
-            "[RDBMS Exporter P{}] Failed to flush record for position {} to the database.",
+            "[RDBMS Exporter P{}] Failed to flush record for positions {} to {} to the database.",
             partitionId,
+            lastFlushedPosition + 1,
             lastPosition);
         throw e;
       }
@@ -255,6 +266,7 @@ public final class RdbmsExporter {
 
   private void updatePositionInBroker() {
     LOG.trace("[RDBMS Exporter P{}] Updating position to {} in broker", partitionId, lastPosition);
+    lastFlushedPosition = lastPosition;
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
@@ -320,8 +332,9 @@ public final class RdbmsExporter {
       flushExecutionQueue();
     } catch (final Exception e) {
       LOG.warn(
-          "[RDBMS Exporter P{}] Failed to flush records for position {}",
+          "[RDBMS Exporter P{}] Failed to flush records for positions {} to {} to the database",
           partitionId,
+          lastFlushedPosition + 1,
           lastPosition);
       throw e;
     } finally {
