@@ -92,6 +92,13 @@ class AuditLogExportHandlerTest {
   }
 
   @Test
+  void shouldGenerateAuditLogKey() {
+    final var key = AuditLogExportHandler.generateAuditLogKey(record);
+
+    assertThat(key).isEqualTo(record.getPartitionId() + "-" + record.getPosition());
+  }
+
+  @Test
   void shouldExport() {
     // Create a properly populated AuditLogEntry that the transformer will return
     final var entry =

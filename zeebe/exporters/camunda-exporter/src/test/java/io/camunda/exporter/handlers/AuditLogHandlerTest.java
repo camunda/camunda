@@ -107,7 +107,8 @@ class AuditLogHandlerTest {
     final var idList = handler.generateIds(record);
 
     assertThat(idList).hasSize(1);
-    assertThat((String) idList.getFirst()).hasSize(AuditLogHandler.ID_LENGTH);
+    assertThat((String) idList.getFirst())
+        .isEqualTo(record.getPartitionId() + "-" + record.getPosition());
   }
 
   @Test
