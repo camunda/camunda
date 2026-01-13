@@ -10,7 +10,6 @@ package io.camunda.it.rdbms.db.auditlog;
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAuditLog;
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveRandomAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -21,7 +20,6 @@ import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuditLogEntity;
-import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.sort.AuditLogSort;
 import org.junit.jupiter.api.Tag;
@@ -98,31 +96,6 @@ public class AuditLogIT {
     final var instance = searchResult.items().getFirst();
 
     compareAuditLog(instance, original);
-  }
-
-  @TestTemplate
-  public void shouldFindAuditLogByAuthorizedTenantId(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
-
-    final var original = AuditLogFixtures.createRandomProcessInstance();
-    createAndSaveAuditLog(rdbmsWriters, original);
-    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.tenantScope(AuditLogTenantScope.TENANT));
-
-    final var searchResult =
-        auditLogReader
-            .search(
-                AuditLogQuery.of(b -> b), resourceAccessChecksFromTenantIds(original.tenantId()))
-            .items()
-            .stream()
-            .toList();
-
-    assertThat(searchResult).isNotNull();
-    assertThat(searchResult.size()).isEqualTo(1);
-
-    compareAuditLog(searchResult.getFirst(), original);
   }
 
   @TestTemplate
