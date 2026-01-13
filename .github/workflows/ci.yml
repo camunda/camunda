@@ -847,8 +847,6 @@ jobs:
           echo "##################################################"
           sudo df -h
           echo "##################################################"
-          sudo du -xh / | sort -h | tail -n 200
-          echo "##################################################"
           docker system df -v
       - uses: hadolint/hadolint-action@v3.1.0
         with:
@@ -890,7 +888,10 @@ jobs:
       # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
       # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
       - name: Cleanup docker images
-        run: docker system prune -af
+        run: |
+          docker buildx prune -f
+          docker image prune -f
+          docker system prune -af
 
       - name: Verify Docker image
         # Skip verification on fork PRs as there public base images are used that don't match our golden labels
@@ -917,8 +918,6 @@ jobs:
         run: |
           echo "##################################################"
           sudo df -h
-          echo "##################################################"
-          sudo du -xh / | sort -h | tail -n 200
           echo "##################################################"
           docker system df -v
       - name: Run Docker tests
@@ -952,8 +951,6 @@ jobs:
         run: |
           echo "##################################################"
           sudo df -h
-          echo "##################################################"
-          sudo du -xh / | sort -h | tail -n 200
           echo "##################################################"
           docker system df -v
       - name: Observe build status
