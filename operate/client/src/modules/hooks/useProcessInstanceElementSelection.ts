@@ -152,21 +152,24 @@ const useProcessInstanceElementSelection = () => {
     elementInstanceByKey ??
     (searchResult?.page.totalItems === 1 ? searchResult?.items[0] : null);
 
-  const isSelected = (element: {
-    elementId?: string;
-    elementInstanceKey?: string;
-    isMultiInstanceBody?: boolean;
-  }) => {
-    if (isMultiInstanceBody !== element.isMultiInstanceBody) {
-      return false;
-    }
+  const isSelected = useCallback(
+    (element: {
+      elementId?: string;
+      elementInstanceKey?: string;
+      isMultiInstanceBody?: boolean;
+    }) => {
+      if (isMultiInstanceBody !== element.isMultiInstanceBody) {
+        return false;
+      }
 
-    if (elementInstanceKey === null) {
-      return elementId === element.elementId;
-    }
+      if (elementInstanceKey === null) {
+        return elementId === element.elementId;
+      }
 
-    return elementInstanceKey === element.elementInstanceKey;
-  };
+      return elementInstanceKey === element.elementInstanceKey;
+    },
+    [isMultiInstanceBody, elementInstanceKey, elementId],
+  );
 
   return {
     selectElement,
