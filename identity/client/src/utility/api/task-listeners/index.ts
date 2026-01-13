@@ -65,15 +65,6 @@ export type EventTypeOption = (typeof EVENT_TYPE_OPTIONS)[number];
  * 4. DELETE /v2/global-task-listeners/{id}
  *    - Delete existing listener
  *    - Permission: GLOBAL_LISTENER:DELETE_TASK_LISTENER
- * 
- * Field mappings now match the API:
- * - id: string
- * - type: string
- * - eventTypes: string[] (array of event types)
- * - retries: number
- * - afterNonGlobal: boolean (true = after, false = before)
- * - priority: number
- * - source: "CONFIGURATION" | "API" (optional)
  */
 
 // Mock data store for prototype - will be replaced with actual API calls
