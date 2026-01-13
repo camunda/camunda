@@ -48,6 +48,8 @@ public final class EvaluateConditionalTest extends ClientTest {
     assertThat(JsonUtil.fromJsonAsMap(request.getVariables())).contains(entry("x", 100));
     assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
 
+    assertThat(response.getConditionalEvaluationKey()).isEqualTo(12345L);
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).hasSize(1);
     assertThat(response.getProcessInstances().get(0).getProcessDefinitionKey())
         .isEqualTo(2251799813685249L);
@@ -76,6 +78,8 @@ public final class EvaluateConditionalTest extends ClientTest {
     final EvaluateConditionalRequest request = gatewayService.getLastRequest();
     assertThat(request.hasProcessDefinitionKey()).isTrue();
     assertThat(request.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(response.getConditionalEvaluationKey()).isEqualTo(12345L);
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).hasSize(1);
     assertThat(response.getProcessInstances().get(0).getProcessDefinitionKey())
         .isEqualTo(processDefinitionKey);
@@ -170,7 +174,7 @@ public final class EvaluateConditionalTest extends ClientTest {
   }
 
   @Test
-  public void shouldEvaluateConditionalWithEmptyResponse() {
+  public void shouldEvaluateConditionalWithNoProcessInstancesStarted() {
     // given
     gatewayService.onEvaluateConditionalRequest();
 
@@ -179,6 +183,8 @@ public final class EvaluateConditionalTest extends ClientTest {
         client.newEvaluateConditionalCommand().variables("{\"x\":100}").send().join();
 
     // then
+    assertThat(response.getConditionalEvaluationKey()).isEqualTo(12345L);
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     assertThat(response.getProcessInstances()).isEmpty();
   }
 
@@ -229,6 +235,22 @@ public final class EvaluateConditionalTest extends ClientTest {
     // then
     final EvaluateConditionalRequest request = gatewayService.getLastRequest();
     assertThat(request.getTenantId()).isEqualTo("custom-tenant");
+  }
+
+  @Test
+  public void shouldReturnConditionalEvaluationKeyAndTenantId() {
+    // given
+    final long expectedKey = 9876543210L;
+    final String expectedTenantId = "test-tenant";
+    gatewayService.onEvaluateConditionalRequest(expectedKey, expectedTenantId, 123L, 456L);
+
+    // when
+    final EvaluateConditionalResponse response =
+        client.newEvaluateConditionalCommand().variables("{\"x\":100}").send().join();
+
+    // then
+    assertThat(response.getConditionalEvaluationKey()).isEqualTo(expectedKey);
+    assertThat(response.getTenantId()).isEqualTo(expectedTenantId);
   }
 
   public static class Variables {

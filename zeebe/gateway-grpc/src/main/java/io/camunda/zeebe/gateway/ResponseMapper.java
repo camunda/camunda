@@ -511,7 +511,9 @@ public final class ResponseMapper {
   public static EvaluateConditionalResponse toEvaluateConditionalResponse(
       final long key, final ConditionalEvaluationRecord brokerResponse) {
     final EvaluateConditionalResponse.Builder responseBuilder =
-        EvaluateConditionalResponse.newBuilder();
+        EvaluateConditionalResponse.newBuilder()
+            .setConditionalEvaluationKey(key)
+            .setTenantId(brokerResponse.getTenantId());
 
     brokerResponse.getStartedProcessInstances().stream()
         .map(
