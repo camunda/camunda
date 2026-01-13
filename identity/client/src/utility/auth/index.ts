@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getBaseUrl, getLoginApiUrl, getLogoutApiUrl } from "src/configuration";
+import { getLoginApiUrl, getLogoutApiUrl } from "src/configuration";
 
 let loggedIn = false;
 
@@ -63,10 +63,30 @@ export function logout(): Promise<void> {
   })
     .then((response: Response) => {
       if (response.status < 400) {
-        window.location.href = `${getBaseUrl()}/`;
+        // redirect to Keycloak logout endpoint
+        // hardcoding post_logout_redirect_uri and client_id for now
+        window.location.href = `http://localhost:18080/auth/realms/camunda/protocol/openid-connect/logout?post_logout_redirect_uri=http://localhost:8080/identity&client_id=orchestration-cluster`;
+        // window.location.href = `http://localhost:18080/auth/realms/camunda/protocol/openid-connect/logout`;
       }
     })
     .catch((e) => {
       console.log(e);
     });
 }
+
+// export function logout(): Promise<void> {
+//   const data = new FormData();
+//   return fetch(getLogoutApiUrl(), {
+//     method: "post",
+//     body: data,
+//   })
+//     .then(() => {
+//       window.location.href = `http://localhost:18080/auth/realms/camunda/protocol/openid-connect/logout`;
+//       /*if (response.status < 400) {
+//         window.location.href = `${getBaseUrl()}/`;
+//       }*/
+//     })
+//     .catch((e) => {
+//       console.log(e);
+//     });
+// }
