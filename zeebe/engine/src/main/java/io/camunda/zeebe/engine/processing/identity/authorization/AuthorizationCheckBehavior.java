@@ -212,11 +212,10 @@ public final class AuthorizationCheckBehavior {
       return AUTHORIZED;
     }
 
-    // Step 3: Check property-based authorization
+    // Step 3: Check if request can be authorized by resource properties
     // Only if we have tenant access (from primary or mapping rules)
     if (request.hasResourceProperties() && mappingRuleResult.hasTenantAccess()) {
-      final boolean propertyAccess = checkPropertyBasedAuthorization(request, aggregatedRejections);
-      if (propertyAccess) {
+      if (isAuthorizedByProperties(request, aggregatedRejections)) {
         return AUTHORIZED;
       }
     }
@@ -283,7 +282,7 @@ public final class AuthorizationCheckBehavior {
     return new AuthorizationResult(tenantAccess, resourceAccess);
   }
 
-  private boolean checkPropertyBasedAuthorization(
+  private boolean isAuthorizedByProperties(
       final AuthorizationRequest request, final List<AuthorizationRejection> aggregatedRejections) {
 
     final var authorizationRejection =
