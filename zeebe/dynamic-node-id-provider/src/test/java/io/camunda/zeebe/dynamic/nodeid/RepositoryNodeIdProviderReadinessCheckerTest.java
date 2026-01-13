@@ -54,7 +54,7 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
           new Lease(
               "task" + i,
               System.currentTimeMillis(),
-              new NodeInstance(i, Version.of(100L + i)),
+              new NodeInstance(i, versionMappings.mappingsByNodeId().get(i)),
               versionMappings);
       when(nodeIdRepository.getLease(i)).thenReturn(getInitializedLease(lease));
     }

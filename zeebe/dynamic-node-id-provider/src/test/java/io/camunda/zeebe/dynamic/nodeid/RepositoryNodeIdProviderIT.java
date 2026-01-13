@@ -352,7 +352,7 @@ class RepositoryNodeIdProviderIT {
     nodeIdProvider = ofSize(clusterSize, true);
 
     // then
-    assertThat(nodeIdProvider.awaitReadiness()).succeedsWithin(EXPIRY_DURATION);
+    assertThat(nodeIdProvider.awaitReadiness()).succeedsWithin(EXPIRY_DURATION).isEqualTo(true);
   }
 
   @Test
@@ -378,7 +378,7 @@ class RepositoryNodeIdProviderIT {
       nodeIdProviderOtherTwo.setMembers(getMembers(expectedMappings));
 
       // then
-      assertThat(nodeIdProvider.awaitReadiness()).succeedsWithin(EXPIRY_DURATION);
+      assertThat(nodeIdProvider.awaitReadiness()).succeedsWithin(EXPIRY_DURATION).isEqualTo(true);
     }
   }
 
