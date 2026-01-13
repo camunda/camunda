@@ -24,7 +24,8 @@ public record DecisionDefinitionFilter(
     List<Long> decisionRequirementsKeys,
     List<String> decisionRequirementsNames,
     List<Integer> decisionRequirementsVersions,
-    List<String> tenantIds)
+    List<String> tenantIds,
+    Boolean isLatestVersion)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<DecisionDefinitionFilter> {
@@ -38,6 +39,7 @@ public record DecisionDefinitionFilter(
     private List<String> decisionRequirementsNames;
     private List<Integer> decisionRequirementsVersions;
     private List<String> tenantIds;
+    private Boolean isLatestVersion;
 
     public Builder decisionDefinitionKeys(final List<Long> values) {
       decisionDefinitionKeys = addValuesToList(decisionDefinitionKeys, values);
@@ -120,8 +122,14 @@ public record DecisionDefinitionFilter(
       return tenantIds(collectValuesAsList(values));
     }
 
+    public Builder isLatestVersion(final Boolean latest) {
+      isLatestVersion = latest;
+      return this;
+    }
+
     @Override
     public DecisionDefinitionFilter build() {
+      // final var latest = Objects.requireNonNullElse(isLatestVersion, false);
       return new DecisionDefinitionFilter(
           Objects.requireNonNullElse(decisionDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),
@@ -131,7 +139,8 @@ public record DecisionDefinitionFilter(
           Objects.requireNonNullElse(decisionRequirementsKeys, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsNames, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsVersions, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          Objects.requireNonNullElse(isLatestVersion, false));
     }
   }
 }
