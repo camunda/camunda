@@ -195,7 +195,7 @@ test.describe.parallel('Create Authorization API for client - Unhappy paths', ()
       );
       await assertBadRequest(
         authRes,
-        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUTHORIZATION, MAPPING_RULE, MESSAGE, BATCH, COMPONENT, SYSTEM, TENANT, RESOURCE, PROCESS_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DECISION_DEFINITION, GROUP, USER, ROLE, DOCUMENT]",
+        "Unexpected value 'WRONG_VALUE_FOR_TEST' for enum field 'resourceType'. Use any of the following values: [AUTHORIZATION, BATCH, CLUSTER_VARIABLE, COMPONENT, DECISION_DEFINITION, DECISION_REQUIREMENTS_DEFINITION, DOCUMENT, GROUP, MAPPING_RULE, MESSAGE, PROCESS_DEFINITION, RESOURCE, ROLE, SYSTEM, TENANT, USER, USER_TASK, AUDIT_LOG]",
       );
     }).toPass(defaultAssertionOptions);
   });
