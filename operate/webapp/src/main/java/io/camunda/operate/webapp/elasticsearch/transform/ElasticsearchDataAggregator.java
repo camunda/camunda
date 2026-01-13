@@ -7,7 +7,9 @@
  */
 package io.camunda.operate.webapp.elasticsearch.transform;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.transform.DataAggregator;
@@ -16,12 +18,6 @@ import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilters;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -36,32 +32,32 @@ public class ElasticsearchDataAggregator extends DataAggregator {
   public Map<String, BatchOperationDto> requestAndAddMetadata(
       final Map<String, BatchOperationDto> resultDtos, final List<String> idList) {
 
-    final AggregationBuilder metadataAggregation =
-        AggregationBuilders.filters(
-            OperationTemplate.METADATA_AGGREGATION,
-            new FiltersAggregator.KeyedFilter(
-                BatchOperationTemplate.FAILED_OPERATIONS_COUNT,
-                QueryBuilders.termQuery(OperationTemplate.STATE, OperationState.FAILED)),
-            new FiltersAggregator.KeyedFilter(
-                BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
-                QueryBuilders.termQuery(OperationTemplate.STATE, OperationState.COMPLETED)));
+    final var metadataAggregations = createMetadataAggregations();
+    final var operationsByBatchOperationId =
+        operationReader.getOperationsAggregatedByBatchOperationId(idList, metadataAggregations);
 
-    final Terms batchIdAggregation =
-        operationReader.getOperationsAggregatedByBatchOperationId(idList, metadataAggregation);
-    for (final Terms.Bucket bucket : batchIdAggregation.getBuckets()) {
-      final ParsedFilters aggregations =
-          bucket.getAggregations().get(OperationTemplate.METADATA_AGGREGATION);
+    for (final var bucket : operationsByBatchOperationId.buckets().array()) {
+      final var operationMetadata =
+          bucket.aggregations().get(OperationTemplate.METADATA_AGGREGATION);
+      if (operationMetadata == null || !operationMetadata.isFilters()) {
+        continue;
+      }
+      final var filters = operationMetadata.filters();
       final int failedCount =
           (int)
-              aggregations
-                  .getBucketByKey(BatchOperationTemplate.FAILED_OPERATIONS_COUNT)
-                  .getDocCount();
+              filters
+                  .buckets()
+                  .keyed()
+                  .get(BatchOperationTemplate.FAILED_OPERATIONS_COUNT)
+                  .docCount();
       final int completedCount =
           (int)
-              aggregations
-                  .getBucketByKey(BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT)
-                  .getDocCount();
-      final String batchId = bucket.getKeyAsString();
+              filters
+                  .buckets()
+                  .keyed()
+                  .get(BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT)
+                  .docCount();
+      final String batchId = bucket.key().stringValue();
 
       resultDtos
           .get(batchId)
@@ -69,5 +65,27 @@ public class ElasticsearchDataAggregator extends DataAggregator {
           .setCompletedOperationsCount(completedCount);
     }
     return resultDtos;
+  }
+
+  private Map<String, Aggregation> createMetadataAggregations() {
+    final var failedQuery =
+        ElasticsearchUtil.termsQuery(OperationTemplate.STATE, OperationState.FAILED);
+    final var completedQuery =
+        ElasticsearchUtil.termsQuery(OperationTemplate.STATE, OperationState.COMPLETED);
+
+    final var filterBuckets =
+        Map.of(
+            BatchOperationTemplate.FAILED_OPERATIONS_COUNT, failedQuery,
+            BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT, completedQuery);
+
+    return Map.of(
+        OperationTemplate.METADATA_AGGREGATION,
+        Aggregation.of(
+            a ->
+                a.filters(
+                    f ->
+                        f.filters(
+                            co.elastic.clients.elasticsearch._types.aggregations.Buckets.of(
+                                b -> b.keyed(filterBuckets))))));
   }
 }
