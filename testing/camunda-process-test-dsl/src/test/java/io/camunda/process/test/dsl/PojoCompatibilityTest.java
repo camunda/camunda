@@ -48,6 +48,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskIns
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableEvaluateDecisionInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableIncreaseTimeInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
@@ -500,7 +501,17 @@ public class PojoCompatibilityTest {
                             .build())
                     .putVariables("input", 100)
                     .putVariables("region", "US")
-                    .build()))
+                    .build())),
+        // ===== INCREASE_TIME =====
+        Arguments.of(
+            "increase time: with days",
+            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build())),
+        Arguments.of(
+            "increase time: with hours",
+            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("PT1H").build())),
+        Arguments.of(
+            "increase time: with minutes",
+            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("PT30M").build()))
         // add new instructions here
         );
   }

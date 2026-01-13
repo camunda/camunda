@@ -37,6 +37,7 @@ import io.camunda.process.test.impl.dsl.instructions.CompleteUserTaskInstruction
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.EvaluateConditionalStartEventInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.EvaluateDecisionInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.IncreaseTimeInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.MockChildProcessInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.MockDmnDecisionInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.MockJobWorkerCompleteJobInstructionHandler;
@@ -72,6 +73,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new CreateProcessInstanceInstructionHandler());
     registerHandler(new EvaluateConditionalStartEventInstructionHandler());
     registerHandler(new EvaluateDecisionInstructionHandler());
+    registerHandler(new IncreaseTimeInstructionHandler());
     registerHandler(new MockChildProcessInstructionHandler());
     registerHandler(new MockDmnDecisionInstructionHandler());
     registerHandler(new MockJobWorkerCompleteJobInstructionHandler());

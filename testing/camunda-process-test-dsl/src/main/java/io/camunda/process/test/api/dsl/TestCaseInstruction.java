@@ -30,6 +30,7 @@ import io.camunda.process.test.api.dsl.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.EvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.api.dsl.instructions.EvaluateDecisionInstruction;
+import io.camunda.process.test.api.dsl.instructions.IncreaseTimeInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockChildProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockDmnDecisionInstruction;
 import io.camunda.process.test.api.dsl.instructions.MockJobWorkerCompleteJobInstruction;
@@ -79,6 +80,9 @@ import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
   @JsonSubTypes.Type(
       value = EvaluateDecisionInstruction.class,
       name = TestCaseInstructionType.EVALUATE_DECISION),
+  @JsonSubTypes.Type(
+      value = IncreaseTimeInstruction.class,
+      name = TestCaseInstructionType.INCREASE_TIME),
   @JsonSubTypes.Type(
       value = MockChildProcessInstruction.class,
       name = TestCaseInstructionType.MOCK_CHILD_PROCESS),
