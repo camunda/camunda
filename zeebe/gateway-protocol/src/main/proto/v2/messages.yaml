@@ -275,8 +275,7 @@ components:
           description: The name of the message associated with the message subscription.
           type: string
         correlationKey:
-          allOf:
-            - $ref: '#/components/schemas/MessageCorrelationKey'
+          type: string
           description: The correlation key of the message subscription.
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -625,15 +624,6 @@ components:
       format: MessageSubscriptionKey
       x-semantic-type: MessageSubscriptionKey
       example: "2251799813632456"
-      type: string
-      allOf:
-        - $ref: 'keys.yaml#/components/schemas/LongKey'
-
-    MessageCorrelationKey:
-      description: System-generated key for a message correlation.
-      format: MessageCorrelationKey
-      x-semantic-type: MessageCorrelationKey
-      example: "2251799813634265"
       type: string
       allOf:
         - $ref: 'keys.yaml#/components/schemas/LongKey'
