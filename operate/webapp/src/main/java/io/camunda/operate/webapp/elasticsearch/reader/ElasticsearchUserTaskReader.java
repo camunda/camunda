@@ -89,16 +89,12 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
               .build();
 
       final var response = es8client.search(searchRequest, TaskEntity.class);
-      final var totalHits = response.hits().total().value();
-      if (totalHits == 1) {
-        return Optional.ofNullable(response.hits().hits().get(0).source());
-      }
+      return response.hits().hits().stream().findFirst().map(Hit::source);
     } catch (final IOException e) {
       final var message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-    return Optional.empty();
   }
 
   @Override
