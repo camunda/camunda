@@ -10,7 +10,6 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8;
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
@@ -54,11 +53,6 @@ public class IncidentStatisticsReader extends AbstractReader
   private static final String UNIQ_PROCESS_INSTANCES = "uniq_processInstances";
   private static final String GROUP_BY_ERROR_MESSAGE_HASH = "group_by_errorMessages";
   private static final String GROUP_BY_PROCESS_KEYS = "group_by_processDefinitionKeys";
-
-  private static final Aggregation COUNT_PROCESS_KEYS =
-      new Aggregation.Builder()
-          .terms(t -> t.field(PROCESS_KEY).size(ElasticsearchUtil.TERMS_AGG_SIZE))
-          .build();
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentStatisticsReader.class);
 
@@ -181,14 +175,15 @@ public class IncidentStatisticsReader extends AbstractReader
         new SearchRequest.Builder()
             .index(listViewTemplate.getFullQualifiedName())
             .query(tenantAwareQuery)
-            .aggregations(PROCESS_KEY, COUNT_PROCESS_KEYS)
+            .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS)
             .size(0)
             .build();
 
     try {
       final var searchResponse = es8client.search(searchRequest, Void.class);
 
-      final var buckets = searchResponse.aggregations().get(PROCESS_KEY).lterms().buckets().array();
+      final var buckets =
+          searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
 
       for (final var bucket : buckets) {
         final Long processDefinitionKey = bucket.key();
@@ -226,13 +221,14 @@ public class IncidentStatisticsReader extends AbstractReader
           new SearchRequest.Builder()
               .index(listViewTemplate.getFullQualifiedName())
               .query(tenantAwareQuery)
-              .aggregations(PROCESS_KEY, COUNT_PROCESS_KEYS)
+              .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS)
               .size(0)
               .build();
 
       final var searchResponse = es8client.search(searchRequest, Void.class);
 
-      final var buckets = searchResponse.aggregations().get(PROCESS_KEY).lterms().buckets().array();
+      final var buckets =
+          searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
 
       for (final var bucket : buckets) {
         final Long processDefinitionKey = bucket.key();
