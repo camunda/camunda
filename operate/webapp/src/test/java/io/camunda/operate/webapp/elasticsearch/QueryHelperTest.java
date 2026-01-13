@@ -15,7 +15,6 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.junit.jupiter.api.Test;
 
 public class QueryHelperTest {
@@ -33,7 +32,7 @@ public class QueryHelperTest {
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
         .thenReturn(ResourcesAllowed.wildcard());
 
-    final QueryBuilder qb = queryHelper.createQueryFragment(queryDto);
+    final var qb = queryHelper.createQueryFragment(queryDto);
     assertThat(qb).as("QueryBuilder should not be null").isNotNull();
     final String queryString = qb.toString();
     assertThat(queryString).as("Should contain activityState field").contains("activityState");
