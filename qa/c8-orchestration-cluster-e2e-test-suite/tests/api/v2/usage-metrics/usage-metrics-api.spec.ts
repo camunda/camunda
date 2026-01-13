@@ -27,6 +27,8 @@ import {
   roleRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {generateUniqueId} from '../../../../utils/constants';
+import {cleanupUsers} from '../../../../utils/usersCleanup';
+import {cleanupRoles} from '../../../../utils/rolesCleanup';
 
 const USAGE_METRICS_GET_ENDPOINT = '/system/usage-metrics';
 const CREATE_USER_ENDPOINT = '/users';
@@ -191,112 +193,14 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
   });
 
   test.afterAll(async ({request}) => {
-    console.log('Starting teardown... MEOW');
-    await test.step('Teardown - Delete limited authorization and verify deletion', async () => {
-      const res = await request.delete(
-        buildUrl('/authorizations/{authorizationKey}', {
-          authorizationKey: limitedAuthorizationKey,
-        }),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(204);
-
-      // Verify authorization is gone
-      let after = await request.get(
-        buildUrl('/authorizations/{authorizationKey}', {
-          authorizationKey: limitedAuthorizationKey,
-        }),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-
-      await waitForAssertion({
-        assertion: async () => {
-          await assertNotFoundRequest(
-            after,
-            `Authorization with key '${limitedAuthorizationKey}' not found`,
-          );
-        },
-        onFailure: async () => {
-          after = await request.get(
-            buildUrl('/authorizations/{authorizationKey}', {
-              authorizationKey: limitedAuthorizationKey,
-            }),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-        },
-        maxRetries: 60,
-      });
-    });
+    console.log('Starting teardown...');
 
     await test.step('Teardown - Delete limited role and verify deletion', async () => {
-      const res = await request.delete(
-        buildUrl('/roles/{roleId}', {roleId: LIMITED_ROLE.roleId}),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      expect(res.status()).toBe(204);
-
-      // Verify role is gone
-      let after = await request.get(
-        buildUrl('/roles/{roleId}', {roleId: LIMITED_ROLE.roleId}),
-        {
-          headers: jsonHeaders(),
-        },
-      );
-      await waitForAssertion({
-        assertion: async () => {
-          await assertNotFoundRequest(
-            after,
-            `Role with id '${LIMITED_ROLE.roleId}' not found`,
-          );
-        },
-        onFailure: async () => {
-          after = await request.get(
-            buildUrl('/roles/{roleId}', {roleId: LIMITED_ROLE.roleId}),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-        },
-        maxRetries: 90,
-      });
+      await cleanupRoles(request, [LIMITED_ROLE.roleId]);
     });
 
     await test.step('Teardown - Delete limited user and verify deletion', async () => {
-      const res = await request.delete(
-        buildUrl('/users/{username}', {username: LIMITED_USER.username}),
-        {headers: jsonHeaders()},
-      );
-      expect(res.status()).toBe(204);
-
-      // Verify user is gone
-      let after = await request.get(
-        buildUrl('/users/{username}', {username: LIMITED_USER.username}),
-        {headers: jsonHeaders()},
-      );
-
-      await waitForAssertion({
-        assertion: async () => {
-          await assertNotFoundRequest(
-            after,
-            `User with username '${LIMITED_USER.username}' not found`,
-          );
-        },
-        onFailure: async () => {
-          after = await request.get(
-            buildUrl('/users/{username}', {username: LIMITED_USER.username}),
-            {headers: jsonHeaders()},
-          );
-        },
-        maxRetries: 90,
-      });
+      await cleanupUsers(request, [LIMITED_USER.username]);
     });
   });
 

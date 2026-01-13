@@ -22,7 +22,12 @@ import {
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
+import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {
+  createUser,
+  grantUserResourceAuthorization,
+  createGroup,
+} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
@@ -31,38 +36,38 @@ import {
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe.serial('Create Authorization API - Success and Conflict', () => {
-  let successUser: {
-    username: string;
+test.describe
+  .serial('Create Authorization API for group - Success and Conflict', () => {
+  let successGroup: {
+    groupId: string;
     name: string;
-    email: string;
-    password: string;
+    description: string;
   };
   test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      successUser = await createUser(request);
-      console.log('Created user with username:', successUser.username);
+    await test.step('Setup - Create group for Authorization tests', async () => {
+      successGroup = await createGroup(request);
+      console.log('Created group with groupId:', successGroup.groupId);
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step(
-      'Teardown - Delete user with username ' +
-        successUser.username +
+      'Teardown - Delete group with groupId ' +
+        successGroup.groupId +
         ' created for Authorization tests',
       async () => {
-        await cleanupUsers(request, [successUser.username]);
+        await cleanupGroups(request, [successGroup.groupId]);
       },
     );
   });
 
-  test('Create Authorization for user - Success', async ({request}) => {
+  test('Create Authorization for group - Success', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
-      '*',
-      'PROCESS_DEFINITION',
-      ['CREATE_PROCESS_INSTANCE'],
+      successGroup.groupId,
+      'GROUP',
+      'operate',
+      'COMPONENT',
+      ['ACCESS'],
     );
 
     await expect(async () => {
@@ -89,17 +94,17 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - Multiple permissionTypes - Success', async ({
+  test('Create Authorization for group - Multiple permissionTypes - Success', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successGroup.groupId,
+      'GROUP',
       '*',
-      'SYSTEM',
+      'DECISION_DEFINITION',
       [
-        'READ_USAGE_METRIC',
-        'UPDATE'
+        'CREATE_DECISION_INSTANCE',
+        'READ_DECISION_DEFINITION'
       ],
     );
 
@@ -127,10 +132,10 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 409 Conflict', async ({request}) => {
+  test('Create Authorization for group - 409 Conflict', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      successGroup.groupId,
+      'GROUP',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -146,37 +151,42 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
       );
       await assertConflictRequest(
         authRes,
-        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successUser.username}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
+        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successGroup.groupId}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
       );
     }).toPass(defaultAssertionOptions);
   });
 });
 
-test.describe.parallel('Create Authorization API - Unhappy paths', () => {
-  let user: {username: string; name: string; email: string; password: string};
+test.describe
+  .parallel('Create Authorization API for group - Unhappy paths', () => {
+  let failGroup: {
+    groupId: string;
+    name: string;
+    description: string;
+  };
   test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      user = await createUser(request);
-      console.log('Created user with username:', user.username);
+    await test.step('Setup - Create group for Authorization tests', async () => {
+      failGroup = await createGroup(request);
+      console.log('Created group with groupId:', failGroup.groupId);
     });
   });
 
   test.afterAll(async ({request}) => {
     await test.step(
-      'Teardown - Delete user with username ' +
-        user.username +
+      'Teardown - Delete group with groupId ' +
+        failGroup.groupId +
         ' created for Authorization tests',
       async () => {
-        await cleanupUsers(request, [user.username]);
+        await cleanupGroups(request, [failGroup.groupId]);
       },
     );
   });
 
-  test('Create Authorization for user - 400 Bad Request - wrong value for ownerType', async ({
+  test('Create Authorization for group - 400 Bad Request - wrong value for ownerType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
+      failGroup.groupId,
       'WRONG_VALUE_FOR_TEST',
       '*',
       'PROCESS_DEFINITION',
@@ -198,12 +208,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Bad Request - wrong value for resourceType', async ({
+  test('Create Authorization for group - 400 Bad Request - wrong value for resourceType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      failGroup.groupId,
+      'GROUP',
       '*',
       'WRONG_VALUE_FOR_TEST',
       ['CREATE_PROCESS_INSTANCE'],
@@ -224,13 +234,13 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Invalid Argument - invalid resourceId', async ({
+  test('Create Authorization for group - 400 Invalid Argument - invalid resourceId', async ({
     request,
   }) => {
     const invalidResourceId = ';;;;';
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      failGroup.groupId,
+      'GROUP',
       invalidResourceId,
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -252,12 +262,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 401 Unauthorized', async ({
+  test('Create Authorization for group - 401 Unauthorized', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      failGroup.groupId,
+      'GROUP',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -277,13 +287,13 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 404 Not Found - not existing ownerId', async ({
+  test('Create Authorization for group - 404 Not Found - not existing ownerId', async ({
     request,
   }) => {
     const notExistingOwnerId = 'nonExistingOwnerId12345';
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
       notExistingOwnerId,
-      'USER',
+      'GROUP',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -299,18 +309,17 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
       );
       await assertNotFoundRequest(
         authRes,
-        `Command 'CREATE' rejected with code 'NOT_FOUND': Expected to create or update authorization with ownerId or resourceId '${notExistingOwnerId}', but a user with this ID does not exist.`,
+        `Command 'CREATE' rejected with code 'NOT_FOUND': Expected to create or update authorization with ownerId or resourceId '${notExistingOwnerId}', but a group with this ID does not exist.`,
       );
     }).toPass(defaultAssertionOptions);
   });
 });
 
-test.describe('Create Authorization for User - Forbidden', () => {
-  let userToGrantAuthorization: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
+test.describe('Create Authorization for Group - Forbidden', () => {
+  let groupToGrantAuthorization = {
+    groupId: 'meow',
+    name: 'meow',
+    description: 'meow',
   };
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
@@ -327,8 +336,6 @@ test.describe('Create Authorization for User - Forbidden', () => {
         request,
         userWithResourcesAuthorizationToSendRequest,
       );
-
-      userToGrantAuthorization = await createUser(request);
     },
   );
 
@@ -337,18 +344,17 @@ test.describe('Create Authorization for User - Forbidden', () => {
     async ({request}) => {
       await cleanupUsers(request, [
         userWithResourcesAuthorizationToSendRequest.username,
-        userToGrantAuthorization.username,
       ]);
     },
   );
-  test('Create Authorization for user - 403 Forbidden', async ({request}) => {
+  test('Create Authorization for group - 403 Forbidden', async ({request}) => {
     await test.step('Test - Create Authorization with user credentials', async () => {
       const token = encode(
         `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
       );
       const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-        userToGrantAuthorization.username,
-        'USER',
+        groupToGrantAuthorization.groupId,
+        'GROUP',
         '*',
         'PROCESS_DEFINITION',
         ['CREATE_PROCESS_INSTANCE'],

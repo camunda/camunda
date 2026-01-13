@@ -150,6 +150,14 @@ test.describe('Child Process Instance Migration', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+          await operateFiltersPanelPage.selectVersion(sourceVersion);
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Parent Process Instance Key',
+          );
+          await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+            parentInstanceKey,
+          );
         },
       });
     });

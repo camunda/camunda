@@ -13,16 +13,22 @@ import {
   assertBadRequest,
   assertInvalidArgument,
   assertUnauthorizedRequest,
-  assertNotFoundRequest,
   assertConflictRequest,
   encode,
   assertStatusCode,
   assertRequiredFields,
   assertForbiddenRequest,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  generateUniqueId,
+} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
-import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
+import {
+  cleanupAuthorizations,
+  createUser,
+  grantUserResourceAuthorization,
+} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
@@ -31,38 +37,23 @@ import {
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe.serial('Create Authorization API - Success and Conflict', () => {
-  let successUser: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
-  };
-  test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      successUser = await createUser(request);
-      console.log('Created user with username:', successUser.username);
+test.describe.serial('Create Authorization API for client - Success and Conflict', () => {
+  const clientId = 'client' + generateUniqueId();
+  let createdAuthorizationKeys: string[] = [];
+
+  test.afterAll(async ({request}) => {
+    await test.step('Teardown - Delete authorizations created during Authorization tests', async () => {
+      await cleanupAuthorizations(request, createdAuthorizationKeys);
     });
   });
 
-  test.afterAll(async ({request}) => {
-    await test.step(
-      'Teardown - Delete user with username ' +
-        successUser.username +
-        ' created for Authorization tests',
-      async () => {
-        await cleanupUsers(request, [successUser.username]);
-      },
-    );
-  });
-
-  test('Create Authorization for user - Success', async ({request}) => {
+  test('Create Authorization for client - Success', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      clientId,
+      'CLIENT',
       '*',
-      'PROCESS_DEFINITION',
-      ['CREATE_PROCESS_INSTANCE'],
+      'AUTHORIZATION',
+      ['READ'],
     );
 
     await expect(async () => {
@@ -86,20 +77,21 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
 
       const authBody = await authRes.json();
       assertRequiredFields(authBody, authorizedComponentRequiredFields);
+      createdAuthorizationKeys.push(authBody.authorizationKey);
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - Multiple permissionTypes - Success', async ({
+  test('Create Authorization for client - Multiple permissionTypes - Success', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      clientId,
+      'CLIENT',
       '*',
-      'SYSTEM',
+      'BATCH',
       [
-        'READ_USAGE_METRIC',
-        'UPDATE'
+        'CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE',
+        'CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE',
       ],
     );
 
@@ -124,13 +116,14 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
 
       const authBody = await authRes.json();
       assertRequiredFields(authBody, authorizedComponentRequiredFields);
+      createdAuthorizationKeys.push(authBody.authorizationKey);
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 409 Conflict', async ({request}) => {
+  test('Create Authorization for client - 409 Conflict', async ({request}) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      successUser.username,
-      'USER',
+      clientId,
+      'CLIENT',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -146,37 +139,20 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
       );
       await assertConflictRequest(
         authRes,
-        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${successUser.username}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
+        `Command 'CREATE' rejected with code 'ALREADY_EXISTS': Expected to create authorization for owner '${clientId}' for resource identifier '*', but an authorization for this resource identifier already exists.`,
       );
     }).toPass(defaultAssertionOptions);
   });
 });
 
-test.describe.parallel('Create Authorization API - Unhappy paths', () => {
-  let user: {username: string; name: string; email: string; password: string};
-  test.beforeAll(async ({request}) => {
-    await test.step('Setup - Create user for Authorization tests', async () => {
-      user = await createUser(request);
-      console.log('Created user with username:', user.username);
-    });
-  });
+test.describe.parallel('Create Authorization API for client - Unhappy paths', () => {
+  const clientId = 'client' + generateUniqueId();
 
-  test.afterAll(async ({request}) => {
-    await test.step(
-      'Teardown - Delete user with username ' +
-        user.username +
-        ' created for Authorization tests',
-      async () => {
-        await cleanupUsers(request, [user.username]);
-      },
-    );
-  });
-
-  test('Create Authorization for user - 400 Bad Request - wrong value for ownerType', async ({
+  test('Create Authorization for client - 400 Bad Request - wrong value for ownerType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
+      clientId,
       'WRONG_VALUE_FOR_TEST',
       '*',
       'PROCESS_DEFINITION',
@@ -198,12 +174,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Bad Request - wrong value for resourceType', async ({
+  test('Create Authorization for client - 400 Bad Request - wrong value for resourceType', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      clientId,
+      'CLIENT',
       '*',
       'WRONG_VALUE_FOR_TEST',
       ['CREATE_PROCESS_INSTANCE'],
@@ -224,13 +200,13 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 400 Invalid Argument - invalid resourceId', async ({
+  test('Create Authorization for client - 400 Invalid Argument - invalid resourceId', async ({
     request,
   }) => {
     const invalidResourceId = ';;;;';
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      clientId,
+      'CLIENT',
       invalidResourceId,
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -252,12 +228,12 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Create Authorization for user - 401 Unauthorized', async ({
+  test('Create Authorization for client - 401 Unauthorized', async ({
     request,
   }) => {
     const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      user.username,
-      'USER',
+      clientId,
+      'CLIENT',
       '*',
       'PROCESS_DEFINITION',
       ['CREATE_PROCESS_INSTANCE'],
@@ -276,42 +252,11 @@ test.describe.parallel('Create Authorization API - Unhappy paths', () => {
       await assertUnauthorizedRequest(authRes);
     }).toPass(defaultAssertionOptions);
   });
-
-  test('Create Authorization for user - 404 Not Found - not existing ownerId', async ({
-    request,
-  }) => {
-    const notExistingOwnerId = 'nonExistingOwnerId12345';
-    const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-      notExistingOwnerId,
-      'USER',
-      '*',
-      'PROCESS_DEFINITION',
-      ['CREATE_PROCESS_INSTANCE'],
-    );
-
-    await expect(async () => {
-      const authRes = await request.post(
-        buildUrl(CREATE_AUTHORIZATION_ENDPOINT),
-        {
-          headers: jsonHeaders(),
-          data: authorizationBody,
-        },
-      );
-      await assertNotFoundRequest(
-        authRes,
-        `Command 'CREATE' rejected with code 'NOT_FOUND': Expected to create or update authorization with ownerId or resourceId '${notExistingOwnerId}', but a user with this ID does not exist.`,
-      );
-    }).toPass(defaultAssertionOptions);
-  });
 });
 
-test.describe('Create Authorization for User - Forbidden', () => {
-  let userToGrantAuthorization: {
-    username: string;
-    name: string;
-    email: string;
-    password: string;
-  };
+test.describe('Create Authorization for Client - Forbidden', () => {
+  let clientIdToGrantAuthorization = 'client' + generateUniqueId();
+
   let userWithResourcesAuthorizationToSendRequest: {
     username: string;
     name: string;
@@ -327,8 +272,6 @@ test.describe('Create Authorization for User - Forbidden', () => {
         request,
         userWithResourcesAuthorizationToSendRequest,
       );
-
-      userToGrantAuthorization = await createUser(request);
     },
   );
 
@@ -337,18 +280,17 @@ test.describe('Create Authorization for User - Forbidden', () => {
     async ({request}) => {
       await cleanupUsers(request, [
         userWithResourcesAuthorizationToSendRequest.username,
-        userToGrantAuthorization.username,
       ]);
     },
   );
-  test('Create Authorization for user - 403 Forbidden', async ({request}) => {
+  test('Create Authorization for client - 403 Forbidden', async ({request}) => {
     await test.step('Test - Create Authorization with user credentials', async () => {
       const token = encode(
         `${userWithResourcesAuthorizationToSendRequest.username}:${userWithResourcesAuthorizationToSendRequest.password}`,
       );
       const authorizationBody = CREATE_CUSTOM_AUTHORIZATION_BODY(
-        userToGrantAuthorization.username,
-        'USER',
+        clientIdToGrantAuthorization,
+        'CLIENT',
         '*',
         'PROCESS_DEFINITION',
         ['CREATE_PROCESS_INSTANCE'],
