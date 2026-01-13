@@ -556,7 +556,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
       final long incidentKey = incident.getIncidentKey();
 
-      // If the incident has a job key, update the job retries before resolving
+      // If the incident has a job key, update the job retries to 1 before resolving
+      // This allows the job to be retried once, enabling the process instance to continue
       if (incident.getJobKey() != null) {
         final long jobKey = incident.getJobKey();
         LOGGER.debug("Updating job retries for job key: {}", jobKey);
