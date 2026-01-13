@@ -39,6 +39,7 @@ import io.camunda.process.test.api.dsl.instructions.MockJobWorkerThrowBpmnErrorI
 import io.camunda.process.test.api.dsl.instructions.PublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.ResolveIncidentInstruction;
 import io.camunda.process.test.api.dsl.instructions.ThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
 
 /** An instruction to define an action or an assertion to be performed in a test case. */
 @JsonTypeInfo(
@@ -109,7 +110,10 @@ import io.camunda.process.test.api.dsl.instructions.ThrowBpmnErrorFromJobInstruc
       name = TestCaseInstructionType.RESOLVE_INCIDENT),
   @JsonSubTypes.Type(
       value = ThrowBpmnErrorFromJobInstruction.class,
-      name = TestCaseInstructionType.THROW_BPMN_ERROR_FROM_JOB)
+      name = TestCaseInstructionType.THROW_BPMN_ERROR_FROM_JOB),
+  @JsonSubTypes.Type(
+      value = UpdateVariablesInstruction.class,
+      name = TestCaseInstructionType.UPDATE_VARIABLES)
 })
 public interface TestCaseInstruction {
 

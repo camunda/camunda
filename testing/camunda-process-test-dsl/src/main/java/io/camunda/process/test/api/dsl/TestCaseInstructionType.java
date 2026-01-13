@@ -40,4 +40,5 @@ public class TestCaseInstructionType {
   public static final String PUBLISH_MESSAGE = "PUBLISH_MESSAGE";
   public static final String RESOLVE_INCIDENT = "RESOLVE_INCIDENT";
   public static final String THROW_BPMN_ERROR_FROM_JOB = "THROW_BPMN_ERROR_FROM_JOB";
+  public static final String UPDATE_VARIABLES = "UPDATE_VARIABLES";
 }

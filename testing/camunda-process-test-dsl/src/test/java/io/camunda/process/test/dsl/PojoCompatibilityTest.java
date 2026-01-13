@@ -59,6 +59,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowB
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableResolveIncidentInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
@@ -573,6 +574,54 @@ public class PojoCompatibilityTest {
         Arguments.of(
             "increase time",
             singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build()))
+                    .build())),
+        // ===== UPDATE_VARIABLES =====
+        Arguments.of(
+            "update variables: global",
+            singleTestCase(
+                ImmutableUpdateVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .putVariables("status", "ready")
+                    .build())),
+        Arguments.of(
+            "update variables: global with multiple variables",
+            singleTestCase(
+                ImmutableUpdateVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .putVariables("status", "ready")
+                    .putVariables("count", 42)
+                    .putVariables("active", true)
+                    .build())),
+        Arguments.of(
+            "update variables: local with elementId",
+            singleTestCase(
+                ImmutableUpdateVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .putVariables("localVar", "localValue")
+                    .build())),
+        Arguments.of(
+            "update variables: local with elementName",
+            singleTestCase(
+                ImmutableUpdateVariablesInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementName("Task A").build())
+                    .putVariables("localVar", "localValue")
+                    .build()))
         // add new instructions here
         );
   }
