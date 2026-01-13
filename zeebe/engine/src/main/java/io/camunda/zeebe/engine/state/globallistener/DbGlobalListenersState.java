@@ -12,20 +12,23 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.Optional;
 import org.agrona.collections.MutableBoolean;
 
 public final class DbGlobalListenersState implements MutableGlobalListenersState {
 
   private final DbString key = new DbString();
-  private final PersistedGlobalListenersConfig currentConfig = new PersistedGlobalListenersConfig();
-  private final ColumnFamily<DbString, PersistedGlobalListenersConfig> currentConfigColumnFamily;
+  private final DbLong currentConfigKey = new DbLong();
+  private final ColumnFamily<DbString, DbLong> currentConfigKeyColumnFamily;
 
   private final DbLong versionKey = new DbLong();
   private final PersistedGlobalListenersConfig versionedConfig =
@@ -37,15 +40,22 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   private final ConfigKeyAndElementKey pinnedConfigKey;
   private final ColumnFamily<ConfigKeyAndElementKey, DbNil> pinnedConfigColumnFamily;
 
+  private final DbEnumValue<GlobalListenerType> listenerType;
+  private final DbString listenerId;
+  private final ListenerTypeAndIdKey listenerTypeAndIdKey;
+  private final PersistedGlobalListener globalListener;
+  private final ColumnFamily<ListenerTypeAndIdKey, PersistedGlobalListener>
+      globalListenersColumnFamily;
+
   public DbGlobalListenersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     key.wrapString("CURRENT");
-    currentConfigColumnFamily =
+    currentConfigKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG,
             transactionContext,
             key,
-            currentConfig);
+            currentConfigKey);
 
     versionedConfigColumnFamily =
         zeebeDb.createColumnFamily(
@@ -62,6 +72,17 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
             transactionContext,
             pinnedConfigKey,
             DbNil.INSTANCE);
+
+    listenerType = new DbEnumValue<>(GlobalListenerType.class);
+    listenerId = new DbString();
+    listenerTypeAndIdKey = new ListenerTypeAndIdKey(listenerType, listenerId);
+    globalListener = new PersistedGlobalListener();
+    globalListenersColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.GLOBAL_LISTENERS,
+            transactionContext,
+            listenerTypeAndIdKey,
+            globalListener);
   }
 
   @Override
@@ -140,6 +161,14 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
       super(
           new DbForeignKey<>(configKey, ZbColumnFamilies.GLOBAL_LISTENER_VERSIONED_CONFIG),
           elementKey);
+    }
+  }
+
+  private static class ListenerTypeAndIdKey
+      extends DbCompositeKey<DbEnumValue<GlobalListenerType>, DbString> {
+    public ListenerTypeAndIdKey(
+        final DbEnumValue<GlobalListenerType> listenerType, final DbString id) {
+      super(listenerType, id);
     }
   }
 }
