@@ -79,14 +79,25 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
   const eventTypes = watch("eventTypes");
 
   const handleEventTypeChange = (selectedItems: EventTypeOption[]) => {
-    // If "all" is selected, clear other selections and only keep "all"
+    const individualTypes = EVENT_TYPE_OPTIONS.filter((opt) => opt !== "all");
+
+    // If "all" was just checked, select all individual types too
     if (selectedItems.includes("all") && !eventTypes.includes("all")) {
-      setValue("eventTypes", ["all"]);
+      setValue("eventTypes", [...EVENT_TYPE_OPTIONS]); // includes "all" and all individuals
       return;
     }
 
-    // If other items are selected while "all" is present, remove "all"
-    if (eventTypes.includes("all") && selectedItems.length > 1) {
+    // If "all" was just unchecked, uncheck all individual types too
+    if (!selectedItems.includes("all") && eventTypes.includes("all")) {
+      setValue("eventTypes", []);
+      return;
+    }
+
+    // If an individual type was unchecked while "all" is checked, uncheck "all" too
+    if (
+      eventTypes.includes("all") &&
+      selectedItems.length < EVENT_TYPE_OPTIONS.length
+    ) {
       setValue(
         "eventTypes",
         selectedItems.filter((item) => item !== "all"),
@@ -94,13 +105,12 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
       return;
     }
 
-    // If all individual event types are selected, replace with "all"
-    const individualTypes = EVENT_TYPE_OPTIONS.filter((opt) => opt !== "all");
+    // If all individual types are now selected, also select "all"
     const allIndividualSelected = individualTypes.every((type) =>
       selectedItems.includes(type),
     );
-    if (allIndividualSelected) {
-      setValue("eventTypes", ["all"]);
+    if (allIndividualSelected && !selectedItems.includes("all")) {
+      setValue("eventTypes", [...EVENT_TYPE_OPTIONS]); // includes "all" and all individuals
       return;
     }
 
@@ -220,6 +230,7 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
             itemToString={(item: EventTypeOption) => getEventTypeLabel(item)}
             invalid={!!fieldState.error}
             invalidText={fieldState.error?.message}
+            hideTag={true}
           />
         )}
       />
