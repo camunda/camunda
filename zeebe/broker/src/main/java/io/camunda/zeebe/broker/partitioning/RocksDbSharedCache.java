@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.management.OperatingSystemMXBean;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
@@ -76,14 +77,33 @@ public class RocksDbSharedCache {
           maxHeapBytes);
     }
 
-    // Estimate Total JVM Memory Usage (Heap + Non-Heap)
-    final long maxJvmInternalBytes = maxHeapBytes + maxNonHeapBytes;
+    // Get Maximum Direct Memory Size, -XX:MaxDirectMemorySize
+    // if not set, JVM sets the limit to be equal to the Maximum Heap Size
+    final var maxDirectMemoryBytes =
+        getMaxDirectMemoryBytes() != 0 ? getMaxDirectMemoryBytes() : maxHeapBytes;
+
+    // Estimate Total JVM Memory Usage (Heap + Non-Heap + Direct Memory)
+    final long maxJvmInternalBytes = maxHeapBytes + maxNonHeapBytes + maxDirectMemoryBytes;
 
     final long availableOffHeapBudget = totalMemorySize - maxJvmInternalBytes;
 
     // We set the cache capacity to a percentage of the remaining budget and
     // reserve space for native overheads.
     return (long) (availableOffHeapBudget * (1.0 - ROCKSDB_OVERHEAD_FACTOR));
+  }
+
+  private static long getMaxDirectMemoryBytes() {
+    try {
+      final HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean =
+          ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class);
+      // This gets the value of the -XX:MaxDirectMemorySize flag
+      // returns 0 if the flag is not set
+      final String value = hotSpotDiagnosticMXBean.getVMOption("MaxDirectMemorySize").getValue();
+      return Long.parseLong(value);
+    } catch (final Exception e) {
+      // If the MXBean is missing or the VM option name changed, we fall back to returning 0.
+      return 0;
+    }
   }
 
   public static void validateRocksDbMemory(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
