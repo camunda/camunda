@@ -43,7 +43,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Component
-@ConditionalOnMcpGatewayEnabled
 @Validated
 public class IncidentTools {
 
