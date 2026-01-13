@@ -160,7 +160,7 @@ const Filters: React.FC = observer(() => {
                             label="Choose option"
                             aria-label="Choose option"
                             titleText="Operations status"
-                            id="-result"
+                            id="result-field"
                             onChange={({selectedItem}) =>
                               input.onChange(
                                 selectedItem === 'all'
