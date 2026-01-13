@@ -6,20 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations.ts';
+import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
 import {operationsStore} from 'modules/stores/operations';
-import {panelStatesStore} from 'modules/stores/panelStates.ts';
+import {panelStatesStore} from 'modules/stores/panelStates';
 import {
   fireEvent,
   render,
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from 'modules/testing-library.ts';
+} from 'modules/testing-library';
 import {useEffect} from 'react';
-import {ProcessOperations} from './index.tsx';
-import {notificationsStore} from 'modules/stores/notifications.tsx';
-import type {OperationEntity} from 'modules/types/operate.ts';
+import {ProcessOperations} from './index';
+import {notificationsStore} from 'modules/stores/notifications';
+import type {OperationEntity} from 'modules/types/operate';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';

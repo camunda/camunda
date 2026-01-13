@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {ListView} from '..';
-import {createSimpleV2TestWrapper} from './testUtils';
+import {getWrapper} from './mocks';
 import {
   mockProcessDefinitions,
   mockProcessXML,
@@ -23,6 +23,14 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
+import {notificationsStore} from 'modules/stores/notifications';
+
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
@@ -67,7 +75,7 @@ describe('<ListView /> - operations', () => {
       '?active=true&incidents=true&process=demoProcess&version=1';
 
     render(<ListView />, {
-      wrapper: createSimpleV2TestWrapper(`/processes${queryString}`),
+      wrapper: getWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -97,7 +105,7 @@ describe('<ListView /> - operations', () => {
     });
 
     render(<ListView />, {
-      wrapper: createSimpleV2TestWrapper('/processes'),
+      wrapper: getWrapper('/processes'),
     });
 
     expect(
@@ -128,7 +136,7 @@ describe('<ListView /> - operations', () => {
     const queryString = '?active=true&incidents=true&process=demoProcess';
 
     render(<ListView />, {
-      wrapper: createSimpleV2TestWrapper(`/processes${queryString}`),
+      wrapper: getWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -146,38 +154,58 @@ describe('<ListView /> - operations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it.skip('should not show delete button when user has no resource based permissions', async () => {
-    // This test is skipped because resourcePermissionsEnabled is deprecated.
-    // Per the @deprecated comment in global.d.ts:
-    // "The C8 API does not expose permissions with resources.
-    // Therefore, permissions should not be checked proactively on the client.
-    // Let users try the action and surface missing permissions errors instead."
-    //
-    // The v2 implementation correctly shows the delete button and handles
-    // permission errors from the server when the user attempts the action.
-
+  it('should show permission error notification when delete operation returns 403', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstancesV2);
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
     });
 
-    const queryString = '?process=demoProcess&version=1';
+    mockApplyProcessDefinitionOperation().withServerError(403);
 
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
-    });
-
-    render(<ListView />, {
-      wrapper: createSimpleV2TestWrapper(`/processes${queryString}`),
+    const {user} = render(<ListView />, {
+      wrapper: getWrapper('/processes?process=demoProcess&version=1'),
     });
 
     expect(
-      await screen.findByRole('heading', {name: 'New demo process'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
+      await screen.findByRole('button', {
         name: /delete process definition/i,
       }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', {name: /delete process definition/i}),
+    );
+
+    const confirmCheckbox = await screen.findByLabelText(
+      /Yes, I confirm I want to delete this process definition/i,
+    );
+
+    await user.click(confirmCheckbox);
+
+    await screen.findByRole('button', {name: 'Cancel'});
+
+    const allButtons = screen.getAllByRole('button');
+    const deleteButtons = allButtons.filter((button) =>
+      button.textContent?.includes('Delete'),
+    );
+    const deleteButton = deleteButtons[deleteButtons.length - 1];
+
+    await user.click(deleteButton);
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'warning',
+      title: "You don't have permission to perform this operation",
+      subtitle: 'Please contact the administrator if you need access.',
+      isDismissable: true,
+    });
   });
 });

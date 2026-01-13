@@ -8,21 +8,21 @@
 
 import {act} from '@testing-library/react';
 import {render, screen, waitFor, type Screen} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
-import {
-  createV2TestWrapper,
-  getProcessInstance,
-  setupSelectionStoreWithInstances,
-  mockProcessInstancesV2,
-} from '../../../../tests/testUtils';
 import {MoveAction} from '..';
 import {open} from 'modules/mocks/diagrams';
-import {batchModificationStore} from 'modules/stores/batchModification';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {
+  PROCESS_DEFINITION_ID,
+  mockProcessInstancesV2,
+  setupSelectionStoreWithInstances,
+  getProcessInstance,
+  createWrapper,
+} from '../../tests/mocks';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const PROCESS_ID = 'MoveModificationProcess';
-
 const mockProcessXML = open('MoveModificationProcess.bpmn');
 
 const waitForDiagramToLoad = async (screen: Screen) => {
@@ -34,7 +34,6 @@ const waitForDiagramToLoad = async (screen: Screen) => {
 };
 
 vi.mock('modules/stores/processes/processes.list', () => {
-  const PROCESS_DEFINITION_ID = '2251799813685249';
   const PROCESS_ID = 'MoveModificationProcess';
 
   return {
@@ -60,7 +59,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when no process version is selected', () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({withTestButtons: true}),
+      wrapper: createWrapper({withTestButtons: true}),
     });
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -74,7 +73,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when only finished instances are selected', async () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
         withTestButtons: true,
       }),
@@ -88,7 +87,7 @@ describe('<MoveAction />', () => {
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(
-        String(instance.processInstanceKey),
+        instance.processInstanceKey,
       );
     });
 
@@ -103,7 +102,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when start event is selected', async () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=StartEvent`,
         withTestButtons: true,
       }),
@@ -117,7 +116,7 @@ describe('<MoveAction />', () => {
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(
-        String(instance.processInstanceKey),
+        instance.processInstanceKey,
       );
     });
 
@@ -132,7 +131,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when boundary event is selected', async () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=BoundaryEvent`,
         withTestButtons: true,
       }),
@@ -146,7 +145,7 @@ describe('<MoveAction />', () => {
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(
-        String(instance.processInstanceKey),
+        instance.processInstanceKey,
       );
     });
 
@@ -161,7 +160,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when multi instance task is selected', async () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MultiInstanceTask`,
         withTestButtons: true,
       }),
@@ -175,7 +174,7 @@ describe('<MoveAction />', () => {
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(
-        String(instance.processInstanceKey),
+        instance.processInstanceKey,
       );
     });
 
@@ -190,7 +189,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button if element is attached to event based gateway', async () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MessageEvent`,
         withTestButtons: true,
       }),
@@ -204,7 +203,7 @@ describe('<MoveAction />', () => {
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(
-        String(instance.processInstanceKey),
+        instance.processInstanceKey,
       );
     });
 
@@ -219,7 +218,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button if element is inside multi instance sub process', async () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=TaskInsideMultiInstance`,
         withTestButtons: true,
       }),
@@ -233,7 +232,7 @@ describe('<MoveAction />', () => {
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(
-        String(instance.processInstanceKey),
+        instance.processInstanceKey,
       );
     });
 
@@ -248,7 +247,7 @@ describe('<MoveAction />', () => {
 
   it('should enable move button when active or incident instances are selected', async () => {
     render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
         withTestButtons: true,
       }),
@@ -264,7 +263,7 @@ describe('<MoveAction />', () => {
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(
-        String(instance.processInstanceKey),
+        instance.processInstanceKey,
       );
     });
 
@@ -273,7 +272,7 @@ describe('<MoveAction />', () => {
 
   it('should enable move button when all instances are selected', async () => {
     const {user} = render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
         withTestButtons: true,
       }),
@@ -294,7 +293,7 @@ describe('<MoveAction />', () => {
 
   it('should display migration helper modal and enter migration mode', async () => {
     const {user} = render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
         withTestButtons: true,
       }),
@@ -331,7 +330,7 @@ describe('<MoveAction />', () => {
 
   it('should hide helper modal after checkbox click', async () => {
     const {user} = render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
         withTestButtons: true,
       }),

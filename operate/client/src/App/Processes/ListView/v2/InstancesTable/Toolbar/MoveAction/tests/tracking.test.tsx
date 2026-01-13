@@ -7,19 +7,18 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {
-  createV2TestWrapper,
-  setupSelectionStoreWithInstances,
-  mockProcessInstancesV2,
-} from '../../../../tests/testUtils';
 import {MoveAction} from '..';
 import {open} from 'modules/mocks/diagrams';
 import {tracking} from 'modules/tracking';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {
+  mockProcessInstancesV2,
+  setupSelectionStoreWithInstances,
+  createWrapper,
+} from '../../tests/mocks';
 
 const PROCESS_ID = 'MoveModificationProcess';
-
 const mockProcessXML = open('MoveModificationProcess.bpmn');
 
 describe('<MoveAction /> - tracking', () => {
@@ -33,7 +32,7 @@ describe('<MoveAction /> - tracking', () => {
     });
 
     const {user} = render(<MoveAction />, {
-      wrapper: createV2TestWrapper({
+      wrapper: createWrapper({
         initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
         withTestButtons: true,
       }),

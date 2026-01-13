@@ -16,7 +16,7 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
-import {getProcessInstanceKeyForMigration} from 'modules/utils/statistics/processInstancesV2';
+import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 import type {FlowNodeState} from 'modules/types/operate';
 
@@ -53,7 +53,7 @@ const SourceDiagram: React.FC = observer(() => {
   const {data: overlayData} = useProcessInstancesOverlayData(
     {
       filter: {
-        processInstanceKey: getProcessInstanceKeyForMigration(),
+        processInstanceKey: getMigrationProcessInstancesFilter(),
       },
     },
     sourceProcessDefinitionKey ?? undefined,

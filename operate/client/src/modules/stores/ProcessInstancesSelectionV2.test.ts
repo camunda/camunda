@@ -25,7 +25,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should return selectedProcessInstanceIds when selectionMode is INCLUDE', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: ['1', '3'],
-      isAllChecked: false,
       selectionMode: 'INCLUDE',
     };
 
@@ -36,7 +35,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should return all process instance IDs minus selectedProcessInstanceIds when selectionMode is EXCLUDE', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: ['1', '3'],
-      isAllChecked: false,
       selectionMode: 'EXCLUDE',
     };
 
@@ -47,7 +45,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should return all process instance IDs when selectionMode is ALL', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: [],
-      isAllChecked: true,
       selectionMode: 'ALL',
     };
 
@@ -64,7 +61,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
 
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: ['1', '3'],
-      isAllChecked: false,
       selectionMode: 'EXCLUDE',
     };
 
@@ -75,7 +71,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should handle an empty selectedProcessInstanceIds array', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: [],
-      isAllChecked: false,
       selectionMode: 'EXCLUDE',
     };
 
@@ -86,7 +81,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
   it('should handle when selectionMode is INCLUDE and selectedProcessInstanceIds is empty', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: [],
-      isAllChecked: false,
       selectionMode: 'INCLUDE',
     };
 

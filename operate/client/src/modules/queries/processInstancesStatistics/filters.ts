@@ -9,7 +9,7 @@
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
-const getProcessInstanceKeyV2 = () => {
+const getSelectedProcessInstancesFilter = () => {
   return processInstancesSelectionStore.checkedProcessInstanceIds.length > 0
     ? {
         $in: processInstancesSelectionStore.checkedProcessInstanceIds,
@@ -17,7 +17,7 @@ const getProcessInstanceKeyV2 = () => {
     : undefined;
 };
 
-const getProcessInstanceKeyForMigration = () => {
+const getMigrationProcessInstancesFilter = () => {
   const {batchOperationQuery} = processInstanceMigrationStore.state;
 
   if (!batchOperationQuery) {
@@ -36,4 +36,4 @@ const getProcessInstanceKeyForMigration = () => {
   return undefined;
 };
 
-export {getProcessInstanceKeyV2, getProcessInstanceKeyForMigration};
+export {getSelectedProcessInstancesFilter, getMigrationProcessInstancesFilter};

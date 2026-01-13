@@ -90,11 +90,9 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
           onSelect={(rowId) => {
             processInstancesSelectionStore.selectProcessInstance(rowId);
           }}
-          checkIsAllSelected={() =>
-            processInstancesSelectionStore.state.isAllChecked
-          }
+          checkIsAllSelected={() => processInstancesSelectionStore.isAllChecked}
           checkIsIndeterminate={() =>
-            !processInstancesSelectionStore.state.isAllChecked &&
+            !processInstancesSelectionStore.isAllChecked &&
             processInstancesSelectionStore.selectedProcessInstanceCount > 0
           }
           checkIsRowSelected={(rowId) => {

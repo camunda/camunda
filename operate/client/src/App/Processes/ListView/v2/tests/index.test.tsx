@@ -264,6 +264,11 @@ describe('Instances', () => {
       search: queryString,
     });
 
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
