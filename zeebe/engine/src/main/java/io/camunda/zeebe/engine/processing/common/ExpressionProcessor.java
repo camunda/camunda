@@ -15,12 +15,17 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -35,6 +40,8 @@ public final class ExpressionProcessor {
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
   private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> null;
+  private static final Duration EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(1);
+
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
@@ -81,6 +88,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as string, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, String> evaluateStringExpression(
       final Expression expression, final long scopeKey) {
@@ -98,6 +106,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as buffer, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, DirectBuffer> evaluateStringExpressionAsDirectBuffer(
       final Expression expression, final long scopeKey) {
@@ -112,6 +121,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as long, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, Long> evaluateLongExpression(
       final Expression expression, final long scopeKey) {
@@ -129,6 +139,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as boolean, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, Boolean> evaluateBooleanExpression(
       final Expression expression, final long scopeKey) {
@@ -145,6 +156,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as interval or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, Interval> evaluateIntervalExpression(
       final Expression expression, final long scopeKey) {
@@ -182,7 +194,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as ZonedDateTime or a failure
-   * @throws EvaluationException if expression evaluation failed
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, ZonedDateTime> evaluateDateTimeExpression(
       final Expression expression, final Long scopeKey) {
@@ -230,6 +242,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as buffer, or a failure if the evaluation fails
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, DirectBuffer> evaluateAnyExpression(
       final Expression expression, final long scopeKey) {
@@ -245,6 +258,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as a list, or a failure if the evaluation fails
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, List<DirectBuffer>> evaluateArrayExpression(
       final Expression expression, final long scopeKey) {
@@ -262,6 +276,7 @@ public final class ExpressionProcessor {
    *     empty variable context)
    * @return either the evaluation result as a list of regular strings, or a failure if the
    *     evaluation fails
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, List<String>> evaluateArrayOfStringsExpression(
       final Expression expression, final long scopeKey) {
@@ -293,6 +308,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as String, or a failure if the evaluation fails
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
       final Expression expression, final long scopeKey) {
@@ -310,6 +326,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as int, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, Integer> evaluateIntegerExpression(
       final Expression expression, final long scopeKey) {
@@ -361,6 +378,7 @@ public final class ExpressionProcessor {
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
    * @return either the evaluation result as buffer, or a failure
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(
       final Expression expression, final long scopeKey) {
@@ -417,7 +435,37 @@ public final class ExpressionProcessor {
 
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression, final long variableScopeKey) {
-    final var result = evaluateExpression(expression, variableScopeKey);
+    final CompletableFuture<EvaluationResult> future =
+        CompletableFuture.supplyAsync(() -> evaluateExpression(expression, variableScopeKey));
+
+    final EvaluationResult result;
+    try {
+      result = future.get(EXPRESSION_EVALUATION_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+
+    } catch (final TimeoutException e) {
+      future.cancel(true);
+      return Either.left(
+          new Failure(
+              "Expected to evaluate expression but timed out after %s ms: '%s'"
+                  .formatted(EXPRESSION_EVALUATION_TIMEOUT.toMillis(), expression.getExpression()),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              variableScopeKey));
+
+    } catch (final InterruptedException e) {
+      future.cancel(true);
+      Thread.currentThread().interrupt();
+      final var message =
+          "Expected to evaluate expression '%s', but the evaluation was interrupted"
+              .formatted(expression.getExpression());
+      throw new EvaluationException(message, e);
+
+    } catch (final ExecutionException e) {
+      final var message =
+          "Expected to evaluate expression '%s', but an exception was thrown"
+              .formatted(expression.getExpression());
+      throw new EvaluationException(message, e);
+    }
+
     return result.isFailure()
         ? Either.left(createFailureMessage(result, result.getFailureMessage(), variableScopeKey))
         : Either.right(result);
@@ -470,6 +518,10 @@ public final class ExpressionProcessor {
   public static final class EvaluationException extends RuntimeException {
     public EvaluationException(final String message) {
       super(message);
+    }
+
+    public EvaluationException(final String message, final Throwable cause) {
+      super(message, cause);
     }
   }
 
