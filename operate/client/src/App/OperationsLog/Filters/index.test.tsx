@@ -6,13 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {Filters} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import React from 'react';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {processesStore} from 'modules/stores/processes/processes.list';
 
