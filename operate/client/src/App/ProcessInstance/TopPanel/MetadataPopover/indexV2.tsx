@@ -25,6 +25,7 @@ import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Incidents} from './Incidents';
 import {useElementInstancesCount} from 'modules/hooks/useElementInstancesCount';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -32,6 +33,8 @@ type Props = {
 
 const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {data: processInstance} = useProcessInstance();
+  const {isSelectedInstanceMultiInstanceBody} =
+    useProcessInstanceElementSelection();
   const selection = flowNodeSelectionStore.state.selection;
   const elementId = selection?.flowNodeId;
   const elementInstanceKey = selection?.flowNodeInstanceId;
@@ -45,7 +48,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {data: statistics} = useFlownodeInstancesStatistics();
 
   let elementInstancesCount = useElementInstancesCount(elementId);
-  if (selection?.isMultiInstance) {
+  if (isSelectedInstanceMultiInstanceBody) {
     elementInstancesCount = 1;
   }
   const incidentCount =
