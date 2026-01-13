@@ -10,11 +10,10 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
 import co.elastic.clients.elasticsearch._types.Refresh;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -26,7 +25,6 @@ import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,25 +57,19 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
 
   @Override
   public void createOrUpdate(final Collection<DraftTaskVariableEntity> draftVariables) {
-    try {
-      final var bulkOperations = draftVariables.stream().map(this::createUpsertRequest).toList();
+    try (final BulkIngester<Void> ingester =
+        BulkIngester.of(b -> b.client(es8Client).globalSettings(s -> s.refresh(Refresh.WaitFor)))) {
 
-      final var bulkRequest =
-          BulkRequest.of(b -> b.operations(bulkOperations).refresh(Refresh.WaitFor));
-
-      final var bulkResponse = es8Client.bulk(bulkRequest);
-
-      if (bulkResponse.errors()) {
-        final var errorMessages =
-            bulkResponse.items().stream()
-                .filter(item -> item.error() != null)
-                .map(item -> item.error().reason())
-                .collect(java.util.stream.Collectors.joining(", "));
-        throw new TasklistRuntimeException(
-            "Failed to upsert draft variables. Errors: " + errorMessages);
+      for (final DraftTaskVariableEntity entity : draftVariables) {
+        ingester.add(
+            op ->
+                op.update(
+                    u ->
+                        u.index(draftTaskVariableTemplate.getFullQualifiedName())
+                            .id(entity.getId())
+                            .action(a -> a.doc(entity).docAsUpsert(true))
+                            .retryOnConflict(UPDATE_RETRY_COUNT)));
       }
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException("Error upserting draft variables", e);
     }
   }
 
@@ -184,23 +176,5 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
-  }
-
-  private BulkOperation createUpsertRequest(final DraftTaskVariableEntity draftVariableEntity) {
-    final var updateFields = new HashMap<String, Object>();
-    updateFields.put(DraftTaskVariableTemplate.TASK_ID, draftVariableEntity.getTaskId());
-    updateFields.put(DraftTaskVariableTemplate.NAME, draftVariableEntity.getName());
-    updateFields.put(DraftTaskVariableTemplate.VALUE, draftVariableEntity.getValue());
-    updateFields.put(DraftTaskVariableTemplate.FULL_VALUE, draftVariableEntity.getFullValue());
-    updateFields.put(DraftTaskVariableTemplate.IS_PREVIEW, draftVariableEntity.getIsPreview());
-
-    return BulkOperation.of(
-        op ->
-            op.update(
-                u ->
-                    u.index(draftTaskVariableTemplate.getFullQualifiedName())
-                        .id(draftVariableEntity.getId())
-                        .retryOnConflict(UPDATE_RETRY_COUNT)
-                        .action(a -> a.doc(updateFields).upsert(draftVariableEntity))));
   }
 }
