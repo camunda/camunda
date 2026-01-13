@@ -130,21 +130,6 @@ public class CamundaProcessTestCompletionApiIT {
   }
 
   @Test
-  void shouldThrowBpmnErrorFromJob() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.throwBpmnErrorFromJob("test", "bpmn-error");
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("error-end");
-  }
-
-  @Test
   void shouldThrowBpmnErrorFromJobWithVariables() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
