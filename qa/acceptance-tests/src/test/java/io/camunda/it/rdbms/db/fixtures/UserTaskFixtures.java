@@ -35,7 +35,7 @@ public final class UserTaskFixtures extends CommonFixtures {
             .rootProcessInstanceKey(nextKey())
             .creationDate(NOW)
             .completionDate(NOW.plusDays(1))
-            .assignee("bud spencer")
+            .assignee(generateRandomString(5, "user"))
             .state(UserTaskState.CREATED)
             .formKey(nextKey())
             .processDefinitionKey(nextKey())

@@ -148,23 +148,55 @@
   <sql id="searchFilter">
     <where>
       <!-- authorization filters -->
-      <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()) or (authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty())">
+      <if test="(authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty())
+              or (authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty())
+              or (authorizationProperties != null and authorizationProperties.hasAnyProperty())">
         AND
         <trim prefix="(" suffix=")" prefixOverrides="OR">
+          <!-- ID-based: process definition -->
           <if test="authorizedProcessDefinitionIds != null and !authorizedProcessDefinitionIds.isEmpty()">
             OR ut.PROCESS_DEFINITION_ID IN
             <foreach collection="authorizedProcessDefinitionIds" item="processDefinitionId" open="(" separator="," close=")">
               #{processDefinitionId}
             </foreach>
           </if>
+          <!-- ID-based: user task key -->
           <if test="authorizedUserTaskKeys != null and !authorizedUserTaskKeys.isEmpty()">
             OR ut.USER_TASK_KEY IN
             <foreach collection="authorizedUserTaskKeys" item="userTaskKey" open="(" separator="," close=")">
               #{userTaskKey}
             </foreach>
           </if>
+          <!-- Property-based: assignee -->
+          <if test="authorizationProperties != null and authorizationProperties.assignee != null and !authorizationProperties.assignee.isEmpty()">
+            OR ut.ASSIGNEE = #{authorizationProperties.assignee}
+          </if>
+          <!-- Property-based: candidate users -->
+          <if test="authorizationProperties != null and authorizationProperties.candidateUsers != null and !authorizationProperties.candidateUsers.isEmpty()">
+            OR EXISTS (
+            SELECT 1 FROM ${prefix}CANDIDATE_USER cu
+            WHERE cu.USER_TASK_KEY = ut.USER_TASK_KEY
+            AND cu.CANDIDATE_USER IN
+            <foreach collection="authorizationProperties.candidateUsers" item="candidateUser" open="(" separator="," close=")">
+              #{candidateUser}
+            </foreach>
+            )
+          </if>
+          <!-- Property-based: candidate groups -->
+          <if test="authorizationProperties != null and authorizationProperties.candidateGroups != null and !authorizationProperties.candidateGroups.isEmpty()">
+            OR EXISTS (
+            SELECT 1 FROM ${prefix}CANDIDATE_GROUP cg
+            WHERE cg.USER_TASK_KEY = ut.USER_TASK_KEY
+            AND cg.CANDIDATE_GROUP IN
+            <foreach collection="authorizationProperties.candidateGroups" item="candidateGroup" open="(" separator="," close=")">
+              #{candidateGroup}
+            </foreach>
+            )
+          </if>
         </trim>
       </if>
+
+      <!-- tenant filter -->
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
         AND ut.TENANT_ID IN
         <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
