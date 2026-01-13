@@ -9,9 +9,11 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.TopHitsAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +66,15 @@ public class DecisionReader extends AbstractReader
       final var response = es8client.search(searchRequest, DecisionDefinitionEntity.class);
       final var totalHits = response.hits().total().value();
       if (totalHits == 1) {
-        return response.hits().hits().get(0).source();
+        final var hit = response.hits().hits().get(0);
+        final var source = hit.source();
+        if (source == null) {
+          throw new OperateRuntimeException(
+              String.format(
+                  "Decision source is missing for key '%s' despite a search hit being returned.",
+                  decisionDefinitionKey));
+        }
+        return source;
       } else if (totalHits > 1) {
         throw new NotFoundException(
             String.format("Could not find unique decision with key '%s'.", decisionDefinitionKey));
@@ -138,23 +149,24 @@ public class DecisionReader extends AbstractReader
           .forEach(
               b -> {
                 final var groupTenantId = b.key().stringValue();
-                final var decisionGroups = b.aggregations().get(groupsAggName).sterms();
+                final StringTermsAggregate decisionGroups =
+                    b.aggregations().get(groupsAggName).sterms();
 
                 decisionGroups.buckets().array().stream()
                     .forEach(
                         tenantB -> {
                           final var decisionId = tenantB.key().stringValue();
                           final var groupKey = groupTenantId + "_" + decisionId;
-                          result.put(groupKey, new ArrayList<>());
 
-                          final var processes =
+                          final var decisionHits =
                               tenantB.aggregations().get(decisionsAggName).topHits();
-                          final var hits = processes.hits().hits();
-                          for (final var searchHit : hits) {
-                            final var decisionEntity =
-                                searchHit.source().to(DecisionDefinitionEntity.class);
-                            result.get(groupKey).add(decisionEntity);
-                          }
+                          final List<DecisionDefinitionEntity> decisions =
+                              decisionHits.hits().hits().stream()
+                                  .map(Hit::source)
+                                  .filter(Objects::nonNull)
+                                  .map(source -> source.to(DecisionDefinitionEntity.class))
+                                  .toList();
+                          result.put(groupKey, new ArrayList<>(decisions));
                         });
               });
 
@@ -162,7 +174,7 @@ public class DecisionReader extends AbstractReader
     } catch (final IOException e) {
       final var message =
           String.format(
-              "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
+              "Exception occurred, while obtaining grouped decisions: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -170,9 +182,7 @@ public class DecisionReader extends AbstractReader
   private Query buildQuery(final String tenantId) {
     final var allowed =
         permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
-    if (allowed == null) {
-      return ElasticsearchUtil.matchAllQuery();
-    }
+
     final var decisionIdQ =
         allowed.isAll()
             ? ElasticsearchUtil.matchAllQuery()
