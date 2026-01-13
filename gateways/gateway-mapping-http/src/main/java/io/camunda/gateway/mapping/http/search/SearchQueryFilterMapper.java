@@ -14,23 +14,27 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.gateway.mapping.http.util.AuditLogCategoryConverter;
-import io.camunda.gateway.mapping.http.util.AuditLogEntityTypeConverter;
-import io.camunda.gateway.mapping.http.util.AuditLogOperationTypeConverter;
-import io.camunda.gateway.mapping.http.util.DecisionInstanceStateConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogActorTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogCategoryConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogEntityTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogOperationTypeConverter;
+import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
+import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
+import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.mapping.http.util.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
+import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.ClusterVariableFilter;
@@ -920,9 +924,8 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
         .ifPresent(builder::operationTypeOperations);
     ofNullable(filter.getResult())
-        .map(io.camunda.gateway.protocol.model.AuditLogResultEnum::getValue)
-        .map(String::toUpperCase)
-        .ifPresent(builder::results);
+        .map(mapToOperations(String.class, new AuditLogResultConverter()))
+        .ifPresent(builder::resultOperations);
     ofNullable(filter.getTimestamp())
         .map(mapToOperations(OffsetDateTime.class))
         .ifPresent(builder::timestampOperations);
@@ -930,9 +933,8 @@ public class SearchQueryFilterMapper {
         .map(mapToOperations(String.class))
         .ifPresent(builder::actorIdOperations);
     ofNullable(filter.getActorType())
-        .map(io.camunda.gateway.protocol.model.AuditLogActorTypeEnum::getValue)
-        .map(String::toUpperCase)
-        .ifPresent(builder::actorTypes);
+        .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
+        .ifPresent(builder::actorTypeOperations);
     ofNullable(filter.getEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);
@@ -1015,6 +1017,30 @@ public class SearchQueryFilterMapper {
                         f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
         .orElse(null);
+  }
+
+  static AuditLogFilter toUserTaskAuditLogFilter(final UserTaskAuditLogFilter filter) {
+    if (filter == null) {
+      return FilterBuilders.auditLog().build();
+    }
+
+    final var builder = FilterBuilders.auditLog();
+    ofNullable(filter.getOperationType())
+        .map(mapToOperations(String.class, new AuditLogOperationTypeConverter()))
+        .ifPresent(builder::operationTypeOperations);
+    ofNullable(filter.getResult())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::resultOperations);
+    ofNullable(filter.getTimestamp())
+        .map(mapToOperations(OffsetDateTime.class))
+        .ifPresent(builder::timestampOperations);
+    ofNullable(filter.getActorId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::actorIdOperations);
+    ofNullable(filter.getActorType())
+        .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
+        .ifPresent(builder::actorTypeOperations);
+    return builder.build();
   }
 
   static VariableFilter toUserTaskVariableFilter(final UserTaskVariableFilter filter) {

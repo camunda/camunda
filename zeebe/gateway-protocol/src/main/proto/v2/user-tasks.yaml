@@ -720,6 +720,22 @@ components:
             - $ref: '#/components/schemas/UserTaskVariableFilter'
           description: The user task variable search filters.
 
+
+    UserTaskAuditLogSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - operationType
+            - result
+            - timestamp
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+
     UserTaskAuditLogSearchQueryRequest:
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
@@ -731,8 +747,9 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: 'audit-logs.yaml#/components/schemas/AuditLogSearchQuerySortRequest'
-        # TODO: filter will be added in a later PR for https://github.com/camunda/camunda/issues/41202
+            $ref: '#/components/schemas/UserTaskAuditLogSearchQuerySortRequest'
+        filter:
+          $ref: '#/components/schemas/UserTaskAuditLogFilter'
 
     ## Enums
 
@@ -795,3 +812,30 @@ components:
             $ref: "#/components/schemas/UserTaskStateEnum"
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+
+
+    UserTaskAuditLogFilter:
+      description: The user task audit log search filters.
+      type: object
+      properties:
+        operationType:
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/OperationTypeFilterProperty'
+          description: The audit log operation type search filter.
+        result:
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogResultFilterProperty'
+          description: The audit log result search filter.
+        timestamp:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: The audit log timestamp filter.
+        actorType:
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeFilterProperty'
+          description: The actor type search filter.
+        actorId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The actor ID search filter.

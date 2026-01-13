@@ -34,6 +34,7 @@ import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.instancio.Instancio;
@@ -105,10 +106,58 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("processDefinitionKey");
     assertThat(filter.getElementInstanceKey().get$Eq()).isEqualTo("elementInstanceKey");
     assertThat(filter.getOperationType().get$Eq().getValue()).isEqualTo("CREATE");
-    assertThat(filter.getResult().getValue()).isEqualTo("SUCCESS");
+    assertThat(filter.getResult().get$Eq().getValue()).isEqualTo("SUCCESS");
     assertThat(filter.getTimestamp().get$Eq()).isEqualTo(OffsetDateTime.MIN.toString());
     assertThat(filter.getActorId().get$Eq()).isEqualTo("actorId");
-    assertThat(filter.getActorType().getValue()).isEqualTo("CLIENT");
+    assertThat(filter.getActorType().get$Eq().getValue()).isEqualTo("CLIENT");
+    assertThat(filter.getEntityType().get$Eq().getValue()).isEqualTo("BATCH");
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenantId");
+    assertThat(filter.getCategory().get$Eq().getValue()).isEqualTo("ADMIN");
+    assertThat(filter.getDeploymentKey().get$Eq()).isEqualTo("deploymentKey");
+    assertThat(filter.getFormKey().get$Eq()).isEqualTo("formKey");
+    assertThat(filter.getResourceKey().get$Eq()).isEqualTo("resourceKey");
+  }
+
+  @Test
+  public void shouldSearchAuditLogsWithAdvancedFilters() {
+    // when
+    client
+        .newAuditLogSearchRequest()
+        .filter(
+            fn ->
+                fn.auditLogKey(f -> f.eq("auditLogKey"))
+                    .processInstanceKey(f -> f.notIn("processInstanceKey"))
+                    .processDefinitionKey(f -> f.eq("processDefinitionKey"))
+                    .elementInstanceKey(f -> f.exists(true))
+                    .operationType(
+                        f -> f.in(Collections.singletonList(AuditLogOperationTypeEnum.CREATE)))
+                    .result(f -> f.neq(AuditLogResultEnum.SUCCESS))
+                    .timestamp(f -> f.gt(OffsetDateTime.MIN))
+                    .actorId(f -> f.eq("actorId"))
+                    .actorType(f -> f.like("CLIENT"))
+                    .entityType(f -> f.eq(AuditLogEntityTypeEnum.BATCH))
+                    .tenantId(f -> f.eq("tenantId"))
+                    .category(f -> f.eq(AuditLogCategoryEnum.ADMIN))
+                    .deploymentKey(f -> f.eq("deploymentKey"))
+                    .formKey(f -> f.eq("formKey"))
+                    .resourceKey(f -> f.eq("resourceKey")))
+        .send()
+        .join();
+
+    // then
+    final AuditLogSearchQueryRequest request =
+        gatewayService.getLastRequest(AuditLogSearchQueryRequest.class);
+    final AuditLogFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getAuditLogKey().get$Eq()).isEqualTo("auditLogKey");
+    assertThat(filter.getProcessInstanceKey().get$NotIn().get(0)).isEqualTo("processInstanceKey");
+    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("processDefinitionKey");
+    assertThat(filter.getElementInstanceKey().get$Exists()).isEqualTo(true);
+    assertThat(filter.getOperationType().get$In().get(0).getValue()).isEqualTo("CREATE");
+    assertThat(filter.getResult().get$Neq().getValue()).isEqualTo("SUCCESS");
+    assertThat(filter.getTimestamp().get$Gt()).isEqualTo(OffsetDateTime.MIN.toString());
+    assertThat(filter.getActorId().get$Eq()).isEqualTo("actorId");
+    assertThat(filter.getActorType().get$Like()).isEqualTo("CLIENT");
     assertThat(filter.getEntityType().get$Eq().getValue()).isEqualTo("BATCH");
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenantId");
     assertThat(filter.getCategory().get$Eq().getValue()).isEqualTo("ADMIN");

@@ -20,10 +20,12 @@ import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
+import io.camunda.client.api.search.filter.builder.AuditLogActorTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogCategoryFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogEntityTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogKeyFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogOperationTypeFilterProperty;
+import io.camunda.client.api.search.filter.builder.AuditLogResultFilterProperty;
 import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -154,6 +156,14 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter actorType(final AuditLogActorTypeEnum actorType);
 
   /**
+   * Filter audit logs by the actor type using {@link AuditLogActorTypeFilterProperty} consumer
+   *
+   * @param fn the actor type filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter actorType(final Consumer<AuditLogActorTypeFilterProperty> fn);
+
+  /**
    * Filter audit logs by the entity type
    *
    * @param entityType the entity type
@@ -192,6 +202,14 @@ public interface AuditLogFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   AuditLogFilter result(final AuditLogResultEnum result);
+
+  /**
+   * Filter audit logs by the result using {@link AuditLogResultFilterProperty} consumer
+   *
+   * @param fn the result filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter result(final Consumer<AuditLogResultFilterProperty> fn);
 
   /**
    * Filter audit logs by the category

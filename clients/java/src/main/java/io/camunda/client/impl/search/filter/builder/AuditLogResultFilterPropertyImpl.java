@@ -15,66 +15,68 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
-import io.camunda.client.api.search.filter.builder.AuditLogEntityTypeFilterProperty;
+import io.camunda.client.api.search.enums.AuditLogResultEnum;
+import io.camunda.client.api.search.filter.builder.AuditLogResultFilterProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.EntityTypeFilterProperty;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AuditLogEntityTypeFilterPropertyImpl
-    extends TypedSearchRequestPropertyProvider<EntityTypeFilterProperty>
-    implements AuditLogEntityTypeFilterProperty {
+public class AuditLogResultFilterPropertyImpl
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.AuditLogResultFilterProperty>
+    implements AuditLogResultFilterProperty {
 
-  private final EntityTypeFilterProperty filterProperty = new EntityTypeFilterProperty();
+  private final io.camunda.client.protocol.rest.AuditLogResultFilterProperty filterProperty =
+      new io.camunda.client.protocol.rest.AuditLogResultFilterProperty();
 
   @Override
-  public AuditLogEntityTypeFilterProperty like(final String value) {
+  public AuditLogResultFilterProperty like(final String value) {
     filterProperty.set$Like(value);
     return this;
   }
 
   @Override
-  public AuditLogEntityTypeFilterProperty eq(final AuditLogEntityTypeEnum value) {
+  public AuditLogResultFilterProperty eq(final AuditLogResultEnum value) {
     filterProperty.set$Eq(
-        EnumUtil.convert(value, io.camunda.client.protocol.rest.AuditLogEntityTypeEnum.class));
+        EnumUtil.convert(value, io.camunda.client.protocol.rest.AuditLogResultEnum.class));
     return this;
   }
 
   @Override
-  public AuditLogEntityTypeFilterProperty neq(final AuditLogEntityTypeEnum value) {
+  public AuditLogResultFilterProperty neq(final AuditLogResultEnum value) {
     filterProperty.set$Neq(
-        EnumUtil.convert(value, io.camunda.client.protocol.rest.AuditLogEntityTypeEnum.class));
+        EnumUtil.convert(value, io.camunda.client.protocol.rest.AuditLogResultEnum.class));
     return this;
   }
 
   @Override
-  public AuditLogEntityTypeFilterProperty exists(final boolean value) {
+  public AuditLogResultFilterProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public AuditLogEntityTypeFilterProperty in(final List<AuditLogEntityTypeEnum> values) {
+  public AuditLogResultFilterProperty in(final List<AuditLogResultEnum> values) {
     filterProperty.set$In(
         values.stream()
             .map(
                 source ->
                     EnumUtil.convert(
-                        source, io.camunda.client.protocol.rest.AuditLogEntityTypeEnum.class))
+                        source, io.camunda.client.protocol.rest.AuditLogResultEnum.class))
             .collect(Collectors.toList()));
     return this;
   }
 
   @Override
-  public AuditLogEntityTypeFilterProperty in(final AuditLogEntityTypeEnum... values) {
+  public AuditLogResultFilterProperty in(final AuditLogResultEnum... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  protected EntityTypeFilterProperty getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.AuditLogResultFilterProperty
+      getSearchRequestProperty() {
     return filterProperty;
   }
 }

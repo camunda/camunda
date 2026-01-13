@@ -584,6 +584,23 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
   }
 
+  public static Either<ProblemDetail, AuditLogQuery> toUserTaskAuditLogQuery(
+      final UserTaskAuditLogSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.auditLogSearchQuery().build());
+    }
+
+    final var filter = SearchQueryFilterMapper.toUserTaskAuditLogFilter(request.getFilter());
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromUserTaskAuditLogSearchRequest(request.getSort()),
+            SortOptionBuilders::auditLog,
+            SearchQuerySortRequestMapper::applyUserTaskAuditLogSortField);
+
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::auditLogSearchQuery);
+  }
+
   public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQuery(
       final MessageSubscriptionSearchQuery request) {
     if (request == null) {
