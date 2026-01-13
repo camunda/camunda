@@ -18,9 +18,11 @@ import static org.mockito.Mockito.when;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import org.junit.jupiter.api.AfterEach;
@@ -130,20 +132,27 @@ class ProcessCacheTest {
     when(searchExecutor.search(any(), eq(ProcessEntity.class), eq(ResourceAccessChecks.disabled())))
         .thenAnswer(
             invocation -> {
-              // We don't inspect the query object here, but we can model the scenario with a
-              // predictable sequence matching the order of cache loads below.
-              final int call =
-                  org.mockito.Mockito.mockingDetails(searchExecutor).getInvocations().size();
-              if (call == 1) {
-                return SearchQueryResult.of(
-                    new ProcessDefinitionEntity(1L, "n1", "d1", null, null, 1, null, "t", null));
-              }
-              if (call == 2) {
-                return SearchQueryResult.of(
-                    new ProcessDefinitionEntity(2L, "n2", "d2", null, null, 1, null, "t", null));
-              }
-              return SearchQueryResult.of(
-                  new ProcessDefinitionEntity(3L, "n3", "d3", null, null, 1, null, "t", null));
+              final var query = invocation.getArgument(0, ProcessDefinitionQuery.class);
+
+              // This test calls getCacheItem(k) which builds a query containing exactly that key.
+              final List<Long> keys = query.filter().processDefinitionKeys();
+              final long key = keys.getFirst();
+
+              return switch ((int) key) {
+                case 1 ->
+                    SearchQueryResult.of(
+                        new ProcessDefinitionEntity(
+                            1L, "n1", "d1", null, null, 1, null, "t", null));
+                case 2 ->
+                    SearchQueryResult.of(
+                        new ProcessDefinitionEntity(
+                            2L, "n2", "d2", null, null, 1, null, "t", null));
+                case 3 ->
+                    SearchQueryResult.of(
+                        new ProcessDefinitionEntity(
+                            3L, "n3", "d3", null, null, 1, null, "t", null));
+                default -> SearchQueryResult.of();
+              };
             });
 
     processCache.getCacheItem(1L);
