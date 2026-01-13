@@ -333,8 +333,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final String errorCode,
       final String errorMessage,
       final Map<String, Object> variables) {
-    throwBpmnErrorFromJob(
-        JobSelectors.byJobType(jobType), errorCode, errorMessage, variables);
+    throwBpmnErrorFromJob(JobSelectors.byJobType(jobType), errorCode, errorMessage, variables);
   }
 
   @Override
@@ -368,7 +367,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               variables);
 
           final ThrowErrorCommandStep1.ThrowErrorCommandStep2 command =
-              client.newThrowErrorCommand(job.getJobKey()).errorCode(errorCode).variables(variables);
+              client
+                  .newThrowErrorCommand(job.getJobKey())
+                  .errorCode(errorCode)
+                  .variables(variables);
 
           if (errorMessage != null) {
             command.errorMessage(errorMessage);

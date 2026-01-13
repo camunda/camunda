@@ -130,7 +130,12 @@ public class ThrowBpmnErrorTest {
       camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE);
 
       // then
-      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(Collections.emptyMap())).send();
+      verify(
+              camundaClient
+                  .newThrowErrorCommand(JOB_KEY)
+                  .errorCode(ERROR_CODE)
+                  .variables(Collections.emptyMap()))
+          .send();
     }
 
     @Test
@@ -142,7 +147,8 @@ public class ThrowBpmnErrorTest {
       camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE, variables);
 
       // then
-      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(variables)).send();
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(variables))
+          .send();
     }
 
     @Test
@@ -151,14 +157,17 @@ public class ThrowBpmnErrorTest {
       final Map<String, Object> variables = Collections.singletonMap("reason", "validation-failed");
 
       // when
-      camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE, ERROR_MESSAGE, variables);
+      camundaProcessTestContext.throwBpmnErrorFromJob(
+          JOB_TYPE, ERROR_CODE, ERROR_MESSAGE, variables);
 
       // then
       // Verify the command was created with the correct job key, error code, and variables
       verify(camundaClient).newThrowErrorCommand(JOB_KEY);
       verify(camundaClient.newThrowErrorCommand(JOB_KEY)).errorCode(ERROR_CODE);
-      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE)).variables(variables);
-      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(variables)).errorMessage(ERROR_MESSAGE);
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE))
+          .variables(variables);
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(variables))
+          .errorMessage(ERROR_MESSAGE);
     }
 
     @Test
@@ -275,7 +284,8 @@ public class ThrowBpmnErrorTest {
           .thenReturn(Collections.emptyList());
 
       // when/then
-      assertThatThrownBy(() -> camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE))
+      assertThatThrownBy(
+              () -> camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
               "Expected to complete job [jobType: %s] but no job is available.", JOB_TYPE);
