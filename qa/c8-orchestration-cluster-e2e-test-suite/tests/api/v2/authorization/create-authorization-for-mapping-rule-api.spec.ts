@@ -37,7 +37,8 @@ import {
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
 
-test.describe.serial('Create Authorization API for Mapping Rule - Success and Conflict', () => {
+test.describe
+  .serial('Create Authorization API for Mapping Rule - Success and Conflict', () => {
   let successMappingRule: {
     mappingRuleId: string;
     claimName: string;
@@ -106,10 +107,7 @@ test.describe.serial('Create Authorization API for Mapping Rule - Success and Co
       'MAPPING_RULE',
       '*',
       'DOCUMENT',
-      [
-        'CREATE',
-        'READ'
-      ],
+      ['CREATE', 'READ'],
     );
 
     await expect(async () => {
@@ -163,7 +161,8 @@ test.describe.serial('Create Authorization API for Mapping Rule - Success and Co
   });
 });
 
-test.describe.parallel('Create Authorization API for Mapping Rule - Unhappy paths', () => {
+test.describe
+  .parallel('Create Authorization API for Mapping Rule - Unhappy paths', () => {
   let unhappyPathMappingRule: {
     mappingRuleId: string;
     claimName: string;

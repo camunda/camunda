@@ -122,7 +122,7 @@ test.describe('process page', () => {
         ).toBeVisible();
       },
       onFailure: async () => {
-        console.log('User_Task not visible yet, retrying...');
+        page.reload();
       },
     });
 
