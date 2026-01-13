@@ -290,6 +290,8 @@
     "taskDetailsShowTaskLabel": "Show task",
     "taskDetailsProcessTabLabel": "Process",
     "taskDetailsShowBpmnProcessLabel": "Show associated BPMN process",
+    "taskDetailsHistoryTabLabel": "History",
+    "taskDetailsShowHistoryLabel": "Show task history",
     "taskDetailsNavLabel": "Task Details Navigation",
     "turnOnNotificationTitle": "Don't miss new assignments",
     "turnOnNotificationSubtitle": "Turn on notifications in your browser to get notified when new tasks are assigned to you.",
