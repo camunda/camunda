@@ -46,7 +46,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.util.NamedValue;
-import com.google.common.collect.ImmutableList;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -78,6 +77,7 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,7 +194,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       final var response = es8client.search(request, FlowNodeInstanceEntity.class);
 
       final Set<String> incidentPaths = new HashSet<>();
-      processAggregation(response.aggregations(), incidentPaths, new Boolean[] {false});
+      processAggregation(response.aggregations(), incidentPaths, new AtomicBoolean());
 
       final Set<String> finishedFlowNodes =
           collectFinishedFlowNodes(response.aggregations().get(FINISHED_FLOW_NODES_AGG_NAME));
@@ -235,7 +235,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
       final var searchRequest =
           new SearchRequest.Builder()
-              .index(whereToSearch(flowNodeInstanceTemplate, ALL))
+              .index(flowNodeInstanceTemplate.getAlias())
               .query(tenantAwareQuery)
               .fields(f -> f.field(ID))
               .source(s -> s.fetch(false))
@@ -244,7 +244,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       final var response = es8client.search(searchRequest, FlowNodeInstanceEntity.class);
 
       return response.hits().hits().stream()
-          .map(hit -> Long.parseLong(hit.fields().get(ID).to(String.class)))
+          .map(hit -> Long.parseLong(hit.fields().get(ID).to(List.class).get(0).toString()))
           .toList();
     } catch (final IOException e) {
       throw new OperateRuntimeException(
@@ -398,7 +398,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       }
       if (flowNodeInstanceRequest.getSearchBefore() != null
           || flowNodeInstanceRequest.getSearchBeforeOrEqual() != null) {
-        response.setChildren(ImmutableList.copyOf(response.getChildren()).reverse());
+        response.setChildren(List.copyOf(response.getChildren()).reversed());
       }
 
       return response;
@@ -512,13 +512,12 @@ public class FlowNodeInstanceReader extends AbstractReader
   private FlowNodeInstanceResponseDto scrollAllSearchHits(
       final SearchRequest.Builder searchRequestBuilder, final String processInstanceId)
       throws IOException {
-    final Boolean[] runningParent = new Boolean[] {false};
+    final var runningParent = new AtomicBoolean();
     final List<FlowNodeInstanceEntity> children =
         ElasticsearchUtil.scrollAllStream(
                 es8client, searchRequestBuilder, FlowNodeInstanceEntity.class)
             .flatMap(
                 response -> {
-                  // Process aggregation from each scroll response
                   processAggregation(response.aggregations(), null, runningParent);
                   return response.hits().hits().stream();
                 })
@@ -531,14 +530,14 @@ public class FlowNodeInstanceReader extends AbstractReader
             .toList();
     markHasIncident(processInstanceId, children);
     return new FlowNodeInstanceResponseDto(
-        runningParent[0], FlowNodeInstanceDto.createFrom(children, objectMapper));
+        runningParent.get(), FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
   private FlowNodeInstanceResponseDto getOnePage(
       final SearchRequest searchRequest, final String processInstanceId) throws IOException {
     final var searchResponse = es8client.search(searchRequest, FlowNodeInstanceEntity.class);
 
-    final Boolean[] runningParent = new Boolean[1];
+    final var runningParent = new AtomicBoolean();
     final Set<String> incidentPaths = new HashSet<>();
     processAggregation(searchResponse.aggregations(), incidentPaths, runningParent);
 
@@ -554,13 +553,13 @@ public class FlowNodeInstanceReader extends AbstractReader
     // Additional incident marking via separate query
     markHasIncident(processInstanceId, children);
     return new FlowNodeInstanceResponseDto(
-        runningParent[0], FlowNodeInstanceDto.createFrom(children, objectMapper));
+        runningParent.get(), FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
   private void processAggregation(
       final Map<String, Aggregate> aggregations,
       final Set<String> incidentPaths,
-      final Boolean[] runningParent) {
+      final AtomicBoolean runningParent) {
     if (aggregations == null) {
       return;
     }
@@ -595,12 +594,12 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private void processRunningParentAggregation(
-      final Map<String, Aggregate> aggregations, final Boolean[] runningParent) {
+      final Map<String, Aggregate> aggregations, final AtomicBoolean runningParent) {
     final var runningParentAgg = aggregations.get(AGG_RUNNING_PARENT);
     if (runningParentAgg != null
         && runningParentAgg.isFilter()
         && runningParentAgg.filter().docCount() > 0) {
-      runningParent[0] = true;
+      runningParent.set(true);
     }
   }
 
@@ -1016,8 +1015,12 @@ public class FlowNodeInstanceReader extends AbstractReader
     final Map<String, Object> lastFlowNodeFields =
         objectMapper.convertValue(hit.source(), ElasticsearchUtil.MAP_CLASS);
 
-    final var stateValue = lastFlowNodeFields.get(STATE);
-    final var treePathValue = lastFlowNodeFields.get(TREE_PATH);
+    final var stateValue =
+        Objects.requireNonNull(lastFlowNodeFields.get(STATE), "STATE field must not be null");
+    final var treePathValue =
+        Objects.requireNonNull(
+            lastFlowNodeFields.get(TREE_PATH), "TREE_PATH field must not be null");
+
     var flowNodeState = FlowNodeStateDto.valueOf(stateValue.toString());
 
     if (flowNodeState.equals(FlowNodeStateDto.ACTIVE)
@@ -1029,7 +1032,15 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private LongTermsBucket getBucketFromLevel(final List<LongTermsBucket> buckets, final int level) {
-    return buckets.stream().filter(b -> b.key() == level).findFirst().get();
+    return buckets.stream()
+        .filter(b -> b.key() == level)
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new OperateRuntimeException(
+                    "No aggregation bucket found for level "
+                        + level
+                        + " when building breadcrumb"));
   }
 
   private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumbForFlowNodeId(
@@ -1048,7 +1059,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         final Map<String, Object> instanceFields =
             objectMapper.convertValue(hit.source(), ElasticsearchUtil.MAP_CLASS);
         if ((int) instanceFields.get(LEVEL) <= currentInstanceLevel) {
-          final var flowNodeType = (FlowNodeType) instanceFields.get(TYPE);
+          final var flowNodeType = FlowNodeType.valueOf((String) instanceFields.get(TYPE));
           final var breadcrumbEntry =
               new FlowNodeInstanceBreadcrumbEntryDto(
                   String.valueOf(instanceFields.get(FLOW_NODE_ID)), flowNodeType);
@@ -1076,8 +1087,8 @@ public class FlowNodeInstanceReader extends AbstractReader
 
     final Map<String, Object> instanceFields =
         objectMapper.convertValue(hits.get(0).source(), ElasticsearchUtil.MAP_CLASS);
-    final Object typeValue = instanceFields.get(TYPE);
+    final var typeValue = (String) instanceFields.get(TYPE);
 
-    return typeValue == null ? null : (FlowNodeType) typeValue;
+    return typeValue == null ? null : FlowNodeType.valueOf(typeValue);
   }
 }
