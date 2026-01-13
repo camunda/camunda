@@ -100,22 +100,25 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
       final CamundaAuthentication authentication,
       final Authorization<T> requiredAuthorization,
       final T resource) {
+    final var resourceId = resolveResourceId(requiredAuthorization, resource);
+    return hasResourceAccessByResourceId(authentication, requiredAuthorization, resourceId);
+  }
+
+  private <T> String resolveResourceId(
+      final Authorization<T> requiredAuthorization, final T resource) {
     final var resourceIdSupplier = requiredAuthorization.resourceIdSupplier();
     final var resourceIds = requiredAuthorization.resourceIds();
-    final var resourceId =
-        Optional.ofNullable(resourceIdSupplier)
-            .map(supplier -> supplier.apply(resource))
-            .orElseGet(
-                () ->
-                    Optional.ofNullable(resourceIds)
-                        .filter(l -> l.size() == 1)
-                        .map(List::getFirst)
-                        .orElseThrow(
-                            () ->
-                                new CamundaSearchException(
-                                    "Expected one resource id to check resource access, but received none or more than one")));
-
-    return hasResourceAccessByResourceId(authentication, requiredAuthorization, resourceId);
+    return Optional.ofNullable(resourceIdSupplier)
+        .map(supplier -> supplier.apply(resource))
+        .orElseGet(
+            () ->
+                Optional.ofNullable(resourceIds)
+                    .filter(l -> l.size() == 1)
+                    .map(List::getFirst)
+                    .orElseThrow(
+                        () ->
+                            new CamundaSearchException(
+                                "Expected one resource id to check resource access, but received none or more than one")));
   }
 
   @Override
