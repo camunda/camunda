@@ -29,6 +29,7 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 public class RdbmsWriterFactory {
@@ -44,7 +45,7 @@ public class RdbmsWriterFactory {
   private final PurgeMapper purgeMapper;
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
-  private final RdbmsWriterMetrics metrics;
+  private final MeterRegistry meterRegistry;
   private final BatchOperationDbReader batchOperationReader;
   private final JobMapper jobMapper;
   private final SequenceFlowMapper sequenceFlowMapper;
@@ -68,7 +69,7 @@ public class RdbmsWriterFactory {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
-      final RdbmsWriterMetrics metrics,
+      final MeterRegistry meterRegistry,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
@@ -91,7 +92,7 @@ public class RdbmsWriterFactory {
     this.userTaskMapper = userTaskMapper;
     this.variableMapper = variableMapper;
     this.jobMapper = jobMapper;
-    this.metrics = metrics;
+    this.meterRegistry = meterRegistry;
     this.batchOperationReader = batchOperationReader;
     this.sequenceFlowMapper = sequenceFlowMapper;
     this.usageMetricMapper = usageMetricMapper;
@@ -104,6 +105,7 @@ public class RdbmsWriterFactory {
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
+    final var metrics = new RdbmsWriterMetrics(meterRegistry, config.partitionId());
     final var executionQueue =
         new DefaultExecutionQueue(
             sqlSessionFactory,

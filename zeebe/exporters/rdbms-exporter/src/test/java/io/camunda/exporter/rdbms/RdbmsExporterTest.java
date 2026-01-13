@@ -105,6 +105,26 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldRescheduleFlushIntervalTaskWhenFlushed() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    final var record = mockRecord(ValueType.JOB, 1);
+
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+
+    // Mock flush to return true (indicating flush happened)
+    when(rdbmsWriters.flush(false)).thenReturn(true);
+
+    // when
+    exporter.export(record);
+
+    // then - verify that the flush task was cancelled and rescheduled
+    verify(flushTask).cancel();
+    verify(controller, times(2))
+        .scheduleCancellableTask(eq(Duration.ofMillis(500)), any()); // 1 initial + 1 rescheduled
+  }
+
+  @Test
   void shouldNotCheckForFlushOnNotProcessedRecord() {
     // given
     final var jobHandler = mockHandler(ValueType.JOB, false);
@@ -518,7 +538,13 @@ class RdbmsExporterTest {
     schemaManager = mock(RdbmsSchemaManager.class);
     when(schemaManager.isInitialized()).thenReturn(schemaInitialized);
 
-    doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriters).flush(true);
+    doAnswer(
+            (invocation) -> {
+              executionQueue.flush();
+              return true;
+            })
+        .when(rdbmsWriters)
+        .flush(true);
     doAnswer((invocation) -> executionQueue.checkQueueForFlush()).when(rdbmsWriters).flush(false);
 
     final var builder =

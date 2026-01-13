@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -228,7 +229,10 @@ public final class RdbmsExporter {
       // causes a flush check after each processed record. Depending on the queue size and
       // configuration, the writers ExecutionQueue may or may not flush here.
       try {
-        rdbmsWriters.flush(flushAfterEachRecord());
+        final boolean flushed = rdbmsWriters.flush(flushAfterEachRecord());
+        if (flushed) {
+          resetIntervalFlush();
+        }
       } catch (final Exception e) {
         LOG.warn(
             "[RDBMS Exporter P{}] Failed to flush record for positions {} to {} to the database.",
@@ -244,6 +248,18 @@ public final class RdbmsExporter {
           record.getKey(),
           Protocol.decodePartitionId(record.getKey()),
           record);
+    }
+  }
+
+  /**
+   * After a flush triggered not by an interval, we need to reset the interval flush task to avoid
+   * too many flushes.
+   */
+  private void resetIntervalFlush() {
+    if (!flushAfterEachRecord() && currentFlushTask != null) {
+      currentFlushTask.cancel();
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
     }
   }
 
@@ -368,6 +384,7 @@ public final class RdbmsExporter {
       LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
+    rdbmsWriters.getMetrics().recordQueueFlush(FlushTrigger.FLUSH_INTERVAL);
     rdbmsWriters.flush(true);
   }
 
