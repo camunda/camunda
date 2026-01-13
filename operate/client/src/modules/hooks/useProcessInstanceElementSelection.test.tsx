@@ -301,6 +301,7 @@ describe('useProcessInstanceElementSelection', () => {
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
 
       expect(result.current.resolvedElementInstance).toBeNull();
+      expect(result.current.isFetchingElementError).toBe(true);
     });
   });
 
@@ -424,6 +425,7 @@ describe('useProcessInstanceElementSelection', () => {
       await waitFor(() => expect(result.current.isFetchingElement).toBe(false));
 
       expect(result.current.resolvedElementInstance).toBeNull();
+      expect(result.current.isFetchingElementError).toBe(true);
     });
 
     it('should prefer elementInstanceKey over elementId search', async () => {
