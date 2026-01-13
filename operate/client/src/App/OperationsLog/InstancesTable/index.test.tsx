@@ -6,18 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {InstancesTable} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import React from 'react';
 import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -31,29 +28,12 @@ vi.mock('modules/tracking', () => ({
   },
 }));
 
-const Wrapper = ({
-  children,
-  initialPath = '/operations-log',
-  processDefinitionKey = null,
-}: {
-  children?: React.ReactNode;
-  initialPath?: string;
-  processDefinitionKey?: string | null;
-}) => {
+const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[initialPath]}>
+      <MemoryRouter initialEntries={['/operations-log']}>
         <Routes>
-          <Route
-            path="/operations-log"
-            element={
-              <ProcessDefinitionKeyContext.Provider
-                value={processDefinitionKey ?? undefined}
-              >
-                {children}
-              </ProcessDefinitionKeyContext.Provider>
-            }
-          />
+          <Route path="/operations-log" element={children} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -79,7 +59,6 @@ describe('OperationsLog InstancesTable', () => {
 
   afterEach(() => {
     processesStore.reset();
-    vi.clearAllMocks();
   });
 
   it('should render operations log header', () => {
