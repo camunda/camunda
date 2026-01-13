@@ -39,6 +39,9 @@
             },
             "source": {
               "type": "keyword"
+            },
+            "listenerType": {
+              "type": "keyword"
             }
           }
         }
