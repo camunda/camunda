@@ -268,7 +268,6 @@
               <dep>commons-collections:commons-collections</dep>
               <dep>org.apache.httpcomponents:httpcore-nio</dep>
               <dep>org.opensearch.client:opensearch-java</dep>
-              <dep>org.opensearch.client:opensearch-rest-client</dep>
               <dep>com.nimbusds:nimbus-jose-jwt</dep>
             </ignoredNonTestScopedDependencies>
           </configuration>

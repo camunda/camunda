@@ -22,9 +22,7 @@ import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -50,7 +48,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.BulkByScrollFailure;
@@ -129,57 +126,18 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private ExtendedOpenSearchClient openSearchClient;
   private OpenSearchAsyncClient openSearchAsyncClient;
   private RichOpenSearchClient richOpenSearchClient;
-  private RestClient restClient;
-  private TransportOptionsProvider transportOptionsProvider;
   private IndexNameServiceOS indexNameServiceOS;
 
   public OptimizeOpenSearchClient(
       final ExtendedOpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient,
       final OptimizeIndexNameService indexNameService) {
-    this(openSearchClient, openSearchAsyncClient, indexNameService, new TransportOptionsProvider());
-  }
-
-  public OptimizeOpenSearchClient(
-      final RestClient restClient,
-      final ExtendedOpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService,
-      final TransportOptionsProvider transportOptionsProvider) {
     this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
-    this.transportOptionsProvider = transportOptionsProvider;
-    this.openSearchAsyncClient = openSearchAsyncClient;
-    richOpenSearchClient =
-        new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
-    this.restClient = restClient;
-    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
-  }
-
-  public OptimizeOpenSearchClient(
-      final ExtendedOpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService,
-      final TransportOptionsProvider transportOptionsProvider) {
-    this.openSearchClient = openSearchClient;
-    this.indexNameService = indexNameService;
-    this.transportOptionsProvider = transportOptionsProvider;
     this.openSearchAsyncClient = openSearchAsyncClient;
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
-  }
-
-  public RestClient getRestClient() {
-    if (restClient != null) {
-      return restClient;
-    } else {
-      // We are creating this client only for testing, as there is currently no use in the normal
-      // codebase. In case that becomes necessary this is a bit complicated because the AwsTransport
-      // requires Apache 5, however the RestClient works with Apache 4, so we would need to
-      // duplicate the entire logic for building the transport
-      throw new NotSupportedException("RestClient is only available for testing");
-    }
   }
 
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
@@ -247,7 +205,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public final void close() {
     Optional.ofNullable(openSearchClient).ifPresent(c -> closeSafely(c._transport()));
     Optional.ofNullable(openSearchAsyncClient).ifPresent(c -> closeSafely(c._transport()));
-    Optional.ofNullable(restClient).ifPresent(this::closeSafely);
   }
 
   @Override
@@ -263,8 +220,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
-    restClient = OpenSearchClientBuilder.restClient(configurationService);
-    transportOptionsProvider = new TransportOptionsProvider(configurationService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 

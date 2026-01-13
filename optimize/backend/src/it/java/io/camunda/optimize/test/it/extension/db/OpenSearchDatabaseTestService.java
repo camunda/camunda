@@ -19,7 +19,6 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInsta
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
 import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
-import co.elastic.clients.util.ContentType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
@@ -30,7 +29,6 @@ import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.builders.OptimizeIndexOperationOS;
@@ -76,11 +74,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.http.HttpEntity;
-import org.apache.http.nio.entity.NStringEntity;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
-import org.opensearch.client.Request;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -789,15 +784,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void performLowLevelBulkRequest(
-      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
-    final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
-    final Request request = new Request(methodName, endpoint);
-    request.setEntity(entity);
-    getOptimizeOpenSearchClient().getRestClient().performRequest(request);
-  }
-
-  @Override
   public void initSchema(final DatabaseSchemaManager schemaManager) {
     schemaManager.initializeSchema(getOptimizeOpenSearchClient());
   }
@@ -917,13 +903,11 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         "Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
     prefixAwareOptimizeOpenSearchClient =
         new OptimizeOpenSearchClient(
-            OpenSearchClientBuilder.restClient(configurationService),
             OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
                 configurationService, new PluginRepository()),
             OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(
                 configurationService, new PluginRepository()),
-            new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH),
-            new TransportOptionsProvider());
+            new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH));
     adjustClusterSettings();
     CLIENT_CACHE.put(clientKey, prefixAwareOptimizeOpenSearchClient);
   }

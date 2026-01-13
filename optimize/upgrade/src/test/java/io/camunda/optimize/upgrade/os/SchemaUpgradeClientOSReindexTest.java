@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.upgrade.os;
 
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.upgrade.db.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -29,11 +28,9 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.github.netmikey.logunit.api.LogCapturer;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.HttpEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +39,6 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
-import org.opensearch.client.Response;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.Retries;
 import org.opensearch.client.opensearch.core.ReindexRequest;
@@ -320,16 +316,5 @@ public class SchemaUpgradeClientOSReindexTest {
 
   private void mockCountResponseFromIndex(final String indexName, final long count) {
     when(openSearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
-  }
-
-  private Response createOsResponse(final GetTasksResponse taskResponse) throws IOException {
-    final Response mockedReindexResponse = mock(Response.class);
-
-    final HttpEntity httpEntity = mock(HttpEntity.class);
-    when(httpEntity.getContent())
-        .thenReturn(new ByteArrayInputStream(OPTIMIZE_MAPPER.writeValueAsBytes(taskResponse)));
-    when(mockedReindexResponse.getEntity()).thenReturn(httpEntity);
-
-    return mockedReindexResponse;
   }
 }

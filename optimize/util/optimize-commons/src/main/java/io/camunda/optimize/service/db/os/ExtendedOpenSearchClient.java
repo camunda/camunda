@@ -25,12 +25,9 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.http.client.methods.HttpPost;
-import org.opensearch.client.Request;
-import org.opensearch.client.Response;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.json.ObjectBuilderDeserializer;
@@ -187,24 +184,6 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
       final String json, final JsonEndpoint<Map<String, Object>, R, ErrorResponse> endpoint)
       throws IOException, OpenSearchException {
     return transport.performRequest(jsonToMap(json), endpoint, null);
-  }
-
-  public Response performRequest(final Request request) throws IOException {
-    final JsonEndpoint<Map<String, Object>, Response, ErrorResponse> endpoint =
-        arbitraryEndpoint(
-            request.getMethod(), request.getEndpoint(), getDeserializer(Response.class));
-    final Map<String, Object> entityContent =
-        Optional.ofNullable(request.getEntity())
-            .map(
-                e -> {
-                  try {
-                    return jsonToMap(new String(e.getContent().readAllBytes()));
-                  } catch (final IOException ex) {
-                    return new HashMap<String, Object>();
-                  }
-                })
-            .orElse(Map.of());
-    return transport.performRequest(entityContent, endpoint, null);
   }
 
   public String arbitraryRequestAsString(final String method, final String path, final String json)
