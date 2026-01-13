@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -22,7 +23,15 @@ import org.junit.Test;
 
 public class ResolveFeelExpressionTest {
 
-  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE_RULE =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              e -> {
+                // Set it low to speed up shouldRejectResolveWhenExpressionEvaluationTimesOut
+                // But not too low to accidentally timeout during other tests
+                e.setExpressionEvaluationTimeout(Duration.ofMillis(300));
+              });
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
