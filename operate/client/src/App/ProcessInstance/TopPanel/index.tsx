@@ -30,6 +30,7 @@ import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
+import {MetadataPopover as MetadataPopoverV2} from './MetadataPopover/indexV2';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown as ModificationDropdownV1} from './ModificationDropdown/indexV1';
@@ -436,7 +437,12 @@ const TopPanel: React.FC = observer(() => {
                       <ModificationDropdownV1 />
                     )
                   ) : (
-                    !isIncidentBarOpen && <MetadataPopover />
+                    !isIncidentBarOpen &&
+                    (IS_ELEMENT_SELECTION_V2 ? (
+                      <MetadataPopoverV2 />
+                    ) : (
+                      <MetadataPopover />
+                    ))
                   )
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
