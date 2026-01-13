@@ -600,7 +600,7 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== SET_TIME =====
         Arguments.of(
-            "set time: minimal",
+            "set time",
             singleTestCase(
                 ImmutableSetTimeInstruction.builder().time("2025-12-01T10:00:00Z").build()))
         // add new instructions here
