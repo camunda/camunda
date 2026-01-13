@@ -12,28 +12,29 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {createUser} from 'modules/testUtils';
 
-const Wrapper = ({
-  children,
-  initialPath = '/operations-log',
-}: {
-  children?: React.ReactNode;
-  initialPath?: string;
-}) => {
-  return (
-    <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path="/operations-log" element={children} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
-};
+function getWrapper(initialPath = '/operations-log') {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    return (
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path="/operations-log" element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  return Wrapper;
+}
 
 describe('OperationsLog Filters', () => {
   beforeEach(() => {
+    mockMe().withSuccess(createUser());
     mockSearchProcessDefinitions().withSuccess({
       items: [
         {
@@ -63,7 +64,7 @@ describe('OperationsLog Filters', () => {
 
   it('should render process filter fields', async () => {
     render(<Filters />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByText('Process')).toBeInTheDocument();
@@ -78,7 +79,7 @@ describe('OperationsLog Filters', () => {
     });
 
     render(<Filters />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
@@ -88,7 +89,7 @@ describe('OperationsLog Filters', () => {
 
   it('should not render tenant field when multi-tenancy is disabled', () => {
     render(<Filters />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(
@@ -98,7 +99,7 @@ describe('OperationsLog Filters', () => {
 
   it('should render all filter fields', () => {
     render(<Filters />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByText('Process instance key')).toBeInTheDocument();
@@ -111,7 +112,7 @@ describe('OperationsLog Filters', () => {
 
   it('should have reset button disabled when filters are empty', () => {
     render(<Filters />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByRole('button', {name: /reset/i})).toBeDisabled();
@@ -119,11 +120,7 @@ describe('OperationsLog Filters', () => {
 
   it('should parse filters from URL search params', async () => {
     render(<Filters />, {
-      wrapper: ({children}) => (
-        <Wrapper initialPath="/operations-log?processInstanceKey=123">
-          {children}
-        </Wrapper>
-      ),
+      wrapper: getWrapper('/operations-log?processInstanceKey=123'),
     });
 
     expect(screen.getByLabelText(/process instance key/i)).toHaveValue('123');
@@ -131,11 +128,7 @@ describe('OperationsLog Filters', () => {
 
   it('should enable reset button when filters are applied', () => {
     render(<Filters />, {
-      wrapper: ({children}) => (
-        <Wrapper initialPath="/operations-log?processInstanceKey=123">
-          {children}
-        </Wrapper>
-      ),
+      wrapper: getWrapper('/operations-log?processInstanceKey=123'),
     });
 
     expect(screen.getByRole('button', {name: /reset/i})).not.toBeDisabled();
@@ -143,11 +136,7 @@ describe('OperationsLog Filters', () => {
 
   it('should reset filters when reset button is clicked', async () => {
     const {user} = render(<Filters />, {
-      wrapper: ({children}) => (
-        <Wrapper initialPath="/operations-log?processInstanceKey=123">
-          {children}
-        </Wrapper>
-      ),
+      wrapper: getWrapper('/operations-log?processInstanceKey=123'),
     });
 
     const resetButton = screen.getByRole('button', {name: /reset/i});
@@ -165,7 +154,7 @@ describe('OperationsLog Filters', () => {
 
   it('should submit filters when form values change', async () => {
     const {user} = render(<Filters />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     const processInstanceKeyInput =
@@ -179,12 +168,29 @@ describe('OperationsLog Filters', () => {
   });
 
   it('should handle process definition identifier correctly', async () => {
+    mockSearchProcessDefinitions().withSuccess({
+      items: [
+        {
+          processDefinitionKey: '123',
+          processDefinitionId: 'process1',
+          name: 'Process 1',
+          version: 1,
+          tenantId: '<default>',
+          hasStartForm: false,
+        },
+        {
+          processDefinitionKey: '456',
+          processDefinitionId: 'process2',
+          name: 'Process 2',
+          version: 1,
+          tenantId: '<default>',
+          hasStartForm: false,
+        },
+      ],
+      page: {totalItems: 2},
+    });
     render(<Filters />, {
-      wrapper: ({children}) => (
-        <Wrapper initialPath="/operations-log?process=process1&version=1">
-          {children}
-        </Wrapper>
-      ),
+      wrapper: getWrapper('/operations-log?process=process1&version=1'),
     });
 
     await waitFor(() => {

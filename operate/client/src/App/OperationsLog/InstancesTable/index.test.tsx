@@ -59,7 +59,6 @@ describe('OperationsLog InstancesTable', () => {
 
   afterEach(() => {
     processesStore.reset();
-    vi.clearAllMocks();
   });
 
   it('should render operations log header', () => {
