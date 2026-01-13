@@ -34,7 +34,12 @@ export async function cleanupMappingRules(
             `Unexpected response status ${response.status()} for mapping rule ${mappingRuleId}`,
           );
         }
-      } catch {}
+      } catch (error) {
+          console.error(
+            `Failed to delete mapping rule ${mappingRuleId}:`,
+            error,
+          );
+      }
     }),
   );
 }
