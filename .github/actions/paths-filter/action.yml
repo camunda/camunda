@@ -205,9 +205,6 @@ outputs:
     description: Output whether Documentation tests should be run based on GitHub event and files changed
     value: >-
       ${{
-        github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-docs.outputs.docs-change == 'true'
       }}
 
@@ -360,6 +357,8 @@ runs:
         docs-change:
           - 'docs/monorepo-docs/**'
           - 'monorepo-docs-site/**'
+          - '.github/workflows/docs-build-deploy.yml'
+          - '.github/workflows/docs-preview.yml'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

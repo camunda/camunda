@@ -20,7 +20,7 @@ assignees: ''
 ## Hints
 
 <!-- Any additional context, links or information you have about this ticket. Also specify if any backporting should be done, see the guidelines:
-https://github.com/camunda/camunda/wiki/CI-&-Automation#backporting-guidelines
+https://camunda.github.io/camunda/ci/#backporting-guidelines
 -->
 <!--
 "The CI changes related to this ticket should be backported to all applicable `stable/*` branches."

@@ -2,7 +2,7 @@ package main
 
 # This file contains rules checking GHA workflow files of the Unified CI to be
 # aligned with the inclusion criteria and best practices:
-# See https://github.com/camunda/camunda/wiki/CI-&-Automation#unified-ci
+# See https://camunda.github.io/camunda/ci/#unified-ci
 
 # The `input` variable is a data structure that contains a YAML file's contents
 # as objects and arrays. See https://www.openpolicyagent.org/docs/latest/philosophy/#how-does-opa-work

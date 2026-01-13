@@ -211,7 +211,7 @@ Metadata follows this structure and is placed at the beginning of a GHA workflow
 
 ### Legacy CI
 
-"Legacy CI" is a name for CI tests that has not been migrated to the Unified CI. Legacy tests do not meet the [inclusion criteria for Unified CI](https://github.com/camunda/camunda/wiki/CI-&-Automation#workflow-inclusion-criteria), such as running under 10 minutes.
+"Legacy CI" is a name for CI tests that has not been migrated to the Unified CI. Legacy tests do not meet the [inclusion criteria for Unified CI](#workflow-inclusion-criteria), such as running under 10 minutes.
 
 Tests that are marked as Legacy are to be migrated to Unified CI by the owning team in the future. Once migrated, the test should live inside the `ci.yml` file, or be part of a workflow file that is called by it. The label of "Legacy" should be removed as well
 

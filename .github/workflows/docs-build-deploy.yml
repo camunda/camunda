@@ -22,7 +22,8 @@ defaults:
     shell: bash
 
 env:
-  NODE_VERSION: "24.6.0"
+  # renovate: datasource=node-version depName=node
+  NODE_VERSION: '24.6.0'
 
 jobs:
   # Detect changes to avoid unnecessary builds
