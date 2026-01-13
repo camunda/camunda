@@ -158,7 +158,8 @@ public final class EngineProcessors {
             clock,
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
-            expressionLanguageMetrics);
+            expressionLanguageMetrics,
+            config);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -425,7 +426,8 @@ public final class EngineProcessors {
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final EngineConfiguration config) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -438,7 +440,8 @@ public final class EngineProcessors {
         clock,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
-        expressionLanguageMetrics);
+        expressionLanguageMetrics,
+        config);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
