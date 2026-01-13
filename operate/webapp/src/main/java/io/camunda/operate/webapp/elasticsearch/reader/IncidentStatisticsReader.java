@@ -324,6 +324,11 @@ public class IncidentStatisticsReader extends AbstractReader
     final var searchHits =
         errorMessageBucket.aggregations().get(ERROR_MESSAGE).topHits().hits().hits();
 
+    if (searchHits.isEmpty()) {
+      throw new OperateRuntimeException(
+          "Could not find error messages in aggregation: " + errorMessageBucket.keyAsString());
+    }
+
     final Map<String, Object> sourceMap = searchHits.get(0).source().to(MAP_CLASS);
     final String errorMessage = (String) sourceMap.get(IncidentTemplate.ERROR_MSG);
     final Integer errorMessageHashCode = (Integer) sourceMap.get(IncidentTemplate.ERROR_MSG_HASH);
