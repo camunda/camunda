@@ -97,10 +97,7 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
       'USER',
       '*',
       'SYSTEM',
-      [
-        'READ_USAGE_METRIC',
-        'UPDATE'
-      ],
+      ['READ_USAGE_METRIC', 'UPDATE'],
     );
 
     await expect(async () => {

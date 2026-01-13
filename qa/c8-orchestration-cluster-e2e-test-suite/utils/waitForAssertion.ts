@@ -14,7 +14,7 @@ async function waitForAssertion(options: {
   const {assertion, onFailure: fallback, maxRetries = 3} = options;
   let retries = 1;
 
-  while (retries < maxRetries) {
+  while (retries <= maxRetries) {
     try {
       await assertion();
       break;

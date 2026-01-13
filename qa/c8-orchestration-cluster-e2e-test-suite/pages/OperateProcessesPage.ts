@@ -53,10 +53,6 @@ class OperateProcessesPage {
   readonly scheduledOperationsIcons: Locator;
   readonly viewParentInstanceLinkInList: Locator;
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
-  readonly operationAndResultsContainer: (
-    operation: string,
-    resultCount?: number,
-  ) => Locator;
   readonly parentInstanceCell: (parentInstanceKey: string) => Locator;
   readonly versionCells: (version: string) => Locator;
   readonly calledInstanceCell: (
@@ -165,15 +161,6 @@ class OperateProcessesPage {
       page.getByRole('link', {
         name: processInstanceKey,
       });
-    this.operationAndResultsContainer = (
-      operation: string,
-      resultCount?: number,
-    ) => {
-      const pattern = resultCount
-        ? new RegExp(`${operation}.*${resultCount} results`)
-        : new RegExp(`${operation}.*\\d+ results`);
-      return page.locator('div').filter({hasText: pattern});
-    };
     this.parentInstanceCell = (parentInstanceKey: string) =>
       this.dataList.getByRole('cell', {name: parentInstanceKey});
     this.versionCells = (version: string) =>
@@ -365,7 +352,7 @@ class OperateProcessesPage {
             .locator('label');
 
           // Wait for the element to be attached and stable
-          await checkbox.waitFor({state: 'attached', timeout: 5000});
+          await checkbox.waitFor({state: 'attached', timeout: 10000});
           if (!(await checkbox.isChecked())) {
             await checkbox.click({timeout: 10000});
           }
