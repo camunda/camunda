@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -58,11 +57,12 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
         ElasticsearchUtil.termsQuery(JobTemplate.PROCESS_INSTANCE_KEY, processInstanceId);
 
     final var query =
-        joinWithAnd(processInstanceQ, getFlowNodeQuery(request), getListenerTypeQuery(request));
+        ElasticsearchUtil.joinWithAnd(
+            processInstanceQ, getFlowNodeQuery(request), getListenerTypeQuery(request));
 
     final var searchRequestBuilder =
         new SearchRequest.Builder()
-            .index(whereToSearch(jobTemplate, ALL))
+            .index(ElasticsearchUtil.whereToSearch(jobTemplate, ALL))
             .query(query)
             .size(request.getPageSize());
 
@@ -111,7 +111,7 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
   private Query getListenerTypeQuery(final ListenerRequestDto request) {
     final var listenerFilter = request.getListenerTypeFilter();
     if (listenerFilter == null) {
-      return joinWithOr(executionListenersQ, taskListenersQ);
+      return ElasticsearchUtil.joinWithOr(executionListenersQ, taskListenersQ);
     } else if (listenerFilter.equals(ListenerType.EXECUTION_LISTENER)) {
       return executionListenersQ;
     } else if (listenerFilter.equals(ListenerType.TASK_LISTENER)) {
@@ -142,7 +142,8 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
     }
 
     if (querySearchAfter != null) {
-      searchRequestBuilder.searchAfter(searchAfterToFieldValues(querySearchAfter));
+      searchRequestBuilder.searchAfter(
+          ElasticsearchUtil.searchAfterToFieldValues(querySearchAfter));
     }
 
     searchRequestBuilder
