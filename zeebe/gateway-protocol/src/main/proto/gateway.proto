@@ -893,6 +893,10 @@ message ProcessInstanceReference {
 message EvaluateConditionalResponse {
   // List of process instances created. If no root-level conditional start events evaluated to true, the list will be empty.
   repeated ProcessInstanceReference processInstances = 1;
+  // The unique key of the evaluated conditional.
+  int64 conditionalEvaluationKey = 2;
+  // The tenant ID of the evaluated conditional.
+  string tenantId = 3;
 }
 
 service Gateway {

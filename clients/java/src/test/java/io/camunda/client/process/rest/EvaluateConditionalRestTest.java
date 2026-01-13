@@ -36,6 +36,8 @@ public class EvaluateConditionalRestTest extends ClientRestTest {
 
   private static final EvaluateConditionalResult DUMMY_RESPONSE =
       new EvaluateConditionalResult()
+          .conditionalEvaluationKey("12345")
+          .tenantId("<default>")
           .addProcessInstancesItem(
               new ProcessInstanceReference()
                   .processDefinitionKey("2251799813685249")
@@ -162,16 +164,42 @@ public class EvaluateConditionalRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldEvaluateConditionalWithEmptyResponse() {
+  public void shouldEvaluateConditionalWithNoProcessInstancesStarted() {
     // given
-    gatewayService.onEvaluateConditionalRequest(new EvaluateConditionalResult());
+    gatewayService.onEvaluateConditionalRequest(
+        new EvaluateConditionalResult().conditionalEvaluationKey("99999").tenantId("<default>"));
 
     // when
     final EvaluateConditionalResponse response =
         client.newEvaluateConditionalCommand().variables("{\"x\":100}").send().join();
 
     // then
+    assertThat(response.getConditionalEvaluationKey()).isEqualTo(99999L);
+    assertThat(response.getTenantId()).isEqualTo("<default>");
     assertThat(response.getProcessInstances()).isEmpty();
+  }
+
+  @Test
+  public void shouldReturnConditionalEvaluationKeyAndTenantId() {
+    // given
+    final String expectedKey = "9876543210";
+    final String expectedTenantId = "test-tenant";
+    gatewayService.onEvaluateConditionalRequest(
+        new EvaluateConditionalResult()
+            .conditionalEvaluationKey(expectedKey)
+            .tenantId(expectedTenantId)
+            .addProcessInstancesItem(
+                new ProcessInstanceReference()
+                    .processDefinitionKey("123")
+                    .processInstanceKey("456")));
+
+    // when
+    final EvaluateConditionalResponse response =
+        client.newEvaluateConditionalCommand().variables("{\"x\":100}").send().join();
+
+    // then
+    assertThat(response.getConditionalEvaluationKey()).isEqualTo(Long.parseLong(expectedKey));
+    assertThat(response.getTenantId()).isEqualTo(expectedTenantId);
   }
 
   public static class Variables {

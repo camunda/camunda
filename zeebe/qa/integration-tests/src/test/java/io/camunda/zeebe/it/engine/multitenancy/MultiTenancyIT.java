@@ -1629,6 +1629,8 @@ public class MultiTenancyIT {
           .succeedsWithin(Duration.ofSeconds(20))
           .satisfies(
               response -> {
+                assertThat(response.getConditionalEvaluationKey()).isPositive();
+                assertThat(response.getTenantId()).isEqualTo(TENANT_A);
                 assertThat(response.getProcessInstances()).hasSize(1);
                 assertThat(response.getProcessInstances().getFirst().getProcessDefinitionKey())
                     .isPositive();
@@ -1696,6 +1698,8 @@ public class MultiTenancyIT {
           .succeedsWithin(Duration.ofSeconds(20))
           .satisfies(
               response -> {
+                assertThat(response.getConditionalEvaluationKey()).isPositive();
+                assertThat(response.getTenantId()).isEqualTo(DEFAULT_TENANT);
                 assertThat(response.getProcessInstances()).hasSize(1);
                 assertThat(response.getProcessInstances().getFirst().getProcessDefinitionKey())
                     .isPositive();
