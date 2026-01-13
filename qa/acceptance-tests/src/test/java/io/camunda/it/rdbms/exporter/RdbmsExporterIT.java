@@ -11,6 +11,7 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionEvaluationEvaluatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementActivatingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementCompletedRecord;
@@ -35,6 +36,7 @@ import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -72,7 +74,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -430,6 +434,33 @@ class RdbmsExporterIT {
     final var key = ((DecisionRecordValue) decisionDefinitionRecord.getValue()).getDecisionKey();
     final var definition = rdbmsService.getDecisionDefinitionReader().findOne(key);
     assertThat(definition).isNotEmpty();
+  }
+
+  @Test
+  public void shouldExportDecisionEvaluation() {
+    // given
+    final ImmutableEvaluatedDecisionValue evaluatedDecisionValue =
+        ImmutableEvaluatedDecisionValue.builder()
+            .withDecisionEvaluationInstanceKey("1234")
+            .withDecisionId("decision-id")
+            .withDecisionKey(123L)
+            .withDecisionType(DecisionDefinitionType.DECISION_TABLE.toString())
+            .build();
+    final var decisionEvaluationRecord =
+        getDecisionEvaluationEvaluatedRecord(1L, List.of(evaluatedDecisionValue));
+
+    // when
+    exporter.export(decisionEvaluationRecord);
+
+    // then
+    final var key = evaluatedDecisionValue.getDecisionEvaluationInstanceKey();
+    final var decisionInstance = rdbmsService.getDecisionInstanceReader().findOne(key);
+    assertThat(decisionInstance).isNotEmpty();
+    final var recordValue = (DecisionEvaluationRecordValue) decisionEvaluationRecord.getValue();
+    assertThat(decisionInstance.get().processInstanceKey())
+        .isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(decisionInstance.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
   }
 
   @Test
