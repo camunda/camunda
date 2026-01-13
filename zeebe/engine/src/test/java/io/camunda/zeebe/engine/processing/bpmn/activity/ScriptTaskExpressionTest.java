@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
@@ -36,7 +37,15 @@ import org.junit.Test;
 
 public final class ScriptTaskExpressionTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              e -> {
+                // Set it low to speed up shouldCreateIncidentIfScriptExpressionEvaluationTimesOut
+                // But not too low to accidentally timeout during other tests
+                e.setExpressionEvaluationTimeout(Duration.ofMillis(300));
+              });
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
