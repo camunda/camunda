@@ -38,9 +38,9 @@ zeebe:
         enabled: false
 
     data:
-      # How often we take snapshots of streams (time unit)
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
-      snapshotPeriod: 15m
+      # The size of data log segment files.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
+      logSegmentSize: 128MB
 
     cluster:
       # Specifies the Zeebe cluster size.
@@ -72,10 +72,9 @@ camunda:
       port: 26500
 
   data:
+    snapshot-period: '15m'
     primary-storage:
       directory: 'data'
-      logstream:
-        log-segment-size: '128MB'
     secondary-storage:
       type: 'elasticsearch'
       elasticsearch:
