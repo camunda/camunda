@@ -46,6 +46,7 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
+    assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(1));
   }
 
   @Test
@@ -68,5 +69,6 @@ final class EngineCfgTest {
     assertThat(configuration.getCommandRedistributionInterval()).isEqualTo(Duration.ofSeconds(60));
     assertThat(configuration.getCommandRedistributionMaxBackoff())
         .isEqualTo(Duration.ofMinutes(20));
+    assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
   }
 }

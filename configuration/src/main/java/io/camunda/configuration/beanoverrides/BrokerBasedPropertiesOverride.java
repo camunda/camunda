@@ -105,10 +105,17 @@ public class BrokerBasedPropertiesOverride {
 
     populateCamundaExporter(override);
 
+    populateFromExpression(override);
+
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
 
     return override;
+  }
+
+  private void populateFromExpression(final BrokerBasedProperties override) {
+    final var expression = unifiedConfiguration.getCamunda().getExpression();
+    override.getExperimental().getEngine().getExpression().setTimeout(expression.getTimeout());
   }
 
   private void populateFromGrpc(final BrokerBasedProperties override) {
