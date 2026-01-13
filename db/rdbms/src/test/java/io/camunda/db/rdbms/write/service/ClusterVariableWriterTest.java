@@ -31,7 +31,7 @@ class ClusterVariableWriterTest {
 
   @Test
   void shouldCreateClusterVariable() {
-    when(vendorDatabaseProperties.variableValuePreviewSize()).thenReturn(1000);
+    when(vendorDatabaseProperties.varcharSize()).thenReturn(1000);
     when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(4000);
 
     final var model = mock(ClusterVariableDbModel.class);

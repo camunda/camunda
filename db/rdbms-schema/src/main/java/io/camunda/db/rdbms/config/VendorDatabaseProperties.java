@@ -12,58 +12,45 @@ import java.util.Properties;
 public class VendorDatabaseProperties {
 
   /**
-   * Required property to specify the size of the variable value preview in characters. This is used
-   * to truncate variable values for preview purposes.
-   */
-  private static final String VARIABLE_VALUE_PREVIEW_SIZE = "variableValue.previewSize";
-
-  /**
-   * Required property to specify the size of an Incident's errorMessage in characters. Longer error
-   * messages will be truncated to this size.
-   */
-  private static final String ERROR_MESSAGE_SIZE = "errorMessage.size";
-
-  /**
    * Optional property to limit the maximum size of string column in bytes, if required by the
    * database vendor. If not set, no limit is applied.
    */
   private static final String CHAR_COLUMN_MAX_BYTES = "charColumn.maxBytes";
 
   /**
-   * Optional property to limit the maximum size of string column in bytes, if required by the
-   * database vendor. If not set, no limit is applied.
+   * Required property to specify the maximum size of varchar columns in characters for non-indexed
+   * fields (e.g., variable values, error messages, process definition names). This is used to
+   * truncate values for preview purposes or to respect database vendor limitations.
    */
-  private static final String USER_CHAR_COLUMN_SIZE = "userCharColumn.size";
+  private static final String VARCHAR_SIZE = "varchar.size";
+
+  /**
+   * Required property to specify the maximum size of varchar columns in characters for indexed
+   * fields (e.g., all ID fields like processDefinitionId, formId, tenantId). This is limited by
+   * database vendor index size constraints.
+   */
+  private static final String VARCHAR_INDEX_SIZE = "varcharIndex.size";
 
   private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
 
   private final Properties properties;
-
-  private final int variableValuePreviewSize;
   private final boolean disableFkBeforeTruncate;
   private final Integer charColumnMaxBytes;
-  private final int userCharColumnSize;
-  private final int errorMessageSize;
+  private final int varcharSize;
+  private final int varcharIndexSize;
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
 
-    if (!properties.containsKey(VARIABLE_VALUE_PREVIEW_SIZE)) {
-      throw new IllegalArgumentException(
-          "Property '" + VARIABLE_VALUE_PREVIEW_SIZE + "' is missing");
+    if (!properties.containsKey(VARCHAR_SIZE)) {
+      throw new IllegalArgumentException("Property '" + VARCHAR_SIZE + "' is missing");
     }
-    variableValuePreviewSize =
-        Integer.parseInt(properties.getProperty(VARIABLE_VALUE_PREVIEW_SIZE));
+    varcharSize = Integer.parseInt(properties.getProperty(VARCHAR_SIZE));
 
-    if (!properties.containsKey(USER_CHAR_COLUMN_SIZE)) {
-      throw new IllegalArgumentException("Property '" + USER_CHAR_COLUMN_SIZE + "' is missing");
+    if (!properties.containsKey(VARCHAR_INDEX_SIZE)) {
+      throw new IllegalArgumentException("Property '" + VARCHAR_INDEX_SIZE + "' is missing");
     }
-    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
-
-    if (!properties.containsKey(ERROR_MESSAGE_SIZE)) {
-      throw new IllegalArgumentException("Property '" + ERROR_MESSAGE_SIZE + "' is missing");
-    }
-    userCharColumnSize = Integer.parseInt(properties.getProperty(USER_CHAR_COLUMN_SIZE));
+    varcharIndexSize = Integer.parseInt(properties.getProperty(VARCHAR_INDEX_SIZE));
 
     if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
       charColumnMaxBytes = null;
@@ -79,16 +66,24 @@ public class VendorDatabaseProperties {
         Boolean.parseBoolean(properties.getProperty(DISABLE_FK_BEFORE_TRUNCATE));
   }
 
-  public int variableValuePreviewSize() {
-    return variableValuePreviewSize;
+  /**
+   * Returns the maximum size of varchar columns in characters for non-indexed fields (e.g.,
+   * variable values, error messages, process definition names).
+   *
+   * @return the maximum varchar size
+   */
+  public int varcharSize() {
+    return varcharSize;
   }
 
-  public int userCharColumnSize() {
-    return userCharColumnSize;
-  }
-
-  public int errorMessageSize() {
-    return errorMessageSize;
+  /**
+   * Returns the maximum size of varchar columns in characters for indexed fields (e.g., all ID
+   * fields like processDefinitionId, formId, tenantId).
+   *
+   * @return the maximum indexed varchar size
+   */
+  public int varcharIndexSize() {
+    return varcharIndexSize;
   }
 
   public Integer charColumnMaxBytes() {

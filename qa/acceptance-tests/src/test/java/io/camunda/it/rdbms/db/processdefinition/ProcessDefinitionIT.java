@@ -112,8 +112,7 @@ public class ProcessDefinitionIT {
     final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
 
     final var processDefinitionId =
-        RandomStringUtils.insecure()
-            .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
+        RandomStringUtils.insecure().nextAlphanumeric(vendorDatabaseProperties.varcharIndexSize());
 
     final var processDefinition =
         ProcessDefinitionFixtures.createRandomized(b -> b.processDefinitionId(processDefinitionId));
