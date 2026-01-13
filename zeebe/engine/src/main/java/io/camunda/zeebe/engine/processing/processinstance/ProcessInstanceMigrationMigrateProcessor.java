@@ -285,7 +285,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             BpmnEventType.TIMER,
             BpmnEventType.SIGNAL,
             BpmnEventType.ERROR,
-            BpmnEventType.ESCALATION));
+            BpmnEventType.ESCALATION,
+            BpmnEventType.CONDITIONAL));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
@@ -295,7 +296,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             BpmnEventType.TIMER,
             BpmnEventType.SIGNAL,
             BpmnEventType.ERROR,
-            BpmnEventType.ESCALATION));
+            BpmnEventType.ESCALATION,
+            BpmnEventType.CONDITIONAL));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
@@ -305,7 +307,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             BpmnEventType.SIGNAL,
             BpmnEventType.ERROR,
             BpmnEventType.ESCALATION,
-            BpmnEventType.COMPENSATION));
+            BpmnEventType.COMPENSATION,
+            BpmnEventType.CONDITIONAL));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
@@ -316,7 +319,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             BpmnEventType.SIGNAL,
             BpmnEventType.ERROR,
             BpmnEventType.ESCALATION,
-            BpmnEventType.COMPENSATION));
+            BpmnEventType.COMPENSATION,
+            BpmnEventType.CONDITIONAL));
     requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,

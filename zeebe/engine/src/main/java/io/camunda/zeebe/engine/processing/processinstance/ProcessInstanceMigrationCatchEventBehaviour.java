@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrati
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
+import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -32,6 +34,7 @@ import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -39,6 +42,7 @@ import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
@@ -141,6 +145,9 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         unsubscribeFromTimerEvents(elementInstance, sourceElementIdToTargetElementId);
     final List<SignalSubscription> signalSubscriptionsToMigrate =
         unsubscribeFromSignalEvents(elementInstance, sourceElementIdToTargetElementId);
+    // unsubscribe from conditional events below
+    final List<ConditionalSubscription> conditionalSubscriptionsToMigrate =
+        unsubscribeFromConditionalEvents(elementInstance, sourceElementIdToTargetElementId);
 
     // SUBSCRIBE TO CATCH EVENTS
     final Map<String, Boolean> targetCatchEventIdToInterrupting =
@@ -164,6 +171,69 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         targetProcessDefinition, sourceElementIdToTargetElementId, timerInstancesToMigrate);
     migrateSignalEvents(
         targetProcessDefinition, sourceElementIdToTargetElementId, signalSubscriptionsToMigrate);
+    migrateConditionalEvents(
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        conditionalSubscriptionsToMigrate);
+  }
+
+  private void migrateConditionalEvents(
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final List<ConditionalSubscription> conditionalSubscriptionsToMigrate) {
+    conditionalSubscriptionsToMigrate.forEach(
+        subscription -> {
+          final var sourceCatchEventId = subscription.getRecord().getCatchEventId();
+          final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
+
+          final var conditionalSubscriptionRecord = subscription.getRecord();
+          final var recordCopy = new ConditionalSubscriptionRecord();
+          recordCopy.wrap(conditionalSubscriptionRecord);
+          recordCopy.setProcessDefinitionKey(targetProcessDefinition.getKey());
+          recordCopy.setCatchEventId(BufferUtil.wrapString(targetCatchEventId));
+
+          final var targetConditional =
+              targetProcessDefinition
+                  .getProcess()
+                  .getElementById(targetCatchEventId, ExecutableCatchEventElement.class)
+                  .getConditional();
+          // below is already checked in tryMigrateElementInstance but adding a safeguard
+          if (targetConditional == null) {
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                """
+                Expected to migrate conditional subscription for process instance '%s' \
+                but target catch event with id '%s' does not have a conditional event definition."""
+                    .formatted(
+                        subscription.getRecord().getProcessInstanceKey(), targetCatchEventId),
+                RejectionType.INVALID_STATE);
+          }
+          recordCopy.setCondition(BufferUtil.wrapString(targetConditional.getCondition()));
+
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(), ConditionalSubscriptionIntent.MIGRATED, recordCopy);
+        });
+  }
+
+  private List<ConditionalSubscription> unsubscribeFromConditionalEvents(
+      final ElementInstance elementInstance,
+      final Map<String, String> sourceElementIdToTargetElementId) {
+    final List<ConditionalSubscription> conditionalSubscriptionsToMigrate = new ArrayList<>();
+    catchEventBehavior.unsubscribeFromConditionalEventsBySubscriptionFilter(
+        elementInstance.getKey(),
+        conditionalSubscription -> {
+          if (sourceElementIdToTargetElementId.containsKey(
+              conditionalSubscription.getRecord().getCatchEventId())) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
+            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final var copy = new ConditionalSubscription();
+            copy.copyFrom(conditionalSubscription);
+            conditionalSubscriptionsToMigrate.add(copy);
+            return false;
+          }
+          return true;
+        });
+    return conditionalSubscriptionsToMigrate;
   }
 
   private void handleCompensationCatchEvents(

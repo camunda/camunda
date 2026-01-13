@@ -108,6 +108,16 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
   }
 
   @Override
+  public void migrate(final long key, final ConditionalSubscriptionRecord subscription) {
+    conditionalSubscription.setKey(key).setRecord(subscription);
+    subscriptionKey.wrapLong(key);
+    tenantIdKey.wrapString(subscription.getTenantId());
+
+    subscriptionKeyColumnFamily.update(tenantAwareSubscriptionKey, conditionalSubscription);
+    // scope key and process instance key do not change during migration
+  }
+
+  @Override
   public void putStart(final long key, final ConditionalSubscriptionRecord subscription) {
     conditionalSubscription.setKey(key).setRecord(subscription);
     subscriptionKey.wrapLong(key);

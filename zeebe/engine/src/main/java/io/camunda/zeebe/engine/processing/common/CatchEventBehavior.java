@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -163,12 +164,20 @@ public final class CatchEventBehavior {
     unsubscribeFromConditionalEvents(elementInstanceKey, elementIdFilter);
   }
 
-  private void unsubscribeFromConditionalEvents(
+  public void unsubscribeFromConditionalEvents(
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    unsubscribeFromConditionalEventsBySubscriptionFilter(
+        elementInstanceKey,
+        subscription -> elementIdFilter.test(subscription.getRecord().getCatchEventIdBuffer()));
+  }
+
+  public void unsubscribeFromConditionalEventsBySubscriptionFilter(
+      final long elementInstanceKey,
+      final Predicate<ConditionalSubscription> conditionalSubscriptionFilter) {
     conditionalSubscriptionState.visitByScopeKey(
         elementInstanceKey,
         subscription -> {
-          if (elementIdFilter.test(subscription.getRecord().getCatchEventIdBuffer())) {
+          if (conditionalSubscriptionFilter.test(subscription)) {
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(),
                 ConditionalSubscriptionIntent.DELETED,

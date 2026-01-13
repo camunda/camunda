@@ -21,6 +21,17 @@ public interface MutableConditionalSubscriptionState extends ConditionalSubscrip
   void put(final long key, ConditionalSubscriptionRecord subscription);
 
   /**
+   * Migrates a conditional subscription by its subscription key.
+   *
+   * <p>This method is intended to be used during state migration to add existing subscriptions to
+   * the new state structure.
+   *
+   * @param key the key of the subscription
+   * @param subscription the subscription record
+   */
+  void migrate(final long key, ConditionalSubscriptionRecord subscription);
+
+  /**
    * Stores a conditional subscription for a root-level conditional start event (where {@code
    * elementInstanceKey < 0}).
    *
