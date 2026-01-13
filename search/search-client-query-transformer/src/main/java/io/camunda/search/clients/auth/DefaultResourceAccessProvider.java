@@ -9,6 +9,7 @@ package io.camunda.search.clients.auth;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 
+import io.camunda.search.clients.auth.matcher.ResourcePropertyMatcherRegistry;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -20,13 +21,19 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultResourceAccessProvider.class);
+
   private final AuthorizationChecker authorizationChecker;
+  private final ResourcePropertyMatcherRegistry propertyMatcherRegistry;
 
   public DefaultResourceAccessProvider(final AuthorizationChecker authorizationChecker) {
     this.authorizationChecker = authorizationChecker;
+    this.propertyMatcherRegistry = new ResourcePropertyMatcherRegistry();
   }
 
   @Override
@@ -100,8 +107,42 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
       final CamundaAuthentication authentication,
       final Authorization<T> requiredAuthorization,
       final T resource) {
+    if (requiredAuthorization.hasAnyResourcePropertyNames()) {
+      return hasResourceAccessByProperties(authentication, requiredAuthorization, resource);
+    }
+
     final var resourceId = resolveResourceId(requiredAuthorization, resource);
     return hasResourceAccessByResourceId(authentication, requiredAuthorization, resourceId);
+  }
+
+  private <T> ResourceAccess hasResourceAccessByProperties(
+      final CamundaAuthentication authentication,
+      final Authorization<T> requiredAuthorization,
+      final T resource) {
+    // resolve which properties the user is authorized for
+    final var resolvedAccess =
+        resolveResourceAccessByPropertyNames(authentication, requiredAuthorization);
+
+    if (resolvedAccess.denied()) {
+      return resolvedAccess;
+    }
+
+    final var authorizedPropertyNames = resolvedAccess.authorization().resourcePropertyNames();
+    final var matcher = propertyMatcherRegistry.getMatcher(resource);
+
+    if (matcher.isEmpty()) {
+      LOG.warn(
+          "No property matcher found for resource type '{}'; denying access.",
+          resource.getClass().getSimpleName());
+      return ResourceAccess.denied(resolvedAccess.authorization());
+    }
+
+    final var matches = matcher.get().matches(resource, authorizedPropertyNames, authentication);
+    if (matches) {
+      return ResourceAccess.allowed(resolvedAccess.authorization());
+    }
+
+    return ResourceAccess.denied(resolvedAccess.authorization());
   }
 
   private <T> String resolveResourceId(
