@@ -96,6 +96,9 @@
           "$ref": "#/definitions/PublishMessageInstruction"
         },
         {
+          "$ref": "#/definitions/ResolveIncidentInstruction"
+        },
+        {
           "$ref": "#/definitions/EvaluateConditionalStartEventInstruction"
         }
       ]
@@ -617,6 +620,33 @@
       ],
       "additionalProperties": false
     },
+    "IncidentSelector": {
+      "description": "A selector to identify an incident.",
+      "type": "object",
+      "properties": {
+        "elementId": {
+          "description": "The ID of the BPMN element where the incident occurred.",
+          "type": "string"
+        },
+        "processDefinitionId": {
+          "description": "The process definition ID of the incident.",
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "elementId"
+          ]
+        },
+        {
+          "required": [
+            "processDefinitionId"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
     "PublishMessageInstruction": {
       "description": "An instruction to publish a message.",
       "type": "object",
@@ -650,6 +680,26 @@
       "required": [
         "type",
         "name"
+      ],
+      "additionalProperties": false
+    },
+    "ResolveIncidentInstruction": {
+      "description": "An instruction to resolve an incident.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "RESOLVE_INCIDENT"
+        },
+        "incidentSelector": {
+          "description": "The selector to identify the incident to resolve.",
+          "$ref": "#/definitions/IncidentSelector"
+        }
+      },
+      "required": [
+        "type",
+        "incidentSelector"
       ],
       "additionalProperties": false
     },

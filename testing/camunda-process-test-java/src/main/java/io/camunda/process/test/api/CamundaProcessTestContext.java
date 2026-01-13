@@ -258,4 +258,12 @@ public interface CamundaProcessTestContext {
    * @param decisionOutput the decision's output which may be a value, list or map.
    */
   void mockDmnDecision(final String decisionId, final Object decisionOutput);
+
+  /**
+   * Resolves an incident matching the specified selector. If the incident is related to a job,
+   * increases the job retries by 1 before resolving.
+   *
+   * @param incidentSelector the selector to identify the incident to resolve
+   */
+  void resolveIncident(final IncidentSelector incidentSelector);
 }

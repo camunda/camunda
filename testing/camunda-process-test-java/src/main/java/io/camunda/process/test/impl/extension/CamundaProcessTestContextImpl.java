@@ -21,15 +21,19 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.JobSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
@@ -531,5 +535,55 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                     "Expected to complete a job with the type '%s' but no job is available.",
                     jobType)
                 .isNotNull());
+  }
+
+  @Override
+  public void resolveIncident(final IncidentSelector incidentSelector) {
+    LOGGER.debug("Resolve incident: {}", incidentSelector.describe());
+
+    try (final CamundaClient client = createClient()) {
+      final Incident incident =
+          awaitBehavior.until(
+              () -> findIncident(incidentSelector, client),
+              foundIncident ->
+                  assertThat(foundIncident)
+                      .withFailMessage(
+                          "Expected to resolve an incident [%s] but no incident was found.",
+                          incidentSelector.describe())
+                      .isPresent());
+
+      final long incidentKey = incident.getIncidentKey();
+
+      // If the incident has a job key, update the job retries before resolving
+      if (incident.getJobKey() != null) {
+        final long jobKey = incident.getJobKey();
+        LOGGER.debug("Updating job retries for job key: {}", jobKey);
+        client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
+      }
+
+      LOGGER.debug("Resolving incident with key: {}", incidentKey);
+      client.newResolveIncidentCommand(incidentKey).send().join();
+    }
+  }
+
+  private Optional<Incident> findIncident(
+      final IncidentSelector incidentSelector, final CamundaClient client) {
+    return client
+        .newIncidentSearchRequest()
+        .filter(
+            filter -> {
+              // Only search for active incidents
+              filter.state(
+                  state ->
+                      state.in(
+                          IncidentState.ACTIVE, IncidentState.PENDING, IncidentState.MIGRATED));
+              incidentSelector.applyFilter(filter);
+            })
+        .send()
+        .join()
+        .items()
+        .stream()
+        .filter(incidentSelector::test)
+        .findFirst();
   }
 }

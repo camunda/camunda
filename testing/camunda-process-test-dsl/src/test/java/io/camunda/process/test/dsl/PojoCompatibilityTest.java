@@ -27,6 +27,7 @@ import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import io.camunda.process.test.api.dsl.ImmutableDecisionDefinitionSelector;
 import io.camunda.process.test.api.dsl.ImmutableElementSelector;
+import io.camunda.process.test.api.dsl.ImmutableIncidentSelector;
 import io.camunda.process.test.api.dsl.ImmutableJobSelector;
 import io.camunda.process.test.api.dsl.ImmutableMessageSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessDefinitionSelector;
@@ -53,6 +54,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableMockDmnDecisionInst
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutablePublishMessageInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableResolveIncidentInstruction;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.dsl.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.dsl.instructions.assertProcessInstance.ProcessInstanceState;
@@ -315,6 +317,32 @@ public class PojoCompatibilityTest {
                     .putVariables("orderId", 12345)
                     .timeToLive(60000L)
                     .messageId("msg-123")
+                    .build())),
+        // ===== RESOLVE_INCIDENT =====
+        Arguments.of(
+            "resolve incident: minimal by elementId",
+            singleTestCase(
+                ImmutableResolveIncidentInstruction.builder()
+                    .incidentSelector(ImmutableIncidentSelector.builder().elementId("task1").build())
+                    .build())),
+        Arguments.of(
+            "resolve incident: by processDefinitionId",
+            singleTestCase(
+                ImmutableResolveIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder()
+                            .processDefinitionId("my-process")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "resolve incident: combined selector",
+            singleTestCase(
+                ImmutableResolveIncidentInstruction.builder()
+                    .incidentSelector(
+                        ImmutableIncidentSelector.builder()
+                            .processDefinitionId("my-process")
+                            .elementId("task1")
+                            .build())
                     .build())),
         // ===== MOCK_CHILD_PROCESS =====
         Arguments.of(
