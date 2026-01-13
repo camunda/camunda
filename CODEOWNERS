@@ -117,8 +117,11 @@
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 /zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 
-# Identity
-/identity/        @camunda/identity
+###############
+## Identity  ##
+###############
+
+/identity/        @camunda/identity-frontend
 /authentication/  @camunda/identity
 /security/        @camunda/identity
 
