@@ -206,6 +206,12 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         queue.size());
 
     final var startMillis = System.currentTimeMillis();
+
+    if (!preFlushListeners.isEmpty()) {
+      LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
+      preFlushListeners.forEach(PreFlushListener::onPreFlush);
+    }
+
     final var session =
         sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
 
@@ -218,11 +224,6 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         session.update(entry.statementId(), entry.parameter());
         queue.remove();
         flushedElements++;
-      }
-
-      if (!preFlushListeners.isEmpty()) {
-        LOG.trace("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
-        preFlushListeners.forEach(PreFlushListener::onPreFlush);
       }
 
       final var batchResult = session.flushStatements();
