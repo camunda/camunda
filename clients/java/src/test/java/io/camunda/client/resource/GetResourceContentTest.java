@@ -26,11 +26,18 @@ import org.junit.jupiter.api.Test;
 public class GetResourceContentTest extends ClientRestTest {
   @Test
   void shouldGetResourceContent() {
-    gatewayService.onResourceContentGetRequest(123L, "test content");
-    client.newResourceContentGetRequest(123L).execute();
+    // given
+    final String resourceContent = "test content";
+    gatewayService.onResourceContentGetRequest(123L, resourceContent);
+
+    // when
+    final String response = client.newResourceContentGetRequest(123L).execute();
+
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getResourceContentUrl("123"));
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+    LoggedRequestAssert.assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.GET)
+        .hasUrl(RestGatewayPaths.getResourceContentUrl("123"));
+
+    assertThat(response).isEqualTo(resourceContent);
   }
 }
