@@ -31,6 +31,14 @@
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
 
+###############
+## Identity  ##
+###############
+
+/identity/        @camunda/identity-frontend
+/authentication/  @camunda/identity
+/security/        @camunda/identity
+
 ##########################
 ## Reliability Testing  ##
 ##########################
