@@ -95,7 +95,7 @@ public record Authorization<T>(
         transitive());
   }
 
-  public Authorization<T> with(final List<String> resourceIds) {
+  public Authorization<T> withResourceIds(final List<String> resourceIds) {
     return new Authorization<>(
         resourceType(),
         permissionType(),
@@ -117,7 +117,7 @@ public record Authorization<T>(
         transitive());
   }
 
-  public Authorization<T> with(final Set<String> resourcePropertyNames) {
+  public Authorization<T> withResourcePropertyNames(final Set<String> resourcePropertyNames) {
     return new Authorization<>(
         resourceType(),
         permissionType(),
