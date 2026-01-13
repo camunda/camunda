@@ -15,6 +15,7 @@ import Tenants from "src/pages/tenants";
 import MappingRules from "src/pages/mapping-rules";
 import Authorizations from "src/pages/authorizations";
 import ClusterVariables from "src/pages/cluster-variables";
+import TaskListeners from "src/pages/task-listeners";
 import {
   isCamundaGroupsEnabled,
   isOIDC,
@@ -84,6 +85,12 @@ export const useGlobalRoutes = () => {
       key: Paths.authorizations(),
       label: t("authorizations"),
       element: <Authorizations />,
+    },
+    {
+      path: `${Paths.taskListeners()}/*`,
+      key: Paths.taskListeners(),
+      label: t("taskListeners"),
+      element: <TaskListeners />,
     },
     {
       path: `${Paths.clusterVariables()}/*`,
