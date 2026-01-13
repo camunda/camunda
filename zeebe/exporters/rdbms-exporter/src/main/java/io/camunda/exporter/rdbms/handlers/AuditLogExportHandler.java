@@ -20,11 +20,9 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
-import org.apache.commons.lang3.RandomStringUtils;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
   private final AuditLogWriter auditLogWriter;
-  private final VendorDatabaseProperties vendorDatabaseProperties;
   private final AuditLogTransformer<R> transformer;
   private final AuditLogConfiguration configuration;
 
@@ -34,7 +32,6 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
       final AuditLogTransformer<R> transformer,
       final AuditLogConfiguration configuration) {
     this.auditLogWriter = auditLogWriter;
-    this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.transformer = transformer;
     this.configuration = configuration;
   }
@@ -42,6 +39,11 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   @VisibleForTesting
   public AuditLogTransformer<R> getTransformer() {
     return transformer;
+  }
+
+  @VisibleForTesting
+  static String generateAuditLogKey(final Record<?> record) {
+    return record.getPartitionId() + "-" + record.getPosition();
   }
 
   @Override
@@ -63,9 +65,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   }
 
   private AuditLogDbModel toAuditLogModel(final AuditLogEntry log, final Record<R> record) {
-    final var key =
-        RandomStringUtils.insecure()
-            .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
+    final var key = generateAuditLogKey(record);
 
     final var auditLog =
         new AuditLogDbModel.Builder()

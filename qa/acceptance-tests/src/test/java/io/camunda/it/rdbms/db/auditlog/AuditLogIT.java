@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db.auditlog;
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAuditLog;
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveRandomAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -33,8 +34,7 @@ public class AuditLogIT {
   public static final int PARTITION_ID = 0;
 
   @TestTemplate
-  public void shouldSaveAndFindAuditLogByEntityKey(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldGetAuditLogById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
@@ -42,7 +42,9 @@ public class AuditLogIT {
     final var original = AuditLogFixtures.createRandomized(b -> b);
     createAndSaveAuditLog(rdbmsWriters, original);
 
-    final var instance = auditLogReader.findByEntityKey(original.entityKey()).orElse(null);
+    final var instance =
+        auditLogReader.getById(
+            String.valueOf(original.auditLogKey()), resourceAccessChecksFromTenantIds());
 
     compareAuditLog(instance, original);
   }

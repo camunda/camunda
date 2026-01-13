@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import org.apache.commons.lang3.RandomStringUtils;
 
 /**
  * A generic handler for audit log records that delegates record-type-specific transformation to an
@@ -49,8 +48,6 @@ import org.apache.commons.lang3.RandomStringUtils;
  * @param <R> the record value type this handler processes
  */
 public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogEntity, R> {
-
-  protected static final int ID_LENGTH = 32;
 
   private final String indexName;
   private final AuditLogTransformer<R> transformer;
@@ -84,7 +81,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
 
   @Override
   public List<String> generateIds(final Record<R> record) {
-    return List.of(RandomStringUtils.insecure().nextAlphanumeric(ID_LENGTH));
+    return List.of(record.getPartitionId() + "-" + record.getPosition());
   }
 
   @Override

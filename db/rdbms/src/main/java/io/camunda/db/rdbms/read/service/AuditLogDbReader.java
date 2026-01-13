@@ -35,6 +35,14 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
   }
 
   @Override
+  public AuditLogEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    final var result = search(AuditLogQuery.of(b -> b.filter(f -> f.auditLogKeys(id))));
+    return Optional.ofNullable(result.items())
+        .flatMap(items -> items.stream().findFirst())
+        .orElse(null);
+  }
+
+  @Override
   public SearchQueryResult<AuditLogEntity> search(
       final AuditLogQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), AuditLogSearchColumn.TIMESTAMP);
@@ -69,11 +77,6 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
     final var hits =
         auditLogMapper.search(dbQuery).stream().map(AuditLogEntityMapper::toEntity).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
-  }
-
-  public Optional<AuditLogEntity> findByEntityKey(final String entityKey) {
-    final var result = search(AuditLogQuery.of(b -> b.filter(f -> f.entityKeys(entityKey))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 
   public SearchQueryResult<AuditLogEntity> search(final AuditLogQuery query) {
