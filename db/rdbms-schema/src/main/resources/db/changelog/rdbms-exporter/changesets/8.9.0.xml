@@ -1078,4 +1078,8 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="drop_batch_operation_item_history_cleanup_date" author="camunda">
+    <dropColumn tableName="${prefix}BATCH_OPERATION_ITEM" columnName="HISTORY_CLEANUP_DATE"/>
+  </changeSet>
+
 </databaseChangeLog>

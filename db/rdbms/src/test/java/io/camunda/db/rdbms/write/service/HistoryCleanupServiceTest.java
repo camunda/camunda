@@ -74,7 +74,6 @@ class HistoryCleanupServiceTest {
     when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(jobWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(sequenceFlowWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
-    when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(0);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt()))
@@ -132,7 +131,6 @@ class HistoryCleanupServiceTest {
     when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
     when(jobWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
     when(sequenceFlowWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
-    when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(1);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
     when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt()))
@@ -153,7 +151,6 @@ class HistoryCleanupServiceTest {
     verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(jobWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(sequenceFlowWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
-    verify(batchOperationWriter).cleanupItemHistory(CLEANUP_DATE, 100);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
     verify(messageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(correlatedMessageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
@@ -216,7 +213,6 @@ class HistoryCleanupServiceTest {
     numDeletedRecords.put("decisionInstance", 100);
     numDeletedRecords.put("job", 100);
     numDeletedRecords.put("sequenceFlow", 100);
-    numDeletedRecords.put("batchOperationItem", 100);
     numDeletedRecords.put("batchOperation", 100);
     numDeletedRecords.put("messageSubscription", 100);
     numDeletedRecords.put("correlatedMessageSubscription", 100);

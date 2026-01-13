@@ -167,9 +167,6 @@ public class HistoryCleanupService {
           "sequenceFlow",
           sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
       numDeletedRecords.put(
-          "batchOperationItem",
-          batchOperationWriter.cleanupItemHistory(cleanupDate, cleanupBatchSize));
-      numDeletedRecords.put(
           "batchOperation", batchOperationWriter.cleanupHistory(cleanupDate, cleanupBatchSize));
       numDeletedRecords.put(
           "messageSubscription",

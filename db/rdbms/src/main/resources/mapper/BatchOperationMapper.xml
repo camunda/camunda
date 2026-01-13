@@ -404,19 +404,8 @@
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
 
-  <update id="updateItemHistoryCleanupDate">
-    UPDATE ${prefix}BATCH_OPERATION_ITEM
-    SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
-  </update>
-
   <delete id="cleanupHistory">
     <bind name="tableName" value="'BATCH_OPERATION'"/>
-    <include refid="historyCleanup"/>
-  </delete>
-
-  <delete id="cleanupItemHistory">
-    <bind name="tableName" value="'BATCH_OPERATION_ITEM'"/>
     <include refid="historyCleanup"/>
   </delete>
 
