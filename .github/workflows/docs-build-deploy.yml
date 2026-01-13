@@ -75,30 +75,6 @@ jobs:
         working-directory: monorepo-docs-site
         run: npm run build
 
-      # NEW: preserve existing PR previews from gh-pages
-      - name: Preserve existing PR previews
-        run: |
-          set -euo pipefail
-
-          # Fetch current gh-pages contents (where previews live)
-          git fetch origin gh-pages:gh-pages || echo "No gh-pages branch yet"
-
-          if git show-ref --verify --quiet refs/heads/gh-pages; then
-            # Check out gh-pages into a temporary worktree
-            git worktree add /tmp/gh-pages gh-pages
-
-            if [ -d /tmp/gh-pages/pr-preview ]; then
-              echo "Copying existing pr-preview/* into new build…"
-              mkdir -p monorepo-docs-site/build/pr-preview
-              cp -a /tmp/gh-pages/pr-preview/. monorepo-docs-site/build/pr-preview/
-            else
-              echo "No pr-preview directory found on gh-pages."
-            fi
-          else
-            echo "gh-pages branch does not exist yet; nothing to preserve."
-          fi
-        shell: bash
-
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
