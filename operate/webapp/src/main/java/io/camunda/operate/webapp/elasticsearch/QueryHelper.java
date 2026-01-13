@@ -92,7 +92,6 @@ public class QueryHelper {
         createBpmnProcessIdQuery(query),
         createExcludeIdsQuery(query),
         createVariablesQuery(query),
-        createVariablesInQuery(query),
         createBatchOperationIdQuery(query),
         createParentInstanceIdQuery(query),
         createTenantIdQuery(query),
@@ -154,34 +153,29 @@ public class QueryHelper {
 
   private Query createVariablesQuery(final ListViewQueryDto query) {
     final VariablesQueryDto variablesQuery = query.getVariable();
-    if (variablesQuery != null && StringUtils.hasLength(variablesQuery.getValue())) {
-      if (variablesQuery.getName() == null) {
-        throw new InvalidRequestException("Variables query must provide not-null variable name.");
-      }
-      return ElasticsearchUtil.hasChildQuery(
-          VARIABLES_JOIN_RELATION,
-          joinWithAnd(
-              ElasticsearchUtil.termsQuery(VAR_NAME, variablesQuery.getName()),
-              ElasticsearchUtil.termsQuery(VAR_VALUE, variablesQuery.getValue())),
-          ChildScoreMode.None);
+    if (variablesQuery == null) {
+      return null;
     }
-    return null;
-  }
 
-  private Query createVariablesInQuery(final ListViewQueryDto query) {
-    final VariablesQueryDto variablesQuery = query.getVariable();
-    if (variablesQuery != null && !ArrayUtils.isEmpty(variablesQuery.getValues())) {
-      if (variablesQuery.getName() == null) {
-        throw new InvalidRequestException("Variables query must provide not-null variable name.");
-      }
-      return ElasticsearchUtil.hasChildQuery(
-          VARIABLES_JOIN_RELATION,
-          joinWithAnd(
-              ElasticsearchUtil.termsQuery(VAR_NAME, variablesQuery.getName()),
-              ElasticsearchUtil.termsQuery(VAR_VALUE, Arrays.asList(variablesQuery.getValues()))),
-          ChildScoreMode.None);
+    if (variablesQuery.getName() == null) {
+      throw new InvalidRequestException("Variables query must provide not-null variable name.");
     }
-    return null;
+
+    final List<String> values;
+    if (StringUtils.hasLength(variablesQuery.getValue())) {
+      values = List.of(variablesQuery.getValue());
+    } else if (!ArrayUtils.isEmpty(variablesQuery.getValues())) {
+      values = Arrays.asList(variablesQuery.getValues());
+    } else {
+      return null;
+    }
+
+    return ElasticsearchUtil.hasChildQuery(
+        VARIABLES_JOIN_RELATION,
+        joinWithAnd(
+            ElasticsearchUtil.termsQuery(VAR_NAME, variablesQuery.getName()),
+            ElasticsearchUtil.termsQuery(VAR_VALUE, values)),
+        ChildScoreMode.None);
   }
 
   private Query createExcludeIdsQuery(final ListViewQueryDto query) {
