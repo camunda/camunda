@@ -127,17 +127,22 @@
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
+<!--
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_ROOT_PROCESS_INSTANCE_KEY">
       <column name="ROOT_PROCESS_INSTANCE_KEY"/>
     </createIndex>
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_TENANT_ID">
       <column name="TENANT_ID"/>
     </createIndex>
+    -->
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_HIST">
       <column name="PARTITION_ID" />
       <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
+    <sql dbms="postgresql">
+      ALTER TABLE ${prefix}VARIABLE SET (fillfactor = 80);
+    </sql>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -189,6 +194,10 @@
       <column name="PARTITION_ID" />
       <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
+
+    <sql dbms="postgresql">
+      ALTER TABLE ${prefix}FLOW_NODE_INSTANCE SET (fillfactor = 80);
+    </sql>
 
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
@@ -776,6 +785,10 @@
       <column name="HISTORY_CLEANUP_DATE" />
     </createIndex>
 
+    <sql dbms="postgresql">
+      ALTER TABLE ${prefix}SEQUENCE_FLOW SET (fillfactor = 80);
+    </sql>
+
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -992,7 +1005,8 @@
 
   <changeSet id="create_audit_log_table" author="camunda">
     <createTable tableName="${prefix}AUDIT_LOG">
-      <column name="AUDIT_LOG_KEY" type="VARCHAR(${userCharColumnSize})">
+      <!-- UUID length -->
+      <column name="AUDIT_LOG_KEY" type="VARCHAR(36)">
         <constraints primaryKey="true" nullable="false"/>
       </column>
       <column name="ENTITY_KEY" type="VARCHAR(${userCharColumnSize})"/>
@@ -1041,9 +1055,14 @@
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
 
+    <!--
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_RPI_KEY">
       <column name="ROOT_PROCESS_INSTANCE_KEY"/>
     </createIndex>
+    -->
+    <sql dbms="postgresql">
+      ALTER TABLE ${prefix}AUDIT_LOG SET (fillfactor = 80);
+    </sql>
 
     <modifySql dbms="mariadb,mysql">
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>

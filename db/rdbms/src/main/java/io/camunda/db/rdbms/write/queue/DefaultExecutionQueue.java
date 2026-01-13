@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.queue;
 
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +61,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     this.partitionId = partitionId;
     this.queueFlushLimit = queueFlushLimit;
     // Convert MB to bytes for internal comparison
-    this.queueMemoryLimitBytes = (long) queueMemoryLimitMb * BYTES_PER_MB;
+    queueMemoryLimitBytes = (long) queueMemoryLimitMb * BYTES_PER_MB;
     this.metrics = metrics;
   }
 
@@ -184,6 +185,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
             partitionId,
             queueSize,
             queueFlushLimit);
+        metrics.recordQueueFlush(FlushTrigger.COUNT_LIMIT);
       }
       if (memoryLimitExceeded) {
         LOG.debug(
@@ -191,6 +193,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
             partitionId,
             queueMemory,
             queueMemoryLimitBytes);
+        metrics.recordQueueFlush(FlushTrigger.MEMORY_LIMIT);
       }
       flush();
       return true;

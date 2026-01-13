@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
@@ -20,9 +22,13 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
-import org.apache.commons.lang3.RandomStringUtils;
 
 public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExportHandler<R> {
+
+  // Shared UUID v7 generator for time-ordered UUIDs
+  private static final TimeBasedEpochGenerator UUID_GENERATOR =
+      Generators.timeBasedEpochGenerator();
+
   private final AuditLogWriter auditLogWriter;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final AuditLogTransformer<R> transformer;
@@ -63,9 +69,9 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
   }
 
   private AuditLogDbModel toAuditLogModel(final AuditLogEntry log, final Record<R> record) {
-    final var key =
-        RandomStringUtils.insecure()
-            .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
+    // Use UUID v7 for better database performance with indexed primary keys.
+    // UUID v7 is time-ordered, reducing index fragmentation and improving insert performance.
+    final var key = UUID_GENERATOR.generate().toString();
 
     final var auditLog =
         new AuditLogDbModel.Builder()

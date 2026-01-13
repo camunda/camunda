@@ -6,11 +6,22 @@
   ~ Licensed under the Camunda License 1.0. You may not use this file
   ~ except in compliance with the Camunda License 1.0.
   -->
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.TableMetricsMapper">
 
+  <select id="countTableRows" parameterType="java.lang.String" resultType="long"
+    databaseId="postgresql">
+    SELECT c.reltuples::BIGINT AS estimate
+    FROM pg_class c
+           JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE LOWER(c.relname) = LOWER('${prefix}${tableName}')
+      AND n.nspname = 'public'
+  </select>
+
   <select id="countTableRows" parameterType="java.lang.String" resultType="long">
-    SELECT COUNT(*) FROM ${prefix}${tableName}
+    SELECT COUNT(*)
+    FROM ${prefix} ${tableName}
   </select>
 
 </mapper>
