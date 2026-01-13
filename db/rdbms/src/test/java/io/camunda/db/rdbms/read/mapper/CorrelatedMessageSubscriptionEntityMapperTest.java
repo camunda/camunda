@@ -32,6 +32,7 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
             .processDefinitionId("processDefinitionId")
             .processDefinitionKey(789L)
             .processInstanceKey(1011L)
+            .rootProcessInstanceKey(2022L)
             .subscriptionKey(321L)
             .subscriptionType(MessageSubscriptionType.PROCESS_EVENT)
             .tenantId("tenantId")

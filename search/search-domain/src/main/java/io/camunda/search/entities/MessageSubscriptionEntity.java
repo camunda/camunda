@@ -16,6 +16,7 @@ public record MessageSubscriptionEntity(
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     String flowNodeId,
     Long flowNodeInstanceKey,
     MessageSubscriptionState messageSubscriptionState,
@@ -33,6 +34,7 @@ public record MessageSubscriptionEntity(
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private String flowNodeId;
     private Long flowNodeInstanceKey;
     private MessageSubscriptionState messageSubscriptionState;
@@ -58,6 +60,11 @@ public record MessageSubscriptionEntity(
 
     public Builder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
@@ -103,6 +110,7 @@ public record MessageSubscriptionEntity(
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           flowNodeId,
           flowNodeInstanceKey,
           messageSubscriptionState,

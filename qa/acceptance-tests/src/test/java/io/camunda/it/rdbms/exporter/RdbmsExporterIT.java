@@ -771,7 +771,7 @@ class RdbmsExporterIT {
   public void shouldExportMessageSubscription() {
     // given
     final var messageSubscriptionRecord =
-        ImmutableRecord.builder()
+        ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withPosition(2L)
@@ -785,6 +785,11 @@ class RdbmsExporterIT {
     final var messageSubscription =
         rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
     assertThat(messageSubscription).isNotEmpty();
+    final var recordValue = messageSubscriptionRecord.getValue();
+    assertThat(messageSubscription.get().processInstanceKey())
+        .isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(messageSubscription.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
   }
 
   @Test
@@ -839,6 +844,11 @@ class RdbmsExporterIT {
                 correlatedMessageSubscriptionRecord.getValue().getMessageKey(),
                 correlatedMessageSubscriptionRecord.getKey());
     assertThat(correlatedMessageSubscription).isNotEmpty();
+    final var recordValue = correlatedMessageSubscriptionRecord.getValue();
+    assertThat(correlatedMessageSubscription.get().processInstanceKey())
+        .isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
   }
 
   @Test

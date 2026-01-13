@@ -25,6 +25,7 @@ public class CorrelatedMessageSubscriptionEntityMapper {
         .processDefinitionId(dbModel.processDefinitionId())
         .processDefinitionKey(dbModel.processDefinitionKey())
         .processInstanceKey(dbModel.processInstanceKey())
+        .rootProcessInstanceKey(dbModel.rootProcessInstanceKey())
         .subscriptionKey(dbModel.subscriptionKey())
         .subscriptionType(dbModel.subscriptionType())
         .tenantId(dbModel.tenantId())

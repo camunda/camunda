@@ -64,7 +64,9 @@ public class MessageSubscriptionIT {
 
     final var roleUpdate =
         MessageSubscriptionFixtures.createRandomized(
-            b -> b.messageSubscriptionKey(subscription.messageSubscriptionKey()));
+            b ->
+                b.messageSubscriptionKey(subscription.messageSubscriptionKey())
+                    .rootProcessInstanceKey(subscription.rootProcessInstanceKey()));
     rdbmsWriters.getMessageSubscriptionWriter().update(roleUpdate);
     rdbmsWriters.flush();
 
