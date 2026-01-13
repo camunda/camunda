@@ -578,4 +578,25 @@ public class ResolveFeelExpressionTest {
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getResultValue()).isEqualTo("Null");
   }
+
+  @Test
+  public void shouldRejectResolveWhenExpressionEvaluationTimesOut() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("= for x in 0..1000000 return for y in 0..x return x + y")
+            .expectRejection()
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(ExpressionIntent.EVALUATE)
+        .hasRejectionType(RejectionType.PROCESSING_ERROR)
+        .hasRejectionReason(
+            """
+            Expected to evaluate expression but timed out after 300 ms: \
+            'for x in 0..1000000 return for y in 0..x return x + y'""");
+  }
 }
