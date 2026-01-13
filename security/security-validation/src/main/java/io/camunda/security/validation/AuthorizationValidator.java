@@ -12,7 +12,6 @@ import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_A
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -25,15 +24,39 @@ public class AuthorizationValidator {
     this.identifierValidator = identifierValidator;
   }
 
-  /* The validate method takes individual arguments instead of a whole object,
-   * because there is currently no common model for all intended use cases of these validators.
-   */
-  public List<String> validate(
+  public List<String> validatePropertyBased(
+      final String ownerId,
+      final AuthorizationOwnerType ownerType,
+      final AuthorizationResourceType resourceType,
+      final String resourcePropertyName,
+      final Set<?> permissions) {
+    final List<String> violations =
+        validateCommonProperties(ownerId, ownerType, resourceType, permissions);
+    identifierValidator.validateId(resourcePropertyName, "resourcePropertyName", violations);
+    return violations;
+  }
+
+  public List<String> validateIdBased(
       final String ownerId,
       final AuthorizationOwnerType ownerType,
       final AuthorizationResourceType resourceType,
       final String resourceId,
-      final Set<PermissionType> permissions) {
+      final Set<?> permissions) {
+    final List<String> violations =
+        validateCommonProperties(ownerId, ownerType, resourceType, permissions);
+    identifierValidator.validateId(
+        resourceId, "resourceId", violations, AuthorizationScope.WILDCARD_CHAR::equals);
+    return violations;
+  }
+
+  /* The validate method takes individual arguments instead of a whole object,
+   * because there is currently no common model for all intended use cases of these validators.
+   */
+  private List<String> validateCommonProperties(
+      final String ownerId,
+      final AuthorizationOwnerType ownerType,
+      final AuthorizationResourceType resourceType,
+      final Set<?> permissions) {
     final List<String> violations = new ArrayList<>();
     // owner validation
     identifierValidator.validateId(ownerId, "ownerId", violations);
@@ -42,8 +65,6 @@ public class AuthorizationValidator {
     }
 
     // resource validation
-    identifierValidator.validateId(
-        resourceId, "resourceId", violations, AuthorizationScope.WILDCARD_CHAR::equals);
     if (resourceType == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
     }

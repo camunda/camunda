@@ -21,13 +21,13 @@ import org.junit.jupiter.api.Test;
 class AuthorizationValidatorTest {
 
   private static final AuthorizationValidator VALIDATOR =
-      new AuthorizationValidator(new IdentifierValidator(Pattern.compile(".*")));
+      new AuthorizationValidator(new IdentifierValidator(Pattern.compile("^[a-zA-Z0-9_~@.+-]+$")));
 
   @Test
   public void shouldValidateOwnerType() {
     // when:
     final List<String> violations =
-        VALIDATOR.validate(
+        VALIDATOR.validateIdBased(
             "foo",
             null,
             AuthorizationResourceType.RESOURCE,
@@ -40,10 +40,10 @@ class AuthorizationValidatorTest {
   }
 
   @Test
-  public void shouldSuccessfullyConfigure() {
+  public void shouldSuccessfullyValidateIdBased() {
     // when:
     final List<String> violations =
-        VALIDATOR.validate(
+        VALIDATOR.validateIdBased(
             "foo",
             AuthorizationOwnerType.USER,
             AuthorizationResourceType.RESOURCE,
@@ -52,5 +52,23 @@ class AuthorizationValidatorTest {
 
     // then:
     assertThat(violations).isEmpty();
+  }
+
+  @Test
+  void shouldNotAllowWildcardAsPropertyName() {
+    // when:
+    final List<String> violations =
+        VALIDATOR.validatePropertyBased(
+            "foo",
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.RESOURCE,
+            WILDCARD_CHAR,
+            Set.of(PermissionType.READ));
+
+    // then:
+    assertThat(violations).hasSize(1);
+    assertThat(violations)
+        .anyMatch(
+            s -> s.contains("The provided resourcePropertyName contains illegal characters."));
   }
 }

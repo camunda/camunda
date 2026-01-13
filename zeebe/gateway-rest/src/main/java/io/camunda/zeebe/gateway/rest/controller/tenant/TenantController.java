@@ -38,7 +38,6 @@ import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.TenantValidator;
 import io.camunda.service.GroupServices;
@@ -80,7 +79,7 @@ public class TenantController {
       final GroupServices groupServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final IdentifierValidator identifierValidator) {
     this.tenantServices = tenantServices;
     this.userServices = userServices;
     this.mappingRuleServices = mappingRuleServices;
@@ -88,11 +87,7 @@ public class TenantController {
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
     tenantMapper =
-        new TenantMapper(
-            new TenantRequestValidator(
-                new TenantValidator(
-                    new IdentifierValidator(
-                        securityConfiguration.getCompiledIdValidationPattern()))));
+        new TenantMapper(new TenantRequestValidator(new TenantValidator(identifierValidator)));
   }
 
   @CamundaPostMapping
