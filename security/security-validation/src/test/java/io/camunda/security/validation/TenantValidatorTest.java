@@ -20,7 +20,7 @@ class TenantValidatorTest {
   @Test
   public void shouldValidateMandatoryFields() {
     // when:
-    final List<String> violations = VALIDATOR.validate(null, "");
+    final List<String> violations = VALIDATOR.validateCreate(null, "");
 
     // then:
     assertThat(violations).containsExactlyInAnyOrder("No tenantId provided", "No name provided");
@@ -29,7 +29,7 @@ class TenantValidatorTest {
   @Test
   public void shouldSuccessfullyConfigure() {
     // when:
-    final List<String> violations = VALIDATOR.validate("foo", "Foo");
+    final List<String> violations = VALIDATOR.validateCreate("foo", "Foo");
 
     // then:
     assertThat(violations).isEmpty();

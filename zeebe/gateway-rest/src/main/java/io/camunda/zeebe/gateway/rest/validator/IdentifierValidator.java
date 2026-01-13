@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+/**
+ * @deprecated use {@link io.camunda.security.validation.IdentifierValidator} instead
+ */
+@Deprecated
 public class IdentifierValidator {
 
   /**

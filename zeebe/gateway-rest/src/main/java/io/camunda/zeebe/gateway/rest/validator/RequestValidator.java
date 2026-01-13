@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
@@ -65,6 +66,10 @@ public final class RequestValidator {
     customValidation.accept(violations);
 
     return createProblemDetail(violations);
+  }
+
+  public static Optional<ProblemDetail> validate(final Supplier<List<String>> customValidation) {
+    return createProblemDetail(customValidation.get());
   }
 
   public static void validateOperationReference(

@@ -26,7 +26,7 @@ public class TenantConfigurer
 
   @Override
   public Either<List<String>, TenantRecord> configure(final ConfiguredTenant tenant) {
-    final List<String> violations = validator.validate(tenant.tenantId(), tenant.name());
+    final List<String> violations = validator.validateCreate(tenant.tenantId(), tenant.name());
     violations.addAll(validator.validateTenantMembers(tenant.users(), EntityType.USER));
     violations.addAll(validator.validateTenantMembers(tenant.groups(), EntityType.GROUP));
     violations.addAll(validator.validateTenantMembers(tenant.roles(), EntityType.ROLE));

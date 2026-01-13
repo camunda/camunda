@@ -35,6 +35,71 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
+<<<<<<< HEAD:zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/mapper/RequestMapper.java
+=======
+import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
+import io.camunda.gateway.mapping.http.validator.DocumentValidator;
+import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
+import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
+import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
+import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
+import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
+import io.camunda.gateway.protocol.model.AuthorizationRequest;
+import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.Changeset;
+import io.camunda.gateway.protocol.model.ClockPinRequest;
+import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
+import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
+import io.camunda.gateway.protocol.model.DecisionEvaluationById;
+import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
+import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
+import io.camunda.gateway.protocol.model.DeleteResourceRequest;
+import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
+import io.camunda.gateway.protocol.model.DocumentLinkRequest;
+import io.camunda.gateway.protocol.model.DocumentMetadata;
+import io.camunda.gateway.protocol.model.GroupCreateRequest;
+import io.camunda.gateway.protocol.model.GroupUpdateRequest;
+import io.camunda.gateway.protocol.model.JobActivationRequest;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobFailRequest;
+import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
+import io.camunda.gateway.protocol.model.JobResultUserTask;
+import io.camunda.gateway.protocol.model.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
+import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
+import io.camunda.gateway.protocol.model.MessagePublicationRequest;
+import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
+import io.camunda.gateway.protocol.model.PermissionTypeEnum;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
+import io.camunda.gateway.protocol.model.RoleCreateRequest;
+import io.camunda.gateway.protocol.model.RoleUpdateRequest;
+import io.camunda.gateway.protocol.model.SetVariableRequest;
+import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
+import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
+import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
+import io.camunda.gateway.protocol.model.UserRequest;
+import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
+import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
+import io.camunda.gateway.protocol.model.UserUpdateRequest;
+>>>>>>> d5077f9d (feat: refactor http-mapping for tenants to use security-validation):gateways/gateway-mapping-http/src/main/java/io/camunda/gateway/mapping/http/RequestMapper.java
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -61,8 +126,6 @@ import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
-import io.camunda.service.TenantServices.TenantMemberRequest;
-import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
@@ -152,6 +215,15 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * This class is way too big and also way too big to be all static, causing leaky abstraction (e.g.
+ * identifierPattern being passed through multiple layers to the IdentifierValidator).
+ *
+ * <p>As refactoring it at once would be a huge task, it should be split up and changed to be more
+ * OOP piece by piece.
+ *
+ * <p>the split-up classes should be put in the @io.camunda.gateway.mapping.http.mapper package
+ */
 public class RequestMapper {
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
@@ -929,41 +1001,6 @@ public class RequestMapper {
                     request, DecisionEvaluationInstruction::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, DecisionEvaluationInstruction::getVariables),
                 tenantId));
-  }
-
-  public static Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequest tenantCreateRequest) {
-    return getResult(
-        TenantRequestValidator.validateCreateRequest(tenantCreateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantCreateRequest.getTenantId(),
-                tenantCreateRequest.getName(),
-                tenantCreateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
-      final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
-    return getResult(
-        TenantRequestValidator.validateUpdateRequest(tenantUpdateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantId,
-                tenantUpdateRequest.getName(),
-                tenantUpdateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
-      final String tenantId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern identifierPattern) {
-    return getResult(
-        TenantRequestValidator.validateMemberRequest(
-            tenantId, memberId, entityType, identifierPattern),
-        () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>

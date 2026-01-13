@@ -24,9 +24,15 @@ public class TenantValidator {
     this.identifierValidator = identifierValidator;
   }
 
-  public List<String> validate(final String tenantId, final String name) {
+  public List<String> validateCreate(final String tenantId, final String name) {
     final List<String> violations = new ArrayList<>();
     validateTenantId(tenantId, violations);
+    validateTenantName(name, violations);
+    return violations;
+  }
+
+  public List<String> validateUpdate(final String name) {
+    final List<String> violations = new ArrayList<>();
     validateTenantName(name, violations);
     return violations;
   }
@@ -40,6 +46,15 @@ public class TenantValidator {
         .map(memberId -> validateMemberId(memberId, memberType))
         .flatMap(List::stream)
         .toList();
+  }
+
+  public List<String> validateTenantMember(
+      final String tenantId, final String memberId, final EntityType memberType) {
+    final List<String> violations = new ArrayList<>();
+    validateTenantId(tenantId, violations);
+    validateMemberId(memberId, memberType);
+    violations.addAll(validateMemberId(memberId, memberType));
+    return violations;
   }
 
   private void validateTenantId(final String id, final List<String> violations) {
