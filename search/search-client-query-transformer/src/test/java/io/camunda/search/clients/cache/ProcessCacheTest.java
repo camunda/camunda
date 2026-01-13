@@ -136,6 +136,9 @@ class ProcessCacheTest {
 
               // This test calls getCacheItem(k) which builds a query containing exactly that key.
               final List<Long> keys = query.filter().processDefinitionKeys();
+              if (keys == null || keys.isEmpty()) {
+                return SearchQueryResult.of();
+              }
               final long key = keys.getFirst();
 
               return switch ((int) key) {
