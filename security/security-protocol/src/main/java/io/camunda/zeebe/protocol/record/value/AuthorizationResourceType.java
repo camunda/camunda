@@ -60,7 +60,11 @@ public enum AuthorizationResourceType {
       PermissionType.DELETE_PROCESS,
       PermissionType.DELETE_RESOURCE),
   ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
-  SYSTEM(PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE),
+  SYSTEM(
+      PermissionType.READ,
+      PermissionType.READ_USAGE_METRIC,
+      PermissionType.READ_JOB_METRIC,
+      PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   UNSPECIFIED(),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
