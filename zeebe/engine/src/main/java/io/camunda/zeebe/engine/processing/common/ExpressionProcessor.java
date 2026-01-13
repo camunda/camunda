@@ -150,8 +150,8 @@ public final class ExpressionProcessor {
 
   public Either<Failure, Boolean> evaluateBooleanExpression(
       final Expression expression, final EvaluationContext context) {
-    return evaluateExpressionAsEither(expression, context)
-        // scopeKey is -1 because the context is already provided
+    // scopeKey is -1 because the context is already provided
+    return evaluateExpressionAsEither(expression, context, -1)
         .flatMap(result -> typeCheck(result, ResultType.BOOLEAN, -1))
         .map(EvaluationResult::getBoolean);
   }
@@ -486,13 +486,12 @@ public final class ExpressionProcessor {
    *     element instance key); use {@code -1} if no process scope is needed
    * @param tenantId the tenant identifier for tenant-scoped variable resolution; may be {@code
    *     null}, empty, or a specific tenant ID
-   * @return the result of evaluating the expression
+   * @return either the evaluation result (right), or a failure (left)
    * @see ScopedEvaluationContext#processScoped(long)
    * @see ScopedEvaluationContext#tenantScoped(String)
    */
-  private EvaluationResult evaluateExpression(
+  private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression, final long variableScopeKey, final String tenantId) {
-
     final EvaluationContext context;
     if (variableScopeKey < 0 && (tenantId == null || tenantId.isEmpty())) {
       context = scopedEvaluationContext;
@@ -501,23 +500,22 @@ public final class ExpressionProcessor {
     } else {
       context = scopedEvaluationContext.processScoped(variableScopeKey).tenantScoped(tenantId);
     }
-
-    return expressionLanguage.evaluateExpression(expression, context);
+    return evaluateExpressionAsEither(expression, context, variableScopeKey);
   }
 
+  /**
+   * Evaluates the given expression within the provided evaluation context.
+   *
+   * @param expression the FEEL expression to evaluate
+   * @param context the context to evaluate the expression against
+   * @param variableScopeKey the scope key for error reporting
+   * @return either the evaluation result (right), or a failure (left)
+   */
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
-      final Expression expression, final long variableScopeKey, final String tenantId) {
-    final var result = evaluateExpression(expression, variableScopeKey, tenantId);
-    return result.isFailure()
-        ? Either.left(createFailureMessage(result, result.getFailureMessage(), variableScopeKey))
-        : Either.right(result);
-  }
-
-  private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
-      final Expression expression, final EvaluationContext context) {
+      final Expression expression, final EvaluationContext context, final long variableScopeKey) {
     final var result = expressionLanguage.evaluateExpression(expression, context);
     return result.isFailure()
-        ? Either.left(createFailureMessage(result, result.getFailureMessage(), -1))
+        ? Either.left(createFailureMessage(result, result.getFailureMessage(), variableScopeKey))
         : Either.right(result);
   }
 
