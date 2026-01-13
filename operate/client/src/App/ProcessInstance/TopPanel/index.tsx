@@ -51,8 +51,6 @@ import {
   hasPendingCancelOrMoveModification,
 } from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
-import {init} from 'modules/utils/flowNodeMetadata';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
@@ -99,7 +97,6 @@ const TopPanel: React.FC = observer(() => {
     sourceFlowNodeInstanceKeyForMoveOperation,
   } = modificationsStore.state;
   const [isInTransition, setIsInTransition] = useState(false);
-  const {data: flowNodeInstancesStatistics} = useFlownodeInstancesStatistics();
   const {data: statistics} = useFlownodeStatistics();
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
   const {data: executedFlowNodes} = useExecutedFlowNodes();
@@ -140,15 +137,6 @@ const TopPanel: React.FC = observer(() => {
     isError: isXmlError,
     error: xmlError,
   } = useProcessInstanceXml({processDefinitionKey});
-
-  useEffect(() => {
-    if (flowNodeInstancesStatistics?.items && processInstance) {
-      init(
-        processInstance.processInstanceKey,
-        flowNodeInstancesStatistics.items,
-      );
-    }
-  }, [flowNodeInstancesStatistics?.items, processInstance]);
 
   useEffect(() => {
     return () => {

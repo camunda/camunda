@@ -8,7 +8,6 @@
 
 import {
   action,
-  computed,
   makeObservable,
   observable,
   override,
@@ -36,7 +35,6 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
     makeObservable(this, {
       state: observable,
       setMetaData: action,
-      isSelectedInstanceRunning: computed,
       reset: override,
       startFetching: action,
       handleSuccess: action,
@@ -60,10 +58,6 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
   setMetaData = (metaData: MetaDataDto | null) => {
     this.state.metaData = metaData;
   };
-
-  get isSelectedInstanceRunning() {
-    return this.state.metaData?.instanceMetadata?.endDate === null;
-  }
 
   reset() {
     super.reset();
