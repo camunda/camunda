@@ -612,8 +612,6 @@ public final class OAuthCredentialsProviderBuilder {
           // if the keystore key alias is not set, apply the first one
           clientAssertionKeystoreKeyAlias = keyStore.aliases().nextElement();
         }
-      } else {
-        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
       }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
