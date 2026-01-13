@@ -8,7 +8,6 @@
 package io.camunda.gateway.mcp.tool.cluster;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
@@ -17,7 +16,6 @@ import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnMcpGatewayEnabled
 public class ClusterTools {
 
   private final TopologyServices topologyServices;

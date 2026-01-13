@@ -7,14 +7,16 @@
  */
 package io.camunda.gateway.mcp;
 
+import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled.McpGatewayEnabledCondition;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperties;
+import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.context.annotation.Conditional;
 
 /**
  * The MCP gateway is disabled when either the {@code zeebe.broker.gateway.enable} or {@code
@@ -25,13 +27,24 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
 @ConditionalOnWebApplication
-@ConditionalOnProperties({
-  @ConditionalOnProperty(
-      name = {"zeebe.broker.gateway.enable"},
-      havingValue = "true",
-      matchIfMissing = true),
-  @ConditionalOnProperty(
-      name = {"camunda.mcp.enabled"},
-      havingValue = "true")
-})
-public @interface ConditionalOnMcpGatewayEnabled {}
+@Conditional(McpGatewayEnabledCondition.class)
+public @interface ConditionalOnMcpGatewayEnabled {
+
+  class McpGatewayEnabledCondition extends AllNestedConditions {
+
+    public McpGatewayEnabledCondition() {
+      super(ConfigurationPhase.PARSE_CONFIGURATION);
+    }
+
+    @ConditionalOnProperty(
+        name = {"zeebe.broker.gateway.enable"},
+        havingValue = "true",
+        matchIfMissing = true)
+    static class ZeebeBrokerGatewayEnabled {}
+
+    @ConditionalOnProperty(
+        name = {"camunda.mcp.enabled"},
+        havingValue = "true")
+    static class McpGatewayEnabled {}
+  }
+}
