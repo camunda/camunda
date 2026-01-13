@@ -38,6 +38,9 @@ const Paths = {
   batchOperations() {
     return '/batch-operations';
   },
+  batchOperation(batchOperationKey: string = ':batchOperationKey') {
+    return `/batch-operations/${batchOperationKey}`;
+  },
 } as const;
 
 const Locations = {

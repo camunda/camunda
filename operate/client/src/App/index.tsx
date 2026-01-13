@@ -116,6 +116,13 @@ const routes = createRoutesFromElements(
         }}
       />
       <Route
+        path={Paths.batchOperation()}
+        lazy={async () => {
+          const {BatchOperation} = await import('./BatchOperation/index');
+          return {Component: BatchOperation};
+        }}
+      />
+      <Route
         path={Paths.operationsLog()}
         lazy={async () => {
           const {OperationsLog} = await import('./OperationsLog/index');
