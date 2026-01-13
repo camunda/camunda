@@ -18,10 +18,10 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -38,7 +38,7 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
   public void init(
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
-      final MeterRegistry meterRegistry,
+      final Context context,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {}
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.exporter.DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -43,8 +44,8 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.TenantEntityAuditL
 import io.camunda.zeebe.exporter.common.auditlog.transformers.UserAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.UserTaskAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.VariableAddUpdateAuditLogTransformer;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -53,6 +54,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class DefaultExporterResourceProviderTest {
@@ -64,7 +66,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -100,7 +102,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -123,7 +125,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -146,7 +148,7 @@ public class DefaultExporterResourceProviderTest {
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        new ExporterTestContext(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
@@ -163,62 +165,27 @@ public class DefaultExporterResourceProviderTest {
                 handlersExcludingAuditLog.stream().map(ExportHandler::getClass).distinct().count());
   }
 
-  @Test
-  void shouldAddAuditLogHandlersFromAddAuditLogHandlersMethod() {
+  @ParameterizedTest
+  @MethodSource("expectedAuditLogTransformers")
+  void shouldAddAuditLogHandlersFromAddAuditLogHandlersMethod(
+      final int partitionId, final Map<Class<?>, ValueType> expectedTransformers) {
     // given
     final var config = new ExporterConfiguration();
+    final var context = new ExporterTestContext();
+    context.setPartitionId(partitionId);
 
     // when
     final var provider = new DefaultExporterResourceProvider();
     provider.init(
         config,
         mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
+        context,
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
     // then
     final var auditLogHandlers =
         provider.getExportHandlers().stream().filter(AuditLogHandler.class::isInstance).toList();
-
-    final Map<Class<?>, ValueType> expectedTransformers =
-        Map.ofEntries(
-            Map.entry(AuthorizationAuditLogTransformer.class, ValueType.AUTHORIZATION),
-            Map.entry(
-                BatchOperationCreationAuditLogTransformer.class,
-                ValueType.BATCH_OPERATION_CREATION),
-            Map.entry(
-                BatchOperationLifecycleManagementAuditLogTransformer.class,
-                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
-            Map.entry(DecisionAuditLogTransformer.class, ValueType.DECISION),
-            Map.entry(DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
-            Map.entry(
-                DecisionRequirementsRecordAuditLogTransformer.class,
-                ValueType.DECISION_REQUIREMENTS),
-            Map.entry(FormAuditLogTransformer.class, ValueType.FORM),
-            Map.entry(GroupAuditLogTransformer.class, ValueType.GROUP),
-            Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),
-            Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
-            Map.entry(MappingRuleAuditLogTransformer.class, ValueType.MAPPING_RULE),
-            Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
-            Map.entry(ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
-            Map.entry(
-                ProcessInstanceCreationAuditLogTransformer.class,
-                ValueType.PROCESS_INSTANCE_CREATION),
-            Map.entry(
-                ProcessInstanceMigrationAuditLogTransformer.class,
-                ValueType.PROCESS_INSTANCE_MIGRATION),
-            Map.entry(
-                ProcessInstanceModificationAuditLogTransformer.class,
-                ValueType.PROCESS_INSTANCE_MODIFICATION),
-            Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
-            Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
-            Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
-            Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
-            Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
-            Map.entry(UserAuditLogTransformer.class, ValueType.USER),
-            Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
-            Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Verify that all expected AuditLogHandler transformers are present
     assertThat(
@@ -282,5 +249,72 @@ public class DefaultExporterResourceProviderTest {
     }
 
     return String.join("-", expectedName);
+  }
+
+  private static Stream<Arguments> expectedAuditLogTransformers() {
+    return Stream.of(
+        Arguments.arguments(
+            PROCESS_DEFINITION_PARTITION,
+            Map.ofEntries(
+                Map.entry(AuthorizationAuditLogTransformer.class, ValueType.AUTHORIZATION),
+                Map.entry(
+                    BatchOperationCreationAuditLogTransformer.class,
+                    ValueType.BATCH_OPERATION_CREATION),
+                Map.entry(
+                    BatchOperationLifecycleManagementAuditLogTransformer.class,
+                    ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
+                Map.entry(DecisionAuditLogTransformer.class, ValueType.DECISION),
+                Map.entry(
+                    DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
+                Map.entry(
+                    DecisionRequirementsRecordAuditLogTransformer.class,
+                    ValueType.DECISION_REQUIREMENTS),
+                Map.entry(FormAuditLogTransformer.class, ValueType.FORM),
+                Map.entry(GroupAuditLogTransformer.class, ValueType.GROUP),
+                Map.entry(GroupEntityAuditLogTransformer.class, ValueType.GROUP),
+                Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
+                Map.entry(MappingRuleAuditLogTransformer.class, ValueType.MAPPING_RULE),
+                Map.entry(ProcessAuditLogTransformer.class, ValueType.PROCESS),
+                Map.entry(
+                    ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
+                Map.entry(
+                    ProcessInstanceCreationAuditLogTransformer.class,
+                    ValueType.PROCESS_INSTANCE_CREATION),
+                Map.entry(
+                    ProcessInstanceMigrationAuditLogTransformer.class,
+                    ValueType.PROCESS_INSTANCE_MIGRATION),
+                Map.entry(
+                    ProcessInstanceModificationAuditLogTransformer.class,
+                    ValueType.PROCESS_INSTANCE_MODIFICATION),
+                Map.entry(ResourceAuditLogTransformer.class, ValueType.RESOURCE),
+                Map.entry(RoleAuditLogTransformer.class, ValueType.ROLE),
+                Map.entry(RoleEntityAuditLogTransformer.class, ValueType.ROLE),
+                Map.entry(TenantAuditLogTransformer.class, ValueType.TENANT),
+                Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
+                Map.entry(UserAuditLogTransformer.class, ValueType.USER),
+                Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
+                Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE))),
+        Arguments.arguments(
+            2,
+            Map.ofEntries(
+                Map.entry(
+                    BatchOperationLifecycleManagementAuditLogTransformer.class,
+                    ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT),
+                Map.entry(
+                    DecisionEvaluationAuditLogTransformer.class, ValueType.DECISION_EVALUATION),
+                Map.entry(IncidentResolutionAuditLogTransformer.class, ValueType.INCIDENT),
+                Map.entry(
+                    ProcessInstanceCancelAuditLogTransformer.class, ValueType.PROCESS_INSTANCE),
+                Map.entry(
+                    ProcessInstanceCreationAuditLogTransformer.class,
+                    ValueType.PROCESS_INSTANCE_CREATION),
+                Map.entry(
+                    ProcessInstanceMigrationAuditLogTransformer.class,
+                    ValueType.PROCESS_INSTANCE_MIGRATION),
+                Map.entry(
+                    ProcessInstanceModificationAuditLogTransformer.class,
+                    ValueType.PROCESS_INSTANCE_MODIFICATION),
+                Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
+                Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE))));
   }
 }
