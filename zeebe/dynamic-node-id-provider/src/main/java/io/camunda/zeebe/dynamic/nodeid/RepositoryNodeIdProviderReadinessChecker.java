@@ -13,8 +13,6 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A readiness checker that verifies if all nodes in the cluster have up-to-date leases in the
@@ -25,26 +23,23 @@ public class RepositoryNodeIdProviderReadinessChecker {
   private final int currentNodeId;
   private final Version currentVersion;
   private final NodeIdRepository nodeIdRepository;
-  private final ScheduledExecutorService scheduler;
   private final Duration checkInterval;
 
   public RepositoryNodeIdProviderReadinessChecker(
       final int clusterSize,
       final NodeInstance currentNodeInstance,
       final NodeIdRepository nodeIdRepository,
-      final ScheduledExecutorService scheduler,
       final Duration checkInterval) {
     this.clusterSize = clusterSize;
     currentNodeId = currentNodeInstance.id();
     currentVersion = currentNodeInstance.version();
     this.nodeIdRepository = nodeIdRepository;
-    this.scheduler = scheduler;
     this.checkInterval = checkInterval;
   }
 
   /**
    * Waits until all nodes in the cluster are up to date by verifying their leases contain the
-   * current version mapping. Returns a future that completes when all nodes are ready
+   * current version mapping. Returns a future that completes when all nodes are ready.
    *
    * @return CompletableFuture that completes when all nodes are up to date
    */
@@ -57,36 +52,31 @@ public class RepositoryNodeIdProviderReadinessChecker {
       }
     }
 
-    final var startTime = System.currentTimeMillis();
-    scheduleCheck(result, nodesToCheck, startTime);
+    Thread.ofVirtual().start(() -> checkLoop(result, nodesToCheck));
     return result;
   }
 
-  private void scheduleCheck(
-      final CompletableFuture<Boolean> result,
-      final Set<Integer> nodesToCheck,
-      final long startTime) {
-    scheduler.schedule(
-        () -> performCheck(result, nodesToCheck, startTime),
-        checkInterval.toMillis(),
-        TimeUnit.MILLISECONDS);
+  private void checkLoop(final CompletableFuture<Boolean> result, final Set<Integer> nodesToCheck) {
+    while (!nodesToCheck.isEmpty() && !result.isDone()) {
+      try {
+        Thread.sleep(checkInterval);
+        performCheck(nodesToCheck);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        result.completeExceptionally(e);
+        return;
+      } catch (final Exception e) {
+        // In case of exception, we just retry in the next check
+      }
+    }
+
+    if (!result.isDone()) {
+      result.complete(true);
+    }
   }
 
-  private void performCheck(
-      final CompletableFuture<Boolean> result,
-      final Set<Integer> nodesToCheck,
-      final long startTime) {
-    try {
-      nodesToCheck.removeIf(this::isNodeUpToDate);
-    } catch (final Exception e) {
-      // In case of exception, we just retry in the next scheduled check
-    }
-
-    if (nodesToCheck.isEmpty()) {
-      result.complete(true);
-    } else {
-      scheduleCheck(result, nodesToCheck, startTime);
-    }
+  private void performCheck(final Set<Integer> nodesToCheck) {
+    nodesToCheck.removeIf(this::isNodeUpToDate);
   }
 
   private boolean isNodeUpToDate(final int nodeId) {
@@ -97,8 +87,7 @@ public class RepositoryNodeIdProviderReadinessChecker {
       }
       final var knownVersionMap =
           initializedLease.lease().knownVersionMappings().mappingsByNodeId();
-      return knownVersionMap.containsKey(currentNodeId)
-          && knownVersionMap.get(currentNodeId).equals(currentVersion);
+      return knownVersionMap.getOrDefault(currentNodeId, Version.zero()).equals(currentVersion);
     } catch (final Exception e) {
       return false;
     }

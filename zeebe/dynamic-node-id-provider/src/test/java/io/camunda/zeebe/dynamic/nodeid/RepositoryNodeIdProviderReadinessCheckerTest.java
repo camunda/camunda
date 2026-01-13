@@ -21,40 +21,29 @@ import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.I
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Uninitialized;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class RepositoryNodeIdProviderReadinessCheckerTest {
   private NodeIdRepository nodeIdRepository;
-  private ScheduledExecutorService scheduler;
   private RepositoryNodeIdProviderReadinessChecker readinessChecker;
   private NodeInstance currentNodeInstance;
   private final NodeInstance nodeInstance2 = new NodeInstance(2, Version.of(2L));
+  private final int clusterSize = 3;
 
   @BeforeEach
   public void setUp() {
     nodeIdRepository = mock(NodeIdRepository.class);
-    scheduler = Executors.newSingleThreadScheduledExecutor();
     currentNodeInstance = new NodeInstance(0, Version.of(100L));
-  }
-
-  @AfterEach
-  public void tearDown() {
-    if (scheduler != null) {
-      scheduler.shutdownNow();
-    }
+    readinessChecker =
+        new RepositoryNodeIdProviderReadinessChecker(
+            clusterSize, currentNodeInstance, nodeIdRepository, Duration.ofMillis(10));
   }
 
   @Test
   public void shouldCompleteWhenAllNodesAreUpToDate() {
     // given
     final int clusterSize = 3;
-    readinessChecker =
-        new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentNodeInstance, nodeIdRepository, scheduler, Duration.ofMillis(10));
 
     final var versionMappings =
         new VersionMappings(Map.of(0, Version.of(100L), 1, Version.of(101L), 2, Version.of(102L)));
@@ -82,11 +71,6 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
   @Test
   public void shouldRetryWhenSomeNodesAreNotUpToDate() {
     // given
-    final int clusterSize = 3;
-    readinessChecker =
-        new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentNodeInstance, nodeIdRepository, scheduler, Duration.ofMillis(10));
-
     final var outdatedVersionMappings = new VersionMappings(Map.of(1, Version.of(101L)));
     final var currentVersionMappings =
         new VersionMappings(Map.of(0, Version.of(100L), 1, Version.of(101L)));
@@ -124,11 +108,6 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
   @Test
   public void shouldRetryWhenNodeLeaseIsUninitialized() {
     // given
-    final int clusterSize = 3;
-    readinessChecker =
-        new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentNodeInstance, nodeIdRepository, scheduler, Duration.ofMillis(10));
-
     final var versionMappings =
         new VersionMappings(Map.of(0, Version.of(100L), 1, Version.of(101L)));
     final var lease2 =
@@ -157,11 +136,6 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
   @Test
   public void shouldContinueCheckingWhenRepositoryThrowsException() {
     // given
-    final int clusterSize = 3;
-    readinessChecker =
-        new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentNodeInstance, nodeIdRepository, scheduler, Duration.ofMillis(10));
-
     final var versionMappings =
         new VersionMappings(Map.of(0, Version.of(100L), 1, Version.of(101L)));
     final var lease2 =
@@ -190,11 +164,6 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
   @Test
   public void shouldNotConsiderNodeUpToDateWhenVersionMissing() {
     // given
-    final int clusterSize = 3;
-    readinessChecker =
-        new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentNodeInstance, nodeIdRepository, scheduler, Duration.ofMillis(10));
-
     final var versionMappingsWithoutNode0 = new VersionMappings(Map.of(1, Version.of(101L)));
     final var versionMappingsComplete =
         new VersionMappings(Map.of(0, Version.of(100L), 1, Version.of(101L)));
@@ -231,11 +200,6 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
   @Test
   public void shouldNotConsiderNodeUpToDateWhenVersionMismatch() {
     // given
-    final int clusterSize = 3;
-    readinessChecker =
-        new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentNodeInstance, nodeIdRepository, scheduler, Duration.ofMillis(10));
-
     final var versionMappingsWrongVersion =
         new VersionMappings(Map.of(0, Version.of(99L), 1, Version.of(101L)));
     final var versionMappingsCorrect =

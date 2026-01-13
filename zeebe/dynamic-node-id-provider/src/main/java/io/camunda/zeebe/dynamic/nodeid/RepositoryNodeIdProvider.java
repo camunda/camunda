@@ -64,7 +64,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
     this.clock = Objects.requireNonNull(clock, "clock cannot be null");
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
-    this.readinessCheckTimeout = readinessCheckTimeout;
+    this.readinessCheckTimeout =
+        Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
@@ -123,27 +124,23 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   private void scheduleReadinessCheck(final int clusterSize) {
+    if (!previousNodeGracefullyShutdown.isDone()) {
+      throw new IllegalStateException(
+          "Readiness check cannot be scheduled until the lease is acquired");
+    }
     if (previousNodeGracefullyShutdown.join()) {
       // if the previous node shut down gracefully, we can consider ourselves ready immediately
       readinessFuture.complete(true);
       return;
     }
 
-    final var readinessCheckExecutor =
-        Executors.newSingleThreadScheduledExecutor(
-            r -> new Thread(r, "NodeIdProvider-readiness-checker"));
     new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize,
-            currentLease.node(),
-            nodeIdRepository,
-            // use a different executor to not block lease renewal during readiness check
-            readinessCheckExecutor,
-            Duration.ofSeconds(5))
+            clusterSize, currentLease.node(), nodeIdRepository, Duration.ofSeconds(5))
         .waitUntilAllNodesAreUpToDate()
         .orTimeout(readinessCheckTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .exceptionally(
             t -> {
-              if (t instanceof TimeoutException) {
+              if (t.getCause() instanceof TimeoutException) {
                 LOG.warn(
                     "Timed out waiting for all nodes to be up to date after {}. Marking the node as ready.",
                     readinessCheckTimeout);
@@ -157,11 +154,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
                 return false;
               }
             })
-        .thenAccept(
-            isReady -> {
-              readinessFuture.complete(isReady);
-              readinessCheckExecutor.shutdown();
-            });
+        .exceptionally(t -> false)
+        .thenAccept(readinessFuture::complete);
   }
 
   private void startRenewalTimer() {
