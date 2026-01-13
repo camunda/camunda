@@ -42,7 +42,6 @@ import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
-import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
 import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
@@ -59,8 +58,6 @@ import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.DocumentLinkRequest;
 import io.camunda.gateway.protocol.model.DocumentMetadata;
-import io.camunda.gateway.protocol.model.GroupCreateRequest;
-import io.camunda.gateway.protocol.model.GroupUpdateRequest;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
@@ -105,8 +102,6 @@ import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
-import io.camunda.service.GroupServices.GroupDTO;
-import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
@@ -367,39 +362,6 @@ public class RequestMapper {
         RoleRequestValidator.validateMemberRequest(
             roleId, memberId, entityType, roleIdentifierPattern, memberIdentifierPattern),
         () -> new RoleMemberRequest(roleId, memberId, entityType));
-  }
-
-  public static Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
-      final GroupCreateRequest groupCreateRequest, final Pattern identifierPattern) {
-    return getResult(
-        GroupRequestValidator.validateCreateRequest(groupCreateRequest, identifierPattern),
-        () ->
-            new GroupDTO(
-                groupCreateRequest.getGroupId(),
-                groupCreateRequest.getName(),
-                groupCreateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
-      final GroupUpdateRequest groupUpdateRequest,
-      final String groupId,
-      final Pattern identifierPattern) {
-    return getResult(
-        GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest, identifierPattern),
-        () ->
-            new GroupDTO(
-                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(
-      final String groupId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern identifierPattern) {
-    return getResult(
-        GroupRequestValidator.validateMemberRequest(
-            groupId, memberId, entityType, identifierPattern),
-        () -> new GroupMemberDTO(groupId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
