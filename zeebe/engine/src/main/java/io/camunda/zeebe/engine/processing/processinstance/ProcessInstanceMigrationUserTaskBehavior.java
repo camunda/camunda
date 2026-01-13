@@ -154,10 +154,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       final UserTaskProperties userTaskProperties,
       final ExecutableUserTask targetElement) {
     userTaskBehavior
-        .evaluatePriorityExpression(
-            newProperties.getPriority(),
-            context.getFlowScopeKey(),
-            targetProcessDefinition.getTenantId())
+        .evaluatePriorityExpression(newProperties.getPriority(), context.getFlowScopeKey())
         .ifRight(userTaskProperties::priority);
 
     final var userTaskRecord =
@@ -183,9 +180,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
           // external form
           userTaskBehavior
               .evaluateExternalFormReferenceExpression(
-                  targetElementProperties.getExternalFormReference(),
-                  context.getFlowScopeKey(),
-                  targetProcessDefinition.getTenantId())
+                  targetElementProperties.getExternalFormReference(), context.getFlowScopeKey())
               .ifRightOrLeft(
                   userTaskProperties::externalFormReference,
                   failure -> {
@@ -206,8 +201,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
                   targetElementProperties.getFormBindingType(),
                   targetElementProperties.getFormVersionTag(),
                   context,
-                  context.getFlowScopeKey(),
-                  targetProcessDefinition.getTenantId())
+                  context.getFlowScopeKey())
               .ifRightOrLeft(
                   userTaskProperties::formKey,
                   failure -> {
