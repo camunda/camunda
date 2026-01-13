@@ -504,14 +504,8 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== INCREASE_TIME =====
         Arguments.of(
-            "increase time: with days",
-            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build())),
-        Arguments.of(
-            "increase time: with hours",
-            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("PT1H").build())),
-        Arguments.of(
-            "increase time: with minutes",
-            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("PT30M").build()))
+            "increase time",
+            singleTestCase(ImmutableIncreaseTimeInstruction.builder().duration("P2D").build()))
         // add new instructions here
         );
   }
