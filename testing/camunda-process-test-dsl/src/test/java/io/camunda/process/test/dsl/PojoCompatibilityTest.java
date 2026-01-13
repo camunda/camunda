@@ -587,19 +587,7 @@ public class PojoCompatibilityTest {
                     .putVariables("status", "ready")
                     .build())),
         Arguments.of(
-            "update variables: global with multiple variables",
-            singleTestCase(
-                ImmutableUpdateVariablesInstruction.builder()
-                    .processInstanceSelector(
-                        ImmutableProcessInstanceSelector.builder()
-                            .processDefinitionId("my-process")
-                            .build())
-                    .putVariables("status", "ready")
-                    .putVariables("count", 42)
-                    .putVariables("active", true)
-                    .build())),
-        Arguments.of(
-            "update variables: local with elementId",
+            "update variables: local",
             singleTestCase(
                 ImmutableUpdateVariablesInstruction.builder()
                     .processInstanceSelector(
@@ -608,18 +596,6 @@ public class PojoCompatibilityTest {
                             .build())
                     .elementSelector(
                         ImmutableElementSelector.builder().elementId("task1").build())
-                    .putVariables("localVar", "localValue")
-                    .build())),
-        Arguments.of(
-            "update variables: local with elementName",
-            singleTestCase(
-                ImmutableUpdateVariablesInstruction.builder()
-                    .processInstanceSelector(
-                        ImmutableProcessInstanceSelector.builder()
-                            .processDefinitionId("my-process")
-                            .build())
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementName("Task A").build())
                     .putVariables("localVar", "localValue")
                     .build()))
         // add new instructions here

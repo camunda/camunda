@@ -15,29 +15,21 @@
  */
 package io.camunda.process.test.impl.dsl;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.function.Consumer;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.ElementInstance;
-import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.dsl.ImmutableElementSelector;
 import io.camunda.process.test.api.dsl.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
 import io.camunda.process.test.impl.dsl.instructions.UpdateVariablesInstructionHandler;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -45,20 +37,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class UpdateVariablesInstructionTest {
 
   private static final String PROCESS_DEFINITION_ID = "my-process";
-  private static final long PROCESS_INSTANCE_KEY = 1234L;
-  private static final long ELEMENT_INSTANCE_KEY = 5678L;
   private static final String ELEMENT_ID = "my-element";
 
   @Mock private CamundaProcessTestContext processTestContext;
-
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  private CamundaClient camundaClient;
-
+  @Mock private CamundaClient camundaClient;
   @Mock private AssertionFacade assertionFacade;
-
-  @Mock private ProcessInstance processInstance;
-
-  @Mock private ElementInstance elementInstance;
 
   private final UpdateVariablesInstructionHandler instructionHandler =
       new UpdateVariablesInstructionHandler();
@@ -79,27 +62,11 @@ public class UpdateVariablesInstructionTest {
             .putAllVariables(variables)
             .build();
 
-    when(camundaClient
-            .newProcessInstanceSearchRequest()
-            .filter(any(Consumer.class))
-            .sort(any(Consumer.class))
-            .page(any(Consumer.class))
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.singletonList(processInstance));
-
-    when(processInstance.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-    when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_DEFINITION_ID);
-
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(camundaClient).newSetVariablesCommand(PROCESS_INSTANCE_KEY);
-    verify(camundaClient.newSetVariablesCommand(PROCESS_INSTANCE_KEY)).variables(variables);
-    verify(camundaClient.newSetVariablesCommand(PROCESS_INSTANCE_KEY).variables(variables))
-        .send();
+    verify(processTestContext).updateVariables(any(), eq(variables));
   }
 
   @Test
@@ -119,117 +86,10 @@ public class UpdateVariablesInstructionTest {
             .putAllVariables(variables)
             .build();
 
-    when(camundaClient
-            .newProcessInstanceSearchRequest()
-            .filter(any(Consumer.class))
-            .sort(any(Consumer.class))
-            .page(any(Consumer.class))
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.singletonList(processInstance));
-
-    lenient().when(processInstance.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-    lenient().when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_DEFINITION_ID);
-
-    when(camundaClient
-            .newElementInstanceSearchRequest()
-            .filter(any(Consumer.class))
-            .sort(any(Consumer.class))
-            .page(any(Consumer.class))
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.singletonList(elementInstance));
-
-    when(elementInstance.getElementInstanceKey()).thenReturn(ELEMENT_INSTANCE_KEY);
-    when(elementInstance.getElementId()).thenReturn(ELEMENT_ID);
-
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(camundaClient).newSetVariablesCommand(ELEMENT_INSTANCE_KEY);
-    verify(camundaClient.newSetVariablesCommand(ELEMENT_INSTANCE_KEY)).variables(variables);
-    verify(camundaClient.newSetVariablesCommand(ELEMENT_INSTANCE_KEY).variables(variables))
-        .send();
-  }
-
-  @Test
-  void shouldThrowExceptionWhenProcessInstanceNotFound() {
-    // given
-    final UpdateVariablesInstruction instruction =
-        ImmutableUpdateVariablesInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .putVariables("key", "value")
-            .build();
-
-    when(camundaClient
-            .newProcessInstanceSearchRequest()
-            .filter(any(Consumer.class))
-            .sort(any(Consumer.class))
-            .page(any(Consumer.class))
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.emptyList());
-
-    // when / then
-    assertThatThrownBy(
-            () ->
-                instructionHandler.execute(
-                    instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("No process instance found for selector");
-  }
-
-  @Test
-  void shouldThrowExceptionWhenElementInstanceNotFound() {
-    // given
-    final UpdateVariablesInstruction instruction =
-        ImmutableUpdateVariablesInstruction.builder()
-            .processInstanceSelector(
-                ImmutableProcessInstanceSelector.builder()
-                    .processDefinitionId(PROCESS_DEFINITION_ID)
-                    .build())
-            .elementSelector(
-                ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
-            .putVariables("key", "value")
-            .build();
-
-    when(camundaClient
-            .newProcessInstanceSearchRequest()
-            .filter(any(Consumer.class))
-            .sort(any(Consumer.class))
-            .page(any(Consumer.class))
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.singletonList(processInstance));
-
-    lenient().when(processInstance.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-    lenient().when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_DEFINITION_ID);
-
-    when(camundaClient
-            .newElementInstanceSearchRequest()
-            .filter(any(Consumer.class))
-            .sort(any(Consumer.class))
-            .page(any(Consumer.class))
-            .send()
-            .join()
-            .items())
-        .thenReturn(Collections.emptyList());
-
-    // when / then
-    assertThatThrownBy(
-            () ->
-                instructionHandler.execute(
-                    instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("No element")
-        .hasMessageContaining("found for process instance");
+    verify(processTestContext).updateLocalVariables(any(), any(), eq(variables));
   }
 }

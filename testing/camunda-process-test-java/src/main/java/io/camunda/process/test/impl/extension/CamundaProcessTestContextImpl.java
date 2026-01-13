@@ -684,4 +684,116 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .filter(incidentSelector::test)
         .findFirst();
   }
+
+  @Override
+  public void updateVariables(
+      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
+      final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitBehavior.untilAsserted(
+        () -> findProcessInstance(processInstanceSelector, client),
+        processInstance -> {
+          assertThat(processInstance)
+              .withFailMessage(
+                  "Expected to update variables for process instance [%s] but no process instance is available.",
+                  processInstanceSelector.describe())
+              .isPresent();
+
+          processInstance.ifPresent(
+              pi -> {
+                LOGGER.debug(
+                    "Update variables for process instance [%s, processInstanceKey: '%s'] with variables {}",
+                    processInstanceSelector.describe(),
+                    pi.getProcessInstanceKey(),
+                    variables);
+
+                client
+                    .newSetVariablesCommand(pi.getProcessInstanceKey())
+                    .variables(variables)
+                    .send()
+                    .join();
+              });
+        });
+  }
+
+  @Override
+  public void updateLocalVariables(
+      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
+      final io.camunda.process.test.api.assertions.ElementSelector elementSelector,
+      final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitBehavior.untilAsserted(
+        () -> findProcessInstance(processInstanceSelector, client),
+        processInstance -> {
+          assertThat(processInstance)
+              .withFailMessage(
+                  "Expected to update local variables for process instance [%s] but no process instance is available.",
+                  processInstanceSelector.describe())
+              .isPresent();
+
+          processInstance.ifPresent(
+              pi -> {
+                final Optional<io.camunda.client.api.search.response.ElementInstance>
+                    elementInstance = findElementInstance(pi.getProcessInstanceKey(), elementSelector, client);
+
+                assertThat(elementInstance)
+                    .withFailMessage(
+                        "Expected to update local variables for element [%s] in process instance [processInstanceKey: %s] but no element is available.",
+                        elementSelector.describe(),
+                        pi.getProcessInstanceKey())
+                    .isPresent();
+
+                elementInstance.ifPresent(
+                    ei -> {
+                      LOGGER.debug(
+                          "Update local variables for element [%s, elementInstanceKey: '%s'] in process instance [processInstanceKey: '%s'] with variables {}",
+                          elementSelector.describe(),
+                          ei.getElementInstanceKey(),
+                          pi.getProcessInstanceKey(),
+                          variables);
+
+                      client
+                          .newSetVariablesCommand(ei.getElementInstanceKey())
+                          .variables(variables)
+                          .send()
+                          .join();
+                    });
+              });
+        });
+  }
+
+  private Optional<io.camunda.client.api.search.response.ProcessInstance> findProcessInstance(
+      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
+      final CamundaClient client) {
+    return client
+        .newProcessInstanceSearchRequest()
+        .filter(processInstanceSelector::applyFilter)
+        .send()
+        .join()
+        .items()
+        .stream()
+        .filter(processInstanceSelector::test)
+        .findFirst();
+  }
+
+  private Optional<io.camunda.client.api.search.response.ElementInstance> findElementInstance(
+      final long processInstanceKey,
+      final io.camunda.process.test.api.assertions.ElementSelector elementSelector,
+      final CamundaClient client) {
+    return client
+        .newElementInstanceSearchRequest()
+        .filter(
+            filter -> {
+              filter.processInstanceKey(processInstanceKey);
+              elementSelector.applyFilter(filter);
+            })
+        .send()
+        .join()
+        .items()
+        .stream()
+        .filter(elementSelector::test)
+        .findFirst();
+  }
 }
