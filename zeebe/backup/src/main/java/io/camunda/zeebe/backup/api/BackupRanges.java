@@ -44,10 +44,8 @@ public interface BackupRanges {
     for (final var marker : sortedMarkers) {
       switch (marker) {
         case final Start start -> {
-          final var range =
-              finalizeRange(currentRangeStart, currentRangeEnd, deletionsInCurrentRange);
-          if (range != null) {
-            ranges.add(range);
+          if (currentRangeStart != null && currentRangeEnd != null) {
+            ranges.add(finalizeRange(currentRangeStart, currentRangeEnd, deletionsInCurrentRange));
           }
           currentRangeStart = start;
           currentRangeEnd = null;
@@ -57,11 +55,10 @@ public interface BackupRanges {
         case final End end -> currentRangeEnd = end;
       }
     }
-    // We need to finalize the last range because the loop above only finalizes ranges when a new
-    // start is found.
-    final var range = finalizeRange(currentRangeStart, currentRangeEnd, deletionsInCurrentRange);
-    if (range != null) {
-      ranges.add(range);
+    if (currentRangeStart != null && currentRangeEnd != null) {
+      // We need to finalize the last range because the loop above only finalizes ranges when a new
+      // start is found.
+      ranges.add(finalizeRange(currentRangeStart, currentRangeEnd, deletionsInCurrentRange));
     }
 
     return ranges;
@@ -69,9 +66,6 @@ public interface BackupRanges {
 
   private static BackupRange finalizeRange(
       final Start currentRangeStart, final End currentRangeEnd, final LongHashSet deletions) {
-    if (currentRangeStart == null || currentRangeEnd == null) {
-      return null;
-    }
     final var validDeletions =
         deletions.stream()
             .filter(
