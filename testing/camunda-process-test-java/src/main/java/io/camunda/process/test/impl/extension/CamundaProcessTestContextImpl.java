@@ -360,22 +360,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         jobSelector,
         client,
         job -> {
-          if (errorMessage != null) {
-            LOGGER.debug(
-                "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {}, message '{}' and variables {}",
-                jobSelector.describe(),
-                job.getJobKey(),
-                errorCode,
-                errorMessage,
-                variables);
-          } else {
-            LOGGER.debug(
-                "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
-                jobSelector.describe(),
-                job.getJobKey(),
-                errorCode,
-                variables);
-          }
+          LOGGER.debug(
+              "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
+              jobSelector.describe(),
+              job.getJobKey(),
+              errorCode,
+              variables);
 
           final ThrowErrorCommandStep1.ThrowErrorCommandStep2 command =
               client.newThrowErrorCommand(job.getJobKey()).errorCode(errorCode).variables(variables);
