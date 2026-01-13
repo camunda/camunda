@@ -169,7 +169,7 @@ public class SearchAuditLogTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchProcessInstanceWithFullSorting() {
+  void shouldSearchAuditLogsWithFullSorting() {
     // when
     client
         .newAuditLogSearchRequest()

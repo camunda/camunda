@@ -35,6 +35,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.api.search.filter.TenantFilter;
 import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.UserTaskAuditLogFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
@@ -65,6 +66,7 @@ import io.camunda.client.api.search.sort.TenantGroupSort;
 import io.camunda.client.api.search.sort.TenantSort;
 import io.camunda.client.api.search.sort.TenantUserSort;
 import io.camunda.client.api.search.sort.UserSort;
+import io.camunda.client.api.search.sort.UserTaskAuditLogSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
@@ -87,6 +89,7 @@ import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
 import io.camunda.client.impl.search.filter.TenantFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
+import io.camunda.client.impl.search.filter.UserTaskAuditLogFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
@@ -119,6 +122,7 @@ import io.camunda.client.impl.search.sort.TenantGroupSortImpl;
 import io.camunda.client.impl.search.sort.TenantSortImpl;
 import io.camunda.client.impl.search.sort.TenantUserSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
+import io.camunda.client.impl.search.sort.UserTaskAuditLogSortImpl;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
@@ -467,6 +471,19 @@ public final class SearchRequestBuilders {
 
   public static AuditLogSort auditLogSort(final Consumer<AuditLogSort> fn) {
     final AuditLogSort sort = new AuditLogSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static UserTaskAuditLogFilter userTaskAuditLogFilter(
+      final Consumer<UserTaskAuditLogFilter> fn) {
+    final UserTaskAuditLogFilter filter = new UserTaskAuditLogFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static UserTaskAuditLogSort userTaskAuditLogSort(final Consumer<UserTaskAuditLogSort> fn) {
+    final UserTaskAuditLogSort sort = new UserTaskAuditLogSortImpl();
     fn.accept(sort);
     return sort;
   }

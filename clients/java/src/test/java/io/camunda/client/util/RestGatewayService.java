@@ -432,6 +432,11 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getAuditLogSearchUrl(), response);
   }
 
+  public void onSearchUserTaskAuditLogRequest(
+      final long userTaskKey, final AuditLogSearchQueryResult response) {
+    registerPost(RestGatewayPaths.getUserTaskAuditLogSearchUrl(userTaskKey), response);
+  }
+
   public void onProcessDefinitionInstanceStatisticsRequest(
       final ProcessDefinitionInstanceStatisticsQueryResult response) {
     registerPost(RestGatewayPaths.getProcessDefinitionInstanceStatisticsUrl(), response);

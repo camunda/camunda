@@ -98,6 +98,8 @@ public class RestGatewayPaths {
   private static final String URL_USER_TASK_UNASSIGNMENT =
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
+  private static final String URL_USER_TASK_AUDIT_LOG =
+      REST_API_PATH + "/user-tasks/%d/audit-logs/search";
   private static final String URL_VARIABLE = REST_API_PATH + "/variables/%s";
   private static final String URL_AUDIT_LOG_GET = REST_API_PATH + "/audit-logs/%s";
   private static final String URL_AUDIT_LOG_SEARCH = REST_API_PATH + "/audit-logs/search";
@@ -394,6 +396,10 @@ public class RestGatewayPaths {
 
   public static String getAuditLogSearchUrl() {
     return String.format(URL_AUDIT_LOG_SEARCH);
+  }
+
+  public static String getUserTaskAuditLogSearchUrl(final long userTaskKey) {
+    return String.format(URL_USER_TASK_AUDIT_LOG, userTaskKey);
   }
 
   public static String getProcessDefinitionInstanceStatisticsUrl() {
