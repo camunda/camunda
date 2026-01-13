@@ -139,18 +139,18 @@ class ProcessCacheTest {
               if (keys.isEmpty()) {
                 return SearchQueryResult.of();
               }
-              final long key = keys.getFirst();
+              final int key = Math.toIntExact(keys.getFirst());
 
               return switch (key) {
-                case 1L ->
+                case 1 ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
                             1L, "n1", "d1", null, null, 1, null, "t", null));
-                case 2L ->
+                case 2 ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
                             2L, "n2", "d2", null, null, 1, null, "t", null));
-                case 3L ->
+                case 3 ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
                             3L, "n3", "d3", null, null, 1, null, "t", null));
