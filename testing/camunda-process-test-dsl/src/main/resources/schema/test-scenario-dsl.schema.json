@@ -96,6 +96,9 @@
           "$ref": "#/definitions/PublishMessageInstruction"
         },
         {
+          "$ref": "#/definitions/SetTimeInstruction"
+        },
+        {
           "$ref": "#/definitions/EvaluateConditionalStartEventInstruction"
         }
       ]
@@ -650,6 +653,26 @@
       "required": [
         "type",
         "name"
+      ],
+      "additionalProperties": false
+    },
+    "SetTimeInstruction": {
+      "description": "An instruction to set the time.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "SET_TIME"
+        },
+        "time": {
+          "description": "The time to set.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "time"
       ],
       "additionalProperties": false
     },
