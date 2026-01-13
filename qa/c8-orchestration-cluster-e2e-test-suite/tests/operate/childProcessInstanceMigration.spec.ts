@@ -152,13 +152,9 @@ test.describe('Child Process Instance Migration', () => {
           await page.reload();
           await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
           await operateFiltersPanelPage.selectVersion(sourceVersion);
-          if (!operateFiltersPanelPage.isOptionalFilterDisplayed(
+          await operateFiltersPanelPage.displayOptionalFilter(
             'Parent Process Instance Key',
-          )) {
-            await operateFiltersPanelPage.displayOptionalFilter(
-              'Parent Process Instance Key',
-            );
-          }
+          );
           await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
             parentInstanceKey,
           );

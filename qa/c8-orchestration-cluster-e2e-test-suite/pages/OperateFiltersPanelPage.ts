@@ -151,6 +151,9 @@ export class OperateFiltersPanelPage {
   }
 
   async displayOptionalFilter(filterName: OptionalFilter) {
+    if (await this.isOptionalFilterDisplayed(filterName)) {
+      return;
+    }
     await this.moreFiltersButton.click();
     await this.page
       .getByRole('menuitem', {
