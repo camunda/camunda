@@ -46,11 +46,20 @@ public final class ExpressionProcessor {
 
   private final ExpressionLanguage expressionLanguage;
   private final EvaluationContextLookup evaluationContextLookup;
+  private final Duration expressionEvaluationTimeout;
 
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage, final EvaluationContextLookup lookup) {
+    this(expressionLanguage, lookup, Duration.ofSeconds(1));
+  }
+
+  public ExpressionProcessor(
+      final ExpressionLanguage expressionLanguage,
+      final EvaluationContextLookup lookup,
+      final Duration expressionEvaluationTimeout) {
     this.expressionLanguage = expressionLanguage;
     evaluationContextLookup = lookup;
+    this.expressionEvaluationTimeout = expressionEvaluationTimeout;
   }
 
   /**
@@ -64,7 +73,7 @@ public final class ExpressionProcessor {
   public ExpressionProcessor withPrimaryContext(final EvaluationContext primaryContext) {
     final EvaluationContextLookup combinedLookup =
         scopeKey -> primaryContext.combine(evaluationContextLookup.getContext(scopeKey));
-    return new ExpressionProcessor(expressionLanguage, combinedLookup);
+    return new ExpressionProcessor(expressionLanguage, combinedLookup, expressionEvaluationTimeout);
   }
 
   /**
@@ -77,7 +86,7 @@ public final class ExpressionProcessor {
   public ExpressionProcessor withSecondaryContext(final EvaluationContext secondaryContext) {
     final EvaluationContextLookup combinedLookup =
         scopeKey -> evaluationContextLookup.getContext(scopeKey).combine(secondaryContext);
-    return new ExpressionProcessor(expressionLanguage, combinedLookup);
+    return new ExpressionProcessor(expressionLanguage, combinedLookup, expressionEvaluationTimeout);
   }
 
   /**
@@ -440,14 +449,13 @@ public final class ExpressionProcessor {
 
     final EvaluationResult result;
     try {
-      result = future.get(EXPRESSION_EVALUATION_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-
+      result = future.get(expressionEvaluationTimeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (final TimeoutException e) {
       future.cancel(true);
       return Either.left(
           new Failure(
               "Expected to evaluate expression but timed out after %s ms: '%s'"
-                  .formatted(EXPRESSION_EVALUATION_TIMEOUT.toMillis(), expression.getExpression()),
+                  .formatted(expressionEvaluationTimeout.toMillis(), expression.getExpression()),
               ErrorType.EXTRACT_VALUE_ERROR,
               variableScopeKey));
 

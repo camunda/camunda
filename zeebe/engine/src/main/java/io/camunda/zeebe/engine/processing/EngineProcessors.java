@@ -117,7 +117,8 @@ public final class EngineProcessors {
             jobMetrics,
             decisionBehavior,
             clock,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            config);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -240,7 +241,8 @@ public final class EngineProcessors {
       final JobProcessingMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
       final InstantSource clock,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final EngineConfiguration config) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -251,7 +253,8 @@ public final class EngineProcessors {
         timerChecker,
         jobStreamer,
         clock,
-        transientProcessMessageSubscriptionState);
+        transientProcessMessageSubscriptionState,
+        config);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(

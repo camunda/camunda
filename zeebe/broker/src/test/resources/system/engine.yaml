@@ -18,3 +18,5 @@ zeebe:
           redistributionInterval: 60s
           maxBackoffDuration: 20m
         maxProcessDepth: 2000
+        expression:
+          timeout: 5s
