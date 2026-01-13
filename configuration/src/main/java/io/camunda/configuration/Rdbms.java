@@ -14,6 +14,9 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
+  /** If true, the database schema is automatically created and updated on application startup. */
+  private Boolean autoDdl = true;
+
   /** The prefix to use for all database artifacts like tables, indexes etc. */
   private String prefix;
 
@@ -56,6 +59,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @NestedConfigurationProperty private RdbmsHistory history = new RdbmsHistory();
 
   @NestedConfigurationProperty private RdbmsMetrics metrics = new RdbmsMetrics();
+
+  public Boolean getAutoDdl() {
+    return autoDdl;
+  }
+
+  public void setAutoDdl(final Boolean autoDdl) {
+    this.autoDdl = autoDdl;
+  }
 
   public String getPrefix() {
     return prefix;
@@ -132,16 +143,16 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
     this.history = history;
   }
 
+  @Override
+  public String databaseName() {
+    return "rdbms";
+  }
+
   public RdbmsMetrics getMetrics() {
     return metrics;
   }
 
   public void setMetrics(final RdbmsMetrics metrics) {
     this.metrics = metrics;
-  }
-
-  @Override
-  public String databaseName() {
-    return "rdbms";
   }
 }
