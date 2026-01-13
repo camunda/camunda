@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 public class GetResourceTest extends ClientRestTest {
   @Test
   void shouldGetResource() {
+    // given
     gatewayService.onResourceGetRequest(
         123L,
         new ResourceResult()
@@ -34,10 +35,19 @@ public class GetResourceTest extends ClientRestTest {
             .resourceId("test.bpmn")
             .resourceName("Test process")
             .version(1));
-    client.newResourceGetRequest(123L).execute();
+
+    // when
+    final Resource response = client.newResourceGetRequest(123L).execute();
+
     // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getResourceUrl("123"));
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+    LoggedRequestAssert.assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.GET)
+        .hasUrl(RestGatewayPaths.getResourceUrl("123"));
+
+    assertThat(response.getResourceKey()).isEqualTo(123);
+    assertThat(response.getResourceId()).isEqualTo("test.bpmn");
+    assertThat(response.getResourceName()).isEqualTo("Test process");
+    assertThat(response.getVersion()).isEqualTo(1);
+  }
   }
 }
