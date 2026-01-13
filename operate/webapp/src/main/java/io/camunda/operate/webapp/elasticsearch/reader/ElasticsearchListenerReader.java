@@ -13,7 +13,6 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import com.google.common.collect.ImmutableList;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -89,7 +88,7 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
                   })
               .toList();
       if (request.getSearchBefore() != null) {
-        return new ListenerResponseDto(ImmutableList.copyOf(listeners).reverse(), totalHitCount);
+        return new ListenerResponseDto(List.copyOf(listeners).reversed(), totalHitCount);
       }
     } catch (final IOException e) {
       final var message =
