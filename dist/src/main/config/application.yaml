@@ -32,11 +32,6 @@ zeebe:
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_ENABLE.
       enable: true
 
-      network:
-        # Sets the port the embedded gateway binds to.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_NETWORK_PORT.
-        port: 26500
-
       security:
         # Enables TLS authentication between clients and the gateway
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED.
@@ -77,7 +72,11 @@ zeebe:
       ioThreadCount: 2
 
 camunda:
-  # Unified Configuration
+# Beginning of Unified Configuration block
+  api:
+    grpc:
+      port: 26500
+
   data:
     secondary-storage:
       type: 'elasticsearch'
@@ -85,7 +84,7 @@ camunda:
         url: 'http://localhost:9200'
         cluster-name: 'elasticsearch'
         index-prefix: ''
-  # ---
+# End of Unified Configuration block
 
   # Operate configuration properties
   operate:
