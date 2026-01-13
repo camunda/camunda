@@ -35,6 +35,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
   private final NodeInstance nodeInstance;
   private final DataDirectoryCopier copier;
   private final boolean previousNodeGracefullyShutdown;
+  private final int retentionCount;
 
   public VersionedNodeIdBasedDataDirectoryProvider(
       final ObjectMapper objectMapper,
@@ -46,6 +47,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
     this.nodeInstance = nodeInstance;
     this.copier = copier;
     this.previousNodeGracefullyShutdown = previousNodeGracefullyShutdown;
+    this.retentionCount = retentionCount;
   }
 
   @Override
@@ -97,6 +99,11 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
 
         copier.validate(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
         writeDirectoryInitializedFile(dataDirectory, nodeInstance.version(), previousVersion.get());
+
+        // Run garbage collection after successful validation
+        new VersionedDataDirectoryGarbageCollector(
+                layout, retentionCount, this::isDirectoryInitialized)
+            .collect();
       } else {
         LOG.info(
             "No valid previous version found for node {}, creating empty directory {}",

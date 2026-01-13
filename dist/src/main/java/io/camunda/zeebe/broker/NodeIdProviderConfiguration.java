@@ -50,14 +50,16 @@ public class NodeIdProviderConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
   private final Cluster cluster;
   private final boolean disableVersionedDirectory;
+  private final int versionedDirectoryRetentionCount;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public NodeIdProviderConfiguration(
       final UnifiedConfiguration configuration, final ObjectMapper objectMapper) {
     cluster = configuration.getCamunda().getCluster();
-    disableVersionedDirectory =
-        configuration.getCamunda().getData().getPrimaryStorage().disableVersionedDirectory();
+    final var primaryStorage = configuration.getCamunda().getData().getPrimaryStorage();
+    disableVersionedDirectory = primaryStorage.disableVersionedDirectory();
+    versionedDirectoryRetentionCount = primaryStorage.getVersionedDirectoryRetentionCount();
     this.objectMapper = objectMapper;
   }
 
@@ -155,7 +157,8 @@ public class NodeIdProviderConfiguration {
                     objectMapper,
                     nodeInstance,
                     fromBrokerCopier(brokerCopier),
-                    previousNodeGracefullyShutdown);
+                    previousNodeGracefullyShutdown,
+                    versionedDirectoryRetentionCount);
           }
         };
 
