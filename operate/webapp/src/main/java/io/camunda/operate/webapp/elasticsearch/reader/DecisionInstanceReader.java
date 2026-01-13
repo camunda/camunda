@@ -40,7 +40,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import com.google.common.collect.ImmutableList;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -66,6 +65,7 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,10 +86,7 @@ public class DecisionInstanceReader extends AbstractReader
 
   @Override
   public DecisionInstanceDto getDecisionInstance(final String decisionInstanceId) {
-    final var query =
-        ElasticsearchUtil.joinWithAnd(
-            ElasticsearchUtil.idsQuery(String.valueOf(decisionInstanceId)),
-            ElasticsearchUtil.termsQuery(ID, decisionInstanceId));
+    final var query = ElasticsearchUtil.idsQuery(String.valueOf(decisionInstanceId));
 
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
@@ -104,7 +101,15 @@ public class DecisionInstanceReader extends AbstractReader
     try {
       final var response = es8client.search(request, DecisionInstanceEntity.class);
       if (response.hits().total().value() == 1) {
-        final var decisionInstance = response.hits().hits().get(0).source();
+        final var decisionInstance = response.hits().hits().getFirst().source();
+
+        if (decisionInstance == null) {
+          throw new OperateRuntimeException(
+              String.format(
+                  "Elasticsearch document for decision instance with id '%s' has no source.",
+                  decisionInstanceId));
+        }
+
         return DtoCreator.create(decisionInstance, DecisionInstanceDto.class);
       } else if (response.hits().total().value() > 1) {
         throw new NotFoundException(
@@ -134,7 +139,7 @@ public class DecisionInstanceReader extends AbstractReader
   @Override
   public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(
       final String decisionInstanceId) {
-    // we need to find all decision instances with he same key, which we extract from
+    // we need to find all decision instances with the same key, which we extract from
     // decisionInstanceId
     final var decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
     final var query = ElasticsearchUtil.termsQuery(KEY, decisionInstanceKey);
@@ -194,14 +199,23 @@ public class DecisionInstanceReader extends AbstractReader
     try {
       final var response = es8client.search(searchRequest, MAP_CLASS);
       if (response.hits().total().value() >= 1) {
-        final var hit = response.hits().hits().get(0);
-        return buildCalledDecisionTuple(hit.id(), hit.source());
+        final var decisionInstanceHit = response.hits().hits().getFirst();
+        final var decisionInstanceMap = decisionInstanceHit.source();
+
+        if (decisionInstanceMap == null) {
+          throw new OperateRuntimeException(
+              String.format(
+                  "Elasticsearch document for decision instance with id '%s' has no source.",
+                  decisionInstanceHit.id()));
+        }
+
+        return buildCalledDecisionTuple(decisionInstanceHit.id(), decisionInstanceMap);
       }
       return Tuple.of(null, null);
     } catch (final IOException e) {
       final var message =
           String.format(
-              "Exception occurred, while obtaining calls decision instance id for flow node instance: %s",
+              "Exception occurred, while obtaining called decision instance id for flow node instance: %s",
               e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
@@ -211,7 +225,7 @@ public class DecisionInstanceReader extends AbstractReader
       final String hitId, final Map<String, Object> source) {
     final var rootDecisionDefId = (String) source.get(ROOT_DECISION_DEFINITION_ID);
     final var decisionDefId = (String) source.get(DECISION_DEFINITION_ID);
-    final var isRootDecision = rootDecisionDefId.equals(decisionDefId);
+    final var isRootDecision = Objects.equals(rootDecisionDefId, decisionDefId);
 
     final var instanceId = isRootDecision ? hitId : null;
     final var nameField = isRootDecision ? DECISION_NAME : ROOT_DECISION_NAME;
@@ -245,7 +259,7 @@ public class DecisionInstanceReader extends AbstractReader
                   })
               .toList();
       if (request.getSearchBefore() != null) {
-        return ImmutableList.copyOf(decisionInstanceEntities).reverse();
+        return List.copyOf(decisionInstanceEntities).reversed();
       }
       return decisionInstanceEntities;
     } catch (final IOException e) {
