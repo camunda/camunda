@@ -471,7 +471,7 @@ public final class ExpressionProcessor {
       final var message =
           "Expected to evaluate expression '%s', but an exception was thrown"
               .formatted(expression.getExpression());
-      throw new EvaluationException(message, e);
+      throw new EvaluationException(message, e.getCause());
     }
 
     return result.isFailure()
