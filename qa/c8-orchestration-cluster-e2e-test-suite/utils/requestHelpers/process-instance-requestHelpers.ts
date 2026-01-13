@@ -151,3 +151,23 @@ export async function verifyIncidentsForProcessInstance(
     ).toBe(expectedIncidentCount);
   }).toPass(defaultAssertionOptions);
 }
+
+export async function expectProcessInstanceCanBeFound(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl(`/process-instances/${processInstanceKey}`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(statusRes, 200);
+    const json = await statusRes.json();
+    expect(json.processInstanceKey).toBe(processInstanceKey);
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 180_000,
+  });
+}

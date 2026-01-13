@@ -52,7 +52,7 @@ const LIMITED_ROLE_AUTHORIZATION = {
   permissionTypes: ['READ_DECISION_DEFINITION'],
 };
 
-test.describe('Get usage metrics API Tests', () => {
+test.describe.serial('Get usage metrics API Tests', () => {
   test('Get Usage Metrics Success', async ({request}) => {
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
