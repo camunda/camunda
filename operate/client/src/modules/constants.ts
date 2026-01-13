@@ -50,6 +50,16 @@ const COLLAPSABLE_PANEL_HEADER_HEIGHT = 'var(--cds-spacing-09)';
 const ARROW_ICON_WIDTH = 'var(--cds-spacing-08)';
 const DEFAULT_TENANT = '<default>';
 
+// Carbon Design System breakpoints (in pixels)
+// These match Carbon's default breakpoint values
+const BREAKPOINTS = {
+  sm: 320,
+  md: 672,
+  lg: 1056,
+  xlg: 1312,
+  max: 1584,
+} as const;
+
 export {
   ACTIVE_OPERATION_STATES,
   TOKEN_OPERATIONS,
@@ -61,4 +71,5 @@ export {
   COLLAPSABLE_PANEL_HEADER_HEIGHT,
   ARROW_ICON_WIDTH,
   DEFAULT_TENANT,
+  BREAKPOINTS,
 };

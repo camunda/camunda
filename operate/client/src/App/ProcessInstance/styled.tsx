@@ -8,12 +8,20 @@
 
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
+import {BREAKPOINTS} from 'modules/constants';
 
-const BottomPanel = styled.div<{$shouldExpandPanel?: boolean}>`
-  display: grid;
-  grid-template-columns: ${({$shouldExpandPanel}) =>
-    $shouldExpandPanel ? '1.1fr 1.9fr' : '1fr 1fr'};
+const BottomPanel = styled.div`
   height: 100%;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+`;
+
+const BottomPanelStacked = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
 `;
 
 const ModificationFooter = styled.div`
@@ -28,4 +36,4 @@ const Buttons = styled(Stack)`
   margin-left: auto;
 `;
 
-export {BottomPanel, ModificationFooter, Buttons};
+export {BottomPanel, BottomPanelStacked, ModificationFooter, Buttons};

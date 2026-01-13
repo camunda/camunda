@@ -9,6 +9,7 @@
 import styled from 'styled-components';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import {ErrorMessage as BaseErrorMessage} from 'modules/components/ErrorMessage';
+import {BREAKPOINTS} from 'modules/constants';
 
 const Container = styled.div`
   border-right: solid 1px var(--cds-border-subtle-01);
@@ -16,6 +17,14 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+
+  @media (max-width: ${BREAKPOINTS.lg - 1}px) {
+    border-right: none;
+    border-bottom: solid 1px var(--cds-border-subtle-01);
+  }
 `;
 
 const PanelHeader = styled(BasePanelHeader)`
