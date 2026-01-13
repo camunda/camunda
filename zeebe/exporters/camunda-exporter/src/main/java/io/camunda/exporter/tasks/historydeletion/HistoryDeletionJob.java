@@ -91,6 +91,10 @@ public class HistoryDeletionJob implements BackgroundTask {
    */
   private CompletionStage<List<String>> deleteProcessInstances(final HistoryDeletionBatch batch) {
     final var processInstanceKeys = batch.getResourceKeys(HistoryDeletionType.PROCESS_INSTANCE);
+    if (processInstanceKeys.isEmpty()) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
     final var deletionFutures =
         processInstanceDependants.stream()
             .filter(t -> !(t instanceof OperationTemplate))
@@ -115,6 +119,9 @@ public class HistoryDeletionJob implements BackgroundTask {
   }
 
   private CompletionStage<Integer> deleteFromHistoryDeletionIndex(final List<String> ids) {
+    if (ids.isEmpty()) {
+      return CompletableFuture.completedFuture(0);
+    }
     return deleterRepository.deleteDocumentsById(historyDeletionIndex.getFullQualifiedName(), ids);
   }
 }
