@@ -41,18 +41,25 @@ public final class ExpressionProcessor {
   private static final List<ResultType> NULLABLE_DATE_TIME_RESULT_TYPES =
       List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
-  private static final Duration EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(1);
-
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
   private final ScopedEvaluationContext scopedEvaluationContext;
+  private final Duration expressionEvaluationTimeout;
 
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage,
       final ScopedEvaluationContext scopedEvaluationContext) {
+    this(expressionLanguage, scopedEvaluationContext, Duration.ofSeconds(1));
+  }
+
+  public ExpressionProcessor(
+      final ExpressionLanguage expressionLanguage,
+      final ScopedEvaluationContext scopedEvaluationContext,
+      final Duration expressionEvaluationTimeout) {
     this.expressionLanguage = expressionLanguage;
     this.scopedEvaluationContext = scopedEvaluationContext;
+    this.expressionEvaluationTimeout = expressionEvaluationTimeout;
   }
 
   /**
@@ -549,14 +556,13 @@ public final class ExpressionProcessor {
 
     final EvaluationResult result;
     try {
-      result = future.get(EXPRESSION_EVALUATION_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-
+      result = future.get(expressionEvaluationTimeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (final TimeoutException e) {
       future.cancel(true);
       return Either.left(
           new Failure(
               "Expected to evaluate expression but timed out after %s ms: '%s'"
-                  .formatted(EXPRESSION_EVALUATION_TIMEOUT.toMillis(), expression.getExpression()),
+                  .formatted(expressionEvaluationTimeout.toMillis(), expression.getExpression()),
               ErrorType.EXTRACT_VALUE_ERROR,
               variableScopeKey));
 
