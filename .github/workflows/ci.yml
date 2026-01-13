@@ -839,6 +839,15 @@ jobs:
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
       - uses: actions/checkout@v4
+      # We need to gather more data on https://app.incident.io/camunda/incidents/4230
+      # as we don't have a reproduction example.
+      - name: Analyze initial disk usage
+        if: always()
+        run: |
+          echo "##################################################"
+          sudo df -h
+          echo "##################################################"
+          docker system df -v
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           config: ./.hadolint.yaml
@@ -879,7 +888,10 @@ jobs:
       # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
       # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
       - name: Cleanup docker images
-        run: docker system prune -af
+        run: |
+          docker buildx prune -f
+          docker image prune -f
+          docker system prune -af
 
       - name: Verify Docker image
         # Skip verification on fork PRs as there public base images are used that don't match our golden labels
@@ -899,6 +911,15 @@ jobs:
         # We pull the image to ensure that we have the right platform image locally,
         # as the runner might be on the arm64 if that was pulled last by the verify step
         run: docker pull ${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}
+      # We need to gather more data on https://app.incident.io/camunda/incidents/4230
+      # as we don't have a reproduction example.
+      - name: Analyze pre-Maven disk usage
+        if: always()
+        run: |
+          echo "##################################################"
+          sudo df -h
+          echo "##################################################"
+          docker system df -v
       - name: Run Docker tests
         shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
@@ -923,6 +944,15 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[IT] Camunda Docker Tests"
+      # We need to gather more data on https://app.incident.io/camunda/incidents/4230
+      # as we don't have a reproduction example.
+      - name: Analyze final disk usage
+        if: always()
+        run: |
+          echo "##################################################"
+          sudo df -h
+          echo "##################################################"
+          docker system df -v
       - name: Observe build status
         if: always()
         continue-on-error: true
