@@ -15,7 +15,6 @@
     <version>8.9.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
-
   <artifactId>camunda-gateway-mcp</artifactId>
   <packaging>jar</packaging>
   <name>Camunda Gateway MCP server</name>
@@ -33,6 +32,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
 
@@ -41,6 +45,10 @@
       <artifactId>camunda-service</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
@@ -84,6 +92,32 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>

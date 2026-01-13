@@ -22,46 +22,39 @@ public class CallToolResultMapper {
 
   public static <T> CallToolResult from(
       final CompletableFuture<T> content, final Function<T, Object> resultMapper) {
-    return from(content, resultMapper, CallToolResultMapper::mapProblemToResult);
-  }
-
-  public static <T> CallToolResult from(
-      final CompletableFuture<T> content,
-      final Function<T, Object> resultMapper,
-      final Function<ProblemDetail, CallToolResult> errorMapper) {
-    return fromInternal(content, resp -> from(resultMapper.apply(resp)), errorMapper);
-  }
-
-  public static CallToolResult fromPrimitive(final String content) {
-    return CallToolResult.builder().addTextContent(content).build();
+    return fromInternal(
+        content, resp -> from(resultMapper.apply(resp)), CallToolResultMapper::mapErrorToResult);
   }
 
   public static <T> CallToolResult fromPrimitive(
       final CompletableFuture<T> content, final Function<T, String> resultMapper) {
-    return fromPrimitive(content, resultMapper, CallToolResultMapper::mapProblemToResult);
+    return fromPrimitive(content, resultMapper, CallToolResultMapper::mapErrorToResult);
   }
 
   public static <T> CallToolResult fromPrimitive(
       final CompletableFuture<T> content,
       final Function<T, String> resultMapper,
-      final Function<ProblemDetail, CallToolResult> errorMapper) {
+      final Function<Throwable, CallToolResult> errorMapper) {
     return fromInternal(content, resp -> fromPrimitive(resultMapper.apply(resp)), errorMapper);
+  }
+
+  private static CallToolResult fromPrimitive(final String content) {
+    return CallToolResult.builder().addTextContent(content).build();
   }
 
   private static <T> CallToolResult fromInternal(
       final CompletableFuture<T> content,
       final Function<T, CallToolResult> resultMapper,
-      final Function<ProblemDetail, CallToolResult> errorMapper) {
+      final Function<Throwable, CallToolResult> errorMapper) {
     return executeServiceMethod(content).fold(errorMapper, resultMapper);
   }
 
-  public static <T> Either<ProblemDetail, T> executeServiceMethod(
-      final CompletableFuture<T> content) {
+  public static <T> Either<Throwable, T> executeServiceMethod(final CompletableFuture<T> content) {
     return content
-        .<Either<ProblemDetail, T>>handleAsync(
+        .<Either<Throwable, T>>handleAsync(
             (resp, error) -> {
               if (error != null) {
-                return Either.left(GatewayErrorMapper.mapErrorToProblem(error));
+                return Either.left(error);
               }
               return Either.right(resp);
             })
@@ -70,5 +63,9 @@ public class CallToolResultMapper {
 
   public static CallToolResult mapProblemToResult(final ProblemDetail problemDetail) {
     return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
+  }
+
+  public static CallToolResult mapErrorToResult(final Throwable error) {
+    return mapProblemToResult(GatewayErrorMapper.mapErrorToProblem(error));
   }
 }
