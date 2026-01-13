@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
@@ -359,30 +360,31 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         jobSelector,
         client,
         job -> {
-          LOGGER.debug(
-              "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {}{}{}",
-              jobSelector.describe(),
-              job.getJobKey(),
-              errorCode,
-              errorMessage != null ? ", message '" + errorMessage + "'" : "",
-              !variables.isEmpty() ? " and variables " + variables : "");
+          if (errorMessage != null) {
+            LOGGER.debug(
+                "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {}, message '{}' and variables {}",
+                jobSelector.describe(),
+                job.getJobKey(),
+                errorCode,
+                errorMessage,
+                variables);
+          } else {
+            LOGGER.debug(
+                "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
+                jobSelector.describe(),
+                job.getJobKey(),
+                errorCode,
+                variables);
+          }
+
+          final ThrowErrorCommandStep1.ThrowErrorCommandStep2 command =
+              client.newThrowErrorCommand(job.getJobKey()).errorCode(errorCode).variables(variables);
 
           if (errorMessage != null) {
-            client
-                .newThrowErrorCommand(job.getJobKey())
-                .errorCode(errorCode)
-                .errorMessage(errorMessage)
-                .variables(variables)
-                .send()
-                .join();
-          } else {
-            client
-                .newThrowErrorCommand(job.getJobKey())
-                .errorCode(errorCode)
-                .variables(variables)
-                .send()
-                .join();
+            command.errorMessage(errorMessage);
           }
+
+          command.send().join();
         });
   }
 

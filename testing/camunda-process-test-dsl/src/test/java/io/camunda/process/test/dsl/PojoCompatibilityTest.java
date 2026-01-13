@@ -344,10 +344,21 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== THROW_BPMN_ERROR_FROM_JOB =====
         Arguments.of(
-            "throw bpmn error from job",
+            "throw bpmn error from job: minimal",
             singleTestCase(
                 ImmutableThrowBpmnErrorFromJobInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().jobType("validate-order").build())
+                    .errorCode("invalid")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: full",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobType("validate-order")
+                            .elementId("task-1")
+                            .build())
                     .errorCode("invalid")
                     .errorMessage("Nope.")
                     .putVariables("x", 1)
