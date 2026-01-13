@@ -210,6 +210,12 @@
 				"default": "./dist/8.9/audit-log.js"
 			}
 		},
+		"./8.9/user-task": {
+			"import": {
+				"types": "./dist/8.9/user-task.d.ts",
+				"default": "./dist/8.9/user-task.js"
+			}
+		},
 		"./8.9/process-instance": {
 			"import": {
 				"types": "./dist/8.9/process-instance.d.ts",

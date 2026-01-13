@@ -7,12 +7,14 @@
  */
 
 import {getAuditLog, queryAuditLogs} from './audit-log';
+import {queryUserTaskAuditLogs} from './user-task';
 import {deleteProcessInstance} from './process-instance';
 
 const endpoints = {
 	queryAuditLogs,
 	getAuditLog,
-  deleteProcessInstance,
+	queryUserTaskAuditLogs,
+	deleteProcessInstance,
 } as const;
 
 export {endpoints};
@@ -42,6 +44,13 @@ export {
 } from './audit-log';
 
 export {
-  deleteProcessInstanceRequestBodySchema,
-  type DeleteProcessInstanceRequestBody
-} from './process-instance';
+	userTaskAuditLogFilterSchema,
+	queryUserTaskAuditLogsRequestBodySchema,
+	queryUserTaskAuditLogsResponseBodySchema,
+	queryUserTaskAuditLogs,
+	type UserTaskAuditLogFilter,
+	type QueryUserTaskAuditLogsRequestBody,
+	type QueryUserTaskAuditLogsResponseBody,
+} from './user-task';
+
+export {deleteProcessInstanceRequestBodySchema, type DeleteProcessInstanceRequestBody} from './process-instance';
