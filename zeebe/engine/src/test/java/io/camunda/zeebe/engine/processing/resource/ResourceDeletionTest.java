@@ -11,16 +11,26 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -30,9 +40,13 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.NestedRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
@@ -42,8 +56,13 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ResourceDeletionTest {
 
@@ -53,9 +72,21 @@ public class ResourceDeletionTest {
   private static final String RESULT_VARIABLE = "result";
   private static final String FORM = "/form/test-form-1-with-version-tag-v1.form";
   private static final String RESOURCE = "/resource/test-rpa-1.rpa";
-
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  protected final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
+  protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
+      Mockito.mock(BrokerRequestAuthorizationConverter.class);
+
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withSearchClientsProxy(searchClientsProxy)
+          .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+
+  @Before
+  public void setUp() {
+    when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
+  }
 
   @Test
   public void shouldWriteDeletedEventsForSingleDecision() {
@@ -686,6 +717,107 @@ public class ResourceDeletionTest {
     verifyResourceDeletionRecords(resourceKey);
   }
 
+  @Test
+  public void shouldNotCreateBatchOperationOnProcessDefinitionDeletionWhenDeleteHistoryIsFalse() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    // when
+    engine
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .withDeleteHistory(false)
+        .delete();
+
+    // then
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceDeletionRecords(processDefinitionKey);
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == ResourceDeletionIntent.DELETED)
+                .batchOperationCreationRecords()
+                .withIntent(BatchOperationIntent.CREATE)
+                .exists())
+        .describedAs("No batch operation should be created when deleteHistory is false")
+        .isFalse();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == ResourceDeletionIntent.DELETED)
+                .historyDeletionRecords()
+                .exists())
+        .describedAs("No history deletion events should be written when deleteHistory is false")
+        .isFalse();
+  }
+
+  @Test
+  public void
+      shouldCreateBatchOperationAndDeleteHistoryOnProcessDefinitionDeletionWhenDeleteHistoryIsTrue() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final long processInstanceKey1 = engine.processInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey2 = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final var processInstanceResult =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    createProcessInstanceEntity(processInstanceKey1, processDefinitionKey),
+                    createProcessInstanceEntity(processInstanceKey2, processDefinitionKey)))
+            .total(2)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(processInstanceResult);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(2))
+        .hasSize(2);
+
+    // when
+    engine
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .withDeleteHistory(true)
+        .delete();
+
+    // then
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceDeletionRecords(processDefinitionKey);
+    verifyBatchOperationIsCreated(processDefinitionKey);
+
+    assertThat(RecordingExporter.historyDeletionRecords(HistoryDeletionIntent.DELETED).limit(3))
+        .describedAs(
+            "History deletion events should be written for all process instances and the process definition")
+        .hasSize(3)
+        .extracting(r -> r.getValue().getResourceKey(), r -> r.getValue().getResourceType())
+        .containsExactlyInAnyOrder(
+            tuple(processInstanceKey1, HistoryDeletionType.PROCESS_INSTANCE),
+            tuple(processInstanceKey2, HistoryDeletionType.PROCESS_INSTANCE),
+            tuple(processDefinitionKey, HistoryDeletionType.PROCESS_DEFINITION));
+  }
+
   private long deployDrg(final String drgResource) {
     return engine
         .deployment()
@@ -1146,5 +1278,50 @@ public class ResourceDeletionTest {
             resourceCreatedRecord.getVersion(),
             resourceCreatedRecord.getVersionTag(),
             resourceCreatedRecord.getDeploymentKey());
+  }
+
+  private ProcessInstanceEntity createProcessInstanceEntity(
+      final long processInstanceKey, final long processDefinitionKey) {
+    return new ProcessInstanceEntity(
+        processInstanceKey,
+        null,
+        null,
+        null,
+        -1,
+        null,
+        processDefinitionKey,
+        -1L,
+        -1L,
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        Set.of());
+  }
+
+  private static void verifyBatchOperationIsCreated(final long processDefinitionKey) {
+    final var batchOperationCreated =
+        RecordingExporter.batchOperationCreationRecords()
+            .withIntent(BatchOperationIntent.CREATE)
+            .getFirst()
+            .getValue();
+    assertThat(batchOperationCreated.getBatchOperationType())
+        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    assertThat(batchOperationCreated.getEntityFilter())
+        .contains(
+            "\"processDefinitionKeyOperations\":[{\"operator\":\"EQUALS\",\"values\":[%s]}]"
+                .formatted(processDefinitionKey));
+    assertThat(batchOperationCreated.getFollowUpCommand())
+        .isNotNull()
+        .extracting(NestedRecordValue::getIntent, NestedRecordValue::getValueType)
+        .containsExactly(HistoryDeletionIntent.DELETE, ValueType.HISTORY_DELETION);
+    assertThat(batchOperationCreated.getFollowUpCommand().getRecordValue())
+        .isInstanceOf(HistoryDeletionRecordValue.class)
+        .asInstanceOf(InstanceOfAssertFactories.type(HistoryDeletionRecordValue.class))
+        .extracting(
+            HistoryDeletionRecordValue::getResourceKey, HistoryDeletionRecordValue::getResourceType)
+        .containsExactly(processDefinitionKey, HistoryDeletionType.PROCESS_DEFINITION);
   }
 }
