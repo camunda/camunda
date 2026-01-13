@@ -17,10 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class ProcessInstanceModifiedAuditLogTransformerTest {
 
@@ -28,15 +25,8 @@ class ProcessInstanceModifiedAuditLogTransformerTest {
   private final ProcessInstanceModificationAuditLogTransformer transformer =
       new ProcessInstanceModificationAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(ProcessInstanceModificationIntent.MODIFIED, AuditLogOperationType.MODIFY));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformProcessInstanceModificationRecord(
-      final ProcessInstanceModificationIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformProcessInstanceModificationRecord() {
     // given
     final ProcessInstanceModificationRecordValue recordValue =
         ImmutableProcessInstanceModificationRecordValue.builder()
@@ -48,7 +38,7 @@ class ProcessInstanceModifiedAuditLogTransformerTest {
     final Record<ProcessInstanceModificationRecordValue> record =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE_MODIFICATION,
-            r -> r.withIntent(intent).withValue(recordValue));
+            r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -56,7 +46,7 @@ class ProcessInstanceModifiedAuditLogTransformerTest {
 
     // then
     assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.MODIFY);
     assertThat(entity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(record.getValue().getRootProcessInstanceKey());

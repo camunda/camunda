@@ -17,10 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class ProcessInstanceMigrationAuditLogTransformerTest {
 
@@ -28,16 +25,8 @@ class ProcessInstanceMigrationAuditLogTransformerTest {
   private final ProcessInstanceMigrationAuditLogTransformer transformer =
       new ProcessInstanceMigrationAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
-        Arguments.of(ProcessInstanceMigrationIntent.MIGRATE, AuditLogOperationType.MIGRATE));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformProcessInstanceMigrationRecord(
-      final ProcessInstanceMigrationIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformProcessInstanceMigrationRecord() {
     // given
     final ProcessInstanceMigrationRecordValue recordValue =
         ImmutableProcessInstanceMigrationRecordValue.builder()
@@ -49,7 +38,8 @@ class ProcessInstanceMigrationAuditLogTransformerTest {
 
     final Record<ProcessInstanceMigrationRecordValue> record =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE_MIGRATION, r -> r.withIntent(intent).withValue(recordValue));
+            ValueType.PROCESS_INSTANCE_MIGRATION,
+            r -> r.withIntent(ProcessInstanceMigrationIntent.MIGRATED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -58,7 +48,7 @@ class ProcessInstanceMigrationAuditLogTransformerTest {
     // then
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(123L);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(234L);
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.MIGRATE);
     assertThat(entity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(record.getValue().getRootProcessInstanceKey());

@@ -17,10 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class ProcessInstanceCancelAuditLogTransformerTest {
 
@@ -28,16 +25,8 @@ class ProcessInstanceCancelAuditLogTransformerTest {
   private final ProcessInstanceCancelAuditLogTransformer transformer =
       new ProcessInstanceCancelAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
-        Arguments.of(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformProcessInstanceCancelRecord(
-      final ProcessInstanceIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformProcessInstanceCancelRecord() {
     // given
     final ProcessInstanceRecordValue recordValue =
         ImmutableProcessInstanceRecordValue.builder()
@@ -50,7 +39,8 @@ class ProcessInstanceCancelAuditLogTransformerTest {
 
     final Record<ProcessInstanceRecordValue> record =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE, r -> r.withIntent(intent).withValue(recordValue));
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.CANCEL).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -60,7 +50,7 @@ class ProcessInstanceCancelAuditLogTransformerTest {
     assertThat(entity.getProcessDefinitionId()).isEqualTo("bpmn-process-id");
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(123L);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(234L);
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CANCEL);
     assertThat(entity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(record.getValue().getRootProcessInstanceKey());

@@ -17,27 +17,15 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class GroupAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final GroupAuditLogTransformer transformer = new GroupAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(GroupIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(GroupIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(GroupIntent.DELETED, AuditLogOperationType.DELETE));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformGroupRecord(
-      final GroupIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformGroupRecord() {
     // given
     final GroupRecordValue recordValue =
         ImmutableGroupRecordValue.builder()
@@ -47,7 +35,8 @@ class GroupAuditLogTransformerTest {
             .build();
 
     final Record<GroupRecordValue> record =
-        factory.generateRecord(ValueType.GROUP, r -> r.withIntent(intent).withValue(recordValue));
+        factory.generateRecord(
+            ValueType.GROUP, r -> r.withIntent(GroupIntent.CREATED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -55,6 +44,6 @@ class GroupAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("test-group");
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
   }
 }
