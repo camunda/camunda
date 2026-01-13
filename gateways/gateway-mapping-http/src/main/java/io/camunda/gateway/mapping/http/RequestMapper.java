@@ -47,7 +47,6 @@ import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.mapping.http.validator.GroupRequestValidator;
 import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
 import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
-import io.camunda.gateway.mapping.http.validator.TenantRequestValidator;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
@@ -97,8 +96,6 @@ import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
-import io.camunda.gateway.protocol.model.TenantCreateRequest;
-import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
@@ -134,8 +131,6 @@ import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
-import io.camunda.service.TenantServices.TenantMemberRequest;
-import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -178,6 +173,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * This class is way too big and also way too big to be all static, causing leaky abstraction (e.g.
+ * identifierPattern being passed through multiple layers to the IdentifierValidator).
+ *
+ * <p>As refactoring it at once would be a huge task, it should be split up and changed to be more
+ * OOP piece by piece.
+ *
+ * <p>the split-up classes should be put in the @io.camunda.gateway.mapping.http.mapper package
+ */
 public class RequestMapper {
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
@@ -1153,41 +1157,6 @@ public class RequestMapper {
                 getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
                 tenantId));
-  }
-
-  public static Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequest tenantCreateRequest) {
-    return getResult(
-        TenantRequestValidator.validateCreateRequest(tenantCreateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantCreateRequest.getTenantId(),
-                tenantCreateRequest.getName(),
-                tenantCreateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, TenantRequest> toTenantUpdateDto(
-      final String tenantId, final TenantUpdateRequest tenantUpdateRequest) {
-    return getResult(
-        TenantRequestValidator.validateUpdateRequest(tenantUpdateRequest),
-        () ->
-            new TenantRequest(
-                null,
-                tenantId,
-                tenantUpdateRequest.getName(),
-                tenantUpdateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
-      final String tenantId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern identifierPattern) {
-    return getResult(
-        TenantRequestValidator.validateMemberRequest(
-            tenantId, memberId, entityType, identifierPattern),
-        () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
