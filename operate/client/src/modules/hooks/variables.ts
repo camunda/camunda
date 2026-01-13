@@ -19,6 +19,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {useElementSelectionInstanceKey} from './useElementSelectionInstanceKey';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -76,8 +77,12 @@ const useDisplayStatus = ({
   const hasNoContent = useHasNoContent();
   const hasMultipleInstances = useHasMultipleInstances();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
+  const isFetchingElementError = IS_ELEMENT_SELECTION_V2
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useProcessInstanceElementSelection().isFetchingElementError
+    : flowNodeMetaDataStore.state.status === 'error';
 
-  if (isError || flowNodeMetaDataStore.state.status === 'error') {
+  if (isError || isFetchingElementError) {
     return 'error';
   }
 
