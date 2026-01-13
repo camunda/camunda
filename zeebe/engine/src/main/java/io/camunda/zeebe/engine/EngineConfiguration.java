@@ -33,6 +33,7 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
       Duration.ofMinutes(5);
+  public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(1);
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -54,6 +55,8 @@ public final class EngineConfiguration {
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
+
+  private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -184,6 +187,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setCommandRedistributionMaxBackoff(
       final Duration commandRedistributionMaxBackoff) {
     this.commandRedistributionMaxBackoff = commandRedistributionMaxBackoff;
+    return this;
+  }
+
+  public Duration getExpressionEvaluationTimeout() {
+    return expressionEvaluationTimeout;
+  }
+
+  public EngineConfiguration setExpressionEvaluationTimeout(
+      final Duration expressionEvaluationTimeout) {
+    this.expressionEvaluationTimeout = expressionEvaluationTimeout;
     return this;
   }
 }
