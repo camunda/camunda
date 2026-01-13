@@ -32,6 +32,7 @@ import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByError
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
+import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
@@ -67,6 +68,7 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -80,6 +82,7 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.search.clients.reader.ProcessDefinitionMessageSubscriptionStatisticsReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
@@ -321,6 +324,18 @@ public class RdbmsConfiguration {
   public IncidentProcessInstanceStatisticsByDefinitionDbReader
       incidentProcessInstanceStatisticsByDefinitionReader(final IncidentMapper incidentMapper) {
     return new IncidentProcessInstanceStatisticsByDefinitionDbReader(incidentMapper);
+  }
+
+  @Bean
+  public PersistentWebSessionDbReader persistentWebSessionReader(
+      final PersistentWebSessionMapper persistentWebSessionMapper) {
+    return new PersistentWebSessionDbReader(persistentWebSessionMapper);
+  }
+
+  @Bean
+  public PersistentWebSessionWriter persistentWebSessionWriter(
+      final PersistentWebSessionMapper persistentWebSessionMapper) {
+    return new PersistentWebSessionWriter(persistentWebSessionMapper);
   }
 
   @Bean

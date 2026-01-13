@@ -1078,4 +1078,22 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="create_web_session_table" author="camunda">
+    <createTable tableName="${prefix}WEB_SESSION">
+      <column name="SESSION_ID" type="VARCHAR(255)">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="CREATION_TIME" type="BIGINT"/>
+      <column name="LAST_ACCESSED_TIME" type="BIGINT"/>
+      <column name="MAX_INACTIVE_INTERVAL_IN_SECONDS" type="BIGINT"/>
+      <column name="ATTRIBUTES" type="BLOB"/>
+    </createTable>
+    <modifySql dbms="h2">
+      <replace replace="BLOB" with="BINARY LARGE OBJECT"/>
+    </modifySql>
+    <modifySql dbms="postgresql">
+      <replace replace="OID" with="BYTEA"/>
+    </modifySql>
+  </changeSet>
+
 </databaseChangeLog>
