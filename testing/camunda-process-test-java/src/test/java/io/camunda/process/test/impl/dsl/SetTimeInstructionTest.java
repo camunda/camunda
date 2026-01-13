@@ -26,7 +26,6 @@ import io.camunda.process.test.impl.dsl.instructions.SetTimeInstructionHandler;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -37,8 +36,7 @@ public class SetTimeInstructionTest {
 
   @Mock private CamundaProcessTestContext processTestContext;
 
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  private CamundaClient camundaClient;
+  @Mock private CamundaClient camundaClient;
 
   @Mock private AssertionFacade assertionFacade;
 
