@@ -117,6 +117,85 @@ public final class ConditionalBoundaryEventTest {
   }
 
   @Test
+  public void shouldTriggerOnBoundaryEventActivationWhenConditionIsTrueWithMultipleVariables() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String serviceTaskId = "task";
+    final String catchEventId = "boundary";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(serviceTaskId)
+                    .zeebeJobType(serviceTaskId)
+                    .boundaryEvent(catchEventId)
+                    .condition(c -> c.condition("=x + y > 10"))
+                    .endEvent()
+                    .moveToActivity(serviceTaskId)
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("x", 6, "y", 5))
+            .create();
+
+    // then
+    final long serviceTaskKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(serviceTaskId)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(serviceTaskId, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(catchEventId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final long subscriptionKey =
+        RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.conditionalSubscriptionRecords()
+                .withRecordKey(subscriptionKey)
+                .withScopeKey(serviceTaskKey)
+                .withElementInstanceKey(serviceTaskKey)
+                .withProcessInstanceKey(processInstanceKey)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .withCatchEventId(catchEventId)
+                .withCondition("=x + y > 10")
+                .withVariableNames(List.of())
+                .withVariableEvents(List.of())
+                .isInterrupting(true)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            ConditionalSubscriptionIntent.CREATED,
+            ConditionalSubscriptionIntent.TRIGGER,
+            ConditionalSubscriptionIntent.TRIGGERED);
+  }
+
+  @Test
   public void shouldTriggerOnBoundaryEventActivationWhenConditionIsTrueWithoutFilters() {
     // given
     final String processId = helper.getBpmnProcessId();
