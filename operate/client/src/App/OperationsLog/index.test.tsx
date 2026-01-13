@@ -56,15 +56,19 @@ describe('OperationsLog', () => {
   });
 
   it('should fetch processes on mount', async () => {
-    const processesStoreSpy = vi.spyOn(processesStore, 'fetchProcesses');
-
-    render(<OperationsLog />, {
+    const {user} = render(<OperationsLog />, {
       wrapper: Wrapper,
     });
 
-    expect(processesStoreSpy).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled();
+    });
 
-    processesStoreSpy.mockRestore();
+    await user.click(screen.getByRole('combobox', {name: 'Name'}));
+
+    expect(
+      screen.getByRole('option', {name: 'Test Process'}),
+    ).toBeInTheDocument();
   });
 
   it('should set page title to instances', () => {
