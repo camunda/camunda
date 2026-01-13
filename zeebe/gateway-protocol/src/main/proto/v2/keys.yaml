@@ -167,7 +167,7 @@ components:
       example: "22517998136843567"
       type: string
 
-## Filters
+    ## Filters
 
     ProcessDefinitionKeyFilterProperty:
       description: ProcessDefinitionKey property with full advanced search capabilities.
@@ -548,6 +548,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuditLogEntityKey"
+
     FormKeyFilterProperty:
       description: FormKey property with full advanced search capabilities.
       type: object

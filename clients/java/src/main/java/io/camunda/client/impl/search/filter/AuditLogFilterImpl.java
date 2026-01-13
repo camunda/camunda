@@ -23,7 +23,6 @@ import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.filter.builder.AuditLogActorTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogCategoryFilterProperty;
-import io.camunda.client.api.search.filter.builder.AuditLogEntityKeyFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogEntityTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogKeyFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogOperationTypeFilterProperty;
@@ -33,7 +32,6 @@ import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.AuditLogActorTypeFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogCategoryFilterPropertyImpl;
-import io.camunda.client.impl.search.filter.builder.AuditLogEntityKeyFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogEntityTypeFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogKeyFilterPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.AuditLogOperationTypeFilterPropertyImpl;
@@ -179,8 +177,8 @@ public class AuditLogFilterImpl
   }
 
   @Override
-  public AuditLogFilter entityKey(final Consumer<AuditLogEntityKeyFilterProperty> fn) {
-    final AuditLogEntityKeyFilterProperty property = new AuditLogEntityKeyFilterPropertyImpl();
+  public AuditLogFilter entityKey(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
     filter.setEntityKey(provideSearchRequestProperty(property));
     return this;

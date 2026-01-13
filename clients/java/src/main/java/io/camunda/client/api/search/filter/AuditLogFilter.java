@@ -22,7 +22,6 @@ import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.filter.builder.AuditLogActorTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogCategoryFilterProperty;
-import io.camunda.client.api.search.filter.builder.AuditLogEntityKeyFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogEntityTypeFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogKeyFilterProperty;
 import io.camunda.client.api.search.filter.builder.AuditLogOperationTypeFilterProperty;
@@ -189,12 +188,12 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter entityKey(final String entityKey);
 
   /**
-   * Filter audit logs by the entity key using {@link AuditLogEntityKeyFilterProperty} consumer
+   * Filter audit logs by the entity key using {@link BasicStringProperty} consumer
    *
    * @param fn the entity key filter consumer
    * @return the updated filter
    */
-  AuditLogFilter entityKey(final Consumer<AuditLogEntityKeyFilterProperty> fn);
+  AuditLogFilter entityKey(final Consumer<BasicStringProperty> fn);
 
   /**
    * Filter audit logs by the tenant id
