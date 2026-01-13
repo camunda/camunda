@@ -42,26 +42,26 @@ export type EventTypeOption = (typeof EVENT_TYPE_OPTIONS)[number];
 
 /*
  * TODO: Replace mock implementation with actual OC REST API calls
- * 
+ *
  * The following endpoints need to be implemented:
- * 
+ *
  * 1. GET /v2/global-task-listeners/{id}
  *    - Retrieve listener by id
  *    - Permission: GLOBAL_LISTENER:READ
  *    - Response: { id, type, event-types, retries, after-non-global, priority, source }
- * 
+ *
  * 2. POST /v2/global-task-listeners
  *    - Create new listener
  *    - Permission: GLOBAL_LISTENER:CREATE_TASK_LISTENER
  *    - Payload: { id, type, event-types, retries?, after-non-global?, priority? }
  *    - Note: source field is automatically set to API
- * 
+ *
  * 3. PUT /v2/global-task-listeners/{id}
  *    - Update existing listener
  *    - Permission: GLOBAL_LISTENER:UPDATE_TASK_LISTENER
  *    - Payload: { type, event-types, retries?, after-non-global?, priority? }
  *    - Note: id and source fields cannot be changed
- * 
+ *
  * 4. DELETE /v2/global-task-listeners/{id}
  *    - Delete existing listener
  *    - Permission: GLOBAL_LISTENER:DELETE_TASK_LISTENER
@@ -171,7 +171,10 @@ export const updateTaskListener: ApiDefinition<
   await simulateDelay(300);
   const index = mockTaskListeners.findIndex((l) => l.id === params.id);
   if (index !== -1) {
-    mockTaskListeners[index] = { ...params, source: mockTaskListeners[index].source };
+    mockTaskListeners[index] = {
+      ...params,
+      source: mockTaskListeners[index].source,
+    };
     return { success: true, data: undefined, error: null, status: 200 };
   }
   return { success: false, data: null, error: null, status: 404 };

@@ -80,10 +80,13 @@ const List: FC = () => {
     );
   }
 
-  // Transform data to include display-friendly execution order
+  // Transform data to include display-friendly execution order and event types
   const transformedData = taskListeners?.items.map((listener) => ({
     ...listener,
     executionOrderDisplay: getExecutionOrderDisplay(listener.afterNonGlobal),
+    eventTypesDisplay: listener.eventTypes.includes("all")
+      ? t("eventTypeAll")
+      : listener.eventTypes.join(", "),
   }));
 
   return (
@@ -98,7 +101,11 @@ const List: FC = () => {
             isSortable: true,
           },
           { header: t("listenerType"), key: "type", isSortable: true },
-          { header: t("eventType"), key: "eventType", isSortable: true },
+          {
+            header: t("eventType"),
+            key: "eventTypesDisplay",
+            isSortable: true,
+          },
           { header: t("retries"), key: "retries", isSortable: true },
           {
             header: t("executionOrder"),
