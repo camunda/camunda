@@ -67,7 +67,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
     final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, "testUser");
 
     // when
-    final var result = evaluator.matches(claims, resourceProperties);
+    final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
     // then
     assertThat(result).isEmpty();
@@ -95,7 +95,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
             .build();
 
     // when
-    final var result = evaluator.matches(claims, resourceProperties);
+    final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
     // then
     assertThat(result)
@@ -114,7 +114,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           UserTaskAuthorizationProperties.builder().assignee(username).build();
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).containsExactly(PROP_ASSIGNEE);
@@ -128,7 +128,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           UserTaskAuthorizationProperties.builder().assignee("differentUser").build();
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();
@@ -142,7 +142,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           UserTaskAuthorizationProperties.builder().assignee("testUser").build();
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();
@@ -162,7 +162,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
               .candidateUsers(List.of("otherUser", username, "anotherUser"))
               .build();
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).containsExactly(PROP_CANDIDATE_USERS);
@@ -178,7 +178,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
               .build();
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();
@@ -192,7 +192,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           UserTaskAuthorizationProperties.builder().candidateUsers(Collections.emptyList()).build();
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();
@@ -208,7 +208,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
               .build();
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();
@@ -233,7 +233,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           .thenReturn(List.of(userGroup));
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).containsExactly(PROP_CANDIDATE_GROUPS);
@@ -254,7 +254,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           .thenReturn(List.of(clientGroup));
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).containsExactly(PROP_CANDIDATE_GROUPS);
@@ -285,7 +285,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           .thenReturn(List.of(mappingGroup));
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).containsExactly(PROP_CANDIDATE_GROUPS);
@@ -323,7 +323,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           .thenReturn(List.of(mappingGroup));
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).containsExactly(PROP_CANDIDATE_GROUPS);
@@ -343,7 +343,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           .thenReturn(List.of("differentGroup"));
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();
@@ -363,7 +363,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
           .thenReturn(Collections.emptyList());
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();
@@ -380,7 +380,7 @@ final class UserTaskPropertyAuthorizationEvaluatorTest {
               .build();
 
       // when
-      final var result = evaluator.matches(claims, resourceProperties);
+      final var result = evaluator.evaluateMatchingProperties(claims, resourceProperties);
 
       // then
       assertThat(result).isEmpty();

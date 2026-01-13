@@ -335,7 +335,7 @@ public final class AuthorizationCheckBehavior {
     }
 
     final T typedProperties = expectedType.cast(properties);
-    return evaluator.matches(claims, typedProperties);
+    return evaluator.evaluateMatchingProperties(claims, typedProperties);
   }
 
   private Set<AuthorizationScope> getPropertyAuthorizedScopes(final AuthorizationRequest request) {

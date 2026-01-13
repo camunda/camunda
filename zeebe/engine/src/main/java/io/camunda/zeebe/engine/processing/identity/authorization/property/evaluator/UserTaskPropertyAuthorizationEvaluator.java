@@ -60,7 +60,7 @@ public final class UserTaskPropertyAuthorizationEvaluator
   }
 
   @Override
-  public Set<String> matches(
+  public Set<String> evaluateMatchingProperties(
       final Map<String, Object> claims, final UserTaskAuthorizationProperties properties) {
     if (properties == null || !properties.hasProperties()) {
       return Collections.emptySet();

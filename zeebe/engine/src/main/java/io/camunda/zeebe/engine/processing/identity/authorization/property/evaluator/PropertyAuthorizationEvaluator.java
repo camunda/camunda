@@ -45,5 +45,5 @@ public interface PropertyAuthorizationEvaluator<T extends ResourceAuthorizationP
    * @param properties typed resource properties of the resource instance
    * @return property names where the principal matches the resource value.
    */
-  Set<String> matches(Map<String, Object> claims, T properties);
+  Set<String> evaluateMatchingProperties(Map<String, Object> claims, T properties);
 }
