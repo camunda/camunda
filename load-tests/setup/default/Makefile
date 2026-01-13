@@ -34,17 +34,22 @@ install-stable: install-storage install-platform-stable install-load-test
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-  helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
-    --namespace $(namespace) \
-    --wait --timeout 5m0s \
-    --set global.postgresql.auth.database=camunda \
-    --set global.postgresql.auth.username=camunda \
-    --set global.postgresql.auth.password=camunda \
-    --set primary.resources.requests.memory=4Gi \
-    --set primary.resources.requests.cpu=3000m \
-    --set primary.resources.limits.memory=6Gi \
-    --set primary.resources.limits.cpu=6000m \
-    --set primary.persistence.size=10Gi
+	# Install Postgres database with
+	# - default user camunda:camunda
+	# - additional extension pg_stat_statements for advanced query performance monitoring (must be activated with postgres user before use)
+	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
+		--namespace $(namespace) \
+		--wait --timeout 5m0s \
+		--set global.postgresql.auth.database=camunda \
+		--set global.postgresql.auth.username=camunda \
+		--set global.postgresql.auth.password=camunda \
+		--set global.postgresql.auth.postgresPassword=camunda \
+		--set postgresqlSharedPreloadLibraries=pg_stat_statements \
+		--set primary.resources.requests.memory=4Gi \
+		--set primary.resources.requests.cpu=3000m \
+		--set primary.resources.limits.memory=6Gi \
+		--set primary.resources.limits.cpu=6000m \
+		--set primary.persistence.size=128Gi
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
