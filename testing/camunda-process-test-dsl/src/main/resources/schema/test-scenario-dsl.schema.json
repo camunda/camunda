@@ -97,6 +97,9 @@
         },
         {
           "$ref": "#/definitions/EvaluateConditionalStartEventInstruction"
+        },
+        {
+          "$ref": "#/definitions/UpdateVariablesInstruction"
         }
       ]
     },
@@ -857,6 +860,35 @@
       "required": [
         "type",
         "decisionDefinitionSelector"
+      ],
+      "additionalProperties": false
+    },
+    "UpdateVariablesInstruction": {
+      "description": "An instruction to create or update global and local process instance variables.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "UPDATE_VARIABLES"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "variables": {
+          "description": "The variables to create or update.",
+          "type": "object"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element for local variables. Optional.",
+          "$ref": "#/definitions/ElementSelector"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "variables"
       ],
       "additionalProperties": false
     }
