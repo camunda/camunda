@@ -127,7 +127,7 @@
 ## Identity  ##
 ###############
 
-/identity/        @camunda/identity
+/identity/        @camunda/identity-frontend
 /authentication/  @camunda/identity
 /security/        @camunda/identity
 
