@@ -9,9 +9,11 @@ package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -23,6 +25,9 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
+import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
+import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -46,6 +51,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -365,8 +371,8 @@ class BackupServiceImplTest {
     when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
 
     final BackupStatus backupNode2 = mock(BackupStatus.class);
-    when(backupNode1.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
-    when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
+    when(backupNode2.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backupNode2.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
 
     when(backupStore.list(
             new BackupIdentifierWildcardImpl(
@@ -374,6 +380,8 @@ class BackupServiceImplTest {
         .thenReturn(CompletableFuture.completedFuture(List.of(backupNode1, backupNode2)));
 
     when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
@@ -400,6 +408,8 @@ class BackupServiceImplTest {
     when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
     when(backupStore.markFailed(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
@@ -491,6 +501,143 @@ class BackupServiceImplTest {
     verify(logStreamWriter).tryWrite(any(), any(LogAppendEntry.class));
   }
 
+  @Test
+  void shouldStoreDeletionMarkerWhenDeletingCompletedBackup() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 5L;
+    final BackupStatus backup = mock(BackupStatus.class);
+    when(backup.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
+
+    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+
+    // then - verify storeRangeMarker is called before delete
+    final var inOrder = inOrder(backupStore);
+    inOrder.verify(backupStore).storeRangeMarker(partitionId, new Deletion(checkpointId));
+    inOrder.verify(backupStore).delete(backup.id());
+  }
+
+  @Test
+  void shouldStoreDeletionMarkerBeforeDeletingInProgressBackup() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 5L;
+    final BackupStatus backup = mock(BackupStatus.class);
+    when(backup.statusCode()).thenReturn(BackupStatusCode.IN_PROGRESS);
+    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
+
+    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.markFailed(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+
+    // then - verify markFailed is called first, then storeRangeMarker, then delete
+    final var inOrder = inOrder(backupStore);
+    inOrder.verify(backupStore).markFailed(eq(backup.id()), anyString());
+    inOrder.verify(backupStore).storeRangeMarker(partitionId, new Deletion(checkpointId));
+    inOrder.verify(backupStore).delete(backup.id());
+  }
+
+  @Test
+  void shouldExtendRangeByStoringNewEndMarkerAndDeletingPreviousOne() {
+    // given
+    final int partitionId = 1;
+    final long previousCheckpointId = 5L;
+    final long newCheckpointId = 10L;
+
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.deleteRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    backupService.extendRange(partitionId, previousCheckpointId, newCheckpointId);
+
+    // then - verify storeRangeMarker is called before deleteRangeMarker
+    final var inOrder = inOrder(backupStore);
+    inOrder
+        .verify(backupStore, timeout(1000))
+        .storeRangeMarker(partitionId, new End(newCheckpointId));
+    inOrder
+        .verify(backupStore, timeout(1000))
+        .deleteRangeMarker(partitionId, new End(previousCheckpointId));
+  }
+
+  @Test
+  void shouldNotDeletePreviousEndMarkerIfStoringNewEndMarkerFails() {
+    // given
+    final int partitionId = 1;
+    final long previousCheckpointId = 5L;
+    final long newCheckpointId = 10L;
+
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
+
+    // when
+    backupService.extendRange(partitionId, previousCheckpointId, newCheckpointId);
+
+    // then
+    verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new End(newCheckpointId));
+    verify(backupStore, never()).deleteRangeMarker(anyInt(), any());
+  }
+
+  @Test
+  void shouldStartNewRangeByStoringStartAndEndMarkers() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 10L;
+
+    when(backupStore.storeRangeMarker(anyInt(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    backupService.startNewRange(partitionId, checkpointId);
+
+    // then - verify Start marker is stored before End marker
+    final var inOrder = inOrder(backupStore);
+    inOrder
+        .verify(backupStore, timeout(1000))
+        .storeRangeMarker(partitionId, new Start(checkpointId));
+    inOrder.verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new End(checkpointId));
+  }
+
+  @Test
+  void shouldNotStoreEndMarkerIfStoringStartMarkerFails() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 10L;
+
+    when(backupStore.storeRangeMarker(eq(partitionId), eq(new Start(checkpointId))))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
+
+    // when
+    backupService.startNewRange(partitionId, checkpointId);
+
+    // then
+    verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new Start(checkpointId));
+    verify(backupStore, never()).storeRangeMarker(partitionId, new End(checkpointId));
+  }
+
   private ActorFuture<Void> failedFuture() {
     return concurrencyControl.failedFuture(new RuntimeException("Expected"));
   }
@@ -519,6 +666,11 @@ class BackupServiceImplTest {
       id = new BackupIdentifierImpl(1, 2, 3);
       checkpointDescriptor =
           new BackupDescriptorImpl(1L, 2, "1.2.0", Instant.now(), CheckpointType.MANUAL_BACKUP);
+    }
+
+    @Override
+    public OptionalLong getFirstLogPosition() {
+      return OptionalLong.empty();
     }
 
     @Override

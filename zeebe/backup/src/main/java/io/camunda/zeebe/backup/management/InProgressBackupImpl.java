@@ -79,6 +79,11 @@ final class InProgressBackupImpl implements InProgressBackup {
   }
 
   @Override
+  public OptionalLong getFirstLogPosition() {
+    return firstLogPosition;
+  }
+
+  @Override
   public BackupDescriptor backupDescriptor() {
     return backupDescriptor;
   }

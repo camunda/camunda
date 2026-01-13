@@ -2342,12 +2342,14 @@ final class JsonSerializableToJsonTest {
                 new CheckpointRecord()
                     .setCheckpointId(1L)
                     .setCheckpointPosition(10L)
-                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP),
+                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
+                    .setFirstLogPosition(100L),
         """
                 {
                   "checkpointId":1,
                   "checkpointPosition":10,
-                  "checkpointType":"SCHEDULED_BACKUP"
+                  "checkpointType":"SCHEDULED_BACKUP",
+                  "firstLogPosition":100
                 }
                 """
       },
@@ -2362,7 +2364,8 @@ final class JsonSerializableToJsonTest {
                 {
                   "checkpointId":1,
                   "checkpointPosition":10,
-                  "checkpointType":"MANUAL_BACKUP"
+                  "checkpointType":"MANUAL_BACKUP",
+                  "firstLogPosition":-1
                 }
                 """
       },

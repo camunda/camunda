@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -24,10 +25,13 @@ public class CheckpointConfirmBackupProcessor {
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointConfirmBackupProcessor.class);
   private final CheckpointState checkpointState;
   private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
+  private final BackupManager backupManager;
 
-  public CheckpointConfirmBackupProcessor(final CheckpointState checkpointState) {
+  public CheckpointConfirmBackupProcessor(
+      final CheckpointState checkpointState, final BackupManager backupManager) {
     this.checkpointState = checkpointState;
     backupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
+    this.backupManager = backupManager;
   }
 
   public ProcessingResult process(
@@ -35,8 +39,15 @@ public class CheckpointConfirmBackupProcessor {
     final var checkpointRecord = record.getValue();
     final var checkpointId = checkpointRecord.getCheckpointId();
     final var latestBackupId = checkpointState.getLatestBackupId();
+    final var firstLogPosition = checkpointRecord.getFirstLogPosition();
     if (latestBackupId < checkpointId) {
       LOG.debug("Confirming backup for checkpoint {}", checkpointId);
+      if (latestBackupId != CheckpointState.NO_CHECKPOINT
+          && firstLogPosition <= checkpointState.getLatestBackupPosition() + 1) {
+        backupManager.extendRange(latestBackupId, checkpointId);
+      } else {
+        backupManager.startNewRange(checkpointId);
+      }
       backupConfirmedApplier.apply(checkpointRecord, record.getTimestamp());
       resultBuilder.appendRecord(
           record.getKey(),

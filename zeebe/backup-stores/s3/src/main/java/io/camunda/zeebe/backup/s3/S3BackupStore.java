@@ -16,8 +16,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
-import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
+import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -90,7 +89,6 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
-  private final S3IndexManager indexManager;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -100,7 +98,6 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
-    indexManager = new S3IndexManager(client, config);
     final var basePath = config.basePath();
     backupIdentifierPattern =
         Pattern.compile(
@@ -256,28 +253,46 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final S3BackupIndexFile s3IndexFile)) {
-      throw new IllegalArgumentException(
-          "Expected index file of type %s but got %s: %s"
-              .formatted(
-                  S3BackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
-    }
-    return indexManager.upload(s3IndexFile);
+  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
+    final var prefix = rangeMarkersPrefix(partitionId);
+    return client
+        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(prefix))
+        .thenApply(
+            response ->
+                response.contents().stream()
+                    .map(S3Object::key)
+                    .map(key -> key.substring(prefix.length()))
+                    .map(BackupRangeMarker::fromName)
+                    .filter(marker -> marker != null)
+                    .toList());
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
-      final BackupIndexIdentifier id, final Path targetPath) {
-    return indexManager.download(id, targetPath);
+  public CompletableFuture<Void> storeRangeMarker(
+      final int partitionId, final BackupRangeMarker marker) {
+    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+    return client
+        .putObject(req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.empty())
+        .thenApply(resp -> null);
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarker(
+      final int partitionId, final BackupRangeMarker marker) {
+    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+    return client
+        .deleteObject(req -> req.bucket(config.bucketName()).key(key))
+        .thenApply(resp -> null);
   }
 
   @Override
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
+  }
+
+  private String rangeMarkersPrefix(final int partitionId) {
+    return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {

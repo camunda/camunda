@@ -7,16 +7,17 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import com.azure.core.util.BinaryData;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIndexFile;
-import io.camunda.zeebe.backup.api.BackupIndexIdentifier;
+import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -52,7 +53,9 @@ public final class AzureBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
-  private final AzureIndexManager indexManager;
+  private final BlobContainerClient blobContainerClient;
+  private final boolean createContainer;
+  private boolean containerCreated;
 
   AzureBackupStore(final AzureBackupConfig config) {
     this(config, buildClient(config));
@@ -60,11 +63,12 @@ public final class AzureBackupStore implements BackupStore {
 
   AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
-    final BlobContainerClient blobContainerClient = getContainerClient(client, config);
+    blobContainerClient = getContainerClient(client, config);
+    createContainer = isCreateContainer(config);
+    containerCreated = !createContainer;
 
-    fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
-    manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
-    indexManager = new AzureIndexManager(blobContainerClient, isCreateContainer(config));
+    fileSetManager = new FileSetManager(blobContainerClient, createContainer);
+    manifestManager = new ManifestManager(blobContainerClient, createContainer);
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -213,22 +217,46 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeIndex(final BackupIndexFile indexFile) {
-    if (!(indexFile instanceof final AzureBackupIndexFile azureIndexFile)) {
-      throw new IllegalArgumentException(
-          "Expected index file of type %s but got %s: %s"
-              .formatted(
-                  AzureBackupIndexFile.class.getSimpleName(),
-                  indexFile.getClass().getSimpleName(),
-                  indexFile));
-    }
-    return CompletableFuture.runAsync(() -> indexManager.upload(azureIndexFile), executor);
+  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          assureContainerCreated();
+          final var prefix = rangeMarkersPrefix(partitionId);
+          return blobContainerClient
+              .listBlobs(new ListBlobsOptions().setPrefix(prefix), null)
+              .stream()
+              .map(blob -> blob.getName().substring(prefix.length()))
+              .map(BackupRangeMarker::fromName)
+              .filter(Objects::nonNull)
+              .toList();
+        },
+        executor);
   }
 
   @Override
-  public CompletableFuture<BackupIndexFile> restoreIndex(
-      final BackupIndexIdentifier id, final Path targetPath) {
-    return CompletableFuture.supplyAsync(() -> indexManager.download(id, targetPath), executor);
+  public CompletableFuture<Void> storeRangeMarker(
+      final int partitionId, final BackupRangeMarker marker) {
+    return CompletableFuture.runAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          blobClient.upload(BinaryData.fromBytes(new byte[0]), true);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteRangeMarker(
+      final int partitionId, final BackupRangeMarker marker) {
+    return CompletableFuture.runAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          blobClient.deleteIfExists();
+        },
+        executor);
   }
 
   @Override
@@ -247,6 +275,17 @@ public final class AzureBackupStore implements BackupStore {
             throw new RuntimeException(e);
           }
         });
+  }
+
+  private String rangeMarkersPrefix(final int partitionId) {
+    return "ranges/" + partitionId + "/";
+  }
+
+  private void assureContainerCreated() {
+    if (!containerCreated) {
+      blobContainerClient.createIfNotExists();
+      containerCreated = true;
+    }
   }
 
   public static void validateConfig(final AzureBackupConfig config) {
