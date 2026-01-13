@@ -152,6 +152,7 @@ const queryKeys = {
     },
   },
   processInstances: {
+    base: () => ['processInstances'],
     searchPaginated: (payload: QueryProcessInstancesRequestBody) => [
       'processInstances',
       'search',

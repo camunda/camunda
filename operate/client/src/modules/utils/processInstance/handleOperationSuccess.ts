@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
+import {queryKeys} from 'modules/queries/queryKeys';
 import type {OperationEntityType} from 'modules/types/operate';
 
 type HandleOperationSuccessOptions = {
@@ -24,46 +24,43 @@ function useHandleOperationSuccess() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  return useCallback(
-    ({
+  return ({
+    operationType,
+    source,
+    onInvalidateQueries,
+  }: HandleOperationSuccessOptions) => {
+    if (onInvalidateQueries) {
+      onInvalidateQueries();
+    } else {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.processInstances.base(),
+      });
+    }
+
+    tracking.track({
+      eventName: 'single-operation',
       operationType,
       source,
-      onInvalidateQueries,
-    }: HandleOperationSuccessOptions) => {
-      if (onInvalidateQueries) {
-        onInvalidateQueries();
-      } else {
-        queryClient.invalidateQueries({
-          queryKey: ['processInstances'],
-        });
+    });
+
+    if (operationType === 'DELETE_PROCESS_INSTANCE') {
+      if (source === 'instance-header') {
+        navigate(
+          Locations.processes({
+            active: true,
+            incidents: true,
+          }),
+          {replace: true},
+        );
       }
 
-      tracking.track({
-        eventName: 'single-operation',
-        operationType,
-        source,
+      notificationsStore.displayNotification({
+        kind: 'success',
+        title: 'Instance is scheduled for deletion',
+        isDismissable: true,
       });
-
-      if (operationType === 'DELETE_PROCESS_INSTANCE') {
-        if (source === 'instance-header') {
-          navigate(
-            Locations.processes({
-              active: true,
-              incidents: true,
-            }),
-            {replace: true},
-          );
-        }
-
-        notificationsStore.displayNotification({
-          kind: 'success',
-          title: 'Instance is scheduled for deletion',
-          isDismissable: true,
-        });
-      }
-    },
-    [queryClient, navigate],
-  );
+    }
+  };
 }
 
 export {useHandleOperationSuccess};
