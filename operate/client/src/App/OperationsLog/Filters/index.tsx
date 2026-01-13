@@ -30,7 +30,7 @@ import {
   AUDIT_LOG_FILTER_FIELDS,
   type OperationsLogFilterField,
   type OperationsLogFilters,
-} from '../shared';
+} from '../auditLogFilters';
 import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,

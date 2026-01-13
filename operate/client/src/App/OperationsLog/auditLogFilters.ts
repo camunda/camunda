@@ -45,5 +45,4 @@ const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
 ];
 
 export type {OperationsLogFilters, OperationsLogFilterField};
-
 export {AUDIT_LOG_FILTER_FIELDS};

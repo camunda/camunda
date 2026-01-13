@@ -31,7 +31,7 @@ import {
   AUDIT_LOG_FILTER_FIELDS,
   type OperationsLogFilterField,
   type OperationsLogFilters,
-} from '../shared';
+} from '../auditLogFilters';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {observer} from 'mobx-react';
 import {CellAppliedTo} from './CellAppliedTo';
