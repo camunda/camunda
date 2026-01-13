@@ -543,14 +543,16 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     try (final CamundaClient client = createClient()) {
       final Incident incident =
-          awaitBehavior.until(
-              () -> findIncident(incidentSelector, client),
-              foundIncident ->
-                  assertThat(foundIncident)
-                      .withFailMessage(
-                          "Expected to resolve an incident [%s] but no incident was found.",
-                          incidentSelector.describe())
-                      .isPresent());
+          awaitBehavior
+              .until(
+                  () -> findIncident(incidentSelector, client),
+                  foundIncident ->
+                      assertThat(foundIncident)
+                          .withFailMessage(
+                              "Expected to resolve an incident [%s] but no incident was found.",
+                              incidentSelector.describe())
+                          .isPresent())
+              .get();
 
       final long incidentKey = incident.getIncidentKey();
 
