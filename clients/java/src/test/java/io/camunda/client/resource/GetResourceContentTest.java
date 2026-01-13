@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 public class GetResourceContentTest extends ClientRestTest {
   @Test
-  void shouldGetResource() {
+  void shouldGetResourceContent() {
     gatewayService.onResourceContentGetRequest(123L, "test content");
     client.newResourceContentGetRequest(123L).execute();
     // then
