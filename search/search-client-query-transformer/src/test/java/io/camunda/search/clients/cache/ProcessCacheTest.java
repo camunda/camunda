@@ -141,16 +141,16 @@ class ProcessCacheTest {
               }
               final long key = keys.getFirst();
 
-              return switch ((int) key) {
-                case 1 ->
+              return switch (key) {
+                case 1L ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
                             1L, "n1", "d1", null, null, 1, null, "t", null));
-                case 2 ->
+                case 2L ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
                             2L, "n2", "d2", null, null, 1, null, "t", null));
-                case 3 ->
+                case 3L ->
                     SearchQueryResult.of(
                         new ProcessDefinitionEntity(
                             3L, "n3", "d3", null, null, 1, null, "t", null));
