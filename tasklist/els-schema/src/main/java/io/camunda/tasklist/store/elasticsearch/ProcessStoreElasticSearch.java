@@ -9,7 +9,11 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.util.NamedValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -17,36 +21,14 @@ import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchTenantHelper;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation;
-import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -59,7 +41,6 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   private static final Boolean CASE_INSENSITIVE = true;
   private static final String BPMN_PROCESS_ID_TENANT_ID_AGG_NAME = "bpmnProcessId_tenantId_buckets";
   private static final String TOP_HITS_AGG_NAME = "top_hit_doc";
-  private static final String DEFINITION_ID_TERMS_SOURCE_NAME = "group_by_definition_id";
   private static final String TENANT_ID_TERMS_SOURCE_NAME = "group_by_tenant_id";
   private static final String MAX_VERSION_DOCUMENTS_AGG_NAME = "max_version_docs";
   private static final String STARTED_BY_FORM_FILTERED_DOCS = "started_by_form_docs";
@@ -67,9 +48,9 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Autowired private ProcessIndex processIndex;
   @Autowired private SecurityConfiguration securityConfiguration;
 
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-
-  @Autowired private ElasticsearchClient es8Client;
+  @Qualifier("tasklistEs8Client")
+  @Autowired
+  private ElasticsearchClient es8Client;
 
   @Autowired private ElasticsearchTenantHelper tenantHelper;
 
@@ -182,36 +163,30 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   @Override
   public List<ProcessEntity> getProcesses(
       final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm) {
-    final QueryBuilder qb;
-
-    if (securityConfiguration.getAuthorizations().isEnabled()) {
-      if (processDefinitions.isEmpty()) {
-        return new ArrayList<>();
-      }
-
-      if (processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
-        qb =
-            QueryBuilders.boolQuery()
-                .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
-                .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
-      } else {
-
-        qb =
-            QueryBuilders.boolQuery()
-                .must(QueryBuilders.termsQuery(ProcessIndex.BPMN_PROCESS_ID, processDefinitions))
-                .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
-                .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
-      }
-
-    } else {
-      qb =
-          QueryBuilders.boolQuery()
-              .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
-              .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
+    // Early return if authorization is enabled but no processes are allowed
+    if (securityConfiguration.getAuthorizations().isEnabled() && processDefinitions.isEmpty()) {
+      return new ArrayList<>();
     }
 
-    final QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQuery, isStartedByForm);
+    // Build base query: field exists AND field is not empty
+    final Query existsQuery = ElasticsearchUtil.existsQuery(ProcessIndex.BPMN_PROCESS_ID);
+    final Query notEmptyQuery =
+        ElasticsearchUtil.mustNotQuery(
+            ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
+
+    // Add process definition filter if needed
+    final Query query;
+    if (securityConfiguration.getAuthorizations().isEnabled()
+        && !processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
+      final Query termsQuery =
+          ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, processDefinitions);
+      query = ElasticsearchUtil.joinWithAnd(termsQuery, existsQuery, notEmptyQuery);
+    } else {
+      query = ElasticsearchUtil.joinWithAnd(existsQuery, notEmptyQuery);
+    }
+
+    final Query finalQuery = enhanceQueryByTenantIdCheck(query, tenantId);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(finalQuery, isStartedByForm);
   }
 
   @Override
@@ -226,172 +201,251 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     }
 
     final String regexSearch = String.format(".*%s.*", search);
-    BoolQueryBuilder qb =
-        QueryBuilders.boolQuery()
-            .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
-            .should(
-                QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
-                    .caseInsensitive(CASE_INSENSITIVE))
-            .should(
-                QueryBuilders.regexpQuery(ProcessIndex.BPMN_PROCESS_ID, regexSearch)
-                    .caseInsensitive(CASE_INSENSITIVE))
-            .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
-            .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""))
-            .minimumShouldMatch(1);
+    final Query idQuery = ElasticsearchUtil.termsQuery(ProcessIndex.ID, search);
+    final Query nameRegexpQuery =
+        Query.of(
+            q ->
+                q.regexp(
+                    r ->
+                        r.field(ProcessIndex.NAME)
+                            .value(regexSearch)
+                            .caseInsensitive(CASE_INSENSITIVE)));
+    final Query bpmnProcessIdRegexpQuery =
+        Query.of(
+            q ->
+                q.regexp(
+                    r ->
+                        r.field(ProcessIndex.BPMN_PROCESS_ID)
+                            .value(regexSearch)
+                            .caseInsensitive(CASE_INSENSITIVE)));
+    final Query existsQuery = ElasticsearchUtil.existsQuery(ProcessIndex.BPMN_PROCESS_ID);
+    final Query notEmptyQuery = ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, "");
+
+    Query query =
+        Query.of(
+            q ->
+                q.bool(
+                    b ->
+                        b.should(idQuery)
+                            .should(nameRegexpQuery)
+                            .should(bpmnProcessIdRegexpQuery)
+                            .must(existsQuery)
+                            .mustNot(notEmptyQuery)
+                            .minimumShouldMatch("1")));
 
     if (securityConfiguration.getAuthorizations().isEnabled()) {
       if (processDefinitions.isEmpty()) {
         return new ArrayList<>();
       }
       if (!processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
-        qb = qb.must(QueryBuilders.termsQuery(ProcessIndex.BPMN_PROCESS_ID, processDefinitions));
+        final Query termsQuery =
+            ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, processDefinitions);
+        query = ElasticsearchUtil.joinWithAnd(query, termsQuery);
       }
     }
-    final QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQuery, isStartedByForm);
+    final Query finalQuery = enhanceQueryByTenantIdCheck(query, tenantId);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(finalQuery, isStartedByForm);
   }
 
   @Override
   public List<ProcessEntity> getProcessesStartedByForm() {
-    final QueryBuilder qb;
-
-    qb =
-        QueryBuilders.boolQuery()
-            .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
-            .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
-
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(qb, true);
+    final Query existsQuery = ElasticsearchUtil.existsQuery(ProcessIndex.BPMN_PROCESS_ID);
+    final Query notEmptyQuery =
+        ElasticsearchUtil.mustNotQuery(
+            ElasticsearchUtil.termsQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
+    final Query query = ElasticsearchUtil.joinWithAnd(existsQuery, notEmptyQuery);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(query, true);
   }
 
-  private ProcessEntity fromSearchHit(final String processString) {
-    return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
-  }
-
-  private QueryBuilder enhanceQueryByTenantIdCheck(final QueryBuilder qb, final String tenantId) {
+  private Query enhanceQueryByTenantIdCheck(final Query query, final String tenantId) {
     if (securityConfiguration.getMultiTenancy().isChecksEnabled()
         && StringUtils.isNotBlank(tenantId)) {
-      return ElasticsearchUtil.joinWithAnd(
-          QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId), qb);
+      final Query tenantIdQuery = ElasticsearchUtil.termsQuery(ProcessIndex.TENANT_ID, tenantId);
+      return ElasticsearchUtil.joinWithAnd(tenantIdQuery, query);
     }
 
-    return qb;
+    return query;
   }
 
-  public List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
-      final QueryBuilder qb, final Boolean isStartedByForm) {
+  // ES8 helper methods
 
-    final CompositeAggregationBuilder processDefinitionAndTenantBucket =
-        AggregationBuilders.composite(
-                BPMN_PROCESS_ID_TENANT_ID_AGG_NAME,
-                List.of(
-                    new TermsValuesSourceBuilder(DEFINITION_ID_TERMS_SOURCE_NAME)
-                        .field(ProcessIndex.BPMN_PROCESS_ID),
-                    new TermsValuesSourceBuilder(TENANT_ID_TERMS_SOURCE_NAME)
-                        .field(ProcessIndex.TENANT_ID)))
-            .size(ElasticsearchUtil.QUERY_MAX_SIZE);
-
-    final AggregationBuilder maxVersionDocsAggregate =
-        AggregationBuilders.terms(MAX_VERSION_DOCUMENTS_AGG_NAME)
-            .field(ProcessIndex.VERSION)
-            .order(BucketOrder.key(false))
-            .size(1);
-
-    final AggregationBuilder topHitsAggregate =
-        AggregationBuilders.topHits(TOP_HITS_AGG_NAME)
-            .sort(
-                SortBuilders.fieldSort(ProcessIndex.VERSION)
-                    .order(org.elasticsearch.search.sort.SortOrder.DESC))
-            .size(1);
-
-    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(qb).size(0);
-    if (isStartedByForm == null) {
-      sourceBuilder.aggregation(
-          processDefinitionAndTenantBucket.subAggregation(
-              maxVersionDocsAggregate.subAggregation(topHitsAggregate)));
+  private Aggregation buildStartedByFormFilterAggEs8(
+      final boolean isStartedByForm, final Aggregation topHitsAgg) {
+    if (isStartedByForm) {
+      return Aggregation.of(
+          a ->
+              a.filter(
+                      f ->
+                          f.bool(
+                              b ->
+                                  b.should(ElasticsearchUtil.existsQuery(ProcessIndex.FORM_KEY))
+                                      .should(ElasticsearchUtil.existsQuery(ProcessIndex.FORM_ID))
+                                      .minimumShouldMatch("1")))
+                  .aggregations(TOP_HITS_AGG_NAME, topHitsAgg));
     } else {
-      sourceBuilder.aggregation(
-          processDefinitionAndTenantBucket.subAggregation(
-              maxVersionDocsAggregate.subAggregation(
-                  startedByFormAggregateFilter(isStartedByForm).subAggregation(topHitsAggregate))));
+      return Aggregation.of(
+          a ->
+              a.filter(
+                      f ->
+                          f.bool(
+                              b ->
+                                  b.mustNot(ElasticsearchUtil.existsQuery(ProcessIndex.FORM_KEY))
+                                      .mustNot(ElasticsearchUtil.existsQuery(ProcessIndex.FORM_ID))
+                                      .minimumShouldMatch("1")))
+                  .aggregations(TOP_HITS_AGG_NAME, topHitsAgg));
+    }
+  }
+
+  private List<ProcessEntity> getAggregateSearchHitsEs8(final Aggregate aggregate) {
+    return aggregate.sterms().buckets().array().stream()
+        .flatMap(
+            bpmnProcessIdBucket -> {
+              final Aggregate tenantIdBuckets =
+                  bpmnProcessIdBucket.aggregations().get(TENANT_ID_TERMS_SOURCE_NAME);
+              return tenantIdBuckets.sterms().buckets().array().stream()
+                  .flatMap(
+                      tenantIdBucket -> {
+                        final Aggregate versionBuckets =
+                            tenantIdBucket.aggregations().get(MAX_VERSION_DOCUMENTS_AGG_NAME);
+                        return versionBuckets.lterms().buckets().array().stream()
+                            .flatMap(
+                                versionBucket -> {
+                                  final Aggregate topHitsAgg =
+                                      versionBucket.aggregations().get(TOP_HITS_AGG_NAME);
+                                  return topHitsAgg.topHits().hits().hits().stream()
+                                      .map(hit -> hit.source().to(ProcessEntity.class));
+                                });
+                      });
+            })
+        .toList();
+  }
+
+  private List<ProcessEntity> getFilteredAggregateSearchHitsEs8(final Aggregate aggregate) {
+    return aggregate.sterms().buckets().array().stream()
+        .flatMap(
+            bpmnProcessIdBucket -> {
+              final Aggregate tenantIdBuckets =
+                  bpmnProcessIdBucket.aggregations().get(TENANT_ID_TERMS_SOURCE_NAME);
+              return tenantIdBuckets.sterms().buckets().array().stream()
+                  .flatMap(
+                      tenantIdBucket -> {
+                        final Aggregate versionBuckets =
+                            tenantIdBucket.aggregations().get(MAX_VERSION_DOCUMENTS_AGG_NAME);
+                        return versionBuckets.lterms().buckets().array().stream()
+                            .flatMap(
+                                versionBucket -> {
+                                  final Aggregate filterAgg =
+                                      versionBucket
+                                          .aggregations()
+                                          .get(STARTED_BY_FORM_FILTERED_DOCS);
+                                  final Aggregate topHitsAgg =
+                                      filterAgg.filter().aggregations().get(TOP_HITS_AGG_NAME);
+                                  return topHitsAgg.topHits().hits().hits().stream()
+                                      .map(hit -> hit.source().to(ProcessEntity.class));
+                                });
+                      });
+            })
+        .toList();
+  }
+
+  public List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantIdEs8(
+      final Query query, final Boolean isStartedByForm) {
+
+    // Build aggregations from innermost to outermost
+    // Level 4: TopHits - get the actual document sorted by version DESC
+    final Aggregation topHitsAgg =
+        Aggregation.of(
+            a ->
+                a.topHits(
+                    th ->
+                        th.sort(ElasticsearchUtil.sortOrder(ProcessIndex.VERSION, SortOrder.Desc))
+                            .size(1)));
+
+    // Level 3: Terms on VERSION field - get max version (size=1, order by key DESC)
+    final Aggregation maxVersionDocsAgg =
+        Aggregation.of(
+            a ->
+                a.terms(
+                    t ->
+                        t.field(ProcessIndex.VERSION)
+                            .size(1)
+                            .order(NamedValue.of("_key", SortOrder.Desc))));
+
+    // Level 2: Terms on TENANT_ID with optional filter for form-started processes
+    final Aggregation tenantIdAgg;
+    if (isStartedByForm != null) {
+      // Add filter aggregation between version terms and topHits
+      final Aggregation filterAgg = buildStartedByFormFilterAggEs8(isStartedByForm, topHitsAgg);
+      final Aggregation maxVersionWithFilter =
+          Aggregation.of(
+              a ->
+                  a.terms(
+                          t ->
+                              t.field(ProcessIndex.VERSION)
+                                  .size(1)
+                                  .order(NamedValue.of("_key", SortOrder.Desc)))
+                      .aggregations(STARTED_BY_FORM_FILTERED_DOCS, filterAgg));
+      tenantIdAgg =
+          Aggregation.of(
+              a ->
+                  a.terms(
+                          t ->
+                              t.field(ProcessIndex.TENANT_ID)
+                                  .size(ElasticsearchUtil.QUERY_MAX_SIZE))
+                      .aggregations(MAX_VERSION_DOCUMENTS_AGG_NAME, maxVersionWithFilter));
+    } else {
+      final Aggregation maxVersionWithTopHits =
+          Aggregation.of(
+              a ->
+                  a.terms(
+                          t ->
+                              t.field(ProcessIndex.VERSION)
+                                  .size(1)
+                                  .order(NamedValue.of("_key", SortOrder.Desc)))
+                      .aggregations(TOP_HITS_AGG_NAME, topHitsAgg));
+      tenantIdAgg =
+          Aggregation.of(
+              a ->
+                  a.terms(
+                          t ->
+                              t.field(ProcessIndex.TENANT_ID)
+                                  .size(ElasticsearchUtil.QUERY_MAX_SIZE))
+                      .aggregations(MAX_VERSION_DOCUMENTS_AGG_NAME, maxVersionWithTopHits));
     }
 
-    final SearchRequest searchRequest =
-        new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
+    // Level 1: Terms on BPMN_PROCESS_ID
+    final Aggregation bpmnProcessIdAgg =
+        Aggregation.of(
+            a ->
+                a.terms(
+                        t ->
+                            t.field(ProcessIndex.BPMN_PROCESS_ID)
+                                .size(ElasticsearchUtil.QUERY_MAX_SIZE))
+                    .aggregations(TENANT_ID_TERMS_SOURCE_NAME, tenantIdAgg));
 
-    final SearchResponse response;
+    final SearchRequest request =
+        new SearchRequest.Builder()
+            .index(processIndex.getAlias())
+            .query(query)
+            .aggregations(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME, bpmnProcessIdAgg)
+            .size(0)
+            .build();
+
     try {
-      response = tenantAwareClient.search(searchRequest);
-      final CompositeAggregation compositeAgg =
-          response.getAggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME);
-      final Set<SearchHit> hits =
-          isStartedByForm != null
-              ? getFilteredAggregateSearchHits(compositeAgg)
-              : getAggregateSearchHits(compositeAgg);
-      return hits.stream()
-          .map(
-              hit ->
-                  ElasticsearchUtil.fromSearchHit(
-                      hit.getSourceAsString(), objectMapper, ProcessEntity.class))
-          .toList();
+      final var response = es8Client.search(request, ProcessEntity.class);
+      final Aggregate bpmnProcessIdBuckets =
+          response.aggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME);
+
+      if (isStartedByForm != null) {
+        return getFilteredAggregateSearchHitsEs8(bpmnProcessIdBuckets);
+      } else {
+        return getAggregateSearchHitsEs8(bpmnProcessIdBuckets);
+      }
 
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
-  }
-
-  private FilterAggregationBuilder startedByFormAggregateFilter(final boolean isStartedByForm) {
-    return isStartedByForm
-        ? AggregationBuilders.filter(
-            STARTED_BY_FORM_FILTERED_DOCS,
-            QueryBuilders.boolQuery()
-                .should(QueryBuilders.existsQuery(ProcessIndex.FORM_KEY))
-                .should(QueryBuilders.existsQuery(ProcessIndex.FORM_ID))
-                .minimumShouldMatch(1))
-        : AggregationBuilders.filter(
-            STARTED_BY_FORM_FILTERED_DOCS,
-            QueryBuilders.boolQuery()
-                .mustNot(QueryBuilders.existsQuery(ProcessIndex.FORM_KEY))
-                .mustNot(QueryBuilders.existsQuery(ProcessIndex.FORM_ID))
-                .minimumShouldMatch(1));
-  }
-
-  private Set<SearchHit> getFilteredAggregateSearchHits(final CompositeAggregation composite) {
-    return composite.getBuckets().stream()
-        .flatMap(
-            bucket ->
-                ((ParsedTerms) bucket.getAggregations().asMap().get(MAX_VERSION_DOCUMENTS_AGG_NAME))
-                    .getBuckets().stream()
-                        .flatMap(
-                            versionBucket -> {
-                              final var startedByFormDocs =
-                                  ((Filter)
-                                          versionBucket
-                                              .getAggregations()
-                                              .get(STARTED_BY_FORM_FILTERED_DOCS))
-                                      .getAggregations();
-                              return Arrays.stream(
-                                  ((TopHits) startedByFormDocs.get(TOP_HITS_AGG_NAME))
-                                      .getHits()
-                                      .getHits());
-                            }))
-        .collect(Collectors.toSet());
-  }
-
-  private Set<SearchHit> getAggregateSearchHits(final CompositeAggregation composite) {
-    return composite.getBuckets().stream()
-        .flatMap(
-            bucket ->
-                ((ParsedTerms) bucket.getAggregations().get(MAX_VERSION_DOCUMENTS_AGG_NAME))
-                    .getBuckets().stream()
-                        .flatMap(
-                            versionBucket ->
-                                Arrays.stream(
-                                    ((TopHits)
-                                            versionBucket.getAggregations().get(TOP_HITS_AGG_NAME))
-                                        .getHits()
-                                        .getHits())))
-        .collect(Collectors.toSet());
   }
 }
