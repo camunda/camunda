@@ -32,6 +32,7 @@ public final class GlobalListenerUpdateProcessor
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final GlobalListenersState globalListenersState;
+  private final GlobalListenerValidator globalListenerValidator;
 
   public GlobalListenerUpdateProcessor(
       final KeyGenerator keyGenerator,
@@ -44,6 +45,7 @@ public final class GlobalListenerUpdateProcessor
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     globalListenersState = processingState.getGlobalListenersState();
+    globalListenerValidator = new GlobalListenerValidator();
   }
 
   @Override
@@ -83,6 +85,11 @@ public final class GlobalListenerUpdateProcessor
             .build();
     return authCheckBehavior
         .isAuthorizedOrInternalCommand(authRequest)
-        .map(unused -> command.getValue());
+        .map(unused -> command.getValue())
+        .flatMap(globalListenerValidator::idProvided)
+        .flatMap(record -> globalListenerValidator.listenerExists(record, globalListenersState))
+        .flatMap(globalListenerValidator::typeProvided)
+        .flatMap(globalListenerValidator::eventTypesProvided)
+        .flatMap(globalListenerValidator::validEventTypes);
   }
 }
