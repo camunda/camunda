@@ -69,6 +69,7 @@ public final class ReconfigurationHelper {
           } catch (final Exception e) {
             logger.warn("Failed to join cluster, could not reload configuration from log", e);
             result.completeExceptionally(e);
+            return;
           }
 
           // Always transition to PASSIVE or the last member type as found by
