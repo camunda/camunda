@@ -16,16 +16,12 @@
 package io.camunda.process.test.impl.dsl.instructions;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.ElementInstance;
-import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
-import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
-import java.util.List;
 import java.util.Optional;
 
 public class UpdateVariablesInstructionHandler
@@ -42,71 +38,19 @@ public class UpdateVariablesInstructionHandler
         InstructionSelectorFactory.buildProcessInstanceSelector(
             instruction.getProcessInstanceSelector());
 
-    final CamundaDataSource dataSource = new CamundaDataSource(camundaClient);
-
-    // Find the process instance
-    final List<ProcessInstance> processInstances =
-        dataSource.findProcessInstances(processInstanceSelector::applyFilter);
-
-    if (processInstances.isEmpty()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "No process instance found for selector [%s]",
-              processInstanceSelector.describe()));
-    }
-
-    final ProcessInstance processInstance =
-        processInstances.stream()
-            .filter(processInstanceSelector::test)
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        String.format(
-                            "No process instance found for selector [%s]",
-                            processInstanceSelector.describe())));
-
-    final long elementInstanceKey;
-
-    // Determine the element instance key based on whether this is a global or local variable update
     final Optional<io.camunda.process.test.api.dsl.ElementSelector> dslElementSelector =
         instruction.getElementSelector();
 
     if (dslElementSelector.isPresent()) {
-      // Local variables: find the element instance
+      // Local variables: update using element selector
       final ElementSelector elementSelector =
           InstructionSelectorFactory.buildElementSelector(dslElementSelector.get());
-
-      final List<ElementInstance> elementInstances =
-          dataSource.findElementInstances(
-              filter -> {
-                filter.processInstanceKey(processInstance.getProcessInstanceKey());
-                elementSelector.applyFilter(filter);
-              });
-
-      final Optional<ElementInstance> elementInstance =
-          elementInstances.stream().filter(elementSelector::test).findFirst();
-
-      if (!elementInstance.isPresent()) {
-        throw new IllegalArgumentException(
-            String.format(
-                "No element [%s] found for process instance [key: %s]",
-                elementSelector.describe(), processInstance.getProcessInstanceKey()));
-      }
-
-      elementInstanceKey = elementInstance.get().getElementInstanceKey();
-
+      context.updateLocalVariables(
+          processInstanceSelector, elementSelector, instruction.getVariables());
     } else {
-      // Global variables: use the process instance key as the element instance key
-      elementInstanceKey = processInstance.getProcessInstanceKey();
+      // Global variables: update at process instance level
+      context.updateVariables(processInstanceSelector, instruction.getVariables());
     }
-
-    // Update the variables
-    camundaClient
-        .newSetVariablesCommand(elementInstanceKey)
-        .variables(instruction.getVariables())
-        .send()
-        .join();
   }
 
   @Override

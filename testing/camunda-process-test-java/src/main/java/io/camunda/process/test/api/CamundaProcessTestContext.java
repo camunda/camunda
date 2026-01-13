@@ -258,4 +258,26 @@ public interface CamundaProcessTestContext {
    * @param decisionOutput the decision's output which may be a value, list or map.
    */
   void mockDmnDecision(final String decisionId, final Object decisionOutput);
+
+  /**
+   * Updates variables for a process instance.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param variables a map of variables to update
+   */
+  void updateVariables(
+      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
+      final Map<String, Object> variables);
+
+  /**
+   * Updates local variables for a specific element within a process instance.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param elementSelector the selector to identify the element
+   * @param variables a map of variables to update
+   */
+  void updateLocalVariables(
+      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
+      final io.camunda.process.test.api.assertions.ElementSelector elementSelector,
+      final Map<String, Object> variables);
 }

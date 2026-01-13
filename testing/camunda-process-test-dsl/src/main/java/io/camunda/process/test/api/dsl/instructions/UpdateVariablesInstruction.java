@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
-/** An instruction to create or update global and local process instance variables. */
+/** An instruction to create or update process instance variables. */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableUpdateVariablesInstruction.Builder.class)
 public interface UpdateVariablesInstruction extends TestCaseInstruction {
