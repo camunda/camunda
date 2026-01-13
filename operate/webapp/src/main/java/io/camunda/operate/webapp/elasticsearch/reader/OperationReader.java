@@ -26,7 +26,12 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.V
 import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED;
 import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -84,8 +89,7 @@ public class OperationReader extends AbstractReader
     final var lockedOperationsQuery =
         ElasticsearchUtil.termsQuery(OperationTemplate.STATE, LOCKED_OPERATION);
 
-    final var lockExpirationTimeBuilder =
-        new co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery.Builder();
+    final var lockExpirationTimeBuilder = new DateRangeQuery.Builder();
     lockExpirationTimeBuilder.field(OperationTemplate.LOCK_EXPIRATION_TIME);
     lockExpirationTimeBuilder.lte(dateTimeFormatter.format(OffsetDateTime.now()));
     final var lockExpirationTimeQuery =
@@ -101,12 +105,10 @@ public class OperationReader extends AbstractReader
     final var constantScoreQuery = ElasticsearchUtil.constantScoreQuery(operationsQuery);
 
     final var searchRequest =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(operationTemplate, ONLY_RUNTIME))
             .query(constantScoreQuery)
-            .sort(
-                ElasticsearchUtil.sortOrder(
-                    BATCH_OPERATION_ID, co.elastic.clients.elasticsearch._types.SortOrder.Asc))
+            .sort(ElasticsearchUtil.sortOrder(BATCH_OPERATION_ID, SortOrder.Asc))
             .from(0)
             .size(batchSize)
             .build();
@@ -136,13 +138,10 @@ public class OperationReader extends AbstractReader
             ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceKeys));
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(operationTemplate, ALL))
             .query(es8Query)
-            .sort(
-                sortOrder(
-                    PROCESS_INSTANCE_KEY, co.elastic.clients.elasticsearch._types.SortOrder.Asc),
-                sortOrder(ID, co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(sortOrder(PROCESS_INSTANCE_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
     try {
       final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
@@ -174,12 +173,10 @@ public class OperationReader extends AbstractReader
             ElasticsearchUtil.termsQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(operationTemplate, ONLY_RUNTIME))
             .query(es8Query)
-            .sort(
-                sortOrder(INCIDENT_KEY, co.elastic.clients.elasticsearch._types.SortOrder.Asc),
-                sortOrder(ID, co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(sortOrder(INCIDENT_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
     try {
       final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
@@ -213,12 +210,10 @@ public class OperationReader extends AbstractReader
                 ElasticsearchUtil.termsQuery(TYPE, OperationType.UPDATE_VARIABLE.name())));
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(operationTemplate, ALL))
             .query(query)
-            .sort(
-                ElasticsearchUtil.sortOrder(
-                    ID, co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
 
     try {
       final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
@@ -249,12 +244,10 @@ public class OperationReader extends AbstractReader
     final var query = ElasticsearchUtil.constantScoreQuery(processInstanceQ);
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(whereToSearch(operationTemplate, ALL))
             .query(query)
-            .sort(
-                ElasticsearchUtil.sortOrder(
-                    ID, co.elastic.clients.elasticsearch._types.SortOrder.Asc));
+            .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
 
     try {
       return scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class)
@@ -277,9 +270,7 @@ public class OperationReader extends AbstractReader
             allowedOperationsQuery());
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-            .index(whereToSearch(operationTemplate, ALL))
-            .query(query);
+        new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
 
     try {
       final var operationEntities =
@@ -312,9 +303,7 @@ public class OperationReader extends AbstractReader
             ElasticsearchUtil.termsQuery(VARIABLE_NAME, variableName));
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-            .index(whereToSearch(operationTemplate, ALL))
-            .query(query);
+        new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
 
     try {
       final var operationEntities =
@@ -334,16 +323,13 @@ public class OperationReader extends AbstractReader
   }
 
   /* Returns StringTermsAggregate with buckets aggregated by BATCH_OPERATION_ID (and provided sub-aggregations) */
-  public co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate
-      getOperationsAggregatedByBatchOperationId(
-          final List<String> batchOperationIds,
-          final Map<String, co.elastic.clients.elasticsearch._types.aggregations.Aggregation>
-              subAggregations) {
+  public StringTermsAggregate getOperationsAggregatedByBatchOperationId(
+      final List<String> batchOperationIds, final Map<String, Aggregation> subAggregations) {
     final var idsQuery =
         ElasticsearchUtil.termsQuery(OperationTemplate.BATCH_OPERATION_ID, batchOperationIds);
 
     final var batchIdAggregation =
-        co.elastic.clients.elasticsearch._types.aggregations.Aggregation.of(
+        Aggregation.of(
             a ->
                 a.terms(t -> t.field(OperationTemplate.BATCH_OPERATION_ID))
                     .aggregations(subAggregations));
@@ -351,7 +337,7 @@ public class OperationReader extends AbstractReader
     final var query = ElasticsearchUtil.constantScoreQuery(idsQuery);
 
     final var searchRequest =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(operationTemplate.getAlias())
             .query(query)
             .size(0)

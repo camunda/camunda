@@ -33,15 +33,16 @@ public class ElasticsearchDataAggregator extends DataAggregator {
       final Map<String, BatchOperationDto> resultDtos, final List<String> idList) {
 
     final var metadataAggregations = createMetadataAggregations();
-    final var batchIdAggregation =
+    final var operationsByBatchOperationId =
         operationReader.getOperationsAggregatedByBatchOperationId(idList, metadataAggregations);
 
-    for (final var bucket : batchIdAggregation.buckets().array()) {
-      final var aggregations = bucket.aggregations().get(OperationTemplate.METADATA_AGGREGATION);
-      if (aggregations == null || !aggregations.isFilters()) {
+    for (final var bucket : operationsByBatchOperationId.buckets().array()) {
+      final var operationMetadata =
+          bucket.aggregations().get(OperationTemplate.METADATA_AGGREGATION);
+      if (operationMetadata == null || !operationMetadata.isFilters()) {
         continue;
       }
-      final var filters = aggregations.filters();
+      final var filters = operationMetadata.filters();
       final int failedCount =
           (int)
               filters
