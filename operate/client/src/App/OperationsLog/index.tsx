@@ -8,13 +8,11 @@
 
 import {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {PAGE_TITLE} from 'modules/constants';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 import {Container} from './styled';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {observer} from 'mobx-react';
 
 const OperationsLog: React.FC = observer(() => {
@@ -39,20 +37,11 @@ const OperationsLog: React.FC = observer(() => {
     };
   }, []);
 
-  const {process, tenant, version} = getProcessInstanceFilters(location.search);
-  const processDefinitionKey = processesStore.getProcessId({
-    process,
-    tenant,
-    version,
-  });
-
   return (
-    <ProcessDefinitionKeyContext.Provider value={processDefinitionKey}>
-      <Container>
-        <Filters />
-        <InstancesTable />
-      </Container>
-    </ProcessDefinitionKeyContext.Provider>
+    <Container>
+      <Filters />
+      <InstancesTable />
+    </Container>
   );
 });
 

@@ -17,7 +17,6 @@ import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs'
 import {notificationsStore} from 'modules/stores/notifications';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -31,29 +30,12 @@ vi.mock('modules/tracking', () => ({
   },
 }));
 
-const Wrapper = ({
-  children,
-  initialPath = '/operations-log',
-  processDefinitionKey = null,
-}: {
-  children?: React.ReactNode;
-  initialPath?: string;
-  processDefinitionKey?: string | null;
-}) => {
+const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
   return (
     <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[initialPath]}>
+      <MemoryRouter initialEntries={['/operations-log']}>
         <Routes>
-          <Route
-            path="/operations-log"
-            element={
-              <ProcessDefinitionKeyContext.Provider
-                value={processDefinitionKey ?? undefined}
-              >
-                {children}
-              </ProcessDefinitionKeyContext.Provider>
-            }
-          />
+          <Route path="/operations-log" element={children} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>

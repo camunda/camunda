@@ -38,7 +38,7 @@ import {CellAppliedTo} from './CellAppliedTo';
 import {CellOperationType} from './CellOperationType';
 import {CellResult} from './CellResult';
 import {CellComment} from './CellComment';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
@@ -100,7 +100,11 @@ const InstancesTable: React.FC = observer(() => {
     OperationsLogFilterField,
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
-  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const processDefinitionKey = processesStore.getProcessId({
+    process: filterValues.process,
+    tenant: filterValues.tenant,
+    version: filterValues.version,
+  });
 
   const request: QueryAuditLogsRequestBody = useMemo(() => {
     return {
