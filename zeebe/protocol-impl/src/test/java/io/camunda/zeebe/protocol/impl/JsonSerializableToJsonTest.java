@@ -4335,7 +4335,8 @@ final class JsonSerializableToJsonTest {
             "eventTypes": ["creating", "assigning"],
             "afterNonGlobal": false,
             "priority": 50,
-            "source": "CONFIGURATION"
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK"
           },
           {
             "id": "listener2",
@@ -4344,7 +4345,8 @@ final class JsonSerializableToJsonTest {
             "eventTypes": ["all"],
             "afterNonGlobal": true,
             "priority": 10,
-            "source": "CONFIGURATION"
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK"
           }
         ]
       }
@@ -4382,7 +4384,8 @@ final class JsonSerializableToJsonTest {
       "eventTypes": ["creating", "assigning"],
       "afterNonGlobal": true,
       "priority": 10,
-      "source": "API"
+      "source": "API",
+      "listenerType": "USER_TASK"
     }
     """
       },
@@ -4397,7 +4400,8 @@ final class JsonSerializableToJsonTest {
       "eventTypes": [],
       "afterNonGlobal": false,
       "priority": 50,
-      "source": "CONFIGURATION"
+      "source": "CONFIGURATION",
+      "listenerType": "USER_TASK"
     }
     """
       }

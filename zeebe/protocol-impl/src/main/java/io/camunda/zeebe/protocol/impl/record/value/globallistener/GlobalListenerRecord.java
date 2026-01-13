@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,16 +40,19 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   private final IntegerProperty priorityProp = new IntegerProperty("priority", DEFAULT_PRIORITY);
   private final EnumProperty<GlobalListenerSource> sourceProp =
       new EnumProperty<>("source", GlobalListenerSource.class, GlobalListenerSource.CONFIGURATION);
+  private final EnumProperty<GlobalListenerType> listenerTypeProp =
+      new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
 
   public GlobalListenerRecord() {
-    super(7);
+    super(8);
     declareProperty(idProp)
         .declareProperty(typeProp)
         .declareProperty(retriesProp)
         .declareProperty(eventTypesProp)
         .declareProperty(afterNonGlobalProp)
         .declareProperty(priorityProp)
-        .declareProperty(sourceProp);
+        .declareProperty(sourceProp)
+        .declareProperty(listenerTypeProp);
   }
 
   @Override
@@ -122,6 +126,16 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord setSource(final GlobalListenerSource source) {
     sourceProp.setValue(source);
+    return this;
+  }
+
+  @Override
+  public GlobalListenerType getListenerType() {
+    return listenerTypeProp.getValue();
+  }
+
+  public GlobalListenerRecord setListenerType(final GlobalListenerType listenerType) {
+    listenerTypeProp.setValue(listenerType);
     return this;
   }
 
