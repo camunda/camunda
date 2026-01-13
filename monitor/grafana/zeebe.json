@@ -21662,7 +21662,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "zeebe_rdbms_table_row_count{cluster=~\"$cluster\", namespace=~\"$namespace\"}",
+              "expr": "max by (table) (zeebe_rdbms_table_row_count{cluster=~\"$cluster\", namespace=~\"$namespace\"})",
               "format": "time_series",
               "interval": "30s",
               "intervalFactor": 1,
