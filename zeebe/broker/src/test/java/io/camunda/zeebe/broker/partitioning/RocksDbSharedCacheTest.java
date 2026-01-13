@@ -140,7 +140,7 @@ class RocksDbSharedCacheTest {
     // - max heap is 128mb
     // - max non-heap is 128mb
     // so available memory is 512 - 128 - 128 = 256mb with a
-    // ROCKSDB_OVERHEAD_FACTOR of 0.15 we can allocate 217.6mb to rocksdb
+    // ROCKSDB_OVERHEAD_FACTOR of 0.5 we can allocate 128mb to rocksdb
     try (final var managementFactoryMock =
         mockMemoryEnvironment(512L * 1024 * 1024, 128L * 1024 * 1024, 128L * 1024 * 1024)) {
       assertThatCode(
@@ -152,7 +152,7 @@ class RocksDbSharedCacheTest {
     }
 
     final int morePartitionsCount = 7;
-    // should not be valid with 7 partitions since 217.6 / 7 = 31.08mb < 32mb
+    // should not be valid with 7 partitions since 128 / 7 = 19mb < 32mb
     try (final var managementFactoryMock =
         mockMemoryEnvironment(512L * 1024 * 1024, 128L * 1024 * 1024, 128L * 1024 * 1024)) {
       final var throwable =
@@ -166,7 +166,7 @@ class RocksDbSharedCacheTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
               "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
-              MINIMUM_PARTITION_MEMORY_LIMIT, 32_595_733); // 217.6mb / 7 partitions
+              MINIMUM_PARTITION_MEMORY_LIMIT, 19_173_961); // 128mb / 7 partitions
     }
   }
 
@@ -179,7 +179,7 @@ class RocksDbSharedCacheTest {
       // 25% of 512MB = 128MB fallback for non-heap
       final long expectedNonHeap = 128L * 1024 * 1024;
       final long expectedAvailable =
-          (long) (((512L * 1024 * 1024) - (128L * 1024 * 1024) - expectedNonHeap) * (1.0 - 0.15));
+          (long) (((512L * 1024 * 1024) - (128L * 1024 * 1024) - expectedNonHeap) * (1.0 - 0.5));
       // Assert
       assertThat(available).isEqualTo(expectedAvailable);
     }
