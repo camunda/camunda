@@ -875,11 +875,12 @@ jobs:
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
 
-      # We need to free up some space to let the step after this block succeed.
-      # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
-      # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
+      # Since subsequent steps of this job need a lot of disk space for downloaded
+      # database Docker images, we try to clean all unused caches and free space here.
       - name: Cleanup docker images
-        run: docker system prune -af
+        run: |
+          docker buildx prune -f
+          docker system prune -af
 
       - name: Verify Docker image
         # Skip verification on fork PRs as there public base images are used that don't match our golden labels
