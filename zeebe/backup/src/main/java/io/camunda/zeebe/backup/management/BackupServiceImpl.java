@@ -342,22 +342,24 @@ final class BackupServiceImpl {
 
   private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {
     LOG.atInfo().addKeyValue("backup", backupStatus.id()).setMessage("Deleting backup").log();
+    final CompletableFuture<Void> preparationStep;
     if (backupStatus.statusCode() == BackupStatusCode.IN_PROGRESS) {
       // In progress backups cannot be deleted. So first mark it as failed
-      return backupStore
-          .markFailed(backupStatus.id(), "The backup is going to be deleted.")
-          .thenCompose(
-              ignored ->
-                  backupStore.storeRangeMarker(
-                      backupStatus.id().partitionId(),
-                      new Deletion(backupStatus.id().checkpointId())))
-          .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
+      preparationStep =
+          backupStore
+              .markFailed(backupStatus.id(), "The backup is going to be deleted.")
+              .thenApply(ignored -> null);
     } else {
-      return backupStore
-          .storeRangeMarker(
-              backupStatus.id().partitionId(), new Deletion(backupStatus.id().checkpointId()))
-          .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
+      preparationStep = CompletableFuture.completedFuture(null);
     }
+
+    return preparationStep
+        .thenCompose(
+            ignored ->
+                backupStore.storeRangeMarker(
+                    backupStatus.id().partitionId(),
+                    new Deletion(backupStatus.id().checkpointId())))
+        .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
   }
 
   ActorFuture<Collection<BackupStatus>> listBackups(
