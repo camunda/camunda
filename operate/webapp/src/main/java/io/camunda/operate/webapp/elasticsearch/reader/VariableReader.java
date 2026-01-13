@@ -30,6 +30,7 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -222,7 +223,7 @@ public class VariableReader extends AbstractReader
       scopeKey = Long.valueOf(request.getScopeId());
     }
 
-    final var queries = new java.util.ArrayList<Query>();
+    final var queries = new ArrayList<Query>();
     queries.add(
         ElasticsearchUtil.termsQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceId));
     queries.add(ElasticsearchUtil.termsQuery(VariableTemplate.SCOPE_KEY, scopeKey));
