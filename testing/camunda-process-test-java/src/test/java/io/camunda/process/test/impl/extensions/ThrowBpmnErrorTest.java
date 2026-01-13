@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -129,7 +130,7 @@ public class ThrowBpmnErrorTest {
       camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE);
 
       // then
-      verify(camundaClient).newThrowErrorCommand(JOB_KEY);
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(Collections.emptyMap())).send();
     }
 
     @Test
@@ -141,7 +142,7 @@ public class ThrowBpmnErrorTest {
       camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE, variables);
 
       // then
-      verify(camundaClient).newThrowErrorCommand(JOB_KEY);
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(variables)).send();
     }
 
     @Test
@@ -153,7 +154,11 @@ public class ThrowBpmnErrorTest {
       camundaProcessTestContext.throwBpmnErrorFromJob(JOB_TYPE, ERROR_CODE, ERROR_MESSAGE, variables);
 
       // then
+      // Verify the command was created with the correct job key, error code, and variables
       verify(camundaClient).newThrowErrorCommand(JOB_KEY);
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY)).errorCode(ERROR_CODE);
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE)).variables(variables);
+      verify(camundaClient.newThrowErrorCommand(JOB_KEY).errorCode(ERROR_CODE).variables(variables)).errorMessage(ERROR_MESSAGE);
     }
 
     @Test
@@ -231,7 +236,7 @@ public class ThrowBpmnErrorTest {
               .send()
               .join())
           .thenThrow(new ClientException("expected"))
-          .thenReturn(org.mockito.Mockito.mock(ThrowErrorResponse.class));
+          .thenReturn(mock(ThrowErrorResponse.class));
 
       clearInvocations(camundaClient);
 
