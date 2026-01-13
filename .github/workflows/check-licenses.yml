@@ -24,6 +24,8 @@ jobs:
       actions: read
       contents: read
     runs-on: gcp-core-16-default
+    # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
+    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     timeout-minutes: 31
     strategy:
