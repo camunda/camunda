@@ -26,6 +26,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
   private final DbLong subscriptionKey;
   private final DbLong scopeKey;
   private final DbLong processDefinitionKey;
+  private final DbLong processInstanceKey;
   private final DbString tenantIdKey;
   private final DbInt subscriptionCount;
 
@@ -40,7 +41,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
       scopeKeyColumnFamily;
   private final ColumnFamily<DbCompositeKey<DbLong, DbTenantAwareKey<DbLong>>, DbNil>
       processDefinitionKeyColumnFamily;
-  private final ColumnFamily<DbLong, DbInt> processDefinitionKeyCountColumnFamily;
+  private final ColumnFamily<DbLong, DbInt> processInstanceKeyCountColumnFamily;
 
   private final ColumnFamily<DbTenantAwareKey<DbLong>, DbNil> tenantIdColumnFamily;
 
@@ -49,6 +50,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     subscriptionKey = new DbLong();
     scopeKey = new DbLong();
     processDefinitionKey = new DbLong();
+    processInstanceKey = new DbLong();
     tenantIdKey = new DbString();
     subscriptionCount = new DbInt();
     tenantAwareSubscriptionKey =
@@ -77,11 +79,12 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
             transactionContext,
             processDefinitionKeyAndTenantAwareSubscriptionKey,
             DbNil.INSTANCE);
-    processDefinitionKeyCountColumnFamily =
+
+    processInstanceKeyCountColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_PROCESS_DEFINITION_COUNT,
+            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_PROCESS_INSTANCE_COUNT,
             transactionContext,
-            processDefinitionKey,
+            processInstanceKey,
             subscriptionCount);
 
     tenantIdColumnFamily =
@@ -101,7 +104,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
 
     subscriptionKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
     scopeKeyColumnFamily.insert(scopeKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
-    incrementProcessDefinitionKeySubscriptionCount(subscription);
+    incrementProcessInstanceKeySubscriptionCount(subscription);
   }
 
   @Override
@@ -125,7 +128,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
 
     subscriptionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
     scopeKeyColumnFamily.deleteExisting(scopeKeyAndTenantAwareSubscriptionKey);
-    decrementProcessDefinitionKeySubscriptionCount(subscription);
+    decrementProcessInstanceKeySubscriptionCount(subscription);
   }
 
   @Override
@@ -149,10 +152,10 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
   }
 
   @Override
-  public boolean exists(final long processDefinitionKey) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
+  public boolean exists(final long processInstanceKey) {
+    this.processInstanceKey.wrapLong(processInstanceKey);
 
-    return processDefinitionKeyCountColumnFamily.exists(this.processDefinitionKey);
+    return processInstanceKeyCountColumnFamily.exists(this.processInstanceKey);
   }
 
   @Override
@@ -215,35 +218,35 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
         });
   }
 
-  private void incrementProcessDefinitionKeySubscriptionCount(
+  private void incrementProcessInstanceKeySubscriptionCount(
       final ConditionalSubscriptionRecord subscription) {
-    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
+    processInstanceKey.wrapLong(subscription.getProcessInstanceKey());
 
-    final DbInt count = processDefinitionKeyCountColumnFamily.get(processDefinitionKey);
+    final DbInt count = processInstanceKeyCountColumnFamily.get(processInstanceKey);
     final var newCount = count == null ? 1 : count.getValue() + 1;
 
     subscriptionCount.wrapInt(newCount);
-    processDefinitionKeyCountColumnFamily.upsert(processDefinitionKey, subscriptionCount);
+    processInstanceKeyCountColumnFamily.upsert(processInstanceKey, subscriptionCount);
   }
 
-  private void decrementProcessDefinitionKeySubscriptionCount(
+  private void decrementProcessInstanceKeySubscriptionCount(
       final ConditionalSubscriptionRecord subscription) {
-    processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-    final DbInt count = processDefinitionKeyCountColumnFamily.get(processDefinitionKey);
+    processInstanceKey.wrapLong(subscription.getProcessInstanceKey());
+    final DbInt count = processInstanceKeyCountColumnFamily.get(processInstanceKey);
 
     if (count == null) {
       throw new IllegalStateException(
-          "Tried to decrement conditional subscription count for process definition key "
-              + subscription.getProcessDefinitionKey()
+          "Tried to decrement conditional subscription count for process instance key "
+              + subscription.getProcessInstanceKey()
               + " but no count was found.");
     }
 
     final int newCount = count.getValue() - 1;
     if (newCount > 0) {
       subscriptionCount.wrapInt(newCount);
-      processDefinitionKeyCountColumnFamily.update(processDefinitionKey, subscriptionCount);
+      processInstanceKeyCountColumnFamily.update(processInstanceKey, subscriptionCount);
     } else {
-      processDefinitionKeyCountColumnFamily.deleteExisting(processDefinitionKey);
+      processInstanceKeyCountColumnFamily.deleteExisting(processInstanceKey);
     }
   }
 }

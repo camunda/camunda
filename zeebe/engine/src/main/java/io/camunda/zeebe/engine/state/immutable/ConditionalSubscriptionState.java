@@ -28,10 +28,10 @@ public interface ConditionalSubscriptionState {
    * <p>This is used to quickly check whether any conditional subscriptions need to be visited when
    * a variable is updated in a given scope.
    *
-   * @param processDefinitionKey the process definition key
+   * @param processInstanceKey the process instance key
    * @return true if any conditional start event subscriptions exist, false otherwise
    */
-  boolean exists(long processDefinitionKey);
+  boolean exists(long processInstanceKey);
 
   /**
    * Visits all (except start event) conditional subscriptions for the given scope key.
