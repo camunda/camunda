@@ -67,7 +67,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
       return ResourceAccess.denied(authorization);
     }
 
-    return ResourceAccess.allowed(authorization.with(authorizedResourceIds));
+    return ResourceAccess.allowed(authorization.withResourceIds(authorizedResourceIds));
   }
 
   private <T> ResourceAccess resolveResourceAccessByPropertyNames(
@@ -85,7 +85,8 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
         authorization.resourcePropertyNames().stream()
             .filter(authorizedResourcePropertyNames::contains)
             .collect(Collectors.toSet());
-    final var resolvedAuthorization = authorization.with(resolvedResourcePropertyNames);
+    final var resolvedAuthorization =
+        authorization.withResourcePropertyNames(resolvedResourcePropertyNames);
 
     if (resolvedResourcePropertyNames.isEmpty()) {
       return ResourceAccess.denied(resolvedAuthorization);
