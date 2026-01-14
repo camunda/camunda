@@ -31,8 +31,9 @@ import {
 } from 'modules/components/OperationsLogDetailsModal';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
   isVisible: boolean;
@@ -77,12 +78,14 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
   const sortByParsed = auditLogSortFieldEnum.safeParse(sortParams.sortBy);
   const sortBy = sortByParsed.success ? sortByParsed.data : 'timestamp';
   const {data: processInstance} = useProcessInstance();
-  const isRootNodeSelected = useIsRootNodeSelected();
-  const flowNodeInstanceId =
-    flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
+  const {resolvedElementInstance, isFetchingElement} =
+    useProcessInstanceElementSelection();
+  const elementInstanceKey = IS_ELEMENT_SELECTION_V2
+    ? resolvedElementInstance?.elementInstanceKey
+    : flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
 
-  const request: QueryAuditLogsRequestBody = useMemo(
-    () => ({
+  const request = useMemo(
+    (): QueryAuditLogsRequestBody => ({
       sort: [
         {
           field: sortBy,
@@ -92,18 +95,14 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
       filter: {
         category: {$neq: 'ADMIN'},
         processInstanceKey: processInstance?.processInstanceKey,
-        elementInstanceKey:
-          isRootNodeSelected || !flowNodeInstanceId
-            ? undefined
-            : flowNodeInstanceId,
+        elementInstanceKey: elementInstanceKey ?? undefined,
       },
     }),
     [
       sortBy,
       sortParams.sortOrder,
       processInstance?.processInstanceKey,
-      isRootNodeSelected,
-      flowNodeInstanceId,
+      elementInstanceKey,
     ],
   );
 
@@ -118,7 +117,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
     hasNextPage,
     fetchNextPage,
   } = useAuditLogs(request, {
-    enabled: isVisible,
+    enabled: isVisible && (IS_ELEMENT_SELECTION_V2 ? !isFetchingElement : true),
     select: (data) => {
       tracking.track({
         eventName: 'audit-logs-loaded',
