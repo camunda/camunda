@@ -1,4 +1,4 @@
-# Additional values file to run Zeebe on stable VMs
+# Additional values file to run Zeebe on preemptible/spot VMs
 # https://github.com/camunda/camunda-platform-helm/blob/d3276435efc994e45b490f97d7875b4330ec0c42/charts/camunda-platform-8.8/values.yaml#L2945-L2948
 orchestration:
   # Require n2-standard-2 to ensure the broker is the only application running on its node
