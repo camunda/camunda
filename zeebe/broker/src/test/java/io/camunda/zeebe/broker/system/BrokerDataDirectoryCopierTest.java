@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -145,7 +146,7 @@ final class BrokerDataDirectoryCopierTest {
     }
 
     // Otherwise, verify content is the same
-    assertThat(Files.readAllBytes(target)).isEqualTo(Files.readAllBytes(source));
+    assertThat(target).hasSameBinaryContentAs(source);
   }
 
   @Test
@@ -155,9 +156,17 @@ final class BrokerDataDirectoryCopierTest {
     final var target = tempDir.resolve("target");
 
     Files.createDirectories(source.resolve("subdir1/subdir2"));
-    Files.writeString(source.resolve("root-file.txt"), "root content");
-    Files.writeString(source.resolve("subdir1/file1.txt"), "file1 content");
-    Files.writeString(source.resolve("subdir1/subdir2/file2.txt"), "file2 content");
+    final var files =
+        Map.of(
+            "root-file.txt",
+            "root content",
+            "subdir1/file1.txt",
+            "file1 content",
+            "subdir1/subdir2/file2.txt",
+            "file2 content");
+    for (final var entry : files.entrySet()) {
+      Files.writeString(source.resolve(entry.getKey()), entry.getValue());
+    }
 
     final var copier = new BrokerDataDirectoryCopier();
 
@@ -165,14 +174,10 @@ final class BrokerDataDirectoryCopierTest {
     copier.copy(source, target, MARKER_FILE, false);
 
     // then
-    assertThat(target.resolve("root-file.txt")).exists();
-    assertThat(target.resolve("subdir1/file1.txt")).exists();
-    assertThat(target.resolve("subdir1/subdir2/file2.txt")).exists();
-
-    assertThat(Files.readString(target.resolve("root-file.txt"))).isEqualTo("root content");
-    assertThat(Files.readString(target.resolve("subdir1/file1.txt"))).isEqualTo("file1 content");
-    assertThat(Files.readString(target.resolve("subdir1/subdir2/file2.txt")))
-        .isEqualTo("file2 content");
+    for (final var entry : files.entrySet()) {
+      assertThat(target.resolve(entry.getKey()))
+          .hasSameTextualContentAs(source.resolve(entry.getKey()));
+    }
   }
 
   private static boolean areHardLinked(final Path source, final Path target) throws IOException {

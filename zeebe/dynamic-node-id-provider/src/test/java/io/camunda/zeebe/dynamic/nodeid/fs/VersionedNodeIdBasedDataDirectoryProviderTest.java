@@ -144,7 +144,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v3"));
     assertThat(result.resolve("file2.txt")).exists();
-    assertThat(Files.readString(result.resolve("file2.txt"))).isEqualTo("content2");
+    assertThat(result.resolve("file2.txt")).hasContent("content2");
 
     assertThat(copier.invocations()).hasSize(1);
     assertThat(copier.invocations().getFirst().source()).isEqualTo(nodeDirectory.resolve("v2"));
@@ -173,7 +173,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v1"));
     assertThat(result.resolve("file0.txt")).exists();
-    assertThat(Files.readString(result.resolve("file0.txt"))).isEqualTo("version 0 content");
+    assertThat(result.resolve("file0.txt")).hasContent("version 0 content");
 
     assertThat(copier.useHardLinks).isEqualTo(gracefulShutdown);
 
@@ -212,7 +212,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     assertThat(result).isEqualTo(nodeDirectory.resolve("v4"));
 
     assertThat(result.resolve("file1.txt")).exists();
-    assertThat(Files.readString(result.resolve("file1.txt"))).isEqualTo("content1");
+    assertThat(result.resolve("file1.txt")).hasContent("content1");
     assertThat(result.resolve("file2.txt")).doesNotExist();
     assertThat(result.resolve("file3.txt")).doesNotExist();
 

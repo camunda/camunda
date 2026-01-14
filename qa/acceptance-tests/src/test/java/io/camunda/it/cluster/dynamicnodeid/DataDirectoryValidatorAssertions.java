@@ -74,7 +74,7 @@ public class DataDirectoryValidatorAssertions implements DataDirectoryValidator 
                   .as("File %s should be hard-linked to %s", source, target)
                   .isTrue();
             } else {
-              assertThat(Files.readAllBytes(target)).isEqualTo(Files.readAllBytes(source));
+              assertThat(target).hasSameBinaryContentAs(source);
             }
 
             filesChecked.incrementAndGet();
