@@ -26,7 +26,7 @@ const ContentContainer = styled(Stack)`
   padding: 0 var(--cds-spacing-05);
 `;
 
-const PageHeader = styled.div`
+const BreadcrumbBar = styled.div`
   width: 100%;
   border-bottom: 1px solid var(--cds-border-subtle-01);
   padding: var(--cds-spacing-04) var(--cds-spacing-05);
@@ -49,11 +49,23 @@ const TileLabel = styled.span`
   color: var(--cds-text-weak);
 `;
 
+const ActionsContainer = styled(Stack)`
+  align-items: center;
+`;
+
+const Header = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
 export {
   PageContainer,
   ContentContainer,
-  PageHeader,
+  BreadcrumbBar,
   TilesContainer,
   Tile,
   TileLabel,
+  ActionsContainer,
+  Header,
 };

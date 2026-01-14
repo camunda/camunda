@@ -123,6 +123,17 @@ describe('<BatchOperation />', () => {
     expect(tiles.length).toBeGreaterThan(0);
   });
 
+  it('should render correct batch actions in active state', async () => {
+    mockGetBatchOperation().withSuccess({...operation, state: 'ACTIVE'});
+    render(<BatchOperation />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('text-skeleton'),
+    );
+
+    expect(screen.getByRole('button', {name: /Suspend/i})).toBeInTheDocument();
+  });
+
   it('should show error notification when batch operation fails to load', async () => {
     mockGetBatchOperation().withServerError(500);
 
