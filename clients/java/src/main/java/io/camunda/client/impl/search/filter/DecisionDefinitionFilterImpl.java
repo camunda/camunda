@@ -85,6 +85,12 @@ public class DecisionDefinitionFilterImpl
   }
 
   @Override
+  public DecisionDefinitionFilter isLatestVersion(final boolean latestVersion) {
+    filter.setIsLatestVersion(latestVersion);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.DecisionDefinitionFilter getSearchRequestProperty() {
     return filter;
   }
