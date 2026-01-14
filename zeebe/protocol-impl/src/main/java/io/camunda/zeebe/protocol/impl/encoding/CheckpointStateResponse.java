@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -99,26 +100,26 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
     final var rangesEncoder = bodyEncoder.rangesCount(ranges.size());
     for (final var range : ranges) {
       final var rangeEncoder = rangesEncoder.next();
-      rangeEncoder
-          .first()
-          .checkpointId(range.startId())
-          // TODO: Fill in
-          .checkpointType(CheckpointInfoEncoder.checkpointTypeNullValue())
-          .checkpointTimestamp(CheckpointInfoEncoder.checkpointTimestampNullValue())
-          .checkpointPosition(CheckpointInfoEncoder.checkpointPositionNullValue());
-      rangeEncoder
-          .last()
-          .checkpointId(range.endId())
-          // TODO: Fill in
-          .checkpointType(CheckpointInfoEncoder.checkpointTypeNullValue())
-          .checkpointTimestamp(CheckpointInfoEncoder.checkpointTimestampNullValue())
-          .checkpointPosition(CheckpointInfoEncoder.checkpointPositionNullValue());
-
+      rangeEncoder.partitionId(range.partitionId());
+      writeCheckpointInfo(range.first(), rangeEncoder.first());
+      writeCheckpointInfo(range.last(), rangeEncoder.last());
       final var missingCheckpointsEncoder =
           rangesEncoder.missingCheckpointsCount(range.missingCheckpoints().size());
       for (final var checkpointId : range.missingCheckpoints()) {
         missingCheckpointsEncoder.next().checkpointId(checkpointId);
       }
+    }
+  }
+
+  private static void writeCheckpointInfo(
+      final CheckpointInfo range, final CheckpointInfoEncoder rangeEncoder) {
+    if (range != null) {
+      rangeEncoder
+          .checkpointId(range.checkpointId)
+          .firstLogPosition(range.firstLogPosition)
+          .checkpointPosition(range.checkpointPosition)
+          .checkpointType(range.checkpointType.getValue())
+          .checkpointTimestamp(range.checkpointTimestamp.toEpochMilli());
     }
   }
 
@@ -159,11 +160,23 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
         missingCheckpoints.add(missingCheckpoint.checkpointId());
       }
 
+      final var first = range.first();
+      final var last = range.last();
       ranges.add(
           new PartitionBackupRange(
               range.partitionId(),
-              range.first().checkpointId(),
-              range.last().checkpointId(),
+              new CheckpointInfo(
+                  first.checkpointId(),
+                  first.firstLogPosition(),
+                  first.checkpointPosition(),
+                  CheckpointType.valueOf(first.checkpointType()),
+                  Instant.ofEpochMilli(first.checkpointTimestamp())),
+              new CheckpointInfo(
+                  last.checkpointId(),
+                  last.firstLogPosition(),
+                  last.checkpointPosition(),
+                  CheckpointType.valueOf(last.checkpointType()),
+                  Instant.ofEpochMilli(last.checkpointTimestamp())),
               missingCheckpoints));
     }
   }
@@ -192,8 +205,15 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
     this.ranges = ranges;
   }
 
+  public record CheckpointInfo(
+      long checkpointId,
+      long firstLogPosition,
+      long checkpointPosition,
+      CheckpointType checkpointType,
+      Instant checkpointTimestamp) {}
+
   public record PartitionBackupRange(
-      int partitionId, long startId, long endId, Set<Long> missingCheckpoints) {}
+      int partitionId, CheckpointInfo first, CheckpointInfo last, Set<Long> missingCheckpoints) {}
 
   public record PartitionCheckpointState(
       int partitionId,

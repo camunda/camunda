@@ -9,8 +9,6 @@ package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
-import io.camunda.zeebe.backup.api.BackupRange.Complete;
-import io.camunda.zeebe.backup.api.BackupRange.Incomplete;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -22,6 +20,7 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.CheckpointInfo;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -40,7 +39,6 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
@@ -245,33 +243,48 @@ public final class BackupApiRequestHandler
     }
 
     backupManager
-        .listBackupRanges()
+        .getBackupRangeStatus()
         .onComplete(
             (ranges, error) -> {
-              if (error == null) {
-                response.setRanges(
-                    ranges.stream()
-                        .map(
-                            r ->
-                                switch (r) {
-                                  case Incomplete(
-                                          final var start,
-                                          final var end,
-                                          final var deleted) ->
-                                      new PartitionBackupRange(partitionId, start, end, deleted);
-                                  case Complete(final var start, final var end) ->
-                                      new PartitionBackupRange(
-                                          partitionId, start, end, Collections.emptySet());
-                                })
-                        .toList());
-                result.complete(Either.right(responseWriter.withCheckpointState(response)));
-              } else {
+              if (error != null) {
                 errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
                 result.complete(Either.left(errorWriter));
+                return;
               }
+              response.setRanges(
+                  ranges.stream()
+                      .map(
+                          r ->
+                              new PartitionBackupRange(
+                                  partitionId,
+                                  fromBackupStatus(r.first()),
+                                  fromBackupStatus(r.last()),
+                                  r.missingCheckpoints()))
+                      .toList());
+              result.complete(Either.right(responseWriter.withCheckpointState(response)));
             });
 
     return result;
+  }
+
+  private CheckpointInfo fromBackupStatus(final BackupStatus backupStatus) {
+    if (backupStatus == null) {
+      return null;
+    }
+
+    final var descriptor =
+        backupStatus
+            .descriptor()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Expected a backup with descriptor: " + backupStatus));
+    return new CheckpointInfo(
+        backupStatus.id().checkpointId(),
+        descriptor.firstLogPosition().orElse(-1L),
+        descriptor.checkpointPosition(),
+        descriptor.checkpointType(),
+        descriptor.checkpointTimestamp());
   }
 
   private BackupListResponse buildBackupListResponse(final Collection<BackupStatus> backups) {

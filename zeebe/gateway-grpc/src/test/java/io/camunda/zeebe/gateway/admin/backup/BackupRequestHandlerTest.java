@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.client.api.BackupListRequest;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupResponse;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
+import io.camunda.zeebe.backup.client.api.BrokerCheckpointStateRequest;
 import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
@@ -25,11 +26,16 @@ import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.CheckpointInfo;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Test;
@@ -343,11 +349,23 @@ public class BackupRequestHandlerTest extends GatewayTest {
   @Test
   public void shouldGetCheckpointState() {
     // given
+    final var now = Instant.now();
     brokerClient.registerHandler(
-        io.camunda.zeebe.backup.client.api.BrokerCheckpointStateRequest.class,
+        BrokerCheckpointStateRequest.class,
         request -> {
           final var response = new CheckpointStateResponse();
-          response.setRanges(List.of(new PartitionBackupRange(1, 1, 10, java.util.Set.of(5L))));
+          response.setRanges(
+              List.of(
+                  new PartitionBackupRange(
+                      request.getPartitionId(),
+                      new CheckpointInfo(
+                          1,
+                          1L,
+                          1L,
+                          CheckpointType.SCHEDULED_BACKUP,
+                          now.minus(1, ChronoUnit.DAYS)),
+                      new CheckpointInfo(10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, now),
+                      Set.of(5L))));
           return new BrokerResponse<>(response);
         });
 
@@ -357,8 +375,12 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
     final var state = future.toCompletableFuture().join();
-    assertThat(state.getRanges()).hasSize(1);
-    assertThat(state.getRanges().getFirst().startId()).isEqualTo(1L);
+    assertThat(state.getRanges())
+        .extracting(PartitionBackupRange::partitionId)
+        .containsExactlyInAnyOrderElementsOf(
+            brokerClient.getTopologyManager().getTopology().getPartitions());
+    assertThat(state.getRanges())
+        .allSatisfy(range -> assertThat(range.first().checkpointId()).isEqualTo(1L));
   }
 
   @Test

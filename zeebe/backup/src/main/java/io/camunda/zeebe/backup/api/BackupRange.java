@@ -13,6 +13,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public sealed interface BackupRange {
+  long firstCheckpointId();
+
+  long lastCheckpointId();
 
   boolean contains(Interval<Long> other);
 
@@ -28,6 +31,16 @@ public sealed interface BackupRange {
     @Override
     public boolean contains(final Interval<Long> other) {
       return interval().contains(other);
+    }
+
+    @Override
+    public long firstCheckpointId() {
+      return interval().start();
+    }
+
+    @Override
+    public long lastCheckpointId() {
+      return interval.end();
     }
 
     @Override
@@ -72,6 +85,16 @@ public sealed interface BackupRange {
 
     private boolean isInDeletionRange(final Interval<Long> interval) {
       return deletedCheckpointIds.stream().anyMatch(interval::contains);
+    }
+
+    @Override
+    public long firstCheckpointId() {
+      return interval().start();
+    }
+
+    @Override
+    public long lastCheckpointId() {
+      return interval.end();
     }
   }
 }
