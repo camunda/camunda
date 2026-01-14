@@ -162,7 +162,7 @@ elasticsearch:
   master:
     fullnameOverride: elastic
     nameOverride: elastic
-    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    ## @param elasticsearch.master.replicaCount defines number of master-eligible replicas to deploy
     replicaCount: 3
     pdb:
       minAvailable: 2
