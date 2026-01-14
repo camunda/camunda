@@ -114,7 +114,8 @@ public class IncidentTools {
 
   @McpTool(description = "Resolve incident by key. " + EVENTUAL_CONSISTENCY_NOTE)
   public CallToolResult resolveIncident(
-      @McpToolParam(description = "Key of the incident to resolve.") @Positive
+      @McpToolParam(description = "Key of the incident to resolve.")
+          @Positive(message = "Incident key must be a positive number.")
           final Long incidentKey) {
     try {
       return CallToolResultMapper.fromPrimitive(
@@ -161,7 +162,8 @@ public class IncidentTools {
       }
       // resolve incident again
       return CallToolResultMapper.fromPrimitive(
-          incidentServices.resolveIncident(incidentKey, null), r -> "RESOLVED");
+          incidentServices.resolveIncident(incidentKey, null),
+          r -> "Incident with key %s resolved.".formatted(incidentKey));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }

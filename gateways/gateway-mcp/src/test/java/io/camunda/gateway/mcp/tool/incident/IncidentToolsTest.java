@@ -326,7 +326,9 @@ class IncidentToolsTest extends ToolsTest {
         .hasSize(1)
         .first()
         .isInstanceOfSatisfying(
-            TextContent.class, textContent -> assertThat(textContent.text()).isEqualTo("RESOLVED"));
+            TextContent.class,
+            textContent ->
+                assertThat(textContent.text()).isEqualTo("Incident with key 5 resolved."));
 
     verify(incidentServices, times(2)).resolveIncident(5L, null);
     verify(incidentServices).getByKey(5L);
@@ -372,5 +374,27 @@ class IncidentToolsTest extends ToolsTest {
     verify(incidentServices).resolveIncident(5L, null);
     verify(incidentServices).getByKey(5L);
     verify(jobServices).updateJob(4L, null, new UpdateJobChangeset(1, null));
+  }
+
+  @Test
+  void shouldFailResolveIncidentByKeyOnInvalidKey() {
+    // when
+    final CallToolResult result =
+        mcpClient.callTool(
+            CallToolRequest.builder()
+                .name("resolveIncident")
+                .arguments(Map.of("incidentKey", -3L))
+                .build());
+
+    // then
+    assertThat(result.isError()).isTrue();
+    assertThat(result.structuredContent()).isNull();
+    assertThat(result.content())
+        .hasSize(1)
+        .first()
+        .isInstanceOfSatisfying(
+            TextContent.class,
+            textContent ->
+                assertThat(textContent.text()).contains("Incident key must be a positive number."));
   }
 }
