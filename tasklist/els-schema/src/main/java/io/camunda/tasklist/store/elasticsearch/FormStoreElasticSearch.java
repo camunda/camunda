@@ -11,6 +11,8 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.GetRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -27,11 +29,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -65,6 +64,10 @@ public class FormStoreElasticSearch implements FormStore {
   @Autowired
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
+
+  @Autowired
+  @Qualifier("tasklistEs8Client")
+  private ElasticsearchClient es8Client;
 
   @Override
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
@@ -103,12 +106,13 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Override
   public Optional<FormIdView> getFormByKey(final String formKey) {
-    final GetRequest getRequest = new GetRequest(formIndex.getFullQualifiedName(), formKey);
+    final var getRequest =
+        GetRequest.of(b -> b.index(formIndex.getFullQualifiedName()).id(formKey));
 
     try {
-      final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
-      if (response.isExists()) {
-        final Map<String, Object> sourceAsMap = response.getSourceAsMap();
+      final var response = es8Client.get(getRequest, ElasticsearchUtil.MAP_CLASS);
+      if (response.found()) {
+        final var sourceAsMap = response.source();
         return Optional.of(
             new FormIdView(
                 (String) sourceAsMap.get(FormIndex.ID),

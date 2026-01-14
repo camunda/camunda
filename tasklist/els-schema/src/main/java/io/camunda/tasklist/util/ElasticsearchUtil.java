@@ -18,11 +18,18 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
+import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.ScrollException;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -35,9 +42,11 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -85,6 +94,8 @@ public abstract class ElasticsearchUtil {
   public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
+  public static final Class<Map<String, Object>> MAP_CLASS =
+      (Class<Map<String, Object>>) (Class<?>) Map.class;
 
   /** IndicesOptions */
   public static final IndicesOptions LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED =
@@ -597,6 +608,177 @@ public abstract class ElasticsearchUtil {
       }
     } catch (final Exception ex) {
       LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+    }
+  }
+
+  // ============ ES8 Query Helper Methods ============
+
+  /**
+   * Creates a match-none query for ES8 that returns no results.
+   *
+   * @return BoolQuery.Builder configured to match no documents
+   */
+  public static co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder
+      createMatchNoneQueryEs8() {
+    return co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.bool()
+        .must(m -> m.matchNone(mn -> mn));
+  }
+
+  /**
+   * Creates a terms query for ES8 with a collection of values.
+   *
+   * @param name Field name
+   * @param values Collection of values to match
+   * @return Query with terms condition
+   */
+  public static Query termsQuery(final String name, final Collection<?> values) {
+    if (values.stream().anyMatch(Objects::isNull)) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query ["
+              + name
+              + "] where terms field is "
+              + values);
+    }
+
+    return co.elastic.clients.elasticsearch._types.query_dsl.Query.of(
+        q ->
+            q.terms(
+                t ->
+                    t.field(name)
+                        .terms(
+                            TermsQueryField.of(
+                                tf -> tf.value(values.stream().map(FieldValue::of).toList())))));
+  }
+
+  /**
+   * Creates a terms query for ES8 with a single value.
+   *
+   * @param name Field name
+   * @param value Single value to match
+   * @return Query with terms condition
+   */
+  public static <T> Query termsQuery(final String name, final T value) {
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "Cannot use terms query with null value, trying to query [" + name + "] with null value");
+    }
+
+    if (value.getClass().isArray()) {
+      throw new IllegalStateException(
+          "Cannot pass an array to the singleton terms query, must pass a single value");
+    }
+
+    return termsQuery(name, List.of(value));
+  }
+
+  /**
+   * Joins multiple ES8 queries with AND logic. Returns null if no queries provided, single query if
+   * only one provided, or a bool query with must clauses for multiple queries.
+   *
+   * @param queries Queries to join
+   * @return Combined query or null
+   */
+  public static Query joinWithAnd(final Query... queries) {
+    final var notNullQueries = throwAwayNullElements(queries);
+
+    if (notNullQueries.isEmpty()) {
+      return null;
+    } else if (notNullQueries.size() == 1) {
+      return notNullQueries.get(0);
+    } else {
+      return co.elastic.clients.elasticsearch._types.query_dsl.Query.of(
+          q -> q.bool(b -> b.must(notNullQueries)));
+    }
+  }
+
+  /**
+   * Creates a match-all query for ES8.
+   *
+   * @return Query that matches all documents
+   */
+  public static Query matchAllQueryEs8() {
+    return Query.of(q -> q.matchAll(m -> m));
+  }
+
+  // ===========================================================================================
+  // ES8 Scroll Helper Methods
+  // ===========================================================================================
+
+  /**
+   * Scrolls through all search results using the ES8 client and returns a stream of response
+   * bodies.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @param docClass Document class type
+   * @param <T> Type of documents
+   * @return Stream of response bodies containing hits
+   * @throws ScrollException if scroll operation fails
+   */
+  public static <T> Stream<ResponseBody<T>> scrollAllStream(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final Class<T> docClass) {
+    final AtomicReference<String> lastScrollId = new AtomicReference<>(null);
+
+    final var scrollKeepAlive = Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS + "ms"));
+
+    final co.elastic.clients.elasticsearch.core.SearchResponse<T> searchRes;
+    searchRequestBuilder.scroll(scrollKeepAlive);
+
+    try {
+      searchRes = client.search(searchRequestBuilder.build(), docClass);
+      lastScrollId.set(searchRes.scrollId());
+
+      if (searchRes.hits().hits().isEmpty()) {
+        clearScrollSilently(client, lastScrollId.get());
+        return Stream.of(searchRes);
+      }
+    } catch (final IOException e) {
+      throw new ScrollException("Error during scroll where initial search request failed", e);
+    }
+
+    final var scrollStream =
+        Stream.generate(
+                () -> {
+                  final ScrollResponse<T> response;
+                  try {
+                    response =
+                        client.scroll(
+                            r -> r.scrollId(lastScrollId.get()).scroll(scrollKeepAlive), docClass);
+
+                    lastScrollId.set(response.scrollId());
+
+                    if (response.hits().hits().isEmpty()) {
+                      clearScrollSilently(client, lastScrollId.get());
+                      return null;
+                    }
+                  } catch (final IOException e) {
+                    clearScrollSilently(client, lastScrollId.get());
+                    throw new ScrollException(
+                        "Error during scroll with id: " + lastScrollId.get(), e);
+                  }
+                  return response;
+                })
+            .takeWhile(Objects::nonNull);
+
+    return Stream.concat(Stream.of(searchRes), scrollStream);
+  }
+
+  /**
+   * Clears scroll context silently, logging any errors that occur.
+   *
+   * @param client ES8 client
+   * @param scrollId Scroll ID to clear
+   */
+  private static void clearScrollSilently(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client, final String scrollId) {
+    if (scrollId != null) {
+      try {
+        client.clearScroll(cs -> cs.scrollId(scrollId));
+      } catch (final Exception e) {
+        LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId, e);
+      }
     }
   }
 

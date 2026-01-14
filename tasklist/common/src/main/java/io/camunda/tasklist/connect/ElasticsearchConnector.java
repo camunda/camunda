@@ -7,6 +7,10 @@
  */
 package io.camunda.tasklist.connect;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -14,11 +18,13 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.ElasticsearchProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.RetryOperation;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -37,6 +43,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
@@ -121,6 +128,45 @@ public class ElasticsearchConnector {
       LOGGER.debug("Elasticsearch connection was successfully created.");
     }
     return esClient;
+  }
+
+  @Bean
+  public ElasticsearchClient tasklistEs8Client() {
+    esClientRepository.load(tasklistProperties.getElasticsearch().getInterceptorPlugins());
+    return createEs8Client(tasklistProperties.getElasticsearch(), esClientRepository);
+  }
+
+  public ElasticsearchClient createEs8Client(
+      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
+    LOGGER.debug("Creating Elasticsearch connection...");
+
+    final RestClientBuilder restClientBuilder =
+        RestClient.builder(getHttpHost(elsConfig))
+            .setHttpClientConfigCallback(
+                httpClientBuilder ->
+                    configureHttpClient(
+                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
+    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
+      restClientBuilder.setRequestConfigCallback(
+          configCallback -> setTimeouts(configCallback, elsConfig));
+    }
+
+    final RestClientTransport transport =
+        new RestClientTransport(
+            restClientBuilder.build(), new JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER));
+
+    final var client = new ElasticsearchClient(transport);
+
+    if (tasklistProperties.getElasticsearch().isHealthCheckEnabled()) {
+      if (!checkHealth(client)) {
+        LOGGER.warn("Elasticsearch cluster is not accessible");
+      } else {
+        LOGGER.debug("Elasticsearch connection was successfully created.");
+      }
+    } else {
+      LOGGER.warn("Elasticsearch cluster health check is disabled.");
+    }
+    return client;
   }
 
   private HttpAsyncClientBuilder configureHttpClient(
@@ -243,6 +289,31 @@ public class ElasticsearchConnector {
                   esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
               return clusterHealthResponse.getClusterName().equals(elsConfig.getClusterName());
             });
+  }
+
+  boolean checkHealth(final ElasticsearchClient esClient) {
+    final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
+    try {
+      return RetryOperation.<Boolean>newBuilder()
+          .noOfRetry(50)
+          .retryOn(
+              IOException.class,
+              co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
+          .delayInterval(3, TimeUnit.SECONDS)
+          .message(
+              String.format(
+                  "Connect to Elasticsearch cluster [%s] at %s",
+                  elsConfig.getClusterName(), elsConfig.getUrl()))
+          .retryConsumer(
+              () -> {
+                final HealthResponse clusterHealthResponse = esClient.cluster().health();
+                return clusterHealthResponse.clusterName().equals(elsConfig.getClusterName());
+              })
+          .build()
+          .retry();
+    } catch (final Exception e) {
+      throw new TasklistRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
+    }
   }
 
   private RetryPolicy<Boolean> getConnectionRetryPolicy(final ElasticsearchProperties elsConfig) {

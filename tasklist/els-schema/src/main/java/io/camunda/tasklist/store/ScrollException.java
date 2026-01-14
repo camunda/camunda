@@ -5,13 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.tenant;
+package io.camunda.tasklist.store;
 
-import java.util.Collection;
+public class ScrollException extends RuntimeException {
 
-public interface TenantCheckApplier<T> {
-
-  T apply(final T searchRequest);
-
-  T apply(final T searchRequest, Collection<String> tenantIds);
+  public ScrollException(final String message, final Throwable cause) {
+    super(message, cause);
+  }
 }

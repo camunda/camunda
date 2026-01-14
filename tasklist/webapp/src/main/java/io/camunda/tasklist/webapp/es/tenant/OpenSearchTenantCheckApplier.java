@@ -36,13 +36,15 @@ public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRe
   @Autowired private TenantService tenantService;
 
   @Override
-  public void apply(final SearchRequest.Builder searchRequest) {
+  public SearchRequest.Builder apply(final SearchRequest.Builder searchRequest) {
     final var tenantAccess = tenantService.getAuthenticatedTenants();
     applyTenantCheckOnQuery(searchRequest, tenantAccess, tenantAccess.tenantIds());
+    return searchRequest;
   }
 
   @Override
-  public void apply(final SearchRequest.Builder searchRequest, final Collection<String> tenantIds) {
+  public SearchRequest.Builder apply(
+      final SearchRequest.Builder searchRequest, final Collection<String> tenantIds) {
     final var tenantAccess = tenantService.getAuthenticatedTenants();
     final var authorizedTenantIds =
         Optional.ofNullable(tenantAccess.tenantIds()).map(Set::copyOf).orElseGet(HashSet::new);
@@ -50,6 +52,8 @@ public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRe
         tenantIds.stream().filter(authorizedTenantIds::contains).collect(Collectors.toSet());
 
     applyTenantCheckOnQuery(searchRequest, tenantAccess, searchByTenantIds);
+
+    return searchRequest;
   }
 
   private void applyTenantCheckOnQuery(
