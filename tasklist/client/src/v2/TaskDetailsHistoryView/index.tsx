@@ -6,6 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_HISTORY_TAB_ENABLED = false;
+const TaskDetailsHistoryView: React.FC = () => {
+  return (
+    <div data-testid="task-details-history-view">
+      {/* Empty content - to be implemented with #40532 */}
+    </div>
+  );
+};
 
-export {IS_HISTORY_TAB_ENABLED};
+export {TaskDetailsHistoryView as Component};

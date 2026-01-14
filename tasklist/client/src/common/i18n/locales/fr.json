@@ -287,6 +287,8 @@
     "taskDetailsShowTaskLabel": "Afficher la tâche",
     "taskDetailsProcessTabLabel": "Processus",
     "taskDetailsShowBpmnProcessLabel": "Afficher le processus BPMN associé",
+    "taskDetailsHistoryTabLabel": "Historique",
+    "taskDetailsShowHistoryLabel": "Afficher l'historique de la tâche",
     "taskDetailsNavLabel": "Navigation dans les détails de la tâche",
     "turnOnNotificationTitle": "Ne manquez pas vos prochaines tâches assignées",
     "turnOnNotificationSubtitle": "Activez les notifications dans votre navigateur pour être averti lorsque de nouvelles tâches vous sont assignées.",

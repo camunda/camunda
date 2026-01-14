@@ -119,6 +119,10 @@ const v2Routes = createRoutesFromElements(
             path="process"
             lazy={() => import('./v2/TaskDetailsProcessView')}
           />
+          <Route
+            path="history"
+            lazy={() => import('./v2/TaskDetailsHistoryView')}
+          />
         </Route>
       </Route>
     </Route>

@@ -286,6 +286,8 @@
     "taskDetailsShowTaskLabel": "Aufgabe anzeigen",
     "taskDetailsProcessTabLabel": "Prozess",
     "taskDetailsShowBpmnProcessLabel": "Verknüpften BPMN-Prozess anzeigen",
+    "taskDetailsHistoryTabLabel": "Verlauf",
+    "taskDetailsShowHistoryLabel": "Aufgabenverlauf anzeigen",
     "taskDetailsNavLabel": "Navigationsdetails zur Aufgabe",
     "turnOnNotificationTitle": "Verpassen Sie keine neuen Zuweisungen",
     "turnOnNotificationSubtitle": "Aktivieren Sie Benachrichtigungen in Ihrem Browser, um benachrichtigt zu werden, wenn Ihnen neue Aufgaben zugewiesen werden.",
