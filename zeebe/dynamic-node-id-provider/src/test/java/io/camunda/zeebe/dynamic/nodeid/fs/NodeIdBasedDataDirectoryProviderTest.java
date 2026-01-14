@@ -5,11 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.nodeid;
+package io.camunda.zeebe.dynamic.nodeid.fs;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
+import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;

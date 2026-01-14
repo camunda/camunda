@@ -15,13 +15,13 @@ import io.camunda.configuration.NodeIdProvider.S3;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.dynamic.nodeid.ConfiguredDataDirectoryProvider;
-import io.camunda.zeebe.dynamic.nodeid.DataDirectoryCopier;
-import io.camunda.zeebe.dynamic.nodeid.DataDirectoryProvider;
-import io.camunda.zeebe.dynamic.nodeid.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
-import io.camunda.zeebe.dynamic.nodeid.VersionedNodeIdBasedDataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryCopier;
+import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
@@ -50,14 +50,16 @@ public class NodeIdProviderConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(NodeIdProviderConfiguration.class);
   private final Cluster cluster;
   private final boolean disableVersionedDirectory;
+  private final int versionedDirectoryRetentionCount;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public NodeIdProviderConfiguration(
       final UnifiedConfiguration configuration, final ObjectMapper objectMapper) {
     cluster = configuration.getCamunda().getCluster();
-    disableVersionedDirectory =
-        configuration.getCamunda().getData().getPrimaryStorage().disableVersionedDirectory();
+    final var primaryStorage = configuration.getCamunda().getData().getPrimaryStorage();
+    disableVersionedDirectory = primaryStorage.disableVersionedDirectory();
+    versionedDirectoryRetentionCount = primaryStorage.getVersionedDirectoryRetentionCount();
     this.objectMapper = objectMapper;
   }
 
@@ -156,7 +158,8 @@ public class NodeIdProviderConfiguration {
                     objectMapper,
                     nodeInstance,
                     fromBrokerCopier(brokerCopier),
-                    previousNodeGracefullyShutdown);
+                    previousNodeGracefullyShutdown,
+                    versionedDirectoryRetentionCount);
           }
         };
 

@@ -5,19 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.nodeid;
+package io.camunda.zeebe.dynamic.nodeid.fs;
 
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * A data directory provider that returns the configured data directory as-is without any
- * modification.
- */
-public class ConfiguredDataDirectoryProvider implements DataDirectoryProvider {
+public interface DataDirectoryProvider {
 
-  @Override
-  public CompletableFuture<Path> initialize(final Path baseDataDirectory) {
-    return CompletableFuture.completedFuture(baseDataDirectory);
-  }
+  /**
+   * Computes and returns the data directory path based on the base directory. The implementation
+   * may also perform initialization of the data directory.
+   */
+  CompletableFuture<Path> initialize(final Path baseDirectory);
 }
