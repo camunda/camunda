@@ -187,10 +187,10 @@ public class IncidentStatisticsReader extends AbstractReader
 
       for (final var bucket : buckets) {
         final Long processDefinitionKey = bucket.key();
-        final long incidents = bucket.docCount();
+        final long incidentCount = bucket.docCount();
         results.put(
             processDefinitionKey,
-            new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), incidents, 0));
+            new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), incidentCount, 0));
       }
       return results;
     } catch (final IOException e) {
