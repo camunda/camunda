@@ -36,7 +36,7 @@ fi
 
 # Run profiling
 filename=flamegraph-$(date +%Y-%m-%d_%H-%M-%S).html
-PID=$(kubectl exec "$node" -- jps | grep Standalone | cut -d " " -f 1)
+PID=$(kubectl exec "$node" -- ps -ax | grep java | awk '{$1=$1;print}' | cut -d " " -f 1)
 kubectl exec "$node" -- ./data/asprof -e itimer -d 100 -t -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" "$PID"
 
 # Copy result
