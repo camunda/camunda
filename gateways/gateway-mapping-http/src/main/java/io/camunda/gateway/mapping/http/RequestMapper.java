@@ -42,7 +42,6 @@ import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
-import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
@@ -64,8 +63,6 @@ import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobResultAdHocSubProcess;
 import io.camunda.gateway.protocol.model.JobResultUserTask;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
-import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
-import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
@@ -101,7 +98,6 @@ import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
-import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
@@ -479,27 +475,6 @@ public class RequestMapper {
                 request.getName(),
                 request.getEmail(),
                 request.getPassword()));
-  }
-
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleCreateRequest(
-      final MappingRuleCreateRequest request, final Pattern identifierPattern) {
-    return getResult(
-        MappingRuleRequestValidator.validateCreateRequest(request, identifierPattern),
-        () ->
-            new MappingRuleDTO(
-                request.getClaimName(),
-                request.getClaimValue(),
-                request.getName(),
-                request.getMappingRuleId()));
-  }
-
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleUpdateRequest(
-      final String mappingRuleId, final MappingRuleUpdateRequest request) {
-    return getResult(
-        MappingRuleRequestValidator.validateUpdateRequest(request),
-        () ->
-            new MappingRuleDTO(
-                request.getClaimName(), request.getClaimValue(), request.getName(), mappingRuleId));
   }
 
   public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
