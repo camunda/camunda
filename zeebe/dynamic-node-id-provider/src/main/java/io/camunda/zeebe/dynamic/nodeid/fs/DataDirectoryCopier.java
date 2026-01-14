@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.nodeid;
+package io.camunda.zeebe.dynamic.nodeid.fs;
 
 import java.io.IOException;
 import java.nio.file.Path;
