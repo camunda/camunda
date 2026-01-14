@@ -23,15 +23,19 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
@@ -91,6 +95,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                           JobState.RETRIES_UPDATED,
                           JobState.TIMED_OUT))
               .retries(retries -> retries.gte(1));
+
+  // We can update variables only for active element instances
+  private static final Consumer<ElementInstanceFilter> DEFAULT_ELEMENT_INSTANCE_FILTER =
+      filter -> filter.state(ElementInstanceState.ACTIVE);
 
   // We can resolve only active incidents
   private static final Consumer<IncidentFilter> DEFAULT_INCIDENT_RESOLUTION_FILTER =
@@ -697,7 +705,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         client,
         pi -> {
           LOGGER.debug(
-              "Update variables for process instance [%s, processInstanceKey: '%s'] with variables {}",
+              "Update variables for process instance [{}, processInstanceKey: '{}'] with variables {}",
               processInstanceSelector.describe(),
               pi.getProcessInstanceKey(),
               variables);
@@ -727,7 +735,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 client,
                 ei -> {
                   LOGGER.debug(
-                      "Update local variables for element [%s, elementInstanceKey: '%s'] in process instance [processInstanceKey: '%s'] with variables {}",
+                      "Update local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
                       elementSelector.describe(),
                       ei.getElementInstanceKey(),
                       pi.getProcessInstanceKey(),
@@ -741,9 +749,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 }));
   }
 
-  private Optional<io.camunda.client.api.search.response.ProcessInstance> findProcessInstance(
-      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
-      final CamundaClient client) {
+  private Optional<ProcessInstance> findProcessInstance(
+      final ProcessInstanceSelector processInstanceSelector, final CamundaClient client) {
     return client
         .newProcessInstanceSearchRequest()
         .filter(processInstanceSelector::applyFilter)
@@ -755,17 +762,17 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .findFirst();
   }
 
-  private Optional<io.camunda.client.api.search.response.ElementInstance> findElementInstance(
+  private Optional<ElementInstance> findElementInstance(
       final long processInstanceKey,
-      final io.camunda.process.test.api.assertions.ElementSelector elementSelector,
+      final ElementSelector elementSelector,
       final CamundaClient client) {
     return client
         .newElementInstanceSearchRequest()
         .filter(
-            filter -> {
-              filter.processInstanceKey(processInstanceKey);
-              elementSelector.applyFilter(filter);
-            })
+            filter ->
+                DEFAULT_ELEMENT_INSTANCE_FILTER
+                    .andThen(elementSelector::applyFilter)
+                    .accept(filter.processInstanceKey(processInstanceKey)))
         .send()
         .join()
         .items()
@@ -777,7 +784,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private void awaitProcessInstance(
       final ProcessInstanceSelector processInstanceSelector,
       final CamundaClient client,
-      final Consumer<io.camunda.client.api.search.response.ProcessInstance> processInstanceConsumer) {
+      final Consumer<ProcessInstance> processInstanceConsumer) {
 
     awaitBehavior.untilAsserted(
         () -> findProcessInstance(processInstanceSelector, client),
@@ -796,7 +803,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final long processInstanceKey,
       final ElementSelector elementSelector,
       final CamundaClient client,
-      final Consumer<io.camunda.client.api.search.response.ElementInstance> elementInstanceConsumer) {
+      final Consumer<ElementInstance> elementInstanceConsumer) {
 
     awaitBehavior.untilAsserted(
         () -> findElementInstance(processInstanceKey, elementSelector, client),
