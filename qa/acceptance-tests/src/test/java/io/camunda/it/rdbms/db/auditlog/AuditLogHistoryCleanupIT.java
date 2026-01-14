@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.security.reader.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -46,7 +47,8 @@ public class AuditLogHistoryCleanupIT {
     historyCleanupService.cleanupHistory(0, cleanupDate);
 
     // THEN
-    assertThat(auditLogReader.findByEntityKey(entityKey)).isNotPresent();
+    assertThat(auditLogReader.getById(auditLog.auditLogKey(), ResourceAccessChecks.disabled()))
+        .isNull();
   }
 
   @TestTemplate
@@ -71,6 +73,7 @@ public class AuditLogHistoryCleanupIT {
     historyCleanupService.cleanupHistory(0, now);
 
     // THEN
-    assertThat(auditLogReader.findByEntityKey(entityKey)).isPresent();
+    assertThat(auditLogReader.getById(auditLog.auditLogKey(), ResourceAccessChecks.disabled()))
+        .isNotNull();
   }
 }

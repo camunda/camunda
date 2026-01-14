@@ -17,6 +17,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.query.BatchOperationItemQuery;
+import io.camunda.security.reader.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -65,7 +66,8 @@ public class BatchOperationHistoryCleanupIT {
     final var query =
         BatchOperationItemQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey)));
     assertThat(batchOperationItemReader.search(query).total()).isEqualTo(0);
-    assertThat(auditLogReader.findByEntityKey(entityKey)).isNotPresent();
+    assertThat(auditLogReader.getById(auditLog.auditLogKey(), ResourceAccessChecks.disabled()))
+        .isNull();
   }
 
   @TestTemplate
@@ -104,6 +106,7 @@ public class BatchOperationHistoryCleanupIT {
     final var query =
         BatchOperationItemQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey)));
     assertThat(batchOperationItemReader.search(query).total()).isEqualTo(5);
-    assertThat(auditLogReader.findByEntityKey(entityKey)).isPresent();
+    assertThat(auditLogReader.getById(auditLog.auditLogKey(), ResourceAccessChecks.disabled()))
+        .isNotNull();
   }
 }
