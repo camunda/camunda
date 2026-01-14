@@ -7,16 +7,13 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.util.ElasticsearchUtil.requestOptionsFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import java.util.ArrayList;
 import java.util.Map;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -102,7 +99,6 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
   public void testThrottleBatchSize() throws Exception {
 
     // having
-    ElasticsearchUtil.setRequestOptions(requestOptionsFor(1024 * 32 * 10));
 
     final var bigVarBuilder = new StringBuilder();
     for (int i = 0; i < 1024 * 32; i++) {
@@ -129,7 +125,6 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
     }
 
     tester.waitUntil().variableExists("end");
-    ElasticsearchUtil.setRequestOptions(RequestOptions.DEFAULT);
   }
 
   protected String buildStringWithLengthOf(final int length) {

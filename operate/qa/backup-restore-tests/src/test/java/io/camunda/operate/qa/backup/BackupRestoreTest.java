@@ -7,10 +7,12 @@
  */
 package io.camunda.operate.qa.backup;
 
-import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.webapps.backup.BackupStateDto.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.TestContainerUtil;
@@ -21,14 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
-import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.restore.RestoreSnapshotRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.repositories.fs.FsRepository;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,10 +80,7 @@ public class BackupRestoreTest {
 
   private void deleteOperateIndices() throws Exception {
     try {
-      testContext
-          .getEsClient()
-          .indices()
-          .delete(new DeleteIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
+      testContext.getEsClient().indices().delete(d -> d.index(INDEX_PREFIX + "*"));
       RetryOperation.newBuilder()
           .noOfRetry(10)
           .delayInterval(2000, TimeUnit.MILLISECONDS)
@@ -98,7 +90,8 @@ public class BackupRestoreTest {
                   !testContext
                       .getEsClient()
                       .indices()
-                      .exists(new GetIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT))
+                      .exists(e -> e.index(INDEX_PREFIX + "*"))
+                      .value())
           .build()
           .retry();
       LOGGER.info("************ Operate indices deleted ************");
@@ -131,10 +124,13 @@ public class BackupRestoreTest {
   private void startAllApps() throws IOException {
     testContainerUtil.startElasticsearch(testContext);
     testContainerUtil.checkElasctisearchHealth(testContext);
-    testContext.setEsClient(
-        new RestHighLevelClient(
-            RestClient.builder(
-                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
+    final RestClient restClient =
+        RestClient.builder(
+                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))
+            .build();
+    final RestClientTransport transport =
+        new RestClientTransport(restClient, new JacksonJsonpMapper());
+    testContext.setEsClient(new ElasticsearchClient(transport));
     createSnapshotRepository(testContext);
 
     testContainerUtil.startZeebe(testContext);
@@ -172,9 +168,10 @@ public class BackupRestoreTest {
                     .getEsClient()
                     .snapshot()
                     .restore(
-                        new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot)
-                            .waitForCompletion(true),
-                        RequestOptions.DEFAULT);
+                        r ->
+                            r.repository(REPOSITORY_NAME)
+                                .snapshot(snapshot)
+                                .waitForCompletion(true));
               } catch (final IOException e) {
                 throw new OperateRuntimeException(
                     "Exception occurred while restoring the backup: " + e.getMessage(), e);
@@ -189,10 +186,10 @@ public class BackupRestoreTest {
         .getEsClient()
         .snapshot()
         .createRepository(
-            new PutRepositoryRequest(REPOSITORY_NAME)
-                .type(FsRepository.TYPE)
-                .settings(asMap("location", REPOSITORY_NAME)),
-            RequestOptions.DEFAULT);
+            r ->
+                r.name(REPOSITORY_NAME)
+                    .repository(
+                        repo -> repo.fs(f -> f.settings(s -> s.location(REPOSITORY_NAME)))));
   }
 }
 

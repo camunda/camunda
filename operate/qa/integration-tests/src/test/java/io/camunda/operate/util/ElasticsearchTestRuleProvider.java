@@ -17,8 +17,7 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.nodes.Stats;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -51,9 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestHighLevelClient;
+import java.util.Set;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,13 +65,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   protected static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchTestRuleProvider.class);
 
-  // Scroll contexts constants
-  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
-  // Path to find search statistics for all indexes
-  private static final String PATH_SEARCH_STATISTICS =
-      "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
-
-  @Autowired protected RestHighLevelClient esClient;
   @Autowired protected ElasticsearchClient es8Client;
 
   @Autowired protected OperateProperties operateProperties;
@@ -94,8 +84,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
-
-  @Autowired private ObjectMapper objectMapper;
 
   private String indexPrefix;
 
@@ -248,7 +236,18 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public int getOpenScrollcontextSize() {
-    return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
+    int openContexts = 0;
+    try {
+      final Set<Map.Entry<String, Stats>> nodesResult =
+          es8Client.nodes().stats().nodes().entrySet();
+      for (final Map.Entry<String, Stats> entryNodes : nodesResult) {
+        openContexts += entryNodes.getValue().indices().search().openContexts().intValue();
+      }
+      return openContexts;
+    } catch (final IOException e) {
+      LOGGER.error("Couldn't retrieve node stats from elasticsearch.", e);
+      return 0;
+    }
   }
 
   @Override
@@ -282,29 +281,5 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
             .build();
     final var response = es8Client.indices().get(getIndexRequest);
     return response.result() != null && response.result().size() >= minCountOfIndices;
-  }
-
-  private int getIntValueForJSON(
-      final String path, final String fieldname, final int defaultValue) {
-    final Optional<JsonNode> jsonNode = getJsonFor(path);
-    if (jsonNode.isPresent()) {
-      final JsonNode field = jsonNode.get().findValue(fieldname);
-      if (field != null) {
-        return field.asInt(defaultValue);
-      }
-    }
-    return defaultValue;
-  }
-
-  private Optional<JsonNode> getJsonFor(final String path) {
-    try {
-      final ObjectMapper objectMapper = new ObjectMapper();
-      final Response response =
-          esClient.getLowLevelClient().performRequest(new Request("GET", path));
-      return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
-    } catch (final Exception e) {
-      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
-      return Optional.empty();
-    }
   }
 }

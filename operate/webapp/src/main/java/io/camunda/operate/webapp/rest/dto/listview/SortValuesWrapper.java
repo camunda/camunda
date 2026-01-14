@@ -18,7 +18,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import org.elasticsearch.common.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,6 @@ public class SortValuesWrapper implements Serializable {
   // Opensearch does not have a filter and just passes any type further on
   static {
     ALLOWED_SORTVALUE_TYPES.add(String.class);
-    ALLOWED_SORTVALUE_TYPES.add(Text.class);
     ALLOWED_SORTVALUE_TYPES.add(Long.class);
     ALLOWED_SORTVALUE_TYPES.add(Integer.class);
     ALLOWED_SORTVALUE_TYPES.add(Short.class);
