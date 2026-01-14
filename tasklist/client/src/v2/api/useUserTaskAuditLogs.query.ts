@@ -22,7 +22,7 @@ function getUserTaskAuditLogsQueryOptions(userTaskKey: string) {
           userTaskKey,
           page: {
             from: pageParam,
-            limit: 50,
+            limit: MAX_AUDIT_LOGS_PER_REQUEST,
           },
         }),
       );
