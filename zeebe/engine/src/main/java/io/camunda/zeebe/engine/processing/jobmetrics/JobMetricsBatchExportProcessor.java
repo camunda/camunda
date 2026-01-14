@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,10 @@ import org.slf4j.LoggerFactory;
 public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobMetricsBatchRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(JobMetricsBatchExportProcessor.class);
-
+  // 4MB minus the margin error of the ArrayProperty overhead
+  // which depends on its
+  // size, see MsgPackWriter.getEncodedArrayHeaderLenght and the overhead of the metadata added
+  // later in the RecordBatch (This is an approximation but should be sufficient)
   private final JobMetricsState jobMetricsState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
@@ -41,9 +44,9 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
   }
 
   @Override
-  public void processRecord(final TypedRecord<JobMetricsBatchRecord> record) {
+  public void processRecord(final TypedRecord<JobMetricsBatchRecord> unused) {
 
-    final JobMetricsBatchRecord exportedRecord = createExportedRecord(record.getValue());
+    final JobMetricsBatchRecord exportedRecord = createExportedRecord();
 
     LOG.debug(
         "Exporting job metrics batch with {} entries, time range: {} - {}",
@@ -55,11 +58,14 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
         keyGenerator.nextKey(), JobMetricsBatchIntent.EXPORTED, exportedRecord);
   }
 
-  private JobMetricsBatchRecord createExportedRecord(final JobMetricsBatchRecord value) {
+  private JobMetricsBatchRecord createExportedRecord() {
     final JobMetricsBatchRecord record = new JobMetricsBatchRecord();
 
-    final List<String> encodedString = jobMetricsState.getEncodedStrings();
-
+    final Set<String> encodedString = jobMetricsState.getEncodedStrings();
+    record.setBatchStartTime(jobMetricsState.getBatchStartTime());
+    record.setBatchEndTime(jobMetricsState.getBatchEndTime());
+    record.setRecordSizeLimitExceeded(jobMetricsState.isIncompleteBatch());
+    record.setEncodedStrings(encodedString);
     jobMetricsState.forEach(
         (jobTypeIndex, tenantIdIndex, workerNameIndex, metrics) -> {
           final JobMetrics jobMetricsEntry = new JobMetrics();
@@ -74,7 +80,7 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
                               .setCount(statusMetrics.getCount())
                               .setLastUpdatedAt(statusMetrics.getLastUpdatedAt()))
                   .collect(Collectors.toList()));
-          record.getJobMetrics().add(jobMetricsEntry);
+          record.addJobMetrics(jobMetricsEntry);
         });
 
     return record;

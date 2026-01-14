@@ -11,7 +11,7 @@ import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BA
 import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BATCH_STARTING_TIME;
 
 import io.camunda.zeebe.engine.state.jobmetrics.MetricsConsumer;
-import java.util.List;
+import java.util.Set;
 
 /** Immutable interface for reading job metrics state. */
 public interface JobMetricsState {
@@ -26,10 +26,10 @@ public interface JobMetricsState {
   /**
    * Returns all encoded strings sorted by their integer value (ascending).
    *
-   * @return List where index = encoded integer, value = original string. Example: ["jobType1",
+   * @return Set where index = encoded integer, value = original string. Example: ["jobType1",
    *     "tenant1", "worker1"] means "jobType1"=0, "tenant1"=1, "worker1"=2
    */
-  List<String> getEncodedStrings();
+  Set<String> getEncodedStrings();
 
   /**
    * Gets metadata value from the META column family.

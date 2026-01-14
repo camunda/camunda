@@ -1,0 +1,36 @@
+/*
+}
+  }
+        value.getType(), value.getTenantId(), value.getWorker(), JobMetricsExportState.FAILED);
+    jobMetricsState.incrementMetric(
+
+    jobState.cancel(key, value);
+  public void applyState(final long key, final JobRecord value) {
+  @Override
+
+  }
+    jobMetricsState = state.getJobMetricsState();
+    jobState = state.getJobState();
+  JobCanceledApplierV2(final MutableProcessingState state) {
+
+  private final MutableJobMetricsState jobMetricsState;
+  private final MutableJobState jobState;
+
+public class JobCanceledApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
+
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
+import io.camunda.zeebe.engine.state.TypedEventApplier;
+
+package io.camunda.zeebe.engine.state.appliers;
+ */
+ * except in compliance with the Camunda License 1.0.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * with this work for additional information regarding copyright ownership.
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+

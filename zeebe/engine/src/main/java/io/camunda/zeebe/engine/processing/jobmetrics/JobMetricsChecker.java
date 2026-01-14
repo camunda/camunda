@@ -35,7 +35,6 @@ public class JobMetricsChecker implements Task {
   private ReadonlyStreamProcessorContext processingContext;
   private volatile boolean shouldReschedule = false;
   private final AtomicReference<ScheduledTask> scheduledTask = new AtomicReference<>(null);
-  private final long lastExportTime = -1;
 
   public JobMetricsChecker(final Duration exportInterval, final InstantSource clock) {
     this.exportInterval = exportInterval;
