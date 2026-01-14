@@ -811,8 +811,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
           assertThat(elementInstance)
               .withFailMessage(
                   "Expected to update local variables for element [%s] in process instance [processInstanceKey: %s] but no element is available.",
-                  elementSelector.describe(),
-                  processInstanceKey)
+                  elementSelector.describe(), processInstanceKey)
               .isPresent();
 
           elementInstance.ifPresent(elementInstanceConsumer);

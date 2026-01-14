@@ -594,8 +594,7 @@ public class PojoCompatibilityTest {
                         ImmutableProcessInstanceSelector.builder()
                             .processDefinitionId("my-process")
                             .build())
-                    .elementSelector(
-                        ImmutableElementSelector.builder().elementId("task1").build())
+                    .elementSelector(ImmutableElementSelector.builder().elementId("task1").build())
                     .putVariables("localVar", "localValue")
                     .build()))
         // add new instructions here

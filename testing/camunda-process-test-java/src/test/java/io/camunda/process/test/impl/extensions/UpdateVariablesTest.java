@@ -295,8 +295,7 @@ public class UpdateVariablesTest {
       assertThatThrownBy(
               () ->
                   camundaProcessTestContext.updateVariables(
-                      ProcessInstanceSelectors.byProcessId(PROCESS_DEFINITION_ID),
-                      variables))
+                      ProcessInstanceSelectors.byProcessId(PROCESS_DEFINITION_ID), variables))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
               "Expected to update variables for process instance [process-id: '%s'] but no process instance is available.",
@@ -337,8 +336,7 @@ public class UpdateVariablesTest {
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
               "Expected to update local variables for element [%s] in process instance [processInstanceKey: %s] but no element is available.",
-              ELEMENT_ID,
-              PROCESS_INSTANCE_KEY);
+              ELEMENT_ID, PROCESS_INSTANCE_KEY);
     }
   }
 }

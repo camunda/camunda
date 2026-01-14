@@ -81,8 +81,7 @@ public class UpdateVariablesInstructionTest {
                 ImmutableProcessInstanceSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .build())
-            .elementSelector(
-                ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+            .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
             .putAllVariables(variables)
             .build();
 
