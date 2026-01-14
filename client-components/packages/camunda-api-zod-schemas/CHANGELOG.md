@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.28
+
+### 🚀 Enhancements
+
+- add process instance deletion v2 endpoint ([#43318](https://github.com/camunda/camunda/pull/43318))
+
 ## v0.0.27
 
 ### 🩹 Fixes

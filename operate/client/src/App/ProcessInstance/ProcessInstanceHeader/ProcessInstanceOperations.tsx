@@ -8,24 +8,22 @@
 
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {useNavigate} from 'react-router-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Operations} from 'modules/components/Operations';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError as handleOperationErrorUtil} from 'modules/utils/notifications';
+import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
 import {tracking} from 'modules/tracking';
-import {Locations} from 'modules/Routes';
 import {useHasActiveOperationItems} from 'modules/queries/batch-operations/useHasActiveOperationItems';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
-import {operationsStore} from 'modules/stores/operations';
 import {type OperationEntityType} from 'modules/types/operate';
 import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import type {OperationConfig} from 'modules/components/Operations/types';
-import {logger} from 'modules/logger';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -33,7 +31,8 @@ type Props = {
 
 const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const handleOperationSuccessUtil = useHandleOperationSuccess();
+
   const [
     isModificationModeHelperModalVisible,
     setIsModificationModeHelperModalVisible,
@@ -52,6 +51,21 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       notificationsStore.displayNotification({
         kind: 'error',
         title: 'Failed to cancel process instance',
+        subtitle: error.message,
+        isDismissable: true,
+      });
+    },
+  });
+
+  const {
+    mutate: deleteProcessInstance,
+    isPending: isDeleteProcessInstancePending,
+  } = useDeleteProcessInstance(processInstance.processInstanceKey, {
+    onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
+    onError: (error) => {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Failed to delete process instance',
         subtitle: error.message,
         isDismissable: true,
       });
@@ -84,44 +98,11 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   };
 
   const handleOperationSuccess = (operationType: OperationEntityType) => {
-    invalidateQueries();
-
-    tracking.track({
-      eventName: 'single-operation',
+    handleOperationSuccessUtil({
       operationType,
       source: 'instance-header',
+      onInvalidateQueries: invalidateQueries,
     });
-
-    if (operationType === 'DELETE_PROCESS_INSTANCE') {
-      navigate(
-        Locations.processes({
-          active: true,
-          incidents: true,
-        }),
-        {replace: true},
-      );
-
-      notificationsStore.displayNotification({
-        kind: 'success',
-        title: 'Instance deleted',
-        isDismissable: true,
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      await operationsStore.applyOperation({
-        instanceId: processInstance.processInstanceKey,
-        payload: {
-          operationType: 'DELETE_PROCESS_INSTANCE',
-        },
-        onError: ({statusCode}) => handleOperationError(statusCode),
-        onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
-      });
-    } catch (error) {
-      logger.error(error);
-    }
   };
 
   const handleEnterModificationMode = () => {
@@ -180,7 +161,8 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   if (!isInstanceActive) {
     operations.push({
       type: 'DELETE_PROCESS_INSTANCE',
-      onExecute: handleDelete,
+      onExecute: deleteProcessInstance,
+      disabled: isDeleteProcessInstancePending,
     });
   }
 
@@ -194,6 +176,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const isLoading =
     hasActiveOperationItems ||
     isCancelProcessInstancePending ||
+    isDeleteProcessInstancePending ||
     isResolveIncidentsPending;
 
   return (

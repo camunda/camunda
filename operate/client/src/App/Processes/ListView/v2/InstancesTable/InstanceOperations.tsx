@@ -6,16 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {handleOperationError} from 'modules/utils/notifications';
-import {tracking} from 'modules/tracking';
-import {applyOperation as applyOperationV1} from 'modules/api/processInstances/operations';
+import {useHandleOperationSuccess} from 'modules/utils/processInstance/handleOperationSuccess';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
+import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
-import type {OperationEntityType} from 'modules/types/operate';
 
 type Props = {
   processInstanceKey: string;
@@ -28,18 +26,7 @@ const InstanceOperations: React.FC<Props> = ({
   hasIncident,
   isInstanceActive,
 }) => {
-  const queryClient = useQueryClient();
-
-  const handleOperationSuccess = (operationType: OperationEntityType) => {
-    tracking.track({
-      eventName: 'single-operation',
-      operationType,
-      source: 'instances-list',
-    });
-    queryClient.invalidateQueries({
-      queryKey: ['processInstances'],
-    });
-  };
+  const handleOperationSuccess = useHandleOperationSuccess();
 
   const {
     mutate: resolveProcessInstanceIncidents,
@@ -49,32 +36,28 @@ const InstanceOperations: React.FC<Props> = ({
       handleOperationError(error.status);
     },
     onSuccess: () => {
-      handleOperationSuccess('RESOLVE_INCIDENT');
+      handleOperationSuccess({
+        operationType: 'RESOLVE_INCIDENT',
+        source: 'instances-list',
+      });
     },
   });
 
-  //TODO update with v2 usage in the scope of #33063
   const {mutate: deleteProcessInstance, isPending: isDeletePending} =
-    useMutation({
-      mutationFn: async () => {
-        const response = await applyOperationV1(processInstanceKey, {
-          operationType: 'DELETE_PROCESS_INSTANCE',
-        });
-
-        if (response.isSuccess) {
-          return response.data;
-        }
-        throw new Error(response.statusCode?.toString());
-      },
+    useDeleteProcessInstance(processInstanceKey, {
       onSuccess: () => {
-        handleOperationSuccess('DELETE_PROCESS_INSTANCE');
+        handleOperationSuccess({
+          operationType: 'DELETE_PROCESS_INSTANCE',
+          source: 'instances-list',
+        });
       },
       onError: (error) => {
-        const statusCode =
-          error instanceof Error && error.message
-            ? parseInt(error.message, 10)
-            : undefined;
-        handleOperationError(statusCode);
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Failed to delete process instance',
+          subtitle: error.message,
+          isDismissable: true,
+        });
       },
     });
 
@@ -84,7 +67,10 @@ const InstanceOperations: React.FC<Props> = ({
   } = useCancelProcessInstance(processInstanceKey, {
     shouldSkipResultCheck: false,
     onSuccess: () => {
-      handleOperationSuccess('CANCEL_PROCESS_INSTANCE');
+      handleOperationSuccess({
+        operationType: 'CANCEL_PROCESS_INSTANCE',
+        source: 'instances-list',
+      });
     },
     onError: (error) => {
       notificationsStore.displayNotification({

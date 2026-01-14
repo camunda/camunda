@@ -69,7 +69,7 @@ describe('OperationsLog', () => {
           timestamp: '2024-01-01T00:00:00.000Z',
           annotation: 'Updated variable',
           actorType: 'USER',
-          category: 'USER_TASK',
+          category: 'USER_TASKS',
         },
       ],
       page: {totalItems: 1},
