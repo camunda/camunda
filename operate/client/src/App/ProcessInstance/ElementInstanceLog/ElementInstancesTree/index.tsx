@@ -126,13 +126,21 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
         useElementInstanceHistoryTree();
       const isRoot = elementType === 'PROCESS';
       const {processInstance} = useElementInstanceHistoryTree();
+      const {isSelected} = useProcessInstanceElementSelection();
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
-      });
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+          });
 
       const {selectElementInstance, clearSelection} =
         useProcessInstanceElementSelection();
@@ -179,8 +187,8 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
           {...rest}
           key={scopeKey}
           data-testid={`tree-node-${scopeKey}`}
-          selected={isSelected ? [scopeKey] : []}
-          active={isSelected ? scopeKey : undefined}
+          selected={isElementSelected ? [scopeKey] : []}
+          active={isElementSelected ? scopeKey : undefined}
           id={scopeKey}
           value={scopeKey}
           aria-label={elementName}
@@ -235,11 +243,19 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
       const businessObject = businessObjects[elementId];
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: isMultiInstance(businessObject),
-      });
+      const {isSelected} = useProcessInstanceElementSelection();
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: isMultiInstance(businessObject),
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: isMultiInstance(businessObject),
+          });
 
       const {selectElementInstance} = useProcessInstanceElementSelection();
 
@@ -279,8 +295,8 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
           {...rest}
           key={scopeKey}
           data-testid={`tree-node-${scopeKey}`}
-          selected={isSelected ? [scopeKey] : []}
-          active={isSelected ? scopeKey : undefined}
+          selected={isElementSelected ? [scopeKey] : []}
+          active={isElementSelected ? scopeKey : undefined}
           id={scopeKey}
           value={scopeKey}
           aria-label={elementName}
@@ -366,11 +382,21 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
       const isRoot = elementType === 'bpmn:Process';
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: isMultiInstance(businessObject),
-      });
+
+      const {isSelected} = useProcessInstanceElementSelection();
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: isMultiInstance(businessObject),
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: isMultiInstance(businessObject),
+          });
+
       const virtualChildren = convertToVirtualElementInstance({
         flowNodeInstances: getVisibleChildPlaceholders(
           scopeKey,
@@ -431,8 +457,8 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
       const elementProps = {
         ...carbonTreeNodeProps,
         'data-testid': `tree-node-${scopeKey}`,
-        selected: isSelected ? [scopeKey] : [],
-        active: isSelected ? scopeKey : undefined,
+        selected: isElementSelected ? [scopeKey] : [],
+        active: isElementSelected ? scopeKey : undefined,
         id: scopeKey,
         value: scopeKey,
         'aria-label': elementName,
@@ -536,11 +562,21 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       const isRoot = elementType === 'PROCESS';
 
       const rootNode = useRootNode();
-      const isSelected = flowNodeSelectionStore.isSelected({
-        flowNodeId: isRoot ? undefined : elementId,
-        flowNodeInstanceId: scopeKey,
-        isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
-      });
+
+      const {isSelected} = useProcessInstanceElementSelection();
+
+      const isElementSelected = IS_ELEMENT_SELECTION_V2
+        ? isSelected({
+            elementId: isRoot ? undefined : elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+          })
+        : flowNodeSelectionStore.isSelected({
+            flowNodeId: isRoot ? undefined : elementId,
+            flowNodeInstanceId: scopeKey,
+            isMultiInstance: elementType === 'MULTI_INSTANCE_BODY',
+          });
+
       const isExpanded = elementInstancesTreeStore.isNodeExpanded(scopeKey);
 
       const virtualChildren = modificationsStore.isModificationModeEnabled
@@ -665,8 +701,8 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       const elementProps = {
         ...carbonTreeNodeProps,
         'data-testid': `tree-node-${scopeKey}`,
-        selected: isSelected ? [scopeKey] : [],
-        active: isSelected ? scopeKey : undefined,
+        selected: isElementSelected ? [scopeKey] : [],
+        active: isElementSelected ? scopeKey : undefined,
         id: scopeKey,
         value: scopeKey,
         'aria-label': elementName,
