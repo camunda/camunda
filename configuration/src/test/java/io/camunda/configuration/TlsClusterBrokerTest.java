@@ -99,11 +99,11 @@ public class TlsClusterBrokerTest {
   @TestPropertySource(
       properties = {
         // legacy
-        "zeebe.broker.network.security.enabled=false",
+        "zeebe.broker.network.security.enabled=true",
         "zeebe.broker.network.security.certificateChainPath=certificateChainPathLegacy",
         "zeebe.broker.network.security.privateKeyPath=certificatePrivateKeyPathLegacy",
-        "zeebe.broker.network.security.keyStore.filePath=certificateKeyStoreFilePathLegacy",
-        "zeebe.broker.network.security.keyStore.password=certificateKeyStorePasswordLegacy",
+        "zeebe.broker.network.security.keyStore.filePath=keyStoreFilePathLegacy",
+        "zeebe.broker.network.security.keyStore.password=keyStorePasswordLegacy",
       })
   @ActiveProfiles({"broker"})
   class WithOnlyLegacySet {
@@ -116,7 +116,7 @@ public class TlsClusterBrokerTest {
     @Test
     void testCamundaBrokerProperties() {
       assertThat(brokerBasedProperties.getNetwork().getSecurity())
-          .returns(false, SecurityCfg::isEnabled)
+          .returns(true, SecurityCfg::isEnabled)
           .returns(new File("certificateChainPathLegacy"), SecurityCfg::getCertificateChainPath)
           .returns(new File("certificatePrivateKeyPathLegacy"), SecurityCfg::getPrivateKeyPath);
 

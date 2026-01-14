@@ -110,11 +110,11 @@ public class TlsClusterGatewayTest {
   @TestPropertySource(
       properties = {
         // legacy
-        "zeebe.gateway.cluster.security.enabled=false",
+        "zeebe.gateway.cluster.security.enabled=true",
         "zeebe.gateway.cluster.security.certificateChainPath=certificateChainPathLegacy",
         "zeebe.gateway.cluster.security.privateKeyPath=certificatePrivateKeyPathLegacy",
-        "zeebe.gateway.cluster.security.keyStore.filePath=certificateKeyStoreFilePathLegacy",
-        "zeebe.gateway.cluster.security.keyStore.password=certificateKeyStorePasswordLegacy",
+        "zeebe.gateway.cluster.security.keyStore.filePath=keyStoreFilePathLegacy",
+        "zeebe.gateway.cluster.security.keyStore.password=keyStorePasswordLegacy",
       })
   class WithOnlyLegacySet {
     final GatewayBasedProperties gatewayBasedProperties;
