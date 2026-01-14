@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.29
+
+### 🚀 Enhancements
+
+- add user task audit log query ([#43973](https://github.com/camunda/camunda/pull/43973))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.28
 
 ### 🚀 Enhancements
