@@ -36,6 +36,7 @@ import {
   formatBatchTitle,
   formatModalHeading,
 } from 'modules/utils/operationsLog';
+import {Paths} from 'modules/Routes';
 
 type Props = {
   isOpen: boolean;
@@ -63,7 +64,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
           <BatchJob />
           This operation is part of a batch.
           <Link
-            href={`/batch-operations/${auditLog.batchOperationKey}`}
+            href={Paths.batchOperation(auditLog.batchOperationKey)}
             target="_self"
           >
             View batch operation details.
@@ -127,7 +128,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 <StructuredListCell>
                   <IconText>
                     <Link
-                      href={`/batch-operations/${auditLog.batchOperationKey}`}
+                      href={Paths.batchOperation(auditLog.batchOperationKey)}
                       target="_self"
                     >
                       View batch operation details&nbsp;

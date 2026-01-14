@@ -11,6 +11,7 @@ import {Link} from '@carbon/react';
 import {OperationLogName} from './styled';
 import {ClassicBatch} from '@carbon/react/icons';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
+import {Paths} from 'modules/Routes';
 
 type Props = {
   item: AuditLog;
@@ -33,7 +34,7 @@ const CellOperationType: React.FC<Props> = ({item}) => {
         <OperationLogName>
           <ClassicBatch />
           <Link
-            href={`/batch-operations/${item.batchOperationKey}`}
+            href={Paths.batchOperation(item.batchOperationKey)}
             target="_self"
           >
             {item.batchOperationKey}
