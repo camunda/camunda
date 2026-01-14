@@ -42,18 +42,17 @@ public class TenantValidator {
     if (memberIds == null) {
       return emptyList();
     }
-    return memberIds.stream()
-        .map(memberId -> validateMemberId(memberId, memberType))
-        .flatMap(List::stream)
-        .toList();
+    final List<String> violations = new ArrayList<>();
+    memberIds.forEach(
+        memberId -> identifierValidator.validateMemberId(memberId, memberType, violations));
+    return violations;
   }
 
   public List<String> validateTenantMember(
       final String tenantId, final String memberId, final EntityType memberType) {
     final List<String> violations = new ArrayList<>();
     validateTenantId(tenantId, violations);
-    validateMemberId(memberId, memberType);
-    violations.addAll(validateMemberId(memberId, memberType));
+    identifierValidator.validateMemberId(memberId, memberType, violations);
     return violations;
   }
 
@@ -65,20 +64,5 @@ public class TenantValidator {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
     }
-  }
-
-  private List<String> validateMemberId(final String entityId, final EntityType entityType) {
-    final List<String> violations = new ArrayList<>();
-    final var propertyName =
-        switch (entityType) {
-          case USER -> "username";
-          case GROUP -> "groupId";
-          case MAPPING_RULE -> "mappingRuleId";
-          case ROLE -> "roleId";
-          case CLIENT -> "clientId";
-          default -> "entityId";
-        };
-    identifierValidator.validateId(entityId, propertyName, violations);
-    return violations;
   }
 }

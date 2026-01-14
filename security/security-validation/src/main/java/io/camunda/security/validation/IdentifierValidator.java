@@ -11,6 +11,7 @@ import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_A
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -32,8 +33,26 @@ public class IdentifierValidator {
 
   private final Pattern idPattern;
 
-  public IdentifierValidator(final Pattern idPattern) {
+  /** To allow for the "bring your own groups" feature, we need a separate ID pattern. */
+  private final Pattern groupIdPattern;
+
+  public IdentifierValidator(final Pattern idPattern, final Pattern groupIdPattern) {
     this.idPattern = idPattern;
+    this.groupIdPattern = groupIdPattern;
+  }
+
+  public void validateMemberId(
+      final String entityId, final EntityType entityType, final List<String> violations) {
+    final var propertyName =
+        switch (entityType) {
+          case USER -> "username";
+          case GROUP -> "groupId";
+          case MAPPING_RULE -> "mappingRuleId";
+          case ROLE -> "roleId";
+          case CLIENT -> "clientId";
+          default -> "entityId";
+        };
+    validateId(entityId, propertyName, violations);
   }
 
   public void validateId(
@@ -55,6 +74,10 @@ public class IdentifierValidator {
       final Function<String, Boolean> alternativeCheck) {
     validateIdInternal(
         id, "tenantId", violations, TENANT_ID_MASK, alternativeCheck, TENANT_ID_MAX_LENGTH);
+  }
+
+  public void validateGroupId(final String id, final List<String> violations) {
+    validateIdInternal(id, "groupId", violations, groupIdPattern, s -> false, MAX_LENGTH);
   }
 
   private static void validateIdInternal(

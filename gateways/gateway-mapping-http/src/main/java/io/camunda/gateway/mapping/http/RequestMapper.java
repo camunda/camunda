@@ -43,7 +43,6 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
-import io.camunda.gateway.mapping.http.validator.RoleRequestValidator;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
@@ -81,8 +80,6 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
-import io.camunda.gateway.protocol.model.RoleCreateRequest;
-import io.camunda.gateway.protocol.model.RoleUpdateRequest;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
@@ -115,9 +112,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.RoleServices.CreateRoleRequest;
-import io.camunda.service.RoleServices.RoleMemberRequest;
-import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -131,7 +125,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
@@ -319,49 +312,6 @@ public class RequestMapper {
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout())));
-  }
-
-  public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final RoleUpdateRequest roleUpdateRequest, final String roleId) {
-    return getResult(
-        RoleRequestValidator.validateUpdateRequest(roleUpdateRequest),
-        () ->
-            new UpdateRoleRequest(
-                roleId, roleUpdateRequest.getName(), roleUpdateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
-      final RoleCreateRequest roleCreateRequest, final Pattern identifierPattern) {
-    return getResult(
-        RoleRequestValidator.validateCreateRequest(roleCreateRequest, identifierPattern),
-        () ->
-            new CreateRoleRequest(
-                roleCreateRequest.getRoleId(),
-                roleCreateRequest.getName(),
-                roleCreateRequest.getDescription()));
-  }
-
-  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
-      final String roleId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern identifierPattern) {
-    return getResult(
-        RoleRequestValidator.validateMemberRequest(
-            roleId, memberId, entityType, identifierPattern, identifierPattern),
-        () -> new RoleMemberRequest(roleId, memberId, entityType));
-  }
-
-  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
-      final String roleId,
-      final String memberId,
-      final EntityType entityType,
-      final Pattern roleIdentifierPattern,
-      final Pattern memberIdentifierPattern) {
-    return getResult(
-        RoleRequestValidator.validateMemberRequest(
-            roleId, memberId, entityType, roleIdentifierPattern, memberIdentifierPattern),
-        () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
