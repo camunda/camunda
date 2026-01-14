@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.PersistentWebSessionMapper">
+
+  <select id="findById" parameterType="java.lang.String" resultMap="persistentWebSessionResultMap">
+    SELECT SESSION_ID, CREATION_TIME, LAST_ACCESSED_TIME, MAX_INACTIVE_INTERVAL_IN_SECONDS, ATTRIBUTES
+    FROM ${prefix}WEB_SESSION
+    WHERE SESSION_ID = #{sessionId}
+  </select>
+
+  <select id="findAll" resultMap="persistentWebSessionResultMap">
+    SELECT SESSION_ID, CREATION_TIME, LAST_ACCESSED_TIME, MAX_INACTIVE_INTERVAL_IN_SECONDS, ATTRIBUTES
+    FROM ${prefix}WEB_SESSION
+  </select>
+
+  <insert id="upsert" parameterType="io.camunda.search.entities.PersistentWebSessionEntity" databaseId="h2">
+    MERGE INTO ${prefix}WEB_SESSION target
+      USING (SELECT CAST(#{id} AS VARCHAR)                                 AS SESSION_ID,
+                    CAST(#{creationTime} AS BIGINT)                        AS CREATION_TIME,
+                    CAST(#{lastAccessedTime} AS BIGINT)                    AS LAST_ACCESSED_TIME,
+                    CAST(#{maxInactiveIntervalInSeconds} AS BIGINT)        AS MAX_INACTIVE_INTERVAL_IN_SECONDS,
+                    CAST(#{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler} AS BLOB) AS ATTRIBUTES
+      ) source
+      ON (target.SESSION_ID = source.SESSION_ID)
+      WHEN MATCHED THEN
+        UPDATE SET
+          CREATION_TIME = source.CREATION_TIME,
+          LAST_ACCESSED_TIME = source.LAST_ACCESSED_TIME,
+          MAX_INACTIVE_INTERVAL_IN_SECONDS = source.MAX_INACTIVE_INTERVAL_IN_SECONDS,
+          ATTRIBUTES = source.ATTRIBUTES
+      WHEN NOT MATCHED THEN
+        INSERT (SESSION_ID,
+                CREATION_TIME,
+                LAST_ACCESSED_TIME,
+                MAX_INACTIVE_INTERVAL_IN_SECONDS,
+                ATTRIBUTES)
+          VALUES (source.SESSION_ID,
+                  source.CREATION_TIME,
+                  source.LAST_ACCESSED_TIME,
+                  source.MAX_INACTIVE_INTERVAL_IN_SECONDS,
+                  source.ATTRIBUTES)
+  </insert>
+  <insert id="upsert" parameterType="io.camunda.search.entities.PersistentWebSessionEntity" databaseId="postgresql">
+      INSERT INTO ${prefix}WEB_SESSION (SESSION_ID, CREATION_TIME, LAST_ACCESSED_TIME, MAX_INACTIVE_INTERVAL_IN_SECONDS, ATTRIBUTES)
+      VALUES (#{id}, #{creationTime}, #{lastAccessedTime}, #{maxInactiveIntervalInSeconds}, #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler})
+      ON CONFLICT (SESSION_ID) DO UPDATE SET
+        CREATION_TIME = #{creationTime},
+        LAST_ACCESSED_TIME = #{lastAccessedTime},
+        MAX_INACTIVE_INTERVAL_IN_SECONDS = #{maxInactiveIntervalInSeconds},
+        ATTRIBUTES = #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler}
+  </insert>
+  <insert id="upsert" parameterType="io.camunda.search.entities.PersistentWebSessionEntity" databaseId="mysql">
+      INSERT INTO ${prefix}WEB_SESSION (SESSION_ID, CREATION_TIME, LAST_ACCESSED_TIME, MAX_INACTIVE_INTERVAL_IN_SECONDS, ATTRIBUTES)
+      VALUES (#{id}, #{creationTime}, #{lastAccessedTime}, #{maxInactiveIntervalInSeconds}, #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler})
+      ON DUPLICATE KEY UPDATE
+        CREATION_TIME = #{creationTime},
+        LAST_ACCESSED_TIME = #{lastAccessedTime},
+        MAX_INACTIVE_INTERVAL_IN_SECONDS = #{maxInactiveIntervalInSeconds},
+        ATTRIBUTES = #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler}
+  </insert>
+  <insert id="upsert" parameterType="io.camunda.search.entities.PersistentWebSessionEntity" databaseId="mariadb">
+    INSERT INTO ${prefix}WEB_SESSION (SESSION_ID, CREATION_TIME, LAST_ACCESSED_TIME, MAX_INACTIVE_INTERVAL_IN_SECONDS, ATTRIBUTES)
+    VALUES (#{id}, #{creationTime}, #{lastAccessedTime}, #{maxInactiveIntervalInSeconds}, #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler})
+    ON DUPLICATE KEY UPDATE
+      CREATION_TIME = #{creationTime},
+      LAST_ACCESSED_TIME = #{lastAccessedTime},
+      MAX_INACTIVE_INTERVAL_IN_SECONDS = #{maxInactiveIntervalInSeconds},
+      ATTRIBUTES = #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler}
+  </insert>
+  <insert id="upsert" parameterType="io.camunda.search.entities.PersistentWebSessionEntity" databaseId="mssql">
+    MERGE INTO ${prefix}WEB_SESSION AS target
+    USING (SELECT #{id} AS SESSION_ID) AS source
+    ON target.SESSION_ID = source.SESSION_ID
+    WHEN MATCHED THEN
+      UPDATE SET
+        CREATION_TIME = #{creationTime},
+        LAST_ACCESSED_TIME = #{lastAccessedTime},
+        MAX_INACTIVE_INTERVAL_IN_SECONDS = #{maxInactiveIntervalInSeconds},
+        ATTRIBUTES = #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler}
+    WHEN NOT MATCHED THEN
+      INSERT (SESSION_ID, CREATION_TIME, LAST_ACCESSED_TIME, MAX_INACTIVE_INTERVAL_IN_SECONDS, ATTRIBUTES)
+      VALUES (#{id}, #{creationTime}, #{lastAccessedTime}, #{maxInactiveIntervalInSeconds}, #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler});
+  </insert>
+  <insert id="upsert" parameterType="io.camunda.search.entities.PersistentWebSessionEntity" databaseId="oracle">
+    MERGE INTO ${prefix}WEB_SESSION target
+      USING (SELECT #{id}                        AS SESSION_ID,
+                    #{creationTime}              AS CREATION_TIME,
+                    #{lastAccessedTime}          AS LAST_ACCESSED_TIME,
+                    #{maxInactiveIntervalInSeconds} AS MAX_INACTIVE_INTERVAL_IN_SECONDS,
+                    #{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler} AS ATTRIBUTES
+             FROM dual) source
+      ON (target.SESSION_ID = source.SESSION_ID)
+      WHEN MATCHED THEN
+        UPDATE SET
+          CREATION_TIME = source.CREATION_TIME,
+          LAST_ACCESSED_TIME = source.LAST_ACCESSED_TIME,
+          MAX_INACTIVE_INTERVAL_IN_SECONDS = source.MAX_INACTIVE_INTERVAL_IN_SECONDS,
+          ATTRIBUTES = source.ATTRIBUTES
+      WHEN NOT MATCHED THEN
+        INSERT (SESSION_ID,
+                CREATION_TIME,
+                LAST_ACCESSED_TIME,
+                MAX_INACTIVE_INTERVAL_IN_SECONDS,
+                ATTRIBUTES)
+          VALUES (source.SESSION_ID,
+                  source.CREATION_TIME,
+                  source.LAST_ACCESSED_TIME,
+                  source.MAX_INACTIVE_INTERVAL_IN_SECONDS,
+                  source.ATTRIBUTES)
+    </insert>
+
+  <delete id="deleteById" parameterType="java.lang.String">
+    DELETE FROM ${prefix}WEB_SESSION
+    WHERE SESSION_ID = #{sessionId}
+  </delete>
+
+  <resultMap id="persistentWebSessionResultMap" type="io.camunda.search.entities.PersistentWebSessionEntity">
+    <constructor>
+      <idArg column="SESSION_ID" javaType="java.lang.String"/>
+      <arg column="CREATION_TIME" javaType="java.lang.Long"/>
+      <arg column="LAST_ACCESSED_TIME" javaType="java.lang.Long"/>
+      <arg column="MAX_INACTIVE_INTERVAL_IN_SECONDS" javaType="java.lang.Long"/>
+      <arg column="ATTRIBUTES" javaType="java.util.Map" typeHandler="io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler"/>
+    </constructor>
+  </resultMap>
+
+</mapper>

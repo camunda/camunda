@@ -28,6 +28,7 @@ class RdbmsTableNamesTest {
     assertThat(tableNames).contains("INCIDENT");
     assertThat(tableNames).contains("USER_TASK");
     assertThat(tableNames).contains("JOB");
+    assertThat(tableNames).contains("WEB_SESSION");
   }
 
   @Test
