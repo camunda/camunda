@@ -97,7 +97,8 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     final var query = ElasticsearchUtil.constantScoreQuery(processInstanceKeyQuery);
     final var searchRequestBuilder = new SearchRequest.Builder().index(index).query(query);
     try {
-      return ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, VariableEntity.class)
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, VariableEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .filter(Objects::nonNull)

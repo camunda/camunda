@@ -29,6 +29,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ST
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -57,9 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.core.CountRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -77,8 +75,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  private final RestHighLevelClient esClient;
-
   private final ElasticsearchClient es8Client;
 
   private final OperateProperties operateProperties;
@@ -90,14 +86,12 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final ListViewTemplate listViewTemplate,
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
       final OperateProperties operateProperties,
-      final RestHighLevelClient esClient,
       final ElasticsearchClient es8Client,
       final ElasticsearchTenantHelper tenantHelper) {
     this.processIndex = processIndex;
     this.listViewTemplate = listViewTemplate;
     this.processInstanceDependantTemplates = processInstanceDependantTemplates;
     this.operateProperties = operateProperties;
-    this.esClient = esClient;
     this.es8Client = es8Client;
     this.tenantHelper = tenantHelper;
   }
@@ -717,9 +711,12 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public long count() throws IOException {
-    return esClient
-        .count(new CountRequest(processIndex.getAlias()), RequestOptions.DEFAULT)
-        .getCount();
+    final var countRequest =
+        new CountRequest.Builder()
+            .index(processIndex.getAlias())
+            .query(ElasticsearchUtil.matchAllQuery())
+            .build();
+    return es8Client.count(countRequest).count();
   }
 
   private Query buildQueryEs8(final String tenantId, final Set<String> allowedBPMNProcessIds) {

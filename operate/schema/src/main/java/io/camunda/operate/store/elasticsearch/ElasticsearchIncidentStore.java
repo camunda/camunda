@@ -13,7 +13,6 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
 import static io.camunda.operate.util.ElasticsearchUtil.sortOrder;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;

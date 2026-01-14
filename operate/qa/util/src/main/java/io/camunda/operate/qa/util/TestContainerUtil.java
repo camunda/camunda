@@ -32,14 +32,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import org.apache.http.HttpHost;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.keycloak.admin.client.Keycloak;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,9 +112,12 @@ public class TestContainerUtil {
   private GenericContainer operateContainer;
   private Keycloak keycloakClient;
 
-  public static RestHighLevelClient getEsClient() {
-    return new RestHighLevelClient(
-        RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)));
+  public static ElasticsearchClient getEsClient() {
+    final RestClient restClient =
+        RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)).build();
+    final RestClientTransport transport =
+        new RestClientTransport(restClient, new JacksonJsonpMapper());
+    return new ElasticsearchClient(transport);
   }
 
   public void startIdentity(
@@ -323,21 +325,22 @@ public class TestContainerUtil {
   }
 
   public boolean checkElasctisearchHealth(final TestContext testContext) {
-    try {
-      final RestHighLevelClient esClient =
-          new RestHighLevelClient(
-              RestClient.builder(
-                  new HttpHost(
-                      testContext.getExternalElsHost(), testContext.getExternalElsPort())));
+    try (final RestClient restClient =
+        RestClient.builder(
+                new HttpHost(
+                    testContext.getExternalElsHost(), testContext.getExternalElsPort()))
+            .build()) {
+      final RestClientTransport transport =
+          new RestClientTransport(restClient, new JacksonJsonpMapper());
+      final ElasticsearchClient esClient = new ElasticsearchClient(transport);
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(5)
-          .retryOn(IOException.class, ElasticsearchException.class)
+          .retryOn(IOException.class, co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
           .retryConsumer(
               () -> {
-                final ClusterHealthResponse clusterHealthResponse =
-                    esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-                return clusterHealthResponse.getStatus().equals(ClusterHealthStatus.GREEN);
+                final HealthResponse clusterHealthResponse = esClient.cluster().health();
+                return clusterHealthResponse.status() == HealthStatus.Green;
               })
           .build()
           .retry();

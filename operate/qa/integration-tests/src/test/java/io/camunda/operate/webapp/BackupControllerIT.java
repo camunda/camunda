@@ -55,8 +55,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.snapshots.SnapshotState;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -98,12 +96,6 @@ public class BackupControllerIT {
 
   private final JsonpMapper jsonpMapper = new JacksonJsonpMapper();
   private final SnapshotNameProvider snapshotNameProvider = new WebappsSnapshotNameProvider();
-
-  @MockitoBean(name = "esClient", answers = Answers.RETURNS_DEEP_STUBS)
-  private RestHighLevelClient esClient;
-
-  @MockitoBean(name = "zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
 
   @MockitoSpyBean private OperateProperties operateProperties;
   @Autowired private BackupController backupController;
@@ -261,9 +253,9 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnCompletedState() throws IOException {
     final long backupId = 2L;
-    final var snapshotInfo1 = createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
-    final var snapshotInfo2 = createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
-    final var snapshotInfo3 = createSnapshotInfoMock("snapshotName3", SnapshotState.SUCCESS);
+    final var snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "SUCCESS");
+    final var snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "SUCCESS");
+    final var snapshotInfo3 = createSnapshotInfoMock("snapshotName3", "SUCCESS");
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     final var snapshotResponse =
         GetSnapshotResponse.of(b -> b.remaining(1).total(1).snapshots(snapshotInfos));
@@ -281,10 +273,8 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnFailedState1() throws IOException {
     final long backupId = 2L;
-    final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "SUCCESS");
+    final SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "SUCCESS");
     final SnapshotShardFailure failure1 =
         SnapshotShardFailure.of(
             b ->
@@ -305,7 +295,7 @@ public class BackupControllerIT {
                     .reason("Shard 2 is not allocated"));
     final List<SnapshotShardFailure> shardFailures = asList(failure1, failure2);
     final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock("snapshotName3", SnapshotState.FAILED, shardFailures);
+        createSnapshotInfoMock("snapshotName3", "FAILED", shardFailures);
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
 
     mockGetWithReturn(
@@ -328,12 +318,9 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnFailedState2() throws IOException {
     final long backupId = 2L;
-    final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock("snapshotName3", SnapshotState.PARTIAL);
+    final SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "SUCCESS");
+    final SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "SUCCESS");
+    final SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", "PARTIAL");
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     mockGetWithReturn(
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
@@ -350,14 +337,10 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnFailedState3WhenMoreSnapshotsThanExpected() throws IOException {
     final long backupId = 2L;
-    final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock("snapshotName3", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo4 =
-        createSnapshotInfoMock("snapshotName4", SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "SUCCESS");
+    final SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "SUCCESS");
+    final SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", "SUCCESS");
+    final SnapshotInfo snapshotInfo4 = createSnapshotInfoMock("snapshotName4", "SUCCESS");
     final List<SnapshotInfo> snapshotInfos =
         asList(snapshotInfo1, snapshotInfo2, snapshotInfo3, snapshotInfo4);
     mockGetWithReturn(
@@ -374,12 +357,9 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnIncompatibleState() throws IOException {
     final long backupId = 2L;
-    final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock("snapshotName3", SnapshotState.INCOMPATIBLE);
+    final SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "SUCCESS");
+    final SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "SUCCESS");
+    final SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", "INCOMPATIBLE");
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     mockGetWithReturn(
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
@@ -396,11 +376,9 @@ public class BackupControllerIT {
   public void shouldReturnIncompleteState() throws IOException {
     final long backupId = 2L;
     // we have only 2 out of 3 snapshots + timeout
-    final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "SUCCESS");
     when(snapshotInfo1.startTimeInMillis()).thenReturn(0L);
-    final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "SUCCESS");
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2);
     mockGetWithReturn(
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
@@ -417,12 +395,9 @@ public class BackupControllerIT {
   public void shouldReturnInProgressState1() throws IOException {
     final long backupId = 2L;
     // we have only 2 out of 3 snapshots
-    final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock("snapshotName3", SnapshotState.IN_PROGRESS);
+    final SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "SUCCESS");
+    final SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "SUCCESS");
+    final SnapshotInfo snapshotInfo3 = createSnapshotInfoMock("snapshotName3", "IN_PROGRESS");
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     mockGetWithReturn(
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
@@ -439,10 +414,8 @@ public class BackupControllerIT {
   public void shouldReturnInProgressState2() throws IOException {
     final long backupId = 2L;
     // we have only 2 out of 3 snapshots
-    final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock("snapshotName1", SnapshotState.IN_PROGRESS);
-    final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock("snapshotName2", SnapshotState.IN_PROGRESS);
+    final SnapshotInfo snapshotInfo1 = createSnapshotInfoMock("snapshotName1", "IN_PROGRESS");
+    final SnapshotInfo snapshotInfo2 = createSnapshotInfoMock("snapshotName2", "IN_PROGRESS");
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2});
     mockGetWithReturn(
@@ -544,23 +517,23 @@ public class BackupControllerIT {
     final long backupId3 = 3L;
     // COMPLETED
     final SnapshotInfo snapshotInfo11 =
-        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 1, 2), SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 1, 2), "SUCCESS");
 
     final SnapshotInfo snapshotInfo12 =
-        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 2, 2), SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 2, 2), "SUCCESS");
 
     // we have only 2 out of 3 snapshots + TIMEOUT -> INCOMPLETE
     final SnapshotInfo snapshotInfo21 =
-        createSnapshotInfoMock(new Metadata(backupId2, "8.8.8", 1, 3), SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId2, "8.8.8", 1, 3), "SUCCESS");
     when(snapshotInfo21.startTimeInMillis()).thenReturn(0L);
     final SnapshotInfo snapshotInfo22 =
-        createSnapshotInfoMock(new Metadata(backupId2, "8.8.8", 2, 3), SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId2, "8.8.8", 2, 3), "SUCCESS");
     when(snapshotInfo22.startTimeInMillis()).thenReturn(0L);
     // IN_PROGRESS
     final SnapshotInfo snapshotInfo31 =
-        createSnapshotInfoMock(new Metadata(backupId3, "8.8.8", 1, 3), SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId3, "8.8.8", 1, 3), "SUCCESS");
     final SnapshotInfo snapshotInfo32 =
-        createSnapshotInfoMock(new Metadata(backupId3, "8.8.8", 2, 3), SnapshotState.IN_PROGRESS);
+        createSnapshotInfoMock(new Metadata(backupId3, "8.8.8", 2, 3), "IN_PROGRESS");
     final List<SnapshotInfo> snapshotInfos =
         asList(
             new SnapshotInfo[] {
@@ -617,14 +590,14 @@ public class BackupControllerIT {
     final Long backupId1 = 123L;
     // COMPLETED
     final Metadata metadata1 = new Metadata(backupId1, "8.8.8", 1, 2);
-    final SnapshotInfo snapshotInfo11 = createSnapshotInfoMock(metadata1, SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo11 = createSnapshotInfoMock(metadata1, "SUCCESS");
     // remove backupId from metadata
     final Metadata metadata1WithNoId = new Metadata(null, "8.8.8", 1, 2);
     when(snapshotInfo11.metadata())
         .thenReturn(MetadataMarshaller.asJson(metadata1WithNoId, jsonpMapper));
 
     final Metadata metadata2 = new Metadata(backupId1, "8.8.8", 2, 2);
-    final SnapshotInfo snapshotInfo12 = createSnapshotInfoMock(metadata2, SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo12 = createSnapshotInfoMock(metadata2, "SUCCESS");
     final Metadata metadata2WithNoId = new Metadata(backupId1, "8.8.8", 2, 2);
     when(snapshotInfo12.metadata())
         .thenReturn(MetadataMarshaller.asJson(metadata2WithNoId, jsonpMapper));
@@ -660,7 +633,7 @@ public class BackupControllerIT {
 
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     when(snapshotInfo.snapshot()).thenReturn(snapshotNameProvider.getSnapshotName(metadata));
-    when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS.toString());
+    when(snapshotInfo.state()).thenReturn("SUCCESS");
     final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
     when(snapshotClient.get(any(GetSnapshotRequest.class)))
         .thenReturn(GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).total(1).remaining(0)));
@@ -686,10 +659,10 @@ public class BackupControllerIT {
     final long backupId1 = 1L;
     // COMPLETED
     final SnapshotInfo snapshotInfo11 =
-        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 1, 2), SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 1, 2), "SUCCESS");
 
     final SnapshotInfo snapshotInfo12 =
-        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 2, 2), SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 2, 2), "SUCCESS");
 
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo11, snapshotInfo12);
 
@@ -742,17 +715,17 @@ public class BackupControllerIT {
             snapshotInfos.stream().map(si -> si.startTimeInMillis()).toArray(Long[]::new));
   }
 
-  private SnapshotInfo createSnapshotInfoMock(final String name, final SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(final String name, final String state) {
     return createSnapshotInfoMock(null, name, state, null);
   }
 
-  private SnapshotInfo createSnapshotInfoMock(final Metadata metadata, final SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(final Metadata metadata, final String state) {
     return createSnapshotInfoMock(metadata, null, state, null);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      final String name, final SnapshotState state, final List<SnapshotShardFailure> failures) {
+      final String name, final String state, final List<SnapshotShardFailure> failures) {
     return createSnapshotInfoMock(null, name, state, failures);
   }
 
@@ -760,7 +733,7 @@ public class BackupControllerIT {
   private SnapshotInfo createSnapshotInfoMock(
       final Metadata metadata,
       final String name,
-      final SnapshotState state,
+      final String state,
       final List<SnapshotShardFailure> failures) {
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     if (metadata != null) {
@@ -781,7 +754,7 @@ public class BackupControllerIT {
                   "partCount",
                   JsonData.of(3)));
     }
-    when(snapshotInfo.state()).thenReturn(state.toString());
+    when(snapshotInfo.state()).thenReturn(state);
     when(snapshotInfo.failures()).thenReturn(failures);
     when(snapshotInfo.startTimeInMillis())
         .thenReturn(OffsetDateTime.now().toInstant().toEpochMilli());

@@ -11,6 +11,9 @@ import static io.camunda.operate.qa.util.TestContainerUtil.ELS_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplateNode;
+import co.elastic.clients.elasticsearch.cluster.GetComponentTemplateResponse;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
@@ -26,19 +29,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetComponentTemplatesRequest;
-import org.elasticsearch.client.indices.GetComponentTemplatesResponse;
-import org.elasticsearch.client.indices.PutComponentTemplateRequest;
-import org.elasticsearch.cluster.metadata.ComponentTemplate;
-import org.elasticsearch.cluster.metadata.Template;
-import org.elasticsearch.common.settings.Settings;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -51,10 +45,6 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
-
-  @Autowired
-  @Qualifier("esClient")
-  protected RestHighLevelClient esClient;
 
   @Autowired protected ElasticsearchClient es8Client;
 
@@ -79,32 +69,30 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Override
   public void updateRefreshInterval(final String value) {
     try {
-      final GetComponentTemplatesRequest getRequest =
-          new GetComponentTemplatesRequest(prefix + "*");
-      final GetComponentTemplatesResponse response =
-          esClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
+      final GetComponentTemplateResponse response =
+          es8Client.cluster().getComponentTemplate(r -> r.name(prefix + "*"));
       response
-          .getComponentTemplates()
-          .entrySet()
+          .componentTemplates()
           .forEach(
               componentTemplate -> {
-                final Template template = componentTemplate.getValue().template();
-                final Settings settings = template.settings();
-                final PutComponentTemplateRequest request =
-                    new PutComponentTemplateRequest().name(prefix);
-                final Settings newSettings =
-                    Settings.builder().put(settings).put("index.refresh_interval", value).build();
-                final Template newTemplate = new Template(newSettings, template.mappings(), null);
-                final ComponentTemplate newComponentTemplate =
-                    new ComponentTemplate(newTemplate, null, null);
-                request.componentTemplate(newComponentTemplate);
+                final ComponentTemplateNode templateNode = componentTemplate.componentTemplate();
+                final IndexSettings existingSettings =
+                    templateNode.template().settings().get("index");
+                final IndexSettings newSettings =
+                    IndexSettings.of(
+                        b -> b.index(existingSettings).refreshInterval(ri -> ri.time(value)));
                 try {
-                  assertThat(
-                          esClient
-                              .cluster()
-                              .putComponentTemplate(request, RequestOptions.DEFAULT)
-                              .isAcknowledged())
-                      .isTrue();
+                  final var putResponse =
+                      es8Client
+                          .cluster()
+                          .putComponentTemplate(
+                              r ->
+                                  r.name(componentTemplate.name())
+                                      .template(
+                                          t ->
+                                              t.settings(newSettings)
+                                                  .mappings(templateNode.template().mappings())));
+                  assertThat(putResponse.acknowledged()).isTrue();
                 } catch (final IOException e) {
                   throw new RuntimeException(e);
                 }

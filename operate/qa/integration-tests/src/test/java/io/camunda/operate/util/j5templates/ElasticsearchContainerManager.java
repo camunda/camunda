@@ -13,8 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ExpandWildcard;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.nodes.Stats;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestSchemaManager;
@@ -23,12 +22,10 @@ import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import java.io.IOException;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestHighLevelClient;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,26 +36,18 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
   protected static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchContainerManager.class);
 
-  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
-  // Path to find search statistics for all indexes
-  private static final String PATH_SEARCH_STATISTICS =
-      "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
-
   protected final ElasticsearchClient es8Client;
-  protected final RestHighLevelClient esClient;
 
   private final IndexPrefixHolder indexPrefixHolder;
 
   public ElasticsearchContainerManager(
       final ElasticsearchClient es8Client,
-      @Qualifier("esClient") final RestHighLevelClient esClient,
       final SearchEngineConfiguration searchEngineConfiguration,
       final OperateProperties operateProperties,
       final TestSchemaManager schemaManager,
       final IndexPrefixHolder indexPrefixHolder) {
     super(searchEngineConfiguration, operateProperties, schemaManager);
     this.es8Client = es8Client;
-    this.esClient = esClient;
     this.indexPrefixHolder = indexPrefixHolder;
   }
 
@@ -110,26 +99,23 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
     searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
 
-    assertThat(getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0))
+    assertThat(getOpenScrollContextCount())
         .describedAs("There are too many open scroll contexts left.")
         .isLessThanOrEqualTo(15);
   }
 
-  private int getIntValueForJSON(
-      final String path, final String fieldname, final int defaultValue) {
-    final ObjectMapper objectMapper = new ObjectMapper();
+  private int getOpenScrollContextCount() {
+    int openContexts = 0;
     try {
-      final Response response =
-          esClient.getLowLevelClient().performRequest(new Request("GET", path));
-      final JsonNode jsonNode = objectMapper.readTree(response.getEntity().getContent());
-      final JsonNode field = jsonNode.findValue(fieldname);
-      if (field != null) {
-        return field.asInt(defaultValue);
+      final Set<Map.Entry<String, Stats>> nodesResult =
+          es8Client.nodes().stats().nodes().entrySet();
+      for (final Map.Entry<String, Stats> entryNodes : nodesResult) {
+        openContexts += entryNodes.getValue().indices().search().openContexts().intValue();
       }
-    } catch (final Exception e) {
-      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
+      return openContexts;
+    } catch (final IOException e) {
+      LOGGER.error("Couldn't retrieve node stats from elasticsearch.", e);
+      return 0;
     }
-
-    return defaultValue;
   }
 }
