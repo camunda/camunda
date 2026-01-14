@@ -87,12 +87,15 @@ const useProcessInstanceElementSelection = () => {
       elementId: string;
       isMultiInstanceBody?: boolean;
     }) => {
-      setSearchParams((params) => {
-        return updateSelectionSearchParams(params, {
-          elementId,
-          isMultiInstanceBody,
-        });
-      });
+      setSearchParams(
+        (params) => {
+          return updateSelectionSearchParams(params, {
+            elementId,
+            isMultiInstanceBody,
+          });
+        },
+        {replace: true},
+      );
     },
     [setSearchParams],
   );
@@ -111,23 +114,29 @@ const useProcessInstanceElementSelection = () => {
       isPlaceholder?: boolean;
       anchorElementId?: string;
     }) => {
-      setSearchParams((params) => {
-        return updateSelectionSearchParams(params, {
-          elementId,
-          elementInstanceKey,
-          isMultiInstanceBody,
-          isPlaceholder,
-          anchorElementId,
-        });
-      });
+      setSearchParams(
+        (params) => {
+          return updateSelectionSearchParams(params, {
+            elementId,
+            elementInstanceKey,
+            isMultiInstanceBody,
+            isPlaceholder,
+            anchorElementId,
+          });
+        },
+        {replace: true},
+      );
     },
     [setSearchParams],
   );
 
   const clearSelection = useCallback(() => {
-    setSearchParams((params) => {
-      return deleteSelectionSearchParams(params);
-    });
+    setSearchParams(
+      (params) => {
+        return deleteSelectionSearchParams(params);
+      },
+      {replace: true},
+    );
   }, [setSearchParams]);
 
   // If elementInstanceKey is in URL, fetch element instance by key.
