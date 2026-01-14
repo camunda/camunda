@@ -7,9 +7,11 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -17,50 +19,48 @@ final class TestRepository extends NoopArchiverRepository {
   final List<DocumentMove> moves = new ArrayList<>();
   ArchiveBatch batch;
 
-  public CompletableFuture<ArchiveBatch> getNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+  public <T extends ArchiveBatch> CompletableFuture<T> getNextBatch() {
+    return CompletableFuture.completedFuture((T) batch);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+  public CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch() {
+    return CompletableFuture.completedFuture((ProcessInstanceArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+  public CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch() {
+    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricTUNextBatch() {
+    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+  public CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch() {
+    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
-    return CompletableFuture.completedFuture(batch);
+  public CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch() {
+    return CompletableFuture.completedFuture((BasicArchiveBatch) batch);
   }
 
   @Override
   public CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
-      final String idFieldName,
-      final List<String> ids,
+      final Map<String, List<String>> keysByField,
       final Executor executor) {
-    moves.add(new DocumentMove(sourceIndexName, destinationIndexName, idFieldName, ids, executor));
+    moves.add(new DocumentMove(sourceIndexName, destinationIndexName, keysByField, executor));
     return CompletableFuture.completedFuture(null);
   }
 
   record DocumentMove(
       String sourceIndexName,
       String destinationIndexName,
-      String idFieldName,
-      List<String> ids,
+      Map<String, List<String>> keysByField,
       Executor executor) {}
 }

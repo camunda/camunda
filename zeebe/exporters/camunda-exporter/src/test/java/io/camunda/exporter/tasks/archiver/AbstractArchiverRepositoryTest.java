@@ -43,7 +43,7 @@ abstract class AbstractArchiverRepositoryTest {
   @ParameterizedTest
   @MethodSource("archiveBatchSuppliers")
   void shouldReturnFailedFutureWhenGetNextBatchFails(
-      final Function<ArchiverRepository, CompletableFuture<ArchiveBatch>> archiveBatchSupplier) {
+      final Function<ArchiverRepository, CompletableFuture<?>> archiveBatchSupplier) {
     // when
     final var result = archiveBatchSupplier.apply(repository);
 
@@ -55,8 +55,7 @@ abstract class AbstractArchiverRepositoryTest {
         .withRootCauseInstanceOf(ConnectException.class);
   }
 
-  static Stream<Named<Function<ArchiverRepository, CompletableFuture<ArchiveBatch>>>>
-      archiveBatchSuppliers() {
+  static Stream<Named<Function<ArchiverRepository, CompletableFuture<?>>>> archiveBatchSuppliers() {
     return Stream.of(
         Named.of("getProcessInstancesNextBatch", ArchiverRepository::getProcessInstancesNextBatch),
         Named.of("getBatchOperationsNextBatch", ArchiverRepository::getBatchOperationsNextBatch),

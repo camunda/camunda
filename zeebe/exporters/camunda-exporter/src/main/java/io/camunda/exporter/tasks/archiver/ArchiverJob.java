@@ -9,16 +9,23 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.BackgroundTask;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.FunctionUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public abstract class ArchiverJob implements BackgroundTask {
+/**
+ * Abstract background task for archiving records from a source index to a destination index.
+ *
+ * @param <B> the type of the archive batch, containing the records to be archived
+ */
+public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundTask {
 
   private final ArchiverRepository archiverRepository;
   private final CamundaExporterMetrics exporterMetrics;
@@ -56,21 +63,9 @@ public abstract class ArchiverJob implements BackgroundTask {
    * @return a future completed with the next batch to be archived, or null/empty if there is
    *     nothing to archive
    */
-  abstract CompletableFuture<ArchiveBatch> getNextBatch();
+  abstract CompletableFuture<B> getNextBatch();
 
-  /**
-   * The source index name from which to archive records
-   *
-   * @return the source index name
-   */
-  abstract String getSourceIndexName();
-
-  /**
-   * The name of the field representing the unique identifier of a record in the source index
-   *
-   * @return the id field name
-   */
-  abstract String getIdFieldName();
+  abstract IndexTemplateDescriptor getTemplateDescriptor();
 
   @Override
   public CompletionStage<Integer> execute() {
@@ -99,28 +94,52 @@ public abstract class ArchiverJob implements BackgroundTask {
     return archiverRepository;
   }
 
-  protected CompletionStage<Integer> archiveBatch(final ArchiveBatch batch) {
-    if (batch == null || batch.ids() == null || batch.ids().isEmpty()) {
+  protected Executor getExecutor() {
+    return executor;
+  }
+
+  protected CompletionStage<Integer> archiveBatch(final B batch) {
+    if (batch == null || batch.finishDate() == null || batch.isEmpty()) {
       logger.trace("No {}s to archive", getJobName());
       return CompletableFuture.completedFuture(0);
     }
 
     logger.trace("Following {}s are found for archiving: {}", getJobName(), batch);
-    recordArchivingMetric.accept(batch.ids().size());
+    recordArchivingMetric.accept(batch.size());
 
-    return archive(getSourceIndexName(), batch.finishDate(), getIdFieldName(), batch.ids())
+    return archive(getTemplateDescriptor(), batch)
         // we want to make sure the rescheduling happens after we update the metrics, so we peek
         // instead of creating an additional pipeline on the interim future
         .thenApplyAsync(FunctionUtil.peek(recordArchivedMetric), executor);
   }
 
+  /**
+   * Archives the given batch of records. This method moves the documents from the source index to
+   * the destination archive index.
+   *
+   * @param templateDescriptor index template descriptor of the records to archive
+   * @param batch the batch of records to archive
+   * @return a future that completes when the archiving is finished
+   */
   protected CompletableFuture<Integer> archive(
-      final String sourceIdx,
-      final String finishDate,
-      final String idFieldName,
-      final List<String> ids) {
+      final IndexTemplateDescriptor templateDescriptor, final B batch) {
+    final var sourceIdxName = templateDescriptor.getFullQualifiedName();
+    final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
+    final var finishDate = batch.finishDate();
     return archiverRepository
-        .moveDocuments(sourceIdx, sourceIdx + finishDate, idFieldName, ids, executor)
-        .thenApplyAsync(ok -> ids.size(), executor);
+        .moveDocuments(sourceIdxName, sourceIdxName + finishDate, idsMap, executor)
+        .thenApplyAsync(ok -> batch.size(), executor);
   }
+
+  /**
+   * Creates a map of IDs grouped by their field names for the given batch. This map is used by the
+   * repository to identifying the documents to move.
+   *
+   * @param templateDescriptor the template descriptor defining the ID field
+   * @param batch the batch of records to archive
+   * @return a map where the key is the field name (e.g. "id" or "processInstanceKey") and the value
+   *     is the list of IDs
+   */
+  protected abstract Map<String, List<String>> createIdsByFieldMap(
+      final IndexTemplateDescriptor templateDescriptor, final B batch);
 }

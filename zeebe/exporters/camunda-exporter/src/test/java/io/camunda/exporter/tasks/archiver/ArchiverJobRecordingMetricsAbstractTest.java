@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 public abstract class ArchiverJobRecordingMetricsAbstractTest {
 
-  abstract ArchiverJob getArchiverJob();
+  abstract ArchiverJob<?> getArchiverJob();
 
   abstract SimpleMeterRegistry getMeterRegistry();
 

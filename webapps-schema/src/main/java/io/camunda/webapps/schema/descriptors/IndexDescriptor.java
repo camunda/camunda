@@ -11,6 +11,8 @@ import java.util.Optional;
 
 public interface IndexDescriptor {
 
+  String ID = "id";
+
   String TENANT_ID = "tenantId";
 
   String getFullQualifiedName();
@@ -39,5 +41,9 @@ public interface IndexDescriptor {
 
   default Optional<String> getTenantIdField() {
     return Optional.empty();
+  }
+
+  default String getIdField() {
+    return ID;
   }
 }

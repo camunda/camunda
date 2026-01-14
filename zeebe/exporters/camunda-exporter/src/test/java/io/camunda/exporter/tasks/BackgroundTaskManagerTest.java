@@ -10,7 +10,7 @@ package io.camunda.exporter.tasks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.tasks.archiver.NoopArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionRepository.NoopHistoryDeletionRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
