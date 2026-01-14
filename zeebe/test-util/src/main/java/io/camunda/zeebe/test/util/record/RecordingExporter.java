@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -76,6 +77,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
@@ -705,6 +707,16 @@ public final class RecordingExporter implements Exporter {
   public static GlobalListenerBatchRecordStream globalListenerBatchRecords(
       final GlobalListenerBatchIntent intent) {
     return globalListenerBatchRecords().withIntent(intent);
+  }
+
+  public static GlobalListenerRecordStream globalListenerRecords() {
+    return new GlobalListenerRecordStream(
+        records(ValueType.GLOBAL_LISTENER, GlobalListenerRecordValue.class));
+  }
+
+  public static GlobalListenerRecordStream globalListenerRecords(
+      final GlobalListenerIntent intent) {
+    return globalListenerRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

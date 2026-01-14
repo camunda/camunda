@@ -15,27 +15,6 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.List;
-import org.immutables.value.Value;
-
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableGlobalListenerRecordValue.Builder.class)
-public interface GlobalListenerRecordValue extends RecordValue {
-  String getId();
-
-  String getType();
-
-  int getRetries();
-
-  List<String> getEventTypes();
-
-  boolean isAfterNonGlobal();
-
-  int getPriority();
-
-  GlobalListenerSource getSource();
-
-  GlobalListenerType getListenerType();
+public enum GlobalListenerType {
+  USER_TASK;
 }

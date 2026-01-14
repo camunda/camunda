@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.protocol.record.value;
+package io.camunda.zeebe.protocol.record.intent;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.List;
-import org.immutables.value.Value;
+public enum GlobalListenerIntent implements Intent {
+  CREATE(0, false),
+  CREATED(1, true),
+  UPDATE(2, false),
+  UPDATED(3, true),
+  DELETE(4, false),
+  DELETED(5, true);
 
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableGlobalListenerRecordValue.Builder.class)
-public interface GlobalListenerRecordValue extends RecordValue {
-  String getId();
+  private final short value;
+  private final boolean event;
 
-  String getType();
+  GlobalListenerIntent(final int value, final boolean event) {
+    this.value = (short) value;
+    this.event = event;
+  }
 
-  int getRetries();
+  @Override
+  public short value() {
+    return value;
+  }
 
-  List<String> getEventTypes();
-
-  boolean isAfterNonGlobal();
-
-  int getPriority();
-
-  GlobalListenerSource getSource();
-
-  GlobalListenerType getListenerType();
+  @Override
+  public boolean isEvent() {
+    return event;
+  }
 }

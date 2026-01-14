@@ -369,6 +369,7 @@ components:
         - CREATE_BATCH_OPERATION_RESOLVE_INCIDENT
         - CREATE_DECISION_INSTANCE
         - CREATE_PROCESS_INSTANCE
+        - CREATE_TASK_LISTENER
         - DELETE
         - DELETE_DECISION_INSTANCE
         - DELETE_DRD
@@ -376,6 +377,7 @@ components:
         - DELETE_PROCESS
         - DELETE_PROCESS_INSTANCE
         - DELETE_RESOURCE
+        - DELETE_TASK_LISTENER
         - EVALUATE
         - MODIFY_PROCESS_INSTANCE
         - READ
@@ -386,9 +388,11 @@ components:
         - READ_PROCESS_INSTANCE
         - READ_USAGE_METRIC
         - READ_USER_TASK
+        - READ_TASK_LISTENER
         - UPDATE
         - UPDATE_PROCESS_INSTANCE
         - UPDATE_USER_TASK
+        - UPDATE_TASK_LISTENER
 
     ResourceTypeEnum:
       description: The type of resource to add/remove permissions to/from.
@@ -403,6 +407,7 @@ components:
         - DECISION_REQUIREMENTS_DEFINITION
         - DOCUMENT
         - EXPRESSION
+        - GLOBAL_LISTENER
         - GROUP
         - MAPPING_RULE
         - MESSAGE

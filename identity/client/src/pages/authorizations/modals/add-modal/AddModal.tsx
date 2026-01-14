@@ -141,6 +141,12 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ,
   ],
   DOCUMENT: [PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE],
+  GLOBAL_LISTENER: [
+    PermissionType.CREATE_TASK_LISTENER,
+    PermissionType.DELETE_TASK_LISTENER,
+    PermissionType.READ_TASK_LISTENER,
+    PermissionType.UPDATE_TASK_LISTENER,
+  ],
 };
 
 export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
