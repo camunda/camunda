@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.globallistener;
 
-import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -18,11 +18,12 @@ import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
-@ExcludeAuthorizationCheck
 public final class GlobalListenerUpdateProcessor
     implements DistributedTypedRecordProcessor<GlobalListenerRecord> {
 
@@ -74,6 +75,14 @@ public final class GlobalListenerUpdateProcessor
 
   private Either<Rejection, GlobalListenerRecord> validateCommand(
       final TypedRecord<GlobalListenerRecord> command) {
-    return Either.right(command.getValue());
+    final AuthorizationRequest authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.GLOBAL_LISTENER)
+            .permissionType(PermissionType.UPDATE_TASK_LISTENER)
+            .build();
+    return authCheckBehavior
+        .isAuthorizedOrInternalCommand(authRequest)
+        .map(unused -> command.getValue());
   }
 }
