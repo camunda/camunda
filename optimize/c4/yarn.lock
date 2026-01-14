@@ -1705,15 +1705,15 @@ __metadata:
   linkType: hard
 
 "@carbon/icons-react@npm:^11.41.0, @carbon/icons-react@npm:^11.67.0":
-  version: 11.72.0
-  resolution: "@carbon/icons-react@npm:11.72.0"
+  version: 11.73.0
+  resolution: "@carbon/icons-react@npm:11.73.0"
   dependencies:
     "@carbon/icon-helpers": "npm:^10.70.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     prop-types: "npm:^15.8.1"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/745365425ba865372ece2fbf5288fe872b8831f597de55d11aef9e2eeeadffa194bfea5a6fd3293f3860a44a38e544b1e28e7c9b1adb86bc86c7246133653242
+  checksum: 10c0/9c1ecef6ff45fc3a1f2bd1360f31ff5f6c1eaa7b0a01edfcacabe7978075db20cc129ffc732e2dc2d9b118298a08b8937d9055bff9747bb57b28d3ebd02a6009
   languageName: node
   linkType: hard
 
