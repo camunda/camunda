@@ -83,6 +83,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .batchOperationKey(log.getBatchOperationKey())
             .batchOperationType(mapBatchOperationType(log.getBatchOperationType()))
             .processInstanceKey(log.getProcessInstanceKey())
+            .rootProcessInstanceKey(log.getRootProcessInstanceKey())
             .entityVersion(log.getEntityVersion())
             .entityValueType(log.getEntityValueType())
             .entityOperationIntent(log.getEntityOperationIntent())

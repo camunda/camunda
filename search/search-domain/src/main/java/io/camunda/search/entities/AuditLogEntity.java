@@ -30,6 +30,7 @@ public record AuditLogEntity(
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
+    Long rootProcessInstanceKey,
     Long elementInstanceKey,
     Long jobKey,
     Long userTaskKey,
@@ -66,6 +67,7 @@ public record AuditLogEntity(
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
+    private Long rootProcessInstanceKey;
     private Long elementInstanceKey;
     private Long jobKey;
     private Long userTaskKey;
@@ -163,6 +165,11 @@ public record AuditLogEntity(
       return this;
     }
 
+    public Builder rootProcessInstanceKey(final Long rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
     public Builder elementInstanceKey(final Long elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
@@ -238,6 +245,7 @@ public record AuditLogEntity(
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
+          rootProcessInstanceKey,
           elementInstanceKey,
           jobKey,
           userTaskKey,

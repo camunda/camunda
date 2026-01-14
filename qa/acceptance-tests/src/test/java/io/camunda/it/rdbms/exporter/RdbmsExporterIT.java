@@ -36,6 +36,10 @@ import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -47,6 +51,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter.Builder;
+import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -57,6 +62,7 @@ import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -66,6 +72,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -82,6 +89,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -1039,6 +1047,42 @@ class RdbmsExporterIT {
     assertThat(job).isNotNull();
     assertThat(job.get().rootProcessInstanceKey())
         .isEqualTo(((JobRecordValue) jobCreatedRecord.getValue()).getRootProcessInstanceKey());
+  }
+
+  @Test
+  public void shouldWriteToAuditLog() {
+    // given
+    final var processInstanceCreationRecord =
+        ImmutableRecord.<ProcessInstanceCreationRecordValue>builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_INSTANCE_CREATION))
+            .withRecordType(RecordType.EVENT)
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withPosition(1L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(processInstanceCreationRecord);
+
+    // then
+    final var recordValue = processInstanceCreationRecord.getValue();
+    final var results =
+        rdbmsService
+            .getAuditLogReader()
+            .search(
+                AuditLogQuery.of(
+                    b ->
+                        b.filter(f -> f.processInstanceKeys(recordValue.getProcessInstanceKey()))));
+    final var items = results.items();
+    assertThat(items).hasSize(1);
+    final var auditLog = items.getFirst();
+    assertThat(auditLog.processInstanceKey()).isEqualTo(recordValue.getProcessInstanceKey());
+    assertThat(auditLog.rootProcessInstanceKey())
+        .isEqualTo(recordValue.getRootProcessInstanceKey());
+    assertThat(auditLog.entityType()).isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
+    assertThat(auditLog.operationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(auditLog.result()).isEqualTo(AuditLogOperationResult.SUCCESS);
+    assertThat(auditLog.category()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
   }
 
   private static void verifyRootProcessInstanceKey(
