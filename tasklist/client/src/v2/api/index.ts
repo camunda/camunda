@@ -17,6 +17,10 @@ import {
   type CreateProcessInstanceRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
+import {
+  queryUserTaskAuditLogs,
+  type QueryUserTaskAuditLogsRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const api = {
   queryTasks: (body: QueryUserTasksRequestBody = {}) => {
@@ -170,6 +174,22 @@ const api = {
         'Content-Type': 'application/json',
       },
     });
+  },
+  queryUserTaskAuditLogs: (
+    params: {userTaskKey: string} & QueryUserTaskAuditLogsRequestBody,
+  ) => {
+    const {userTaskKey, ...body} = params;
+    return new Request(
+      getFullURL(queryUserTaskAuditLogs.getUrl({userTaskKey})),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: queryUserTaskAuditLogs.method,
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   },
 } as const;
 
