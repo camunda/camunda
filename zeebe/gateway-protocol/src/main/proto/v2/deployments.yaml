@@ -343,6 +343,11 @@ components:
       nullable: true
       additionalProperties: false
       properties:
+        deleteHistory:
+          description: Indicates if the historic data should be deleted.
+          type: boolean
+          required: false
+          default: false
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
 

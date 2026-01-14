@@ -850,6 +850,8 @@ message DeleteResourceRequest {
   int64 resourceKey = 1;
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 2;
+  // Indicates if the historic data should be deleted.
+  optional bool deleteHistory = 3;
 }
 
 message DeleteResourceResponse {
