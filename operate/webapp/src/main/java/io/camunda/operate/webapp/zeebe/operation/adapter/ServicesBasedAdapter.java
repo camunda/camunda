@@ -90,7 +90,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
                     resourceServices
                         .withAuthentication(authentication)
                         .deleteResource(
-                            new ResourceDeletionRequest(resourceKey, operationReference)),
+                            new ResourceDeletionRequest(resourceKey, operationReference, false)),
                 operationId));
   }
 
