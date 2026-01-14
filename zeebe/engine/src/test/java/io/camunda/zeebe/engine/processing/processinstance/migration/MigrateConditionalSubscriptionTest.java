@@ -50,7 +50,11 @@ public class MigrateConditionalSubscriptionTest {
                     .userTask("A")
                     .boundaryEvent("boundary1")
                     .cancelActivity(true)
-                    .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                    .condition(
+                        c ->
+                            c.condition("=x > 10")
+                                .zeebeVariableNames("x")
+                                .zeebeVariableEvents("create"))
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent()
@@ -61,7 +65,11 @@ public class MigrateConditionalSubscriptionTest {
                     .userTask("B")
                     .boundaryEvent("boundary2")
                     .cancelActivity(true)
-                    .condition(c -> c.condition("=x > 999").zeebeVariableNames("x"))
+                    .condition(
+                        c ->
+                            c.condition("=y > 10")
+                                .zeebeVariableNames("y")
+                                .zeebeVariableEvents("update"))
                     .endEvent("target_process_conditional_end")
                     .moveToActivity("B")
                     .endEvent()
@@ -99,11 +107,15 @@ public class MigrateConditionalSubscriptionTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .describedAs("Expect that the catch event id is updated")
         .hasCatchEventId("boundary2")
-        .describedAs("Expect that the migrated subscription keeps its new condition")
-        .hasCondition("=x > 999");
+        .describedAs("Expect that the migrated subscription keeps its source condition")
+        .hasCondition("=x > 10")
+        .describedAs("Expect that the migrated subscription keeps the source variable names")
+        .hasVariableNames("x")
+        .describedAs("Expect that the migrated subscription keeps the source variable events")
+        .hasVariableEvents("create");
 
     // and when: trigger via variable update (validates the migrated subscription remains usable)
-    engine.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 1000)).update();
+    engine.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 11)).update();
 
     Assertions.assertThat(
             RecordingExporter.conditionalSubscriptionRecords(
@@ -205,7 +217,7 @@ public class MigrateConditionalSubscriptionTest {
             ConditionalSubscriptionRecordValue::getCondition)
         .describedAs("Expect that the conditional boundary events are migrated")
         .containsExactlyInAnyOrder(
-            Tuple.tuple("boundary3", "=x > 999"), Tuple.tuple("boundary4", "=y > 999"));
+            Tuple.tuple("boundary3", "=x > 10"), Tuple.tuple("boundary4", "=y > 10"));
   }
 
   @Test
@@ -279,7 +291,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasCatchEventId("boundary3")
-        .hasCondition("=x > 999");
+        .hasCondition("=x > 10");
 
     Assertions.assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
@@ -368,7 +380,7 @@ public class MigrateConditionalSubscriptionTest {
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasCatchEventId("boundary2")
-        .hasCondition("=x > 999");
+        .hasCondition("=x > 10");
 
     // the additional conditional boundary in the target should be created
     Assertions.assertThat(
@@ -610,7 +622,7 @@ public class MigrateConditionalSubscriptionTest {
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId("boundary2")
-                .withCondition("=x > 999")
+                .withCondition("=x > 10")
                 .getFirst()
                 .getValue()
                 .getScopeKey())
@@ -760,7 +772,7 @@ public class MigrateConditionalSubscriptionTest {
         .extracting(
             ConditionalSubscriptionRecordValue::getCatchEventId,
             ConditionalSubscriptionRecordValue::getCondition)
-        .containsExactlyInAnyOrder(tuple("boundary3", "=x > 99"), tuple("boundary4", "=x > 999"))
+        .containsExactlyInAnyOrder(tuple("boundary3", "=x > 10"), tuple("boundary4", "=x > 5"))
         .hasSize(2);
   }
 
@@ -823,8 +835,8 @@ public class MigrateConditionalSubscriptionTest {
                 .getValue())
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasCatchEventId("catch2")
-        .describedAs("Expect that the migrated subscription keeps its new condition")
-        .hasCondition("=x > 999");
+        .describedAs("Expect that the migrated subscription keeps the source condition")
+        .hasCondition("=x > 10");
 
     // validate migrated catch continues
     engine.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 1000)).update();

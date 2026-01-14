@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -145,7 +144,6 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         unsubscribeFromTimerEvents(elementInstance, sourceElementIdToTargetElementId);
     final List<SignalSubscription> signalSubscriptionsToMigrate =
         unsubscribeFromSignalEvents(elementInstance, sourceElementIdToTargetElementId);
-    // unsubscribe from conditional events below
     final List<ConditionalSubscription> conditionalSubscriptionsToMigrate =
         unsubscribeFromConditionalEvents(elementInstance, sourceElementIdToTargetElementId);
 
@@ -191,23 +189,6 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           recordCopy.wrap(conditionalSubscriptionRecord);
           recordCopy.setProcessDefinitionKey(targetProcessDefinition.getKey());
           recordCopy.setCatchEventId(BufferUtil.wrapString(targetCatchEventId));
-
-          final var targetConditional =
-              targetProcessDefinition
-                  .getProcess()
-                  .getElementById(targetCatchEventId, ExecutableCatchEventElement.class)
-                  .getConditional();
-          // below is already checked in tryMigrateElementInstance but adding a safeguard
-          if (targetConditional == null) {
-            throw new ProcessInstanceMigrationPreconditionFailedException(
-                """
-                Expected to migrate conditional subscription for process instance '%s' \
-                but target catch event with id '%s' does not have a conditional event definition."""
-                    .formatted(
-                        subscription.getRecord().getProcessInstanceKey(), targetCatchEventId),
-                RejectionType.INVALID_STATE);
-          }
-          recordCopy.setCondition(BufferUtil.wrapString(targetConditional.getCondition()));
 
           stateWriter.appendFollowUpEvent(
               subscription.getKey(), ConditionalSubscriptionIntent.MIGRATED, recordCopy);

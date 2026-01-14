@@ -75,9 +75,6 @@ public class BpmnConditionalBehavior {
    */
   public void evaluateConditionals(
       final long processInstanceKey, final List<VariableEvent> variableEvents) {
-
-    // performance optimization: skip evaluation if no conditional subscriptions exist for the
-    // process definition
     if (!isConditionalSubscriptionExist(processInstanceKey)) {
       return;
     }
@@ -188,7 +185,6 @@ public class BpmnConditionalBehavior {
   }
 
   private boolean isConditionalSubscriptionExist(final long processInstanceKey) {
-    // no conditional subscriptions for the process instance, so skip evaluation
     return conditionSubscriptionState.exists(processInstanceKey);
   }
 

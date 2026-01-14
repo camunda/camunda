@@ -21,10 +21,11 @@ public interface MutableConditionalSubscriptionState extends ConditionalSubscrip
   void put(final long key, ConditionalSubscriptionRecord subscription);
 
   /**
-   * Migrates a conditional subscription by its subscription key.
+   * Migrates an existing conditional subscription by its subscription key.
    *
-   * <p>This method is intended to be used during state migration to add existing subscriptions to
-   * the new state structure.
+   * <p>This method is intended to be used during process instance migration to update an existing
+   * subscription's process definition key and catch event ID to match the target process
+   * definition, while retaining the same subscription key.
    *
    * @param key the key of the subscription
    * @param subscription the subscription record

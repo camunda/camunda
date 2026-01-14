@@ -228,8 +228,12 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub1",
                         s ->
                             s.startEvent("start1")
-                                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
-                                .serviceTask("A", t -> t.zeebeJobType("task1"))
+                                .condition(
+                                    c ->
+                                        c.condition("=x > 10")
+                                            .zeebeVariableNames("x")
+                                            .zeebeVariableEvents("create"))
+                                .userTask("subUserTask1")
                                 .endEvent())
                     .startEvent("start")
                     .userTask("userTask1")
@@ -241,8 +245,12 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub2",
                         s ->
                             s.startEvent("start2")
-                                .condition(c -> c.condition("=x > 999").zeebeVariableNames("x"))
-                                .userTask("eventSubprocessUserTask")
+                                .condition(
+                                    c ->
+                                        c.condition("=y > 10")
+                                            .zeebeVariableNames("y")
+                                            .zeebeVariableEvents("update"))
+                                .userTask("subUserTask2")
                                 .endEvent())
                     .startEvent("start")
                     .userTask("userTask2")
@@ -281,17 +289,21 @@ public class MigrateConditionalEventSubprocessTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .describedAs("Expect that the catch event id is updated")
         .hasCatchEventId("start2")
-        .describedAs("Expect that the migrated subscription uses the new condition from target")
-        .hasCondition("=x > 999");
+        .describedAs("Expect that the migrated subscription keeps the source condition")
+        .hasCondition("=x > 10")
+        .describedAs("Expect that the migrated subscription keeps the source variable names")
+        .hasVariableNames("x")
+        .describedAs("Expect that the migrated subscription keeps the source variable events")
+        .hasVariableEvents("create");
 
     // trigger the migrated subscription
-    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 1000)).update();
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 11)).update();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.USER_TASK)
-                .withElementId("eventSubprocessUserTask")
+                .withElementId("subUserTask2")
                 .getFirst()
                 .getValue())
         .describedAs("Expect that the process instance is continued in the target process")
@@ -608,7 +620,7 @@ public class MigrateConditionalEventSubprocessTest {
         .migrate();
 
     // then
-    org.assertj.core.api.Assertions.assertThat(
+    Assertions.assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId("start2")

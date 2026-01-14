@@ -164,7 +164,7 @@ public final class CatchEventBehavior {
     unsubscribeFromConditionalEvents(elementInstanceKey, elementIdFilter);
   }
 
-  public void unsubscribeFromConditionalEvents(
+  private void unsubscribeFromConditionalEvents(
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
     unsubscribeFromConditionalEventsBySubscriptionFilter(
         elementInstanceKey,
@@ -551,7 +551,7 @@ public final class CatchEventBehavior {
         });
   }
 
-  public void unsubscribeFromSignalEvents(
+  private void unsubscribeFromSignalEvents(
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
     unsubscribeFromSignalEventsBySubscriptionFilter(
         elementInstanceKey,

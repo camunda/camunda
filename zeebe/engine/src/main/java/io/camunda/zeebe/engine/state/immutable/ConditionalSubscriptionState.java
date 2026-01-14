@@ -21,7 +21,7 @@ public interface ConditionalSubscriptionState {
   boolean exists(String tenantId, long subscriptionKey);
 
   /**
-   * Checks whether any conditional subscriptions exist for the given process definition key. Please
+   * Checks whether any conditional subscriptions exist for the given process instance key. Please
    * note that this DOES NOT include conditional start event subscriptions but only boundary events,
    * intermediate catch events, and event subprocess start events.
    *
@@ -29,7 +29,7 @@ public interface ConditionalSubscriptionState {
    * a variable is updated in a given scope.
    *
    * @param processInstanceKey the process instance key
-   * @return true if any conditional start event subscriptions exist, false otherwise
+   * @return true if any (non-start event) conditional subscriptions exist, false otherwise
    */
   boolean exists(long processInstanceKey);
 
