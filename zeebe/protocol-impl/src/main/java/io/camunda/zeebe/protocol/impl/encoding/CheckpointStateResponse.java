@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
+import io.camunda.zeebe.protocol.management.CheckpointInfoEncoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseDecoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.CheckpointStatesEncoder;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.LongHashSet;
 
 public class CheckpointStateResponse implements BufferReader, BufferWriter {
 
@@ -96,7 +98,22 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
 
     final var rangesEncoder = bodyEncoder.rangesCount(ranges.size());
     for (final var range : ranges) {
-      rangesEncoder.next().startId(range.startId()).endId(range.endId());
+      final var rangeEncoder = rangesEncoder.next();
+      rangeEncoder
+          .first()
+          .checkpointId(range.startId())
+          // TODO: Fill in
+          .checkpointType(CheckpointInfoEncoder.checkpointTypeNullValue())
+          .checkpointTimestamp(CheckpointInfoEncoder.checkpointTimestampNullValue())
+          .checkpointPosition(CheckpointInfoEncoder.checkpointPositionNullValue());
+      rangeEncoder
+          .last()
+          .checkpointId(range.endId())
+          // TODO: Fill in
+          .checkpointType(CheckpointInfoEncoder.checkpointTypeNullValue())
+          .checkpointTimestamp(CheckpointInfoEncoder.checkpointTimestampNullValue())
+          .checkpointPosition(CheckpointInfoEncoder.checkpointPositionNullValue());
+
       final var missingCheckpointsEncoder =
           rangesEncoder.missingCheckpointsCount(range.missingCheckpoints().size());
       for (final var checkpointId : range.missingCheckpoints()) {
@@ -133,16 +150,21 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
                         state.checkpointTimestamp(),
                         state.checkpointPosition())));
 
-    ranges = new ArrayList<>();
-    for (final var rangesDecoder : bodyDecoder.ranges()) {
-      final int partitionId = rangesDecoder.partitionId();
-      final long startId = rangesDecoder.startId();
-      final long endId = rangesDecoder.endId();
-      final var missingCheckpoints = new HashSet<Long>();
-      for (final var missingCheckpoint : rangesDecoder.missingCheckpoints()) {
+    final var rangesDecoder = bodyDecoder.ranges();
+    ranges = new ArrayList<>(rangesDecoder.count());
+    for (final var range : rangesDecoder) {
+      final var missingCheckpointsDecoder = range.missingCheckpoints();
+      final var missingCheckpoints = new LongHashSet(missingCheckpointsDecoder.count());
+      for (final var missingCheckpoint : missingCheckpointsDecoder) {
         missingCheckpoints.add(missingCheckpoint.checkpointId());
       }
-      ranges.add(new PartitionBackupRange(partitionId, startId, endId, missingCheckpoints));
+
+      ranges.add(
+          new PartitionBackupRange(
+              range.partitionId(),
+              range.first().checkpointId(),
+              range.last().checkpointId(),
+              missingCheckpoints));
     }
   }
 
