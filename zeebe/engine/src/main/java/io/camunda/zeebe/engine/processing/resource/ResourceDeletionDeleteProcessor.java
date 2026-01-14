@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.resource;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.exception.Forbi
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -39,20 +42,28 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -61,11 +72,13 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
@@ -91,6 +104,7 @@ public class ResourceDeletionDeleteProcessor
       final BpmnBehaviors bpmnBehaviors,
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
@@ -194,7 +208,7 @@ public class ResourceDeletionDeleteProcessor
           PermissionType.DELETE_PROCESS,
           bufferAsString(process.getBpmnProcessId()),
           process.getTenantId(),
-          () -> deleteProcess(process));
+          () -> deleteProcess(process, command, eventKey));
     }
 
     final var drgOptional =
@@ -290,7 +304,10 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
-  private void deleteProcess(final DeployedProcess process) {
+  private void deleteProcess(
+      final DeployedProcess process,
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey) {
     // We don't add the checksum or resource in this event. The checksum is not easily available
     // and the resources are left out to prevent exceeding the maximum batch size.
     final var processIdBuffer = process.getBpmnProcessId();
@@ -330,10 +347,34 @@ public class ResourceDeletionDeleteProcessor
         elementInstanceState.hasActiveProcessInstances(process.getKey(), bannedInstances);
 
     if (!hasRunningInstances) {
+      if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
+        deleteProcessInstanceHistory(process, eventKey);
+      }
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
     } else {
       throw new ActiveProcessInstancesException(process.getKey());
     }
+  }
+
+  private void deleteProcessInstanceHistory(final DeployedProcess process, final long eventKey) {
+    final var filter =
+        new ProcessInstanceFilter.Builder().processDefinitionKeys(process.getKey()).build();
+    final var batchOperationRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(keyGenerator.nextKey())
+            .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setAuthentication(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(CamundaAuthentication.anonymous())))
+            .setFollowUpCommand(
+                ValueType.HISTORY_DELETION,
+                HistoryDeletionIntent.DELETE,
+                new HistoryDeletionRecord()
+                    .setResourceKey(process.getKey())
+                    .setResourceType(HistoryDeletionType.PROCESS_DEFINITION));
+    commandWriter.appendFollowUpCommand(
+        eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {
