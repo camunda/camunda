@@ -20,6 +20,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
@@ -39,8 +40,8 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -746,6 +747,204 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
+  void shouldNotBeAuthorizedByPropertyAuthorizationWhenUserHasNoTenantAccess() {
+    // given: user has property-based permission but NO tenant assignment
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("assignee");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+
+    final var tenantId = "tenant-" + UUID.randomUUID();
+    final var command = mockCommand(user.getUsername());
+
+    // when: request with property authorization but no tenant access
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder().assignee(user.getUsername()).build())
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then: not authorized because property-based authorization requires tenant access
+    EitherAssert.assertThat(authorized).isLeft();
+  }
+
+  @Test
+  void shouldBeAuthorizedByPropertyAuthorizationWhenUserHasTenantAccessViaPrimaryResult() {
+    // given: user has property-based permission AND tenant access
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("assignee");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+
+    final var tenantId = createAndAssignTenant(user.getUsername(), EntityType.USER);
+    final var command = mockCommand(user.getUsername());
+
+    // when: request with property authorization AND tenant access
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder().assignee(user.getUsername()).build())
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then: authorized because user has both property permission and tenant access
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void shouldBeAuthorizedByPropertyAuthorizationWhenUserHasTenantAccessViaMappingRule() {
+    // given: user has property-based permission AND tenant access via mapping rule
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingRule = createMappingRule(claimName, claimValue);
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateUsers");
+    addPermission(
+        mappingRule.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
+        resourceType,
+        permissionType,
+        propertyScope);
+
+    final var tenantId =
+        createAndAssignTenant(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
+
+    final var username = "legolas";
+    final var command = mockCommandWithUserAndMappingRule(username, claimName, claimValue);
+
+    // when: request with property authorization via mapping rule
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateUsers(List.of(username, "aragorn"))
+                    .build())
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then: authorized because mapping rule provides both property permission and tenant access
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
+  void shouldNotBeAuthorizedByPropertyAuthorizationWhenMappingRuleHasNoTenantAccess() {
+    // given: user has property-based permission via mapping rule but NO tenant access
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingRule = createMappingRule(claimName, claimValue);
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateUsers");
+    addPermission(
+        mappingRule.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
+        resourceType,
+        permissionType,
+        propertyScope);
+
+    final var tenantId = "tenant-" + UUID.randomUUID();
+    final var username = "gimli";
+    final var command = mockCommandWithUserAndMappingRule(username, claimName, claimValue);
+
+    // when: request with property authorization but no tenant access
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateUsers(List.of(username, "boromir"))
+                    .build())
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then: not authorized because property-based authorization requires tenant access
+    EitherAssert.assertThat(authorized).isLeft();
+  }
+
+  @Test
+  void shouldBeAuthorizedByPropertyAuthorizationWhenPrimaryHasNoTenantButMappingRuleDoes() {
+    // given: user (primary) has NO tenant, but mapping rule provides tenant access
+    final var user = createUser();
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingRule = createMappingRule(claimName, claimValue);
+
+    final var resourceType = AuthorizationResourceType.USER_TASK;
+    final var permissionType = PermissionType.UPDATE;
+    final var propertyScope = AuthorizationScope.property("candidateGroups");
+
+    // Grant property permission to user (primary)
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        propertyScope);
+
+    // Assign tenant to mapping rule
+    final var tenantId =
+        createAndAssignTenant(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
+
+    // Create group via mapping rule
+    final var group =
+        createGroupAndAssignEntity(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
+
+    final var command =
+        mockCommandWithUserAndMappingRule(user.getUsername(), claimName, claimValue);
+
+    // when: request with property authorization where tenant comes from mapping rule
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .resourceProperties(
+                UserTaskAuthorizationProperties.builder()
+                    .candidateGroups(List.of(group.getGroupId(), "elves"))
+                    .build())
+            .build();
+
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then: authorized because mapping rule provides tenant access (supplementing primary)
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
+  @Test
   void shouldGetTenantsWhenUserIsAssignedToRequestedTenantThroughRole() {
     // given
     final var user = createUser();
@@ -907,22 +1106,29 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
       final PermissionType permissionType,
       final String... resourceIds) {
     for (final String resourceId : resourceIds) {
-      final var authorizationKey = random.nextLong();
-      final var resourceMatcher =
-          "*".equals(resourceId)
-              ? AuthorizationResourceMatcher.ANY
-              : AuthorizationResourceMatcher.ID;
-      final var authorization =
-          new AuthorizationRecord()
-              .setAuthorizationKey(authorizationKey)
-              .setOwnerId(ownerId)
-              .setOwnerType(ownerType)
-              .setResourceMatcher(resourceMatcher)
-              .setResourceId(resourceId)
-              .setResourceType(resourceType)
-              .setPermissionTypes(Set.of(permissionType));
-      authorizationCreatedApplier.applyState(authorizationKey, authorization);
+      addPermission(
+          ownerId, ownerType, resourceType, permissionType, AuthorizationScope.of(resourceId));
     }
+  }
+
+  private void addPermission(
+      final String ownerId,
+      final AuthorizationOwnerType ownerType,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final AuthorizationScope authorizationScope) {
+    final var authorizationKey = random.nextLong();
+    final var authorization =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceMatcher(authorizationScope.getMatcher())
+            .setResourceId(authorizationScope.getResourceId())
+            .setResourcePropertyName(authorizationScope.getResourcePropertyName())
+            .setResourceType(resourceType)
+            .setPermissionTypes(Set.of(permissionType));
+    authorizationCreatedApplier.applyState(authorizationKey, authorization);
   }
 
   private GroupRecord createGroupAndAssignEntity(
