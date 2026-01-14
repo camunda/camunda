@@ -21,6 +21,20 @@ import sbom from 'rollup-plugin-sbom';
 const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
 const outDir = 'build';
 
+function getReporters() {
+  if (process.env.CI) {
+    return {
+      reporters: ['default', 'junit', 'github-actions'],
+      outputFile: {
+        junit: 'TEST-unit.xml',
+      },
+    };
+  }
+  return {
+    reporters: ['default'],
+  };
+}
+
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
   plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
@@ -80,6 +94,7 @@ export default defineConfig(({mode}) => ({
     setupFiles: ['./src/setupTests.ts'],
     restoreMocks: true,
     mockReset: true,
+    ...getReporters(),
     coverage: {
       provider: 'istanbul',
       exclude: [
