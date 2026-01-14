@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.identity;
 
+import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +21,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 @ComponentScan(basePackages = {"io.camunda.authentication"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.authentication"})
 @Profile("consolidated-auth")
-@ConditionalOnRestGatewayEnabled
+@ConditionalOnAnyHttpGatewayEnabled
 public class AuthenticationConfiguration {
 
   @Bean
