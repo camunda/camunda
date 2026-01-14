@@ -12,17 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public interface UpdatingBackupStatus {
 
   BackupStore getStore();
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void backupIsMarkedAsCompleted(final Backup backup) {
     // when
     getStore().save(backup).join();
@@ -34,7 +33,7 @@ public interface UpdatingBackupStatus {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void backupCanBeMarkedAsFailed(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -50,7 +49,7 @@ public interface UpdatingBackupStatus {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void markingAsFailedUpdatesTimestamp(final Backup backup) {
     // given
     getStore().save(backup).join();

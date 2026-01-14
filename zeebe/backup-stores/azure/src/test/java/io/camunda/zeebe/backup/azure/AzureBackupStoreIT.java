@@ -26,7 +26,6 @@ import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -35,7 +34,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -79,7 +78,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void backupShouldExistAfterStoreIsClosed(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -96,7 +95,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void cannotDeleteUploadingBlock(final Backup backup) {
 
     // given when
@@ -115,7 +114,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void cannotRestoreUploadingBackup(final Backup backup, @TempDir final Path targetDir) {
     // when
     uploadInProgressManifest(backup);

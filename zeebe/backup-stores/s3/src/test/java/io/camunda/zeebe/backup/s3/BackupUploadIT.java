@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,8 +28,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.junit.jupiter.Container;
@@ -84,31 +86,33 @@ final class BackupUploadIT {
     return new S3BackupStore(backupConfig, asyncClient);
   }
 
-  @Test
-  void shouldSaveBackupWithManyFiles() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldSaveBackupWithManyFiles(final boolean legacy) throws IOException {
     // given
     // Default values for the configuration
 
     final CompletableFuture<Void> saveFuture =
-        buildBackupStore(50, Duration.ofSeconds(10)).save(backupWithManyFiles(4_000));
+        buildBackupStore(50, Duration.ofSeconds(10)).save(backupWithManyFiles(4_000, legacy));
 
     // then
     Assertions.assertThat(saveFuture).succeedsWithin(Duration.ofSeconds(60));
   }
 
-  @Test
-  void shouldNotTimeoutForAcquisitionOfConnection() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldNotTimeoutForAcquisitionOfConnection(final boolean legacy) throws IOException {
     // given
     // Even with just one connection, and low timeout limit, the second upload should not start
     // until a connection is available, and therefore should not throw AcquisitionConnectionTimeout
     final CompletableFuture<Void> saveFuture =
-        buildBackupStore(1, Duration.ofMillis(50)).save(backupWithLargeFiles(50_000_000));
+        buildBackupStore(1, Duration.ofMillis(50)).save(backupWithLargeFiles(50_000_000, legacy));
 
     // then
     Assertions.assertThat(saveFuture).succeedsWithin(Duration.ofSeconds(60));
   }
 
-  Backup backupWithManyFiles(final int numberOfSegments) throws IOException {
+  Backup backupWithManyFiles(final int numberOfSegments, final boolean legacy) throws IOException {
     final var tempDir = Files.createTempDirectory("backup");
     Files.createDirectory(tempDir.resolve("segments/"));
     Files.createDirectory(tempDir.resolve("snapshot/"));
@@ -128,12 +132,18 @@ final class BackupUploadIT {
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
-            "test-snapshot-id", 4, 5, "test", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            "test-snapshot-id",
+            4,
+            5,
+            legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion(),
+            Instant.now(),
+            CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(largeNumberOfSegments),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
   }
 
-  Backup backupWithLargeFiles(final int sizeOfFileInBytes) throws IOException {
+  Backup backupWithLargeFiles(final int sizeOfFileInBytes, final boolean legacy)
+      throws IOException {
     final var tempDir = Files.createTempDirectory("backup");
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
@@ -150,7 +160,12 @@ final class BackupUploadIT {
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
         new BackupDescriptorImpl(
-            "test-snapshot-id", 4, 5, "test", Instant.now(), CheckpointType.MANUAL_BACKUP),
+            "test-snapshot-id",
+            4,
+            5,
+            legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion(),
+            Instant.now(),
+            CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }

@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -20,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public interface SavingBackup {
   BackupStore getStore();
@@ -30,13 +29,13 @@ public interface SavingBackup {
   Class<? extends Exception> getFileNotFoundExceptionClass();
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void savingBackupIsSuccessful(final Backup backup) {
     Assertions.assertThat(getStore().save(backup)).succeedsWithin(Duration.ofSeconds(10));
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void backupFailsIfBackupAlreadyExists(final Backup backup) {
     // when
     getStore().save(backup).join();
@@ -49,7 +48,7 @@ public interface SavingBackup {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void backupFailsIfFilesAreMissing(final Backup backup) throws IOException {
     // when
     final var deletedFile = backup.segments().files().stream().findFirst().orElseThrow();
@@ -64,7 +63,7 @@ public interface SavingBackup {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   default void shouldNotOverwriteCompletedBackup(final Backup backup) {
     // given
     getStore().save(backup).join();

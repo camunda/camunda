@@ -19,7 +19,6 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
-import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -31,7 +30,7 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class FilesystemBackupStoreIT implements BackupStoreTestKit {
 
@@ -70,7 +69,7 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void backupShouldExistAfterStoreIsClosed(final Backup backup) {
     // given
     getStore().save(backup).join();
@@ -87,7 +86,7 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void cannotDeleteUploadingBlock(final Backup backup) {
 
     // given when
@@ -106,7 +105,7 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
   }
 
   @ParameterizedTest
-  @ArgumentsSource(TestBackupProvider.class)
+  @MethodSource("provideBackups")
   void cannotRestoreUploadingBackup(final Backup backup, @TempDir final Path targetDir) {
     // when
     uploadInProgressManifest(backup);

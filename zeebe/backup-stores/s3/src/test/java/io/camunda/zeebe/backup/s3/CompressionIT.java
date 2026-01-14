@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,7 +86,19 @@ final class CompressionIT {
   @Test
   void canBackupWithCompression() throws IOException {
     // given
-    final var backup = compressibleBackup();
+    final var backup = compressibleBackup(false);
+
+    // when
+    final var result = store.save(backup);
+
+    // then
+    Assertions.assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void legacyCanBackupWithCompression() throws IOException {
+    // given
+    final var backup = compressibleBackup(true);
 
     // when
     final var result = store.save(backup);
@@ -97,7 +110,7 @@ final class CompressionIT {
   @Test
   void canRestoreBackupWithCompression(@TempDir final Path target) throws IOException {
     // given
-    final var backup = compressibleBackup();
+    final var backup = compressibleBackup(false);
 
     // when
     Assertions.assertThat(store.save(backup)).succeedsWithin(Duration.ofSeconds(30));
@@ -109,7 +122,22 @@ final class CompressionIT {
         .hasSameContentsAs(backup);
   }
 
-  private Backup compressibleBackup() throws IOException {
+  @Test
+  void canRestoreLegacyBackupWithCompression(@TempDir final Path target) throws IOException {
+    // given
+    final var backup = compressibleBackup(true);
+
+    // when
+    Assertions.assertThat(store.save(backup)).succeedsWithin(Duration.ofSeconds(30));
+
+    // then
+    Assertions.assertThat(store.restore(backup.id(), target))
+        .succeedsWithin(Duration.ofSeconds(30))
+        .asInstanceOf(new InstanceOfAssertFactory<>(Backup.class, BackupAssert::assertThatBackup))
+        .hasSameContentsAs(backup);
+  }
+
+  private Backup compressibleBackup(final boolean legacy) throws IOException {
     final var tempDir = Files.createTempDirectory("backup");
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
@@ -129,7 +157,7 @@ final class CompressionIT {
             "test-snapshot-id",
             4,
             5,
-            "test",
+            legacy ? VersionUtil.getPreviousVersion() : VersionUtil.getVersion(),
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),

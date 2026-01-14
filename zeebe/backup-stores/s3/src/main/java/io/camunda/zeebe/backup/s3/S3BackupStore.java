@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
@@ -31,10 +32,12 @@ import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
+import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.core.async.SdkPublisher;
@@ -53,6 +57,7 @@ import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -99,11 +104,10 @@ public final class S3BackupStore implements BackupStore {
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
     final var basePath = config.basePath();
-    backupIdentifierPattern =
-        Pattern.compile(
-            "^"
-                + basePath.map(base -> base + "/").map(Pattern::quote).orElse("")
-                + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
+    final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
+    final var identifierSuffix =
+        "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*";
+    backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
   }
 
   public static BackupStore of(final S3BackupConfig config) {
@@ -126,6 +130,26 @@ public final class S3BackupStore implements BackupStore {
   }
 
   /**
+   * Tries to build the longest possible prefix based on the given wildcard for the legacy backup
+   * structure. The legacy backup structure stores manifests and backup contents in the same path.
+   * Backups created prior to 8.9 use this structure so this is purely for maintaining backwards
+   * compatibility.
+   *
+   * <p>If the first component of prefix is not present in the wildcard, the prefix will be empty.
+   * If the second component of the prefix is empty, the prefix will only contain the first prefix
+   * component and so forth.
+   *
+   * <p>Using the resulting prefix to list objects does not guarantee that returned objects actually
+   * match the wildcard, use {@link S3BackupStore#tryParseKeyAsId(String objectKey)} and {@link
+   * BackupIdentifierWildcard#matches(BackupIdentifier id)} to ensure that the listed object
+   * matches.
+   */
+  private String legacyWildcardPrefix(final BackupIdentifierWildcard wildcard) {
+    return config.basePath().map(base -> base + "/").orElse("")
+        + BackupIdentifierWildcard.asPrefix(wildcard);
+  }
+
+  /**
    * Tries to build the longest possible prefix based on the given wildcard. If the first component
    * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
    * the prefix is empty, the prefix will only contain the first prefix component and so forth.
@@ -137,15 +161,29 @@ public final class S3BackupStore implements BackupStore {
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
     return config.basePath().map(base -> base + "/").orElse("")
+        + Directory.MANIFESTS.name
+        + "/"
         + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
-  public String objectPrefix(final BackupIdentifier id) {
+  /** Backwards compatible object path for backups generated prior to 8.9 */
+  public String legacyObjectPrefix(final BackupIdentifier id) {
     final var base = config.basePath();
-    if (base.isPresent()) {
-      return "%s/%s/%s/%s/".formatted(base.get(), id.partitionId(), id.checkpointId(), id.nodeId());
-    }
-    return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
+    return base.map(
+            s -> "%s/%s/%s/%s/".formatted(s, id.partitionId(), id.checkpointId(), id.nodeId()))
+        .orElseGet(() -> "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+  }
+
+  public String objectPrefix(final BackupIdentifier id, final Directory directory) {
+    final var base = config.basePath();
+    return base.map(
+            s ->
+                "%s/%s/%s/%s/%s/"
+                    .formatted(s, directory.name, id.partitionId(), id.checkpointId(), id.nodeId()))
+        .orElseGet(
+            () ->
+                "%s/%s/%s/%s/"
+                    .formatted(directory.name, id.partitionId(), id.checkpointId(), id.nodeId()));
   }
 
   public static void validateConfig(final S3BackupConfig config) {
@@ -222,27 +260,39 @@ public final class S3BackupStore implements BackupStore {
                     "Can't delete in-progress backup %s, must be marked as failed first"
                         .formatted(manifest.id()));
               } else {
-                return manifest.id();
+                return manifest;
               }
             })
-        .thenComposeAsync(this::listBackupObjects)
-        .thenComposeAsync(this::deleteBackupObjects);
+        .thenComposeAsync(
+            manifest ->
+                listObjects(manifest, Directory.MANIFESTS)
+                    .thenComposeAsync(this::deleteBackupObjects)
+                    .thenComposeAsync(
+                        ignored ->
+                            listObjects(manifest, Directory.CONTENTS)
+                                .thenComposeAsync(this::deleteBackupObjects)));
   }
 
   @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
-    final var backupPrefix = objectPrefix(id);
     return readManifestObject(id)
         .thenApply(Manifest::expectCompleted)
         .thenComposeAsync(
-            manifest ->
-                fileSetManager
-                    .restore(backupPrefix + SEGMENTS_PREFIX, manifest.segmentFiles(), targetFolder)
-                    .thenCombineAsync(
-                        fileSetManager.restore(
-                            backupPrefix + SNAPSHOT_PREFIX, manifest.snapshotFiles(), targetFolder),
-                        (segments, snapshot) ->
-                            new BackupImpl(id, manifest.descriptor(), snapshot, segments)));
+            manifest -> {
+              final var backupContentsPrefix =
+                  derivePath(manifest.descriptor(), manifest.id(), Directory.CONTENTS);
+
+              return fileSetManager
+                  .restore(
+                      backupContentsPrefix + SEGMENTS_PREFIX, manifest.segmentFiles(), targetFolder)
+                  .thenCombineAsync(
+                      fileSetManager.restore(
+                          backupContentsPrefix + SNAPSHOT_PREFIX,
+                          manifest.snapshotFiles(),
+                          targetFolder),
+                      (segments, snapshot) ->
+                          new BackupImpl(id, manifest.descriptor(), snapshot, segments));
+            });
   }
 
   @Override
@@ -295,9 +345,49 @@ public final class S3BackupStore implements BackupStore {
     return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
   }
 
-  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {
+  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {
+    return listObjects(manifest, Directory.CONTENTS);
+  }
+
+  private CompletableFuture<List<ObjectIdentifier>> listBackupManifestObjects(
+      final Manifest manifest) {
+    return listObjects(manifest, Directory.MANIFESTS);
+  }
+
+  private CompletableFuture<List<ObjectIdentifier>> listObjects(
+      final Manifest manifest, final Directory directory) {
+
+    if (manifest instanceof final ValidBackupManifest validManifest
+        && validManifest.backupDescriptor().isPresent()) {
+      return listObjectsBasedOnDescriptor(
+          validManifest.backupDescriptor().get(), manifest.id(), directory);
+    }
+    return listObjectsBasedOnId(manifest, directory);
+  }
+
+  private CompletableFuture<List<ObjectIdentifier>> listObjectsBasedOnDescriptor(
+      final BackupDescriptor descriptor, final BackupIdentifier id, final Directory directory) {
+    final var prefix = derivePath(descriptor, id, directory);
+    return listBackupObjects(prefix);
+  }
+
+  private CompletableFuture<List<ObjectIdentifier>> listObjectsBasedOnId(
+      final Manifest manifest, final Directory directory) {
+    final var legacyPrefix = legacyObjectPrefix(manifest.id());
+    final var prefix = objectPrefix(manifest.id(), directory);
+    return listBackupObjects(prefix)
+        .thenCombine(
+            listBackupObjects(legacyPrefix),
+            (objects, legacyObjects) -> {
+              final var allObjects = new HashSet<>(objects);
+              allObjects.addAll(legacyObjects);
+              return allObjects.stream().toList();
+            });
+  }
+
+  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final String prefix) {
     return client
-        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(objectPrefix(id)))
+        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(prefix))
         .thenApplyAsync(
             objects ->
                 objects.contents().stream()
@@ -336,8 +426,9 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  SdkPublisher<BackupIdentifier> findBackupIds(final BackupIdentifierWildcard wildcard) {
-    final var prefix = wildcardPrefix(wildcard);
+  SdkPublisher<BackupIdentifier> findBackupIds(
+      final BackupIdentifierWildcard wildcard, final boolean legacyStructure) {
+    final var prefix = legacyStructure ? legacyWildcardPrefix(wildcard) : wildcardPrefix(wildcard);
     LOG.atTrace()
         .addKeyValue("pattern", wildcard)
         .setMessage("Searching for matching manifest files")
@@ -355,22 +446,55 @@ public final class S3BackupStore implements BackupStore {
 
   CompletableFuture<Collection<Manifest>> readManifestObjects(
       final BackupIdentifierWildcard wildcard) {
+
+    final var legacyAggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+    final var legacyPublisher = findBackupIds(wildcard, true).map(this::readManifestObject);
+    legacyPublisher.subscribe(legacyAggregator);
+
     final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
-    final var publisher = findBackupIds(wildcard).map(this::readManifestObject);
+    final var publisher = findBackupIds(wildcard, false).map(this::readManifestObject);
     publisher.subscribe(aggregator);
 
-    return aggregator.result();
+    return legacyAggregator
+        .result()
+        .thenCombine(
+            aggregator.result(),
+            (legacyManifests, manifests) -> {
+              final var combined = new HashSet<>(legacyManifests);
+              combined.addAll(manifests);
+              return combined;
+            });
+  }
+
+  private CompletableFuture<ResponseBytes<GetObjectResponse>> findManifestForBackup(
+      final BackupIdentifier id) {
+    LOG.atTrace().addKeyValue("backup", id).setMessage("Finding manifest").log();
+    return client
+        .getObject(
+            req ->
+                req.bucket(config.bucketName())
+                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_KEY),
+            AsyncResponseTransformer.toBytes())
+        .exceptionallyCompose(
+            throwable -> {
+              if (throwable.getCause() instanceof NoSuchKeyException) {
+                LOG.debug("Manifest not found for backup {}, trying legacy path", id);
+                return client.getObject(
+                    req ->
+                        req.bucket(config.bucketName())
+                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_KEY),
+                    AsyncResponseTransformer.toBytes());
+              }
+              return CompletableFuture.failedFuture(throwable);
+            });
   }
 
   CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
-    LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
-    return client
-        .getObject(
-            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + MANIFEST_OBJECT_KEY),
-            AsyncResponseTransformer.toBytes())
+    return findManifestForBackup(id)
         .thenApply(
             response -> {
               try {
+                LOG.atTrace().addKeyValue("backup", id).setMessage("Reading manifest").log();
                 return (Manifest)
                     MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
               } catch (final IOException e) {
@@ -439,7 +563,12 @@ public final class S3BackupStore implements BackupStore {
             request ->
                 request
                     .bucket(config.bucketName())
-                    .key(objectPrefix(manifest.id()) + MANIFEST_OBJECT_KEY)
+                    .key(
+                        derivePath(
+                                manifest.backupDescriptor().get(),
+                                manifest.id(),
+                                Directory.MANIFESTS)
+                            + MANIFEST_OBJECT_KEY)
                     .build(),
             body)
         .thenApply(resp -> manifest);
@@ -447,14 +576,32 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
     LOG.atTrace().addKeyValue("backup", backup.id()).setMessage("Saving snapshot files").log();
-    final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
+    final var prefix =
+        derivePath(backup.descriptor(), backup.id(), Directory.CONTENTS) + SNAPSHOT_PREFIX;
     return fileSetManager.save(prefix, backup.snapshot());
   }
 
   private CompletableFuture<FileSet> saveSegmentFiles(final Backup backup) {
     LOG.atTrace().addKeyValue("backup", backup.id()).setMessage("Saving segment files").log();
-    final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
+    final var prefix =
+        derivePath(backup.descriptor(), backup.id(), Directory.CONTENTS) + SEGMENTS_PREFIX;
     return fileSetManager.save(prefix, backup.segments());
+  }
+
+  public String derivePath(
+      final BackupDescriptor descriptor, final BackupIdentifier id, final Directory directory) {
+    return isLegacyBackup(descriptor) ? legacyObjectPrefix(id) : objectPrefix(id, directory);
+  }
+
+  private boolean isLegacyBackup(final BackupDescriptor descriptor) {
+    final var brokerVersion =
+        SemanticVersion.parse(descriptor.brokerVersion())
+            .orElseThrow(
+                () ->
+                    new ManifestParseException(
+                        "Invalid broker version format in manifest: " + descriptor.brokerVersion(),
+                        null));
+    return brokerVersion.major() == 8 && brokerVersion.minor() <= 8;
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
@@ -493,5 +640,16 @@ public final class S3BackupStore implements BackupStore {
         .apiCallTimeout()
         .ifPresent(timeout -> builder.overrideConfiguration(cfg -> cfg.apiCallTimeout(timeout)));
     return builder.build();
+  }
+
+  public enum Directory {
+    MANIFESTS("manifests"),
+    CONTENTS("contents");
+
+    private final String name;
+
+    Directory(final String name) {
+      this.name = name;
+    }
   }
 }
