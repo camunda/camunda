@@ -10,7 +10,7 @@ on:
         required: true
       pod:
         description: 'Specifies the pod name of the load test to profile. Please only specify the suffix like zeebe-0, or zeebe-1, etc.'
-        default: 'zeebe-0'
+        default: 'camunda-0'
         required: false
 jobs:
   profile-load-test:
@@ -35,7 +35,7 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./zeebe/load-tests/docs/scripts/executeProfiling.sh ${{ inputs.name }}-${{ inputs.pod }}
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.name }}-${{ inputs.pod }}
       - uses: actions/upload-artifact@v4
         with:
           # Name of the artifact to upload.
