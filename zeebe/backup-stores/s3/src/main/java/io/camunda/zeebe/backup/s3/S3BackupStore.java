@@ -346,21 +346,17 @@ public final class S3BackupStore implements BackupStore {
   private CompletableFuture<List<ObjectIdentifier>> listObjects(
       final Manifest manifest, final Directory directory) {
 
-    if (canDerivePathFromManifest(manifest)) {
-      return listObjectsBasedOnDescriptor(manifest, directory);
+    if (manifest instanceof final ValidBackupManifest validManifest
+        && validManifest.backupDescriptor().isPresent()) {
+      return listObjectsBasedOnDescriptor(
+          validManifest.backupDescriptor().get(), manifest.id(), directory);
     }
     return listObjectsBasedOnId(manifest, directory);
   }
 
-  private boolean canDerivePathFromManifest(final Manifest manifest) {
-    return manifest instanceof final ValidBackupManifest validManifest
-        && validManifest.backupDescriptor().isPresent();
-  }
-
   private CompletableFuture<List<ObjectIdentifier>> listObjectsBasedOnDescriptor(
-      final Manifest manifest, final Directory directory) {
-    final var descriptor = ((ValidBackupManifest) manifest).backupDescriptor().get();
-    final var prefix = derivePath(descriptor, manifest.id(), directory);
+      final BackupDescriptor descriptor, final BackupIdentifier id, final Directory directory) {
+    final var prefix = derivePath(descriptor, id, directory);
     return listBackupObjects(prefix);
   }
 
