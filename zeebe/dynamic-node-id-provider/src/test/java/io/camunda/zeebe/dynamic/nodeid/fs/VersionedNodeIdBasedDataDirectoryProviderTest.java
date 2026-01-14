@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -292,12 +293,13 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var copier = new RecordingDataDirectoryCopier();
     // retention count of 2 means keep only v4 and v5 (the new one)
     final int retentionCount = 2;
-    final DataDirectoryProvider initializer =
+    final var initializer =
         new VersionedNodeIdBasedDataDirectoryProvider(
             OBJECT_MAPPER, nodeInstance, copier, false, retentionCount);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
+    assertThat(initializer.garbageCollection()).succeedsWithin(Duration.ofSeconds(15));
 
     // then
     assertThat(result).isEqualTo(nodeDirectory.resolve("v5"));
@@ -320,12 +322,13 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var nodeDirectory = rootDirectory.resolve("node-1");
 
     final var copier = new RecordingDataDirectoryCopier();
-    final DataDirectoryProvider initializer =
+    final var initializer =
         new VersionedNodeIdBasedDataDirectoryProvider(
             OBJECT_MAPPER, nodeInstance, copier, false, DEFAULT_RETENTION_COUNT);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
+    assertThat(initializer.garbageCollection()).succeedsWithin(Duration.ofSeconds(15));
 
     // then - should succeed without GC running (no previous versions)
     assertThat(result).isEqualTo(nodeDirectory.resolve("v1"));

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
 import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -37,6 +38,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
   private final DataDirectoryCopier copier;
   private final boolean previousNodeGracefullyShutdown;
   private final int retentionCount;
+  private final CompletableFuture<Void> garbageCollection = new CompletableFuture<>();
 
   public VersionedNodeIdBasedDataDirectoryProvider(
       final ObjectMapper objectMapper,
@@ -49,6 +51,11 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
     this.copier = copier;
     this.previousNodeGracefullyShutdown = previousNodeGracefullyShutdown;
     this.retentionCount = retentionCount;
+  }
+
+  @VisibleForTesting
+  CompletableFuture<Void> garbageCollection() {
+    return garbageCollection;
   }
 
   @Override
@@ -102,7 +109,15 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
         layout.initializeDirectory(nodeInstance.version(), previousVersion.get());
 
         // Run garbage collection after successful validation
-        new VersionedDataDirectoryGarbageCollector(layout, retentionCount).collect();
+        Thread.startVirtualThread(
+            () -> {
+              try {
+                new VersionedDataDirectoryGarbageCollector(layout, retentionCount).collect();
+                garbageCollection.complete(null);
+              } catch (final Exception e) {
+                garbageCollection.completeExceptionally(e);
+              }
+            });
       } else {
         LOG.info(
             "No valid previous version found for node {}, creating empty directory {}",
@@ -111,6 +126,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
 
         Files.createDirectories(dataDirectory);
         layout.initializeDirectory(nodeInstance.version(), null);
+        garbageCollection.complete(null);
       }
 
       return CompletableFuture.completedFuture(dataDirectory);

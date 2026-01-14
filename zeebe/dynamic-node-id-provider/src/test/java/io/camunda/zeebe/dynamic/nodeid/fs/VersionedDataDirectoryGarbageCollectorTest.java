@@ -26,8 +26,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class VersionedDataDirectoryGarbageCollectorTest {
 
-  private static final String MARKER_FILE = "marker.txt";
-
   @TempDir Path tempDir;
 
   private VersionedDirectoryLayout layout;
