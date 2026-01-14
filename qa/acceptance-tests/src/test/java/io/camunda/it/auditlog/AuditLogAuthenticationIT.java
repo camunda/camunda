@@ -24,9 +24,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/*
- * Test is disabled on RDBMS until https://github.com/camunda/camunda/issues/43323 is implemented.
- */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogAuthenticationIT {

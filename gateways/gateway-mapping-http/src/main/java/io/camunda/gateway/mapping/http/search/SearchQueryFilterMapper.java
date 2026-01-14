@@ -938,6 +938,9 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);
+    ofNullable(filter.getEntityKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::entityKeyOperations);
     ofNullable(filter.getTenantId())
         .map(mapToOperations(String.class))
         .ifPresent(builder::tenantIdOperations);

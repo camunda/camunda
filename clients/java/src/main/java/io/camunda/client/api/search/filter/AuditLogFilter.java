@@ -180,6 +180,22 @@ public interface AuditLogFilter extends SearchRequestFilter {
   AuditLogFilter entityType(final Consumer<AuditLogEntityTypeFilterProperty> fn);
 
   /**
+   * Filter audit logs by the entity key
+   *
+   * @param entityKey the entity type
+   * @return the updated filter
+   */
+  AuditLogFilter entityKey(final String entityKey);
+
+  /**
+   * Filter audit logs by the entity key using {@link BasicStringProperty} consumer
+   *
+   * @param fn the entity key filter consumer
+   * @return the updated filter
+   */
+  AuditLogFilter entityKey(final Consumer<BasicStringProperty> fn);
+
+  /**
    * Filter audit logs by the tenant id
    *
    * @param tenantId the tenant id

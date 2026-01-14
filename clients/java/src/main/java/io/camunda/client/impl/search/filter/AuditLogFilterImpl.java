@@ -172,6 +172,19 @@ public class AuditLogFilterImpl
   }
 
   @Override
+  public AuditLogFilter entityKey(final String entityKey) {
+    return entityKey(b -> b.eq(entityKey));
+  }
+
+  @Override
+  public AuditLogFilter entityKey(final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
+    fn.accept(property);
+    filter.setEntityKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public AuditLogFilter tenantId(final String value) {
     return tenantId(b -> b.eq(value));
   }

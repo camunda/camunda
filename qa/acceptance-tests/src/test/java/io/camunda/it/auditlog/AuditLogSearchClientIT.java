@@ -23,9 +23,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
-/*
- * Test is disabled on RDBMS until https://github.com/camunda/camunda/issues/43323 is implemented.
- */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogSearchClientIT {
@@ -95,6 +92,33 @@ public class AuditLogSearchClientIT {
     assertThat(auditLog.getProcessInstanceKey())
         .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
+
+  @Test
+  void shouldSearchAuditLogByEntityKeyAndEntityType(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final String tenantId = AuditLogUtils.TENANT_A;
+
+    // when
+    // look for tenant creation audit log as the entity key setter is overridden in transformer
+    final var auditLogItems =
+        client
+            .newAuditLogSearchRequest()
+            .filter(
+                fn ->
+                    fn.entityKey(f -> f.in(tenantId))
+                        .entityType(f -> f.like("TENANT"))
+                        .operationType(AuditLogOperationTypeEnum.CREATE))
+            .send()
+            .join();
+
+    // then
+    final var auditLog = auditLogItems.items().getFirst();
+    assertThat(auditLogItems.items().size()).isEqualTo(1);
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.TENANT);
+    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
 }
