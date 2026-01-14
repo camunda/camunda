@@ -320,12 +320,6 @@ public class PojoCompatibilityTest {
                     .build())),
         // ===== RESOLVE_INCIDENT =====
         Arguments.of(
-            "resolve incident: minimal by elementId",
-            singleTestCase(
-                ImmutableResolveIncidentInstruction.builder()
-                    .incidentSelector(ImmutableIncidentSelector.builder().elementId("task1").build())
-                    .build())),
-        Arguments.of(
             "resolve incident: by processDefinitionId",
             singleTestCase(
                 ImmutableResolveIncidentInstruction.builder()

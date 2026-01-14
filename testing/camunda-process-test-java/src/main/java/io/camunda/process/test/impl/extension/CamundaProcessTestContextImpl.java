@@ -87,6 +87,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                           JobState.TIMED_OUT))
               .retries(retries -> retries.gte(1));
 
+  // We can resolve only active incidents
+  private static final Consumer<IncidentFilter> DEFAULT_INCIDENT_RESOLUTION_FILTER =
+      filter -> filter.state(state -> state.in(IncidentState.ACTIVE));
+
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
   private final URI connectorsRestApiAddress;
@@ -542,31 +546,42 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     LOGGER.debug("Resolve incident: {}", incidentSelector.describe());
 
     try (final CamundaClient client = createClient()) {
-      final Incident incident =
-          awaitBehavior
-              .until(
-                  () -> findIncident(incidentSelector, client),
-                  foundIncident ->
-                      assertThat(foundIncident)
-                          .withFailMessage(
-                              "Expected to resolve an incident [%s] but no incident was found.",
-                              incidentSelector.describe())
-                          .isPresent())
-              .get();
+      awaitIncident(
+          incidentSelector,
+          client,
+          incident -> {
+            final long incidentKey = incident.getIncidentKey();
 
-      final long incidentKey = incident.getIncidentKey();
+            // If the incident has a job key, update the job retries to 1 before resolving
+            // This allows the job to be retried once, enabling the process instance to continue
+            if (incident.getJobKey() != null) {
+              final long jobKey = incident.getJobKey();
+              LOGGER.debug("Updating job retries for job key: {}", jobKey);
+              client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
+            }
 
-      // If the incident has a job key, update the job retries to 1 before resolving
-      // This allows the job to be retried once, enabling the process instance to continue
-      if (incident.getJobKey() != null) {
-        final long jobKey = incident.getJobKey();
-        LOGGER.debug("Updating job retries for job key: {}", jobKey);
-        client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
-      }
-
-      LOGGER.debug("Resolving incident with key: {}", incidentKey);
-      client.newResolveIncidentCommand(incidentKey).send().join();
+            LOGGER.debug("Resolving incident with key: {}", incidentKey);
+            client.newResolveIncidentCommand(incidentKey).send().join();
+          });
     }
+  }
+
+  private void awaitIncident(
+      final IncidentSelector incidentSelector,
+      final CamundaClient client,
+      final Consumer<Incident> incidentConsumer) {
+
+    awaitBehavior.untilAsserted(
+        () -> findIncident(incidentSelector, client),
+        incident -> {
+          assertThat(incident)
+              .withFailMessage(
+                  "Expected to resolve an incident [%s] but no incident was found.",
+                  incidentSelector.describe())
+              .isPresent();
+
+          incident.ifPresent(incidentConsumer);
+        });
   }
 
   private Optional<Incident> findIncident(
@@ -575,12 +590,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .newIncidentSearchRequest()
         .filter(
             filter -> {
-              // Only search for active incidents
-              filter.state(
-                  state ->
-                      state.in(
-                          IncidentState.ACTIVE, IncidentState.PENDING, IncidentState.MIGRATED));
-              incidentSelector.applyFilter(filter);
+              DEFAULT_INCIDENT_RESOLUTION_FILTER.andThen(incidentSelector::applyFilter)
+                  .accept(filter);
             })
         .send()
         .join()
