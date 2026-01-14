@@ -588,7 +588,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .newIncidentSearchRequest()
         .filter(
             filter -> {
-              DEFAULT_INCIDENT_RESOLUTION_FILTER.andThen(incidentSelector::applyFilter)
+              DEFAULT_INCIDENT_RESOLUTION_FILTER
+                  .andThen(incidentSelector::applyFilter)
                   .accept(filter);
             })
         .send()
