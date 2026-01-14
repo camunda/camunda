@@ -7,47 +7,70 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.request;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 public final class AuthorizationRequest {
+
+  private static final String FORBIDDEN_ERROR_MESSAGE =
+      "Insufficient permissions to perform operation '%s' on resource '%s'";
+  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS =
+      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '[*, %s]'";
+  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_PROPERTIES =
+      FORBIDDEN_ERROR_MESSAGE + ", resource did not match property constraints '[%s]'";
+  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS_AND_PROPERTIES =
+      FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS
+          + " or resource must match property constraints '[%s]'";
+
+  private static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
+  private static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
 
   private final Map<String, Object> claims;
   private final AuthorizationResourceType resourceType;
   private final PermissionType permissionType;
   private final String tenantId;
   private final Set<String> resourceIds;
+  private final ResourceAuthorizationProperties resourceProperties;
   private final boolean isNewResource;
   private final boolean isTenantOwnedResource;
   private final boolean isTriggeredByInternalCommand;
 
-  // private constructor to enforce the use of the builder
-  private AuthorizationRequest(
-      final Map<String, Object> claims,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String tenantId,
-      final Set<String> resourceIds,
-      final boolean isNewResource,
-      final boolean isTenantOwnedResource,
-      final boolean isTriggeredByInternalCommand) {
-    this.claims = claims;
-    this.resourceType = resourceType;
-    this.permissionType = permissionType;
-    this.tenantId = tenantId;
-    this.resourceIds = resourceIds;
-    this.isNewResource = isNewResource;
-    this.isTenantOwnedResource = isTenantOwnedResource;
-    this.isTriggeredByInternalCommand = isTriggeredByInternalCommand;
+  private AuthorizationRequest(final Builder builder) {
+    claims = resolveClaims(builder);
+    resourceType = builder.resourceType;
+    permissionType = builder.permissionType;
+    tenantId = builder.tenantId;
+    resourceIds = Collections.unmodifiableSet(builder.resourceIds);
+    resourceProperties = builder.resourceProperties;
+    isNewResource = builder.isNewResource;
+    isTenantOwnedResource = deriveTenantOwnedResource(builder);
+    isTriggeredByInternalCommand = deriveTriggeredByInternalCommand(builder);
+  }
+
+  private static Map<String, Object> resolveClaims(final Builder builder) {
+    final var claims =
+        builder.command != null ? builder.command.getAuthorizations() : builder.authorizationClaims;
+    return Collections.unmodifiableMap(Objects.requireNonNullElse(claims, Collections.emptyMap()));
+  }
+
+  private static boolean deriveTenantOwnedResource(final Builder builder) {
+    return builder.tenantId != null && !builder.tenantId.isEmpty();
+  }
+
+  private static boolean deriveTriggeredByInternalCommand(final Builder builder) {
+    return builder.command != null && builder.command.isInternalCommand();
   }
 
   public Map<String, Object> claims() {
@@ -70,6 +93,14 @@ public final class AuthorizationRequest {
     return resourceIds;
   }
 
+  public ResourceAuthorizationProperties resourceProperties() {
+    return resourceProperties;
+  }
+
+  public boolean hasResourceProperties() {
+    return resourceProperties != null && resourceProperties.hasProperties();
+  }
+
   public boolean isNewResource() {
     return isNewResource;
   }
@@ -83,25 +114,39 @@ public final class AuthorizationRequest {
   }
 
   public String getForbiddenErrorMessage() {
-    if (resourceIds.isEmpty()) {
-      return AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE.formatted(
-          permissionType, resourceType);
+    final boolean hasIds = !resourceIds.isEmpty();
+    final boolean hasProps = hasResourceProperties();
+
+    if (!hasIds && !hasProps) {
+      return FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType);
     }
 
-    return AuthorizationCheckBehavior.FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+    if (hasIds && hasProps) {
+      return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS_AND_PROPERTIES.formatted(
+          permissionType,
+          resourceType,
+          resourceIds.stream().sorted().collect(Collectors.joining(", ")),
+          resourceProperties.getPropertyNames().stream()
+              .sorted()
+              .collect(Collectors.joining(", ")));
+    }
+
+    if (hasIds) {
+      return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS.formatted(
+          permissionType,
+          resourceType,
+          resourceIds.stream().sorted().collect(Collectors.joining(", ")));
+    }
+
+    return FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_PROPERTIES.formatted(
         permissionType,
         resourceType,
-        resourceIds.stream()
-            .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
-            .sorted()
-            .collect(Collectors.joining(", ")));
+        resourceProperties.getPropertyNames().stream().sorted().collect(Collectors.joining(", ")));
   }
 
   public String getTenantErrorMessage() {
     final var errorMsg =
-        isNewResource
-            ? AuthorizationCheckBehavior.FORBIDDEN_FOR_TENANT_ERROR_MESSAGE
-            : AuthorizationCheckBehavior.NOT_FOUND_FOR_TENANT_ERROR_MESSAGE;
+        isNewResource ? FORBIDDEN_FOR_TENANT_ERROR_MESSAGE : NOT_FOUND_FOR_TENANT_ERROR_MESSAGE;
     return errorMsg.formatted(permissionType, resourceType, tenantId);
   }
 
@@ -115,14 +160,10 @@ public final class AuthorizationRequest {
     private Map<String, Object> authorizationClaims;
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
-    private Set<String> resourceIds;
+    private final Set<String> resourceIds = new HashSet<>();
+    private ResourceAuthorizationProperties resourceProperties;
     private String tenantId;
     private boolean isNewResource;
-
-    public Builder() {
-      authorizationClaims = new HashMap<>();
-      resourceIds = new HashSet<>();
-    }
 
     public Builder command(final TypedRecord<?> command) {
       this.command = command;
@@ -159,7 +200,9 @@ public final class AuthorizationRequest {
     }
 
     public Builder addResourceId(final String resourceId) {
-      resourceIds.add(resourceId);
+      if (StringUtils.isNotEmpty(resourceId)) {
+        resourceIds.add(resourceId);
+      }
       return this;
     }
 
@@ -168,21 +211,27 @@ public final class AuthorizationRequest {
       return this;
     }
 
-    public AuthorizationRequest build() {
-      final Map<String, Object> claims =
-          command != null ? command.getAuthorizations() : authorizationClaims;
-      final boolean isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
-      final boolean triggeredByInternalCommand = command != null && command.isInternalCommand();
+    public Builder resourceProperties(final ResourceAuthorizationProperties resourceProperties) {
+      this.resourceProperties = resourceProperties;
+      return this;
+    }
 
-      return new AuthorizationRequest(
-          Collections.unmodifiableMap(claims),
-          resourceType,
-          permissionType,
-          tenantId,
-          Collections.unmodifiableSet(resourceIds),
-          isNewResource,
-          isTenantOwnedResource,
-          triggeredByInternalCommand);
+    public AuthorizationRequest build() {
+      if (resourceType == null) {
+        throw new IllegalStateException("resourceType must be set");
+      }
+      if (permissionType == null) {
+        throw new IllegalStateException("permissionType must be set");
+      }
+
+      if (command == null && authorizationClaims == null) {
+        throw new IllegalStateException("command or authorizationClaims must be provided");
+      }
+      if (command != null && authorizationClaims != null) {
+        throw new IllegalStateException("command and authorizationClaims are mutually exclusive");
+      }
+
+      return new AuthorizationRequest(this);
     }
   }
 }

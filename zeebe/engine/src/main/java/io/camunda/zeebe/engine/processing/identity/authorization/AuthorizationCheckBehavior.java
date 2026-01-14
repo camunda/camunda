@@ -16,6 +16,10 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.aggregator.RejectionAggregator;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.ResourceAuthorizationProperties;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.PropertyAuthorizationEvaluator;
+import io.camunda.zeebe.engine.processing.identity.authorization.property.evaluator.UserTaskPropertyAuthorizationEvaluator;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.AuthorizationScopeResolver;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
@@ -27,6 +31,7 @@ import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -36,27 +41,22 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class AuthorizationCheckBehavior {
-
-  public static final String FORBIDDEN_ERROR_MESSAGE =
-      "Insufficient permissions to perform operation '%s' on resource '%s'";
-  public static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
-      "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
-  public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
-      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '[*, %s]'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
-  public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
-      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
+  private static final Either<Rejection, Void> AUTHORIZED = Either.right(null);
+
   private final MappingRuleState mappingRuleState;
   private final ClaimsExtractor claimsExtractor;
   private final TenantResolver tenantResolver;
   private final AuthorizationScopeResolver scopeResolver;
+  private final PropertyAuthorizationEvaluatorRegistry propertyEvaluatorRegistry;
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
@@ -83,6 +83,10 @@ public final class AuthorizationCheckBehavior {
             mappingRuleState,
             claimsExtractor,
             authorizationsEnabled);
+    propertyEvaluatorRegistry =
+        new PropertyAuthorizationEvaluatorRegistry()
+            .register(
+                new UserTaskPropertyAuthorizationEvaluator(claimsExtractor, mappingRuleState));
 
     authorizationsCache =
         CacheBuilder.newBuilder()
@@ -142,7 +146,7 @@ public final class AuthorizationCheckBehavior {
     for (final var request : requests) {
       final var result = isAuthorized(request);
       if (result.isRight()) {
-        return Either.right(null);
+        return AUTHORIZED;
       }
       rejections.add(result.getLeft());
     }
@@ -180,7 +184,7 @@ public final class AuthorizationCheckBehavior {
     // bypass authorization if any request is from an internal command
     for (final var request : requests) {
       if (request.isTriggeredByInternalCommand()) {
-        return Either.right(null);
+        return AUTHORIZED;
       }
     }
 
@@ -188,25 +192,32 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
-
     if (shouldSkipAuthorization(request)) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     final List<AuthorizationRejection> aggregatedRejections = new ArrayList<>();
 
+    // Step 1: Check primary entity (user/client)
     final AuthorizationResult primaryResult =
         checkPrimaryAuthorization(request, aggregatedRejections);
-
     if (primaryResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
+    // Step 2: Check mapping rules (can supplement primary entity)
     final AuthorizationResult mappingRuleResult =
         checkMappingRuleAuthorization(request, primaryResult, aggregatedRejections);
-
     if (mappingRuleResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
+    }
+
+    // Step 3: Check if request can be authorized by resource properties
+    // Only if we have tenant access (from primary or mapping rules)
+    if (request.hasResourceProperties() && mappingRuleResult.hasTenantAccess()) {
+      if (isAuthorizedByProperties(request, aggregatedRejections)) {
+        return AUTHORIZED;
+      }
     }
 
     return Either.left(RejectionAggregator.aggregate(aggregatedRejections));
@@ -269,6 +280,67 @@ public final class AuthorizationCheckBehavior {
               aggregatedRejections);
     }
     return new AuthorizationResult(tenantAccess, resourceAccess);
+  }
+
+  private boolean isAuthorizedByProperties(
+      final AuthorizationRequest request, final List<AuthorizationRejection> aggregatedRejections) {
+
+    final var authorizationRejection =
+        new AuthorizationRejection.Permission(
+            new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
+
+    final var evaluator = propertyEvaluatorRegistry.get(request.resourceType());
+    if (evaluator.isEmpty()) {
+      // No evaluator for this resource type - cannot grant access via properties
+      aggregatedRejections.add(authorizationRejection);
+      return false;
+    }
+
+    final Set<String> matchedProperties =
+        matchProperties(evaluator.get(), request.claims(), request.resourceProperties());
+
+    if (matchedProperties.isEmpty()) {
+      aggregatedRejections.add(authorizationRejection);
+      return false;
+    }
+
+    final var authorizedScopes = getPropertyAuthorizedScopes(request);
+    final boolean hasMatchingScope =
+        authorizedScopes.stream()
+            .anyMatch(scope -> matchedProperties.contains(scope.getResourcePropertyName()));
+
+    if (!hasMatchingScope) {
+      aggregatedRejections.add(authorizationRejection);
+      return false;
+    }
+
+    return true;
+  }
+
+  private <T extends ResourceAuthorizationProperties> Set<String> matchProperties(
+      final PropertyAuthorizationEvaluator<T> evaluator,
+      final Map<String, Object> claims,
+      final ResourceAuthorizationProperties properties) {
+
+    final Class<T> expectedType = evaluator.propertiesType();
+
+    if (!expectedType.isInstance(properties)) {
+      throw new IllegalStateException(
+          "Evaluator %s expects %s but received %s"
+              .formatted(
+                  evaluator.getClass().getSimpleName(),
+                  expectedType.getSimpleName(),
+                  properties.getClass().getSimpleName()));
+    }
+
+    final T typedProperties = expectedType.cast(properties);
+    return evaluator.evaluateMatchingProperties(claims, typedProperties);
+  }
+
+  private Set<AuthorizationScope> getPropertyAuthorizedScopes(final AuthorizationRequest request) {
+    return scopeResolver.getAllAuthorizedScopes(request).stream()
+        .filter(scope -> scope.getMatcher() == AuthorizationResourceMatcher.PROPERTY)
+        .collect(Collectors.toSet());
   }
 
   private boolean hasAccess(
@@ -359,6 +431,7 @@ public final class AuthorizationCheckBehavior {
 
     // check if any granted scope matches any requested `resourceId`
     return grantedScopes.stream()
+        .filter(scope -> scope.getMatcher() == AuthorizationResourceMatcher.ID)
         .map(AuthorizationScope::getResourceId)
         .filter(resourceId -> resourceId != null && !resourceId.isEmpty())
         .anyMatch(request.resourceIds()::contains);
@@ -399,8 +472,7 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned or multi-tenancy is disabled, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
-    return tenantResolver.isAssignedToTenant(
-        AuthorizationRequest.builder().command(command).tenantId(tenantId).build());
+    return tenantResolver.isAssignedToTenant(command.getAuthorizations(), tenantId);
   }
 
   /**
