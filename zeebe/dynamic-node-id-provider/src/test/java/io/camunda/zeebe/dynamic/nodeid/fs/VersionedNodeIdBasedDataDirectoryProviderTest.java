@@ -33,8 +33,24 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
   private static final String DIRECTORY_INITIALIZED_FILE = "directory-initialized.json";
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final int DEFAULT_RETENTION_COUNT = 2;
+  private static final DataDirectoryValidator alwaysValid = (source, target, marker) -> {};
 
   @TempDir Path tempDir;
+  private Path rootDirectory;
+  private RecordingDataDirectoryCopier copier;
+  private VersionedNodeIdBasedDataDirectoryProvider initializer;
+
+  void setup(final NodeInstance nodeInstance) {
+    setup(nodeInstance, DEFAULT_RETENTION_COUNT);
+  }
+
+  void setup(final NodeInstance nodeInstance, final int retentionCount) {
+    rootDirectory = tempDir.resolve("root");
+    copier = new RecordingDataDirectoryCopier();
+    initializer =
+        new VersionedNodeIdBasedDataDirectoryProvider(
+            OBJECT_MAPPER, nodeInstance, copier, alwaysValid, false, retentionCount);
+  }
 
   @Test
   void shouldCreateEmptyDirectoryWhenNoPreviousVersionExists() throws Exception {
@@ -43,12 +59,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var nodeVersion = 3L;
 
     final var nodeInstance = new NodeInstance(nodeId, Version.of(nodeVersion));
-
-    final var rootDirectory = tempDir.resolve("root");
-    final var copier = new RecordingDataDirectoryCopier();
-    final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, false, DEFAULT_RETENTION_COUNT);
+    setup(nodeInstance);
 
     // when
     final var result = initializer.initialize(rootDirectory);
@@ -74,8 +85,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // given
     final var nodeId = 2;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(4L));
-
-    final var rootDirectory = tempDir.resolve("root");
+    setup(nodeInstance);
 
     final var previous = rootDirectory.resolve("node-2").resolve("v3");
     final var previousPartition =
@@ -87,11 +97,6 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     Files.writeString(previousPartition.resolve("atomix-partition-1-1.log"), "log");
 
     writeInitializationFile(previous, 3L, null);
-
-    final var copier = new RecordingDataDirectoryCopier();
-    final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown, DEFAULT_RETENTION_COUNT);
 
     // when
     final var newDirectory = initializer.initialize(rootDirectory).join();
@@ -126,17 +131,12 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(3L));
+    setup(nodeInstance);
 
-    final var rootDirectory = tempDir.resolve("root");
     final var nodeDirectory = rootDirectory.resolve("node-1");
 
     createValidVersionDirectory(nodeDirectory, 0L, "file0.txt", "content0");
     createValidVersionDirectory(nodeDirectory, 2L, "file2.txt", "content2");
-
-    final var copier = new RecordingDataDirectoryCopier();
-    final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown, DEFAULT_RETENTION_COUNT);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -162,16 +162,10 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(1L));
-
-    final var rootDirectory = tempDir.resolve("root");
+    setup(nodeInstance);
     final var nodeDirectory = rootDirectory.resolve("node-1");
 
     createValidVersionDirectory(nodeDirectory, 0L, "file0.txt", "version 0 content");
-
-    final var copier = new RecordingDataDirectoryCopier();
-    final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown, DEFAULT_RETENTION_COUNT);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -195,8 +189,8 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(4L));
+    setup(nodeInstance);
 
-    final var rootDirectory = tempDir.resolve("root");
     final var nodeDirectory = rootDirectory.resolve("node-1");
 
     createValidVersionDirectory(nodeDirectory, 1L, "file1.txt", "content1");
@@ -210,11 +204,6 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var invalidVersion3 = nodeDirectory.resolve("v3");
     Files.createDirectories(invalidVersion3);
     Files.writeString(invalidVersion3.resolve("file3.txt"), "content3");
-
-    final var copier = new RecordingDataDirectoryCopier();
-    final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown, DEFAULT_RETENTION_COUNT);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -244,8 +233,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(2L));
-
-    final var rootDirectory = tempDir.resolve("root");
+    setup(nodeInstance);
 
     final var nodeDirectory = rootDirectory.resolve("node-1");
     createValidVersionDirectory(nodeDirectory, 1L, "file1.txt", "content1");
@@ -254,11 +242,6 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     final var targetDirectory = nodeDirectory.resolve("v2");
     Files.createDirectories(targetDirectory);
     Files.writeString(targetDirectory.resolve("garbage.txt"), "garbage");
-
-    final var copier = new RecordingDataDirectoryCopier();
-    final DataDirectoryProvider initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, gracefulShutdown, DEFAULT_RETENTION_COUNT);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -280,8 +263,9 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(5L));
+    // retention count of 2 means keep only v4 and v5 (the new one)
+    setup(nodeInstance, 2);
 
-    final var rootDirectory = tempDir.resolve("root");
     final var nodeDirectory = rootDirectory.resolve("node-1");
 
     // Create 4 previous versions (v1, v2, v3, v4)
@@ -291,11 +275,6 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     createValidVersionDirectory(nodeDirectory, 4L, "file4.txt", "content4");
 
     final var copier = new RecordingDataDirectoryCopier();
-    // retention count of 2 means keep only v4 and v5 (the new one)
-    final int retentionCount = 2;
-    final var initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, false, retentionCount);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -317,14 +296,9 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
     // given
     final var nodeId = 1;
     final var nodeInstance = new NodeInstance(nodeId, Version.of(1L));
+    setup(nodeInstance);
 
-    final var rootDirectory = tempDir.resolve("root");
     final var nodeDirectory = rootDirectory.resolve("node-1");
-
-    final var copier = new RecordingDataDirectoryCopier();
-    final var initializer =
-        new VersionedNodeIdBasedDataDirectoryProvider(
-            OBJECT_MAPPER, nodeInstance, copier, false, DEFAULT_RETENTION_COUNT);
 
     // when
     final var result = initializer.initialize(rootDirectory).join();
@@ -344,6 +318,7 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
             OBJECT_MAPPER,
             null,
             new RecordingDataDirectoryCopier(),
+            alwaysValid,
             false,
             DEFAULT_RETENTION_COUNT);
 
@@ -433,12 +408,6 @@ class VersionedNodeIdBasedDataDirectoryProviderTest {
               return FileVisitResult.CONTINUE;
             }
           });
-    }
-
-    @Override
-    public void validate(final Path source, final Path target, final String markerFileName)
-        throws IOException {
-      // no-op for recording copier
     }
 
     private record Invocation(Path source, Path target, String markerFileName) {}

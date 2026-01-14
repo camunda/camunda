@@ -18,14 +18,13 @@ import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RepositoryNodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.ConfiguredDataDirectoryProvider;
-import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryCopier;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryValidator;
 import io.camunda.zeebe.dynamic.nodeid.fs.NodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.VersionedNodeIdBasedDataDirectoryProvider;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -138,13 +137,14 @@ public class NodeIdProviderConfiguration {
   public DataDirectoryProvider dataDirectoryProvider(
       final NodeIdProvider nodeIdProvider,
       final NodeIdProviderReadinessAwaiter readinessAwaiter,
-      final BrokerBasedConfiguration brokerBasedConfiguration) {
+      final BrokerBasedConfiguration brokerBasedConfiguration,
+      @Autowired(required = false) final DataDirectoryValidator dataDirectoryValidator) {
 
     if (!readinessAwaiter.isReady()) {
       throw new IllegalStateException("NodeIdProvider is not ready");
     }
 
-    final var initializer =
+    final DataDirectoryProvider initializer =
         switch (cluster.getNodeIdProvider().getType()) {
           case FIXED -> new ConfiguredDataDirectoryProvider();
           case S3 -> {
@@ -152,12 +152,17 @@ public class NodeIdProviderConfiguration {
             final var nodeInstance = nodeIdProvider.currentNodeInstance();
             final var previousNodeGracefullyShutdown =
                 nodeIdProvider.previousNodeGracefullyShutdown().join();
+            // Use custom validator if provided (for testing), otherwise use default from
+            // copier
+            final DataDirectoryValidator validator =
+                dataDirectoryValidator != null ? dataDirectoryValidator : brokerCopier::validate;
             yield disableVersionedDirectory
                 ? new NodeIdBasedDataDirectoryProvider(nodeInstance)
                 : new VersionedNodeIdBasedDataDirectoryProvider(
                     objectMapper,
                     nodeInstance,
-                    fromBrokerCopier(brokerCopier),
+                    brokerCopier::copy,
+                    validator,
                     previousNodeGracefullyShutdown,
                     versionedDirectoryRetentionCount);
           }
@@ -191,28 +196,6 @@ public class NodeIdProviderConfiguration {
 
     final var isReady = nodeIdProvider.awaitReadiness().join();
     return new NodeIdProviderReadinessAwaiter(isReady);
-  }
-
-  // brokerCopier does not implement the interface because it's defined in zeebe-broker module
-  // which does not depend on dynamic-node-id-provider module.
-  private DataDirectoryCopier fromBrokerCopier(final BrokerDataDirectoryCopier brokerCopier) {
-    return new DataDirectoryCopier() {
-      @Override
-      public void copy(
-          final Path source,
-          final Path target,
-          final String markerFileName,
-          final boolean useHardLinks)
-          throws IOException {
-        brokerCopier.copy(source, target, markerFileName, useHardLinks);
-      }
-
-      @Override
-      public void validate(final Path source, final Path target, final String markerFileName)
-          throws IOException {
-        brokerCopier.validate(source, target, markerFileName);
-      }
-    };
   }
 
   public record NodeIdProviderReadinessAwaiter(boolean isReady) {}

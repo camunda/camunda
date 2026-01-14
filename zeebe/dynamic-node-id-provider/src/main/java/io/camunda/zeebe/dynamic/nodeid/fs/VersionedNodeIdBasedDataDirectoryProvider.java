@@ -36,6 +36,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
   private final ObjectMapper objectMapper;
   private final NodeInstance nodeInstance;
   private final DataDirectoryCopier copier;
+  private final DataDirectoryValidator validator;
   private final boolean previousNodeGracefullyShutdown;
   private final int retentionCount;
   private final CompletableFuture<Void> garbageCollection = new CompletableFuture<>();
@@ -44,11 +45,13 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
       final ObjectMapper objectMapper,
       final NodeInstance nodeInstance,
       final DataDirectoryCopier copier,
+      final DataDirectoryValidator validator,
       final boolean previousNodeGracefullyShutdown,
       final int retentionCount) {
     this.objectMapper = objectMapper;
     this.nodeInstance = nodeInstance;
     this.copier = copier;
+    this.validator = validator;
     this.previousNodeGracefullyShutdown = previousNodeGracefullyShutdown;
     this.retentionCount = retentionCount;
   }
@@ -105,7 +108,7 @@ public class VersionedNodeIdBasedDataDirectoryProvider implements DataDirectoryP
             DIRECTORY_INITIALIZED_FILE,
             previousNodeGracefullyShutdown);
 
-        copier.validate(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
+        validator.validate(previousDataDirectory, dataDirectory, DIRECTORY_INITIALIZED_FILE);
         layout.initializeDirectory(nodeInstance.version(), previousVersion.get());
 
         // Run garbage collection after successful validation

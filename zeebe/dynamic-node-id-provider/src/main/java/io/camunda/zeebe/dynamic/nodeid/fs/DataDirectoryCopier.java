@@ -23,7 +23,4 @@ public interface DataDirectoryCopier {
    */
   void copy(Path source, Path target, String markerFileName, boolean useHardLinks)
       throws IOException;
-
-  void validate(final Path source, final Path target, final String markerFileName)
-      throws IOException;
 }

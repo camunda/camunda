@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.nodeid.Lease;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.NodeInstance;
 import io.camunda.zeebe.dynamic.nodeid.Version;
+import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryValidator;
 import io.camunda.zeebe.dynamic.nodeid.fs.DirectoryInitializationInfo;
 import io.camunda.zeebe.dynamic.nodeid.repository.Metadata;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
