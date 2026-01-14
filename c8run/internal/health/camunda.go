@@ -23,7 +23,6 @@ import (
 
 const (
 	inboundConnectorsPort = 8086
-	zeebeGatewayAddress   = "localhost:26500"
 	zeebeAPIURL           = "http://localhost:26500"
 	camundaMetricsURL     = "http://localhost:9600/actuator/prometheus"
 	quickstartURL         = "https://docs.camunda.io/docs/next/guides/getting-started-example/"
