@@ -13,6 +13,8 @@ import static org.mockito.Mockito.mock;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.gateway.mcp.tool.cluster.ClusterTools;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.IncidentServices;
+import io.camunda.service.JobServices;
 import io.camunda.service.TopologyServices;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
@@ -36,6 +38,8 @@ class McpGatewayConfigurationTest {
   public void includesMcpToolComponentsWhenEnabled() {
     baseRunner()
         .withBean(TopologyServices.class, () -> mock(TopologyServices.class))
+        .withBean(IncidentServices.class, () -> mock(IncidentServices.class))
+        .withBean(JobServices.class, () -> mock(JobServices.class))
         .withBean(
             CamundaAuthenticationProvider.class, () -> mock(CamundaAuthenticationProvider.class))
         .withPropertyValues("camunda.mcp.enabled=true")

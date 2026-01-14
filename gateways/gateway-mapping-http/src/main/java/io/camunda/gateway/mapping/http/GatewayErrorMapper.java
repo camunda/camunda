@@ -24,27 +24,55 @@ public class GatewayErrorMapper {
   public static final Function<String, Throwable> REQUEST_CANCELED_EXCEPTION_PROVIDER =
       RuntimeException::new;
 
-  public static final Logger LOG = LoggerFactory.getLogger(GatewayErrorMapper.class);
+  private static final Logger LOG = LoggerFactory.getLogger(GatewayErrorMapper.class);
 
+  /**
+   * Maps a {@link ServiceException} to a {@link ProblemDetail}, unwrapping potential Java
+   * concurrent exceptions wrapping the causing {@link ServiceException}. The {@link Status} of the
+   * service exception is mapped to an HTTP status.
+   *
+   * @param error the {@link ServiceException}, can be wrapped in a Java concurrent exception
+   * @return the problem detail mapping the service exception content respectively
+   */
   public static ProblemDetail mapErrorToProblem(final Throwable error) {
     if (error == null) {
       return null;
     }
-    // SeviceExceptions can be wrapped in Java exceptions because they are handled in Java futures
-    if (error instanceof CompletionException || error instanceof ExecutionException) {
-      return mapErrorToProblem(error.getCause());
-    }
-    if (error instanceof final ServiceException se) {
+    // ServiceExceptions can be wrapped in Java exceptions because they are handled in Java futures
+    final var exception = unwrapError(error);
+    if (exception instanceof final ServiceException se) {
       return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
       return createProblemDetail(
           HttpStatus.INTERNAL_SERVER_ERROR,
-          "Unexpected error occurred during the request processing: " + error.getMessage(),
-          error.getClass().getName());
+          "Unexpected error occurred during the request processing: " + exception.getMessage(),
+          exception.getClass().getName());
     }
   }
 
+  /**
+   * Unwrapping potential Java concurrent exceptions wrapping the real cause.
+   *
+   * @param throwable the potentially wrapping Java concurrent exception
+   * @return the cause of the exception if wrapped, otherwise the exception itself
+   */
+  public static Throwable unwrapError(final Throwable throwable) {
+    // ServiceExceptions can be wrapped in Java exceptions because they are handled in Java futures
+    if (throwable instanceof CompletionException || throwable instanceof ExecutionException) {
+      return throwable.getCause();
+    }
+    return throwable;
+  }
+
+  /**
+   * Creates a {@link ProblemDetail} from a status, detail, and title.
+   *
+   * @param status the status of the problem
+   * @param detail the detail text of the problem
+   * @param title the title of the problem
+   * @return a problem detail reflecting the provided input
+   */
   public static ProblemDetail createProblemDetail(
       final HttpStatusCode status, final String detail, final String title) {
     final var problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
@@ -52,7 +80,7 @@ public class GatewayErrorMapper {
     return problemDetail;
   }
 
-  public static HttpStatus mapStatus(final Status status) {
+  protected static HttpStatus mapStatus(final Status status) {
     return switch (status) {
       case ABORTED -> HttpStatus.BAD_GATEWAY;
       case UNAVAILABLE, RESOURCE_EXHAUSTED -> HttpStatus.SERVICE_UNAVAILABLE;
