@@ -3,6 +3,7 @@ secondary_storage ?= elasticsearch
 helm_chart ?= camunda-platform-8.9
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
+prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -24,10 +25,10 @@ endif
 all: install
 
 .PHONY: install
-install: install-storage install-platform install-load-test
+install: install-storage install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: install-storage install-platform-stable install-load-test
+install-stable: install-storage install-platform-stable install-load-test install-elasticsearch-exporter
 
 # Install PostgreSQL database if secondary_storage is postgresql
 .PHONY: install-storage
@@ -52,6 +53,21 @@ ifeq ($(secondary_storage),postgresql)
 		--set primary.persistence.size=128Gi
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
+endif
+
+# Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
+.PHONY: install-elasticsearch-exporter
+install-elasticsearch-exporter:
+ifeq ($(secondary_storage),elasticsearch)
+	@echo "Installing Elasticsearch Prometheus Exporter for namespace $(namespace)..."
+	helm upgrade --install elasticsearch-exporter oci://ghcr.io/prometheus-community/charts/prometheus-elasticsearch-exporter \
+    --namespace $(namespace) \
+    --version $(prometheus_elasticsearch_exporter_chart_version) \
+    --wait --timeout 5m0s \
+    -f prometheus-elasticsearch-exporter-values.yaml \
+    --set es.uri="http://$(namespace)-elasticsearch:9200"
+else
+	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
 
 # Install/upgrade Camunda Platform helm chart
@@ -123,6 +139,7 @@ template-stable:
 clean:
 	-helm --namespace $(namespace) uninstall $(namespace)
 	-helm --namespace $(namespace) uninstall $(namespace)-test
+	-helm --namespace $(namespace) uninstall elasticsearch-exporter
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
