@@ -10,15 +10,26 @@ ARG JATTACH_CHECKSUM_AMD64="acd9e17f15749306be843df392063893e97bfecc5260eef73ee9
 ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e33710bdcaab51"
 
 # If you don't have access to Minimus hardened base images, you can use public
-# base images like this instead on your own risk:
-#ARG BASE_IMAGE="eclipse-temurin:21-jre-noble"
-#ARG BASE_DIGEST="sha256:67fc762eabacb56e5444b367889e04ce8c839b8f4b3d8ef3e459c5579fbefd8a"
+# base images like this instead on your own risk.
+# Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:67fc762eabacb56e5444b367889e04ce8c839b8f4b3d8ef3e459c5579fbefd8a"
+ARG BASE="hardened"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
 
+### Base Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base-hardened
+
+### Base Public Application Image ###
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE_PUBLIC}@${BASE_DIGEST_PUBLIC} AS base-public
+
 ### Build zeebe from scratch ###
-FROM reg.mini.dev/openjdk:21.0.9-dev AS build
+# hadolint ignore=DL3006
+FROM base-${BASE} AS build
 
 # hadolint ignore=DL3002
 USER root
@@ -74,7 +85,7 @@ FROM ${DIST} AS dist
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
+FROM base-${BASE} AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
