@@ -16,11 +16,12 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.InstantSource;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * RocksDB-based implementation of job metrics state management.
@@ -63,10 +64,10 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   private final DbLong metadataValue;
 
   // In-memory cache for string encoding (for fast lookups)
-  private final ConcurrentHashMap<String, Integer> stringEncodingCache;
+  private final Map<String, Integer> stringEncodingCache;
 
   // In-memory cache for metrics (key: composite of indices, value: metrics)
-  private final ConcurrentHashMap<MetricsCacheKey, MetricsValue> metricsCache;
+  private final Map<MetricsCacheKey, MetricsValue> metricsCache;
   private final int maxJobTypeLength;
   private final int maxTenantIdLength;
   private final int maxWorkerNameLength;
@@ -112,10 +113,10 @@ public class DbJobMetricsState implements MutableJobMetricsState {
             ZbColumnFamilies.JOB_METRICS_META, transactionContext, metadataKey, metadataValue);
 
     // Initialize string encoding cache
-    stringEncodingCache = new ConcurrentHashMap<>();
+    stringEncodingCache = new HashMap<>();
 
     // Initialize metrics cache
-    metricsCache = new ConcurrentHashMap<>();
+    metricsCache = new HashMap<>();
 
     // Populate caches from existing data
     populateStringEncodingCache();
@@ -187,11 +188,6 @@ public class DbJobMetricsState implements MutableJobMetricsState {
       final String workerName,
       final JobMetricsExportState status) {
 
-    // Check if already truncated, skip if so
-    if (isIncompleteBatch()) {
-      return;
-    }
-
     if (sizeLimitsExceeded(jobType, tenantId, workerName)) {
       // Would exceed threshold, mark as truncated and skip
       setMetadataValue(META_SIZE_LIMITS_EXCEEDED, 1L);
@@ -217,7 +213,8 @@ public class DbJobMetricsState implements MutableJobMetricsState {
 
     // Reset all metadata values to 0
     setMetadataValue(META_SIZE_LIMITS_EXCEEDED, 0L);
-    setMetadataValue(META_BATCH_STARTING_TIME, -1L);
+    setMetadataValue(META_COUNTER, 0L);
+    setMetadataValue(META_BATCH_ENDING_TIME, -1L);
     setMetadataValue(META_BATCH_STARTING_TIME, -1L);
   }
 
@@ -234,9 +231,9 @@ public class DbJobMetricsState implements MutableJobMetricsState {
     return metricsCache.size() + 1 > maxUniqueJobMetricsKeys
         && !metricsCache.containsKey(
             new MetricsCacheKey(
-                getOrCreateStringIndex(jobType),
-                getOrCreateStringIndex(tenantId),
-                getOrCreateStringIndex(workerName)));
+                Optional.ofNullable(stringEncodingCache.get(jobType)).orElse(-1),
+                Optional.ofNullable(stringEncodingCache.get(tenantId)).orElse(-1),
+                Optional.ofNullable(stringEncodingCache.get(workerName)).orElse(-1)));
   }
 
   private void incrementVerifiedMetric(

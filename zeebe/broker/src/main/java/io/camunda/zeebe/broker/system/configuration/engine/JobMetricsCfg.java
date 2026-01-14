@@ -26,11 +26,6 @@ public class JobMetricsCfg implements ConfigurationEntry {
     this.exportInterval = exportInterval;
   }
 
-  @Override
-  public String toString() {
-    return "JobMetricsCfg{" + "exportInterval=" + exportInterval + '}';
-  }
-
   public int getMaxWorkerNameLength() {
     return maxWorkerNameLength;
   }
@@ -61,5 +56,21 @@ public class JobMetricsCfg implements ConfigurationEntry {
 
   public void setMaxUniqueKeys(final int maxUniqueKeys) {
     this.maxUniqueKeys = maxUniqueKeys;
+  }
+
+  @Override
+  public String toString() {
+    return "JobMetricsCfg{"
+        + "exportInterval="
+        + exportInterval
+        + ", maxWorkerNameLength="
+        + maxWorkerNameLength
+        + ", maxJobTypeLength="
+        + maxJobTypeLength
+        + ", maxTenantIdLength="
+        + maxTenantIdLength
+        + ", maxUniqueKeys="
+        + maxUniqueKeys
+        + '}';
   }
 }

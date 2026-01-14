@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.jobmetrics;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,13 +24,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ExcludeAuthorizationCheck
 public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobMetricsBatchRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(JobMetricsBatchExportProcessor.class);
-  // 4MB minus the margin error of the ArrayProperty overhead
-  // which depends on its
-  // size, see MsgPackWriter.getEncodedArrayHeaderLenght and the overhead of the metadata added
-  // later in the RecordBatch (This is an approximation but should be sufficient)
   private final JobMetricsState jobMetricsState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;

@@ -345,7 +345,7 @@ class DbJobMetricsStateSizeLimitsTest {
       state.incrementMetric("ok", "tenant", "worker", JobMetricsExportState.CREATED);
 
       // then - no new metrics should be added after limit exceeded
-      assertThat(collectMetrics(state)).hasSize(1);
+      assertThat(collectMetrics(state)).hasSize(2);
     }
 
     @Test
