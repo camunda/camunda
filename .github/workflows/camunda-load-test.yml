@@ -176,7 +176,8 @@ jobs:
               echo "realistic=true" >> "$GITHUB_OUTPUT"
               ;;
             typical)
-              echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=\"bpmn/typical_process.bpmn\"" >> "$GITHUB_OUTPUT"
+              typical_config="--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=\"bpmn/typical_process.bpmn\""
+              echo "load-test-load=$typical_config" >> "$GITHUB_OUTPUT"
               echo "realistic=false" >> "$GITHUB_OUTPUT"
               ;;
             max)
@@ -356,10 +357,18 @@ jobs:
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ inputs.name }}
+          
+          # Build additional load test configuration
+          load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}"
+          if [[ "${{ needs.calculate-scenario-config.outputs.realistic }}" == "true" ]]; then
+            load_test_config="$load_test_config -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml"
+          fi
+          load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+          
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=gcr.io --set orchestration.image.repository=zeebe-io/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
-            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ needs.calculate-scenario-config.outputs.realistic == 'true' && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+            additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment
         if: success()
         run: |
