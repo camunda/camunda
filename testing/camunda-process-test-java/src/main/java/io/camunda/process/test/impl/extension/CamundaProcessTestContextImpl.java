@@ -89,7 +89,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   // We can resolve only active incidents
   private static final Consumer<IncidentFilter> DEFAULT_INCIDENT_RESOLUTION_FILTER =
-      filter -> filter.state(state -> state.in(IncidentState.ACTIVE));
+      filter -> filter.state(IncidentState.ACTIVE);
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -543,8 +543,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void resolveIncident(final IncidentSelector incidentSelector) {
-    LOGGER.debug("Resolve incident: {}", incidentSelector.describe());
-
     try (final CamundaClient client = createClient()) {
       awaitIncident(
           incidentSelector,
@@ -560,7 +558,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
             }
 
-            LOGGER.debug("Resolving incident with key: {}", incidentKey);
+            LOGGER.debug("Resolving incident [{}]", incidentSelector.describe());
             client.newResolveIncidentCommand(incidentKey).send().join();
           });
     }

@@ -30,7 +30,6 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ResolveIncidentResponse;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
-import io.camunda.client.api.search.filter.builder.IncidentStateProperty;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -74,13 +73,9 @@ public class ResolveIncidentTest {
   @Mock private Incident incident;
 
   @Captor private ArgumentCaptor<Consumer<IncidentFilter>> incidentFilterCaptor;
-  @Captor private ArgumentCaptor<Consumer<IncidentStateProperty>> incidentStatePropertyCaptor;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private IncidentFilter incidentFilter;
-
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  private IncidentStateProperty incidentStateProperty;
 
   private CamundaProcessTestContext camundaProcessTestContext;
 
@@ -169,11 +164,8 @@ public class ResolveIncidentTest {
 
       // then
       incidentFilterCaptor.getValue().accept(incidentFilter);
-      verify(incidentFilter).state(incidentStatePropertyCaptor.capture());
+      verify(incidentFilter).state(IncidentState.ACTIVE);
       verify(incidentFilter).elementId(ELEMENT_ID);
-
-      incidentStatePropertyCaptor.getValue().accept(incidentStateProperty);
-      verify(incidentStateProperty).in(IncidentState.ACTIVE);
 
       verifyNoMoreInteractions(incidentFilter);
     }
@@ -190,11 +182,8 @@ public class ResolveIncidentTest {
 
       // then
       incidentFilterCaptor.getValue().accept(incidentFilter);
-      verify(incidentFilter).state(incidentStatePropertyCaptor.capture());
+      verify(incidentFilter).state(IncidentState.ACTIVE);
       verify(incidentFilter).processDefinitionId(PROCESS_DEFINITION_ID);
-
-      incidentStatePropertyCaptor.getValue().accept(incidentStateProperty);
-      verify(incidentStateProperty).in(IncidentState.ACTIVE);
 
       verifyNoMoreInteractions(incidentFilter);
     }
