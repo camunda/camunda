@@ -22,7 +22,6 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.dsl.instructions.UpdateVariablesInstruction;
 import io.camunda.process.test.impl.dsl.AssertionFacade;
 import io.camunda.process.test.impl.dsl.TestCaseInstructionHandler;
-import java.util.Optional;
 
 public class UpdateVariablesInstructionHandler
     implements TestCaseInstructionHandler<UpdateVariablesInstruction> {
@@ -38,13 +37,10 @@ public class UpdateVariablesInstructionHandler
         InstructionSelectorFactory.buildProcessInstanceSelector(
             instruction.getProcessInstanceSelector());
 
-    final Optional<io.camunda.process.test.api.dsl.ElementSelector> dslElementSelector =
-        instruction.getElementSelector();
-
-    if (dslElementSelector.isPresent()) {
+    if (instruction.getElementSelector().isPresent()) {
       // Local variables: update using element selector
       final ElementSelector elementSelector =
-          InstructionSelectorFactory.buildElementSelector(dslElementSelector.get());
+          InstructionSelectorFactory.buildElementSelector(instruction.getElementSelector().get());
       context.updateLocalVariables(
           processInstanceSelector, elementSelector, instruction.getVariables());
     } else {

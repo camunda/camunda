@@ -221,6 +221,46 @@ public class UpdateVariablesTest {
       // then
       verify(camundaClient, times(2)).newSetVariablesCommand(PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldAwaitUntilElementInstanceIsPresent() {
+      // given
+      final Map<String, Object> variables = Collections.singletonMap("localVar", "localValue");
+
+      when(camundaClient
+              .newProcessInstanceSearchRequest()
+              .filter(processInstanceFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      when(processInstance.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      when(processInstance.getProcessDefinitionId()).thenReturn(PROCESS_DEFINITION_ID);
+
+      when(elementInstance.getElementInstanceKey()).thenReturn(ELEMENT_INSTANCE_KEY);
+      when(elementInstance.getElementId()).thenReturn(ELEMENT_ID);
+
+      when(camundaClient
+              .newElementInstanceSearchRequest()
+              .filter(elementInstanceFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.singletonList(elementInstance));
+
+      clearInvocations(camundaClient);
+
+      // when
+      camundaProcessTestContext.updateLocalVariables(
+          ProcessInstanceSelectors.byProcessId(PROCESS_DEFINITION_ID),
+          ElementSelectors.byId(ELEMENT_ID),
+          variables);
+
+      // then
+      verify(camundaClient, times(2)).newElementInstanceSearchRequest();
+    }
   }
 
   @Nested
