@@ -42,7 +42,6 @@ import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
-import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.Changeset;
@@ -82,11 +81,9 @@ import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
 import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
-import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
-import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -108,7 +105,6 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
@@ -200,18 +196,6 @@ public class RequestMapper {
                 userTaskKey,
                 getRecordWithChangedAttributes(updateRequest),
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
-  }
-
-  public static Either<ProblemDetail, UserDTO> toUserUpdateRequest(
-      final UserUpdateRequest updateRequest, final String username) {
-    return getResult(
-        UserRequestValidator.validateUpdateRequest(updateRequest),
-        () ->
-            new UserDTO(
-                username,
-                updateRequest.getName(),
-                updateRequest.getEmail(),
-                updateRequest.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -463,18 +447,6 @@ public class RequestMapper {
     return getResult(
         validateDocumentLinkParams(documentLinkRequest),
         () -> new DocumentLinkParams(Duration.ofMillis(documentLinkRequest.getTimeToLive())));
-  }
-
-  public static Either<ProblemDetail, UserDTO> toUserRequest(
-      final UserRequest request, final Pattern identifierPattern) {
-    return getResult(
-        UserRequestValidator.validateCreateRequest(request, identifierPattern),
-        () ->
-            new UserDTO(
-                request.getUsername(),
-                request.getName(),
-                request.getEmail(),
-                request.getPassword()));
   }
 
   public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(

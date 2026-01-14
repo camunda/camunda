@@ -10,17 +10,19 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.authentication.ConditionalOnInternalUserManagement;
-import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.mapper.UserMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.security.validation.UserValidator;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
@@ -44,22 +46,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserController {
   private final UserServices userServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final SecurityConfiguration securityConfiguration;
+  private final UserMapper userMapper;
 
   public UserController(
       final UserServices userServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final IdentifierValidator identifierValidator) {
     this.userServices = userServices;
     this.authenticationProvider = authenticationProvider;
-    this.securityConfiguration = securityConfiguration;
+    userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toUserRequest(
-            userRequest, securityConfiguration.getCompiledIdValidationPattern())
+    return userMapper
+        .toUserRequest(userRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
@@ -100,7 +102,8 @@ public class UserController {
   @CamundaPutMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> updateUser(
       @PathVariable final String username, @RequestBody final UserUpdateRequest userUpdateRequest) {
-    return RequestMapper.toUserUpdateRequest(userUpdateRequest, username)
+    return userMapper
+        .toUserUpdateRequest(userUpdateRequest, username)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
   }
 
