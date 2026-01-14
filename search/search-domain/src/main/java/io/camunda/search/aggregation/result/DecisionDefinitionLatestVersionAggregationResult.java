@@ -12,4 +12,3 @@ import java.util.List;
 
 public record DecisionDefinitionLatestVersionAggregationResult(
     List<DecisionDefinitionEntity> items, String endCursor) implements AggregationResultBase {}
-

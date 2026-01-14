@@ -39,4 +39,3 @@ public class DecisionDefinitionLatestVersionAggregationResultTransformer
         aggregations.get(AGGREGATION_NAME_BY_DECISION_ID).endCursor());
   }
 }
-

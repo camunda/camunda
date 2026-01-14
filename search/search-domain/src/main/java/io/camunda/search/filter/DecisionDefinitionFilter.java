@@ -129,7 +129,6 @@ public record DecisionDefinitionFilter(
 
     @Override
     public DecisionDefinitionFilter build() {
-      // final var latest = Objects.requireNonNullElse(isLatestVersion, false);
       return new DecisionDefinitionFilter(
           Objects.requireNonNullElse(decisionDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),

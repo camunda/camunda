@@ -79,4 +79,3 @@ public class DecisionDefinitionLatestVersionAggregationTransformer
     return List.of(finalAggregation);
   }
 }
-
