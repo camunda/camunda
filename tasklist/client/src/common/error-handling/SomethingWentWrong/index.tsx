@@ -16,9 +16,15 @@ type Props = {
   className?: string;
   title?: string;
   message?: string;
+  onRetryClick?: () => void;
 };
 
-const SomethingWentWrong: React.FC<Props> = ({className, title, message}) => {
+const SomethingWentWrong: React.FC<Props> = ({
+  className,
+  title,
+  message,
+  onRetryClick = () => window.location.reload(),
+}) => {
   const {t} = useTranslation();
 
   return (
@@ -29,7 +35,7 @@ const SomethingWentWrong: React.FC<Props> = ({className, title, message}) => {
           <Stack gap={4}>
             <Heading>{title ?? t('errorGenericErrorTitle')}</Heading>
             <p>{message ?? t('errorGenericErrorMessage')}</p>
-            <Button kind="primary" onClick={() => window.location.reload()}>
+            <Button kind="primary" type="button" onClick={onRetryClick}>
               {t('errorGenericErrorButtonLabel')}
             </Button>
           </Stack>
