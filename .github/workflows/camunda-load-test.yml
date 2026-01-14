@@ -303,8 +303,8 @@ jobs:
           cd load-tests/setup/${{ env.NAMESPACE }}
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=gcr.io --set orchestration.image.repository=zeebe-io/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
-            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=registry.camunda.cloud --set orchestration.image.repository=team-zeebe/zeebe --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_load_test_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }} ${{ inputs.load-test-load }}"
       - name: Summarize platform deployment
         if: success()
         run: |
