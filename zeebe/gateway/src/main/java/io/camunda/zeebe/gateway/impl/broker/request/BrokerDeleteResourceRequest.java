@@ -28,6 +28,11 @@ public final class BrokerDeleteResourceRequest
     return this;
   }
 
+  public BrokerDeleteResourceRequest setDeleteHistory(final boolean deleteHistory) {
+    requestDto.setDeleteHistory(deleteHistory);
+    return this;
+  }
+
   @Override
   public ResourceDeletionRecord getRequestWriter() {
     return requestDto;
