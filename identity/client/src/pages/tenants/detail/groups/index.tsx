@@ -69,7 +69,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
           parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
-          docsLinkPath="/docs/components/identity/group/"
+          docsLinkPath="/components/identity/group/"
         />
         {assignGroupsModal}
       </>
