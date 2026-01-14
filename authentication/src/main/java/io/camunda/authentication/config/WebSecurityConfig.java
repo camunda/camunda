@@ -43,6 +43,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import io.micrometer.common.KeyValues;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -186,6 +187,10 @@ public class WebSecurityConfig {
   private static final int ORDER_WEBAPP_API = 1;
   // Intended for a "catch-all-unhandled"-chain protecting all resources by default
   private static final int ORDER_UNHANDLED = 2;
+  private static final String CAMUNDA_AUTHENTICATION_OBSERVATION_NAME =
+      "camunda_authentication_external_requests";
+  private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
+      KeyValues.of("domain", "identity");
 
   @Bean
   @Order(ORDER_UNPROTECTED)
@@ -974,6 +979,10 @@ public class WebSecurityConfig {
       // The message converters are taken from the expected rest client in
       // AbstractRestClientOAuth2AccessTokenResponseClient
       return RestClient.builder()
+          .observationConvention(
+              new CustomDefaultClientRequestObservationConvention(
+                  CAMUNDA_AUTHENTICATION_OBSERVATION_NAME,
+                  CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS))
           .messageConverters(
               (messageConverters) -> {
                 messageConverters.clear();
