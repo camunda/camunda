@@ -32,6 +32,11 @@ public class SimpleVoteQuorum implements VoteQuorum {
   }
 
   @Override
+  public Collection<MemberId> participants() {
+    return members;
+  }
+
+  @Override
   public void succeed(final MemberId member) {
     if (members.remove(member)) {
       succeeded++;

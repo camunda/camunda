@@ -16,7 +16,37 @@
  */
 package io.atomix.cluster.protocol;
 
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.MemberId;
+import io.atomix.cluster.protocol.GroupMembershipEvent.Type;
 import io.atomix.utils.event.EventListener;
+import java.util.Set;
 
 /** Node discovery event listener. */
-public interface GroupMembershipEventListener extends EventListener<GroupMembershipEvent> {}
+public interface GroupMembershipEventListener extends EventListener<GroupMembershipEvent> {
+  default void onState(final GroupMembershipState state) {}
+
+  private static GroupMembershipEvent.Type convert(final ClusterMembershipEvent.Type tpe) {
+    return switch (tpe) {
+      case MEMBER_ADDED -> Type.MEMBER_ADDED;
+      case MEMBER_REMOVED -> Type.MEMBER_REMOVED;
+      case METADATA_CHANGED -> Type.METADATA_CHANGED;
+      case REACHABILITY_CHANGED -> Type.REACHABILITY_CHANGED;
+    };
+  }
+
+  record GroupMembershipState(Set<MemberId> members) {
+
+    public void apply(final ClusterMembershipEvent event) {
+      apply(new GroupMembershipEvent(convert(event.type()), event.subject()));
+    }
+
+    public void apply(final GroupMembershipEvent event) {
+      switch (event.type()) {
+        case MEMBER_ADDED -> members.add(event.member().id());
+        case MEMBER_REMOVED -> members.remove(event.member().id());
+        default -> {}
+      }
+    }
+  }
+}
