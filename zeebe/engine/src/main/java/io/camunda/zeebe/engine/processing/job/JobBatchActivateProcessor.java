@@ -36,6 +36,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -58,14 +59,15 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final ProcessingState state,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final InstantSource clock) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     authorizationCheckBehavior = authCheckBehavior;
     jobBatchCollector =
-        new JobBatchCollector(state, stateWriter::canWriteEventOfLength, authCheckBehavior);
+        new JobBatchCollector(state, stateWriter::canWriteEventOfLength, authCheckBehavior, clock);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
