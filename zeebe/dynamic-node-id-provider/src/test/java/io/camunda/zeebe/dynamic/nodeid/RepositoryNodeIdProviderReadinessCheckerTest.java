@@ -37,7 +37,11 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
     currentNodeInstance = new NodeInstance(0, Version.of(100L));
     readinessChecker =
         new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentNodeInstance, nodeIdRepository, Duration.ofMillis(10));
+            clusterSize,
+            currentNodeInstance,
+            nodeIdRepository,
+            Duration.ofMillis(10),
+            Duration.ofMinutes(5));
   }
 
   @Test
@@ -233,6 +237,24 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
     assertThat(result).succeedsWithin(Duration.ofSeconds(5));
     verify(nodeIdRepository, times(1)).getLease(2);
     verify(nodeIdRepository, times(2)).getLease(1);
+  }
+
+  @Test
+  void shouldReturnTrueWhenTimedout() {
+    // given
+    readinessChecker =
+        new RepositoryNodeIdProviderReadinessChecker(
+            clusterSize,
+            currentNodeInstance,
+            nodeIdRepository,
+            Duration.ofMillis(10),
+            Duration.ofMillis(50));
+
+    // when
+    final var result = readinessChecker.waitUntilAllNodesAreUpToDate();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(true);
   }
 
   private static Initialized getInitializedLease(final Lease lease0) {

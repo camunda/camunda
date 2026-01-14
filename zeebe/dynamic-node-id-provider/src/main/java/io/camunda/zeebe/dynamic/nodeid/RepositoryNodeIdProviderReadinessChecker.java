@@ -13,28 +13,34 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
 
 /**
  * A readiness checker that verifies if all nodes in the cluster have up-to-date leases in the
  * repository containing the current node's version mapping.
  */
 public class RepositoryNodeIdProviderReadinessChecker {
+  private static final Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(RepositoryNodeIdProviderReadinessChecker.class);
   private final int clusterSize;
   private final int currentNodeId;
   private final Version currentVersion;
   private final NodeIdRepository nodeIdRepository;
   private final Duration checkInterval;
+  private final Duration timeout;
 
   public RepositoryNodeIdProviderReadinessChecker(
       final int clusterSize,
       final NodeInstance currentNodeInstance,
       final NodeIdRepository nodeIdRepository,
-      final Duration checkInterval) {
+      final Duration checkInterval,
+      final Duration timeout) {
     this.clusterSize = clusterSize;
     currentNodeId = currentNodeInstance.id();
     currentVersion = currentNodeInstance.version();
     this.nodeIdRepository = nodeIdRepository;
     this.checkInterval = checkInterval;
+    this.timeout = timeout;
   }
 
   /**
@@ -57,12 +63,20 @@ public class RepositoryNodeIdProviderReadinessChecker {
   }
 
   private void checkLoop(final CompletableFuture<Boolean> result, final Set<Integer> nodesToCheck) {
+    final long startTime = System.currentTimeMillis();
     while (!nodesToCheck.isEmpty() && !result.isDone()) {
+      if (System.currentTimeMillis() - startTime > timeout.toMillis()) {
+        LOGGER.debug(
+            "Failed to verify all nodes are up to date within the timeout of {}. Marking as ready",
+            timeout);
+        result.complete(true);
+        return;
+      }
+
       try {
         Thread.sleep(checkInterval);
         performCheck(nodesToCheck);
       } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
         result.completeExceptionally(e);
         return;
       } catch (final Exception e) {

@@ -25,7 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -135,26 +134,21 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     }
 
     new RepositoryNodeIdProviderReadinessChecker(
-            clusterSize, currentLease.node(), nodeIdRepository, Duration.ofSeconds(5))
+            clusterSize,
+            currentLease.node(),
+            nodeIdRepository,
+            Duration.ofSeconds(5),
+            readinessCheckTimeout)
         .waitUntilAllNodesAreUpToDate()
-        .orTimeout(readinessCheckTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .exceptionally(
             t -> {
-              if (t.getCause() instanceof TimeoutException) {
-                LOG.warn(
-                    "Timed out waiting for all nodes to be up to date after {}. Marking the node as ready.",
-                    readinessCheckTimeout);
-                return true;
-              } else {
-                // This should never happen as the checker should wait indefinitely until timeout
-                // until the nodes are up-to-date
-                LOG.warn(
-                    "Failed to verify that all nodes are up to date. Marking readiness as failed.",
-                    t);
-                return false;
-              }
+              // This should never happen as the checker should wait indefinitely until timeout
+              // until the nodes are up-to-date
+              LOG.warn(
+                  "Failed to verify that all nodes are up to date. Marking readiness as failed.",
+                  t);
+              return false;
             })
-        .exceptionally(t -> false)
         .thenAccept(readinessFuture::complete);
   }
 
