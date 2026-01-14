@@ -10,8 +10,11 @@ package io.camunda.zeebe.backup.management;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
+import io.camunda.zeebe.backup.api.BackupRange.Complete;
+import io.camunda.zeebe.backup.api.BackupRange.Incomplete;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
+import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -30,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,6 +42,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.agrona.collections.Hashing;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -383,22 +389,106 @@ final class BackupServiceImpl {
     return availableBackupsFuture;
   }
 
-  ActorFuture<Collection<BackupRange>> listBackupRanges(
+  ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus(
       final int partitionId, final ConcurrencyControl executor) {
-    final ActorFuture<Collection<BackupRange>> future = executor.createFuture();
+    LOG.atDebug().setMessage("Listing backup ranges").log();
+    final ActorFuture<Collection<BackupRangeStatus>> future = executor.createFuture();
     executor.run(
         () ->
             backupStore
                 .rangeMarkers(partitionId)
-                .whenComplete(
+                .whenCompleteAsync(
                     (markers, throwable) -> {
+                      LOG.atTrace()
+                          .addKeyValue("markers", markers::size)
+                          .setMessage("Retrieved range markers")
+                          .log();
                       if (throwable != null) {
                         future.completeExceptionally(throwable);
                       } else {
-                        future.complete(BackupRanges.fromMarkers(markers));
+                        getStatusForRanges(
+                            partitionId, BackupRanges.fromMarkers(markers), future, executor);
                       }
-                    }));
+                    },
+                    executor));
     return future;
+  }
+
+  private void getStatusForRanges(
+      final int partitionId,
+      final Collection<BackupRange> ranges,
+      final ActorFuture<Collection<BackupRangeStatus>> future,
+      final ConcurrencyControl executor) {
+    final var statuses = getBackupStatusForAllRanges(partitionId, ranges, executor);
+    final var result = new ArrayList<BackupRangeStatus>(ranges.size());
+    executor.runOnCompletion(
+        statuses.values(),
+        error -> {
+          if (error != null) {
+            LOG.atError()
+                .addKeyValue("ranges", ranges::size)
+                .setMessage("Failed to determine backup status for all ranges")
+                .setCause(error)
+                .log();
+            future.completeExceptionally(error);
+            return;
+          }
+          LOG.atTrace()
+              .addKeyValue("ranges", ranges::size)
+              .addKeyValue("statuses", statuses::size)
+              .setMessage("Resolved all backup statuses for ranges")
+              .log();
+          for (final var range : ranges) {
+            final var firstStatus = statuses.get(range.firstCheckpointId()).join();
+            final var lastStatus = statuses.get(range.lastCheckpointId()).join();
+            if (firstStatus.isEmpty() || lastStatus.isEmpty()) {
+              LOG.atWarn()
+                  .addKeyValue("range", range)
+                  .addKeyValue("firstStatus", firstStatus)
+                  .addKeyValue("lastStatus", lastStatus)
+                  .setMessage("Did not find backup status for checkpoints in range, skipping range")
+                  .log();
+              continue;
+            }
+            if (firstStatus.get().statusCode() != BackupStatusCode.COMPLETED
+                || lastStatus.get().statusCode() != BackupStatusCode.COMPLETED) {
+              LOG.atWarn()
+                  .addKeyValue("range", range)
+                  .addKeyValue("firstStatus", firstStatus)
+                  .addKeyValue("lastStatus", lastStatus)
+                  .setMessage("Backup status for range is not completed, skipping range")
+                  .log();
+              continue;
+            }
+            result.add(
+                switch (range) {
+                  case final Complete ignored ->
+                      new BackupRangeStatus.Complete(firstStatus.get(), lastStatus.get());
+                  case final Incomplete incomplete ->
+                      new BackupRangeStatus.Incomplete(
+                          firstStatus.get(), lastStatus.get(), incomplete.missingCheckpoints());
+                });
+          }
+          future.complete(result);
+        });
+  }
+
+  private Long2ObjectHashMap<ActorFuture<Optional<BackupStatus>>> getBackupStatusForAllRanges(
+      final int partitionId,
+      final Collection<BackupRange> ranges,
+      final ConcurrencyControl executor) {
+    final var result =
+        new Long2ObjectHashMap<ActorFuture<Optional<BackupStatus>>>(
+            ranges.size() * 2, Hashing.DEFAULT_LOAD_FACTOR);
+    for (final BackupRange range : ranges) {
+      result.putIfAbsent(
+          range.firstCheckpointId(),
+          getBackupStatus(partitionId, range.firstCheckpointId(), executor));
+      result.putIfAbsent(
+          range.lastCheckpointId(),
+          getBackupStatus(partitionId, range.lastCheckpointId(), executor));
+    }
+    return result;
   }
 
   void createFailedBackup(

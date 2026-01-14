@@ -7,22 +7,30 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.util.Collections;
 import java.util.Set;
 
-public sealed interface BackupRange {
-  long firstCheckpointId();
+public sealed interface BackupRangeStatus {
+  BackupStatus first();
 
-  long lastCheckpointId();
+  BackupStatus last();
 
-  /** A complete backup range without deletions. */
-  record Complete(long firstCheckpointId, long lastCheckpointId) implements BackupRange {}
+  Set<Long> missingCheckpoints();
+
+  record Complete(BackupStatus first, BackupStatus last) implements BackupRangeStatus {
+
+    @Override
+    public Set<Long> missingCheckpoints() {
+      return Collections.emptySet();
+    }
+  }
 
   /**
    * A backup range with deletions. Verification of all contained backups is required to determine
    * whether the range is effectively complete or not.
    */
-  record Incomplete(long firstCheckpointId, long lastCheckpointId, Set<Long> missingCheckpoints)
-      implements BackupRange {
+  record Incomplete(BackupStatus first, BackupStatus last, Set<Long> missingCheckpoints)
+      implements BackupRangeStatus {
     public Incomplete {
       missingCheckpoints = Set.copyOf(missingCheckpoints);
     }

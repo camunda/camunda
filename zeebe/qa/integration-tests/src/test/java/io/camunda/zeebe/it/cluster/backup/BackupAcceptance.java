@@ -15,6 +15,7 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -128,15 +129,7 @@ public interface BackupAcceptance {
 
     Awaitility.await("Backup range reflects deletion")
         .timeout(Duration.ofSeconds(30))
-        .untilAsserted(
-            () ->
-                assertThat(actuator.state().getRanges())
-                    .anySatisfy(
-                        range -> {
-                          assertThat(range.startId()).isLessThanOrEqualTo(backupId);
-                          assertThat(range.endId()).isGreaterThanOrEqualTo(backupId);
-                          assertThat(range.missingCheckpoints()).contains(backupId);
-                        }));
+        .untilAsserted(() -> assertThat(actuator.state().getRanges()).isEmpty());
   }
 
   @Test
@@ -176,16 +169,23 @@ public interface BackupAcceptance {
     Awaitility.await("until backup range is created")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
-            () ->
-                assertThat(actuator.state().getRanges())
-                    .describedAs(
-                        "There should be at least one backup range containing the taken backup")
-                    .isNotEmpty()
-                    .anySatisfy(
-                        range -> {
-                          assertThat(range.startId()).isLessThanOrEqualTo(backupId);
-                          assertThat(range.endId()).isGreaterThanOrEqualTo(backupId);
-                        }));
+            () -> {
+              final var ranges = actuator.state().getRanges();
+              assertThat(ranges)
+                  .describedAs("Backup ranges should be unique per partition")
+                  .extracting(PartitionBackupRange::partitionId)
+                  .doesNotHaveDuplicates();
+              assertThat(ranges)
+                  .describedAs("All backup ranges should start and end with the same backup")
+                  .allSatisfy(
+                      range -> {
+                        assertThat(range.first().checkpointId()).isEqualTo(backupId);
+                        assertThat(range.first().checkpointType())
+                            .isEqualTo(CheckpointType.MANUAL_BACKUP);
+                        assertThat(range.first()).isEqualTo(range.last());
+                        assertThat(range.missingCheckpoints()).isEmpty();
+                      });
+            });
   }
 
   @Test

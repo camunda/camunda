@@ -9,7 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
-import io.camunda.zeebe.backup.api.BackupRange;
+import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -169,11 +169,6 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupRange>> listBackupRanges() {
-    return internalBackupManager.listBackupRanges(partitionId, actor);
-  }
-
-  @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     final var operationMetrics = metrics.startDeleting();
 
@@ -206,6 +201,11 @@ public final class BackupService extends Actor implements BackupManager {
           internalBackupManager.createFailedBackup(
               backupId, backupDescriptor.checkpointPosition(), failureReason, actor);
         });
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
+    return internalBackupManager.getBackupRangeStatus(partitionId, actor);
   }
 
   @Override

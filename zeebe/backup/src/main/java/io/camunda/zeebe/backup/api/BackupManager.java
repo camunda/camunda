@@ -71,7 +71,7 @@ public interface BackupManager {
   /**
    * @return all backup ranges for the partition
    */
-  ActorFuture<Collection<BackupRange>> listBackupRanges();
+  ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus();
 
   void extendRange(final long previousCheckpointId, final long newCheckpointId);
 
