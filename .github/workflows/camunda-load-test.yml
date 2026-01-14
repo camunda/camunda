@@ -176,8 +176,8 @@ jobs:
               echo "realistic=true" >> "$GITHUB_OUTPUT"
               ;;
             typical)
-              typical_config="--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=\"bpmn/typical_process.bpmn\""
-              echo "load-test-load=$typical_config" >> "$GITHUB_OUTPUT"
+              # Output typical configuration directly to avoid quote escaping issues
+              echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
               echo "realistic=false" >> "$GITHUB_OUTPUT"
               ;;
             max)
@@ -363,7 +363,10 @@ jobs:
           if [[ "${{ needs.calculate-scenario-config.outputs.realistic }}" == "true" ]]; then
             load_test_config="$load_test_config -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml"
           fi
-          load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+          # Append load-test-load configuration if not empty
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.load-test-load }}" ]]; then
+            load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+          fi
           
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
