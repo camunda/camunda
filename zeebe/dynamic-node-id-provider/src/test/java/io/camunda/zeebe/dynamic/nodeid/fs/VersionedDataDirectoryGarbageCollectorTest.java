@@ -10,11 +10,11 @@ package io.camunda.zeebe.dynamic.nodeid.fs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.dynamic.nodeid.Version;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class VersionedDataDirectoryGarbageCollectorTest {
 
   @BeforeEach
   void setUp() {
-    layout = new VersionedDirectoryLayout(tempDir.resolve("node-1"));
+    layout = new VersionedDirectoryLayout(tempDir.resolve("node-1"), ObjectMapperInstance.INSTANCE);
   }
 
   @ParameterizedTest
@@ -42,11 +42,10 @@ class VersionedDataDirectoryGarbageCollectorTest {
   void shouldNotDeleteAnythingWhenValidVersionsAtOrBelowRetentionCount(final int retentionCount)
       throws IOException {
     // given - 2 valid versions
-    createValidVersionDirectory(1);
-    createValidVersionDirectory(2);
+    createInitializedVersionDirectory(1);
+    createInitializedVersionDirectory(2);
 
-    final var gc =
-        new VersionedDataDirectoryGarbageCollector(layout, retentionCount, alwaysValid());
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, retentionCount);
 
     // when
     final var deleted = gc.collect();
@@ -63,13 +62,12 @@ class VersionedDataDirectoryGarbageCollectorTest {
       final int retentionCount, final long[] expectedDeleted, final long[] expectedKept)
       throws IOException {
     // given - 4 valid versions
-    createValidVersionDirectory(1);
-    createValidVersionDirectory(2);
-    createValidVersionDirectory(3);
-    createValidVersionDirectory(4);
+    createInitializedVersionDirectory(1);
+    createInitializedVersionDirectory(2);
+    createInitializedVersionDirectory(3);
+    createInitializedVersionDirectory(4);
 
-    final var gc =
-        new VersionedDataDirectoryGarbageCollector(layout, retentionCount, alwaysValid());
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, retentionCount);
 
     // when
     final var deleted = gc.collect();
@@ -98,12 +96,12 @@ class VersionedDataDirectoryGarbageCollectorTest {
   @Test
   void shouldHandleNonConsecutiveVersionNumbers() throws IOException {
     // given
-    createValidVersionDirectory(1);
-    createValidVersionDirectory(5);
-    createValidVersionDirectory(10);
-    createValidVersionDirectory(100);
+    createInitializedVersionDirectory(1);
+    createInitializedVersionDirectory(5);
+    createInitializedVersionDirectory(10);
+    createInitializedVersionDirectory(100);
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, alwaysValid());
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -122,16 +120,16 @@ class VersionedDataDirectoryGarbageCollectorTest {
   void shouldIgnoreNonVersionDirectories() throws IOException {
     // given
     final var nodeDirectory = layout.nodeDirectory();
-    createValidVersionDirectory(1);
-    createValidVersionDirectory(2);
-    createValidVersionDirectory(3);
+    createInitializedVersionDirectory(1);
+    createInitializedVersionDirectory(2);
+    createInitializedVersionDirectory(3);
 
     // non-version directories that should be ignored
     Files.createDirectories(nodeDirectory.resolve("other"));
     Files.createDirectories(nodeDirectory.resolve("version1")); // wrong prefix
     Files.writeString(nodeDirectory.resolve("v4.txt"), "file"); // file, not directory
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, alwaysValid());
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -149,11 +147,11 @@ class VersionedDataDirectoryGarbageCollectorTest {
   @Test
   void shouldHandleVersionZero() throws IOException {
     // given
-    createValidVersionDirectory(0);
-    createValidVersionDirectory(1);
-    createValidVersionDirectory(2);
+    createInitializedVersionDirectory(0);
+    createInitializedVersionDirectory(1);
+    createInitializedVersionDirectory(2);
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, alwaysValid());
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -168,8 +166,10 @@ class VersionedDataDirectoryGarbageCollectorTest {
   @Test
   void shouldThrowExceptionWhenNodeDirectoryDoesNotExist() {
     // given
-    final var nonExistentLayout = new VersionedDirectoryLayout(tempDir.resolve("non-existent"));
-    final var gc = new VersionedDataDirectoryGarbageCollector(nonExistentLayout, 2, alwaysValid());
+    final var nonExistentLayout =
+        new VersionedDirectoryLayout(
+            tempDir.resolve("non-existent"), ObjectMapperInstance.INSTANCE);
+    final var gc = new VersionedDataDirectoryGarbageCollector(nonExistentLayout, 2);
 
     // when/then
     assertThatThrownBy(gc::collect)
@@ -182,7 +182,7 @@ class VersionedDataDirectoryGarbageCollectorTest {
     // given - only create the directory, no versions
     Files.createDirectories(layout.nodeDirectory());
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, alwaysValid());
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -194,15 +194,15 @@ class VersionedDataDirectoryGarbageCollectorTest {
   @Test
   void shouldDeleteDirectoryWithContents() throws IOException {
     // given
-    final var v1 = createValidVersionDirectory(1);
+    final var v1 = createInitializedVersionDirectory(1);
     Files.writeString(v1.resolve("file1.txt"), "content1");
     Files.createDirectories(v1.resolve("subdir"));
     Files.writeString(v1.resolve("subdir").resolve("file2.txt"), "content2");
 
-    createValidVersionDirectory(2);
-    createValidVersionDirectory(3);
+    createInitializedVersionDirectory(2);
+    createInitializedVersionDirectory(3);
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, alwaysValid());
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -217,21 +217,20 @@ class VersionedDataDirectoryGarbageCollectorTest {
   @ParameterizedTest
   @ValueSource(ints = {0, -1, -10})
   void shouldThrowExceptionWhenRetentionCountIsInvalid(final int retentionCount) {
-    assertThatThrownBy(
-            () -> new VersionedDataDirectoryGarbageCollector(layout, retentionCount, alwaysValid()))
+    assertThatThrownBy(() -> new VersionedDataDirectoryGarbageCollector(layout, retentionCount))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("retentionCount must be at least 1");
   }
 
   @Test
   void shouldAlwaysDeleteInvalidDirectories() throws IOException {
-    // given - v1 and v2 are invalid, v3 and v4 are valid
-    createInvalidVersionDirectory(1);
-    createInvalidVersionDirectory(2);
-    createValidVersionDirectory(3);
-    createValidVersionDirectory(4);
+    // given - v2 and v3 are invalid, v1 and v4 are valid
+    createInitializedVersionDirectory(1);
+    createVersionDirectory(2);
+    createVersionDirectory(3);
+    createInitializedVersionDirectory(4);
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, this::isValidDirectory);
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -239,10 +238,10 @@ class VersionedDataDirectoryGarbageCollectorTest {
     // then - invalid directories are always deleted, valid ones are kept
     assertThat(deleted)
         .containsExactlyInAnyOrder(
-            layout.resolveVersionDirectory(1), layout.resolveVersionDirectory(2));
-    assertVersionDirectoryIsDeleted(1);
+            layout.resolveVersionDirectory(2), layout.resolveVersionDirectory(3));
+    assertVersionDirectoryExists(1);
     assertVersionDirectoryIsDeleted(2);
-    assertVersionDirectoryExists(3);
+    assertVersionDirectoryIsDeleted(3);
     assertVersionDirectoryExists(4);
   }
 
@@ -251,12 +250,12 @@ class VersionedDataDirectoryGarbageCollectorTest {
     // given - v1 valid, v2 invalid, v3 valid, v4 valid (newest)
     // With retention=2, we should keep v4 and v3 (newest valid), delete v2 (invalid), delete v1
     // (valid but exceeds retention)
-    createValidVersionDirectory(1);
-    createInvalidVersionDirectory(2);
-    createValidVersionDirectory(3);
-    createValidVersionDirectory(4);
+    createInitializedVersionDirectory(1);
+    createVersionDirectory(2);
+    createInitializedVersionDirectory(3);
+    createInitializedVersionDirectory(4);
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, this::isValidDirectory);
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -275,11 +274,11 @@ class VersionedDataDirectoryGarbageCollectorTest {
   void shouldNotDeleteValidDirectoriesWhenOnlyInvalidExceedsRetention() throws IOException {
     // given - v1 valid, v2 valid, v3 invalid (newest)
     // With retention=2, we have 2 valid directories, so we should only delete the invalid one
-    createValidVersionDirectory(1);
-    createValidVersionDirectory(2);
-    createInvalidVersionDirectory(3);
+    createInitializedVersionDirectory(1);
+    createInitializedVersionDirectory(2);
+    createVersionDirectory(3);
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, this::isValidDirectory);
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -294,10 +293,10 @@ class VersionedDataDirectoryGarbageCollectorTest {
   @Test
   void shouldDeleteAllInvalidDirectoriesEvenWhenBelowRetentionCount() throws IOException {
     // given - v1 invalid, v2 valid (only 1 valid, below retention of 2)
-    createInvalidVersionDirectory(1);
-    createValidVersionDirectory(2);
+    createVersionDirectory(1);
+    createInitializedVersionDirectory(2);
 
-    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2, this::isValidDirectory);
+    final var gc = new VersionedDataDirectoryGarbageCollector(layout, 2);
 
     // when
     final var deleted = gc.collect();
@@ -308,32 +307,22 @@ class VersionedDataDirectoryGarbageCollectorTest {
     assertVersionDirectoryExists(2);
   }
 
-  private Path createValidVersionDirectory(final long version) throws IOException {
-    final var versionDir = layout.resolveVersionDirectory(version);
-    Files.createDirectories(versionDir);
-    // Write a marker file with version-specific content to mark as valid
-    Files.writeString(versionDir.resolve(MARKER_FILE), "version-" + version);
+  private Path createInitializedVersionDirectory(final long version) throws IOException {
+    final var versionDir = createVersionDirectory(version);
+    layout.initializeDirectory(Version.of(version), null);
     return versionDir;
   }
 
-  private Path createInvalidVersionDirectory(final long version) throws IOException {
+  private Path createVersionDirectory(final long version) throws IOException {
     final var versionDir = layout.resolveVersionDirectory(version);
     Files.createDirectories(versionDir);
-    // No marker file = invalid directory
     return versionDir;
-  }
-
-  private boolean isValidDirectory(final Path directory) {
-    return Files.exists(directory.resolve(MARKER_FILE));
-  }
-
-  private Predicate<Path> alwaysValid() {
-    return path -> true;
   }
 
   private void assertVersionDirectoryExists(final long version) {
     final var versionDir = layout.resolveVersionDirectory(version);
     assertThat(versionDir).as("Version directory v%d should exist", version).exists().isDirectory();
+    assertThat(layout.isDirectoryInitialized(Version.of(version))).isTrue();
   }
 
   private void assertVersionDirectoryIsDeleted(final long version) {

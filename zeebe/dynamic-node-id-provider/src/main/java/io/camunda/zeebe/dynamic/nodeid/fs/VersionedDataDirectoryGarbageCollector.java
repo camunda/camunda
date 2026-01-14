@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,26 +27,21 @@ public class VersionedDataDirectoryGarbageCollector {
 
   private final VersionedDirectoryLayout layout;
   private final int retentionCount;
-  private final Predicate<Path> isValidDirectory;
 
   /**
    * Creates a new garbage collector.
    *
    * @param layout the versioned directory layout for the node directory
    * @param retentionCount the number of valid version directories to retain (must be at least 1)
-   * @param isValidDirectory predicate to check if a directory is valid (properly initialized)
    */
   public VersionedDataDirectoryGarbageCollector(
-      final VersionedDirectoryLayout layout,
-      final int retentionCount,
-      final Predicate<Path> isValidDirectory) {
+      final VersionedDirectoryLayout layout, final int retentionCount) {
     if (retentionCount < 1) {
       throw new IllegalArgumentException(
           "retentionCount must be at least 1, was " + retentionCount);
     }
     this.layout = layout;
     this.retentionCount = retentionCount;
-    this.isValidDirectory = isValidDirectory;
   }
 
   /**
@@ -62,7 +56,7 @@ public class VersionedDataDirectoryGarbageCollector {
           "Node directory does not exist: " + layout.nodeDirectory());
     }
 
-    final List<Long> versions = layout.findAllVersions();
+    final var versions = layout.findAllVersions();
     if (versions.isEmpty()) {
       LOG.debug("No version directories found in {}", layout.nodeDirectory());
       return List.of();
@@ -73,11 +67,10 @@ public class VersionedDataDirectoryGarbageCollector {
     final List<Path> directoriesToDelete = new ArrayList<>();
     int validCount = 0;
 
-    for (final Long version : versions) {
+    for (final var version : versions) {
       final Path versionDir = layout.resolveVersionDirectory(version);
-      final boolean isValid = isValidDirectory.test(versionDir);
 
-      if (isValid) {
+      if (layout.isDirectoryInitialized(version)) {
         validCount++;
         if (validCount > retentionCount) {
           // We have enough valid directories, this one can be deleted
