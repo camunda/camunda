@@ -46,6 +46,7 @@ public class ConditionalStartEventTest {
             RecordingExporter.conditionalSubscriptionRecords()
                 .withIntent(ConditionalSubscriptionIntent.CREATED)
                 .withProcessDefinitionKey(processDefinitionKey)
+                .withBpmnProcessId(processId)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(
@@ -322,12 +323,13 @@ public class ConditionalStartEventTest {
         .extracting(Record::getValue)
         .extracting(
             ConditionalSubscriptionRecordValue::getProcessDefinitionKey,
+            ConditionalSubscriptionRecordValue::getBpmnProcessId,
             ConditionalSubscriptionRecordValue::getCatchEventId,
             ConditionalSubscriptionRecordValue::getCondition)
         .hasSize(2)
         .contains(
-            tuple(processDefinitionKeyP1V1, "startEvent1", "=x > 1"),
-            tuple(processDefinitionKeyP2V1, "startEvent2", "=y > 2"));
+            tuple(processDefinitionKeyP1V1, processId1, "startEvent1", "=x > 1"),
+            tuple(processDefinitionKeyP2V1, processId2, "startEvent2", "=y > 2"));
 
     // when P1 is redeployed with a different condition
     final var deploymentP1V2 =
@@ -350,6 +352,7 @@ public class ConditionalStartEventTest {
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.DELETED)
                 .withProcessDefinitionKey(processDefinitionKeyP1V1)
+                .withBpmnProcessId(processId1)
                 .withCatchEventId("startEvent1")
                 .withCondition("=x > 1")
                 .limit(1))
@@ -357,6 +360,7 @@ public class ConditionalStartEventTest {
     assertThat(
             RecordingExporter.conditionalSubscriptionRecords(ConditionalSubscriptionIntent.CREATED)
                 .withProcessDefinitionKey(processDefinitionKeyP1V2)
+                .withBpmnProcessId(processId1)
                 .withCatchEventId("startEvent1")
                 .withCondition("=x > 10")
                 .limit(1))
@@ -370,6 +374,7 @@ public class ConditionalStartEventTest {
                 .conditionalSubscriptionRecords()
                 .withIntent(ConditionalSubscriptionIntent.DELETED)
                 .withProcessDefinitionKey(processDefinitionKeyP2V1)
+                .withBpmnProcessId(processId2)
                 .withCatchEventId("startEvent2")
                 .withCondition("=y > 2")
                 .limit(1))

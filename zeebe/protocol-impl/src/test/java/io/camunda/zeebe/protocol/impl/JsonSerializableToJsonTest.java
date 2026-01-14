@@ -4139,6 +4139,7 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenant-1")
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(456L)
+                    .setBpmnProcessId(BufferUtil.wrapString("process-1"))
                     .setScopeKey(789L)
                     .setElementInstanceKey(111L)
                     .setCatchEventId(BufferUtil.wrapString("catchEvent"))
@@ -4148,15 +4149,16 @@ final class JsonSerializableToJsonTest {
                     .setInterrupting(true),
         """
                 {
+                  "tenantId":"tenant-1",
+                  "scopeKey":789,
+                  "condition":"=x > 5",
+                  "interrupting":true,
                   "processInstanceKey":123,
                   "elementInstanceKey":111,
                   "catchEventId":"catchEvent",
                   "variableNames":["x","y"],
                   "variableEvents":["CREATED","UPDATED"],
-                  "interrupting":true,
-                  "tenantId":"tenant-1",
-                  "scopeKey":789,
-                  "condition":"=x > 5",
+                  "bpmnProcessId":"process-1",
                   "processDefinitionKey":456
                 }
                 """
@@ -4172,16 +4174,17 @@ final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>) ConditionalSubscriptionRecord::new,
         """
                 {
-                "processDefinitionKey":-1,
-                "processInstanceKey":-1,
-                "elementInstanceKey":-1,
-                "catchEventId":"",
-                "variableNames":[],
-                "variableEvents":[],
-                "interrupting":true,
-                "tenantId":"<default>",
-                "scopeKey":-1,
-                "condition":""
+                  "tenantId":"<default>",
+                  "scopeKey":-1,
+                  "condition":"",
+                  "interrupting":true,
+                  "processInstanceKey":-1,
+                  "elementInstanceKey":-1,
+                  "catchEventId":"",
+                  "variableNames":[],
+                  "variableEvents":[],
+                  "bpmnProcessId":"",
+                  "processDefinitionKey":-1
                 }
                 """
       },

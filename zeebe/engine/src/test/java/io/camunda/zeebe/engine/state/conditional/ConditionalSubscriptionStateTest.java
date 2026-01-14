@@ -49,6 +49,7 @@ public class ConditionalSubscriptionStateTest {
     record
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
+        .setBpmnProcessId(BufferUtil.wrapString("test-process"))
         .setCatchEventId(BufferUtil.wrapString("start-" + processDefinitionKey))
         .setCondition(BufferUtil.wrapString("=x > 1"))
         .setVariableNames(List.of("x"))
@@ -477,31 +478,6 @@ public class ConditionalSubscriptionStateTest {
 
       // then
       assertThat(visitedKeys).isEmpty();
-    }
-  }
-
-  @Nested
-  class VisitStartEventSubscriptionsByProcessDefinitionKeyTests {
-
-    @Test
-    void shouldVisitAllSubscriptionsRegardlessOfVisitorReturnValue() {
-      // given
-      final long processDefinitionKey = 100L;
-      state.putStart(1L, createStartEventSubscription(processDefinitionKey, DEFAULT_TENANT));
-      state.putStart(2L, createStartEventSubscription(processDefinitionKey, DEFAULT_TENANT));
-      state.putStart(3L, createStartEventSubscription(processDefinitionKey, DEFAULT_TENANT));
-
-      // when
-      final List<Long> visitedKeys = new ArrayList<>();
-      state.visitStartEventSubscriptionsByProcessDefinitionKey(
-          processDefinitionKey,
-          subscription -> {
-            visitedKeys.add(subscription.getKey());
-            return false; // This is ignored - iteration continues
-          });
-
-      // then
-      assertThat(visitedKeys).containsExactlyInAnyOrder(1L, 2L, 3L);
     }
   }
 

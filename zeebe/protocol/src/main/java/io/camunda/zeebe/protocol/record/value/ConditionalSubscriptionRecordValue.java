@@ -59,6 +59,11 @@ public interface ConditionalSubscriptionRecordValue
   long getProcessDefinitionKey();
 
   /**
+   * @return the bpmn process id of the corresponding process definition
+   */
+  String getBpmnProcessId();
+
+  /**
    * @return the id of the catch event tied to the subscription
    */
   String getCatchEventId();

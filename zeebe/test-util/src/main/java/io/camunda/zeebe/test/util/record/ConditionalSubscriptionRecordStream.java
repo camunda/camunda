@@ -45,6 +45,10 @@ public final class ConditionalSubscriptionRecordStream
     return valueFilter(v -> v.getProcessDefinitionKey() == processDefinitionKey);
   }
 
+  public ConditionalSubscriptionRecordStream withBpmnProcessId(final String bpmnProcessId) {
+    return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
+  }
+
   public ConditionalSubscriptionRecordStream withCatchEventId(final String catchEventId) {
     return valueFilter(v -> catchEventId.equals(v.getCatchEventId()));
   }

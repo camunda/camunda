@@ -42,7 +42,6 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
       processDefinitionKeyColumnFamily;
   private final ColumnFamily<DbLong, DbInt> processDefinitionKeyCountColumnFamily;
 
-  private final DbTenantAwareKey<DbLong> tenantAwareSubscriptionKeyForTenantIndex;
   private final ColumnFamily<DbTenantAwareKey<DbLong>, DbNil> tenantIdColumnFamily;
 
   public DbConditionalSubscriptionState(
@@ -85,13 +84,11 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
             processDefinitionKey,
             subscriptionCount);
 
-    tenantAwareSubscriptionKeyForTenantIndex =
-        new DbTenantAwareKey<>(tenantIdKey, subscriptionKey, DbTenantAwareKey.PlacementType.PREFIX);
     tenantIdColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_TENANT_ID,
             transactionContext,
-            tenantAwareSubscriptionKeyForTenantIndex,
+            tenantAwareSubscriptionKey,
             DbNil.INSTANCE);
   }
 
@@ -117,7 +114,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     subscriptionKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
     processDefinitionKeyColumnFamily.insert(
         processDefinitionKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
-    tenantIdColumnFamily.insert(tenantAwareSubscriptionKeyForTenantIndex, DbNil.INSTANCE);
+    tenantIdColumnFamily.insert(tenantAwareSubscriptionKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -140,7 +137,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     subscriptionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
     processDefinitionKeyColumnFamily.deleteExisting(
         processDefinitionKeyAndTenantAwareSubscriptionKey);
-    tenantIdColumnFamily.deleteExisting(tenantAwareSubscriptionKeyForTenantIndex);
+    tenantIdColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
   }
 
   @Override

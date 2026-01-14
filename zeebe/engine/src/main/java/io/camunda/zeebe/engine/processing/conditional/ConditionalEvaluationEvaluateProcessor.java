@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.conditional;
 
+import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
@@ -21,23 +21,19 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
-import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -63,6 +59,7 @@ public class ConditionalEvaluationEvaluateProcessor
   private final ConditionalSubscriptionState conditionalSubscriptionState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ExpressionProcessor expressionProcessor;
+  private final ExpressionLanguage expressionLanguage;
 
   public ConditionalEvaluationEvaluateProcessor(
       final Writers writers,
@@ -71,7 +68,8 @@ public class ConditionalEvaluationEvaluateProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final ExpressionProcessor expressionProcessor) {
+      final ExpressionProcessor expressionProcessor,
+      final ExpressionLanguage expressionLanguage) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -80,6 +78,7 @@ public class ConditionalEvaluationEvaluateProcessor
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
     this.expressionProcessor = expressionProcessor;
+    this.expressionLanguage = expressionLanguage;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -104,37 +103,33 @@ public class ConditionalEvaluationEvaluateProcessor
 
     final var processDefinitionKey = record.getProcessDefinitionKey();
 
-    final List<MatchedStartEvent> matchedStartEvents;
-    if (processDefinitionKey > 0) {
-      final var process =
-          processState.getProcessByKeyAndTenant(processDefinitionKey, record.getTenantId());
-      if (process == null) {
-        final var failureMessage =
-            NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(command.getKey(), processDefinitionKey);
-        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, failureMessage);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, failureMessage);
-        return;
-      }
-      matchedStartEvents = collectMatchingStartEvents(record, process);
-    } else {
-      matchedStartEvents = collectMatchingStartEvents(record);
+    if (processDefinitionKey > 0
+        && processState.getProcessByKeyAndTenant(processDefinitionKey, record.getTenantId())
+            == null) {
+      final var failureMessage =
+          NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(command.getKey(), processDefinitionKey);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, failureMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, failureMessage);
+      return;
     }
 
+    final List<MatchedStartEvent> matchedStartEvents = collectMatchingStartEvents(record);
+
     for (final var match : matchedStartEvents) {
-      checkAuthorizationToStartProcessInstance(command, match.process());
+      checkAuthorizationToStartProcessInstance(command, match.bpmnProcessId());
     }
 
     for (final var match : matchedStartEvents) {
       final long processInstanceKey = keyGenerator.nextKey();
 
       eventHandle.activateProcessInstanceForStartEvent(
-          match.process().getKey(),
+          match.processDefinitionKey(),
           processInstanceKey,
           match.startEventId(),
           record.getVariablesBuffer(),
           record.getTenantId());
 
-      record.addStartedProcessInstance(match.process().getKey(), processInstanceKey);
+      record.addStartedProcessInstance(match.processDefinitionKey(), processInstanceKey);
     }
 
     final long eventKey = keyGenerator.nextKey();
@@ -158,26 +153,6 @@ public class ConditionalEvaluationEvaluateProcessor
   }
 
   private List<MatchedStartEvent> collectMatchingStartEvents(
-      final ConditionalEvaluationRecord record, final DeployedProcess process) {
-
-    final List<MatchedStartEvent> matches = new ArrayList<>();
-
-    final var variables = record.getVariables();
-    final var providedVariableNames = variables.keySet();
-    final var context = new InMemoryVariableEvaluationContext(variables);
-    final var processDefinitionKey = process.getKey();
-
-    conditionalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
-        processDefinitionKey,
-        subscription -> {
-          evaluateSubscription(subscription, process, providedVariableNames, context, matches);
-          return true; // continue iteration
-        });
-
-    return matches;
-  }
-
-  private List<MatchedStartEvent> collectMatchingStartEvents(
       final ConditionalEvaluationRecord record) {
 
     final List<MatchedStartEvent> matches = new ArrayList<>();
@@ -187,72 +162,75 @@ public class ConditionalEvaluationEvaluateProcessor
     final var providedVariableNames = variables.keySet();
     final var context = new InMemoryVariableEvaluationContext(variables);
 
-    // Cache to avoid fetching the same process multiple times
-    final Map<Long, DeployedProcess> processCache = new HashMap<>();
-
-    conditionalSubscriptionState.visitStartEventSubscriptionsByTenantId(
-        tenantId,
-        subscription -> {
-          final var processDefinitionKey = subscription.getRecord().getProcessDefinitionKey();
-          final var process =
-              processCache.computeIfAbsent(
-                  processDefinitionKey,
-                  key -> processState.getProcessByKeyAndTenant(key, tenantId));
-
-          if (process != null) {
-            evaluateSubscription(subscription, process, providedVariableNames, context, matches);
-          }
-
-          return true; // continue iteration
-        });
+    if (record.getProcessDefinitionKey() > 0) {
+      conditionalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
+          record.getProcessDefinitionKey(),
+          subscription -> {
+            evaluateSubscription(subscription.getRecord(), providedVariableNames, context, matches);
+            return true;
+          });
+    } else {
+      conditionalSubscriptionState.visitStartEventSubscriptionsByTenantId(
+          tenantId,
+          subscription -> {
+            evaluateSubscription(subscription.getRecord(), providedVariableNames, context, matches);
+            return true;
+          });
+    }
     return matches;
   }
 
   private void evaluateSubscription(
-      final ConditionalSubscription subscription,
-      final DeployedProcess process,
+      final ConditionalSubscriptionRecord subscription,
       final Set<String> providedVariableNames,
       final InMemoryVariableEvaluationContext context,
       final List<MatchedStartEvent> matches) {
 
-    final var subscriptionRecord = subscription.getRecord();
-    final var variableNames = subscriptionRecord.getVariableNames();
+    final var variableNames = subscription.getVariableNames();
 
     if (!variableNames.isEmpty()
         && variableNames.stream().noneMatch(providedVariableNames::contains)) {
       return;
     }
 
-    final var catchEventId = subscriptionRecord.getCatchEventIdBuffer();
-    final var startEvent =
-        process.getProcess().getElementById(catchEventId, ExecutableStartEvent.class);
+    final String conditionString = subscription.getCondition();
+    final var conditionExpression = expressionLanguage.parseExpression(conditionString);
 
-    if (startEvent != null && startEvent.getConditional() != null) {
-      final var conditionExpression = startEvent.getConditional().getConditionExpression();
-      final var result =
-          expressionProcessor.evaluateBooleanExpression(conditionExpression, context);
+    if (!conditionExpression.isValid()) {
+      LOG.warn(
+          "Failed to parse condition expression for conditional start event '{}' in process '{}': {}",
+          subscription.getCatchEventId(),
+          subscription.getBpmnProcessId(),
+          conditionExpression.getFailureMessage());
+      return;
+    }
 
-      if (result.isRight() && Boolean.TRUE.equals(result.get())) {
-        matches.add(new MatchedStartEvent(process, catchEventId));
-      } else if (result.isLeft()) {
-        LOG.debug(
-            "Failed to evaluate condition on conditional start event '{}' in process '{}': {}",
-            BufferUtil.bufferAsString(catchEventId),
-            BufferUtil.bufferAsString(process.getBpmnProcessId()),
-            result.getLeft().getMessage());
-      }
+    final var result = expressionProcessor.evaluateBooleanExpression(conditionExpression, context);
+
+    if (result.isRight() && Boolean.TRUE.equals(result.get())) {
+      matches.add(
+          new MatchedStartEvent(
+              subscription.getProcessDefinitionKey(),
+              subscription.getBpmnProcessId(),
+              subscription.getCatchEventIdBuffer()));
+    } else if (result.isLeft()) {
+      LOG.debug(
+          "Failed to evaluate condition on conditional start event '{}' in process '{}': {}",
+          subscription.getCatchEventId(),
+          subscription.getBpmnProcessId(),
+          result.getLeft().getMessage());
     }
   }
 
   private void checkAuthorizationToStartProcessInstance(
-      final TypedRecord<ConditionalEvaluationRecord> command, final DeployedProcess process) {
+      final TypedRecord<ConditionalEvaluationRecord> command, final String bpmnProcessId) {
     final var authRequest =
         AuthorizationRequest.builder()
             .command(command)
             .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
             .tenantId(command.getValue().getTenantId())
-            .addResourceId(BufferUtil.bufferAsString(process.getBpmnProcessId()))
+            .addResourceId(bpmnProcessId)
             .build();
 
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
@@ -261,5 +239,6 @@ public class ConditionalEvaluationEvaluateProcessor
     }
   }
 
-  private record MatchedStartEvent(DeployedProcess process, DirectBuffer startEventId) {}
+  private record MatchedStartEvent(
+      long processDefinitionKey, String bpmnProcessId, DirectBuffer startEventId) {}
 }
