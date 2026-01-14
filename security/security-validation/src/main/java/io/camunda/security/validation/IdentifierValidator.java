@@ -16,17 +16,12 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-/**
- * This class is temporary duplicated from gateway-rest and will be refactored in the follow-up
- * issue https://github.com/camunda/camunda/issues/40506
- */
 public class IdentifierValidator {
 
-  /**
-   * Stricter validation for tenant IDs, matching {@link
-   * io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator}.
-   */
+  /** Stricter validation for tenant IDs */
   public static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
+
+  private static final String DEFAULT_TENANT_ID = "<default>";
 
   private static final int MAX_LENGTH = 256;
   private static final int TENANT_ID_MAX_LENGTH = 31;
@@ -68,12 +63,14 @@ public class IdentifierValidator {
     validateIdInternal(id, propertyName, violations, idPattern, alternativeCheck, MAX_LENGTH);
   }
 
-  public void validateTenantId(
-      final String id,
-      final List<String> violations,
-      final Function<String, Boolean> alternativeCheck) {
+  public void validateTenantId(final String id, final List<String> violations) {
     validateIdInternal(
-        id, "tenantId", violations, TENANT_ID_MASK, alternativeCheck, TENANT_ID_MAX_LENGTH);
+        id,
+        "tenantId",
+        violations,
+        TENANT_ID_MASK,
+        IdentifierValidator.DEFAULT_TENANT_ID::equals,
+        TENANT_ID_MAX_LENGTH);
   }
 
   public void validateGroupId(final String id, final List<String> violations) {

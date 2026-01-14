@@ -15,12 +15,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.mapping.http.validator.IdentifierValidator;
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;

@@ -8,7 +8,6 @@
 package io.camunda.security.validation;
 
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.security.validation.TenantValidator.DEFAULT_TENANT_ID;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +57,7 @@ public class ClusterVariableValidator {
   }
 
   private void validateTenantId(final String id, final List<String> violations) {
-    identifierValidator.validateTenantId(id, violations, DEFAULT_TENANT_ID::equals);
+    identifierValidator.validateTenantId(id, violations);
   }
 
   private static void validateValue(final Object value, final List<String> violations) {
