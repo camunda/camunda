@@ -36,9 +36,11 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.JobSelectors;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
@@ -687,81 +689,56 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void updateVariables(
-      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
-      final Map<String, Object> variables) {
+      final ProcessInstanceSelector processInstanceSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
 
-    awaitBehavior.untilAsserted(
-        () -> findProcessInstance(processInstanceSelector, client),
-        processInstance -> {
-          assertThat(processInstance)
-              .withFailMessage(
-                  "Expected to update variables for process instance [%s] but no process instance is available.",
-                  processInstanceSelector.describe())
-              .isPresent();
+    awaitProcessInstance(
+        processInstanceSelector,
+        client,
+        pi -> {
+          LOGGER.debug(
+              "Update variables for process instance [%s, processInstanceKey: '%s'] with variables {}",
+              processInstanceSelector.describe(),
+              pi.getProcessInstanceKey(),
+              variables);
 
-          processInstance.ifPresent(
-              pi -> {
-                LOGGER.debug(
-                    "Update variables for process instance [%s, processInstanceKey: '%s'] with variables {}",
-                    processInstanceSelector.describe(),
-                    pi.getProcessInstanceKey(),
-                    variables);
-
-                client
-                    .newSetVariablesCommand(pi.getProcessInstanceKey())
-                    .variables(variables)
-                    .send()
-                    .join();
-              });
+          client
+              .newSetVariablesCommand(pi.getProcessInstanceKey())
+              .variables(variables)
+              .send()
+              .join();
         });
   }
 
   @Override
   public void updateLocalVariables(
-      final io.camunda.process.test.api.assertions.ProcessInstanceSelector processInstanceSelector,
-      final io.camunda.process.test.api.assertions.ElementSelector elementSelector,
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
       final Map<String, Object> variables) {
     final CamundaClient client = createClient();
 
-    awaitBehavior.untilAsserted(
-        () -> findProcessInstance(processInstanceSelector, client),
-        processInstance -> {
-          assertThat(processInstance)
-              .withFailMessage(
-                  "Expected to update local variables for process instance [%s] but no process instance is available.",
-                  processInstanceSelector.describe())
-              .isPresent();
+    awaitProcessInstance(
+        processInstanceSelector,
+        client,
+        pi ->
+            awaitElementInstance(
+                pi.getProcessInstanceKey(),
+                elementSelector,
+                client,
+                ei -> {
+                  LOGGER.debug(
+                      "Update local variables for element [%s, elementInstanceKey: '%s'] in process instance [processInstanceKey: '%s'] with variables {}",
+                      elementSelector.describe(),
+                      ei.getElementInstanceKey(),
+                      pi.getProcessInstanceKey(),
+                      variables);
 
-          processInstance.ifPresent(
-              pi -> {
-                final Optional<io.camunda.client.api.search.response.ElementInstance>
-                    elementInstance = findElementInstance(pi.getProcessInstanceKey(), elementSelector, client);
-
-                assertThat(elementInstance)
-                    .withFailMessage(
-                        "Expected to update local variables for element [%s] in process instance [processInstanceKey: %s] but no element is available.",
-                        elementSelector.describe(),
-                        pi.getProcessInstanceKey())
-                    .isPresent();
-
-                elementInstance.ifPresent(
-                    ei -> {
-                      LOGGER.debug(
-                          "Update local variables for element [%s, elementInstanceKey: '%s'] in process instance [processInstanceKey: '%s'] with variables {}",
-                          elementSelector.describe(),
-                          ei.getElementInstanceKey(),
-                          pi.getProcessInstanceKey(),
-                          variables);
-
-                      client
-                          .newSetVariablesCommand(ei.getElementInstanceKey())
-                          .variables(variables)
-                          .send()
-                          .join();
-                    });
-              });
-        });
+                  client
+                      .newSetVariablesCommand(ei.getElementInstanceKey())
+                      .variables(variables)
+                      .send()
+                      .join();
+                }));
   }
 
   private Optional<io.camunda.client.api.search.response.ProcessInstance> findProcessInstance(
@@ -795,5 +772,43 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .stream()
         .filter(elementSelector::test)
         .findFirst();
+  }
+
+  private void awaitProcessInstance(
+      final ProcessInstanceSelector processInstanceSelector,
+      final CamundaClient client,
+      final Consumer<io.camunda.client.api.search.response.ProcessInstance> processInstanceConsumer) {
+
+    awaitBehavior.untilAsserted(
+        () -> findProcessInstance(processInstanceSelector, client),
+        processInstance -> {
+          assertThat(processInstance)
+              .withFailMessage(
+                  "Expected to update variables for process instance [%s] but no process instance is available.",
+                  processInstanceSelector.describe())
+              .isPresent();
+
+          processInstance.ifPresent(processInstanceConsumer);
+        });
+  }
+
+  private void awaitElementInstance(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final CamundaClient client,
+      final Consumer<io.camunda.client.api.search.response.ElementInstance> elementInstanceConsumer) {
+
+    awaitBehavior.untilAsserted(
+        () -> findElementInstance(processInstanceKey, elementSelector, client),
+        elementInstance -> {
+          assertThat(elementInstance)
+              .withFailMessage(
+                  "Expected to update local variables for element [%s] in process instance [processInstanceKey: %s] but no element is available.",
+                  elementSelector.describe(),
+                  processInstanceKey)
+              .isPresent();
+
+          elementInstance.ifPresent(elementInstanceConsumer);
+        });
   }
 }
