@@ -10,6 +10,10 @@ package io.camunda.zeebe.backup.s3;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStore.Directory;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
@@ -21,9 +25,13 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -272,6 +280,121 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+  }
+
+  @Test
+  default void shouldListBackupsForBothStructures() throws IOException {
+    // given
+    final var legacyBackup =
+        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), true);
+    final var backup =
+        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 10), false);
+
+    getStore().save(legacyBackup).join();
+    getStore().save(backup).join();
+
+    // when
+    final var pattern =
+        new BackupIdentifierWildcardImpl(Optional.of(1), Optional.of(2), CheckpointPattern.any());
+    final var listedBackups = getStore().list(pattern).join();
+
+    // then
+    assertThat(listedBackups)
+        .hasSize(2)
+        .extracting(BackupStatus::id)
+        .containsExactlyInAnyOrder(legacyBackup.id(), backup.id());
+  }
+
+  @Test
+  default void backupStructureShouldBeDistinct() throws IOException {
+    // given
+    final var legacyBackup =
+        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3), true);
+    final var backup =
+        S3TestBackupProvider.simpleBackupWithId(new BackupIdentifierImpl(1, 2, 10), false);
+
+    // when
+    getStore().save(legacyBackup).join();
+    getStore().save(backup).join();
+
+    // then
+
+    // no objects exist under the legacy prefix for the new version backup
+    assertThat(
+            getClient()
+                .listObjectsV2(
+                    req ->
+                        req.bucket(getConfig().bucketName())
+                            .prefix(getStore().legacyObjectPrefix(backup.id())))
+                .join()
+                .contents())
+        .isEmpty();
+
+    final var legacyContent =
+        getClient()
+            .listObjectsV2(
+                req ->
+                    req.bucket(getConfig().bucketName())
+                        .prefix(getStore().legacyObjectPrefix(legacyBackup.id())))
+            .join()
+            .contents();
+
+    // a single manifest exists
+    assertThat(legacyContent.stream().filter(s -> s.key().endsWith("manifest.json")).count())
+        .isOne();
+
+    final var legacySegmentFiles = legacyBackup.segments().names();
+    final var legacySnapshotFiles = legacyBackup.snapshot().names();
+    final var legacyPath = getStore().legacyObjectPrefix(legacyBackup.id());
+    final var legacyFileNames =
+        Stream.concat(
+                legacySegmentFiles.stream().map(name -> "segments/" + name),
+                legacySnapshotFiles.stream().map(name -> "snapshot/" + name))
+            .collect(Collectors.joining("|"));
+    final var legacyContentRegex = Pattern.quote(legacyPath) + "(" + legacyFileNames + ")";
+
+    // all objects follow the legacy pattern
+    assertThat(legacyContent.stream().filter(f -> !f.key().endsWith("manifest.json")).toList())
+        .allSatisfy(obj -> assertThat(obj.key()).matches(legacyContentRegex));
+
+    // New structured backup has a single manifest
+    final var manifestPath = getStore().objectPrefix(backup.id(), Directory.MANIFESTS);
+    assertThat(
+            getClient()
+                .listObjectsV2(req -> req.bucket(getConfig().bucketName()).prefix(manifestPath))
+                .join()
+                .contents())
+        .hasSize(1)
+        .satisfiesOnlyOnce(s -> assertThat(s.key()).isEqualTo(manifestPath + "manifest.json"));
+
+    final var segmentFiles = backup.segments().names();
+    final var snapshotFiles = backup.snapshot().names();
+    final var path = getStore().objectPrefix(backup.id(), Directory.CONTENTS);
+    final var fileNames =
+        Stream.concat(
+                segmentFiles.stream().map(name -> "segments/" + name),
+                snapshotFiles.stream().map(name -> "snapshot/" + name))
+            .collect(Collectors.joining("|"));
+    final var contentRegex = Pattern.quote(path) + "(" + fileNames + ")";
+
+    // all objects follow the new structure pattern for the new backup
+    assertThat(
+            getClient()
+                .listObjectsV2(req -> req.bucket(getConfig().bucketName()).prefix(path))
+                .join()
+                .contents())
+        .allSatisfy(obj -> assertThat(obj.key()).matches(contentRegex));
+
+    // no objects exist under the old structure for the new backup
+    assertThat(
+            getClient()
+                .listObjectsV2(
+                    req ->
+                        req.bucket(getConfig().bucketName())
+                            .prefix(getStore().legacyObjectPrefix(backup.id())))
+                .join()
+                .contents())
+        .isEmpty();
   }
 
   static Stream<? extends Arguments> provideBackups() throws Exception {
