@@ -10,6 +10,11 @@ package io.camunda.operate.qa.util;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -32,11 +37,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.HealthStatus;
-import co.elastic.clients.elasticsearch.cluster.HealthResponse;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.keycloak.admin.client.Keycloak;
@@ -327,15 +327,16 @@ public class TestContainerUtil {
   public boolean checkElasctisearchHealth(final TestContext testContext) {
     try (final RestClient restClient =
         RestClient.builder(
-                new HttpHost(
-                    testContext.getExternalElsHost(), testContext.getExternalElsPort()))
+                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))
             .build()) {
       final RestClientTransport transport =
           new RestClientTransport(restClient, new JacksonJsonpMapper());
       final ElasticsearchClient esClient = new ElasticsearchClient(transport);
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(5)
-          .retryOn(IOException.class, co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
+          .retryOn(
+              IOException.class,
+              co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
           .retryConsumer(
               () -> {

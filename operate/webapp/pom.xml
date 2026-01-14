@@ -165,15 +165,6 @@
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-x-content</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
     </dependency>
@@ -268,12 +259,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
