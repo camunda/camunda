@@ -455,6 +455,29 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .join();
   }
 
+  @Override
+  public void resolveIncident(final IncidentSelector incidentSelector) {
+    final CamundaClient client = createClient();
+
+    awaitIncident(
+        incidentSelector,
+        client,
+        incident -> {
+          final long incidentKey = incident.getIncidentKey();
+
+          // If the incident has a job key, update the job retries to 1 before resolving
+          // This allows the job to be retried once, enabling the process instance to continue
+          if (incident.getJobKey() != null) {
+            final long jobKey = incident.getJobKey();
+            LOGGER.debug("Updating job retries for job key: {}", jobKey);
+            client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
+          }
+
+          LOGGER.debug("Resolving incident [{}]", incidentSelector.describe());
+          client.newResolveIncidentCommand(incidentKey).send().join();
+        });
+  }
+
   private void awaitUserTask(
       final UserTaskSelector userTaskSelector,
       final CamundaClient client,
@@ -539,29 +562,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                     "Expected to complete a job with the type '%s' but no job is available.",
                     jobType)
                 .isNotNull());
-  }
-
-  @Override
-  public void resolveIncident(final IncidentSelector incidentSelector) {
-    try (final CamundaClient client = createClient()) {
-      awaitIncident(
-          incidentSelector,
-          client,
-          incident -> {
-            final long incidentKey = incident.getIncidentKey();
-
-            // If the incident has a job key, update the job retries to 1 before resolving
-            // This allows the job to be retried once, enabling the process instance to continue
-            if (incident.getJobKey() != null) {
-              final long jobKey = incident.getJobKey();
-              LOGGER.debug("Updating job retries for job key: {}", jobKey);
-              client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
-            }
-
-            LOGGER.debug("Resolving incident [{}]", incidentSelector.describe());
-            client.newResolveIncidentCommand(incidentKey).send().join();
-          });
-    }
   }
 
   private void awaitIncident(
