@@ -130,9 +130,14 @@ public final class S3BackupStore implements BackupStore {
   }
 
   /**
-   * Tries to build the longest possible prefix based on the given wildcard. If the first component
-   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
-   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   * Tries to build the longest possible prefix based on the given wildcard for the legacy backup
+   * structure. The legacy backup structure stores manifests and backup contents in the same path.
+   * Backups created prior to 8.9 use this structure so this is purely for maintaining backwards
+   * compatibility.
+   *
+   * <p>If the first component of prefix is not present in the wildcard, the prefix will be empty.
+   * If the second component of the prefix is empty, the prefix will only contain the first prefix
+   * component and so forth.
    *
    * <p>Using the resulting prefix to list objects does not guarantee that returned objects actually
    * match the wildcard, use {@link S3BackupStore#tryParseKeyAsId(String objectKey)} and {@link
@@ -144,6 +149,16 @@ public final class S3BackupStore implements BackupStore {
         + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
+  /**
+   * Tries to build the longest possible prefix based on the given wildcard. If the first component
+   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
+   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   *
+   * <p>Using the resulting prefix to list objects does not guarantee that returned objects actually
+   * match the wildcard, use {@link S3BackupStore#tryParseKeyAsId(String objectKey)} and {@link
+   * BackupIdentifierWildcard#matches(BackupIdentifier id)} to ensure that the listed object
+   * matches.
+   */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
     return config.basePath().map(base -> base + "/").orElse("")
         + Directory.MANIFESTS.name
