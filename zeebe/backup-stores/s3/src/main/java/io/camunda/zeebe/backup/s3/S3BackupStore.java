@@ -36,7 +36,6 @@ import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -251,15 +250,12 @@ public final class S3BackupStore implements BackupStore {
             })
         .thenComposeAsync(
             manifest ->
-                listBackupObjects(manifest)
-                    .thenCombine(
-                        listBackupManifestObjects(manifest),
-                        (contentsObjects, manifestObjects) -> {
-                          final var allObjects = new ArrayList<>(contentsObjects);
-                          allObjects.addAll(manifestObjects);
-                          return allObjects;
-                        }))
-        .thenComposeAsync(this::deleteBackupObjects);
+                listObjects(manifest, Directory.MANIFESTS)
+                    .thenComposeAsync(this::deleteBackupObjects)
+                    .thenComposeAsync(
+                        ignored ->
+                            listObjects(manifest, Directory.CONTENTS)
+                                .thenComposeAsync(this::deleteBackupObjects)));
   }
 
   @Override
