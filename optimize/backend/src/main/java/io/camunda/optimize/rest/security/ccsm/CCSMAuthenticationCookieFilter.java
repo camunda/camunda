@@ -9,10 +9,9 @@ package io.camunda.optimize.rest.security.ccsm;
 
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 
-import com.auth0.jwt.exceptions.TokenExpiredException;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
-import io.camunda.identity.sdk.exception.IdentityException;
+import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -61,34 +60,24 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
       final Map<String, Cookie> cookiesByName =
           Arrays.stream(cookies).collect(Collectors.toMap(Cookie::getName, Function.identity()));
       try {
-        // Check the validity of the access token
-        AuthCookieService.extractJoinedCookieValueFromCookies(
-                cookiesByName.values().stream().toList())
-            .ifPresentOrElse(
-                ccsmTokenService::verifyToken,
-                // If no access token cookie is present, we can try renewing the tokens using the
-                // refresh token
-                () -> tryCookieRenewal(request, response, cookiesByName));
-      } catch (final TokenExpiredException expiredException) {
-        // If the access token has expired, we try to renew the tokens using the refresh token
-        tryCookieRenewal(request, response, cookiesByName);
-      } catch (final IdentityException verificationException) {
-        // If any renewal fails or the access token is otherwise not valid, try to revoke the tokens
-        // using the refresh token
         try {
-          Optional.ofNullable(cookiesByName.get(OPTIMIZE_REFRESH_TOKEN))
-              .ifPresent(
-                  refreshTokenCookie ->
-                      ccsmTokenService.revokeToken(refreshTokenCookie.getValue()));
-        } catch (final IdentityException ex) {
-          // It's possible that the revoking will fail, but we catch it so that we can still delete
-          // the cookies
-        } finally {
-          deleteCookies(response);
+          // Check the validity of the access token
+          AuthCookieService.extractJoinedCookieValueFromCookies(
+                  cookiesByName.values().stream().toList())
+              .ifPresentOrElse(
+                  ccsmTokenService::verifyAccessToken,
+                  // If no access token cookie is present, we can try renewing the tokens using the
+                  // refresh token
+                  () -> tryCookieRenewal(request, response, cookiesByName));
+        } catch (final TokenVerificationException verificationException) {
+          // If the access token has any verification exception
+          // we try to renew the tokens using the refresh token
+          tryCookieRenewal(request, response, cookiesByName);
         }
       } catch (final NotAuthorizedException notAuthorizedException) {
         // During token verification, it could be that the user is no longer authorized to access
         // Optimize, in which case we delete any existing cookies
+        logger.debug(notAuthorizedException.getMessage());
         deleteCookies(response);
       }
     }
