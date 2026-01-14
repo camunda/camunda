@@ -33,10 +33,12 @@ import org.slf4j.LoggerFactory;
 public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(RepositoryNodeIdProvider.class);
+
   private final NodeIdRepository nodeIdRepository;
   private final InstantSource clock;
   private volatile StoredLease.Initialized currentLease;
   private final Duration leaseDuration;
+  private final Duration readinessCheckTimeout;
   private final String taskId;
   private final Runnable onLeaseFailure;
   private final ScheduledExecutorService executor;
@@ -47,18 +49,22 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private VersionMappings knownVersionMappings = VersionMappings.empty();
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
+  private final CompletableFuture<Boolean> readinessFuture = new CompletableFuture<>();
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
       final InstantSource clock,
       final Duration expiryDuration,
       final Duration leaseAcquireMaxDelay,
+      final Duration readinessCheckTimeout,
       final String taskId,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
     this.clock = Objects.requireNonNull(clock, "clock cannot be null");
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
+    this.readinessCheckTimeout =
+        Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
@@ -70,7 +76,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   public CompletableFuture<Void> initialize(final int clusterSize) {
     nodeIdRepository.initialize(clusterSize);
     return CompletableFuture.runAsync(() -> acquireInitialLease(clusterSize), executor)
-        .thenRun(this::startRenewalTimer);
+        .thenRun(this::startRenewalTimer)
+        .thenRun(() -> scheduleReadinessCheck(clusterSize));
   }
 
   @Override
@@ -112,8 +119,37 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
 
   @Override
   public CompletableFuture<Boolean> awaitReadiness() {
-    // TODO: Use the knownVersionMappings to verify other members have seen this node's version
-    return CompletableFuture.completedFuture(true);
+    return readinessFuture;
+  }
+
+  private void scheduleReadinessCheck(final int clusterSize) {
+    if (!previousNodeGracefullyShutdown.isDone()) {
+      throw new IllegalStateException(
+          "Readiness check cannot be scheduled until the lease is acquired");
+    }
+    if (previousNodeGracefullyShutdown.join()) {
+      // if the previous node shut down gracefully, we can consider ourselves ready immediately
+      readinessFuture.complete(true);
+      return;
+    }
+
+    new RepositoryNodeIdProviderReadinessChecker(
+            clusterSize,
+            currentLease.node(),
+            nodeIdRepository,
+            Duration.ofSeconds(5),
+            readinessCheckTimeout)
+        .waitUntilAllNodesAreUpToDate()
+        .exceptionally(
+            t -> {
+              // This should never happen as the checker should wait indefinitely until timeout
+              // until the nodes are up-to-date
+              LOG.warn(
+                  "Failed to verify that all nodes are up to date. Marking readiness as failed.",
+                  t);
+              return false;
+            })
+        .thenAccept(readinessFuture::complete);
   }
 
   private void startRenewalTimer() {
