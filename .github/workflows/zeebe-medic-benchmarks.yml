@@ -54,10 +54,7 @@ jobs:
       name: ${{ needs.test-data.outputs.test }}-typical
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      load-test-load: >
-        --set starter.rate=50
-        --set workers.worker.replicas=6
-        --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
+      scenario: typical
   setup-postgres-typical-load-test:
     name: Typical load test
     needs:
@@ -69,10 +66,7 @@ jobs:
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
-      load-test-load: >
-        --set starter.rate=50
-        --set workers.worker.replicas=6
-        --set starter.bpmnXmlPath="bpmn/typical_process.bpmn"
+      scenario: typical
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -83,7 +77,7 @@ jobs:
       name: ${{ needs.test-data.outputs.test }}-mixed
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      realistic: true
+      scenario: realistic
   setup-latency-test:
     name: Latency test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -94,9 +88,7 @@ jobs:
       name: ${{ needs.test-data.outputs.test }}-latency
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      load-test-load: >
-        --set starter.rate=1
-        --set workers.worker.replicas=1
+      scenario: latency
 
   notify:
     name: Notify on failure
