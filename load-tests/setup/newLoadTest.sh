@@ -82,6 +82,9 @@ cp -rv default/ $namespace
 # Copy camunda-platform-values*.yaml files to the new folder
 cp -v ../camunda-platform-values*.yaml $namespace/
 
+# Copy Prometheus ElasticSearch Exporter values.yaml to the new folder
+cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
+
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
