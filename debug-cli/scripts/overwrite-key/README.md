@@ -11,8 +11,8 @@ Note that this operation requires the cluster to be shut down while the recovery
 
 ## Prerequisites
 
-- `bash` and common `unix` commands
-- Kubectl access to the cluster
+- `bash` and common `unix` commands - Kubectl access to the cluster
+- `curl`
 - `jq` installed for JSON parsing
 - **Cold backup of all broker data** (PVC snapshots or volume backups)
 - Cluster must be shut down during recovery
@@ -36,6 +36,288 @@ Before starting, you need:
 
 > [!NOTE]
 > You can use [../detect-config.sh](../detect-config.sh) && [identify-partition-brokers](../identify-partition-brokers.sh) to auto-detect all required parameters except for `NEW_KEY` and `PARTITION_ID`
+
+#### Finding Key Jumps Using Elasticsearch
+
+To identify where the key jump occurred within a partition, use the provided script to query Elasticsearch and analyze `processInstanceKey` values. The script automatically handles pagination for partitions with many process instances.
+
+> [!NOTE]
+> The provided script should work for most scenarios, but may need adjustments for specific Elasticsearch configurations or custom requirements. If needed, you can perform manual queries by examining the Elasticsearch queries used by the script.
+
+**Run the Analysis Script:**
+
+```bash
+# Set required parameters and run the script
+ES_URL="http://localhost:9200" PARTITION_ID=1 ./analyze-partition-keys.sh
+```
+
+The script will:
+1. Query Elasticsearch for all unique processInstanceKeys in the partition (with automatic pagination)
+2. Save results to `partition_${PARTITION_ID}_keys.txt`
+3. Analyze the keys to detect jumps > 1 million
+4. Display any jumps found with timestamps
+
+**Optional Parameters:**
+
+```bash
+# Custom batch size (default: 1000, max: 10000)
+ES_URL="http://localhost:9200" PARTITION_ID=1 BATCH_SIZE=5000 ./analyze-partition-keys.sh
+
+# Resume from a specific key (useful if script was interrupted)
+ES_URL="http://localhost:9200" PARTITION_ID=1 AFTER_KEY=2251799813999999 ./analyze-partition-keys.sh
+
+# Skip download and only analyze existing file (useful if data already downloaded)
+PARTITION_ID=1 SKIP_DOWNLOAD=true ./analyze-partition-keys.sh
+```
+
+**Use Cases:**
+
+- **BATCH_SIZE**: Use a larger batch size (e.g., 5000-10000) for faster downloads when the partition has many process instances. Smaller batch sizes are useful for slow networks.
+
+- **AFTER_KEY**: If the script is interrupted during download, you can resume by setting AFTER_KEY to the last processInstanceKey in the file. Check the last line with `tail -1 partition_${PARTITION_ID}_keys.txt | cut -f1`.
+
+- **SKIP_DOWNLOAD**: Use this when you've already downloaded the data and just want to re-run the analysis. This is useful for:
+
+  - Testing different jump thresholds without re-downloading
+  - Sharing the data file with team members for offline analysis
+  - Re-analyzing after manually modifying the data
+
+**Important:** If you need to re-run the analysis from scratch, manually delete the output file first:
+
+```bash
+rm partition_${PARTITION_ID}_keys.txt
+```
+
+**Example Output:**
+
+```
+======================================
+Partition Key Analysis
+======================================
+Elasticsearch URL: http://localhost:9200
+Partition ID:      1
+Batch Size:        1000
+Output File:       partition_1_keys.txt
+
+Testing Elasticsearch connectivity...
+✓ Connected to Elasticsearch
+
+Fetching processInstanceKeys...
+Batch 1: Fetching up to 1000 keys... ✓ 1000 keys (Total: 1000)
+Batch 2: Fetching up to 1000 keys... ✓ 1000 keys (Total: 2000)
+Batch 3: Fetching up to 1000 keys... ✓ 456 keys (Total: 2456)
+✓ All keys fetched
+
+======================================
+Analyzing for Key Jumps...
+======================================
+=== JUMP DETECTED ===
+Previous key: 2251799813693770 (timestamp: 2026-01-14T14:20:15.123Z)
+Current key:  4503599627373441 (timestamp: 2026-01-14T14:20:15.456Z)
+Difference:   2251799813679671
+
+======================================
+Analysis Complete
+======================================
+Total keys analyzed: 2456
+Results saved to:    partition_1_keys.txt
+```
+
+**Alternative Analysis Methods:**
+
+Step 2 can be done using other tools if you prefer. The file `partition_${PARTITION_ID}_keys.txt` is a tab-separated text file with two columns:
+
+1. **Column 1**: `processInstanceKey` (sorted numerically)
+2. **Column 2**: `timestamp` (when the process instance started)
+
+**What to look for:** Find rows where the difference between consecutive `processInstanceKey` values is greater than a threshold (e.g. one million ). This indicates an abnormal jump.
+
+**Example file content:**
+
+```
+2251799813688023	2026-01-14T14:17:11.249Z
+2251799813688159	2026-01-14T14:18:02.853Z
+2251799813688165	2026-01-14T14:18:03.241Z
+...
+2251799813693770	2026-01-14T14:23:03.201Z
+4503599627373441	2026-01-14T14:23:03.456Z  <- JUMP! Jumped into partition 2's range (~2.25 trillion difference)
+4503599627373512	2026-01-14T14:23:03.789Z
+```
+
+**Using Python:**
+
+```python
+prev_key = None
+with open('partition_1_keys.txt', 'r') as f:
+    for line in f:
+        key, timestamp = line.strip().split('\t')
+        key = int(key)
+        if prev_key is not None:
+            diff = key - prev_key
+            if diff > 1000000:
+                print(f"JUMP: {prev_key} -> {key} (diff: {diff})")
+        prev_key = key
+```
+
+**Using Excel/Spreadsheet:**
+1. Import the file as tab-delimited data
+2. Add a column to calculate the difference: `=A2-A1` (drag down)
+3. Use conditional formatting or filter to highlight differences > 1,000,000
+
+**How to Use the Results:**
+
+1. The **Previous key** shows the last valid key before the jump (e.g., `2251799813693770`)
+2. The **Current key** shows where it jumped to (e.g., `4503599627373441` - overflowed into partition 2's range)
+3. Use these values in the "Calculating Key Values" section below to determine `NEW_KEY` and `NEW_MAX_KEY`
+4. **Important:** Always verify the calculated range using the "Verifying the Key Range is Safe" section before proceeding with recovery
+
+**Understanding Partition Key Ranges:**
+
+- Partition 1: `[2251799813685248, 4503599627370496)`
+- Partition 2: `[4503599627370496, 6755399441055744)`
+- Partition 3: `[6755399441055744, 9007199254740992)`
+
+If partition 1 has keys that jumped into partition 2's range, that indicates the overflow issue.
+
+**Next Steps:** Once you've identified where the jump occurred, proceed to the sections below to calculate and verify safe key values before starting the recovery procedure.
+
+#### Calculating Key Values
+
+After identifying the jump location using the Elasticsearch analysis above, you need to calculate safe values for `NEW_KEY` and `NEW_MAX_KEY`.
+
+Choosing the right values is critical - the new key range `[NEW_KEY, NEW_MAX_KEY)` must not overlap with existing records.
+
+> [!IMPORTANT]
+> If there's overlap with existing records there is risk of data corruption!
+
+In camunda, the key for a partition `PARTITION_ID` must be in the range:
+
+```bash
+echo "[$(($PARTITION_ID << 51)), $((($PARTITION_ID + 1) << 51)))"
+# For PARTITION_ID=1:
+# [2251799813685248, 4503599627370496)
+```
+
+**Example:** If the Elasticsearch analysis (above) shows partition 1 keys jumped from `2251799813693770` to `4503599627373441` (which is in partition 2's range), then you should set:
+- `NEW_KEY`: higher than the key before the jump → `2251800000000000`
+- `NEW_MAX_KEY`: lower than the key it jumped to → `4503599000000000`
+
+It's ok to leave a lot of room between the keys for extra safety, the key space is quite big.
+
+#### Verifying the Key Range is Safe
+
+**CRITICAL STEP:** Before proceeding with recovery, verify that no data exists in the proposed `[NEW_KEY, NEW_MAX_KEY)` range. Run both verification queries below to ensure the key range is safe.
+
+```bash
+# Set your proposed key values
+NEW_KEY=2251800000000000
+NEW_MAX_KEY=4503599000000000
+PARTITION_ID=1
+ES_URL="http://localhost:9200"
+```
+
+**1. Check Process Instances (operate-list-view):**
+
+```bash
+curl -s "$ES_URL/operate-list-view-*/_search" -H 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "filter": [
+        {"term": {"partitionId": $PARTITION_ID}},
+        {"range": {"processInstanceKey": {"gte": $NEW_KEY, "lt": $NEW_MAX_KEY}}}
+      ]
+    }
+  },
+  "aggs": {
+    "has_data": {
+      "stats": {"field": "processInstanceKey"}
+    }
+  }
+}
+EOF
+)" | jq '{
+  index: "operate-list-view",
+  total_hits: .hits.total.value,
+  has_data: (.hits.total.value > 0),
+  min_key: .aggregations.has_data.min,
+  max_key: .aggregations.has_data.max
+}'
+```
+
+**2. Check Flow Node Instances (operate-flownode-instance):**
+
+```bash
+curl -s "$ES_URL/operate-flownode-instance-*/_search" -H 'Content-Type: application/json' -d "$(cat <<EOF
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "filter": [
+        {"term": {"partitionId": $PARTITION_ID}},
+        {"range": {"key": {"gte": $NEW_KEY, "lt": $NEW_MAX_KEY}}}
+      ]
+    }
+  },
+  "aggs": {
+    "has_data": {
+      "stats": {"field": "key"}
+    }
+  }
+}
+EOF
+)" | jq '{
+  index: "operate-flownode-instance",
+  total_hits: .hits.total.value,
+  has_data: (.hits.total.value > 0),
+  min_key: .aggregations.has_data.min,
+  max_key: .aggregations.has_data.max
+}'
+```
+
+**Expected Safe Output (for both queries):**
+
+```json
+{
+  "index": "operate-list-view",  // or "operate-flownode-instance"
+  "total_hits": 0,
+  "has_data": false,
+  "min_key": null,
+  "max_key": null
+}
+```
+
+**BOTH queries must return `has_data: false` for the range to be safe.**
+
+**If `has_data: true` (UNSAFE):**
+
+> [!WARNING]
+> Data exists in the proposed range! You must choose different values to avoid data corruption.
+
+The query will show `min_key` and `max_key` of existing data. You have three options to find a safe range:
+
+**Option A: Lower NEW_MAX_KEY**
+Set `NEW_MAX_KEY` below the smallest `min_key` found across both queries:
+
+```bash
+NEW_MAX_KEY=<value less than min_key>
+```
+
+**Option B: Raise NEW_KEY**
+Set `NEW_KEY` above the largest `max_key` found across both queries:
+
+```bash
+NEW_KEY=<value greater than max_key>
+```
+
+**Option C: Find a gap**
+If there's a gap between the last key before the jump and first key after the jump:
+1. Run the script again to get all keys: `./analyze-partition-keys.sh`
+2. Find the gap in the output file `partition_${PARTITION_ID}_keys.txt`
+3. Set `NEW_KEY` and `NEW_MAX_KEY` within that gap
+
+After adjusting values, **re-run both verification queries** until both return `has_data: false`.
 
 ## Recovery Steps
 
@@ -202,27 +484,6 @@ export CONTAINER_FS_GROUP="1001"                 # default: 1001
 ./generate-recovery-job.sh
 # Output: generated/recovery-job-partition-1-20251215-143022.yaml
 ```
-
-#### Calculating Key Values
-
-Choosing the right `NEW_KEY` and `NEW_MAX_KEY` is not straightforward as it's important to select a new key range `[NEW_KEY, NEW_MAX_KEY)` that does not overlap with existing records.
-
-> [!IMPORTANT]
-> If there's overlap with existing records there is risk of data corruption!
-
-In camunda, the key for a partition `PARTITION_ID` must be in the range:
-
-```bash
-echo "[$(($PARTITION_ID << 51)), $((($PARTITION_ID + 1) << 51)))"
-# returns for PARTITION_ID=2
-# [4503599627370496, 6755399441055744)
-```
-
-If for some reason the key for partition 2 jumped from 4503599627370496 to 6755399441000000, then you should set the variables to:
-- `NEW_KEY`: higher than the key before the jump, such as `4503599900000000`
-- `NEW_MAX_KEY`: lower than the key it jumped to, such as `6755399000000000`
-
-It's ok to leave a lot of room between the keys for extra safety, the key space is quite big.
 
 ### 6. Review the Generated YAML
 
