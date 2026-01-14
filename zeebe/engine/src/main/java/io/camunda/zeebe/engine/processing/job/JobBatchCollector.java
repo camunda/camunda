@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
@@ -49,6 +50,7 @@ final class JobBatchCollector {
   private final JobVariablesCollector jobVariablesCollector;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final Predicate<Integer> canWriteEventOfLength;
+  private final InstantSource clock;
 
   /**
    * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
@@ -59,11 +61,13 @@ final class JobBatchCollector {
   JobBatchCollector(
       final ProcessingState state,
       final Predicate<Integer> canWriteEventOfLength,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final InstantSource clock) {
     jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
     this.authCheckBehavior = authCheckBehavior;
+    this.clock = clock;
   }
 
   /**
@@ -100,6 +104,7 @@ final class JobBatchCollector {
                 record,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE));
+    final var deadline = clock.millis() + value.getTimeout();
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
@@ -112,7 +117,6 @@ final class JobBatchCollector {
 
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
-          final var deadline = record.getTimestamp() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
           jobVariablesCollector.setJobVariables(requestedVariables, jobRecord);
 
