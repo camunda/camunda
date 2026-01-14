@@ -55,7 +55,8 @@ public class SearchQueryPageRequestDeserializer
       throw new DeserializationException(
           ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(getSupportedFields()));
     }
-    if (!presentFields.contains(LIMIT_PAGINATION_FIELD) && presentFields.size() > 1) {
+    if ((!presentFields.contains(LIMIT_PAGINATION_FIELD) && presentFields.size() > 1)
+        || presentFields.contains(LIMIT_PAGINATION_FIELD) && presentFields.size() > 2) {
       throw new DeserializationException(
           ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(getErrorMessageParam()));
     }

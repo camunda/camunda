@@ -584,6 +584,47 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldInvalidateProcessInstancesSearchQueryWithConflictingPaginationIncludingLimit() {
+    // given
+    final var request =
+        """
+            {
+                "page": {
+                    "limit": 4,
+                    "after": "a",
+                    "before": "b"
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400,
+                  "detail": "Only one of [from, after, before] is allowed.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
+
+  @Test
   public void shouldReturnProcessInstanceForValidKey() {
     // given
     final var validProcesInstanceKey = 123L;
