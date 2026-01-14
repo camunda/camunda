@@ -71,7 +71,8 @@ public class RepositoryNodeIdProviderReadinessCheckerTest {
   @Test
   public void shouldRetryWhenSomeNodesAreNotUpToDate() {
     // given
-    final var outdatedVersionMappings = new VersionMappings(Map.of(1, Version.of(101L)));
+    final var outdatedVersionMappings =
+        new VersionMappings(Map.of(0, Version.of(99), 1, Version.of(101L)));
     final var currentVersionMappings =
         new VersionMappings(Map.of(0, Version.of(100L), 1, Version.of(101L)));
 
