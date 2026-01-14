@@ -40,14 +40,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
 import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.Changeset;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
-import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.gateway.protocol.model.DecisionEvaluationById;
 import io.camunda.gateway.protocol.model.DecisionEvaluationByKey;
 import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
@@ -87,7 +85,6 @@ import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
-import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
@@ -132,7 +129,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
@@ -447,40 +443,6 @@ public class RequestMapper {
     return getResult(
         validateDocumentLinkParams(documentLinkRequest),
         () -> new DocumentLinkParams(Duration.ofMillis(documentLinkRequest.getTimeToLive())));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request, final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateGlobalClusterVariableCreateRequest(
-            request, identifierPattern),
-        () -> new ClusterVariableRequest(request.getName(), request.getValue(), null));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableRequest(
-      final String name, final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateGlobalClusterVariableRequest(
-            name, identifierPattern),
-        () -> new ClusterVariableRequest(name, null, null));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request,
-      final String tenantId,
-      final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateTenantClusterVariableCreateRequest(
-            request, tenantId, identifierPattern),
-        () -> new ClusterVariableRequest(request.getName(), request.getValue(), tenantId));
-  }
-
-  public static Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableRequest(
-      final String name, final String tenantId, final Pattern identifierPattern) {
-    return getResult(
-        ClusterVariableRequestValidator.validateTenantClusterVariableRequest(
-            name, tenantId, identifierPattern),
-        () -> new ClusterVariableRequest(name, null, tenantId));
   }
 
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(

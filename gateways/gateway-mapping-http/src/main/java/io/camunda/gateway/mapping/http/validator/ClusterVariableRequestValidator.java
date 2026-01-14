@@ -7,69 +7,44 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import java.util.List;
+import io.camunda.security.validation.ClusterVariableValidator;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
 public class ClusterVariableRequestValidator {
 
-  public static Optional<ProblemDetail> validateTenantClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request,
-      final String tenantId,
-      final Pattern identifierPattern) {
+  private final ClusterVariableValidator clusterVariableValidator;
+
+  public ClusterVariableRequestValidator(final ClusterVariableValidator clusterVariableValidator) {
+    this.clusterVariableValidator = clusterVariableValidator;
+  }
+
+  public Optional<ProblemDetail> validateTenantClusterVariableCreateRequest(
+      final CreateClusterVariableRequest request, final String tenantId) {
     return validate(
-        violations -> {
-          validateClusterVariableName(request.getName(), violations, identifierPattern);
-          validateTenantId(tenantId, violations);
-          validateValue(request.getValue(), violations);
-        });
+        () ->
+            clusterVariableValidator.validateTenantClusterVariableCreateRequest(
+                request.getName(), request.getValue(), tenantId));
   }
 
-  public static Optional<ProblemDetail> validateGlobalClusterVariableCreateRequest(
-      final CreateClusterVariableRequest request, final Pattern identifierPattern) {
+  public Optional<ProblemDetail> validateGlobalClusterVariableCreateRequest(
+      final CreateClusterVariableRequest request) {
     return validate(
-        violations -> {
-          validateClusterVariableName(request.getName(), violations, identifierPattern);
-          validateValue(request.getValue(), violations);
-        });
+        () ->
+            clusterVariableValidator.validateGlobalClusterVariableCreateRequest(
+                request.getName(), request.getValue()));
   }
 
-  public static Optional<ProblemDetail> validateTenantClusterVariableRequest(
-      final String name, final String tenantId, final Pattern identifierPattern) {
+  public Optional<ProblemDetail> validateTenantClusterVariableRequest(
+      final String name, final String tenantId) {
     return validate(
-        violations -> {
-          validateClusterVariableName(name, violations, identifierPattern);
-          validateTenantId(tenantId, violations);
-        });
+        () -> clusterVariableValidator.validateTenantClusterVariableRequest(name, tenantId));
   }
 
-  public static Optional<ProblemDetail> validateGlobalClusterVariableRequest(
-      final String name, final Pattern identifierPattern) {
-    return validate(
-        violations -> {
-          validateClusterVariableName(name, violations, identifierPattern);
-        });
-  }
-
-  private static void validateClusterVariableName(
-      final String variableName, final List<String> violations, final Pattern identifierPattern) {
-    IdentifierValidator.validateId(variableName, "name", violations, identifierPattern);
-  }
-
-  private static void validateTenantId(final String id, final List<String> violations) {
-    IdentifierValidator.validateTenantId(
-        id, violations, TenantOwned.DEFAULT_TENANT_IDENTIFIER::equals);
-  }
-
-  private static void validateValue(final Object value, final List<String> violations) {
-    if (value == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("value"));
-    }
+  public Optional<ProblemDetail> validateGlobalClusterVariableRequest(final String name) {
+    return validate(() -> clusterVariableValidator.validateGlobalClusterVariableRequest(name));
   }
 }
