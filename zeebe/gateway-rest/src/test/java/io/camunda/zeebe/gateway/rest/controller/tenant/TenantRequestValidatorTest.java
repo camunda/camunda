@@ -26,10 +26,10 @@ public class TenantRequestValidatorTest {
 
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
 
-  private static final TenantRequestValidator tenantRequestValidator =
+  private static final TenantRequestValidator VALIDATOR =
       new TenantRequestValidator(
           new io.camunda.security.validation.TenantValidator(
-              new io.camunda.security.validation.IdentifierValidator(ID_PATTERN)));
+              new io.camunda.security.validation.IdentifierValidator(ID_PATTERN, ID_PATTERN)));
 
   @ParameterizedTest
   @MethodSource("validTenantIds")
@@ -42,7 +42,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = tenantRequestValidator.validateCreateRequest(request);
+    final var validationResult = VALIDATOR.validateCreateRequest(request);
 
     // then
     assertThat(validationResult).isEmpty();
@@ -56,7 +56,7 @@ public class TenantRequestValidatorTest {
 
     // when
     final var validationResult =
-        tenantRequestValidator.validateMemberRequest(tenantId, memberId, EntityType.USER);
+        VALIDATOR.validateMemberRequest(tenantId, memberId, EntityType.USER);
 
     // then
     assertThat(validationResult).isEmpty();
@@ -73,7 +73,7 @@ public class TenantRequestValidatorTest {
             .description("A new tenant for testing");
 
     // when
-    final var validationResult = tenantRequestValidator.validateCreateRequest(request);
+    final var validationResult = VALIDATOR.validateCreateRequest(request);
 
     // then
     assertThat(validationResult)
@@ -89,7 +89,7 @@ public class TenantRequestValidatorTest {
 
     // when
     final var validationResult =
-        tenantRequestValidator.validateMemberRequest(tenantId, memberId, EntityType.USER);
+        VALIDATOR.validateMemberRequest(tenantId, memberId, EntityType.USER);
 
     // then
     assertThat(validationResult)

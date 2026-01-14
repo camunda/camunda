@@ -55,7 +55,9 @@ public class CamundaSecurityConfiguration {
 
   @Bean
   public IdentifierValidator identifierValidator() {
-    return new IdentifierValidator(camundaSecurityProperties.getCompiledIdValidationPattern());
+    return new IdentifierValidator(
+        camundaSecurityProperties.getCompiledIdValidationPattern(),
+        camundaSecurityProperties.getCompiledGroupIdValidationPattern());
   }
 
   @PostConstruct

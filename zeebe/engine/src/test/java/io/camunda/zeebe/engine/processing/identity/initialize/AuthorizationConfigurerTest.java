@@ -40,7 +40,8 @@ class AuthorizationConfigurerTest {
           WILDCARD_CHAR,
           Set.of(PermissionType.READ));
   private static final AuthorizationValidator VALIDATOR =
-      new AuthorizationValidator(new IdentifierValidator(Pattern.compile(".*")));
+      new AuthorizationValidator(
+          new IdentifierValidator(Pattern.compile(".*"), Pattern.compile(".*")));
 
   @Test
   void shouldReturnViolationOnValidationFailure() {

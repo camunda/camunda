@@ -10,12 +10,15 @@ package io.camunda.security.validation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class TenantValidatorTest {
 
   private static final TenantValidator VALIDATOR =
-      new TenantValidator(new IdentifierValidator(java.util.regex.Pattern.compile(".*")));
+      new TenantValidator(
+          new IdentifierValidator(
+              Pattern.compile("^[a-zA-Z0-9_~@.+-]+$"), Pattern.compile("^[a-zA-Z0-9_~@.+-]+$")));
 
   @Test
   public void shouldValidateMandatoryFields() {
