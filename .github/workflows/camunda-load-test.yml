@@ -231,9 +231,9 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
-      - name: Build Starter Image for Harbor
+      - name: Build Starter Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="registry.camunda.cloud/team-zeebe/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
-      - name: Build Worker Image for Harbor
+      - name: Build Worker Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="registry.camunda.cloud/team-zeebe/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Observe build status
         if: always()
