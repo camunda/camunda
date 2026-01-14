@@ -793,6 +793,48 @@
     </resources>
 
     <plugins>
+      <!-- Generate and verify defaults.yaml from Spring configuration metadata.
+           To generate/update the file:
+             mvn exec:java@generate-default-config
+           To verify the file is up to date:
+             mvn exec:java@verify-default-config
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-default-config</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>none</phase>
+            <configuration>
+              <mainClass>io.camunda.configuration.GenerateDefaults</mainClass>
+              <arguments>
+                <argument>${project.basedir}/../configuration/target/classes/META-INF/spring-configuration-metadata.json</argument>
+                <argument>${project.basedir}/src/main/config/defaults.yaml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>verify-default-config</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>none</phase>
+            <configuration>
+              <mainClass>io.camunda.configuration.GenerateDefaults</mainClass>
+              <arguments>
+                <argument>${project.basedir}/../configuration/target/classes/META-INF/spring-configuration-metadata.json</argument>
+                <argument>${project.basedir}/src/main/config/defaults.yaml</argument>
+                <argument>--verify</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
