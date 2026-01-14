@@ -25,6 +25,7 @@ import {BatchModificationFooter} from './BatchModificationFooter';
 import type {InstanceEntityState} from 'modules/types/operate';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {InstanceOperations} from './InstanceOperations';
+import {getProcessDefinitionName} from 'modules/utils/instance';
 
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
@@ -119,7 +120,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                     size={20}
                   />
 
-                  {instance.processDefinitionName}
+                  {getProcessDefinitionName(instance)}
                 </ProcessName>
               ),
               processInstanceKey: (
