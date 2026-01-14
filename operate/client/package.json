@@ -6,7 +6,7 @@
   "dependencies": {
     "@axe-core/playwright": "4.11.0",
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
-    "@camunda/camunda-api-zod-schemas": "0.0.28",
+    "@camunda/camunda-api-zod-schemas": "0.0.29",
     "@camunda/camunda-composite-components": "0.19.1",
     "@carbon/elements": "11.71.0",
     "@carbon/react": "1.57.0",
