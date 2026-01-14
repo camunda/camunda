@@ -97,9 +97,14 @@ type ModificationBadgePayload = {
 };
 
 const TopPanel: React.FC = observer(() => {
+  const {
+    clearSelection,
+    selectedElementId,
+    selectElement,
+    selectedAnchorElementId,
+  } = useProcessInstanceElementSelection();
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
-  const currentSelection = flowNodeSelectionStore.state.selection;
   const {
     sourceFlowNodeIdForMoveOperation,
     sourceFlowNodeInstanceKeyForMoveOperation,
@@ -110,7 +115,7 @@ const TopPanel: React.FC = observer(() => {
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
   const {data: executedFlowNodes} = useExecutedFlowNodes();
   const {data: totalRunningInstancesV1} = useTotalRunningInstancesForFlowNode(
-    currentSelection?.flowNodeId,
+    flowNodeSelection?.flowNodeId,
   );
   const {data: totalRunningInstancesByFlowNode} =
     useTotalRunningInstancesByFlowNode();
@@ -137,8 +142,6 @@ const TopPanel: React.FC = observer(() => {
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
-  const {clearSelection, selectedElementId, selectElement} =
-    useProcessInstanceElementSelection();
 
   const {data: selectedElementRunningInstancesCount} =
     useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
@@ -205,6 +208,14 @@ const TopPanel: React.FC = observer(() => {
       ? allFlowNodeStateOverlays
       : notCompletedFlowNodeStateOverlays;
   }, [statistics, businessObjects, isExecutionCountVisible]);
+
+  const selectedElementIds = useMemo(() => {
+    return selectedAnchorElementId
+      ? [selectedAnchorElementId]
+      : selectedElementId
+        ? [selectedElementId]
+        : undefined;
+  }, [selectedElementId, selectedAnchorElementId]);
 
   const selectedFlowNode = useMemo(() => {
     return flowNodeSelection?.anchorFlowNodeId
@@ -286,13 +297,13 @@ const TopPanel: React.FC = observer(() => {
 
   useEffect(() => {
     if (!isModificationModeEnabled) {
-      if (flowNodeSelection?.flowNodeId) {
+      if (selectedElementId) {
         tracking.track({eventName: 'metadata-popover-opened'});
       } else {
         tracking.track({eventName: 'metadata-popover-closed'});
       }
     }
-  }, [flowNodeSelection?.flowNodeId, isModificationModeEnabled]);
+  }, [isModificationModeEnabled, selectedElementId]);
 
   const getStatus = () => {
     if (isXmlFetching) {
@@ -383,7 +394,11 @@ const TopPanel: React.FC = observer(() => {
                     ? modifiableFlowNodes
                     : selectableFlowNodes
                 }
-                selectedFlowNodeIds={selectedFlowNode}
+                selectedFlowNodeIds={
+                  IS_ELEMENT_SELECTION_V2
+                    ? selectedElementIds
+                    : selectedFlowNode
+                }
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
                     const ancestorSelectionRequired = hasMultipleScopes(
