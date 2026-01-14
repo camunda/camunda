@@ -146,7 +146,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 		InboundConnectorsAPI: fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort),
 		ZeebeAPI:             zeebeAPIURL,
 		CamundaMetrics:       camundaMetricsURL,
-		DesktopModelerTarget: zeebeGatewayAddress,
+		DesktopModelerTarget: fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),
 		QuickstartURL:        quickstartURL,
 		JavaDevelopersURL:    javaSpringGuideURL,
 		AgentGuideURL:        agentGuideURL,
