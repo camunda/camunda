@@ -11,6 +11,10 @@ import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAudi
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveRandomAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -21,8 +25,15 @@ import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.sort.AuditLogSort;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.condition.AuthorizationConditions;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -193,6 +204,402 @@ public class AuditLogIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldFilterByAuthorizedCategories(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    // Create audit logs with different categories
+    final var adminLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters, b -> b.category(AuditLogOperationCategory.ADMIN));
+    final var userTaskLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters, b -> b.category(AuditLogOperationCategory.USER_TASKS));
+    final var deployedResourcesLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters, b -> b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+
+    // Create ResourceAccessChecks with AUDIT_LOG resource type
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(
+                    a ->
+                        a.resourceType(AUDIT_LOG)
+                            .resourceIds(
+                                List.of(
+                                    AuditLogOperationCategory.ADMIN.name(),
+                                    AuditLogOperationCategory.USER_TASKS.name())))),
+            TenantCheck.disabled());
+
+    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .contains(adminLog.auditLogKey(), userTaskLog.auditLogKey())
+        .doesNotContain(deployedResourcesLog.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByProcessDefinitionWithReadProcessInstance(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final var processDefId1 = "process-def-1";
+    final var processDefId2 = "process-def-2";
+    final var processDefId3 = "process-def-3";
+
+    // Create audit logs with different process definitions
+    final var log1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+    final var log2 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(processDefId2).category(AuditLogOperationCategory.ADMIN));
+    final var log3 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(processDefId3).category(AuditLogOperationCategory.ADMIN));
+
+    // Create ResourceAccessChecks with PROCESS_DEFINITION + READ_PROCESS_INSTANCE
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(
+                    a ->
+                        a.resourceType(PROCESS_DEFINITION)
+                            .permissionType(READ_PROCESS_INSTANCE)
+                            .resourceIds(List.of(processDefId1, processDefId2)))),
+            TenantCheck.disabled());
+
+    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .contains(log1.auditLogKey(), log2.auditLogKey())
+        .doesNotContain(log3.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByProcessDefinitionWithReadProcessInstanceWildcard(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final var processDefId1 = "process-def-1";
+    final var processDefId2 = "process-def-2";
+
+    // Create audit logs with different process definitions and categories
+    final var log1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+    final var log2 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(processDefId2).category(AuditLogOperationCategory.ADMIN));
+    final var userTaskLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .category(AuditLogOperationCategory.USER_TASKS));
+    // Create a log without process definition ID - should NOT be returned
+    final var logWithoutProcessDefId =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(null).category(AuditLogOperationCategory.ADMIN));
+
+    // Create ResourceAccessChecks with wildcard access
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(
+                    a ->
+                        a.resourceType(PROCESS_DEFINITION)
+                            .permissionType(READ_PROCESS_INSTANCE)
+                            .resourceIds(List.of("*")))),
+            TenantCheck.disabled());
+
+    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+
+    // Should return all logs that have a process definition ID (including USER_TASKS)
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .contains(log1.auditLogKey(), log2.auditLogKey(), userTaskLog.auditLogKey())
+        .doesNotContain(logWithoutProcessDefId.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByProcessDefinitionWithReadUserTask(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final var processDefId1 = "process-def-1";
+    final var processDefId2 = "process-def-2";
+    final var processDefId3 = "process-def-3";
+
+    // Create audit logs with different process definitions
+    final var log1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .category(AuditLogOperationCategory.USER_TASKS));
+    final var log2 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId2)
+                    .category(AuditLogOperationCategory.USER_TASKS));
+    final var log3 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId3)
+                    .category(AuditLogOperationCategory.USER_TASKS));
+
+    // Create ResourceAccessChecks with PROCESS_DEFINITION + READ_USER_TASK
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(
+                    a ->
+                        a.resourceType(PROCESS_DEFINITION)
+                            .permissionType(READ_USER_TASK)
+                            .resourceIds(List.of(processDefId1, processDefId2)))),
+            TenantCheck.disabled());
+
+    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .contains(log1.auditLogKey(), log2.auditLogKey())
+        .doesNotContain(log3.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByProcessDefinitionWithReadUserTaskWildcard(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final var processDefId1 = "process-def-1";
+    final var processDefId2 = "process-def-2";
+
+    // Create audit logs with different process definitions and categories
+    final var log1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .category(AuditLogOperationCategory.USER_TASKS));
+    final var log2 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId2)
+                    .category(AuditLogOperationCategory.USER_TASKS));
+    final var adminLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+
+    // Create ResourceAccessChecks with wildcard access
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(
+                    a ->
+                        a.resourceType(PROCESS_DEFINITION)
+                            .permissionType(READ_USER_TASK)
+                            .resourceIds(List.of("*")))),
+            TenantCheck.disabled());
+
+    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+
+    // Should return all USER_TASKS category logs
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .contains(log1.auditLogKey(), log2.auditLogKey())
+        .doesNotContain(adminLog.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterByCompositeAuthorization(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final var processDefId1 = "process-def-1";
+    final var processDefId2 = "process-def-2";
+
+    // Create audit logs with different categories and process definitions
+    final var log1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+    final var log2 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId2)
+                    .category(AuditLogOperationCategory.USER_TASKS));
+    final var log3 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters, b -> b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+    final var log4 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.processDefinitionId("process-def-3").category(AuditLogOperationCategory.ADMIN));
+
+    // Create composite authorization with multiple resource types and permissions
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                AuthorizationConditions.anyOf(
+                    Authorization.of(
+                        a ->
+                            a.resourceType(AUDIT_LOG)
+                                .resourceIds(
+                                    List.of(AuditLogOperationCategory.DEPLOYED_RESOURCES.name()))),
+                    Authorization.of(
+                        a ->
+                            a.resourceType(PROCESS_DEFINITION)
+                                .permissionType(READ_PROCESS_INSTANCE)
+                                .resourceIds(List.of(processDefId1))),
+                    Authorization.of(
+                        a ->
+                            a.resourceType(PROCESS_DEFINITION)
+                                .permissionType(READ_USER_TASK)
+                                .resourceIds(List.of(processDefId2))))),
+            TenantCheck.disabled());
+
+    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .contains(log1.auditLogKey(), log2.auditLogKey(), log3.auditLogKey())
+        .doesNotContain(log4.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyResultWhenNoAuthorizationMatch(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    // Create audit logs
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b -> b.processDefinitionId("process-def-1").category(AuditLogOperationCategory.ADMIN));
+
+    // Create ResourceAccessChecks with non-matching authorization
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(
+                    a ->
+                        a.resourceType(PROCESS_DEFINITION)
+                            .permissionType(READ_PROCESS_INSTANCE)
+                            .resourceIds(List.of("non-existent-process")))),
+            TenantCheck.disabled());
+
+    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+
+    assertThat(searchResult.total()).isZero();
+    assertThat(searchResult.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldReturnAllWhenAuthorizationDisabled(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final Long processInstanceKey = nextKey();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey));
+
+    // Search with disabled authorization
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            ResourceAccessChecks.disabled());
+
+    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.items()).hasSize(20);
+  }
+
+  @TestTemplate
+  public void shouldCombineAuthorizationWithOtherFilters(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final var processDefId1 = "process-def-1";
+    final var processDefId2 = "process-def-2";
+    final var processInstanceKey1 = nextKey();
+    final var processInstanceKey2 = nextKey();
+
+    // Create audit logs with different process definitions and process instances
+    final var log1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .processInstanceKey(processInstanceKey1)
+                    .category(AuditLogOperationCategory.ADMIN));
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(processDefId1)
+                .processInstanceKey(processInstanceKey2)
+                .category(AuditLogOperationCategory.ADMIN));
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b ->
+            b.processDefinitionId(processDefId2)
+                .processInstanceKey(processInstanceKey1)
+                .category(AuditLogOperationCategory.ADMIN));
+
+    // Create ResourceAccessChecks with authorization
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(
+                    a ->
+                        a.resourceType(PROCESS_DEFINITION)
+                            .permissionType(READ_PROCESS_INSTANCE)
+                            .resourceIds(List.of(processDefId1)))),
+            TenantCheck.disabled());
+
+    // Search with both authorization and filter
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey1))),
+            resourceAccessChecks);
+
+    // Should only return log1 (matches both authorization and filter)
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().auditLogKey()).isEqualTo(log1.auditLogKey());
   }
 
   private void compareAuditLog(final AuditLogEntity instance, final AuditLogDbModel original) {

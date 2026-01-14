@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogAuthorizationsIT {
   protected static final boolean USE_REST_API = true;
@@ -144,6 +143,29 @@ public class AuditLogAuthorizationsIT {
 
     // then
     assertThat(logs.items()).isEmpty();
+  }
+
+  /**
+   * Verifies that the authorization filter blocks all access when no relevant permissions are
+   * configured.
+   */
+  @Test
+  void shouldDenyAllAccessWhenNoRelevantPermissions(
+      @Authenticated(USER_UNAUTHORIZED_NAME) final CamundaClient unauthorizedClient,
+      @Authenticated(USER_A_USERNAME) final CamundaClient authorizedClient) {
+    // given - verify that audit logs exist in the system
+    final var authorizedLogs = authorizedClient.newAuditLogSearchRequest().send().join();
+    assertThat(authorizedLogs.items())
+        .as("Audit logs should exist in the system for the authorized user")
+        .isNotEmpty();
+
+    // when - search with a user that has no audit log related permissions
+    final var unauthorizedLogs = unauthorizedClient.newAuditLogSearchRequest().send().join();
+
+    // then - the deny-all filter should block all access
+    assertThat(unauthorizedLogs.items())
+        .as("User without permissions should get zero results due to denyAll authorization filter")
+        .isEmpty();
   }
 
   @Test

@@ -66,12 +66,57 @@
 
   <sql id="searchFilter">
     <where>
-      <!-- authorization filters -->
+      <!-- tenant authorization filter -->
       <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
         AND (TENANT_SCOPE = 'GLOBAL' OR TENANT_ID IN
         <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
           #{tenantId}
         </foreach>)
+      </if>
+      <!-- Deny all access when no authorizations are configured -->
+      <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+        AND 1 = 0
+      </if>
+      <!-- composite authorization filter (OR of all authorization checks) -->
+      <!-- Only apply this filter if there are any authorizations configured -->
+      <if test="!authorizationFilter.authorizedCategories.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+        AND (
+          <trim prefixOverrides="OR">
+             <!-- AUDIT_LOG resource type: wildcard access to all categories -->
+            <if test="authorizationFilter.hasCategoryWildcard()">
+              OR CATEGORY IS NOT NULL
+            </if>
+            <!-- AUDIT_LOG resource type: specific authorized categories -->
+            <if test="!authorizationFilter.authorizedCategories.isEmpty() and !authorizationFilter.hasCategoryWildcard()">
+              OR CATEGORY IN
+              <foreach collection="authorizationFilter.authorizedCategories" item="category" open="(" separator="," close=")">
+                #{category}
+              </foreach>
+            </if>
+            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: wildcard access -->
+            <if test="authorizationFilter.hasProcessInstanceWildcard()">
+              OR PROCESS_DEFINITION_ID IS NOT NULL
+            </if>
+            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: specific process definition IDs -->
+            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and !authorizationFilter.hasProcessInstanceWildcard()">
+              OR PROCESS_DEFINITION_ID IN
+              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance" item="processDefId" open="(" separator="," close=")">
+                #{processDefId}
+              </foreach>
+            </if>
+            <!-- PROCESS_DEFINITION + READ_USER_TASK: wildcard access -->
+            <if test="authorizationFilter.hasUserTaskWildcard()">
+              OR CATEGORY = 'USER_TASKS'
+            </if>
+            <!-- PROCESS_DEFINITION + READ_USER_TASK: specific process definition IDs -->
+            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty() and !authorizationFilter.hasUserTaskWildcard()">
+              OR (CATEGORY = 'USER_TASKS' AND PROCESS_DEFINITION_ID IN
+              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForUserTask" item="processDefId" open="(" separator="," close=")">
+                #{processDefId}
+              </foreach>)
+            </if>
+          </trim>
+        )
       </if>
       <!-- basic filters -->
       <if test="filter.auditLogKeyOperations != null and !filter.auditLogKeyOperations.isEmpty()">
