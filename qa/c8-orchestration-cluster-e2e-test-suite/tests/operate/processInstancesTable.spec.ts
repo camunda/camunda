@@ -27,7 +27,7 @@ test.beforeAll(async () => {
     './resources/instancesTableProcessB_v_1.bpmn',
     './resources/instancesTableProcessForInfiniteScroll.bpmn',
   ]);
-
+  await sleep(3000);
   processA = {
     processInstanceKey: Number(
       (await createSingleInstance('instancesTableProcessA', 1))
