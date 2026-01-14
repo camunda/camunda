@@ -34,7 +34,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class McpSearchQueryMapper {
+/**
+ * Mapper for converting simple search request models into advanced search query representations.
+ *
+ * <p>This class provides static helper methods to:
+ *
+ * <ul>
+ *   <li>Validate and map simple {@link SearchQueryPageRequest} instances to advanced pagination
+ *       requests (e.g. limit, cursor, and offset-based pagination).
+ *   <li>Map simple filters to advanced query components with equality semantics.
+ */
+public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.SearchQueryPageRequest toPageRequest(
       final SearchQueryPageRequest page) {
@@ -83,25 +93,25 @@ public class McpSearchQueryMapper {
     final var filterModel = new io.camunda.gateway.protocol.model.IncidentFilter();
     if (filter != null) {
       ofNullable(filter.processDefinitionId())
-          .map(McpSearchQueryMapper::getStringFilter)
+          .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::processDefinitionId);
       ofNullable(filter.errorType())
           .map(e -> new AdvancedIncidentErrorTypeFilter().$eq(e))
           .ifPresent(filterModel::errorType);
       ofNullable(filter.elementId())
-          .map(McpSearchQueryMapper::getStringFilter)
+          .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::elementId);
       ofNullable(filter.creationTime())
-          .map(McpSearchQueryMapper::getDateTimeFilter)
+          .map(SimpleSearchQueryMapper::getDateTimeFilter)
           .ifPresent(filterModel::creationTime);
       ofNullable(filter.state())
           .map(s -> new AdvancedIncidentStateFilter().$eq(s))
           .ifPresent(filterModel::state);
       ofNullable(filter.processDefinitionKey())
-          .map(McpSearchQueryMapper::getBasicStringFilter)
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::processDefinitionKey);
       ofNullable(filter.processInstanceKey())
-          .map(McpSearchQueryMapper::getBasicStringFilter)
+          .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::processInstanceKey);
     }
     return filterModel;
@@ -113,10 +123,6 @@ public class McpSearchQueryMapper {
 
   private static BasicStringFilterProperty getBasicStringFilter(final long value) {
     return new BasicStringFilter().$eq(String.valueOf(value));
-  }
-
-  private static StringFilterProperty getStringFilter(final Enum<?> value) {
-    return new AdvancedStringFilter().$eq(value.name());
   }
 
   private static io.camunda.gateway.protocol.model.DateTimeFilterProperty getDateTimeFilter(

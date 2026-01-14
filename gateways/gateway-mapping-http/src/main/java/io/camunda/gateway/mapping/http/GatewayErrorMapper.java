@@ -38,7 +38,7 @@ public class GatewayErrorMapper {
     if (error == null) {
       return null;
     }
-    // SeviceExceptions can be wrapped in Java exceptions because they are handled in Java futures
+    // ServiceExceptions can be wrapped in Java exceptions because they are handled in Java futures
     final var exception = unwrapError(error);
     if (exception instanceof final ServiceException se) {
       return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
@@ -58,7 +58,7 @@ public class GatewayErrorMapper {
    * @return the cause of the exception if wrapped, otherwise the exception itself
    */
   public static Throwable unwrapError(final Throwable throwable) {
-    // SeviceExceptions can be wrapped in Java exceptions because they are handled in Java futures
+    // ServiceExceptions can be wrapped in Java exceptions because they are handled in Java futures
     if (throwable instanceof CompletionException || throwable instanceof ExecutionException) {
       return throwable.getCause();
     }
