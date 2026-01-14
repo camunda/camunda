@@ -10,12 +10,10 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.ASSIGNEE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.TU_ID_PATTERN;
 import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
-import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.ASSIGNEE_HASH;
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.END_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -24,8 +22,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.CommonUtils;
+import co.elastic.clients.elasticsearch._types.ExpandWildcard;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
@@ -35,23 +42,13 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,9 +56,7 @@ public class TaskMetricsStoreElasticSearchTest {
 
   private static final String METRIC_INDEX_NAME = "usage_metric_tu_x.0.0";
   @Mock private UsageMetricTUTemplate template;
-  @Mock private RestHighLevelClient esClient;
   @Mock private ElasticsearchClient es8Client;
-  @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
   @InjectMocks private TaskMetricsStoreElasticSearch instance;
 
@@ -109,8 +104,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    final SearchRequest searchRequest = buildSearchRequest(now, oneHourBefore);
-    when(esClient.search(refEq(searchRequest), eq(RequestOptions.DEFAULT)))
+    when(es8Client.search(any(SearchRequest.class), eq(Void.class)))
         .thenThrow(new IOException("IO exception raised"));
 
     // When - Then
@@ -126,7 +120,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    when(esClient.search(any(), eq(RequestOptions.DEFAULT)))
+    when(es8Client.search(any(SearchRequest.class), eq(Void.class)))
         .thenThrow(new IOException("IO exception occurred"));
 
     // When - Then
@@ -137,66 +131,91 @@ public class TaskMetricsStoreElasticSearchTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void expectedResponseWhenResultsAreEmpty() throws IOException {
     // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    final SearchRequest searchRequest = buildSearchRequest(now, oneHourBefore);
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    when(esClient.search(refEq(searchRequest), eq(RequestOptions.DEFAULT)))
-        .thenReturn(searchResponse);
-    final Aggregations aggregations = mock(Aggregations.class);
-    when(searchResponse.getAggregations()).thenReturn(aggregations);
-    final var aggregation = mock(ParsedLongTerms.class);
-    when(aggregations.get(ASSIGNEE)).thenReturn(aggregation);
-    when(aggregation.getBuckets()).thenReturn(Collections.emptyList());
+    final SearchResponse<Void> searchResponse = mock(SearchResponse.class);
+    when(es8Client.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
+
+    final LongTermsAggregate longTermsAggregate = mock(LongTermsAggregate.class);
+    final Aggregate aggregate = mock(Aggregate.class);
+    when(aggregate.lterms()).thenReturn(longTermsAggregate);
+    when(searchResponse.aggregations()).thenReturn(Map.of(ASSIGNEE, aggregate));
+
+    final Buckets<LongTermsBucket> buckets = mock(Buckets.class);
+    when(longTermsAggregate.buckets()).thenReturn(buckets);
+    when(buckets.array()).thenReturn(Collections.emptyList());
 
     // When
     final var result = instance.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now, null);
 
     // Then
     assertThat(result).isEmpty();
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(es8Client).search(captor.capture(), eq(Void.class));
+    final SearchRequest capturedRequest = captor.getValue();
+    assertThat(capturedRequest.index()).containsExactly(METRIC_INDEX_NAME);
+    assertThat(capturedRequest.aggregations()).containsKey(ASSIGNEE);
   }
 
   private SearchRequest buildSearchRequest(
-      final OffsetDateTime now, final OffsetDateTime oneHourBefore) {
-    final BoolQueryBuilder rangeQuery =
-        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(oneHourBefore).lt(now));
-    final TermsAggregationBuilder aggregation =
-        AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE);
+      final OffsetDateTime startTime, final OffsetDateTime endTime) {
+    final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+    boolQueryBuilder.must(
+        QueryBuilders.range(
+            r -> r.date(d -> d.field(END_TIME).gte(startTime.toString()).lt(endTime.toString()))));
 
-    final SearchSourceBuilder source =
-        SearchSourceBuilder.searchSource().query(rangeQuery).aggregation(aggregation);
-    final SearchRequest searchRequest =
-        new SearchRequest(template.getFullQualifiedName())
-            .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
-            .source(source);
-    return searchRequest;
+    final Query query = boolQueryBuilder.build()._toQuery();
+
+    final Aggregation termsAggregation =
+        Aggregation.of(a -> a.terms(t -> t.field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE)));
+
+    return SearchRequest.of(
+        s ->
+            s.index(METRIC_INDEX_NAME)
+                .ignoreUnavailable(true)
+                .allowNoIndices(true)
+                .ignoreThrottled(true)
+                .expandWildcards(ExpandWildcard.Open)
+                .query(query)
+                .aggregations(ASSIGNEE, termsAggregation)
+                .size(0));
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void expectedResponseWhenResultsAreReturned() throws IOException {
     // Given
     final OffsetDateTime now = OffsetDateTime.now();
     final OffsetDateTime oneHourBefore = OffsetDateTime.now().withHour(1);
 
-    final SearchRequest searchRequest = buildSearchRequest(now, oneHourBefore);
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    when(esClient.search(refEq(searchRequest), eq(RequestOptions.DEFAULT)))
-        .thenReturn(searchResponse);
-    final Aggregations aggregations = mock(Aggregations.class);
-    when(searchResponse.getAggregations()).thenReturn(aggregations);
-    final var aggregation = mock(ParsedLongTerms.class);
-    when(aggregations.get(ASSIGNEE)).thenReturn(aggregation);
-    final var bucket = mock(ParsedLongTerms.ParsedBucket.class);
-    when(bucket.getKey()).thenReturn(1234567L);
-    when((List<ParsedLongTerms.ParsedBucket>) aggregation.getBuckets()).thenReturn(List.of(bucket));
+    final SearchResponse<Void> searchResponse = mock(SearchResponse.class);
+    when(es8Client.search(any(SearchRequest.class), eq(Void.class))).thenReturn(searchResponse);
+
+    final LongTermsAggregate longTermsAggregate = mock(LongTermsAggregate.class);
+    final Aggregate aggregate = mock(Aggregate.class);
+    when(aggregate.lterms()).thenReturn(longTermsAggregate);
+    when(searchResponse.aggregations()).thenReturn(Map.of(ASSIGNEE, aggregate));
+
+    final Buckets<LongTermsBucket> buckets = mock(Buckets.class);
+    when(longTermsAggregate.buckets()).thenReturn(buckets);
+
+    final LongTermsBucket bucket = mock(LongTermsBucket.class);
+    when(bucket.key()).thenReturn(1234567L);
+    when(buckets.array()).thenReturn(List.of(bucket));
 
     // When
     final var result = instance.retrieveDistinctAssigneesBetweenDates(oneHourBefore, now, null);
 
     // Then
     assertThat(result).containsExactly(1234567L);
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+    verify(es8Client).search(captor.capture(), eq(Void.class));
+    final SearchRequest capturedRequest = captor.getValue();
+    assertThat(capturedRequest.index()).containsExactly(METRIC_INDEX_NAME);
+    assertThat(capturedRequest.aggregations()).containsKey(ASSIGNEE);
   }
 }
