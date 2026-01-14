@@ -62,7 +62,7 @@ data/
         └── ...
 ```
 
-The `directory-initialized.json` file marks a directory as valid and refers to a serialized `DirectoryInitializationInfo`:
+The `directory-initialized.json` file marks a directory as valid and refers to a serialized `DirectoryInitializationInfo`, which stores metadata about the initialized directory (such as node ID, version, and timestamps).
 
 ### Garbage Collection
 
