@@ -36,7 +36,6 @@ const batchOperationStateSchema = z.enum([
 	'COMPLETED',
 	'PARTIALLY_COMPLETED',
 	'CANCELED',
-	'INCOMPLETED',
 	'FAILED',
 ]);
 type BatchOperationState = z.infer<typeof batchOperationStateSchema>;
@@ -109,17 +108,17 @@ const queryBatchOperations: Endpoint = {
 };
 
 const cancelBatchOperation: Endpoint<{batchOperationKey: string}> = {
-	method: 'PUT',
+	method: 'POST',
 	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/cancellation`,
 };
 
 const suspendBatchOperation: Endpoint<{batchOperationKey: string}> = {
-	method: 'PUT',
+	method: 'POST',
 	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/suspension`,
 };
 
 const resumeBatchOperation: Endpoint<{batchOperationKey: string}> = {
-	method: 'PUT',
+	method: 'POST',
 	getUrl: ({batchOperationKey}) => `/${API_VERSION}/batch-operations/${batchOperationKey}/resumption`,
 };
 
