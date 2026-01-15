@@ -526,6 +526,9 @@
             <configuration>
               <localCheckout>true</localCheckout>
               <scmCommentPrefix xml:space="preserve">build: </scmCommentPrefix>
+              <dependencyExcludes>
+                <dependencyExclude>io.camunda:zeebe-qa-util</dependencyExclude>
+              </dependencyExcludes>
             </configuration>
           </plugin>
           <plugin>
