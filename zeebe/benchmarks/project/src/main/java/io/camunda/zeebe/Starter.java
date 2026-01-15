@@ -129,6 +129,7 @@ public class Starter extends App {
         new ProcessInstanceStartMeter(
             registry,
             Executors.newScheduledThreadPool(1),
+            appCfg.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
               return CompletableFuture.completedFuture(List.of());
               //              final CamundaFuture<SearchResponse<ProcessInstance>> send =
