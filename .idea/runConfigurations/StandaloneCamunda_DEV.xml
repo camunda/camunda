@@ -8,6 +8,11 @@
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME" value="Demo" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD" value="demo" />
       <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME" value="demo" />
+      <!-- Uncomment to test the app integrations exporter
+      <env name="ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_ARGS_APIKEY" value="myApiKey" />
+      <env name="ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_ARGS_URL" value="http://localhost:8088/app-int" />
+      <env name="ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_CLASSNAME" value="io.camunda.appint.exporter.AppIntegrationsExporter" />
+      -->
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL" value="http://localhost:9200" />
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS" value="false" />
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME" value="io.camunda.exporter.CamundaExporter" />
