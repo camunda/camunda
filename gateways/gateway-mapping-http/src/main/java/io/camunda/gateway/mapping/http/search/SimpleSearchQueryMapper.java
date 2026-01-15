@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.gateway.mcp.mapper;
+package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
@@ -22,14 +22,15 @@ import io.camunda.gateway.protocol.model.CursorBackwardPagination;
 import io.camunda.gateway.protocol.model.CursorForwardPagination;
 import io.camunda.gateway.protocol.model.LimitPagination;
 import io.camunda.gateway.protocol.model.OffsetPagination;
+import io.camunda.gateway.protocol.model.SortOrderEnum;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
-import io.camunda.gateway.protocol.model.simple.DateTimeFilterProperty;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.IncidentSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.SimpleDateTimeFilterProperty;
+import io.camunda.gateway.protocol.model.simple.SimpleSearchQueryPageRequest;
 import io.camunda.service.exception.ServiceError;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -40,14 +41,14 @@ import java.util.stream.Stream;
  * <p>This class provides static helper methods to:
  *
  * <ul>
- *   <li>Validate and map simple {@link SearchQueryPageRequest} instances to advanced pagination
- *       requests (e.g. limit, cursor, and offset-based pagination).
+ *   <li>Validate and map simple {@link SimpleSearchQueryPageRequest} instances to advanced
+ *       pagination requests (e.g. limit, cursor, and offset-based pagination).
  *   <li>Map simple filters to advanced query components with equality semantics.
  */
 public class SimpleSearchQueryMapper {
 
   public static io.camunda.gateway.protocol.model.SearchQueryPageRequest toPageRequest(
-      final SearchQueryPageRequest page) {
+      final SimpleSearchQueryPageRequest page) {
     if (page == null) {
       return new LimitPagination();
     }
@@ -84,33 +85,29 @@ public class SimpleSearchQueryMapper {
     return new LimitPagination().limit(page.limit());
   }
 
-  public static <T> List<T> toSortRequest(final List<T> sort) {
-    return sort == null ? Collections.emptyList() : sort;
-  }
-
   public static io.camunda.gateway.protocol.model.IncidentFilter toIncidentFilter(
       final IncidentFilter filter) {
     final var filterModel = new io.camunda.gateway.protocol.model.IncidentFilter();
     if (filter != null) {
-      ofNullable(filter.processDefinitionId())
+      ofNullable(filter.getProcessDefinitionId())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::processDefinitionId);
-      ofNullable(filter.errorType())
+      ofNullable(filter.getErrorType())
           .map(e -> new AdvancedIncidentErrorTypeFilter().$eq(e))
           .ifPresent(filterModel::errorType);
-      ofNullable(filter.elementId())
+      ofNullable(filter.getElementId())
           .map(SimpleSearchQueryMapper::getStringFilter)
           .ifPresent(filterModel::elementId);
-      ofNullable(filter.creationTime())
+      ofNullable(filter.getCreationTime())
           .map(SimpleSearchQueryMapper::getDateTimeFilter)
           .ifPresent(filterModel::creationTime);
-      ofNullable(filter.state())
+      ofNullable(filter.getState())
           .map(s -> new AdvancedIncidentStateFilter().$eq(s))
           .ifPresent(filterModel::state);
-      ofNullable(filter.processDefinitionKey())
+      ofNullable(filter.getProcessDefinitionKey())
           .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::processDefinitionKey);
-      ofNullable(filter.processInstanceKey())
+      ofNullable(filter.getProcessInstanceKey())
           .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::processInstanceKey);
     }
@@ -121,12 +118,12 @@ public class SimpleSearchQueryMapper {
     return new AdvancedStringFilter().$eq(value);
   }
 
-  private static BasicStringFilterProperty getBasicStringFilter(final long value) {
-    return new BasicStringFilter().$eq(String.valueOf(value));
+  private static BasicStringFilterProperty getBasicStringFilter(final String value) {
+    return new BasicStringFilter().$eq(value);
   }
 
   private static io.camunda.gateway.protocol.model.DateTimeFilterProperty getDateTimeFilter(
-      final DateTimeFilterProperty value) {
+      final SimpleDateTimeFilterProperty value) {
     if (value == null
         || (value.from() == null || value.from().isBlank())
             && (value.to() == null || value.to().isBlank())) {
@@ -141,5 +138,21 @@ public class SimpleSearchQueryMapper {
       filterModel.$lt(value.to());
     }
     return filterModel;
+  }
+
+  public static List<io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest>
+      toIncidentSort(final List<IncidentSearchQuerySortRequest> sort) {
+    if (sort == null || sort.isEmpty()) {
+      return List.of();
+    }
+    return sort.stream()
+        .map(
+            s ->
+                new io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest()
+                    .field(
+                        io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest.FieldEnum
+                            .fromValue(s.getField().getValue()))
+                    .order(SortOrderEnum.fromValue(s.getOrder().getValue())))
+        .toList();
   }
 }
