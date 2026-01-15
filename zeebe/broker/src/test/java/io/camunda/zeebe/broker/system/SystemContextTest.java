@@ -925,6 +925,7 @@ final class SystemContextTest {
 
   private GlobalListenerCfg createListenerCfg(final String type, final List<String> eventTypes) {
     final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
+    listenerCfg.setId("GlobalListener_" + type);
     listenerCfg.setType(type);
     listenerCfg.setEventTypes(eventTypes);
     return listenerCfg;

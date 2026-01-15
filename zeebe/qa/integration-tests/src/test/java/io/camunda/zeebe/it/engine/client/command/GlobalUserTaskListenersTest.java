@@ -381,6 +381,7 @@ public class GlobalUserTaskListenersTest {
   private GlobalListenerCfg createListenerConfig(
       final String type, final List<String> eventTypes, final boolean afterNonGlobal) {
     final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
+    listenerCfg.setId("GlobalListener_" + type);
     listenerCfg.setType(type);
     listenerCfg.setEventTypes(eventTypes);
     listenerCfg.setAfterNonGlobal(afterNonGlobal);
