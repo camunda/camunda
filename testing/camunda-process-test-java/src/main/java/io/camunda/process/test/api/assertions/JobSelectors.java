@@ -62,6 +62,16 @@ public class JobSelectors {
     return new JobKindSelector(jobKind);
   }
 
+  /**
+   * Select the job by its process instance key.
+   *
+   * @param processInstanceKey the process instance key
+   * @return the selector
+   */
+  public static JobSelector byProcessInstanceKey(final Long processInstanceKey) {
+    return new JobProcessInstanceKeySelector(processInstanceKey);
+  }
+
   private static final class JobTypeSelector implements JobSelector {
 
     private final String jobType;
@@ -155,6 +165,30 @@ public class JobSelectors {
     @Override
     public void applyFilter(final JobFilter filter) {
       filter.kind(jobKind);
+    }
+  }
+
+  private static final class JobProcessInstanceKeySelector implements JobSelector {
+
+    private final Long processInstanceKey;
+
+    private JobProcessInstanceKeySelector(final Long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+    }
+
+    @Override
+    public boolean test(final Job job) {
+      return processInstanceKey.equals(job.getProcessInstanceKey());
+    }
+
+    @Override
+    public String describe() {
+      return "processInstanceKey: " + processInstanceKey;
+    }
+
+    @Override
+    public void applyFilter(final JobFilter filter) {
+      filter.processInstanceKey(processInstanceKey);
     }
   }
 }

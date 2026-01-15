@@ -23,6 +23,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -470,14 +471,9 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final Consumer<CompleteAdHocSubProcessResultStep1> jobResult) {
     final CamundaClient client = createClient();
 
-    // Add the AD_HOC_SUB_PROCESS kind filter to the job selector
-    final JobSelector adHocJobSelector =
-        jobSelector.and(
-            JobSelectors.byJobKind(io.camunda.client.api.search.enums.JobKind.AD_HOC_SUB_PROCESS));
-
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
-        adHocJobSelector,
+        JobSelectors.byJobKind(JobKind.AD_HOC_SUB_PROCESS).and(jobSelector),
         client,
         job -> {
           LOGGER.debug(

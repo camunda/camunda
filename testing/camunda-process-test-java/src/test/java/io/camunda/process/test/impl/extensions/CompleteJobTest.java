@@ -54,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -285,7 +286,7 @@ public class CompleteJobTest {
                       JobSelectors.byJobType(JOB_TYPE), result -> result.activateElement("task1")))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
-              "Expected to complete job [jobType: %s, jobKind: AD_HOC_SUB_PROCESS] but no job is available.",
+              "Expected to complete job [jobKind: AD_HOC_SUB_PROCESS, jobType: %s] but no job is available.",
               JOB_TYPE);
     }
   }
@@ -303,6 +304,8 @@ public class CompleteJobTest {
     private IntegerProperty retriesProperty;
 
     @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
+    @Captor private ArgumentCaptor<Consumer<JobStateProperty>> jobStatePropertyCaptor;
+    @Captor private ArgumentCaptor<Consumer<IntegerProperty>> retriesPropertyCaptor;
 
     @Mock private CompleteJobCommandJobResultStep completeJobCommandJobResultStep;
     @Mock private CompleteAdHocSubProcessResultStep1 completeAdHocSubProcessResultStep;
@@ -344,7 +347,7 @@ public class CompleteJobTest {
 
       // then
       verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
-          .withResult(org.mockito.ArgumentMatchers.any());
+          .withResult(ArgumentMatchers.any());
     }
 
     @Test
@@ -358,7 +361,7 @@ public class CompleteJobTest {
 
       // then
       verify(camundaClient.newCompleteCommand(JOB_KEY).variables(variables))
-          .withResult(org.mockito.ArgumentMatchers.any());
+          .withResult(ArgumentMatchers.any());
     }
 
     @Test
@@ -388,8 +391,18 @@ public class CompleteJobTest {
 
       // then
       jobFilterCaptor.getValue().accept(jobFilter);
-      verify(jobFilter).type(JOB_TYPE);
       verify(jobFilter).kind(JobKind.AD_HOC_SUB_PROCESS);
+      verify(jobFilter).type(JOB_TYPE);
+      verify(jobFilter).state(jobStatePropertyCaptor.capture());
+      verify(jobFilter.state(jobStatePropertyCaptor.getValue()))
+          .retries(retriesPropertyCaptor.capture());
+
+      jobStatePropertyCaptor.getValue().accept(jobStateProperty);
+      verify(jobStateProperty)
+          .in(JobState.CREATED, JobState.FAILED, JobState.RETRIES_UPDATED, JobState.TIMED_OUT);
+
+      retriesPropertyCaptor.getValue().accept(retriesProperty);
+      verify(retriesProperty).gte(1);
     }
 
     @Test
@@ -420,7 +433,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newCompleteCommand(JOB_KEY)
               .variables(Collections.emptyMap())
-              .withResult(org.mockito.ArgumentMatchers.any())
+              .withResult(ArgumentMatchers.any())
               .send()
               .join())
           .thenThrow(new ClientException("expected"))
