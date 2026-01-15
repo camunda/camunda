@@ -65,6 +65,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -79,6 +80,7 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -841,18 +843,44 @@ class RdbmsExporterIT {
     exporter.export(correlatedMessageSubscriptionRecord);
 
     // then
+    final var recordValue = correlatedMessageSubscriptionRecord.getValue();
     final var correlatedMessageSubscription =
         rdbmsService
             .getCorrelatedMessageSubscriptionReader()
-            .findOne(
-                correlatedMessageSubscriptionRecord.getValue().getMessageKey(),
-                correlatedMessageSubscriptionRecord.getKey());
+            .findOne(recordValue.getMessageKey(), correlatedMessageSubscriptionRecord.getKey());
     assertThat(correlatedMessageSubscription).isNotEmpty();
-    final var recordValue = correlatedMessageSubscriptionRecord.getValue();
     assertThat(correlatedMessageSubscription.get().processInstanceKey())
         .isEqualTo(recordValue.getProcessInstanceKey());
     assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
         .isEqualTo(recordValue.getRootProcessInstanceKey());
+  }
+
+  @Test
+  public void shouldExportCorrelatedMessageSubscriptionFromStartEvent() {
+    // given
+    final Record<MessageStartEventSubscriptionRecordValue> messageStartEventSubRecord =
+        ImmutableRecord.<MessageStartEventSubscriptionRecordValue>builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION))
+            .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(messageStartEventSubRecord);
+
+    // then
+    final var recordValue = messageStartEventSubRecord.getValue();
+    final var correlatedMessageSubscription =
+        rdbmsService
+            .getCorrelatedMessageSubscriptionReader()
+            .findOne(recordValue.getMessageKey(), messageStartEventSubRecord.getKey());
+    assertThat(correlatedMessageSubscription).isNotEmpty();
+    final var processInstanceKey = recordValue.getProcessInstanceKey();
+    assertThat(correlatedMessageSubscription.get().processInstanceKey())
+        .isEqualTo(processInstanceKey);
+    assertThat(correlatedMessageSubscription.get().rootProcessInstanceKey())
+        .isEqualTo(processInstanceKey);
   }
 
   @Test
