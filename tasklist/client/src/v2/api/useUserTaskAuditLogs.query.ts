@@ -9,17 +9,37 @@
 import {infiniteQueryOptions} from '@tanstack/react-query';
 import {api} from 'v2/api';
 import {request} from 'common/api/request';
-import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {
+  type QueryUserTaskAuditLogsResponseBody,
+  auditLogSortFieldEnum,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const MAX_AUDIT_LOGS_PER_REQUEST = 50;
 
-function getUserTaskAuditLogsQueryOptions(userTaskKey: string) {
+const AUDIT_LOG_SORT_FIELDS = auditLogSortFieldEnum.options;
+type AuditLogSortField = (typeof AUDIT_LOG_SORT_FIELDS)[number];
+
+type AuditLogSort = {
+  field: AuditLogSortField;
+  order: 'asc' | 'desc';
+};
+
+const DEFAULT_SORT: AuditLogSort = {
+  field: 'timestamp',
+  order: 'desc',
+};
+
+function getUserTaskAuditLogsQueryOptions(
+  userTaskKey: string,
+  sort: AuditLogSort = DEFAULT_SORT,
+) {
   return infiniteQueryOptions({
-    queryKey: ['userTaskAuditLogs', userTaskKey],
+    queryKey: ['userTaskAuditLogs', userTaskKey, sort],
     queryFn: async ({pageParam}) => {
       const {response, error} = await request(
         api.queryUserTaskAuditLogs({
           userTaskKey,
+          sort: [sort],
           page: {
             from: pageParam,
             limit: MAX_AUDIT_LOGS_PER_REQUEST,
@@ -56,4 +76,10 @@ function getUserTaskAuditLogsQueryOptions(userTaskKey: string) {
   });
 }
 
-export {getUserTaskAuditLogsQueryOptions};
+export {
+  getUserTaskAuditLogsQueryOptions,
+  DEFAULT_SORT,
+  AUDIT_LOG_SORT_FIELDS,
+  type AuditLogSort,
+  type AuditLogSortField,
+};
