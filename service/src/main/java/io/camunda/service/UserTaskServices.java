@@ -11,7 +11,7 @@ import static io.camunda.search.query.SearchQueryBuilders.auditLogSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.userTaskSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
-import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION;
 
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
@@ -107,7 +107,7 @@ public final class UserTaskServices
     return search(
         query,
         securityContextProvider.provideSecurityContext(
-            authentication, USER_TASK_READ_AUTHORIZATION));
+            authentication, PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION));
   }
 
   private SearchQueryResult<UserTaskEntity> search(
@@ -200,7 +200,8 @@ public final class UserTaskServices
                         securityContextProvider.provideSecurityContext(
                             authentication,
                             withAuthorization(
-                                USER_TASK_READ_AUTHORIZATION, UserTaskEntity::processDefinitionId)))
+                                PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION,
+                                UserTaskEntity::processDefinitionId)))
                     .getUserTask(userTaskKey));
 
     final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());

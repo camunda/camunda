@@ -89,7 +89,8 @@ public class UserTaskServiceTest {
       // given
       when(client.getUserTask(any(Long.class)))
           .thenThrow(
-              new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
+              new ResourceAccessDeniedException(
+                  Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION));
 
       // when
       final ThrowingCallable executable =
@@ -140,7 +141,8 @@ public class UserTaskServiceTest {
       // given
       when(client.getUserTask(any(Long.class)))
           .thenThrow(
-              new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
+              new ResourceAccessDeniedException(
+                  Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION));
 
       // when
       final ThrowingCallable executable =
@@ -279,7 +281,8 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class)))
           .thenThrow(
-              new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
+              new ResourceAccessDeniedException(
+                  Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION));
 
       final ThrowingCallable executable = () -> services.getByKey(entity.userTaskKey());
 
