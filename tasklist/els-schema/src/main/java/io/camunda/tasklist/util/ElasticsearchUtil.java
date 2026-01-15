@@ -54,8 +54,6 @@ import java.util.stream.Stream;
 import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -389,21 +387,28 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
-   * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
-   * #DEFAULT_MAX_TERMS_COUNT}
+   * Scrolls through all search results using ES8 client and collects results into a list, with
+   * chunking support for large ID lists.
+   *
+   * @param client ES8 client
+   * @param ids List of IDs to process in chunks
+   * @param chunkSize Maximum number of IDs per chunk
+   * @param searchRequestBuilderFactory Factory to create search request builder for each chunk
+   * @param docClass Document class type
+   * @param <T> Type of documents
+   * @param <ID> Type of IDs
+   * @return List of document sources
    */
   public static <T, ID> List<T> scrollInChunks(
-      final List<ID> list,
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final List<ID> ids,
       final int chunkSize,
-      final Function<List<ID>, SearchRequest> chunkToSearchRequest,
-      final Class<T> clazz,
-      final ObjectMapper objectMapper,
-      final RestHighLevelClient esClient)
-      throws IOException {
+      final Function<List<ID>, co.elastic.clients.elasticsearch.core.SearchRequest.Builder>
+          searchRequestBuilderFactory,
+      final Class<T> docClass) {
     final var result = new ArrayList<T>();
-    for (final var chunk : ListUtils.partition(list, chunkSize)) {
-      result.addAll(scroll(chunkToSearchRequest.apply(chunk), clazz, objectMapper, esClient));
+    for (final var chunk : ListUtils.partition(ids, chunkSize)) {
+      result.addAll(scrollAllToList(client, searchRequestBuilderFactory.apply(chunk), docClass));
     }
     return result;
   }
@@ -541,28 +546,21 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
+  /**
+   * Scrolls through all search results using ES8 client and collects document IDs with their index
+   * names into a map.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @return Map of document ID to index name
+   */
   public static Map<String, String> scrollIdsWithIndexToMap(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final Map<String, String> result = new LinkedHashMap();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) ->
-            result.putAll(
-                Stream.of(hits.getHits())
-                    .collect(Collectors.toMap(SearchHit::getId, SearchHit::getIndex)));
-
-    scrollWith(request, esClient, collectIds, null, null);
-    return result;
-  }
-
-  public static List<Long> scrollKeysToList(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final List<Long> result = new ArrayList<>();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
-
-    scrollWith(request, esClient, collectIds, null, null);
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder) {
+    final Map<String, String> result = new LinkedHashMap<>();
+    scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
+        .flatMap(response -> response.hits().hits().stream())
+        .forEach(hit -> result.put(hit.id(), hit.index()));
     return result;
   }
 
@@ -578,39 +576,6 @@ public abstract class ElasticsearchUtil {
 
     scrollWith(request, esClient, collectFields, null, null);
     return result;
-  }
-
-  public static Set<String> scrollIdsToSet(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final Set<String> result = new HashSet<>();
-
-    final Consumer<SearchHits> collectIds =
-        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
-    scrollWith(request, esClient, collectIds, null, collectIds);
-    return result;
-  }
-
-  public static Set<Long> scrollKeysToSet(
-      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
-    final Set<Long> result = new HashSet<>();
-    final Consumer<SearchHits> collectIds =
-        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
-    scrollWith(request, esClient, collectIds, null, null);
-    return result;
-  }
-
-  public static void refreshIndicesFor(
-      final RestHighLevelClient esClient, final String indexPattern) {
-    final var refreshRequest = new RefreshRequest(indexPattern);
-    try {
-      final RefreshResponse refresh =
-          esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-      if (refresh.getFailedShards() > 0) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
-    } catch (final Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
-    }
   }
 
   // ============ ES8 Query Helper Methods ============
@@ -823,6 +788,54 @@ public abstract class ElasticsearchUtil {
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId, e);
       }
     }
+  }
+
+  /**
+   * Scrolls through all search results using ES8 client and collects results into a list.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @param docClass Document class type
+   * @param <T> Type of documents
+   * @return List of document sources
+   */
+  public static <T> List<T> scrollAllToList(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final Class<T> docClass) {
+    return scrollAllStream(client, searchRequestBuilder, docClass)
+        .flatMap(response -> response.hits().hits().stream())
+        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Scrolls through all search results using ES8 client and collects a specific field's Long values
+   * into a set.
+   *
+   * @param client ES8 client
+   * @param searchRequestBuilder Search request builder
+   * @param fieldName The field name to extract Long values from
+   * @return Set of Long values
+   */
+  public static Set<Long> scrollFieldToLongSet(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final co.elastic.clients.elasticsearch.core.SearchRequest.Builder searchRequestBuilder,
+      final String fieldName) {
+    final Set<Long> result = new HashSet<>();
+    scrollAllStream(client, searchRequestBuilder, MAP_CLASS)
+        .flatMap(response -> response.hits().hits().stream())
+        .map(co.elastic.clients.elasticsearch.core.search.Hit::source)
+        .filter(Objects::nonNull)
+        .forEach(
+            source -> {
+              final var value = source.get(fieldName);
+              if (value != null) {
+                result.add(((Number) value).longValue());
+              }
+            });
+    return result;
   }
 
   // ===========================================================================================

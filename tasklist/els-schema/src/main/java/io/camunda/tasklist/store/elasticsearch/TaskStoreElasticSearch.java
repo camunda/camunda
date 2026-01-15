@@ -11,10 +11,8 @@ import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.tasklist.util.ElasticsearchUtil.scrollInChunks;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
@@ -57,7 +55,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -87,10 +84,6 @@ public class TaskStoreElasticSearch implements TaskStore {
           TaskState.CREATED, TaskTemplate.CREATION_TIME,
           TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
-
-  @Autowired
-  @Qualifier("tasklistEsClient")
-  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistEs8Client")
@@ -159,20 +152,29 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
-    final var processInstanceQuery = termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
-    final var flownodeInstanceQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+    final var processInstanceQuery =
+        ElasticsearchUtil.termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
+    final var flownodeInstanceQuery =
+        ElasticsearchUtil.existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
     final var finalQuery =
         ElasticsearchUtil.joinWithAnd(processInstanceQuery, flownodeInstanceQuery);
-    final SearchRequest searchRequest =
-        createSearchRequest(taskTemplate)
-            .source(
-                SearchSourceBuilder.searchSource()
-                    .query(finalQuery)
-                    .fetchField(TaskTemplate.KEY)
-                    .size(tasklistProperties.getElasticsearch().getBatchSize()));
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(taskTemplate, QueryType.ALL))
+            .query(finalQuery)
+            .source(s -> s.filter(f -> f.includes(TaskTemplate.KEY)))
+            .size(tasklistProperties.getElasticsearch().getBatchSize());
+
     try {
-      return ElasticsearchUtil.scrollUserTaskKeysToList(searchRequest, esClient);
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollAllStream(
+              es8Client, searchRequestBuilder, ElasticsearchUtil.MAP_CLASS)
+          .flatMap(response -> response.hits().hits().stream())
+          .map(hit -> hit.source())
+          .filter(Objects::nonNull)
+          .map(source -> String.valueOf(((Number) source.get(TaskTemplate.KEY)).longValue()))
+          .toList();
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -181,16 +183,21 @@ public class TaskStoreElasticSearch implements TaskStore {
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
     final var processDefinitionQuery =
-        termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId);
-    final var flownodeInstanceQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+        ElasticsearchUtil.termsQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId);
+    final var flownodeInstanceQuery =
+        ElasticsearchUtil.existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
     final var finalQuery =
         ElasticsearchUtil.joinWithAnd(processDefinitionQuery, flownodeInstanceQuery);
-    final SearchRequest searchRequest =
-        createSearchRequest(taskTemplate)
-            .source(searchSource().query(finalQuery).fetchField(TaskTemplate.KEY));
+
+    final var searchRequestBuilder =
+        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(taskTemplate, QueryType.ALL))
+            .query(finalQuery)
+            .source(s -> s.filter(f -> f.includes(TaskTemplate.KEY)));
+
     try {
-      return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
-    } catch (final IOException e) {
+      return ElasticsearchUtil.scrollIdsWithIndexToMap(es8Client, searchRequestBuilder);
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -334,29 +341,32 @@ public class TaskStoreElasticSearch implements TaskStore {
       final List<String> processInstanceIds) {
     try {
       // the number of process instance ids may be large, so we need to chunk them
-      return scrollInChunks(
+      return ElasticsearchUtil.scrollInChunks(
+          es8Client,
           processInstanceIds,
           tasklistProperties.getElasticsearch().getMaxTermsCount(),
-          this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
-          TaskEntity.class,
-          objectMapper,
-          esClient);
-    } catch (final IOException e) {
+          this::buildSearchCreatedTasksByProcessInstanceIdsRequestEs8,
+          TaskEntity.class);
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
-  private SearchRequest buildSearchCreatedTasksByProcessInstanceIdsRequest(
-      final List<String> processInstanceIds) {
-    return createSearchRequest(taskTemplate)
-        .source(
-            searchSource()
-                .query(
-                    boolQuery()
-                        .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds))
-                        .must(termQuery(TaskTemplate.STATE, TaskState.CREATED))
-                        .must(existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID)))
-                .size(tasklistProperties.getElasticsearch().getBatchSize()));
+  private co.elastic.clients.elasticsearch.core.SearchRequest.Builder
+      buildSearchCreatedTasksByProcessInstanceIdsRequestEs8(final List<String> processInstanceIds) {
+    final var processInstanceIdsQuery =
+        ElasticsearchUtil.termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds);
+    final var stateQuery =
+        ElasticsearchUtil.termsQuery(TaskTemplate.STATE, TaskState.CREATED.name());
+    final var flowNodeInstanceQuery =
+        ElasticsearchUtil.existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+    final var query =
+        ElasticsearchUtil.joinWithAnd(processInstanceIdsQuery, stateQuery, flowNodeInstanceQuery);
+
+    return new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        .index(ElasticsearchUtil.whereToSearch(taskTemplate, QueryType.ALL))
+        .query(query)
+        .size(tasklistProperties.getElasticsearch().getBatchSize());
   }
 
   private List<TaskSearchView> mapTasksFromEntity(final SearchResponse response) {
