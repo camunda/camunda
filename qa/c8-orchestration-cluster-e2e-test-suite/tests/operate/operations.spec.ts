@@ -269,7 +269,7 @@ test.describe('Operations', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(operationEntry).toBeVisible({});
+          await expect(operationEntry).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
