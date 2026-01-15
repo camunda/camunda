@@ -68,13 +68,13 @@ public class ProcessInstanceStartMeterTest {
     // then
     await()
         .ignoreExceptions()
-        .untilAsserted(
+        .until(
             () ->
                 meterRegistry
                     .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                     .timer()
                     .count(),
-            (count) -> assertThat(count).isOne());
+            (count) -> count == 1);
 
     assertThat(
             meterRegistry
@@ -184,13 +184,13 @@ public class ProcessInstanceStartMeterTest {
     countDownLatch.await(1, TimeUnit.SECONDS);
     await()
         .ignoreExceptions()
-        .untilAsserted(
+        .until(
             () ->
                 meterRegistry
                     .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
                     .timer()
                     .count(),
-            (count) -> assertThat(count).isOne());
+            (count) -> count == 1);
 
     assertThat(
             meterRegistry
