@@ -42,12 +42,12 @@ jobs:
   tasklist-backend-unit-tests:
     name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
     strategy:
       fail-fast: false
       matrix:
-        suite: [DataLayer, CoreFeatures]
+        suite: [ DataLayer, CoreFeatures ]
         include:
           - suite: DataLayer
             suiteName: Data Layer
@@ -162,15 +162,10 @@ jobs:
 
   fe-tests:
     if: inputs.runFeTests
-    name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
+    name: "Unit - Front End"
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: {} # GITHUB_TOKEN unused in this job
-    strategy:
-      fail-fast: false
-      matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
     env:
       TEST_TYPE: Unit
       TEST_OWNER: Core Features
@@ -186,58 +181,8 @@ jobs:
           node-version: "22"
       - run: npm ci
         name: Install dependencies
-      - run: npm run test:ci -- --no-file-parallelism --maxWorkers 1 --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+      - run: npm run test:ci -- --no-file-parallelism --maxWorkers 1
         name: Unit & Integration tests
-      - name: Upload blob report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: tasklist-fe-blob-report-${{ matrix.shardIndex }}
-          path: tasklist/client/.vitest-reports/*
-          include-hidden-files: true
-          retention-days: 1
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          job_name: "tasklist-ci/fe-tests-${{ matrix.shardIndex }}"
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-core-features"
-
-  fe-tests-merge:
-    if: ${{ !cancelled() && inputs.runFeTests }}
-    needs: [fe-tests]
-    name: "Unit - Front End - Merge Reports"
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {} # GITHUB_TOKEN unused in this job
-    env:
-      TEST_TYPE: Unit
-      TEST_OWNER: Core Features
-    defaults:
-      run:
-        working-directory: tasklist/client
-    steps:
-      - uses: actions/checkout@v4
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm ci
-        name: Install dependencies
-      - name: Download blob reports
-        uses: actions/download-artifact@v4
-        with:
-          path: tasklist/client/.vitest-reports
-          pattern: tasklist-fe-blob-report-*
-          merge-multiple: true
-      - name: Merge reports
-        run: npx vitest --merge-reports
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -352,7 +297,7 @@ jobs:
     name: "Integration / Backup Restore ITs"
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       DOCKER_IMAGE_TAG: current-test
       TEST_TYPE: Integration
@@ -360,7 +305,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        database: [opensearch, elasticsearch]
+        database: [ opensearch, elasticsearch ]
     services:
       registry:
         image: registry:3
@@ -420,13 +365,14 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+
   integration-tests:
     if: inputs.runBeTests
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
     name: "Integration / Docker ITs"
     runs-on: gcp-core-4-default
     timeout-minutes: 15
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Integration
       TEST_OWNER: Core Features
