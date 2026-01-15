@@ -72,7 +72,7 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
     final Long totalHitCount;
     final List<ListenerDto> listeners;
     try {
-      final var response = es8client.search(searchRequest, JobEntity.class);
+      final var response = esClient.search(searchRequest, JobEntity.class);
       totalHitCount = response.hits().total().value();
       listeners =
           response.hits().hits().stream()

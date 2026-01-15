@@ -99,7 +99,7 @@ public class DecisionInstanceReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(request, DecisionInstanceEntity.class);
+      final var response = esClient.search(request, DecisionInstanceEntity.class);
       if (response.hits().total().value() == 1) {
         final var decisionInstance = response.hits().hits().getFirst().source();
 
@@ -153,7 +153,7 @@ public class DecisionInstanceReader extends AbstractReader
 
     try {
       final var entries =
-          scrollAllStream(es8client, searchRequestBuilder, MAP_CLASS)
+          scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)
               .flatMap(res -> res.hits().hits().stream())
               .map(
                   hit ->
@@ -197,7 +197,7 @@ public class DecisionInstanceReader extends AbstractReader
             .build();
 
     try {
-      final var response = es8client.search(searchRequest, MAP_CLASS);
+      final var response = esClient.search(searchRequest, MAP_CLASS);
       if (response.hits().total().value() >= 1) {
         final var decisionInstanceHit = response.hits().hits().getFirst();
         final var decisionInstanceMap = decisionInstanceHit.source();
@@ -246,7 +246,7 @@ public class DecisionInstanceReader extends AbstractReader
     LOGGER.debug("Search request will search in: \n{}", searchRequest.index());
 
     try {
-      final var response = es8client.search(searchRequest, DecisionInstanceEntity.class);
+      final var response = esClient.search(searchRequest, DecisionInstanceEntity.class);
       result.setTotalCount(response.hits().total().value());
 
       final var decisionInstanceEntities =
