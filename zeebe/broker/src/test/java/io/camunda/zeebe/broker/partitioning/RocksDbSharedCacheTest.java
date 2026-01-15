@@ -162,4 +162,47 @@ class RocksDbSharedCacheTest {
       assertThat(available).isEqualTo(expectedAvailable);
     }
   }
+
+  @Test
+  void shouldThrowIfMemoryFractionIsInvalid() {
+    // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.AUTO);
+
+    // when fraction > 1
+    brokerCfg.getExperimental().getRocksdb().setMemoryFraction(1.1);
+
+    // then
+    var throwable =
+        catchThrowable(
+            () -> {
+              RocksDbSharedCache.validateRocksDbMemory(
+                  brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
+            });
+
+    assertThat(throwable)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected the memoryFraction for RocksDB AUTO memory allocation strategy to be between 0 and 1, but was %s.",
+            1.1);
+
+    // when fraction <= 0
+    brokerCfg.getExperimental().getRocksdb().setMemoryFraction(0.0);
+
+    // then
+    throwable =
+        catchThrowable(
+            () -> {
+              RocksDbSharedCache.validateRocksDbMemory(
+                  brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT);
+            });
+
+    assertThat(throwable)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected the memoryFraction for RocksDB AUTO memory allocation strategy to be between 0 and 1, but was %s.",
+            0.0);
+  }
 }

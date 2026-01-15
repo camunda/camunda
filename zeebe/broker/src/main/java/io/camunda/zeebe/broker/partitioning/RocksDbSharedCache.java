@@ -46,21 +46,13 @@ public class RocksDbSharedCache {
   }
 
   static long getFixedMemoryPercentage(final double memoryFraction) {
+    // get total memory from the OS bean.
     final long totalMemorySize =
         ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalMemorySize();
-    return (long) (totalMemorySize * memoryFraction);
+    return Math.round(totalMemorySize * memoryFraction);
   }
 
   public static void validateRocksDbMemory(final RocksdbCfg rocksdbCfg, final int partitionsCount) {
-    final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsCount);
-
-    if (blockCacheBytes / partitionsCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
-              MINIMUM_PARTITION_MEMORY_LIMIT, blockCacheBytes / partitionsCount));
-    }
-
     // makes sure that memoryFraction is between [0 and 1] when using AUTO strategy
     if (rocksdbCfg.getMemoryAllocationStrategy() == MemoryAllocationStrategy.AUTO
         && (rocksdbCfg.getMemoryFraction() <= 0.0 || rocksdbCfg.getMemoryFraction() >= 1.0)) {
@@ -68,6 +60,15 @@ public class RocksDbSharedCache {
           String.format(
               "Expected the memoryFraction for RocksDB AUTO memory allocation strategy to be between 0 and 1, but was %s.",
               rocksdbCfg.getMemoryFraction()));
+    }
+
+    final long blockCacheBytes = getBlockCacheBytes(rocksdbCfg, partitionsCount);
+
+    if (blockCacheBytes / partitionsCount < MINIMUM_PARTITION_MEMORY_LIMIT) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
+              MINIMUM_PARTITION_MEMORY_LIMIT, blockCacheBytes / partitionsCount));
     }
   }
 }
