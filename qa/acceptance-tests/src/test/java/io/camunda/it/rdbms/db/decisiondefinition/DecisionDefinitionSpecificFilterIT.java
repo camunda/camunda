@@ -24,6 +24,7 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,53 @@ public class DecisionDefinitionSpecificFilterIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().decisionDefinitionKey()).isEqualTo(1337L);
+  }
+
+  @Test
+  public void shouldFindDecisionDefinitionWithLatestVersion() {
+    createAndSaveDecisionDefinition(
+        rdbmsWriters,
+        DecisionDefinitionFixtures.createRandomized(
+            b ->
+                b.decisionDefinitionKey(4711L)
+                    .decisionDefinitionId("sorting-test-process")
+                    .name("Sorting Test Process")
+                    .version(1)
+                    .decisionRequirementsKey(1338L)
+                    .decisionRequirementsId("requirements-1338")
+                    .decisionRequirementsName("requirements-name-1338")
+                    .decisionRequirementsVersion(1338)
+                    .tenantId("sorting-tenant1")));
+
+    createAndSaveDecisionDefinition(
+        rdbmsWriters,
+        DecisionDefinitionFixtures.createRandomized(
+            b ->
+                b.decisionDefinitionKey(4712L)
+                    .decisionDefinitionId("sorting-test-process")
+                    .name("Sorting Test Process")
+                    .version(2)
+                    .decisionRequirementsKey(1338L)
+                    .decisionRequirementsId("requirements-1338")
+                    .decisionRequirementsName("requirements-name-1338")
+                    .decisionRequirementsVersion(1338)
+                    .tenantId("sorting-tenant1")));
+
+    final var searchResult =
+        decisionDefinitionReader.search(
+            new DecisionDefinitionQuery(
+                new DecisionDefinitionFilter.Builder()
+                    .decisionDefinitionIds("sorting-test-process")
+                    .isLatestVersion(true)
+                    .build(),
+                DecisionDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().decisionDefinitionId())
+        .isEqualTo("sorting-test-process");
+    assertThat(searchResult.items().getFirst().version()).isEqualTo(2);
   }
 
   static List<DecisionDefinitionFilter> shouldFindWithSpecificFilterParameters() {

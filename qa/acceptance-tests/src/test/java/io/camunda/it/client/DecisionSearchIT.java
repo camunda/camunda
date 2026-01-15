@@ -21,16 +21,23 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 @CompatibilityTest
@@ -604,8 +611,140 @@ class DecisionSearchIT {
             .join();
 
     // then
-    assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionRequirementsKey())
+    assertThat(resultSearchFrom.items()).isNotEmpty();
+    assertThat(resultSearchFrom.items().getFirst().getDecisionRequirementsKey())
         .isEqualTo(thirdKey);
+  }
+
+  @Test
+  void shouldRetrieveSingleLatestDecisionDefinitionWhenFilteredById() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .filter(
+                f ->
+                    f.isLatestVersion(true)
+                        .decisionDefinitionId(multiVersionDecisionV1.getDmnDecisionId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getDmnDecisionId())
+        .isEqualTo(multiVersionDecisionV1.getDmnDecisionId());
+    assertThat(result.items().getFirst().getTenantId())
+        .isEqualTo(multiVersionDecisionV1.getTenantId());
+    assertThat(result.items().getFirst().getVersion()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldRetrieveAllLatestDecisionDefinitions() {
+    // given
+    final var expectedLatest = keepLatestDecisionDefinitionVersions();
+
+    // when
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .filter(f -> f.isLatestVersion(true))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(expectedLatest.size());
+    final var results =
+        result.items().stream()
+            .map(
+                dd ->
+                    new DecisionDefinitionTestContext(
+                        dd.getDmnDecisionId(), dd.getVersion(), dd.getTenantId()))
+            .toList();
+    assertThat(results).containsExactlyInAnyOrderElementsOf(expectedLatest);
+  }
+
+  private static Stream<Arguments> decisionSortOrderWithComparator() {
+    return Stream.of(
+        Arguments.of(
+            (Function<
+                    io.camunda.client.api.search.sort.DecisionDefinitionSort,
+                    io.camunda.client.api.search.sort.DecisionDefinitionSort>)
+                s -> s.decisionDefinitionId().asc(),
+            Comparator.comparing(DecisionDefinitionTestContext::decisionDefinitionId)
+                .thenComparing(DecisionDefinitionTestContext::tenantId)),
+        Arguments.of(
+            (Function<
+                    io.camunda.client.api.search.sort.DecisionDefinitionSort,
+                    io.camunda.client.api.search.sort.DecisionDefinitionSort>)
+                s -> s.decisionDefinitionId().desc(),
+            Comparator.comparing(DecisionDefinitionTestContext::decisionDefinitionId)
+                .reversed()
+                .thenComparing(DecisionDefinitionTestContext::tenantId)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("decisionSortOrderWithComparator")
+  void shouldRetrieveAllLatestDecisionDefinitionsWhenPaginatedAndSorted(
+      final Function<
+              io.camunda.client.api.search.sort.DecisionDefinitionSort,
+              io.camunda.client.api.search.sort.DecisionDefinitionSort>
+          sort,
+      final Comparator<DecisionDefinitionTestContext> comparator) {
+    // given
+    final var expectedLatest = keepLatestDecisionDefinitionVersions();
+
+    // when
+    final var decisionDefinitions = new LinkedHashSet<DecisionDefinition>();
+    var endCursor = "";
+    do {
+      final String finalEndCursor = endCursor;
+      final var pageResult =
+          camundaClient
+              .newDecisionDefinitionSearchRequest()
+              .filter(f -> f.isLatestVersion(true))
+              .sort(sort::apply)
+              .page(
+                  p -> {
+                    p.limit(1);
+                    if (!Objects.equals(finalEndCursor, "")) {
+                      p.after(finalEndCursor);
+                    }
+                  })
+              .send()
+              .join();
+
+      if (!pageResult.items().isEmpty()) {
+        decisionDefinitions.addAll(pageResult.items());
+        endCursor = pageResult.page().endCursor();
+      } else {
+        endCursor = null;
+      }
+    } while (endCursor != null && !endCursor.isEmpty());
+
+    // then
+    assertThat(decisionDefinitions).hasSize(expectedLatest.size());
+    assertThat(
+            decisionDefinitions.stream()
+                .map(
+                    dd ->
+                        new DecisionDefinitionTestContext(
+                            dd.getDmnDecisionId(), dd.getVersion(), dd.getTenantId()))
+                .toList())
+        .containsExactlyElementsOf(expectedLatest.stream().sorted(comparator).toList());
+  }
+
+  private List<DecisionDefinitionTestContext> keepLatestDecisionDefinitionVersions() {
+    return DEPLOYED_DECISIONS.values().stream()
+        .collect(
+            Collectors.toMap(
+                d -> d.getTenantId() + ":" + d.getDmnDecisionId(),
+                d ->
+                    new DecisionDefinitionTestContext(
+                        d.getDmnDecisionId(), d.getVersion(), d.getTenantId()),
+                (d1, d2) -> d1.version >= d2.version ? d1 : d2))
+        .values()
+        .stream()
+        .toList();
   }
 
   private static void waitForDecisionsBeingExported() {
@@ -661,4 +800,6 @@ class DecisionSearchIT {
         .isEqualTo(drd.getDmnDecisionRequirementsName());
     assertThat(decisionDefinition.getDecisionRequirementsVersion()).isEqualTo(drd.getVersion());
   }
+
+  record DecisionDefinitionTestContext(String decisionDefinitionId, int version, String tenantId) {}
 }

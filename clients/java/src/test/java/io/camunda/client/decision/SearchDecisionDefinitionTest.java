@@ -49,7 +49,8 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
                     .decisionRequirementsKey(2L)
                     .decisionRequirementsId("ddri")
                     .version(3)
-                    .tenantId("t"))
+                    .tenantId("t")
+                    .isLatestVersion(true))
         .send()
         .join();
 
@@ -63,6 +64,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
     assertThat(request.getFilter().getDecisionRequirementsId()).isEqualTo("ddri");
     assertThat(request.getFilter().getVersion()).isEqualTo(3);
     assertThat(request.getFilter().getTenantId()).isEqualTo("t");
+    assertThat(request.getFilter().getIsLatestVersion()).isTrue();
   }
 
   @Test

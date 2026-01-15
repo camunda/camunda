@@ -589,6 +589,7 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getName()).ifPresent(builder::names);
+      ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
       ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey())
