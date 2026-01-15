@@ -127,6 +127,12 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   public boolean recordProcessInstanceStart(
       final long processInstanceKey, final long startTimeNanos) {
     if (startedInstances.size() >= MAX_OBSERVED_INSTANCES) {
+      LOG.debug(
+          "Maximum number of observed process instances ({}) reached; "
+              + "rejecting tracking for process instance {}. Currently tracking {} instances.",
+          MAX_OBSERVED_INSTANCES,
+          processInstanceKey,
+          startedInstances.size());
       return false;
     }
     startedInstances.put(
