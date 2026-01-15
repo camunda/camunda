@@ -485,11 +485,16 @@ public class GroupControllerTest {
     }
 
     @Test
-    void shouldFailOnUpdateGroupWithoutDescription() {
+    void shouldUpdateGroupWithoutDescription() {
       // given
       final var groupId = "groupId";
       final var name = "name";
       final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupId);
+      final String description = null;
+      when(groupServices.updateGroup(groupId, name, description))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  new GroupRecord().setGroupId(groupId).setName(name).setDescription(description)));
 
       // when / then
       webClient
@@ -497,24 +502,23 @@ public class GroupControllerTest {
           .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(name))
+          .bodyValue(new GroupUpdateRequest().name(name).description(description))
           .exchange()
           .expectStatus()
-          .isBadRequest()
+          .isOk()
           .expectBody()
           .json(
               """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No description provided.",
-              "instance": "%s"
-            }"""
-                  .formatted(uri),
+           {
+             "groupId": "%s",
+             "name": "%s",
+             "description": "%s"
+           }
+           """
+                  .formatted(groupId, name, ""),
               JsonCompareMode.STRICT);
 
-      verifyNoInteractions(groupServices);
+      verify(groupServices, times(1)).updateGroup(groupId, name, description);
     }
 
     @Test

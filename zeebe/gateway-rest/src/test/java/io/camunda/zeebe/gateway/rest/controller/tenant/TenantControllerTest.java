@@ -48,7 +48,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -74,7 +77,6 @@ public class TenantControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
 
     @BeforeEach
     void setup() {
@@ -82,8 +84,6 @@ public class TenantControllerTest {
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
-      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
-      when(securityConfiguration.getCompiledGroupIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
     @ParameterizedTest
@@ -310,39 +310,6 @@ public class TenantControllerTest {
       // then
       verify(tenantServices, times(1))
           .updateTenant(new TenantRequest(null, tenantId, tenantName, tenantDescription));
-    }
-
-    @Test
-    void updateTenantWithoutDescriptionShouldFail() {
-      // given
-      final var tenantId = 100L;
-      final var tenantName = "tenant name";
-      final var uri = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
-
-      // when / then
-      webClient
-          .put()
-          .uri(uri)
-          .accept(MediaType.APPLICATION_JSON)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new TenantUpdateRequest().name(tenantName))
-          .exchange()
-          .expectStatus()
-          .isBadRequest()
-          .expectBody()
-          .json(
-              """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No description provided.",
-              "instance": "%s"
-            }"""
-                  .formatted(uri),
-              JsonCompareMode.STRICT);
-
-      verifyNoInteractions(tenantServices);
     }
 
     @Test
@@ -628,6 +595,43 @@ public class TenantControllerTest {
       verifyNoInteractions(tenantServices);
     }
 
+    private static Stream<Arguments> provideAddMemberByIdTestCases() {
+      return Stream.of(
+          Arguments.of(EntityType.USER, "users", "username"),
+          Arguments.of(EntityType.MAPPING_RULE, "mapping-rules", "mappingRuleId"),
+          Arguments.of(EntityType.GROUP, "groups", "groupId"),
+          Arguments.of(EntityType.ROLE, "roles", "roleId"),
+          Arguments.of(EntityType.CLIENT, "clients", "clientId"));
+    }
+
+    private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
+      return Stream.of(
+          Arguments.of(EntityType.USER, "users", "username"),
+          Arguments.of(EntityType.MAPPING_RULE, "mapping-rules", "mappingRuleId"),
+          Arguments.of(EntityType.GROUP, "groups", "groupId"),
+          Arguments.of(EntityType.ROLE, "roles", "roleId"),
+          Arguments.of(EntityType.CLIENT, "clients", "clientId"));
+    }
+  }
+
+  @Nested
+  @WebMvcTest(TenantController.class)
+  public class TenantsApiEnabledAndByogEnabledTest extends RestControllerTest {
+    @MockitoBean private TenantServices tenantServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+
+    @BeforeEach
+    void setup() {
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(tenantServices);
+    }
+
     /**
      * Test for the group ID that contains special characters to simulate external groups that does
      * not match the default regex {@link SecurityConfiguration#DEFAULT_ID_REGEX}
@@ -639,8 +643,6 @@ public class TenantControllerTest {
       final var groupId = "group id";
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
-      when(securityConfiguration.getCompiledGroupIdValidationPattern())
-          .thenReturn(DEFAULT_EXTERNAL_ID_REGEX);
       when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -667,8 +669,6 @@ public class TenantControllerTest {
       final var groupId = "group id";
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
-      when(securityConfiguration.getCompiledGroupIdValidationPattern())
-          .thenReturn(DEFAULT_EXTERNAL_ID_REGEX);
       when(tenantServices.removeMember(request))
           .thenReturn(CompletableFuture.completedFuture(null));
 
@@ -685,22 +685,13 @@ public class TenantControllerTest {
       verify(tenantServices, times(1)).removeMember(request);
     }
 
-    private static Stream<Arguments> provideAddMemberByIdTestCases() {
-      return Stream.of(
-          Arguments.of(EntityType.USER, "users", "username"),
-          Arguments.of(EntityType.MAPPING_RULE, "mapping-rules", "mappingRuleId"),
-          Arguments.of(EntityType.GROUP, "groups", "groupId"),
-          Arguments.of(EntityType.ROLE, "roles", "roleId"),
-          Arguments.of(EntityType.CLIENT, "clients", "clientId"));
-    }
-
-    private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
-      return Stream.of(
-          Arguments.of(EntityType.USER, "users", "username"),
-          Arguments.of(EntityType.MAPPING_RULE, "mapping-rules", "mappingRuleId"),
-          Arguments.of(EntityType.GROUP, "groups", "groupId"),
-          Arguments.of(EntityType.ROLE, "roles", "roleId"),
-          Arguments.of(EntityType.CLIENT, "clients", "clientId"));
+    @TestConfiguration
+    static class AdditionalConfig {
+      @Bean
+      @Primary
+      public IdentifierValidator byogIdentifierValidator() {
+        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_REGEX);
+      }
     }
   }
 

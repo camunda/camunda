@@ -38,10 +38,13 @@ public class IdentifierValidator {
 
   public void validateMemberId(
       final String entityId, final EntityType entityType, final List<String> violations) {
+    if (entityType == EntityType.GROUP) {
+      validateGroupId(entityId, violations);
+      return;
+    }
     final var propertyName =
         switch (entityType) {
           case USER -> "username";
-          case GROUP -> "groupId";
           case MAPPING_RULE -> "mappingRuleId";
           case ROLE -> "roleId";
           case CLIENT -> "clientId";

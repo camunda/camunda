@@ -9,8 +9,6 @@ package io.camunda.security.validation;
 
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,24 +22,32 @@ public class AuthorizationValidator {
     this.identifierValidator = identifierValidator;
   }
 
+  /**
+   * As enum values are only checked for null-values and there are different enum types that might
+   * be checked, they are typed as Enum<?>.
+   */
   public List<String> validatePropertyBased(
       final String ownerId,
-      final AuthorizationOwnerType ownerType,
-      final AuthorizationResourceType resourceType,
+      final Enum<?> ownerType,
+      final Enum<?> resourceType,
       final String resourcePropertyName,
-      final Set<?> permissions) {
+      final Set<? extends Enum<?>> permissions) {
     final List<String> violations =
         validateCommonProperties(ownerId, ownerType, resourceType, permissions);
     identifierValidator.validateId(resourcePropertyName, "resourcePropertyName", violations);
     return violations;
   }
 
+  /**
+   * As enum values are only checked for null-values and there are different enum types that might
+   * be checked, they are typed as Enum<?>.
+   */
   public List<String> validateIdBased(
       final String ownerId,
-      final AuthorizationOwnerType ownerType,
-      final AuthorizationResourceType resourceType,
+      final Enum<?> ownerType,
+      final Enum<?> resourceType,
       final String resourceId,
-      final Set<?> permissions) {
+      final Set<? extends Enum<?>> permissions) {
     final List<String> violations =
         validateCommonProperties(ownerId, ownerType, resourceType, permissions);
     identifierValidator.validateId(
@@ -54,9 +60,9 @@ public class AuthorizationValidator {
    */
   private List<String> validateCommonProperties(
       final String ownerId,
-      final AuthorizationOwnerType ownerType,
-      final AuthorizationResourceType resourceType,
-      final Set<?> permissions) {
+      final Enum<?> ownerType,
+      final Enum<?> resourceType,
+      final Set<? extends Enum<?>> permissions) {
     final List<String> violations = new ArrayList<>();
     // owner validation
     identifierValidator.validateId(ownerId, "ownerId", violations);
@@ -71,7 +77,7 @@ public class AuthorizationValidator {
 
     // permissions validation
     if (permissions == null || permissions.isEmpty()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissions"));
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionTypes"));
     }
     return violations;
   }

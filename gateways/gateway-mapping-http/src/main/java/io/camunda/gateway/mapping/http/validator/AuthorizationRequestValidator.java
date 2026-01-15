@@ -12,8 +12,6 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.security.validation.AuthorizationValidator;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.http.ProblemDetail;
@@ -31,10 +29,10 @@ public final class AuthorizationRequestValidator {
         () ->
             authorizationValidator.validateIdBased(
                 request.getOwnerId(),
-                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
-                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                request.getOwnerType(),
+                request.getResourceType(),
                 request.getResourceId(),
-                Set.of(request.getPermissionTypes())));
+                Set.copyOf(request.getPermissionTypes())));
   }
 
   public Optional<ProblemDetail> validatePropertyBasedRequest(
@@ -43,9 +41,9 @@ public final class AuthorizationRequestValidator {
         () ->
             authorizationValidator.validatePropertyBased(
                 request.getOwnerId(),
-                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
-                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                request.getOwnerType(),
+                request.getResourceType(),
                 request.getResourcePropertyName(),
-                Set.of(request.getPermissionTypes())));
+                Set.copyOf(request.getPermissionTypes())));
   }
 }
