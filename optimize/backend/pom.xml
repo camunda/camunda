@@ -711,23 +711,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-qa-util</artifactId>
-      <!-- Pinned version until https://github.com/camunda/camunda/issues/44104 is resolved -->
-      <version>8.8.9-SNAPSHOT</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>io.camunda</groupId>
-          <artifactId>camunda-gateway-mcp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.liquibase</groupId>
-          <artifactId>liquibase-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
       <scope>test</scope>
       <exclusions>
@@ -867,6 +850,34 @@
   </build>
 
   <profiles>
+    <!-- QA Build Profile - includes zeebe-qa-util dependency -->
+    <profile>
+      <id>qa-build</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-qa-util</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <groupId>io.camunda</groupId>
+              <artifactId>camunda-gateway-mcp</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.liquibase</groupId>
+              <artifactId>liquibase-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+    </profile>
+    
     <profile>
       <id>it</id>
       <build>
