@@ -13,11 +13,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-public class JobTimedOutApplier implements TypedEventApplier<JobIntent, JobRecord> {
+public class JobTimedOutV1Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
 
-  JobTimedOutApplier(final MutableProcessingState state) {
+  JobTimedOutV1Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
   }
 

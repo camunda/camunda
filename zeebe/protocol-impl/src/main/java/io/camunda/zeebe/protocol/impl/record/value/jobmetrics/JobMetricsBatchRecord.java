@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -109,7 +108,7 @@ public final class JobMetricsBatchRecord extends UnifiedRecordValue
     return this;
   }
 
-  public JobMetricsBatchRecord setEncodedStrings(final Set<String> encodedStrings) {
+  public JobMetricsBatchRecord setEncodedStrings(final List<String> encodedStrings) {
     encodedStringsProperty.reset();
     encodedStrings.forEach(str -> encodedStringsProperty.add().wrap(BufferUtil.wrapString(str)));
     return this;

@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscr
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -47,6 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -94,6 +97,13 @@ public final class RecordToWrite implements LogAppendEntry {
 
   public RecordToWrite job(final JobIntent intent) {
     return job(intent, new JobRecord().setType("type").setRetries(3).setWorker("worker"));
+  }
+
+  public RecordToWrite jobMetricsBatch(
+      final JobMetricsBatchIntent intent, final JobMetricsBatchRecordValue value) {
+    recordMetadata.valueType(ValueType.JOB_METRICS_BATCH).intent(intent);
+    unifiedRecordValue = (JobMetricsBatchRecord) value;
+    return this;
   }
 
   public RecordToWrite jobBatch(final JobBatchIntent intent) {

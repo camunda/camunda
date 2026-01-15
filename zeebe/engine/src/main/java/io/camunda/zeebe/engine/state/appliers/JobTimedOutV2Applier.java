@@ -15,21 +15,20 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-public class JobCanceledApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
+public class JobTimedOutV2Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableJobMetricsState jobMetricsState;
 
-  JobCanceledApplierV2(final MutableProcessingState state) {
+  JobTimedOutV2Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     jobMetricsState = state.getJobMetricsState();
   }
 
   @Override
   public void applyState(final long key, final JobRecord value) {
-    jobState.cancel(key, value);
+    jobState.timeout(key, value);
 
-    jobMetricsState.incrementMetric(
-        value.getType(), value.getTenantId(), value.getWorker(), JobMetricsExportState.FAILED);
+    jobMetricsState.incrementMetric(value, JobMetricsExportState.FAILED);
   }
 }

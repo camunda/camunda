@@ -116,7 +116,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -4248,7 +4247,7 @@ final class JsonSerializableToJsonTest {
                     .setBatchStartTime(1000L)
                     .setBatchEndTime(2000L)
                     .setRecordSizeLimitExceeded(false)
-                    .setEncodedStrings(new LinkedHashSet(List.of("jobType1", "tenant1", "worker1")))
+                    .setEncodedStrings(List.of("jobType1", "tenant1", "worker1"))
                     .setJobMetrics(
                         List.of(
                             new JobMetrics()

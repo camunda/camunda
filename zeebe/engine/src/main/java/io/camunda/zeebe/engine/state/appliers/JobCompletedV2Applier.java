@@ -8,28 +8,33 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
-import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-final class JobFailedApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
+class JobCompletedV2Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
-  private final MutableJobMetricsState jobMetricsState;
+  private final MutableElementInstanceState elementInstanceState;
 
-  JobFailedApplierV2(final MutableProcessingState state) {
+  JobCompletedV2Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
-    jobMetricsState = state.getJobMetricsState();
+    elementInstanceState = state.getElementInstanceState();
   }
 
   @Override
   public void applyState(final long key, final JobRecord value) {
-    jobState.fail(key, value);
+    jobState.complete(key, value);
 
-    jobMetricsState.incrementMetric(
-        value.getType(), value.getTenantId(), value.getWorker(), JobMetricsExportState.FAILED);
+    final long elementInstanceKey = value.getElementInstanceKey();
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+
+    if (elementInstance != null) {
+      elementInstance.setJobKey(-1);
+      elementInstanceState.updateInstance(elementInstance);
+    }
   }
 }

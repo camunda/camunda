@@ -18,12 +18,12 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 
-final class JobCreatedApplier implements TypedEventApplier<JobIntent, JobRecord> {
+final class JobCreatedV1Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableJobState jobState;
 
-  JobCreatedApplier(final MutableProcessingState state) {
+  JobCreatedV1Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
   }

@@ -9,9 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsExportState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
@@ -20,16 +18,14 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 
-final class JobCreatedApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
+final class JobCreatedV1Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableJobState jobState;
-  private final MutableJobMetricsState jobMetricsState;
 
-  JobCreatedApplierV2(final MutableProcessingState state) {
+  JobCreatedV1Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
-    jobMetricsState = state.getJobMetricsState();
   }
 
   @Override
@@ -52,9 +48,6 @@ final class JobCreatedApplierV2 implements TypedEventApplier<JobIntent, JobRecor
         elementInstanceState.updateInstance(elementInstance);
       }
     }
-
-    jobMetricsState.incrementMetric(
-        value.getType(), value.getTenantId(), value.getWorker(), JobMetricsExportState.CREATED);
   }
 
   private ZeebeTaskListenerEventType toTaskListenerEventType(final JobListenerEventType eventType) {

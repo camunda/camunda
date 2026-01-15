@@ -13,15 +13,15 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.InstantSource;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
 
 /**
  * RocksDB-based implementation of job metrics state management.
@@ -77,16 +77,13 @@ public class DbJobMetricsState implements MutableJobMetricsState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final InstantSource clock,
-      final int maxJobTypeLength,
-      final int maxTenantIdLength,
-      final int maxWorkerNameLength,
-      final int maxUniqueJobMetricsKeys) {
+      final EngineConfiguration engineConfiguration) {
     this.clock = clock;
 
-    this.maxJobTypeLength = maxJobTypeLength;
-    this.maxTenantIdLength = maxTenantIdLength;
-    this.maxWorkerNameLength = maxWorkerNameLength;
-    this.maxUniqueJobMetricsKeys = maxUniqueJobMetricsKeys;
+    maxJobTypeLength = engineConfiguration.getMaxJobTypeLength();
+    maxTenantIdLength = engineConfiguration.getMaxTenantIdLength();
+    maxWorkerNameLength = engineConfiguration.getMaxWorkerNameLength();
+    maxUniqueJobMetricsKeys = engineConfiguration.getMaxUniqueJobMetricsKeys();
 
     // Initialize metrics column family
     metricsKey = new MetricsKey();
@@ -149,13 +146,12 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   }
 
   @Override
-  public Set<String> getEncodedStrings() {
-    // Collect all entries sorted by their integer value
-    final Map<Integer, String> sortedMap = new TreeMap<>();
-    stringEncodingColumnFamily.forEach(
-        (key, value) -> sortedMap.put(value.getValue(), key.toString()));
-
-    return new LinkedHashSet<>(sortedMap.values());
+  public List<String> getEncodedStrings() {
+    // Use the in-memory cache and sort by index value
+    return stringEncodingCache.entrySet().stream()
+        .sorted(Map.Entry.comparingByValue())
+        .map(Map.Entry::getKey)
+        .toList();
   }
 
   @Override
@@ -176,17 +172,13 @@ public class DbJobMetricsState implements MutableJobMetricsState {
    * <p>IMPORTANT: If this creates a NEW key in METRICS column family, increments
    * __job_metrics_number__
    *
-   * @param jobType the job type string
-   * @param tenantId the tenant ID string
-   * @param workerName the worker name string
    * @param status the job status to increment
    */
   @Override
-  public void incrementMetric(
-      final String jobType,
-      final String tenantId,
-      final String workerName,
-      final JobMetricsExportState status) {
+  public void incrementMetric(final JobRecord jobRecord, final JobMetricsExportState status) {
+    final var jobType = jobRecord.getType();
+    final var tenantId = jobRecord.getTenantId();
+    final var workerName = jobRecord.getWorker();
 
     if (sizeLimitsExceeded(jobType, tenantId, workerName)) {
       // Would exceed threshold, mark as truncated and skip

@@ -18,13 +18,13 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-public class JobErrorThrownApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
+public class JobErrorThrownV2Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableJobMetricsState jobMetricsState;
 
-  JobErrorThrownApplierV2(final MutableProcessingState state) {
+  JobErrorThrownV2Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     jobMetricsState = state.getJobMetricsState();
@@ -41,8 +41,7 @@ public class JobErrorThrownApplierV2 implements TypedEventApplier<JobIntent, Job
       removeJobReference(jobKey, job, serviceTaskInstance);
     }
 
-    jobMetricsState.incrementMetric(
-        job.getType(), job.getTenantId(), job.getWorker(), JobMetricsExportState.FAILED);
+    jobMetricsState.incrementMetric(job, JobMetricsExportState.FAILED);
   }
 
   private void removeJobReference(

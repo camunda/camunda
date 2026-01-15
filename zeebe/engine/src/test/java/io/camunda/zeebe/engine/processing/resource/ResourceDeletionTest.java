@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -247,6 +248,7 @@ public class ResourceDeletionTest {
                 .onlyEvents()
                 .filter(r -> r.getIntent() != DeploymentIntent.RECONSTRUCTED_ALL)
                 .filter(r -> r.getIntent() != UsageMetricIntent.EXPORTED)
+                .filter(r -> r.getIntent() != JobMetricsBatchIntent.EXPORTED)
                 .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED)))
         .describedAs("Should write events in correct order")
         .extracting(Record::getIntent)

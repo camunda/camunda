@@ -16,12 +16,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-public class JobErrorThrownApplier implements TypedEventApplier<JobIntent, JobRecord> {
+public class JobErrorThrownV1Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
 
-  JobErrorThrownApplier(final MutableProcessingState state) {
+  JobErrorThrownV1Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
   }

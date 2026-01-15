@@ -10,18 +10,22 @@ package io.camunda.zeebe.engine.processing.jobmetrics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.StatusMetrics;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Random;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -236,12 +240,13 @@ public final class JobMetricsBatchExportTest {
     // In the worst case, each key has unique jobType, worker, and tenantId
     // That means N unique jobTypes + N unique workers + N unique tenantIds = 3N strings
     final JobMetricsBatchRecord record = new JobMetricsBatchRecord();
-    record.setBatchStartTime(System.currentTimeMillis());
-    record.setBatchEndTime(System.currentTimeMillis());
+    final var now = System.currentTimeMillis();
+    record.setBatchStartTime(now);
+    record.setBatchEndTime(now);
     record.setRecordSizeLimitExceeded(false);
 
     // Add all unique encoded strings (3 * maxNumberOfKeys total)
-    final Set<String> encodedStrings = new LinkedHashSet<>();
+    final List<String> encodedStrings = new ArrayList<>();
     for (int i = 0; i < maxNumberOfKeys; i++) {
       encodedStrings.add(maxJobType + i); // unique job types
       encodedStrings.add(maxWorker + i); // unique workers
@@ -264,11 +269,25 @@ public final class JobMetricsBatchExportTest {
       record.addJobMetrics(jobMetrics);
     }
 
-    // when - calculate the record size
-    final int recordLength = record.getLength();
+    // when - export the record through the engine
+    // custom record key to easily fetch the exported record
+    final long metricsRecordKey = new Random().nextLong();
+    ENGINE_RULE.writeRecords(
+        RecordToWrite.event()
+            .jobMetricsBatch(JobMetricsBatchIntent.EXPORTED, record)
+            .key(metricsRecordKey));
 
     // then - verify the record is under 4MiB
-    assertThat(recordLength)
+    final int recordLength = record.getLength();
+    // then - verify the record was successfully exported
+    final Record<JobMetricsBatchRecordValue> exportedRecord =
+        RecordingExporter.jobMetricsBatchRecords()
+            .withRecordKey(metricsRecordKey)
+            .withIntent(JobMetricsBatchIntent.EXPORTED)
+            .getFirst();
+    assertThat(exportedRecord.getValue().getBatchStartTime()).isEqualTo(now);
+    assertThat(exportedRecord.getValue().getBatchEndTime()).isEqualTo(now);
+    assertThat(record.getLength())
         .as(
             "Record size with %d keys should be under max record size (%d bytes accounting overhead), but was %d bytes",
             maxNumberOfKeys, fourMiBMinusOverhead, recordLength)

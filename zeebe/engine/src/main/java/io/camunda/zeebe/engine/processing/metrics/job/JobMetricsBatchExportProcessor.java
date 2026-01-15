@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.jobmetrics;
+package io.camunda.zeebe.engine.processing.metrics.job;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,27 +57,28 @@ public class JobMetricsBatchExportProcessor implements TypedRecordProcessor<JobM
   }
 
   private JobMetricsBatchRecord createExportedRecord() {
-    final JobMetricsBatchRecord record = new JobMetricsBatchRecord();
-
-    final Set<String> encodedString = jobMetricsState.getEncodedStrings();
-    record.setBatchStartTime(jobMetricsState.getBatchStartTime());
-    record.setBatchEndTime(jobMetricsState.getBatchEndTime());
-    record.setRecordSizeLimitExceeded(jobMetricsState.isIncompleteBatch());
-    record.setEncodedStrings(encodedString);
+    final List<String> encodedString = jobMetricsState.getEncodedStrings();
+    final JobMetricsBatchRecord record =
+        new JobMetricsBatchRecord()
+            .setBatchStartTime(jobMetricsState.getBatchStartTime())
+            .setBatchEndTime(jobMetricsState.getBatchEndTime())
+            .setRecordSizeLimitExceeded(jobMetricsState.isIncompleteBatch())
+            .setEncodedStrings(encodedString);
     jobMetricsState.forEach(
         (jobTypeIndex, tenantIdIndex, workerNameIndex, metrics) -> {
-          final JobMetrics jobMetricsEntry = new JobMetrics();
-          jobMetricsEntry.setJobTypeIndex(jobTypeIndex);
-          jobMetricsEntry.setTenantIdIndex(tenantIdIndex);
-          jobMetricsEntry.setWorkerNameIndex(workerNameIndex);
-          jobMetricsEntry.setStatusMetrics(
-              Arrays.stream(metrics)
-                  .map(
-                      statusMetrics ->
-                          new StatusMetrics()
-                              .setCount(statusMetrics.getCount())
-                              .setLastUpdatedAt(statusMetrics.getLastUpdatedAt()))
-                  .collect(Collectors.toList()));
+          final JobMetrics jobMetricsEntry =
+              new JobMetrics()
+                  .setJobTypeIndex(jobTypeIndex)
+                  .setTenantIdIndex(tenantIdIndex)
+                  .setWorkerNameIndex(workerNameIndex)
+                  .setStatusMetrics(
+                      Arrays.stream(metrics)
+                          .map(
+                              statusMetrics ->
+                                  new StatusMetrics()
+                                      .setCount(statusMetrics.getCount())
+                                      .setLastUpdatedAt(statusMetrics.getLastUpdatedAt()))
+                          .collect(Collectors.toList()));
           record.addJobMetrics(jobMetricsEntry);
         });
 

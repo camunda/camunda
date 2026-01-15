@@ -208,15 +208,7 @@ public class ProcessingDbState implements MutableProcessingState {
     conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
-    jobMetricsState =
-        new DbJobMetricsState(
-            zeebeDb,
-            transactionContext,
-            clock,
-            config.getMaxJobTypeLength(),
-            config.getMaxTenantIdLength(),
-            config.getMaxWorkerNameLength(),
-            config.getMaxUniqueJobMetricsKeys());
+    jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
   }
 
   @Override

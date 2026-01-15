@@ -14,15 +14,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-class DbJobMetricsExportStateTest {
+class DbJobMetricsStateTest {
 
   private MutableProcessingState processingState;
   private MutableJobMetricsState state;
@@ -35,12 +35,11 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldIncrementMetricForNewKey() {
     // given
-    final String jobType = "testJobType";
-    final String tenantId = "testTenant";
-    final String workerName = "testWorker";
+    final var jobRecord =
+        new JobRecord().setType("testJobType").setTenantId("testTenant").setWorker("testWorker");
 
     // when
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.CREATED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.CREATED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -52,14 +51,13 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldIncrementMetricForExistingKey() {
     // given
-    final String jobType = "testJobType";
-    final String tenantId = "testTenant";
-    final String workerName = "testWorker";
+    final var jobRecord =
+        new JobRecord().setType("testJobType").setTenantId("testTenant").setWorker("testWorker");
 
     // when
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.CREATED);
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.CREATED);
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.CREATED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.CREATED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.CREATED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.CREATED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -71,14 +69,13 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldIncrementDifferentStatusesForSameKey() {
     // given
-    final String jobType = "testJobType";
-    final String tenantId = "testTenant";
-    final String workerName = "testWorker";
+    final var jobRecord =
+        new JobRecord().setType("testJobType").setTenantId("testTenant").setWorker("testWorker");
 
     // when
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.CREATED);
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.COMPLETED);
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.FAILED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.CREATED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.COMPLETED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.FAILED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -93,22 +90,37 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldTrackMultipleDifferentKeys() {
     // given / when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
-    state.incrementMetric("jobType2", "tenant1", "worker1", JobMetricsExportState.CREATED);
-    state.incrementMetric("jobType1", "tenant2", "worker1", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType2").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant2").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
 
     // then
+    final var encodedStrings = state.getEncodedStrings();
     final List<StatusMetrics[]> metrics = collectMetrics();
     assertThat(metrics).hasSize(3);
+    assertThat(metrics.getFirst()[JobMetricsExportState.CREATED.getIndex()].getCount())
+        .isEqualTo(1);
+    assertThat(metrics.get(1)[JobMetricsExportState.CREATED.getIndex()].getCount()).isEqualTo(1);
+    assertThat(metrics.get(2)[JobMetricsExportState.CREATED.getIndex()].getCount()).isEqualTo(1);
+    assertThat(encodedStrings)
+        .containsSequence("jobType1", "tenant1", "worker1", "jobType2", "tenant2");
   }
 
   @Test
   void shouldEncodeStringsToIntegers() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
 
     // when
-    final Set<String> encodedStrings = state.getEncodedStrings();
+    final List<String> encodedStrings = state.getEncodedStrings();
 
     // then
     assertThat(encodedStrings).containsExactly("jobType1", "tenant1", "worker1");
@@ -117,11 +129,15 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldReuseEncodedStrings() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
-    state.incrementMetric("jobType2", "tenant1", "worker1", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType2").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
 
     // when
-    final Set<String> encodedStrings = state.getEncodedStrings();
+    final List<String> encodedStrings = state.getEncodedStrings();
 
     // then - tenant1 and worker1 should be reused, only 4 unique strings
     assertThat(encodedStrings).containsExactly("jobType1", "tenant1", "worker1", "jobType2");
@@ -130,12 +146,11 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldUpdateLastUpdatedAtTimestamp() {
     // given
-    final String jobType = "testJobType";
-    final String tenantId = "testTenant";
-    final String workerName = "testWorker";
+    final var jobRecord =
+        new JobRecord().setType("testJobType").setTenantId("testTenant").setWorker("testWorker");
 
     // when
-    state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.CREATED);
+    state.incrementMetric(jobRecord, JobMetricsExportState.CREATED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -149,7 +164,9 @@ class DbJobMetricsExportStateTest {
     final long beforeIncrement = System.currentTimeMillis();
 
     // when
-    state.incrementMetric("jobType", "tenant", "worker", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType").setTenantId("tenant").setWorker("worker"),
+        JobMetricsExportState.CREATED);
 
     // then
     final long batchStartTime = state.getBatchStartTime();
@@ -159,11 +176,15 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldUpdateBatchEndTimeOnEveryIncrement() {
     // given
-    state.incrementMetric("jobType1", "tenant", "worker", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant").setWorker("worker"),
+        JobMetricsExportState.CREATED);
     final long firstEndTime = state.getBatchEndTime();
 
     // when
-    state.incrementMetric("jobType2", "tenant", "worker", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType2").setTenantId("tenant").setWorker("worker"),
+        JobMetricsExportState.CREATED);
 
     // then
     final long secondEndTime = state.getBatchEndTime();
@@ -179,8 +200,12 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldCleanUpAllData() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
-    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsExportState.COMPLETED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType2").setTenantId("tenant2").setWorker("worker2"),
+        JobMetricsExportState.COMPLETED);
     assertThat(collectMetrics()).hasSize(2);
 
     // when
@@ -196,7 +221,9 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldResetMetadataAfterCleanUp() {
     // given
-    state.incrementMetric("jobType", "tenant", "worker", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType").setTenantId("tenant").setWorker("worker"),
+        JobMetricsExportState.CREATED);
     assertThat(state.getBatchStartTime()).isGreaterThan(0);
 
     // when
@@ -215,7 +242,9 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldIncrementCounterForEachNewString() {
     // given / when
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
 
     // then - 3 new strings created, counter should be 3
     assertThat(state.getMetadata(META_COUNTER)).isEqualTo(3L);
@@ -224,11 +253,15 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldNotIncrementCounterForReusedStrings() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
     final long counterAfterFirst = state.getMetadata(META_COUNTER);
 
     // when - reuse all strings
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.COMPLETED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.COMPLETED);
 
     // then
     assertThat(state.getMetadata(META_COUNTER)).isEqualTo(counterAfterFirst);
@@ -237,8 +270,12 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldIterateOverAllMetrics() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
-    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsExportState.COMPLETED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType2").setTenantId("tenant2").setWorker("worker2"),
+        JobMetricsExportState.COMPLETED);
 
     // when
     final List<int[]> indices = new ArrayList<>();
@@ -253,8 +290,12 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldTrackMetricsForSameJobTypeWithDifferentTenants() {
     // given / when
-    state.incrementMetric("jobType", "tenant1", "worker", JobMetricsExportState.CREATED);
-    state.incrementMetric("jobType", "tenant2", "worker", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType").setTenantId("tenant1").setWorker("worker"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType").setTenantId("tenant2").setWorker("worker"),
+        JobMetricsExportState.CREATED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -264,8 +305,12 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldTrackMetricsForSameJobTypeWithDifferentWorkers() {
     // given / when
-    state.incrementMetric("jobType", "tenant", "worker1", JobMetricsExportState.CREATED);
-    state.incrementMetric("jobType", "tenant", "worker2", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType").setTenantId("tenant").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType").setTenantId("tenant").setWorker("worker2"),
+        JobMetricsExportState.CREATED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -275,13 +320,12 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldPreserveMetricCountsAcrossMultipleIncrements() {
     // given
-    final String jobType = "testJobType";
-    final String tenantId = "testTenant";
-    final String workerName = "testWorker";
+    final var jobRecord =
+        new JobRecord().setType("testJobType").setTenantId("testTenant").setWorker("testWorker");
 
     // when
     for (int i = 0; i < 100; i++) {
-      state.incrementMetric(jobType, tenantId, workerName, JobMetricsExportState.CREATED);
+      state.incrementMetric(jobRecord, JobMetricsExportState.CREATED);
     }
 
     // then
@@ -294,7 +338,9 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldKeepZeroCountsForUnusedStatuses() {
     // given / when
-    state.incrementMetric("jobType", "tenant", "worker", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType").setTenantId("tenant").setWorker("worker"),
+        JobMetricsExportState.CREATED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -306,7 +352,8 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldHandleEmptyStrings() {
     // given / when
-    state.incrementMetric("", "", "", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("").setTenantId("").setWorker(""), JobMetricsExportState.CREATED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -317,11 +364,15 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldMaintainEncodedStringsOrderByIndex() {
     // given
-    state.incrementMetric("first", "second", "third", JobMetricsExportState.CREATED);
-    state.incrementMetric("fourth", "second", "third", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("first").setTenantId("second").setWorker("third"),
+        JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("fourth").setTenantId("second").setWorker("third"),
+        JobMetricsExportState.CREATED);
 
     // when
-    final Set<String> encodedStrings = state.getEncodedStrings();
+    final List<String> encodedStrings = state.getEncodedStrings();
 
     // then - should be ordered by creation (index)
     assertThat(encodedStrings).containsExactly("first", "second", "third", "fourth");
@@ -330,11 +381,15 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldAllowAddingMetricsAfterCleanUp() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
     state.cleanUp();
 
     // when
-    state.incrementMetric("jobType2", "tenant2", "worker2", JobMetricsExportState.COMPLETED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType2").setTenantId("tenant2").setWorker("worker2"),
+        JobMetricsExportState.COMPLETED);
 
     // then
     final List<StatusMetrics[]> metrics = collectMetrics();
@@ -346,15 +401,19 @@ class DbJobMetricsExportStateTest {
   @Test
   void shouldResetStringEncodingCounterAfterCleanUp() {
     // given
-    state.incrementMetric("jobType1", "tenant1", "worker1", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
+        JobMetricsExportState.CREATED);
     state.cleanUp();
 
     // when
-    state.incrementMetric("newJobType", "newTenant", "newWorker", JobMetricsExportState.CREATED);
+    state.incrementMetric(
+        new JobRecord().setType("newJobType").setTenantId("newTenant").setWorker("newWorker"),
+        JobMetricsExportState.CREATED);
 
     // then - strings should be re-encoded starting from 0
-    final Set<String> encodedStrings = state.getEncodedStrings();
-    assertThat(encodedStrings).containsExactly("newJobType", "newTenant", "newWorker");
+    final List<String> encodedStrings = state.getEncodedStrings();
+    assertThat(encodedStrings).containsSequence("newJobType", "newTenant", "newWorker");
   }
 
   private List<StatusMetrics[]> collectMetrics() {
