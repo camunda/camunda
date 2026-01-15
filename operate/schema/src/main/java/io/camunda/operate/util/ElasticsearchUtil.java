@@ -34,7 +34,9 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -212,6 +214,31 @@ public abstract class ElasticsearchUtil {
       throw new OperateRuntimeException(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
+          e);
+    }
+    return entity;
+  }
+
+  public static <T> List<T> mapSearchHits(
+      final SearchHit[] searchHits, final ObjectMapper objectMapper, final JavaType valueType) {
+    return map(
+        searchHits,
+        (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, valueType));
+  }
+
+  public static <T> T fromSearchHit(
+      final String searchHitString, final ObjectMapper objectMapper, final JavaType valueType) {
+    final T entity;
+    try {
+      entity = objectMapper.readValue(searchHitString, valueType);
+    } catch (final IOException e) {
+      LOGGER.error(
+          String.format(
+              "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
+          e);
+      throw new OperateRuntimeException(
+          String.format(
+              "Error while reading entity of type %s from Elasticsearch!", valueType.toString()),
           e);
     }
     return entity;
