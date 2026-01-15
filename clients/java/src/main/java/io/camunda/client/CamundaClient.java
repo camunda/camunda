@@ -159,6 +159,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
+import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
@@ -3053,6 +3054,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the incidents by element instance search request
    */
   AuditLogSearchRequest newAuditLogSearchRequest();
+
+  /**
+   * Executes a search request to query audit logs related to a user task.
+   *
+   * <pre>
+   *   long userTaskKey = ...;
+   *
+   *  camundaClient
+   *   .newUserTaskAuditLogSearchRequest(userTaskKey)
+   *   .filter((f) -> f.actorId("actorId"))
+   *   .sort((s) -> s.timestamp().desc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
+   * </pre>
+   *
+   * @param userTaskKey the key of the user task
+   * @return a builder for the user task audit log search request
+   */
+  UserTaskAuditLogSearchRequest newUserTaskAuditLogSearchRequest(long userTaskKey);
 
   /**
    * Get statistics about process instances, grouped by process definition and tenant.

@@ -121,4 +121,47 @@ public class AuditLogSearchClientIT {
     assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.CREATE);
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
   }
+
+  @Test
+  void shouldSearchUserTaskAuditLogByKey(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final long userTask = utils.getUserTasks().getFirst().getUserTaskKey();
+
+    // when
+    final var auditLogItems = client.newUserTaskAuditLogSearchRequest(userTask).send().join();
+
+    // then
+    final var auditLog = auditLogItems.items().getFirst();
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTask));
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
+    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
+    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
+    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
+
+  @Test
+  void shouldSearchUserTaskAuditLogByKeyWithActorId(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given
+    final long userTask = utils.getUserTasks().getFirst().getUserTaskKey();
+
+    // when
+    final var auditLogItems =
+        client
+            .newUserTaskAuditLogSearchRequest(userTask)
+            .filter(f -> f.actorId("demo"))
+            .send()
+            .join();
+
+    // then
+    final var auditLog = auditLogItems.items().getFirst();
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTask));
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER_TASK);
+    assertThat(auditLog.getOperationType()).isEqualTo(AuditLogOperationTypeEnum.ASSIGN);
+    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.USER_TASKS);
+    assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
+  }
 }

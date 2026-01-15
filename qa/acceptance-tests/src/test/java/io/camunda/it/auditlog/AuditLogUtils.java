@@ -18,6 +18,7 @@ import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,6 +31,8 @@ public class AuditLogUtils {
 
   public static final String TENANT_A = "tenantA";
   public static final String TENANT_B = "tenantB";
+
+  public static final long USER_TASK_KEY = 123L;
 
   public static final String PROCESS_A_ID = "processA";
   public static final BpmnModelInstance PROCESS_A =
@@ -62,6 +65,7 @@ public class AuditLogUtils {
   private final List<DeploymentEvent> deployments = new ArrayList<>();
   private final List<ProcessInstanceEvent> processInstances = new ArrayList<>();
   private final List<UserTenantAssignment> userTenantAssignments = new ArrayList<>();
+  private final List<UserTaskRecordValue> userTasks = new ArrayList<>();
 
   public AuditLogUtils(final CamundaClient defaultClient) {
     this(defaultClient, true);
@@ -121,6 +125,7 @@ public class AuditLogUtils {
             .findFirst()
             .get()
             .getValue();
+    userTasks.add(task);
 
     defaultClient.newAssignUserTaskCommand(task.getUserTaskKey()).assignee(username).send().join();
 
@@ -229,6 +234,10 @@ public class AuditLogUtils {
 
   public List<UserTenantAssignment> getUserTenantAssignments() {
     return userTenantAssignments;
+  }
+
+  public List<UserTaskRecordValue> getUserTasks() {
+    return userTasks;
   }
 
   public AuditLogUtils await() {
