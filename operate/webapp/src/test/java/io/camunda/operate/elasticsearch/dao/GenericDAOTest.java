@@ -47,7 +47,7 @@ public class GenericDAOTest {
         .isThrownBy(
             () ->
                 new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                    .es8Client(esClient)
+                    .esClient(esClient)
                     .index(index)
                     .build());
   }
@@ -70,7 +70,7 @@ public class GenericDAOTest {
             () ->
                 new GenericDAO.Builder<MetricEntity, MetricIndex>()
                     .objectMapper(objectMapper)
-                    .es8Client(esClient)
+                    .esClient(esClient)
                     .build());
   }
 
@@ -123,7 +123,7 @@ public class GenericDAOTest {
 
   private GenericDAO<MetricEntity, MetricIndex> instantiateDao() {
     return new GenericDAO.Builder<MetricEntity, MetricIndex>()
-        .es8Client(esClient)
+        .esClient(esClient)
         .index(index)
         .objectMapper(objectMapper)
         .build();

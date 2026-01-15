@@ -123,14 +123,15 @@ public class BackupRestoreTest {
 
   private void startAllApps() throws IOException {
     testContainerUtil.startElasticsearch(testContext);
-    testContainerUtil.checkElasticsearchHealth(testContext);
     final RestClient restClient =
         RestClient.builder(
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))
             .build();
     final RestClientTransport transport =
         new RestClientTransport(restClient, new JacksonJsonpMapper());
-    testContext.setEsClient(new ElasticsearchClient(transport));
+    final ElasticsearchClient esClient = new ElasticsearchClient(transport);
+    testContext.setEsClient(esClient);
+    testContainerUtil.checkElasticsearchHealth(testContext, esClient);
     createSnapshotRepository(testContext);
 
     testContainerUtil.startZeebe(testContext);

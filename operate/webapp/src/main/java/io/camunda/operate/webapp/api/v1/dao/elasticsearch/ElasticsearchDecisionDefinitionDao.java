@@ -91,7 +91,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
         new SearchRequest.Builder().index(decisionIndex.getAlias()).query(tenantAwareQuery);
 
     return ElasticsearchUtil.scrollAllStream(
-            es8Client, searchRequestBuilder, DecisionDefinition.class)
+            esClient, searchRequestBuilder, DecisionDefinition.class)
         .flatMap(res -> res.hits().hits().stream())
         .map(Hit::source)
         .toList();
@@ -194,7 +194,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
 
     final var nonNullKeys =
         ElasticsearchUtil.scrollAllStream(
-                es8Client, searchRequestBuilder, DecisionRequirements.class)
+                esClient, searchRequestBuilder, DecisionRequirements.class)
             .flatMap(res -> res.hits().hits().stream())
             .map(Hit::source)
             .filter(Objects::nonNull)

@@ -42,7 +42,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired private PermissionsService permissionsService;
 
@@ -56,7 +56,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
     final var searchRequest = createSearchRequest(batchOperationRequestDto);
     try {
-      final var res = es8Client.search(searchRequest, BatchOperationEntity.class);
+      final var res = esClient.search(searchRequest, BatchOperationEntity.class);
       final var batchOperationEntities =
           res.hits().hits().stream()
               .map(

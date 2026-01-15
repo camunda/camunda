@@ -8,6 +8,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
@@ -31,7 +32,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
 
   @Autowired private DecisionIndex decisionIndex;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Override
   public Optional<Long> getDistinctCountFor(final String fieldName) {
@@ -39,7 +40,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
     LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
 
     final var searchRequest =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(indexAlias)
             .query(q -> q.matchAll(m -> m))
             .size(0)
@@ -48,7 +49,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
                 a -> a.cardinality(c -> c.precisionThreshold(1_000).field(fieldName)))
             .build();
     try {
-      final var res = es8Client.search(searchRequest, Void.class);
+      final var res = esClient.search(searchRequest, Void.class);
       final var distinctFieldCounts = res.aggregations().get(DISTINCT_FIELD_COUNTS).cardinality();
 
       return Optional.of(distinctFieldCounts.value());
@@ -71,7 +72,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
       throws IOException {
 
     final var res =
-        es8Client.deleteByQuery(
+        esClient.deleteByQuery(
             d -> d.index(indexName).query(ElasticsearchUtil.termsQuery(idField, id)));
 
     LOGGER.debug("Delete document {} in {} response: {}", id, indexName, res.deleted());

@@ -24,7 +24,7 @@ public class UsageMetricDAO extends GenericDAO<UsageMetricsEntity, UsageMetricTe
   public UsageMetricDAO(
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final UsageMetricTemplate index,
-      final ElasticsearchClient es8Client) {
-    super(objectMapper, index, es8Client);
+      final ElasticsearchClient esClient) {
+    super(objectMapper, index, esClient);
   }
 }

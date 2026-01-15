@@ -116,8 +116,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
           new SearchRequest.Builder().index(incidentIndex.getAlias()).query(tenantAwareQuery);
 
       incidents =
-          ElasticsearchUtil.scrollAllStream(
-                  es8Client, searchReqBuilder, ElasticsearchUtil.MAP_CLASS)
+          ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, ElasticsearchUtil.MAP_CLASS)
               .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .filter(Objects::nonNull)

@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticsearchCondition.class)
 public class TestElasticSearchRepository implements TestSearchRepository {
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -70,7 +70,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   public <R> List<R> searchAll(final String index, final Class<R> clazz) throws IOException {
     final var searchRequest =
         new SearchRequest.Builder().index(index).query(ElasticsearchUtil.matchAllQuery()).build();
-    final var response = es8Client.search(searchRequest, clazz);
+    final var response = esClient.search(searchRequest, clazz);
     return response.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
   }
 
@@ -85,7 +85,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     final var query = ElasticsearchUtil.termsQuery(field, value);
     final var searchRequest =
         new SearchRequest.Builder().index(index).query(query).size(size).build();
-    final var response = es8Client.search(searchRequest, clazz);
+    final var response = esClient.search(searchRequest, clazz);
     return response.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
   }
 
@@ -97,8 +97,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     final var query = ElasticsearchUtil.constantScoreQuery(processInstanceKeyQuery);
     final var searchRequestBuilder = new SearchRequest.Builder().index(index).query(query);
     try {
-      return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, VariableEntity.class)
+      return ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, VariableEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .filter(Objects::nonNull)
@@ -124,7 +123,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
 
     final var searchRequest =
         new SearchRequest.Builder().index(indexName).query(query).size(100).build();
-    final var response = es8Client.search(searchRequest, ProcessInstanceForListViewEntity.class);
+    final var response = esClient.search(searchRequest, ProcessInstanceForListViewEntity.class);
     return response.hits().hits().stream().map(Hit::source).filter(Objects::nonNull).toList();
   }
 
@@ -136,7 +135,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     if (routing != null) {
       requestBuilder.routing(routing);
     }
-    final IndexResponse response = es8Client.index(requestBuilder.build());
+    final IndexResponse response = esClient.index(requestBuilder.build());
     final Result result = response.result();
     return result == Result.Created || result == Result.Updated;
   }
