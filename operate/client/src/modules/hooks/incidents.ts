@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
@@ -18,7 +17,6 @@ import {useSearchParams} from 'react-router-dom';
 import {parseSortParamsV2} from 'modules/utils/filter';
 import {useMemo} from 'react';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type EnhancedIncident = Incident & {
   processDefinitionName: string;
@@ -55,17 +53,11 @@ const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
         businessObjects,
         flowNodeId: incident.elementId,
       }),
-      isSelected: IS_ELEMENT_SELECTION_V2
-        ? isSelected({
-            elementId: incident.elementId,
-            elementInstanceKey: incident.elementInstanceKey,
-            isMultiInstanceBody: false,
-          })
-        : flowNodeSelectionStore.isSelected({
-            flowNodeId: incident.elementId,
-            flowNodeInstanceId: incident.elementInstanceKey,
-            isMultiInstance: false,
-          }),
+      isSelected: isSelected({
+        elementId: incident.elementId,
+        elementInstanceKey: incident.elementInstanceKey,
+        isMultiInstanceBody: false,
+      }),
       processDefinitionName:
         processDefinitionNames?.[incident.processInstanceKey] ?? '',
     };

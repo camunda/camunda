@@ -15,7 +15,6 @@ import {
   useNewTokenCountForSelectedNode,
 } from './flowNodeSelection';
 import {useHasMultipleInstances} from './flowNodeMetadata';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {useElementSelectionInstanceKey} from './useElementSelectionInstanceKey';
