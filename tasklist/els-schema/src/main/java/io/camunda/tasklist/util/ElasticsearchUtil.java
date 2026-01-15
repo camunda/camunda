@@ -417,21 +417,28 @@ public abstract class ElasticsearchUtil {
   }
 
   /**
-   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
-   * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
-   * #DEFAULT_MAX_TERMS_COUNT}
+   * Scrolls through all search results using ES8 client and collects results into a list, with
+   * chunking support for large ID lists.
+   *
+   * @param client ES8 client
+   * @param ids List of IDs to process in chunks
+   * @param chunkSize Maximum number of IDs per chunk
+   * @param searchRequestBuilderFactory Factory to create search request builder for each chunk
+   * @param docClass Document class type
+   * @param <T> Type of documents
+   * @param <ID> Type of IDs
+   * @return List of document sources
    */
   public static <T, ID> List<T> scrollInChunks(
-      final List<ID> list,
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client,
+      final List<ID> ids,
       final int chunkSize,
-      final Function<List<ID>, SearchRequest> chunkToSearchRequest,
-      final Class<T> clazz,
-      final ObjectMapper objectMapper,
-      final RestHighLevelClient esClient)
-      throws IOException {
+      final Function<List<ID>, co.elastic.clients.elasticsearch.core.SearchRequest.Builder>
+          searchRequestBuilderFactory,
+      final Class<T> docClass) {
     final var result = new ArrayList<T>();
-    for (final var chunk : ListUtils.partition(list, chunkSize)) {
-      result.addAll(scroll(chunkToSearchRequest.apply(chunk), clazz, objectMapper, esClient));
+    for (final var chunk : ListUtils.partition(ids, chunkSize)) {
+      result.addAll(scrollAllToList(client, searchRequestBuilderFactory.apply(chunk), docClass));
     }
     return result;
   }
