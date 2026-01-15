@@ -57,6 +57,7 @@ const BatchOperation: React.FC = () => {
     operationsTotalCount,
     startDate,
     endDate,
+    actorId,
   } = batchOperationData || {};
 
   const operationType = formatOperationType(batchOperationType ?? '');
@@ -102,6 +103,10 @@ const BatchOperation: React.FC = () => {
     {
       label: 'End time',
       content: formatDate(endDate ?? ''),
+    },
+    {
+      label: 'Actor',
+      content: actorId ?? '--',
     },
   ];
 

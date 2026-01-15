@@ -36,6 +36,7 @@ const operation: BatchOperation = {
   operationsTotalCount: 2,
   operationsCompletedCount: 2,
   operationsFailedCount: 0,
+  actorId: 'demo',
 };
 
 const createMockOperations = (count: number): BatchOperation[] => {
@@ -92,6 +93,9 @@ describe('<BatchOperations />', () => {
 
     expect(screen.getByTestId('cell-operationType').textContent).toBe(
       'Migrate Process Instance',
+    );
+    expect(screen.getByTestId('cell-actor').textContent).toBe(
+      operation.actorId,
     );
   });
 
