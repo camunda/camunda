@@ -27,6 +27,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
@@ -282,7 +285,8 @@ public class CompleteJobTest {
                       JobSelectors.byJobType(JOB_TYPE), result -> result.activateElement("task1")))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining(
-              "Expected to complete job [jobType: %s, jobKind: AD_HOC_SUB_PROCESS] but no job is available.", JOB_TYPE);
+              "Expected to complete job [jobType: %s, jobKind: AD_HOC_SUB_PROCESS] but no job is available.",
+              JOB_TYPE);
     }
   }
 
@@ -299,6 +303,14 @@ public class CompleteJobTest {
     private IntegerProperty retriesProperty;
 
     @Captor private ArgumentCaptor<Consumer<JobFilter>> jobFilterCaptor;
+
+    @Mock private CompleteJobCommandJobResultStep completeJobCommandJobResultStep;
+    @Mock private CompleteAdHocSubProcessResultStep1 completeAdHocSubProcessResultStep;
+    @Mock private Consumer<CompleteAdHocSubProcessResultStep1> jobResultConsumer;
+
+    @Captor
+    private ArgumentCaptor<Function<CompleteJobCommandJobResultStep, CompleteJobResult>>
+        jobResultFunctionCaptor;
 
     @BeforeEach
     void setup() {
@@ -352,37 +364,20 @@ public class CompleteJobTest {
     @Test
     void shouldInvokeJobResultConsumer() {
       // given
-      @SuppressWarnings("unchecked")
-      final ArgumentCaptor<
-              Function<
-                  io.camunda.client.api.command.CompleteJobCommandStep1
-                      .CompleteJobCommandJobResultStep,
-                  io.camunda.client.api.command.CompleteJobResult>>
-          resultFunctionCaptor = ArgumentCaptor.forClass(Function.class);
-      @SuppressWarnings("unchecked")
-      final Consumer<io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1>
-          resultConsumer = mock(Consumer.class);
+      when(completeJobCommandJobResultStep.forAdHocSubProcess())
+          .thenReturn(completeAdHocSubProcessResultStep);
 
       // when
       camundaProcessTestContext.completeJobOfAdHocSubProcess(
-          JobSelectors.byJobType(JOB_TYPE), resultConsumer);
+          JobSelectors.byJobType(JOB_TYPE), jobResultConsumer);
 
       // then - verify that withResult was called
       verify(camundaClient.newCompleteCommand(JOB_KEY).variables(Collections.emptyMap()))
-          .withResult(resultFunctionCaptor.capture());
+          .withResult(jobResultFunctionCaptor.capture());
 
       // and invoke the captured function to verify our consumer is called
-      final io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep
-          mockResultStep =
-              mock(
-                  io.camunda.client.api.command.CompleteJobCommandStep1
-                      .CompleteJobCommandJobResultStep.class);
-      final io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1 mockAdHocResult =
-          mock(io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1.class);
-      when(mockResultStep.forAdHocSubProcess()).thenReturn(mockAdHocResult);
-
-      resultFunctionCaptor.getValue().apply(mockResultStep);
-      verify(resultConsumer).accept(mockAdHocResult);
+      jobResultFunctionCaptor.getValue().apply(completeJobCommandJobResultStep);
+      verify(jobResultConsumer).accept(completeAdHocSubProcessResultStep);
     }
 
     @Test
