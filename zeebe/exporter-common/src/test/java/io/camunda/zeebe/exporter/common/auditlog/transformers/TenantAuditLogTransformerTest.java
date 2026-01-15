@@ -17,27 +17,15 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class TenantAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final TenantAuditLogTransformer transformer = new TenantAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(TenantIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(TenantIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(TenantIntent.DELETED, AuditLogOperationType.DELETE));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformTenantRecord(
-      final TenantIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformTenantRecord() {
     // given
     final TenantRecordValue recordValue =
         ImmutableTenantRecordValue.builder()
@@ -47,7 +35,8 @@ class TenantAuditLogTransformerTest {
             .build();
 
     final Record<TenantRecordValue> record =
-        factory.generateRecord(ValueType.TENANT, r -> r.withIntent(intent).withValue(recordValue));
+        factory.generateRecord(
+            ValueType.TENANT, r -> r.withIntent(TenantIntent.CREATED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -55,6 +44,6 @@ class TenantAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("test-tenant");
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
   }
 }

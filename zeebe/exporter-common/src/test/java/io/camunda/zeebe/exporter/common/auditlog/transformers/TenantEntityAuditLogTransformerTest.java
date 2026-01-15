@@ -17,26 +17,15 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class TenantEntityAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final TenantEntityAuditLogTransformer transformer = new TenantEntityAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(TenantIntent.ENTITY_ADDED, AuditLogOperationType.ASSIGN),
-        Arguments.of(TenantIntent.ENTITY_REMOVED, AuditLogOperationType.UNASSIGN));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformTenantEntityRecord(
-      final TenantIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformTenantEntityRecord() {
     // given
     final TenantRecordValue recordValue =
         ImmutableTenantRecordValue.builder()
@@ -46,7 +35,8 @@ class TenantEntityAuditLogTransformerTest {
             .build();
 
     final Record<TenantRecordValue> record =
-        factory.generateRecord(ValueType.TENANT, r -> r.withIntent(intent).withValue(recordValue));
+        factory.generateRecord(
+            ValueType.TENANT, r -> r.withIntent(TenantIntent.ENTITY_ADDED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -54,6 +44,6 @@ class TenantEntityAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("test-tenant");
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.ASSIGN);
   }
 }

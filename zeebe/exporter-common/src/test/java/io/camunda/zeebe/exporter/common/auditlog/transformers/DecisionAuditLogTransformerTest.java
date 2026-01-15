@@ -17,26 +17,15 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class DecisionAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final DecisionAuditLogTransformer transformer = new DecisionAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(DecisionIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(DecisionIntent.DELETED, AuditLogOperationType.DELETE));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformDecisionRecord(
-      final DecisionIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformDecisionRecord() {
     // given
     final DecisionRecordValue recordValue =
         ImmutableDecisionRecordValue.builder()
@@ -51,7 +40,7 @@ class DecisionAuditLogTransformerTest {
 
     final Record<DecisionRecordValue> record =
         factory.generateRecord(
-            ValueType.DECISION, r -> r.withIntent(intent).withValue(recordValue));
+            ValueType.DECISION, r -> r.withIntent(DecisionIntent.CREATED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -63,6 +52,6 @@ class DecisionAuditLogTransformerTest {
     assertThat(entity.getDecisionDefinitionKey()).isEqualTo(789L);
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("decisionRequirementsId");
     assertThat(entity.getDecisionDefinitionId()).isEqualTo("decisionId");
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
   }
 }

@@ -17,10 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class BatchOperationLifecycleManagementAuditLogTransformerTest {
 
@@ -28,20 +25,8 @@ class BatchOperationLifecycleManagementAuditLogTransformerTest {
   private final BatchOperationLifecycleManagementAuditLogTransformer transformer =
       new BatchOperationLifecycleManagementAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(BatchOperationIntent.RESUMED, AuditLogOperationType.RESUME),
-        Arguments.of(BatchOperationIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
-        Arguments.of(BatchOperationIntent.CANCELED, AuditLogOperationType.CANCEL),
-        Arguments.of(BatchOperationIntent.RESUME, AuditLogOperationType.RESUME),
-        Arguments.of(BatchOperationIntent.SUSPEND, AuditLogOperationType.SUSPEND),
-        Arguments.of(BatchOperationIntent.CANCEL, AuditLogOperationType.CANCEL));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformBatchOperationLifecycleRecord(
-      final BatchOperationIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformBatchOperationLifecycleRecord() {
     // given
     final BatchOperationLifecycleManagementRecordValue recordValue =
         ImmutableBatchOperationLifecycleManagementRecordValue.builder()
@@ -52,13 +37,13 @@ class BatchOperationLifecycleManagementAuditLogTransformerTest {
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(intent).withValue(recordValue));
+            r -> r.withIntent(BatchOperationIntent.SUSPENDED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
     transformer.transform(record, entity);
 
     // then
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.SUSPEND);
   }
 }

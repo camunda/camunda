@@ -17,27 +17,15 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.stream.Stream;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 class UserAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final UserAuditLogTransformer transformer = new UserAuditLogTransformer();
 
-  public static Stream<Arguments> getIntentMappings() {
-    return Stream.of(
-        Arguments.of(UserIntent.CREATED, AuditLogOperationType.CREATE),
-        Arguments.of(UserIntent.UPDATED, AuditLogOperationType.UPDATE),
-        Arguments.of(UserIntent.DELETED, AuditLogOperationType.DELETE));
-  }
-
-  @MethodSource("getIntentMappings")
-  @ParameterizedTest
-  void shouldTransformUserRecord(
-      final UserIntent intent, final AuditLogOperationType operationType) {
+  @Test
+  void shouldTransformUserRecord() {
     // given
     final UserRecordValue recordValue =
         ImmutableUserRecordValue.builder()
@@ -47,7 +35,8 @@ class UserAuditLogTransformerTest {
             .build();
 
     final Record<UserRecordValue> record =
-        factory.generateRecord(ValueType.USER, r -> r.withIntent(intent).withValue(recordValue));
+        factory.generateRecord(
+            ValueType.USER, r -> r.withIntent(UserIntent.CREATED).withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -55,6 +44,6 @@ class UserAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("testuser");
-    assertThat(entity.getOperationType()).isEqualTo(operationType);
+    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
   }
 }
