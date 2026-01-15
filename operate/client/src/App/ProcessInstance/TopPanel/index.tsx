@@ -297,13 +297,21 @@ const TopPanel: React.FC = observer(() => {
 
   useEffect(() => {
     if (!isModificationModeEnabled) {
-      if (selectedElementId) {
+      if (
+        IS_ELEMENT_SELECTION_V2
+          ? selectedElementId
+          : flowNodeSelection?.flowNodeId
+      ) {
         tracking.track({eventName: 'metadata-popover-opened'});
       } else {
         tracking.track({eventName: 'metadata-popover-closed'});
       }
     }
-  }, [isModificationModeEnabled, selectedElementId]);
+  }, [
+    isModificationModeEnabled,
+    selectedElementId,
+    flowNodeSelection?.flowNodeId,
+  ]);
 
   const getStatus = () => {
     if (isXmlFetching) {
