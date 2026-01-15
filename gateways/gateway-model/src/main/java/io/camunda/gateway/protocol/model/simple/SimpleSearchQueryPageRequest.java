@@ -12,13 +12,13 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import org.jspecify.annotations.Nullable;
+import org.springframework.lang.Nullable;
 
 @Schema(
-    name = "SearchQueryPageRequest",
+    name = "SimpleSearchQueryPageRequest",
     description =
         "Pagination configuration for search queries. Supports cursor-based pagination (before/after), offset-based pagination (from), or simple limit-based pagination.")
-public record SearchQueryPageRequest(
+public record SimpleSearchQueryPageRequest(
     @Nullable
         @Pattern(regexp = "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=)?$")
         @Size(min = 2, max = 300)
