@@ -33,8 +33,8 @@ import org.springframework.context.annotation.Bean;
       "org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration"
     })
 public class JsonMapperConfiguration {
-  final ObjectMapper objectMapper;
-  final tools.jackson.databind.ObjectMapper jackson3ObjectMapper;
+  private final ObjectMapper objectMapper;
+  private final tools.jackson.databind.ObjectMapper jackson3ObjectMapper;
 
   @Autowired
   public JsonMapperConfiguration(
