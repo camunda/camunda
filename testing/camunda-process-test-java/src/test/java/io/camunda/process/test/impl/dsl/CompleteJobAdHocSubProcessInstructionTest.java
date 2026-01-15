@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelector;
@@ -32,6 +33,7 @@ import io.camunda.process.test.impl.dsl.instructions.CompleteJobAdHocSubProcessI
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -55,6 +57,11 @@ public class CompleteJobAdHocSubProcessInstructionTest {
   @Mock private AssertionFacade assertionFacade;
   @Mock private JobFilter jobFilter;
   @Captor private ArgumentCaptor<JobSelector> jobSelectorCaptor;
+  @Captor
+  private ArgumentCaptor<Consumer<CompleteAdHocSubProcessResultStep1>> jobResultHandlerCaptor;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private CompleteAdHocSubProcessResultStep1 jobResult;
 
   private final CompleteJobAdHocSubProcessInstructionHandler instructionHandler =
       new CompleteJobAdHocSubProcessInstructionHandler();
@@ -169,7 +176,16 @@ public class CompleteJobAdHocSubProcessInstructionTest {
     // then
     verify(processTestContext)
         .completeJobOfAdHocSubProcess(
-            jobSelectorCaptor.capture(), eq(Collections.emptyMap()), any());
+            jobSelectorCaptor.capture(),
+            eq(Collections.emptyMap()),
+            jobResultHandlerCaptor.capture());
+
+    jobResultHandlerCaptor.getValue().accept(jobResult);
+
+    verify(jobResult).activateElement("task1");
+    verify(jobResult.activateElement("task1")).variables(Collections.singletonMap("x", 1));
+    verify(jobResult).activateElement("task2");
+    verify(jobResult.activateElement("task2")).variables(Collections.emptyMap());
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }
@@ -198,7 +214,15 @@ public class CompleteJobAdHocSubProcessInstructionTest {
 
     // then
     verify(processTestContext)
-        .completeJobOfAdHocSubProcess(jobSelectorCaptor.capture(), eq(variables), any());
+        .completeJobOfAdHocSubProcess(
+            jobSelectorCaptor.capture(), eq(variables), jobResultHandlerCaptor.capture());
+
+    jobResultHandlerCaptor.getValue().accept(jobResult);
+
+    verify(jobResult).activateElement("task1");
+    verify(jobResult.activateElement("task1")).variables(Collections.singletonMap("x", 1));
+    verify(jobResult).cancelRemainingInstances(true);
+    verify(jobResult).completionConditionFulfilled(true);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
   }

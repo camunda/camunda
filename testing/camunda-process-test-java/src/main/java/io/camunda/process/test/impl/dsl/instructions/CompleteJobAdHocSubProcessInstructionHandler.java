@@ -41,13 +41,13 @@ public class CompleteJobAdHocSubProcessInstructionHandler
         instruction.getVariables(),
         result -> {
           // Activate elements
-          for (final ActivateElement element : instruction.getActivateElements()) {
-            if (element.getVariables() != null && !element.getVariables().isEmpty()) {
-              result.activateElement(element.getElementId()).variables(element.getVariables());
-            } else {
-              result.activateElement(element.getElementId());
-            }
-          }
+          instruction
+              .getActivateElements()
+              .forEach(
+                  element ->
+                      result
+                          .activateElement(element.getElementId())
+                          .variables(element.getVariables()));
 
           // Set completion flags
           if (instruction.getCancelRemainingInstances()) {
