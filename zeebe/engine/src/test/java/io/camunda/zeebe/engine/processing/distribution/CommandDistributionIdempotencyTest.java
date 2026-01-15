@@ -746,7 +746,10 @@ public class CommandDistributionIdempotencyTest {
                     ENGINE
                         .globalListenerBatch()
                         .withTaskListener(
-                            new GlobalListenerRecord().setType("global1").addEventType("all"))
+                            new GlobalListenerRecord()
+                                .setId("GlobalListener_global1")
+                                .setType("global1")
+                                .addEventType("all"))
                         .configure()),
             GlobalListenerBatchConfigureProcessor.class
           },
