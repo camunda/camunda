@@ -252,12 +252,13 @@ jobs:
       ZEEBE_IT_DISTRIBUTED_MODULES: ${{ steps.set-constants.outputs.it_distributed }}
       # IT Exporter = ZEEBE_EXPORTER_MODULES (reused directly)
       ZEEBE_IT_EXPORTER_MODULES: ${{ steps.set-constants.outputs.it_exporter }}
-      # IT Engine = All other zeebe modules (via negation)
+      # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 10
     permissions: { }
     steps:
+      - uses: actions/checkout@v4
       - name: Set all test constants
         id: set-constants
         run: |
@@ -270,13 +271,13 @@ jobs:
           PROTOCOL="':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
           GATEWAY="':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
           EXPORTER="':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
-          BACKUP="':zeebe-backup',':zeebe-backup-store-azure',':zeebe-backup-store-common',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3',':zeebe-backup-store-testkit'"
+          BACKUP="':zeebe-backup',':zeebe-backup-store-azure',':zeebe-backup-store-common',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3',':zeebe-backup-testkit'"
 
           # Zeebe modules owned by @camunda/zeebe-distributed-platform
-          DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':zeebe-dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
+          DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
 
           # Zeebe modules owned by @camunda/camundaex
-          CLIENT="':zeebe-client-java'"
+          CLIENT="':zeebe-client-java',':camunda-client-java'"
 
           # General UT configuration
           GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"
@@ -286,37 +287,196 @@ jobs:
           # Integration Test Module Constants (computed from UT constants)
           # ============================================================================
 
-          # IT Distributed = DISTRIBUTED + BACKUP (broker stays in distributed suite)
+          # IT Distributed = DISTRIBUTED + BACKUP (all distributed platform modules)
           IT_DISTRIBUTED="${DISTRIBUTED},${BACKUP}"
 
           # IT Exporter = EXPORTER (direct reuse)
           IT_EXPORTER="$EXPORTER"
 
-          # IT Engine = Negation of (IT_DISTRIBUTED + IT_EXPORTER + QA modules)
-          DIST_BACKUP_MODULES=$(echo "$IT_DISTRIBUTED" | tr ',' '\n' | sed "s/^'/:/" | sed "s/'$//" | sed "s/^/'!/" | sed "s/$/'/" | tr '\n' ',' | sed 's/,$//')
-          EXPORTER_MODULES=$(echo "$IT_EXPORTER" | tr ',' '\n' | sed "s/^'/:/" | sed "s/'$//" | sed "s/^/'!/" | sed "s/$/'/" | tr '\n' ',' | sed 's/,$//')
-          IT_ENGINE="'!:zeebe-qa-integration-tests','!:zeebe-qa-update-tests',${DIST_BACKUP_MODULES},${EXPORTER_MODULES},':zeebe-*'"
+          # IT Engine = CORE_FEATURES + PROTOCOL + GATEWAY + CLIENT (explicit list)
+          IT_ENGINE="${CORE_FEATURES},${PROTOCOL},${GATEWAY},${CLIENT}"
 
           # ============================================================================
           # Output all constants (both UT and IT)
           # ============================================================================
 
-          # UT constants
-          echo "core_features=${CORE_FEATURES}" >> "$GITHUB_OUTPUT"
-          echo "protocol=${PROTOCOL}" >> "$GITHUB_OUTPUT"
-          echo "gateway=${GATEWAY}" >> "$GITHUB_OUTPUT"
-          echo "exporter=${EXPORTER}" >> "$GITHUB_OUTPUT"
-          echo "backup=${BACKUP}" >> "$GITHUB_OUTPUT"
-          echo "distributed=${DISTRIBUTED}" >> "$GITHUB_OUTPUT"
-          echo "client=${CLIENT}" >> "$GITHUB_OUTPUT"
-          echo "general_ut_extra_skip=${GENERAL_UT_EXTRA_SKIP}" >> "$GITHUB_OUTPUT"
-          echo "general_ut_do_not_skip=${GENERAL_UT_DO_NOT_SKIP}" >> "$GITHUB_OUTPUT"
+          {
+            # UT constants
+            echo "core_features=${CORE_FEATURES}"
+            echo "protocol=${PROTOCOL}"
+            echo "gateway=${GATEWAY}"
+            echo "exporter=${EXPORTER}"
+            echo "backup=${BACKUP}"
+            echo "distributed=${DISTRIBUTED}"
+            echo "client=${CLIENT}"
+            echo "general_ut_extra_skip=${GENERAL_UT_EXTRA_SKIP}"
+            echo "general_ut_do_not_skip=${GENERAL_UT_DO_NOT_SKIP}"
 
-          # IT constants
-          echo "it_distributed=${IT_DISTRIBUTED}" >> "$GITHUB_OUTPUT"
-          echo "it_exporter=${IT_EXPORTER}" >> "$GITHUB_OUTPUT"
-          echo "it_engine=${IT_ENGINE}" >> "$GITHUB_OUTPUT"
+            # IT constants
+            echo "it_distributed=${IT_DISTRIBUTED}"
+            echo "it_exporter=${IT_EXPORTER}"
+            echo "it_engine=${IT_ENGINE}"
+          } >> "$GITHUB_OUTPUT"
 
+      - name: Validate module coverage
+        run: |
+          set -euo pipefail
+
+          echo "🔍 Validating test module coverage..."
+          echo ""
+          echo "📍 Working directory: $(pwd)"
+          echo ""
+
+          # ============================================================================
+          # Read constants from previous step
+          # ============================================================================
+
+          IT_DISTRIBUTED="${{ steps.set-constants.outputs.it_distributed }}"
+          IT_EXPORTER="${{ steps.set-constants.outputs.it_exporter }}"
+          IT_ENGINE="${{ steps.set-constants.outputs.it_engine }}"
+
+          # Extract module artifactIds from constants (remove quotes, commas, and : prefix)
+          ALL_IT_MODULES="${IT_DISTRIBUTED},${IT_EXPORTER},${IT_ENGINE}"
+          ALL_COVERED=$(echo "$ALL_IT_MODULES" | tr ',' '\n' | tr -d "'" | sed 's/^://' | sort -u)
+
+          echo "📊 Module artifactIds in test constants ($(echo "$ALL_COVERED" | wc -l | xargs)):"
+          echo "$ALL_COVERED" | awk '{print "  - " $0}'
+          echo ""
+
+          # ============================================================================
+          # Use Maven to get all zeebe module artifactIds
+          # ============================================================================
+
+          echo "🔎 Using Maven to discover zeebe modules..."
+          echo ""
+
+          # Change to zeebe directory (handle both relative paths)
+          if [ -d "zeebe" ]; then
+            cd zeebe
+          else
+            echo "❌ ERROR: zeebe directory not found in $(pwd)"
+            exit 1
+          fi
+
+          # Use Maven to list all project artifactIds
+          echo "Running: mvnw exec:exec to get all artifactIds..."
+          echo "This may take a few minutes while Maven resolves the reactor..."
+          echo ""
+
+          echo "Starting Maven execution at $(date '+%Y-%m-%d %H:%M:%S')"
+          ZEEBE_MODULES=$(../mvnw -q \
+            --also-make \
+            --projects '!qa/integration-tests,!qa/update-tests' \
+            exec:exec \
+            -Dexec.executable=echo \
+            -Dexec.args="\${project.artifactId}" \
+            2>&1 | grep -v '^\[' | grep -v '^Downloading' | grep -v '^Downloaded' | grep -v '^Progress' | sort -u | xargs)
+
+          echo "Maven execution completed at $(date '+%Y-%m-%d %H:%M:%S')"
+          echo ""
+
+          cd ..
+
+          if [ -z "$ZEEBE_MODULES" ]; then
+            echo "❌ ERROR: Maven returned no modules!"
+            echo "This might indicate:"
+            echo "  - Maven failed to execute"
+            echo "  - No modules matched the project selector"
+            echo "  - All output was filtered out"
+            exit 1
+          fi
+
+          echo "📂 Module artifactIds discovered by Maven ($(echo "$ZEEBE_MODULES" | wc -w | xargs)):"
+          for m in $ZEEBE_MODULES; do
+            echo "  - $m"
+          done
+          echo ""
+
+          # ============================================================================
+          # Validate coverage - direct comparison, no transformations
+          # ============================================================================
+
+          echo "🔬 Validating coverage (direct artifactId comparison)..."
+          echo ""
+
+          # Modules to exclude from validation (parent POMs, build tools, QA utilities)
+          EXCLUDED="zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-qa-util zeebe-parent zeebe-build-tools zeebe-bom zeebe-root zeebe-atomix-parent zeebe-qa zeebe-feel-tagged-parameters"
+
+          MISSING_MODULES=""
+          EXTRA_MODULES=""
+
+          # Check for missing modules (in Maven but not in test constants)
+          for module in $ZEEBE_MODULES; do
+            # Skip excluded modules
+            if echo "$EXCLUDED" | grep -qw "$module"; then
+              continue
+            fi
+
+            # Check if module is in test constants
+            if ! echo "$ALL_COVERED" | grep -qx "$module"; then
+              MISSING_MODULES="${MISSING_MODULES}${module} "
+            fi
+          done
+
+          # Check for extra modules (in test constants but not in Maven)
+          for covered in $ALL_COVERED; do
+            if ! echo "$ZEEBE_MODULES" | grep -qw "$covered"; then
+              EXTRA_MODULES="${EXTRA_MODULES}${covered} "
+            fi
+          done
+
+          # ============================================================================
+          # Report results
+          # ============================================================================
+
+          if [ -n "$MISSING_MODULES" ]; then
+            echo "❌ ERROR: The following Maven modules are NOT in test constants:"
+            for m in $MISSING_MODULES; do
+              echo "  - $m"
+            done
+            echo ""
+            echo "Add these to the appropriate constant in 'Set all test constants' step."
+            exit 1
+          fi
+
+          if [ -n "$EXTRA_MODULES" ]; then
+            echo "⚠️  WARNING: The following modules are in test constants but NOT in zeebe/ directory:"
+            for m in $EXTRA_MODULES; do
+              echo "  - $m"
+            done
+            echo ""
+            echo "Note: These modules exist outside zeebe/ (e.g., clients/, load-tests/)."
+            echo "      They are configured in test constants but not validated by this zeebe-only check."
+            echo ""
+          fi
+
+          # Success!
+          ZEEBE_MODULE_COUNT=$(echo "$ZEEBE_MODULES" | wc -w | xargs)
+          EXCLUDED_COUNT=$(echo "$EXCLUDED" | wc -w | xargs)
+          COVERED_COUNT=$(echo "$ALL_COVERED" | wc -l | xargs)
+          NON_ZEEBE_COUNT=$(echo "$EXTRA_MODULES" | wc -w | xargs)
+
+          echo "✅ All zeebe/ directory modules are covered by test constants!"
+          echo ""
+          echo "📈 Summary:"
+          echo "  - Zeebe modules found: $ZEEBE_MODULE_COUNT"
+          echo "  - Excluded modules: $EXCLUDED_COUNT"
+          echo "  - Covered by tests: $COVERED_COUNT"
+          if [ "$NON_ZEEBE_COUNT" -gt 0 ]; then
+            echo "  - Non-zeebe/ modules: $NON_ZEEBE_COUNT (not validated)"
+          fi
+          echo ""
+          echo "🎉 Validation passed!"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
@@ -1416,7 +1576,7 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_roleId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "General"
 
   renovatelint:
