@@ -59,7 +59,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     useState<ListenerTypeFilter>();
   const [selectedTab, setSelectedTab] = useState<TabId>('variables');
 
-  const shouldFetchListeners = selectedElementInstanceKey || selectedElementId;
   const {
     data: jobs,
     fetchNextPage,
@@ -75,7 +74,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         kind: listenerTypeFilter,
       },
     },
-    disabled: !shouldFetchListeners,
+    disabled: !hasSelection,
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
