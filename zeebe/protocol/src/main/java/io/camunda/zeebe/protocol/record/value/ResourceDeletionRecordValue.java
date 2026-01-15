@@ -27,7 +27,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableResourceDeletionRecordValue.Builder.class)
-public interface ResourceDeletionRecordValue extends RecordValue, TenantOwned {
+public interface ResourceDeletionRecordValue
+    extends RecordValue, TenantOwned, BatchOperationRelated {
 
   /**
    * @return the key of the resource that will be deleted
@@ -38,4 +39,9 @@ public interface ResourceDeletionRecordValue extends RecordValue, TenantOwned {
    * @return whether resource history should be deleted
    */
   boolean isDeleteHistory();
+
+  /**
+   * @return the batch operation type
+   */
+  BatchOperationType getBatchOperationType();
 }
