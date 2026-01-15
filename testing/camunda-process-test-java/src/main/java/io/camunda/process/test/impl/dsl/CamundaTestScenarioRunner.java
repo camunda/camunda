@@ -32,6 +32,7 @@ import io.camunda.process.test.impl.dsl.instructions.AssertProcessInstanceMessag
 import io.camunda.process.test.impl.dsl.instructions.AssertUserTaskInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.AssertVariablesInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.BroadcastSignalInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.CompleteJobAdHocSubProcessInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CompleteJobInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CompleteUserTaskInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
@@ -70,6 +71,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new AssertVariablesInstructionHandler());
     registerHandler(new BroadcastSignalInstructionHandler());
     registerHandler(new CompleteJobInstructionHandler());
+    registerHandler(new CompleteJobAdHocSubProcessInstructionHandler());
     registerHandler(new CompleteUserTaskInstructionHandler());
     registerHandler(new CreateProcessInstanceInstructionHandler());
     registerHandler(new EvaluateConditionalStartEventInstructionHandler());

@@ -42,14 +42,14 @@ public interface CompleteJobAdHocSubProcessInstruction extends TestCaseInstructi
   JobSelector getJobSelector();
 
   /**
-   * The variables to complete the job with. Defaults to an empty map.
+   * The variables to complete the job with. Optional.
    *
    * @return the variables
    */
   Map<String, Object> getVariables();
 
   /**
-   * The elements to activate in the ad-hoc sub-process.
+   * The elements to activate in the ad-hoc sub-process. Optional.
    *
    * @return the list of elements to activate
    */
@@ -88,7 +88,7 @@ public interface CompleteJobAdHocSubProcessInstruction extends TestCaseInstructi
     String getElementId();
 
     /**
-     * The variables to set when activating the element. Defaults to an empty map.
+     * The variables to set when activating the element. Optional.
      *
      * @return the variables
      */

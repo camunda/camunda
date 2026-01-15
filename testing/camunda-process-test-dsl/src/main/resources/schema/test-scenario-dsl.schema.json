@@ -568,11 +568,11 @@
           "$ref": "#/definitions/JobSelector"
         },
         "variables": {
-          "description": "The variables to complete the job with. Defaults to an empty map.",
+          "description": "The variables to complete the job with. Optional.",
           "type": "object"
         },
         "activateElements": {
-          "description": "The elements to activate in the ad-hoc sub-process.",
+          "description": "The elements to activate in the ad-hoc sub-process. Optional.",
           "type": "array",
           "items": {
             "type": "object",
@@ -582,7 +582,7 @@
                 "type": "string"
               },
               "variables": {
-                "description": "The variables to set when activating the element. Defaults to an empty map.",
+                "description": "The variables to set when activating the element. Optional.",
                 "type": "object"
               }
             },

@@ -474,27 +474,7 @@ public class PojoCompatibilityTest {
                     .jobSelector(ImmutableJobSelector.builder().elementId("ad-hoc-sp").build())
                     .build())),
         Arguments.of(
-            "complete job ad-hoc sub-process: with variables",
-            singleTestCase(
-                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().jobType("ad-hoc-task").build())
-                    .putVariables("result", "okay")
-                    .build())),
-        Arguments.of(
-            "complete job ad-hoc sub-process: with activate elements",
-            singleTestCase(
-                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
-                    .jobSelector(ImmutableJobSelector.builder().elementId("ad-hoc-sp").build())
-                    .addActivateElements(
-                        ImmutableActivateElement.builder()
-                            .elementId("task1")
-                            .putVariables("x", 1)
-                            .build())
-                    .addActivateElements(
-                        ImmutableActivateElement.builder().elementId("task2").build())
-                    .build())),
-        Arguments.of(
-            "complete job ad-hoc sub-process: with all options",
+            "complete job ad-hoc sub-process: full",
             singleTestCase(
                 ImmutableCompleteJobAdHocSubProcessInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().jobType("ad-hoc-task").build())
