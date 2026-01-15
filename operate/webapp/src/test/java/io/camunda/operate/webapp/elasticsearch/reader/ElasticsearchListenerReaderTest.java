@@ -30,19 +30,19 @@ import org.springframework.test.util.ReflectionTestUtils;
 public class ElasticsearchListenerReaderTest {
 
   @Mock private JobTemplate jobTemplate;
-  @Mock private ElasticsearchClient es8client;
+  @Mock private ElasticsearchClient esClient;
 
   private ElasticsearchListenerReader underTest;
 
   @BeforeEach
   public void setUp() {
     underTest = new ElasticsearchListenerReader(jobTemplate);
-    ReflectionTestUtils.setField(underTest, "es8client", es8client);
+    ReflectionTestUtils.setField(underTest, "esClient", esClient);
   }
 
   @Test
   public void testGetListenerExecutionsFailWithException() throws IOException {
-    when(es8client.search(any(SearchRequest.class), any(Class.class)))
+    when(esClient.search(any(SearchRequest.class), any(Class.class)))
         .thenThrow(new IOException("Exception to test exception handling."));
     when(jobTemplate.getAlias()).thenReturn("operate-job-8.6.0");
 

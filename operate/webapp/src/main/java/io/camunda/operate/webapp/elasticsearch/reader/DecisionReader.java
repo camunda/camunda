@@ -63,7 +63,7 @@ public class DecisionReader extends AbstractReader
         new SearchRequest.Builder().index(decisionIndex.getAlias()).query(tenantAwareQuery).build();
 
     try {
-      final var response = es8client.search(searchRequest, DecisionDefinitionEntity.class);
+      final var response = esClient.search(searchRequest, DecisionDefinitionEntity.class);
       final var totalHits = response.hits().total().value();
       if (totalHits == 1) {
         final var hit = response.hits().hits().get(0);
@@ -141,7 +141,7 @@ public class DecisionReader extends AbstractReader
             .build();
 
     try {
-      final var searchResponse = es8client.search(searchRequest, DecisionDefinitionEntity.class);
+      final var searchResponse = esClient.search(searchRequest, DecisionDefinitionEntity.class);
       final var groups = searchResponse.aggregations().get(tenantsGroupsAggName).sterms();
       final var result = new HashMap<String, List<DecisionDefinitionEntity>>();
 

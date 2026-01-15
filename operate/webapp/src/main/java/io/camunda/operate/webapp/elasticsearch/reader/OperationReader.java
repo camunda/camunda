@@ -114,7 +114,7 @@ public class OperationReader extends AbstractReader
             .build();
 
     try {
-      final var searchResponse = es8client.search(searchRequest, OperationEntity.class);
+      final var searchResponse = esClient.search(searchRequest, OperationEntity.class);
       return searchResponse.hits().hits().stream().map(Hit::source).toList();
     } catch (final IOException e) {
       final String message =
@@ -144,7 +144,7 @@ public class OperationReader extends AbstractReader
             .sort(sortOrder(PROCESS_INSTANCE_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
     try {
-      final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
+      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
@@ -179,7 +179,7 @@ public class OperationReader extends AbstractReader
             .sort(sortOrder(INCIDENT_KEY, SortOrder.Asc), sortOrder(ID, SortOrder.Asc));
 
     try {
-      final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
+      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
@@ -216,7 +216,7 @@ public class OperationReader extends AbstractReader
             .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
 
     try {
-      final var resStream = scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class);
+      final var resStream = scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class);
       return resStream
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
@@ -250,7 +250,7 @@ public class OperationReader extends AbstractReader
             .sort(ElasticsearchUtil.sortOrder(ID, SortOrder.Asc));
 
     try {
-      return scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class)
+      return scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -274,7 +274,7 @@ public class OperationReader extends AbstractReader
 
     try {
       final var operationEntities =
-          scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class)
+          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
               .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .toList();
@@ -307,7 +307,7 @@ public class OperationReader extends AbstractReader
 
     try {
       final var operationEntities =
-          scrollAllStream(es8client, searchRequestBuilder, OperationEntity.class)
+          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
               .flatMap(res -> res.hits().hits().stream())
               .map(Hit::source)
               .toList();
@@ -345,7 +345,7 @@ public class OperationReader extends AbstractReader
             .build();
 
     try {
-      final var searchResponse = es8client.search(searchRequest, OperationEntity.class);
+      final var searchResponse = esClient.search(searchRequest, OperationEntity.class);
       return searchResponse.aggregations().get(BATCH_OPERATION_ID_AGGREGATION).sterms();
     } catch (final IOException e) {
       final String message =
