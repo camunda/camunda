@@ -26,12 +26,16 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValueAssert;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.ControllableStreamClockImpl;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +53,8 @@ final class JobBatchCollectorTest {
   private static final String JOB_TYPE = "job";
 
   private final RecordLengthEvaluator lengthEvaluator = new RecordLengthEvaluator();
+  private final ControllableStreamClock clock =
+      new ControllableStreamClockImpl(InstantSource.system());
 
   @SuppressWarnings("unused") // injected by the extension
   private MutableProcessingState state;
@@ -58,7 +64,8 @@ final class JobBatchCollectorTest {
   @BeforeEach
   void beforeEach() {
     collector =
-        new JobBatchCollector(state.getJobState(), state.getVariableState(), lengthEvaluator);
+        new JobBatchCollector(
+            state.getJobState(), state.getVariableState(), lengthEvaluator, clock);
   }
 
   @Test
@@ -173,7 +180,9 @@ final class JobBatchCollectorTest {
     // given
     final TypedRecord<JobBatchRecord> record = createRecord();
     final long scopeKey = state.getKeyGenerator().nextKey();
-    final long expectedDeadline = record.getTimestamp() + record.getValue().getTimeout();
+    clock.pinAt(Instant.now().plusSeconds(30)); // pin clock for a deterministic timeout
+
+    final long expectedDeadline = clock.millis() + record.getValue().getTimeout();
     createJob(scopeKey);
     createJob(scopeKey);
 
