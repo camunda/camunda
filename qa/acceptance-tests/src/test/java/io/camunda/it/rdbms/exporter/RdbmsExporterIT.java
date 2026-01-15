@@ -416,7 +416,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportDecisionRequirements() {
     // given
-    final var record = getDecisionRequirementsCreatedRecord(1L);
+    final var record = getDecisionRequirementsCreatedRecord(32L);
 
     // when
     exporter.export(record);
@@ -453,7 +453,7 @@ class RdbmsExporterIT {
             .withDecisionType(DecisionDefinitionType.DECISION_TABLE.toString())
             .build();
     final var decisionEvaluationRecord =
-        getDecisionEvaluationEvaluatedRecord(1L, List.of(evaluatedDecisionValue));
+        getDecisionEvaluationEvaluatedRecord(64L, List.of(evaluatedDecisionValue));
 
     // when
     exporter.export(decisionEvaluationRecord);
@@ -886,7 +886,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportCreatedAndDeletedMapping() {
     // given
-    final var mappingRuleCreatedRecord = getMappingRuleRecord(1L, MappingRuleIntent.CREATED);
+    final var mappingRuleCreatedRecord = getMappingRuleRecord(16L, MappingRuleIntent.CREATED);
 
     // when
     exporter.export(mappingRuleCreatedRecord);
