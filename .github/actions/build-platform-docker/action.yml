@@ -37,14 +37,6 @@ inputs:
     description: 'Path to the dockerfile, that should be used; defaults to Dockerfile'
     required: false
     default: 'Dockerfile'
-  publicBaseImage:
-    description: 'Base image from DockerHub to use when running on fork PRs without Minimus access'
-    required: false
-    default: 'eclipse-temurin:21-jre-noble'
-  publicBaseDigest:
-    description: 'Base image digest from DockerHub to use when running on fork PRs without Minimus access'
-    required: false
-    default: 'sha256:67fc762eabacb56e5444b367889e04ce8c839b8f4b3d8ef3e459c5579fbefd8a'
   debug:
     description: 'Enable debug logging for BuildKit daemon'
     required: false
@@ -140,8 +132,7 @@ runs:
 
           {
             echo 'result<<EOF'
-            echo 'BASE_IMAGE=${{ inputs.publicBaseImage }}'
-            echo 'BASE_DIGEST=${{ inputs.publicBaseDigest }}'
+            echo 'BASE=public'
             echo 'EOF'
           } | tee -a $GITHUB_OUTPUT
         fi
