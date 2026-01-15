@@ -13,7 +13,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {
   useModificationsByFlowNode,
   useWillAllFlowNodesBeCanceled,
-  useNewScopeIdForFlowNode,
+  useNewScopeKeyForElement,
 } from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
@@ -300,17 +300,17 @@ describe('modifications hooks', () => {
     });
   });
 
-  describe('useNewScopeIdForFlowNode', () => {
+  describe('useNewScopeKeyForElement', () => {
     beforeEach(() => {
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
     });
 
-    it('should return null if elementId is undefined', () => {
+    it('should return null if elementId is null', () => {
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useNewScopeIdForFlowNode(), {
+      const {result} = renderHook(() => useNewScopeKeyForElement(null), {
         wrapper: getWrapper(),
       });
 
@@ -332,7 +332,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useNewScopeIdForFlowNode('node1'), {
+      const {result} = renderHook(() => useNewScopeKeyForElement('node1'), {
         wrapper: getWrapper(),
       });
 
@@ -356,7 +356,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useNewScopeIdForFlowNode('node1'), {
+      const {result} = renderHook(() => useNewScopeKeyForElement('node1'), {
         wrapper: getWrapper(),
       });
 
@@ -381,7 +381,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useNewScopeIdForFlowNode('node2'), {
+      const {result} = renderHook(() => useNewScopeKeyForElement('node2'), {
         wrapper: getWrapper(),
       });
 
@@ -406,7 +406,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useNewScopeIdForFlowNode('node2'), {
+      const {result} = renderHook(() => useNewScopeKeyForElement('node2'), {
         wrapper: getWrapper(),
       });
 
