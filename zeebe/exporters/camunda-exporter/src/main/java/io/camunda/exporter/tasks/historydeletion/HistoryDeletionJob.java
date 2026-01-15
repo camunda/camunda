@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
+import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
@@ -42,8 +43,7 @@ public class HistoryDeletionJob implements BackgroundTask {
       final Executor executor,
       final HistoryDeletionRepository historyDeletionRepository,
       final Logger logger,
-      final HistoryDeletionIndex historyDeletionIndex,
-      final ListViewTemplate listViewTemplate) {
+      final ExporterResourceProvider resourceProvider) {
     this.processInstanceDependants =
         processInstanceDependants.stream()
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
@@ -51,8 +51,8 @@ public class HistoryDeletionJob implements BackgroundTask {
     this.executor = executor;
     deleterRepository = historyDeletionRepository;
     this.logger = logger;
-    this.historyDeletionIndex = historyDeletionIndex;
-    this.listViewTemplate = listViewTemplate;
+    historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
+    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
   }
 
   @Override

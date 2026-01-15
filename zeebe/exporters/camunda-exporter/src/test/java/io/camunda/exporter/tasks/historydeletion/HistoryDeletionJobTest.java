@@ -46,16 +46,12 @@ final class HistoryDeletionJobTest {
     repository = mock(HistoryDeletionRepository.class);
     final TestExporterResourceProvider resourceProvider =
         new TestExporterResourceProvider("", true);
-    historyDeletionIndex = resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class);
-    listViewTemplate = resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     dependants =
         resourceProvider.getIndexTemplateDescriptors().stream()
             .filter(ProcessInstanceDependant.class::isInstance)
             .map(ProcessInstanceDependant.class::cast)
             .toList();
-    job =
-        new HistoryDeletionJob(
-            dependants, executor, repository, LOGGER, historyDeletionIndex, listViewTemplate);
+    job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
   }
 
   @Test

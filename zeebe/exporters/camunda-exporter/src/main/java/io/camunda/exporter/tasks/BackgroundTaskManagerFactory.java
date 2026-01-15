@@ -42,7 +42,6 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -414,12 +413,7 @@ public final class BackgroundTaskManagerFactory {
 
     return buildHistoryDeletionTask(
         new HistoryDeletionJob(
-            dependantTemplates,
-            executor,
-            historyDeletionRepository,
-            logger,
-            resourceProvider.getIndexDescriptor(HistoryDeletionIndex.class),
-            resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class)));
+            dependantTemplates, executor, historyDeletionRepository, logger, resourceProvider));
   }
 
   private ReschedulingTask buildHistoryDeletionTask(final BackgroundTask task) {
