@@ -8,8 +8,9 @@
 
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {formatBatchTitle} from 'modules/utils/operationsLog';
-import {Link} from '@carbon/react';
+import {Link} from 'modules/components/Link';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {Paths} from 'modules/Routes';
 
 type Props = {
   item: AuditLog;
@@ -28,8 +29,8 @@ const CellAppliedTo: React.FC<Props> = ({item}) => {
           <div>
             {item.batchOperationKey ? (
               <Link
-                href={`/batch-operations/${item.batchOperationKey}`}
-                target="_self"
+                to={Paths.batchOperation(item.batchOperationKey)}
+                aria-label={`View batch operation ${item.batchOperationKey}`}
               >
                 {item.batchOperationKey}
               </Link>
@@ -57,7 +58,10 @@ const CellAppliedTo: React.FC<Props> = ({item}) => {
             }
           </div>
           <div>
-            <Link href={`/processes/${item.entityKey}`} target="_self">
+            <Link
+              to={Paths.processInstance(item.entityKey)}
+              aria-label={`View process instance ${item.entityKey}`}
+            >
               {item.entityKey}
             </Link>
           </div>
@@ -67,7 +71,10 @@ const CellAppliedTo: React.FC<Props> = ({item}) => {
       return (
         <>
           <div>
-            <Link href={`/decisions/${item.entityKey}`} target="_self">
+            <Link
+              to={Paths.decisionInstance(item.entityKey)}
+              aria-label={`View decision ${item.entityKey}`}
+            >
               {item.entityKey}
             </Link>
           </div>

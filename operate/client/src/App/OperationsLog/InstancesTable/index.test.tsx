@@ -311,10 +311,12 @@ describe('OperationsLog InstancesTable', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() => {
-      const link = screen.getByRole('link', {name: '999'});
-      expect(link).toHaveAttribute('href', '/processes/999');
-    });
+    expect(
+      await screen.findByRole('link', {name: 'View process instance 999'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {name: 'View process instance 999'}),
+    ).toHaveAttribute('href', '/processes/999');
   });
 
   it('should render decision instance link for DECISION entity type', async () => {
@@ -340,9 +342,11 @@ describe('OperationsLog InstancesTable', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() => {
-      const link = screen.getByRole('link', {name: '888'});
-      expect(link).toHaveAttribute('href', '/decisions/888');
-    });
+    expect(
+      await screen.findByRole('link', {name: 'View decision 888'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {name: 'View decision 888'}),
+    ).toHaveAttribute('href', '/decisions/888');
   });
 });
