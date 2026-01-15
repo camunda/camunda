@@ -32,8 +32,6 @@ public class AuditLogUtils {
   public static final String TENANT_A = "tenantA";
   public static final String TENANT_B = "tenantB";
 
-  public static final long USER_TASK_KEY = 123L;
-
   public static final String PROCESS_A_ID = "processA";
   public static final BpmnModelInstance PROCESS_A =
       Bpmn.createExecutableProcess(PROCESS_A_ID)
