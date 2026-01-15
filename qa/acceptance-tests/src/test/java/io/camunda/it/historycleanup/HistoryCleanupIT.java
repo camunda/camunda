@@ -18,10 +18,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.HistoryMultiDbTest;
 import java.time.Duration;
 import java.util.Objects;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +32,17 @@ public class HistoryCleanupIT {
 
   static final String RESOURCE_NAME = "process/process_with_assigned_user_task.bpmn";
   private static CamundaClient camundaClient;
+  private static DatabaseType databaseType;
+  private static Duration cleanupTimeout;
+
+  @BeforeAll
+  static void setup() {
+    cleanupTimeout =
+        switch (databaseType) {
+          case OS, AWS_OS -> Duration.ofSeconds(210); // OS cleanup can not be faster than 3min
+          default -> Duration.ofSeconds(30);
+        };
+  }
 
   @Test
   void shouldDeleteProcessesWhichAreMarkedForCleanup() {
@@ -66,7 +79,7 @@ public class HistoryCleanupIT {
 
     // and soon it should be gone
     Awaitility.await("should wait until process and tasks are deleted")
-        .atMost(Duration.ofMinutes(5))
+        .atMost(cleanupTimeout)
         .pollDelay(Duration.ofMillis(500))
         .pollInterval(Duration.ofSeconds(10))
         .ignoreExceptions() // Ignore exceptions and continue retrying

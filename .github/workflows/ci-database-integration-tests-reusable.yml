@@ -94,7 +94,7 @@ jobs:
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Stop Database service
-        if: always() && inputs.database-type != 'h2'
+        if: ${{ always() && inputs.database-type != 'h2' }}
         run: docker-compose -f db/docker-compose.yml down
       - name: Analyze Test Runs
         id: analyze-test-run

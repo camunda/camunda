@@ -14,6 +14,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.HistoryMultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -26,15 +27,25 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @HistoryMultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.database.type",
+    matches = "rdbms.*$") // RDBMS will be supported after the implementation
+// of https://github.com/camunda/camunda/issues/41683
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ProcessInstanceHistoryCleanupIT {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ProcessInstanceHistoryCleanupIT.class);
+
   private static CamundaClient client;
+  private static DatabaseType databaseType;
 
   private static final String ROOT_PROCESS_ID = "rootProcess";
   private static final String CHILD_PROCESS_ID = "childProcess";
@@ -42,8 +53,18 @@ public class ProcessInstanceHistoryCleanupIT {
   private static final String MESSAGE_NAME = "message";
   private static final String JOB_TYPE = "job";
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
-  private static final Duration CLEANUP_TIMEOUT = Duration.ofMinutes(2);
+  private static Duration cleanupTimeout;
+
   private final AtomicBoolean shouldWorkerCompleteJob = new AtomicBoolean(false);
+
+  @BeforeAll
+  static void setup() {
+    cleanupTimeout =
+        switch (databaseType) {
+          case OS, AWS_OS -> Duration.ofSeconds(210); // OS cleanup can not be faster than 3min
+          default -> Duration.ofSeconds(30);
+        };
+  }
 
   @Test
   void shouldDeleteInstancesDataOnlyWhenRootInstancesAreCompleted() {
@@ -82,9 +103,17 @@ public class ProcessInstanceHistoryCleanupIT {
 
   private void assertProcessInstanceDataIsPresent(
       final CamundaClient client, final long processInstanceKey) {
+    if (databaseType == DatabaseType.OS || databaseType == DatabaseType.AWS_OS) {
+      // In OpenSearch, data cleanup only happens in the 3rd minute after completion due to ISM
+      // policies, even when the ISM job interval is reduced to 1 minute for tests.
+      // Therefore, we skip this check to avoid false negatives and longer wait times.
+      return;
+    }
     Awaitility.await("Wait and verify process instance data is still present")
-        .pollDelay(TIMEOUT)
-        .timeout(TIMEOUT.plusSeconds(5))
+        .logging(LOGGER::trace)
+        .pollDelay(cleanupTimeout)
+        .timeout(cleanupTimeout.plusSeconds(1))
+        .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
               final var verifiers = getDataVerifiers(client, processInstanceKey);
@@ -99,8 +128,9 @@ public class ProcessInstanceHistoryCleanupIT {
   private void assertProcessInstanceDataIsCleanedUp(
       final CamundaClient client, final long processInstanceKey) {
     Awaitility.await("Wait for process instance data cleanup")
-        .timeout(CLEANUP_TIMEOUT)
-        .pollInterval(Duration.ofSeconds(1))
+        .logging(LOGGER::trace)
+        .timeout(cleanupTimeout)
+        .pollInterval(Duration.ofSeconds(5))
         .untilAsserted(
             () -> {
               final var verifiers = getDataVerifiers(client, processInstanceKey);
