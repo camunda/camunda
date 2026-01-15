@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaJackson3ObjectMapper;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.spring.configuration.JsonMapperConfigurationTest.OverrideObjectMapper.JacksonConfiguration;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,12 +41,12 @@ public class JsonMapperConfigurationTest {
   @Nested
   @SpringBootTest(classes = {JsonMapperConfiguration.class, JacksonAutoConfiguration.class})
   class JacksonSpringBoot {
-    @Autowired JsonMapperConfiguration config;
     @Autowired JsonMapper jsonMapper;
+    @Autowired tools.jackson.databind.ObjectMapper objectMapper;
 
     @Test
     void shouldUseAutoConfiguredObjectMapper() {
-      assertThat(config.jackson3ObjectMapper).isNotNull();
+      assertThat(objectMapper).isNotNull();
     }
 
     @Test
@@ -57,11 +58,17 @@ public class JsonMapperConfigurationTest {
   @Nested
   @SpringBootTest(classes = {JsonMapperConfiguration.class, Jackson2AutoConfiguration.class})
   class Jackson2SpringBoot {
-    @Autowired JsonMapperConfiguration config;
+    @Autowired com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    @Autowired JsonMapper jsonMapper;
 
     @Test
     void shouldUseAutoConfiguredObjectMapper() {
-      assertThat(config.objectMapper).isNotNull();
+      assertThat(objectMapper).isNotNull();
+    }
+
+    @Test
+    void shouldUseCamundaJackson2ObjectMapper() {
+      assertThat(jsonMapper).isInstanceOf(CamundaObjectMapper.class);
     }
   }
 
