@@ -35,17 +35,12 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import oracle.net.nt.Clock;
@@ -228,20 +223,12 @@ public class DynamicNodeIdIT {
       }
     }
 
-    // Capture initial state (v0)
+    // Capture initial state
     final Lease leaseBeforeRestart = awaitValidLease(nodeId);
     final long versionBeforeRestart = leaseBeforeRestart.nodeInstance().version().version();
     assertThat(versionBeforeRestart).isEqualTo(1L);
 
-    final Path v0Dir = getVersionDirectory(broker, 1);
-    assertThat(v0Dir).exists().isDirectory();
-
-    // Verify v0 initialization file
-    final var v0InitInfo = readInitializationFile(v0Dir);
-    assertThat(v0InitInfo.initializedAt()).isGreaterThan(0);
-    assertThat(v0InitInfo.initializedFrom()).isNull();
-
-    // when - gracefully restart broker
+    // when - restart broker
     broker.stop();
 
     // Verify lease is released
@@ -270,28 +257,26 @@ public class DynamicNodeIdIT {
     }
 
     broker.start().await(TestHealthProbe.READY);
-    testCluster.awaitCompleteTopology();
+    testCluster.awaitHealthyTopology();
 
-    // then - verify new version created
+    // then
     final Lease leaseAfterRestart = awaitValidLease(nodeId);
     final long versionAfterRestart = leaseAfterRestart.nodeInstance().version().version();
     assertThat(versionAfterRestart).isEqualTo(2L);
 
-    // Verify both version directories exist
-    assertThat(v0Dir).exists().isDirectory();
-    final Path v1Dir = getVersionDirectory(broker, 2);
+    // verify new directory is created and old is not deleted
+    final var v1Dir = getVersionDirectory(broker, 1);
     assertThat(v1Dir).exists().isDirectory();
+    final Path v2Dir = getVersionDirectory(broker, 2);
+    assertThat(v2Dir).exists().isDirectory();
 
     // Verify v1 initialization file
-    final var v1InitInfo = readInitializationFile(v1Dir);
-    assertThat(v1InitInfo.initializedAt()).isGreaterThan(0);
-    assertThat(v1InitInfo.initializedFrom()).isNotNull();
-    assertThat(v1InitInfo.initializedFrom().version()).isEqualTo(1L);
+    final var v2InitInfo = readInitializationFile(v2Dir);
+    assertThat(v2InitInfo.initializedAt()).isGreaterThan(0);
+    assertThat(v2InitInfo.initializedFrom()).isNotNull();
+    assertThat(v2InitInfo.initializedFrom().version()).isEqualTo(1L);
 
-    // Verify files are hard-linked (gracefulShutdonw) or copied otherwise
-    assertFilesAreHardLinkedOrCopied(v0Dir, v1Dir, gracefulShutdown);
-
-    // Verify data continuity - complete process instance started in v0
+    // Verify data continuity - complete process instance started in v2
     try (final CamundaClient client = testCluster.newClientBuilder().build()) {
       final var completedJobs = new ArrayList<ActivatedJob>();
 
@@ -331,65 +316,6 @@ public class DynamicNodeIdIT {
     final Path initFile = versionDir.resolve("directory-initialized.json");
     assertThat(initFile).exists().isRegularFile();
     return OBJECT_MAPPER.readValue(initFile.toFile(), DirectoryInitializationInfo.class);
-  }
-
-  private void assertFilesAreHardLinkedOrCopied(
-      final Path v0Dir, final Path v1Dir, final boolean assertHardLinked) throws IOException {
-    final String markerFile = "directory-initialized.json";
-    final AtomicInteger filesChecked = new AtomicInteger(0);
-
-    Files.walkFileTree(
-        v1Dir,
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult preVisitDirectory(
-              final Path dir, final BasicFileAttributes attrs) {
-            // Skip runtime directories
-            if (dir.getFileName().toString().equals("runtime")) {
-              return FileVisitResult.SKIP_SUBTREE;
-            }
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult visitFile(final Path target, final BasicFileAttributes attrs)
-              throws IOException {
-            final Path relative = v1Dir.relativize(target);
-
-            // Skip marker file
-            if (relative.getFileName().toString().equals(markerFile)) {
-              return FileVisitResult.CONTINUE;
-            }
-
-            final Path source = v0Dir.resolve(relative);
-
-            // Source file should exist
-            assertThat(source).exists();
-
-            // Files should be hard-linked (same inode)
-            if (assertHardLinked) {
-              assertThat(areHardLinked(source, target))
-                  .as("File %s should be hard-linked to %s", source, target)
-                  .isTrue();
-            } else {
-              assertThat(Files.readAllBytes(target)).isEqualTo(Files.readAllBytes(source));
-            }
-
-            filesChecked.incrementAndGet();
-            return FileVisitResult.CONTINUE;
-          }
-        });
-
-    // Ensure we actually checked some files
-    assertThat(filesChecked.get())
-        .as("Should have verified at least some hard-linked files")
-        .isGreaterThan(0);
-  }
-
-  private boolean areHardLinked(final Path file1, final Path file2) throws IOException {
-    final var key1 = Files.readAttributes(file1, BasicFileAttributes.class).fileKey();
-    final var key2 = Files.readAttributes(file2, BasicFileAttributes.class).fileKey();
-    return key1 != null && key2 != null && key1.equals(key2);
   }
 
   private List<Lease> readLeases(final List<S3Object> objectsInBucket) throws IOException {
