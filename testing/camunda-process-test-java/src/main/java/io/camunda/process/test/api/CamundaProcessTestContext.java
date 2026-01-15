@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
@@ -267,4 +268,27 @@ public interface CamundaProcessTestContext {
    * @param incidentSelector the selector to identify the incident to resolve
    */
   void resolveIncident(final IncidentSelector incidentSelector);
+
+  /**
+   * Completes a job of an ad-hoc sub-process matching the specified selector.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param jobResult the consumer to configure the ad-hoc sub-process result
+   */
+  void completeJobOfAdHocSubProcess(
+      final JobSelector jobSelector,
+      final Consumer<CompleteAdHocSubProcessResultStep1> jobResult);
+
+  /**
+   * Completes a job of an ad-hoc sub-process matching the specified selector and sets the provided
+   * variables.
+   *
+   * @param jobSelector the selector to identify the job to complete
+   * @param variables a map of variables to set when completing the job
+   * @param jobResult the consumer to configure the ad-hoc sub-process result
+   */
+  void completeJobOfAdHocSubProcess(
+      final JobSelector jobSelector,
+      final Map<String, Object> variables,
+      final Consumer<CompleteAdHocSubProcessResultStep1> jobResult);
 }
