@@ -65,7 +65,7 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
-       (github.actor == 'eamonnmoloney' || github.actor == 'remcowesterhoud' || github.actor == 'korthout' || github.actor == 'fabiopaini-camunda' || github.actor == 'eppdot' || github.actor == 'koevskinikola' || github.actor == 'kristinkomschow' || github.actor == 'konstantinos-mylosis' || github.actor == 'danielkelemen' || github.actor == 'tanjinyi' || github.actor == 'tmetzke' || github.actor == 'OmranAbazid' || github.actor == 'mustafadagher' || github.actor == 'ce-dmelnych') &&
+       contains(fromJson('["eamonnmoloney","remcowesterhoud","korthout","fabiopaini-camunda","eppdot","koevskinikola","kristinkomschow","konstantinos-mylosis","danielkelemen","tanjinyi","tmetzke","OmranAbazid","mustafadagher","ce-dmelnych"]'), github.actor) &&
        !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
