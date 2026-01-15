@@ -32,17 +32,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @MultiDbTest
  * final class MyMultiDbTest {
  *
- *   private CamundaClient client;
+ *   private static CamundaClient client;
+ *   private static DatabaseType databaseType;
  *
  *   @Test
- *   void shouldMakeUseOfClient() {
- *     // given
- *     // ... set up
+ *   void shouldUseInjectedFields() {
+ *     // Fields are automatically injected
+ *     topology = client.newTopologyRequest().send().join();
+ *     assertThat(topology.getClusterSize()).isEqualTo(1);
  *
- *     // when
- *     topology = c.newTopologyRequest().send().join();
+ *     if (databaseType == DatabaseType.ES) {
+ *       // Elasticsearch-specific logic
+ *     }
+ *   }
  *
- *     // then
+ *   @Test
+ *   void shouldUseParameterInjection(CamundaClient client, DatabaseType databaseType) {
+ *     // Can also use parameter injection instead of fields
+ *     topology = client.newTopologyRequest().send().join();
  *     assertThat(topology.getClusterSize()).isEqualTo(1);
  *   }
  * }</pre>
@@ -53,7 +60,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * @MultiDbTest
  * final class MyMultiDbTest {
  *
- *   private CamundaClient client;
+ *   private static CamundaClient client;
+ *   private static DatabaseType databaseType;
  *
  *   @MultiDbTestApplication
  *   private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
@@ -65,10 +73,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *     // ... set up
  *
  *     // when
- *     topology = c.newTopologyRequest().send().join();
+ *     topology = client.newTopologyRequest().send().join();
  *
  *     // then
  *     assertThat(topology.getClusterSize()).isEqualTo(1);
+ *     // Can also use databaseType field for conditional logic
  *   }
  * }</pre>
  */
