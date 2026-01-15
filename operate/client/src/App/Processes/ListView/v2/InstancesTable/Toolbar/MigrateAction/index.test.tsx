@@ -11,8 +11,10 @@ import {render, screen} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {
+  createProcessDefinition,
   mockCalledProcessInstances,
   mockProcessInstances,
+  mockProcessXML,
 } from 'modules/testUtils';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -28,25 +30,14 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {SelectedProcessDefinitionContext} from '../../../../selectedProcessDefinitionContext';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
-
-vi.mock('modules/stores/processes/processes.list', () => {
-  const PROCESS_DEFINITION_ID = '2251799813685249';
-  const PROCESS_ID = 'eventBasedGatewayProcess';
-  return {
-    processesStore: {
-      getPermissions: vi.fn(),
-      getProcessId: () => PROCESS_ID,
-      state: {processes: []},
-      versionsByProcessAndTenant: {
-        [`{${PROCESS_ID}}-{<default>}`]: [
-          {id: PROCESS_DEFINITION_ID, version: 1},
-        ],
-      },
-    },
-  };
+const selectedProcessDefinition = createProcessDefinition({
+  processDefinitionId: PROCESS_ID,
+  version: 1,
+  processDefinitionKey: PROCESS_DEFINITION_ID,
 });
 
 function getWrapper(initialPath: string = '') {
@@ -62,28 +53,32 @@ function getWrapper(initialPath: string = '') {
 
     return (
       <MemoryRouter initialEntries={[initialPath]}>
-        {children}
-        <button
-          onClick={processInstancesSelectionStore.selectAllProcessInstances}
+        <SelectedProcessDefinitionContext.Provider
+          value={selectedProcessDefinition}
         >
-          Select all instances
-        </button>
-        <button
-          onClick={() =>
-            processInstancesStore.fetchInstances({
-              fetchType: 'initial',
-              payload: {query: {}},
-            })
-          }
-        >
-          Fetch process instances
-        </button>
-        <button onClick={batchModificationStore.enable}>
-          Enter batch modification mode
-        </button>
-        <button onClick={batchModificationStore.reset}>
-          Exit batch modification mode
-        </button>
+          {children}
+          <button
+            onClick={processInstancesSelectionStore.selectAllProcessInstances}
+          >
+            Select all instances
+          </button>
+          <button
+            onClick={() =>
+              processInstancesStore.fetchInstances({
+                fetchType: 'initial',
+                payload: {query: {}},
+              })
+            }
+          >
+            Fetch process instances
+          </button>
+          <button onClick={batchModificationStore.enable}>
+            Enter batch modification mode
+          </button>
+          <button onClick={batchModificationStore.reset}>
+            Exit batch modification mode
+          </button>
+        </SelectedProcessDefinitionContext.Provider>
       </MemoryRouter>
     );
   };
@@ -105,6 +100,9 @@ function getWrapperWithQueryClient(initialPath: string = '') {
 }
 
 describe('<MigrateAction />', () => {
+  beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+  });
   it('should disable migrate button, when no process version is selected', () => {
     render(<MigrateAction />, {wrapper: getWrapperWithQueryClient()});
 

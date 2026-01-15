@@ -26,6 +26,7 @@ describe('<ListView /> - operations', () => {
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
       totalCount: 0,

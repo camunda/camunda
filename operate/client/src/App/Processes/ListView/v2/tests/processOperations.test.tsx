@@ -28,6 +28,7 @@ describe('<ListView /> - operations', () => {
   beforeEach(() => {
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
     mockSearchProcessDefinitions().withSuccess(
       searchResult([
         createProcessDefinition({
