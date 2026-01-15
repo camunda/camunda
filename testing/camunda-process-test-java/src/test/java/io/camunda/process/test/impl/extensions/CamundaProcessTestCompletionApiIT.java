@@ -22,9 +22,12 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.JobSelectors;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -332,5 +335,48 @@ public class CamundaProcessTestCompletionApiIT {
         .moveToActivity("user-task-1")
         .endEvent("success-end")
         .done();
+  }
+
+  @Test
+  void shouldCompleteJobOfAdHocSubProcess() {
+    // given
+    deployProcessModel(
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc-sub-process",
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeJobType("ad-hoc-sub-process");
+
+                  adHocSubProcess.task("A");
+                  adHocSubProcess.task("B");
+                })
+            .done());
+
+    final long processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    // when
+    processTestContext.completeJobOfAdHocSubProcess(
+        JobSelectors.byJobType("ad-hoc-sub-process"),
+        Collections.singletonMap("var", "new"),
+        result -> result.activateElement("A"));
+
+    processTestContext.completeJobOfAdHocSubProcess(
+        JobSelectors.byJobType("ad-hoc-sub-process"),
+        Collections.singletonMap("var", "updated"),
+        result -> result.completionConditionFulfilled(true));
+
+    // then
+    assertThatProcessInstance(ProcessInstanceSelectors.byKey(processInstanceKey))
+        .hasCompletedElements("ad-hoc-sub-process", "A")
+        .hasVariable("var", "updated")
+        .isCompleted();
   }
 }
