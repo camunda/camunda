@@ -42,18 +42,17 @@ function getDefinitionIdFromIdentifier(
  */
 function useDecisionDefinitions(tenantId?: string) {
   return useDecisionDefinitionsSearch({
-    payload: {
-      filter: {tenantId, isLatestVersion: true},
-      sort: [{field: 'name', order: 'asc'}],
-    },
+    payload: {filter: {tenantId, isLatestVersion: true}},
     select: (definitions) =>
-      definitions.map<DecisionDefinitionWithIdentifier>((definition) => ({
-        ...definition,
-        identifier: getDefinitionIdentifier(
-          definition.decisionDefinitionId,
-          definition.tenantId,
-        ),
-      })),
+      definitions
+        .map<DecisionDefinitionWithIdentifier>((definition) => ({
+          ...definition,
+          identifier: getDefinitionIdentifier(
+            definition.decisionDefinitionId,
+            definition.tenantId,
+          ),
+        }))
+        .sort((d1, d2) => d1.name.localeCompare(d2.name)),
   });
 }
 
