@@ -870,6 +870,11 @@ public class BrokerBasedPropertiesOverride {
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
 
+    setArg(
+        args,
+        "history.processInstanceRetentionMode",
+        database.getHistory().getProcessInstanceRetentionMode());
+
     setArg(args, "history.retention.policyName", database.getHistory().getPolicyName());
     setArg(args, "history.elsRolloverDateFormat", database.getHistory().getElsRolloverDateFormat());
     setArg(args, "history.rolloverInterval", database.getHistory().getRolloverInterval());
