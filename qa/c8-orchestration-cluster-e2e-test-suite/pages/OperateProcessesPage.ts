@@ -364,7 +364,7 @@ class OperateProcessesPage {
           await checkbox.waitFor({state: 'attached', timeout: 5000});
           await sleep(200);
           if (!(await checkbox.isChecked())) {
-            await checkbox.click({timeout: 10000});
+            await checkbox.click();
           }
           await sleep(100);
           break;

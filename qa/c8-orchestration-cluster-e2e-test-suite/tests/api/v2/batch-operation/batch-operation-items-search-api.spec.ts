@@ -15,7 +15,6 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertNotFoundRequest,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -25,12 +24,10 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponseShape} from '../../../../json-body-assertions';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
-  createCancellationBatch,
   createSingleIncidentProcessInstance,
   expectBatchState,
   verifyIncidentsForProcessInstance,
 } from '@requestHelpers';
-import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
 
 const SEARCH_BATCH_OPERATION_ITEMS_PATH = '/batch-operation-items/search';
