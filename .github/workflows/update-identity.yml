@@ -76,7 +76,7 @@ jobs:
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG;
       - name: Notify Camunda of completion
         if: success()
-        uses: camunda-community-hub/camunda-platform-8-github-action@787c775abd971a613cea6026a5525f504613f9ae
+        uses: camunda-community-hub/camunda-platform-8-github-action@9ceee922b16da4ac2b0d7b9e852b319b09382478
         with:
           clientConfig: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
           operation: publishMessage
