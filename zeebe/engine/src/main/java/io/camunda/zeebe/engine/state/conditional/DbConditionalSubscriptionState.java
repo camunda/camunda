@@ -42,6 +42,8 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
       processDefinitionKeyColumnFamily;
   private final ColumnFamily<DbLong, DbInt> processDefinitionKeyCountColumnFamily;
 
+  private final ColumnFamily<DbTenantAwareKey<DbLong>, DbNil> tenantIdColumnFamily;
+
   public DbConditionalSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     subscriptionKey = new DbLong();
@@ -81,6 +83,13 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
             transactionContext,
             processDefinitionKey,
             subscriptionCount);
+
+    tenantIdColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_TENANT_ID,
+            transactionContext,
+            tenantAwareSubscriptionKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -105,6 +114,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     subscriptionKeyColumnFamily.insert(tenantAwareSubscriptionKey, conditionalSubscription);
     processDefinitionKeyColumnFamily.insert(
         processDefinitionKeyAndTenantAwareSubscriptionKey, DbNil.INSTANCE);
+    tenantIdColumnFamily.insert(tenantAwareSubscriptionKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -127,6 +137,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
     subscriptionKeyColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
     processDefinitionKeyColumnFamily.deleteExisting(
         processDefinitionKeyAndTenantAwareSubscriptionKey);
+    tenantIdColumnFamily.deleteExisting(tenantAwareSubscriptionKey);
   }
 
   @Override
@@ -181,6 +192,26 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
           if (subscription != null) {
             visitor.visit(subscription);
           }
+        });
+  }
+
+  @Override
+  public void visitStartEventSubscriptionsByTenantId(
+      final String tenantId, final ConditionalSubscriptionVisitor visitor) {
+
+    tenantIdKey.wrapString(tenantId);
+
+    tenantIdColumnFamily.whileEqualPrefix(
+        tenantIdKey,
+        (key, nil) -> {
+          subscriptionKey.wrapLong(key.wrappedKey().getValue());
+          final var subscription =
+              subscriptionKeyColumnFamily.get(
+                  tenantAwareSubscriptionKey, ConditionalSubscription::new);
+          if (subscription != null) {
+            return visitor.visit(subscription);
+          }
+          return true;
         });
   }
 

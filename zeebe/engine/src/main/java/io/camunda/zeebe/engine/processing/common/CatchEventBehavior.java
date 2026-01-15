@@ -485,6 +485,7 @@ public final class CatchEventBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setBpmnProcessId(context.getBpmnProcessId())
         .setCatchEventId(event.getId())
         .setInterrupting(event.isInterrupting())
         .setCondition(BufferUtil.wrapString(conditional.getCondition()))

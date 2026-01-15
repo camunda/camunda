@@ -45,10 +45,20 @@ public interface ConditionalSubscriptionState {
    * Visits all conditional start event subscriptions for the given process definition key.
    *
    * @param processDefinitionKey the process definition key
-   * @param visitor the visitor to process each subscription
+   * @param visitor the visitor to process each subscription. The return value of the visitor will
+   *     be ignored
    */
   void visitStartEventSubscriptionsByProcessDefinitionKey(
       long processDefinitionKey, ConditionalSubscriptionVisitor visitor);
+
+  /**
+   * Visits all conditional start event subscriptions for the given tenant ID.
+   *
+   * @param tenantId the tenant ID
+   * @param visitor the visitor to process each subscription
+   */
+  void visitStartEventSubscriptionsByTenantId(
+      String tenantId, ConditionalSubscriptionVisitor visitor);
 
   @FunctionalInterface
   interface ConditionalSubscriptionVisitor {

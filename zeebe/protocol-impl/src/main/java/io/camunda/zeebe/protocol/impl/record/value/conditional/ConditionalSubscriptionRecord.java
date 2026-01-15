@@ -31,6 +31,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
   private static final StringValue CATCH_EVENT_ID_KEY = new StringValue("catchEventId");
   private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
   private static final StringValue CONDITION_KEY = new StringValue("condition");
@@ -46,6 +47,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
       new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
+  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final StringProperty catchEventIdProp = new StringProperty(CATCH_EVENT_ID_KEY, "");
   private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
   private final StringProperty conditionProp = new StringProperty(CONDITION_KEY, "");
@@ -57,11 +59,12 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ConditionalSubscriptionRecord() {
-    super(10);
+    super(11);
     declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
+        .declareProperty(bpmnProcessIdProp)
         .declareProperty(catchEventIdProp)
         .declareProperty(interruptingProp)
         .declareProperty(conditionProp)
@@ -75,6 +78,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
+    bpmnProcessIdProp.setValue(record.getBpmnProcessId());
     catchEventIdProp.setValue(record.getCatchEventId());
     interruptingProp.setValue(record.isInterrupting());
     conditionProp.setValue(record.getCondition());
@@ -198,6 +202,15 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
 
   public ConditionalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
     catchEventIdProp.setValue(catchEventId);
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public ConditionalSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 

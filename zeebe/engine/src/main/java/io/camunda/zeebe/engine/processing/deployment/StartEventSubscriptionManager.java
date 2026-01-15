@@ -273,6 +273,7 @@ public class StartEventSubscriptionManager {
     conditionalSubscriptionRecord.reset();
     conditionalSubscriptionRecord
         .setProcessDefinitionKey(processDefinition.getKey())
+        .setBpmnProcessId(processDefinition.getBpmnProcessId())
         .setCatchEventId(startEvent.getId())
         .setCondition(BufferUtil.wrapString(conditional.getCondition()))
         .setVariableNames(conditional.getVariableNames())

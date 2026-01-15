@@ -264,7 +264,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // job metrics
   JOB_METRICS(134, PARTITION_LOCAL),
   JOB_METRICS_STRING_ENCODING(135, PARTITION_LOCAL),
-  JOB_METRICS_META(136, PARTITION_LOCAL);
+  JOB_METRICS_META(136, PARTITION_LOCAL),
+
+  CONDITIONAL_SUBSCRIPTION_BY_TENANT_ID(137, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
