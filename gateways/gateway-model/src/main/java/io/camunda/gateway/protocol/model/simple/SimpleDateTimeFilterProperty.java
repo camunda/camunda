@@ -9,14 +9,13 @@ package io.camunda.gateway.protocol.model.simple;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import io.camunda.gateway.mcp.tool.ToolDescriptions;
 
-public record DateTimeFilterProperty(
+public record SimpleDateTimeFilterProperty(
     @JsonProperty
         @JsonPropertyDescription(
-            "Filter from this time (inclusive). " + ToolDescriptions.DATE_TIME_FORMAT)
+            "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00').")
         String from,
     @JsonProperty
         @JsonPropertyDescription(
-            "Filter up to this time (exclusive). " + ToolDescriptions.DATE_TIME_FORMAT)
+            "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00').")
         String to) {}
