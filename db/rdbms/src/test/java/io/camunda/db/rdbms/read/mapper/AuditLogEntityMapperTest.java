@@ -51,6 +51,7 @@ public class AuditLogEntityMapperTest {
             .decisionDefinitionId("decision-id")
             .processDefinitionKey(200L)
             .processInstanceKey(300L)
+            .rootProcessInstanceKey(312L)
             .elementInstanceKey(400L)
             .jobKey(500L)
             .userTaskKey(600L)
