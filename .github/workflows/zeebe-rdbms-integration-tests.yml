@@ -83,11 +83,7 @@ jobs:
             database-type: "mssql"
             database-image-version: "2025-latest"
             it-database-type: "rdbms_mssql"
-          # Oracle - Supported versions: 19c, 23ai
-          - database-name: "Oracle 19c"
-            database-type: "oracle"
-            database-image-version: "19-slim-faststart"
-            it-database-type: "rdbms_oracle"
+          # Oracle - Supported version: 23ai (19c not available as Docker image)
           - database-name: "Oracle 23ai"
             database-type: "oracle"
             database-image-version: "23-slim-faststart"

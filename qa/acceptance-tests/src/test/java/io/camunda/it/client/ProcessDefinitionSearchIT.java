@@ -662,16 +662,9 @@ public class ProcessDefinitionSearchIT {
             .send()
             .join();
 
-    final var all =
-        resultAsc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList();
-    final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    // depending on the database vendor, we have two different sort algorithms here... either
+    // case-insensitive or normal ascending/descending
+    assertSortedFlexible(resultAsc, resultDesc, ProcessDefinition::getProcessDefinitionId);
   }
 
   @Test
@@ -682,15 +675,9 @@ public class ProcessDefinitionSearchIT {
     final var resultDesc =
         camundaClient.newProcessDefinitionSearchRequest().sort(s -> s.name().desc()).send().join();
 
-    final var all = resultAsc.items().stream().map(ProcessDefinition::getName).toList();
-    final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(ProcessDefinition::getName).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessDefinition::getName).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    // depending on the database vendor, we have two different sort algorithms here... either
+    // case-insensitive or normal ascending/descending
+    assertSortedFlexible(resultAsc, resultDesc, ProcessDefinition::getName);
   }
 
   @Test
@@ -757,15 +744,9 @@ public class ProcessDefinitionSearchIT {
             .send()
             .join();
 
-    final var all = resultAsc.items().stream().map(ProcessDefinition::getTenantId).toList();
-    final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(ProcessDefinition::getTenantId).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(ProcessDefinition::getTenantId).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    // depending on the database vendor, we have two different sort algorithms here... either
+    // case-insensitive or normal ascending/descending
+    assertSortedFlexible(resultAsc, resultDesc, ProcessDefinition::getTenantId);
   }
 
   @Test
