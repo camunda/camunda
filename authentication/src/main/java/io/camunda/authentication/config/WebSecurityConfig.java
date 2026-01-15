@@ -95,7 +95,6 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGra
 import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
-import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
@@ -858,6 +857,8 @@ public class WebSecurityConfig {
       return filterChainBuilder.build();
     }
 
+    // the domain should be enough, but need to clarify if it is a security concern
+    // ask infosec
     private List<String> getIdPConnectUrls(final List<ClientRegistration> clientRegistrations) {
       return clientRegistrations.stream()
           .map(
@@ -954,10 +955,9 @@ public class WebSecurityConfig {
               .logout(
                   (logout) ->
                       logout
-                          .logoutSuccessHandler(
-                              new OidcClientInitiatedLogoutSuccessHandler(
-                                  clientRegistrationRepository))
                           .logoutUrl(LOGOUT_URL)
+                          .logoutSuccessHandler(
+                              new CamundaOidcLogoutSuccessHandler(clientRegistrationRepository))
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
