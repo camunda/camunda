@@ -46,7 +46,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
 
-  @Autowired protected ElasticsearchClient es8Client;
+  @Autowired protected ElasticsearchClient esClient;
 
   protected TestStandaloneBroker zeebeBroker;
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -70,7 +70,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   public void updateRefreshInterval(final String value) {
     try {
       final GetComponentTemplateResponse response =
-          es8Client.cluster().getComponentTemplate(r -> r.name(prefix + "*"));
+          esClient.cluster().getComponentTemplate(r -> r.name(prefix + "*"));
       response
           .componentTemplates()
           .forEach(
@@ -83,7 +83,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
                         b -> b.index(existingSettings).refreshInterval(ri -> ri.time(value)));
                 try {
                   final var putResponse =
-                      es8Client
+                      esClient
                           .cluster()
                           .putComponentTemplate(
                               r ->
@@ -108,7 +108,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       final String date =
           DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
       final var refreshRequest = new RefreshRequest.Builder().index(prefix + "*" + date).build();
-      es8Client.indices().refresh(refreshRequest);
+      esClient.indices().refresh(refreshRequest);
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -122,7 +122,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       client = null;
     }
     if (!failed) {
-      TestUtil.removeAllIndices(es8Client, prefix);
+      TestUtil.removeAllIndices(esClient, prefix);
     }
   }
 

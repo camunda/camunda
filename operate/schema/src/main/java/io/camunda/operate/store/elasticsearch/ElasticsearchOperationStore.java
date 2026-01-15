@@ -11,7 +11,9 @@ import static io.camunda.operate.util.ElasticsearchUtil.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.ScriptLanguage;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,7 +54,7 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Autowired private OperationTemplate operationTemplate;
 
@@ -65,14 +67,14 @@ public class ElasticsearchOperationStore implements OperationStore {
       final String alias, final Collection<String> ids) {
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(alias)
             .query(ElasticsearchUtil.idsQuery(ids.toArray(String[]::new)))
             .source(s -> s.fetch(Boolean.FALSE));
 
     try {
       final var resStream =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
 
       return resStream
           .flatMap(res -> res.hits().hits().stream())
@@ -122,14 +124,11 @@ public class ElasticsearchOperationStore implements OperationStore {
                 List.of(OperationState.SENT.name(), OperationState.LOCKED.name())));
 
     final var searchRequestBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
-            .index(operationTemplate.getAlias())
-            .size(1)
-            .query(query);
+        new SearchRequest.Builder().index(operationTemplate.getAlias()).size(1).query(query);
 
     try {
       return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, OperationEntity.class)
+              esClient, searchRequestBuilder, OperationEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -143,7 +142,7 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Override
   public String add(final BatchOperationEntity batchOperationEntity) throws PersistenceException {
     try {
-      es8Client.index(
+      esClient.index(
           i ->
               i.index(batchOperationTemplate.getFullQualifiedName())
                   .id(batchOperationEntity.getId())
@@ -165,7 +164,7 @@ public class ElasticsearchOperationStore implements OperationStore {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      es8Client.update(
+      esClient.update(
           u ->
               u.index(operationTemplate.getFullQualifiedName())
                   .id(operation.getId())
@@ -190,7 +189,7 @@ public class ElasticsearchOperationStore implements OperationStore {
       final String script,
       final Map<String, Object> parameters) {
     try {
-      es8Client.update(
+      esClient.update(
           u ->
               u.index(index)
                   .id(id)
@@ -209,13 +208,12 @@ public class ElasticsearchOperationStore implements OperationStore {
     return beanFactory.getBean(BatchRequest.class);
   }
 
-  private co.elastic.clients.elasticsearch._types.Script getScriptWithParameters(
-      final String script, final Map<String, Object> params) {
+  private Script getScriptWithParameters(final String script, final Map<String, Object> params) {
     final Map<String, JsonData> jsonDataParams =
         params.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
 
-    return new co.elastic.clients.elasticsearch._types.Script.Builder()
+    return new Script.Builder()
         .params(jsonDataParams)
         .source(script)
         .lang(ScriptLanguage.Painless)

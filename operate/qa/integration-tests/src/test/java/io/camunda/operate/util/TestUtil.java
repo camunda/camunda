@@ -446,32 +446,32 @@ public abstract class TestUtil {
     return variable;
   }
 
-  public static void removeAllIndices(final ElasticsearchClient es8Client, final String prefix) {
+  public static void removeAllIndices(final ElasticsearchClient esClient, final String prefix) {
     try {
       LOGGER.info("Removing indices");
 
       // Get all indices matching the prefix and delete in bulk
       final var getIndexRequest = new GetIndexRequest.Builder().index(prefix + "*").build();
-      final var indexResponses = es8Client.indices().get(getIndexRequest);
+      final var indexResponses = esClient.indices().get(getIndexRequest);
       final var indices = indexResponses.result().keySet().stream().toList();
 
       if (!indices.isEmpty()) {
         final var deleteIndexRequest = new DeleteIndexRequest.Builder().index(indices).build();
-        es8Client.indices().delete(deleteIndexRequest);
+        esClient.indices().delete(deleteIndexRequest);
         LOGGER.info("Deleted {} indices", indices.size());
       }
 
       // Get all templates matching the prefix and delete in bulk
       final var getTemplateRequest =
           new GetIndexTemplateRequest.Builder().name(prefix + "*").build();
-      final var templateResponses = es8Client.indices().getIndexTemplate(getTemplateRequest);
+      final var templateResponses = esClient.indices().getIndexTemplate(getTemplateRequest);
       final var templateNames =
           templateResponses.indexTemplates().stream().map(template -> template.name()).toList();
 
       if (!templateNames.isEmpty()) {
         final var deleteTemplateRequest =
             new DeleteIndexTemplateRequest.Builder().name(templateNames).build();
-        es8Client.indices().deleteIndexTemplate(deleteTemplateRequest);
+        esClient.indices().deleteIndexTemplate(deleteTemplateRequest);
         LOGGER.info("Deleted {} templates", templateNames.size());
       }
     } catch (final ElasticsearchException | IOException ex) {

@@ -33,7 +33,7 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
       LoggerFactory.getLogger(ElasticsearchSequenceFlowStore.class);
   @Autowired private SequenceFlowTemplate sequenceFlowTemplate;
 
-  @Autowired private ElasticsearchClient es8Client;
+  @Autowired private ElasticsearchClient esClient;
 
   @Override
   public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(
@@ -51,7 +51,7 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
 
     try {
       return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, SequenceFlowEntity.class)
+              esClient, searchRequestBuilder, SequenceFlowEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
