@@ -191,4 +191,31 @@ public class ProcessInstanceStartMeterTest {
                 .totalTime(TimeUnit.MILLISECONDS))
         .isGreaterThan(1);
   }
+
+  @Test
+  public void shouldRejectRecordingWhenMaxObservedInstancesReached() throws InterruptedException {
+    // given
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    availabilityChecker =
+        (list) -> {
+          countDownLatch.countDown();
+          return CompletableFuture.completedFuture(List.of());
+        };
+
+    processInstanceStartMeter.start();
+
+    // when - record MAX_OBSERVED_INSTANCES process instances
+    for (int i = 1; i <= ProcessInstanceStartMeter.MAX_OBSERVED_INSTANCES; i++) {
+      final boolean recorded =
+          processInstanceStartMeter.recordProcessInstanceStart(
+              Protocol.encodePartitionId(1, i), System.nanoTime());
+      assertThat(recorded).isTrue();
+    }
+
+    // then - attempting to record another instance should be rejected
+    final boolean rejected =
+        processInstanceStartMeter.recordProcessInstanceStart(
+            Protocol.encodePartitionId(1, 101), System.nanoTime());
+    assertThat(rejected).isFalse();
+  }
 }

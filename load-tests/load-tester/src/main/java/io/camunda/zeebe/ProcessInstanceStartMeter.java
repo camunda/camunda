@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class ProcessInstanceStartMeter implements AutoCloseable {
 
+  public static final int MAX_OBSERVED_INSTANCES = 100;
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
   private final Map<Long, PiCreationResult> startedInstances;
@@ -115,9 +116,23 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     startedInstances.remove(awaitingPI.processInstanceKey);
   }
 
-  public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
+  /**
+   * Records the start of a process instance creation.
+   *
+   * @param processInstanceKey the key of the process instance
+   * @param startTimeNanos the start time in nanoseconds
+   * @return true if the process instance was recorded, false if the maximum number of observed
+   *     instances has been reached
+   */
+  public boolean recordProcessInstanceStart(
+      final long processInstanceKey, final long startTimeNanos) {
+    if (startedInstances.size() >= MAX_OBSERVED_INSTANCES) {
+      return false;
+    }
     startedInstances.put(
         processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+
+    return true;
   }
 
   private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
