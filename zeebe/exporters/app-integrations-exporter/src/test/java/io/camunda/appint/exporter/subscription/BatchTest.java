@@ -17,7 +17,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class BatchTests {
+public class BatchTest {
 
   private static final int BATCH_SIZE = 3;
   private static final long FLUSH_INTERVAL = 500;

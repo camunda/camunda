@@ -7,21 +7,19 @@
  */
 package io.camunda.appint.exporter;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
-import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.appint.exporter.config.Config;
+import io.camunda.appint.exporter.subscription.SubscriptionFactory;
 import io.camunda.appint.exporter.transport.Authentication.ApiKey;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -31,21 +29,21 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.List;
 import java.util.Map;
-import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestInstance(Lifecycle.PER_CLASS)
 final class AppIntegrationsExporterIT {
 
-  @Rule
-  public WireMockRule wireMockRule =
-      new WireMockRule(wireMockConfig().dynamicPort().dynamicHttpsPort());
+  @RegisterExtension
+  public static WireMockExtension wireMock =
+      WireMockExtension.extensionOptions().options(wireMockConfig().dynamicPort()).build();
 
   // omit authorizations since they are removed from the records during serialization
   private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
@@ -56,12 +54,9 @@ final class AppIntegrationsExporterIT {
 
   @BeforeAll
   public void beforeAll() {
-    wireMockRule.start();
-    configureFor(wireMockRule.port());
-    stubFor(post(anyUrl()).willReturn(ok()));
-    final var url = "http://localhost:" + wireMockRule.port();
-
-    final var config = new Config().setUrl(url).setApiKey("test-key").setBatchSize(1);
+    final var url = "http://localhost:" + wireMock.getPort() + "/events";
+    final var config =
+        new Config().setUrl(url).setApiKey("test-key").setBatchSize(1).setMaxRetries(1);
     testContext.setConfiguration(new ExporterTestConfiguration<>("test", config));
 
     exporter = new AppIntegrationsExporter();
@@ -72,39 +67,39 @@ final class AppIntegrationsExporterIT {
   @AfterAll
   public void afterAll() {
     exporter.close();
-    wireMockRule.stop();
-  }
-
-  @BeforeEach
-  public void beforeEach() {
-    wireMockRule.resetRequests();
   }
 
   @Test
-  void shouldExportRecord() {
+  void shouldExportRecord() throws JsonProcessingException {
     // given
+    wireMock.stubFor(post("/events").willReturn(ok()));
     final var record = generateUserTaskRecords();
 
     // when
     exporter.export(record);
 
     final var expectedJson =
-        "[{\"id\":\""
-            + record.getKey()
-            + "\", \"type\":\""
-            + record.getValueType().name()
-            + "\", \"intent\":\""
-            + record.getIntent().name()
-            + "\", \"userTaskKey\":\""
-            + record.getValue().getUserTaskKey()
-            + "\", \"assignee\": \""
-            + record.getValue().getAssignee()
-            + "\"}]";
+        SubscriptionFactory.createJsonMapper()
+            .toJson(
+                Map.of(
+                    "events",
+                    List.of(
+                        Map.of(
+                            "id",
+                            String.valueOf(record.getKey()),
+                            "type",
+                            record.getValueType().name(),
+                            "intent",
+                            record.getIntent().name(),
+                            "userTaskKey",
+                            String.valueOf(record.getValue().getUserTaskKey()),
+                            "assignee",
+                            record.getValue().getAssignee()))));
 
     // then
-    verify(
+    wireMock.verify(
         exactly(1),
-        postRequestedFor(urlEqualTo("/"))
+        postRequestedFor(urlEqualTo("/events"))
             .withHeader(ApiKey.HEADER_NAME, equalTo("test-key"))
             .withRequestBody(equalToJson(expectedJson, true, true)));
   }

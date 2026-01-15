@@ -61,6 +61,6 @@ public class SupportedRecordsMapper implements RecordMapper<Event> {
             record.getValue().getPriority(),
             String.valueOf(record.getValue().getFormKey()));
 
-    return new Event.UserTaskCreatedEvent(eventMetaData, processMetaData, userTaskMetaData);
+    return new Event.UserTaskCreatedEvent(eventMetaData, userTaskMetaData, processMetaData);
   }
 }

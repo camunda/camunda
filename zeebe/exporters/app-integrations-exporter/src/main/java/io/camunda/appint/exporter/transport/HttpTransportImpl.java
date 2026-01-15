@@ -7,8 +7,6 @@
  */
 package io.camunda.appint.exporter.transport;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.failsafe.Failsafe;
 import dev.failsafe.RetryPolicy;
 import dev.failsafe.Timeout;
@@ -37,7 +35,7 @@ public class HttpTransportImpl implements Transport<Event> {
   private static final String CONTENT_TYPE_JSON = "application/json";
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
-  private final ObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
   private final CloseableHttpClient httpClient;
   private final String url;
   private final Authentication authentication;
@@ -45,8 +43,8 @@ public class HttpTransportImpl implements Transport<Event> {
   private final RetryPolicy<Object> retryPolicy;
 
   public HttpTransportImpl(
-      final ObjectMapper objectMapper, final HttpTransportConfig httpTransportConfig) {
-    this.objectMapper = objectMapper;
+      final JsonMapper jsonMapper, final HttpTransportConfig httpTransportConfig) {
+    this.jsonMapper = jsonMapper;
 
     url = httpTransportConfig.url();
     authentication = httpTransportConfig.authentication();
@@ -69,7 +67,8 @@ public class HttpTransportImpl implements Transport<Event> {
   @Override
   public void send(final List<Event> events) {
     log.debug("Posting records to url: {}", url);
-    sendPostRequest(url, toJson(events));
+    final var json = jsonMapper.toJson(new BatchRequest(events));
+    sendPostRequest(url, json);
   }
 
   private void sendPostRequest(final String url, final String json) {
@@ -86,6 +85,7 @@ public class HttpTransportImpl implements Transport<Event> {
   private StringEntity createJsonEntity(final String json) {
     final StringEntity entity = new StringEntity(json, "UTF-8");
     entity.setContentType(CONTENT_TYPE_JSON);
+    log.trace("Created JSON entity: {}", json);
     return entity;
   }
 
@@ -124,18 +124,10 @@ public class HttpTransportImpl implements Transport<Event> {
       log.debug("Successfully posted records to: {}", response.getStatusLine().getReasonPhrase());
     } else {
       log.debug(
-          "Failed posting records status:{} reason: {}",
+          "Failed posting records. Status: {} reason: {}",
           statusCode,
           response.getStatusLine().getReasonPhrase());
-      throw new RuntimeException("Failed to post records, status: " + statusCode);
-    }
-  }
-
-  private String toJson(final Object object) {
-    try {
-      return objectMapper.writeValueAsString(object);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to post records. Status: " + statusCode);
     }
   }
 

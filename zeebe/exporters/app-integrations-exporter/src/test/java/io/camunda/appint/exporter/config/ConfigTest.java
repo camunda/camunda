@@ -11,7 +11,7 @@ import static io.camunda.appint.exporter.config.ConfigValidator.*;
 
 import org.junit.jupiter.api.Test;
 
-public class ConfigTests {
+public class ConfigTest {
 
   @Test
   void testConfigValidation() {

@@ -36,7 +36,7 @@ public sealed interface Event {
 
   record UserTaskCreatedEvent(
       @JsonUnwrapped EventMetaData eventMetaData,
-      @JsonUnwrapped ProcessMetaData processMetaData,
-      @JsonUnwrapped UserTaskMetaData userTaskMetaData)
+      @JsonUnwrapped UserTaskMetaData userTaskMetaData,
+      @JsonUnwrapped ProcessMetaData processMetaData)
       implements Event {}
 }
