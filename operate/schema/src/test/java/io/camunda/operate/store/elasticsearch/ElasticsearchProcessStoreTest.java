@@ -16,8 +16,10 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.search.TotalHits;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
@@ -51,7 +53,7 @@ public class ElasticsearchProcessStoreTest {
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates =
       new LinkedList<>();
 
-  @Mock private ElasticsearchClient es8Client;
+  @Mock private ElasticsearchClient esClient;
 
   @Mock private OperateProperties operateProperties;
 
@@ -67,14 +69,14 @@ public class ElasticsearchProcessStoreTest {
             listViewTemplate,
             processInstanceDependantTemplates,
             operateProperties,
-            es8Client,
+            esClient,
             tenantHelper);
   }
 
   @Test
   public void testExceptionDuringGetDistinctCountFor() throws IOException {
 
-    when(es8Client.search(any(SearchRequest.class), any())).thenThrow(new IOException());
+    when(esClient.search(any(SearchRequest.class), any())).thenThrow(new IOException());
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
 
     final Optional<Long> result = underTest.getDistinctCountFor("foo");
@@ -87,7 +89,7 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessByKeyTooManyResults() throws IOException {
     final var mockRes = createMockSearchResponse(List.of(new Object(), new Object()));
 
-    whenEs8ClientSearch().thenReturn(mockRes);
+    whenEsClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -97,7 +99,7 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessByKeyNoResults() throws IOException {
     final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    whenEs8ClientSearch().thenReturn(mockRes);
+    whenEsClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -105,7 +107,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessByKeyWithException() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -115,7 +117,7 @@ public class ElasticsearchProcessStoreTest {
   public void testGetDiagramByKeyNoResults() throws IOException {
     final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    whenEs8ClientSearch().thenReturn(mockRes);
+    whenEsClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getDiagramByKey(123L));
@@ -125,7 +127,7 @@ public class ElasticsearchProcessStoreTest {
   public void testGetDiagramByKeyTooManyResults() throws IOException {
     final var mockRes = createMockSearchResponse(List.of(new Object(), new Object()));
 
-    whenEs8ClientSearch().thenReturn(mockRes);
+    whenEsClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getDiagramByKey(123L));
@@ -133,7 +135,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetDiagramByKeyWithException() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessByKey(123L));
@@ -141,7 +143,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessesGrouped() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessesGrouped(DEFAULT_TENANT_ID, Set.of("demoProcess")));
@@ -149,7 +151,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessesIdsToProcessesWithFields() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(
@@ -162,7 +164,7 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessInstanceListViewByKeyTooManyResults() throws IOException {
     final var mockRes = createMockSearchResponse(List.of(new Object(), new Object()));
 
-    whenEs8ClientSearch().thenReturn(mockRes);
+    whenEsClientSearch().thenReturn(mockRes);
     mockTenantHelper();
 
     assertThatExceptionOfType(NotFoundException.class)
@@ -173,25 +175,22 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessInstanceListViewByKeyNoResults() throws IOException {
     final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    whenEs8ClientSearch().thenReturn(mockRes);
+    whenEsClientSearch().thenReturn(mockRes);
     mockTenantHelper();
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessInstanceListViewByKey(123L));
   }
 
-  private OngoingStubbing<co.elastic.clients.elasticsearch.core.SearchResponse>
-      whenEs8ClientSearch() throws IOException {
-    return when(es8Client.search((Function) any(), any()));
+  private OngoingStubbing<SearchResponse> whenEsClientSearch() throws IOException {
+    return when(esClient.search((Function) any(), any()));
   }
 
-  private <T> co.elastic.clients.elasticsearch.core.SearchResponse<T> createMockSearchResponse(
-      final List<T> responseObjects) {
-    final var mockTotalHits =
-        Mockito.mock(co.elastic.clients.elasticsearch.core.search.TotalHits.class);
+  private <T> SearchResponse<T> createMockSearchResponse(final List<T> responseObjects) {
+    final var mockTotalHits = Mockito.mock(TotalHits.class);
     when(mockTotalHits.value()).thenReturn(Long.valueOf(responseObjects.size()));
 
-    final var mockRes = Mockito.mock(co.elastic.clients.elasticsearch.core.SearchResponse.class);
+    final var mockRes = Mockito.mock(SearchResponse.class);
     final var hitObjects =
         responseObjects.stream().map(obj -> Hit.of(h -> h.source(obj).index("test"))).toList();
 
@@ -207,7 +206,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testGetProcessInstanceListViewByKeyWithException() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
     mockTenantHelper();
 
     assertThatExceptionOfType(OperateRuntimeException.class)
@@ -216,7 +215,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetCoreStatistics() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getCoreStatistics(Set.of("demoProcess")));
@@ -226,7 +225,7 @@ public class ElasticsearchProcessStoreTest {
   public void testGetProcessInstanceTreePathByIdNoResults() throws IOException {
     final var mockRes = createMockSearchResponse(Collections.emptyList());
 
-    whenEs8ClientSearch().thenReturn(mockRes);
+    whenEsClientSearch().thenReturn(mockRes);
 
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
@@ -234,7 +233,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessInstanceTreePathById() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
@@ -242,7 +241,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringDeleteProcessInstanceFromTreePath() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.deleteProcessInstanceFromTreePath("2251799813685251"));
@@ -271,7 +270,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringGetProcessInstancesByProcessAndStates() throws IOException {
-    whenEs8ClientSearch().thenThrow(new IOException());
+    whenEsClientSearch().thenThrow(new IOException());
 
     final Exception exception =
         assertThatExceptionOfType(OperateRuntimeException.class)
@@ -307,7 +306,7 @@ public class ElasticsearchProcessStoreTest {
   @Test
   public void testExceptionDuringGetProcessInstancesByParentKeys() throws IOException {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
-    when(es8Client.search(any(SearchRequest.class), any())).thenThrow(new IOException());
+    when(esClient.search(any(SearchRequest.class), any())).thenThrow(new IOException());
 
     final Exception exception =
         assertThatExceptionOfType(OperateRuntimeException.class)
@@ -331,7 +330,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringDeleteProcessInstancesAndDependants() throws IOException {
-    when(es8Client.deleteByQuery(any((Function.class)))).thenThrow(new IOException());
+    when(esClient.deleteByQuery(any((Function.class)))).thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.deleteProcessInstancesAndDependants(Set.of(123L)));
@@ -352,7 +351,7 @@ public class ElasticsearchProcessStoreTest {
 
   @Test
   public void testExceptionDuringDeleteProcessDefinitionsByKeys() throws IOException {
-    when(es8Client.deleteByQuery(any(Function.class))).thenThrow(new IOException());
+    when(esClient.deleteByQuery(any(Function.class))).thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
         .isThrownBy(() -> underTest.deleteProcessDefinitionsByKeys(123L, 234L));

@@ -65,7 +65,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   protected static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchTestRuleProvider.class);
 
-  @Autowired protected ElasticsearchClient es8Client;
+  @Autowired protected ElasticsearchClient esClient;
 
   @Autowired protected OperateProperties operateProperties;
   protected boolean failed = false;
@@ -114,7 +114,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void finished(final Description description) {
     if (!failed) {
       final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
-      TestUtil.removeAllIndices(es8Client, indexPrefix);
+      TestUtil.removeAllIndices(esClient, indexPrefix);
     }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
@@ -140,7 +140,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
           new RefreshRequest.Builder()
               .index(searchEngineConfiguration.connect().getIndexPrefix() + "*")
               .build();
-      es8Client.indices().refresh(refreshRequest);
+      esClient.indices().refresh(refreshRequest);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Elasticsearch indices", t);
     }
@@ -202,7 +202,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       }
 
       ElasticsearchUtil.processBulkRequest(
-          es8Client,
+          esClient,
           bulkRequestBuilder,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
@@ -238,8 +238,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public int getOpenScrollcontextSize() {
     int openContexts = 0;
     try {
-      final Set<Map.Entry<String, Stats>> nodesResult =
-          es8Client.nodes().stats().nodes().entrySet();
+      final Set<Map.Entry<String, Stats>> nodesResult = esClient.nodes().stats().nodes().entrySet();
       for (final Map.Entry<String, Stats> entryNodes : nodesResult) {
         openContexts += entryNodes.getValue().indices().search().openContexts().intValue();
       }
@@ -258,7 +257,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public boolean indexExists(final String index) throws IOException {
     final var request = new ExistsRequest.Builder().index(index).build();
-    return es8Client.indices().exists(request).value();
+    return esClient.indices().exists(request).value();
   }
 
   private String getRoutingKey(final ExporterEntity entity) {
@@ -279,7 +278,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
             .allowNoIndices(false)
             .expandWildcards(ExpandWildcard.Open)
             .build();
-    final var response = es8Client.indices().get(getIndexRequest);
+    final var response = esClient.indices().get(getIndexRequest);
     return response.result() != null && response.result().size() >= minCountOfIndices;
   }
 }

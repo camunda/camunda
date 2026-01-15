@@ -80,7 +80,7 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
               .query(tenantAwareQuery)
               .source(s -> s.filter(f -> f.includes(DecisionRequirementsIndex.XML)));
 
-      final var res = es8Client.search(searchReq.build(), ElasticsearchUtil.MAP_CLASS);
+      final var res = esClient.search(searchReq.build(), ElasticsearchUtil.MAP_CLASS);
 
       if (res.hits().total().value() == 1) {
         return res.hits().hits().getFirst().source().get(DecisionRequirementsIndex.XML).toString();
@@ -115,12 +115,11 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchReqBuilder =
-        new co.elastic.clients.elasticsearch.core.SearchRequest.Builder()
+        new SearchRequest.Builder()
             .index(decisionRequirementsIndex.getAlias())
             .query(tenantAwareQuery);
 
-    return ElasticsearchUtil.scrollAllStream(
-            es8Client, searchReqBuilder, DecisionRequirements.class)
+    return ElasticsearchUtil.scrollAllStream(esClient, searchReqBuilder, DecisionRequirements.class)
         .flatMap(res -> res.hits().hits().stream())
         .map(Hit::source)
         .toList();

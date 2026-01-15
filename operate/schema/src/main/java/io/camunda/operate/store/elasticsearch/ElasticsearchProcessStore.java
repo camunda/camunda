@@ -78,7 +78,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  private final ElasticsearchClient es8Client;
+  private final ElasticsearchClient esClient;
 
   private final OperateProperties operateProperties;
 
@@ -89,13 +89,13 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final ListViewTemplate listViewTemplate,
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
       final OperateProperties operateProperties,
-      final ElasticsearchClient es8Client,
+      final ElasticsearchClient esClient,
       final ElasticsearchTenantHelper tenantHelper) {
     this.processIndex = processIndex;
     this.listViewTemplate = listViewTemplate;
     this.processInstanceDependantTemplates = processInstanceDependantTemplates;
     this.operateProperties = operateProperties;
-    this.es8Client = es8Client;
+    this.esClient = esClient;
     this.tenantHelper = tenantHelper;
   }
 
@@ -113,7 +113,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                 a -> a.cardinality(c -> c.precisionThreshold(1_000).field(fieldName)))
             .build();
     try {
-      final var res = es8Client.search(searchRequest, Void.class);
+      final var res = esClient.search(searchRequest, Void.class);
       final var distinctFieldCounts = res.aggregations().get(DISTINCT_FIELD_COUNTS).cardinality();
 
       return Optional.of(distinctFieldCounts.value());
@@ -132,7 +132,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       throw new OperateRuntimeException("Refresh indices needs at least one index to refresh.");
     }
     try {
-      es8Client.indices().refresh(r -> r.index(Arrays.asList(indices)));
+      esClient.indices().refresh(r -> r.index(Arrays.asList(indices)));
     } catch (final IOException ex) {
       throw new OperateRuntimeException("Failed to refresh indices " + Arrays.asList(indices), ex);
     }
@@ -145,7 +145,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       final var res =
-          es8Client.search(
+          esClient.search(
               s -> s.index(processIndex.getAlias()).query(tenantAwareQuery), ProcessEntity.class);
       if (res.hits().total().value() == 1) {
         return res.hits().hits().getFirst().source();
@@ -171,7 +171,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       final var res =
-          es8Client.search(
+          esClient.search(
               s ->
                   s.index(processIndex.getAlias())
                       .query(tenantAwareQuery)
@@ -260,7 +260,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       final var res =
-          es8Client.search(
+          esClient.search(
               s ->
                   s.index(processIndex.getAlias())
                       .query(tenantAwareQuery)
@@ -291,7 +291,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     }
     try {
       final var res =
-          es8Client.deleteByQuery(
+          esClient.deleteByQuery(
               d ->
                   d.index(processIndex.getAlias())
                       .query(
@@ -318,7 +318,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final var constantScoreQuery = ElasticsearchUtil.constantScoreQuery(tenantAwareQuery);
 
       final var res =
-          es8Client.search(
+          esClient.search(
               s -> s.index(whereToSearch(listViewTemplate, ALL)).query(constantScoreQuery),
               ProcessInstanceForListViewEntity.class);
       if (res.hits().total().value() == 1 && res.hits().hits().size() == 1) {
@@ -357,7 +357,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       final var res =
-          es8Client.search(
+          esClient.search(
               s ->
                   s.index(whereToSearch(listViewTemplate, ONLY_RUNTIME))
                       .query(tenantAwareQuery)
@@ -391,7 +391,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       final var res =
-          es8Client.search(
+          esClient.search(
               s ->
                   s.index(whereToSearch(listViewTemplate, ALL))
                       .query(tenantAwareQuery)
@@ -437,7 +437,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       final var resStream =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
 
       resStream
           .flatMap(res -> res.hits().hits().stream())
@@ -467,7 +467,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   public long deleteDocument(final String indexName, final String idField, final String id)
       throws IOException {
     final var res =
-        es8Client.deleteByQuery(
+        esClient.deleteByQuery(
             q -> q.index(indexName).query(ElasticsearchUtil.termsQuery(idField, id)));
     LOGGER.debug("Delete document {} in {} failures: {}", id, indexName, res.failures());
     return res.deleted() == null ? 0 : res.deleted();
@@ -504,7 +504,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .source(s -> s.filter(f -> f.includes(TREE_PATH)));
     try {
       final var resStream =
-          ElasticsearchUtil.scrollAllStream(es8Client, searchRequestBuilder, MAP_CLASS);
+          ElasticsearchUtil.scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS);
       resStream
           .flatMap(res -> res.hits().hits().stream())
           .forEach(
@@ -526,7 +526,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
               });
 
       ElasticsearchUtil.processBulkRequest(
-          es8Client,
+          esClient,
           es8BulkRequest,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (final Exception e) {
@@ -560,7 +560,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
           includeFields == null ? Collections.emptyList() : Arrays.asList(includeFields);
       final var source = SourceConfig.of(sc -> sc.filter(f -> f.includes(nullSideIncludeFields)));
       final var res =
-          es8Client.search(
+          esClient.search(
               s ->
                   s.index(whereToSearch(listViewTemplate, ALL))
                       .query(tenantAwareQuery)
@@ -604,7 +604,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     try {
       return ElasticsearchUtil.scrollAllStream(
-              es8Client, searchRequestBuilder, ProcessInstanceForListViewEntity.class)
+              esClient, searchRequestBuilder, ProcessInstanceForListViewEntity.class)
           .flatMap(res -> res.hits().hits().stream())
           .map(Hit::source)
           .toList();
@@ -630,7 +630,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       for (final ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
         final String indexName = ((IndexTemplateDescriptor) template).getAlias();
         final var res =
-            es8Client.deleteByQuery(
+            esClient.deleteByQuery(
                 q ->
                     q.index(indexName)
                         .query(
@@ -641,7 +641,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       }
 
       final var res =
-          es8Client.deleteByQuery(
+          esClient.deleteByQuery(
               q ->
                   q.index(listViewTemplate.getAlias())
                       .query(
@@ -663,7 +663,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .index(processIndex.getAlias())
             .query(ElasticsearchUtil.matchAllQuery())
             .build();
-    return es8Client.count(countRequest).count();
+    return esClient.count(countRequest).count();
   }
 
   private Query buildQueryEs8(final String tenantId, final Set<String> allowedBPMNProcessIds) {

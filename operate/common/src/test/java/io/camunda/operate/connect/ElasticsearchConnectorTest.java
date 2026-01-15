@@ -16,9 +16,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.Test;
 
 class ElasticsearchConnectorTest {
@@ -30,6 +30,7 @@ class ElasticsearchConnectorTest {
     esProperties.setHealthCheckEnabled(false);
     operateProperties.setElasticsearch(esProperties);
     final ElasticsearchConnector connector = spy(new ElasticsearchConnector(operateProperties));
+    connector.setObjectMapper(new ObjectMapper());
 
     connector.createEsClient(esProperties, mock());
 
@@ -42,10 +43,11 @@ class ElasticsearchConnectorTest {
     final OperateElasticsearchProperties esProperties = new OperateElasticsearchProperties();
     operateProperties.setElasticsearch(esProperties);
     final ElasticsearchConnector connector = spy(new ElasticsearchConnector(operateProperties));
-    doReturn(true).when(connector).checkHealth(any(RestHighLevelClient.class));
+    connector.setObjectMapper(new ObjectMapper());
+    doReturn(true).when(connector).checkHealth(any(ElasticsearchClient.class));
 
     connector.createEsClient(esProperties, mock());
 
-    verify(connector, times(1)).checkHealth(any(RestHighLevelClient.class));
+    verify(connector, times(1)).checkHealth(any(ElasticsearchClient.class));
   }
 }

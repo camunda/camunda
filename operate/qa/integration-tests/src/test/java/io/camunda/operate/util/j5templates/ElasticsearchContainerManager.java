@@ -36,18 +36,18 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
   protected static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchContainerManager.class);
 
-  protected final ElasticsearchClient es8Client;
+  protected final ElasticsearchClient esClient;
 
   private final IndexPrefixHolder indexPrefixHolder;
 
   public ElasticsearchContainerManager(
-      final ElasticsearchClient es8Client,
+      final ElasticsearchClient esClient,
       final SearchEngineConfiguration searchEngineConfiguration,
       final OperateProperties operateProperties,
       final TestSchemaManager schemaManager,
       final IndexPrefixHolder indexPrefixHolder) {
     super(searchEngineConfiguration, operateProperties, schemaManager);
-    this.es8Client = es8Client;
+    this.esClient = esClient;
     this.indexPrefixHolder = indexPrefixHolder;
   }
 
@@ -87,7 +87,7 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
             .allowNoIndices(false)
             .expandWildcards(ExpandWildcard.Open)
             .build();
-    final var response = es8Client.indices().get(getIndexRequest);
+    final var response = esClient.indices().get(getIndexRequest);
     return response.result() != null && response.result().size() >= minCountOfIndices;
   }
 
@@ -95,7 +95,7 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
   public void stopContainer() {
     // TestUtil.removeIlmPolicy(esClient);
     final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
-    TestUtil.removeAllIndices(es8Client, indexPrefix);
+    TestUtil.removeAllIndices(esClient, indexPrefix);
     searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
 
@@ -107,8 +107,7 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
   private int getOpenScrollContextCount() {
     int openContexts = 0;
     try {
-      final Set<Map.Entry<String, Stats>> nodesResult =
-          es8Client.nodes().stats().nodes().entrySet();
+      final Set<Map.Entry<String, Stats>> nodesResult = esClient.nodes().stats().nodes().entrySet();
       for (final Map.Entry<String, Stats> entryNodes : nodesResult) {
         openContexts += entryNodes.getValue().indices().search().openContexts().intValue();
       }
