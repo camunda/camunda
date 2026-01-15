@@ -144,18 +144,22 @@ const useProcessInstanceElementSelection = () => {
   const {
     data: elementInstanceByKey,
     isFetching: isFetchingElementInstanceByKey,
+    isError: isFetchingElementInstanceError,
   } = useElementInstance(elementInstanceKey ?? '', {
     enabled: !!elementInstanceKey && isPlaceholder === false,
   });
 
   // If only elementId is in URL, search for all instances
-  const {data: searchResult, isFetching: isFetchingElementInstancesSearch} =
-    useElementInstancesSearch({
-      elementId: elementId ?? '',
-      processInstanceKey: processInstanceKey ?? '',
-      elementType: isMultiInstanceBody ? 'MULTI_INSTANCE_BODY' : undefined,
-      enabled: !!elementId && !elementInstanceKey && !!processInstanceKey,
-    });
+  const {
+    data: searchResult,
+    isFetching: isFetchingElementInstancesSearch,
+    isError: isFetchingElementInstancesSearchError,
+  } = useElementInstancesSearch({
+    elementId: elementId ?? '',
+    processInstanceKey: processInstanceKey ?? '',
+    elementType: isMultiInstanceBody ? 'MULTI_INSTANCE_BODY' : undefined,
+    enabled: !!elementId && !elementInstanceKey && !!processInstanceKey,
+  });
 
   const resolvedElementInstance =
     elementInstanceByKey ??
@@ -202,6 +206,8 @@ const useProcessInstanceElementSelection = () => {
     selectedAnchorElementId: anchorElementId,
     isFetchingElement:
       isFetchingElementInstanceByKey || isFetchingElementInstancesSearch,
+    isFetchingElementError:
+      isFetchingElementInstanceError || isFetchingElementInstancesSearchError,
     isSelected,
   };
 };
