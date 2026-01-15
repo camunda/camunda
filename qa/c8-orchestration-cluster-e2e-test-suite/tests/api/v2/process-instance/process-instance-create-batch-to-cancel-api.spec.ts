@@ -64,9 +64,9 @@ test.describe.parallel('Create Process Instance Batch to Cancel Tests', () => {
             headers: jsonHeaders(),
             data: {
               filter: {
-                $or: [
-                  ...localState['processInstanceKeys'].map((key) => ({ processInstanceKey: key })),
-                ]
+                processInstanceKey: {
+                  $in: localState['processInstanceKeys'],
+                },
               },
             },
           },
