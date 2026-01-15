@@ -84,11 +84,6 @@ services:
       - "ES_JAVA_OPTS=-Xms1024m -Xmx2048m"
       - path.repo=/usr/local/els-snapshots
       - action.destructive_requires_name=false
-        # We need to configure ILM to run more often, to make sure data is cleaned up earlier
-        # Useful for tests where we verify history clean up
-        # Default is 10m
-        # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-settings.html
-      - indices.lifecycle.poll_interval=1s
     ulimits:
       memlock:
         soft: -1
@@ -115,13 +110,6 @@ services:
       - action.destructive_requires_name=false
         # Disabling the security to make sure we can access without tls in our tests
         # https://opensearch.org/docs/latest/security/configuration/disable-enable-security/
-        # We need to configure ISM to run more often, to make sure data is cleaned up earlier
-        # Useful for tests where we verify history clean up
-        # Default is 5 - unit is minutes
-        # https://opensearch.org/docs/latest/im-plugin/ism/settings/
-      - plugins.index_state_management.job_interval=1
-        # A randomized delay that is added to a job’s base run time to prevent a surge of activity from all indexes at the same time.
-      - plugins.index_state_management.jitter=0
       - knn.algo_param.index_thread_qty=4
     ulimits:
       memlock:

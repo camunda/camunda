@@ -461,6 +461,44 @@ jobs:
       database-type: "h2"
       it-database-type: "rdbms_h2"
 
+  elasticsearch-history-tests:
+    name: "History Integration Tests / Elasticsearch"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "elasticsearch"
+      database-image-version: "8.18.4"
+      it-database-type: "es"
+      maven-profiles: "history"
+      test-type-label: "History"
+
+  opensearch-history-tests:
+    name: "History Integration Tests / Opensearch"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "opensearch"
+      database-image-version: "2.17.0"
+      it-database-type: "os"
+      maven-profiles: "history"
+      test-type-label: "History"
+
+  h2-history-tests:
+    name: "History Integration Tests / H2"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "h2"
+      it-database-type: "rdbms_h2"
+      maven-profiles: "history"
+      test-type-label: "History"
+
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
@@ -1220,13 +1258,16 @@ jobs:
       - commitlint
       - detect-changes
       - docker-checks
+      - elasticsearch-history-tests
       - elasticsearch-integration-tests
       - general-unit-tests
+      - h2-history-tests
       - identity-frontend-tests
       - integration-tests
       - java-checks
       - maven-spotless-linter
       - openapi-lint
+      - opensearch-history-tests
       - opensearch-integration-tests
       - operate-ci
       - optimize-ci
