@@ -201,6 +201,8 @@ const useProcessInstanceElementSelection = () => {
      * The currently selected element instance key from the URL search params
      */
     selectedElementInstanceKey: elementInstanceKey,
+    /** Is true when the user currently has an element selected. */
+    hasSelection: !!elementId || !!elementInstanceKey,
     isSelectedInstanceMultiInstanceBody: isMultiInstanceBody,
     isSelectedInstancePlaceholder: isPlaceholder,
     selectedAnchorElementId: anchorElementId,
