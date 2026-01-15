@@ -49,6 +49,8 @@ const batchOperationSchema = z.object({
 	batchOperationType: batchOperationTypeSchema,
 	startDate: z.string().optional(),
 	endDate: z.string().optional(),
+	actorType: z.string().optional(),
+	actorId: z.string().optional(),
 	operationsTotalCount: z.number().int(),
 	operationsFailedCount: z.number().int(),
 	operationsCompletedCount: z.number().int(),
@@ -66,7 +68,7 @@ const batchOperationItemSchema = z.object({
 type BatchOperationItem = z.infer<typeof batchOperationItemSchema>;
 
 const queryBatchOperationsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate'] as const,
+	sortFields: ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate', 'actorId'] as const,
 	filter: z
 		.object({
 			batchOperationKey: basicStringFilterSchema,
