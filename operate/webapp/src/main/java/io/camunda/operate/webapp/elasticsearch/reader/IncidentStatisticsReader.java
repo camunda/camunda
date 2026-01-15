@@ -7,18 +7,19 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
+import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY_ES8;
+import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
@@ -37,18 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.Cardinality;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,11 +50,8 @@ public class IncidentStatisticsReader extends AbstractReader
     implements io.camunda.operate.webapp.reader.IncidentStatisticsReader {
 
   private static final String ERROR_MESSAGE = "errorMessages";
-
   private static final String UNIQ_PROCESS_INSTANCES = "uniq_processInstances";
-
   private static final String GROUP_BY_ERROR_MESSAGE_HASH = "group_by_errorMessages";
-
   private static final String GROUP_BY_PROCESS_KEYS = "group_by_processDefinitionKeys";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentStatisticsReader.class);
@@ -80,8 +66,7 @@ public class IncidentStatisticsReader extends AbstractReader
 
   @Override
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
-    final QueryBuilder pisWithReadPermissionQuery =
-        createQueryForProcessInstancesWithReadPermission();
+    final Query pisWithReadPermissionQuery = createQueryForProcessInstancesWithReadPermission();
     final Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap =
         updateActiveInstances(
             getIncidentsByProcess(pisWithReadPermissionQuery), pisWithReadPermissionQuery);
@@ -101,37 +86,64 @@ public class IncidentStatisticsReader extends AbstractReader
             ProcessIndex.TENANT_ID,
             ProcessIndex.VERSION);
 
-    final TermsAggregationBuilder aggregation =
-        terms(GROUP_BY_ERROR_MESSAGE_HASH)
-            .field(IncidentTemplate.ERROR_MSG_HASH)
-            .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-            .subAggregation(
-                topHits(ERROR_MESSAGE)
-                    .size(1)
-                    .fetchSource(
-                        new String[] {IncidentTemplate.ERROR_MSG, IncidentTemplate.ERROR_MSG_HASH},
-                        null))
-            .subAggregation(
-                terms(GROUP_BY_PROCESS_KEYS)
-                    .field(IncidentTemplate.PROCESS_DEFINITION_KEY)
-                    .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-                    .subAggregation(
-                        cardinality(UNIQ_PROCESS_INSTANCES)
-                            .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));
+    final var uniqueProcessInstances =
+        new Aggregation.Builder()
+            .cardinality(c -> c.field(IncidentTemplate.PROCESS_INSTANCE_KEY))
+            .build();
+
+    final var groupByProcessKeys =
+        new Aggregation.Builder()
+            .terms(
+                t ->
+                    t.field(IncidentTemplate.PROCESS_DEFINITION_KEY)
+                        .size(ElasticsearchUtil.TERMS_AGG_SIZE))
+            .aggregations(Map.of(UNIQ_PROCESS_INSTANCES, uniqueProcessInstances))
+            .build();
+
+    final var errorMessage =
+        new Aggregation.Builder()
+            .topHits(
+                th ->
+                    th.size(1)
+                        .source(
+                            s ->
+                                s.filter(
+                                    f ->
+                                        f.includes(
+                                            IncidentTemplate.ERROR_MSG,
+                                            IncidentTemplate.ERROR_MSG_HASH))))
+            .build();
+
+    final var groupByErrorMessageHash =
+        new Aggregation.Builder()
+            .terms(
+                t ->
+                    t.field(IncidentTemplate.ERROR_MSG_HASH).size(ElasticsearchUtil.TERMS_AGG_SIZE))
+            .aggregations(
+                Map.of(
+                    ERROR_MESSAGE, errorMessage,
+                    GROUP_BY_PROCESS_KEYS, groupByProcessKeys))
+            .build();
 
     final var query =
-        joinWithAnd(ACTIVE_INCIDENT_QUERY, createQueryForProcessInstancesWithReadPermission());
+        joinWithAnd(ACTIVE_INCIDENT_QUERY_ES8, createQueryForProcessInstancesWithReadPermission());
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-            .source(new SearchSourceBuilder().query(query).aggregation(aggregation).size(0));
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(ElasticsearchUtil.whereToSearch(incidentTemplate, QueryType.ONLY_RUNTIME))
+            .query(tenantAwareQuery)
+            .aggregations(GROUP_BY_ERROR_MESSAGE_HASH, groupByErrorMessageHash)
+            .size(0)
+            .build();
 
     try {
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final var searchResponse = es8client.search(searchRequest, MAP_CLASS);
 
-      final Terms errorMessageAggregation =
-          searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGE_HASH);
-      for (final Bucket bucket : errorMessageAggregation.getBuckets()) {
+      final var errorMessageAggregation =
+          searchResponse.aggregations().get(GROUP_BY_ERROR_MESSAGE_HASH).lterms();
+
+      for (final var bucket : errorMessageAggregation.buckets().array()) {
         result.add(getIncidentsByErrorMsgStatistic(processes, bucket));
       }
     } catch (final IOException e) {
@@ -145,28 +157,40 @@ public class IncidentStatisticsReader extends AbstractReader
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess(
-      final QueryBuilder permittedProcessInstancesQuery) {
+      final Query permittedProcessInstancesQuery) {
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>();
 
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(joinWithAnd(INCIDENTS_QUERY, permittedProcessInstancesQuery))
-                    .aggregation(COUNT_PROCESS_KEYS)
-                    .size(0));
+    final var incidentsQuery =
+        joinWithAnd(
+            ElasticsearchUtil.termsQuery(
+                ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
+            ElasticsearchUtil.termsQuery(
+                ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
+            ElasticsearchUtil.termsQuery(ListViewTemplate.INCIDENT, true),
+            permittedProcessInstancesQuery);
+
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(incidentsQuery);
+
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(listViewTemplate.getFullQualifiedName())
+            .query(tenantAwareQuery)
+            .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS)
+            .size(0)
+            .build();
 
     try {
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final var searchResponse = es8client.search(searchRequest, Void.class);
 
-      final List<? extends Bucket> buckets =
-          ((Terms) searchResponse.getAggregations().get(PROCESS_KEYS)).getBuckets();
-      for (final Bucket bucket : buckets) {
-        final Long processDefinitionKey = (Long) bucket.getKey();
-        final long incidents = bucket.getDocCount();
+      final var buckets =
+          searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
+
+      for (final var bucket : buckets) {
+        final Long processDefinitionKey = bucket.key();
+        final long incidentCount = bucket.docCount();
         results.put(
             processDefinitionKey,
-            new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), incidents, 0));
+            new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), incidentCount, 0));
       }
       return results;
     } catch (final IOException e) {
@@ -180,29 +204,35 @@ public class IncidentStatisticsReader extends AbstractReader
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
       final Map<Long, IncidentByProcessStatisticsDto> statistics,
-      final QueryBuilder processInstancePermissionQuery) {
-    final QueryBuilder runningInstanceQuery =
+      final Query processInstancePermissionQuery) {
+    final Query runningInstanceQuery =
         joinWithAnd(
-            termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+            ElasticsearchUtil.termsQuery(
+                ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
+            ElasticsearchUtil.termsQuery(
+                ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
             processInstancePermissionQuery);
+
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
+
     try {
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
-              .source(
-                  new SearchSourceBuilder()
-                      .query(runningInstanceQuery)
-                      .aggregation(COUNT_PROCESS_KEYS)
-                      .size(0));
+      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(runningInstanceQuery);
+      final var searchRequest =
+          new SearchRequest.Builder()
+              .index(listViewTemplate.getFullQualifiedName())
+              .query(tenantAwareQuery)
+              .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS)
+              .size(0)
+              .build();
 
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+      final var searchResponse = es8client.search(searchRequest, Void.class);
 
-      final List<? extends Bucket> buckets =
-          ((Terms) searchResponse.getAggregations().get(PROCESS_KEYS)).getBuckets();
-      for (final Bucket bucket : buckets) {
-        final Long processDefinitionKey = (Long) bucket.getKey();
-        final long runningCount = bucket.getDocCount();
+      final var buckets =
+          searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
+
+      for (final var bucket : buckets) {
+        final Long processDefinitionKey = bucket.key();
+        final long runningCount = bucket.docCount();
         IncidentByProcessStatisticsDto statistic = results.get(processDefinitionKey);
         if (statistic != null) {
           statistic.setActiveInstancesCount(
@@ -281,32 +311,42 @@ public class IncidentStatisticsReader extends AbstractReader
    *
    * @return query that matches the processes for which the user has the given permission
    */
-  private QueryBuilder createQueryForProcessInstancesWithReadPermission() {
+  private Query createQueryForProcessInstancesWithReadPermission() {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
     return allowed.isAll()
-        ? QueryBuilders.matchAllQuery()
-        : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
+        ? ElasticsearchUtil.matchAllQuery()
+        : ElasticsearchUtil.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
   }
 
   private IncidentsByErrorMsgStatisticsDto getIncidentsByErrorMsgStatistic(
-      final Map<Long, ProcessEntity> processes, final Bucket errorMessageBucket) {
-    final SearchHits searchHits =
-        ((TopHits) errorMessageBucket.getAggregations().get(ERROR_MESSAGE)).getHits();
-    final SearchHit searchHit = searchHits.getHits()[0];
-    final String errorMessage = (String) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG);
-    final Integer errorMessageHashCode =
-        (Integer) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG_HASH);
+      final Map<Long, ProcessEntity> processes, final LongTermsBucket errorMessageBucket) {
+    final var searchHits =
+        errorMessageBucket.aggregations().get(ERROR_MESSAGE).topHits().hits().hits();
+
+    if (searchHits.isEmpty()) {
+      throw new OperateRuntimeException(
+          "Could not find error messages in aggregation: " + errorMessageBucket.keyAsString());
+    }
+
+    final Map<String, Object> sourceMap = searchHits.get(0).source().to(MAP_CLASS);
+    final String errorMessage = (String) sourceMap.get(IncidentTemplate.ERROR_MSG);
+    final Integer errorMessageHashCode = (Integer) sourceMap.get(IncidentTemplate.ERROR_MSG_HASH);
+
     final IncidentsByErrorMsgStatisticsDto processStatistics =
         new IncidentsByErrorMsgStatisticsDto(errorMessage, errorMessageHashCode);
 
-    final Terms processDefinitionKeyAggregation =
-        (Terms) errorMessageBucket.getAggregations().get(GROUP_BY_PROCESS_KEYS);
-    for (final Bucket processDefinitionKeyBucket : processDefinitionKeyAggregation.getBuckets()) {
-      final Long processDefinitionKey = (Long) processDefinitionKeyBucket.getKey();
+    final var processDefinitionKeyAggregation =
+        errorMessageBucket.aggregations().get(GROUP_BY_PROCESS_KEYS).lterms();
+
+    for (final var processDefinitionKeyBucket : processDefinitionKeyAggregation.buckets().array()) {
+      final Long processDefinitionKey = processDefinitionKeyBucket.key();
       final long incidentsCount =
-          ((Cardinality) processDefinitionKeyBucket.getAggregations().get(UNIQ_PROCESS_INSTANCES))
-              .getValue();
+          processDefinitionKeyBucket
+              .aggregations()
+              .get(UNIQ_PROCESS_INSTANCES)
+              .cardinality()
+              .value();
 
       if (processes.containsKey(processDefinitionKey)) {
         final IncidentByProcessStatisticsDto statisticForProcess =

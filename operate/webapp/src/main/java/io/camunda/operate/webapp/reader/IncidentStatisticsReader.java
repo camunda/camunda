@@ -7,28 +7,20 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
-import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import java.util.Set;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 
 public interface IncidentStatisticsReader {
   String PROCESS_KEYS = "processDefinitionKeys";
-  AggregationBuilder COUNT_PROCESS_KEYS =
-      terms(PROCESS_KEYS).field(PROCESS_KEY).size(ElasticsearchUtil.TERMS_AGG_SIZE);
-  QueryBuilder INCIDENTS_QUERY =
-      joinWithAnd(
-          termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-          termQuery(STATE, ProcessInstanceState.ACTIVE.toString()),
-          termQuery(INCIDENT, true));
+  Aggregation COUNT_PROCESS_KEYS =
+      new Aggregation.Builder()
+          .terms(t -> t.field(PROCESS_KEY).size(ElasticsearchUtil.TERMS_AGG_SIZE))
+          .build();
 
   Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics();
 
