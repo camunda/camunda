@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # analyze-partition-keys.sh
 # 
-# Queries Elasticsearch to extract all processInstanceKeys for a specific partition
+# Queries Elasticsearch to extract all flow node instance keys for a specific partition
 # and saves them to a file for jump analysis.
 #
 # Required environment variables:
@@ -135,7 +135,7 @@ else
 
   # Main pagination loop
   echo ""
-  echo -e "${BLUE}Fetching processInstanceKeys...${NC}"
+  echo -e "${BLUE}Fetching flow node instance keys...${NC}"
   BATCH_NUM=1
   TOTAL_KEYS=0
   CURRENT_AFTER_KEY="$AFTER_KEY"
@@ -144,49 +144,52 @@ else
     # Build after parameter
     AFTER_PARAM=""
     if [ -n "$CURRENT_AFTER_KEY" ]; then
-      AFTER_PARAM=", \"after\": {\"processInstanceKey\": $CURRENT_AFTER_KEY}"
+      AFTER_PARAM=", \"after\": {\"key\": $CURRENT_AFTER_KEY}"
     fi
     
     # Query Elasticsearch
     echo -n "Batch $BATCH_NUM: Fetching up to $BATCH_SIZE keys..."
     
-    RESPONSE=$(curl -sf "${ES_URL}/operate-list-view-*/_search" \
+    RESPONSE=$(curl -sf "${ES_URL}/operate-flownode-instance-*/_search" \
       -H 'Content-Type: application/json' \
-      -d "{
-      \"size\": 0,
-      \"query\": {
-        \"term\": {
-          \"partitionId\": ${PARTITION_ID}
-        }
+      -d "$(cat <<EOF
+{
+  "size": 0,
+  "query": {
+    "term": {
+      "partitionId": ${PARTITION_ID}
+    }
+  },
+  "aggs": {
+    "flownode_instances": {
+      "composite": {
+        "size": ${BATCH_SIZE},
+        "sources": [
+          {"key": {"terms": {"field": "key"}}}
+        ]
+        ${AFTER_PARAM}
       },
-      \"aggs\": {
-        \"process_instances\": {
-          \"composite\": {
-            \"size\": ${BATCH_SIZE},
-            \"sources\": [
-              {\"processInstanceKey\": {\"terms\": {\"field\": \"processInstanceKey\"}}}
-            ]
-            ${AFTER_PARAM}
-          },
-          \"aggs\": {
-            \"min_timestamp\": {\"min\": {\"field\": \"startDate\"}}
-          }
-        }
+      "aggs": {
+        "min_timestamp": {"min": {"field": "startDate"}}
       }
-    }") || {
+    }
+  }
+}
+EOF
+)") || {
       echo -e "${RED}Failed!${NC}"
       echo -e "${RED}Error: Failed to query Elasticsearch${NC}"
       exit 1
     }
   
   # Extract data and append to file
-  BATCH_KEYS=$(echo "$RESPONSE" | jq -r '.aggregations.process_instances.buckets[] | [.key.processInstanceKey, .min_timestamp.value_as_string // "N/A"] | @tsv' | tee -a "$OUTPUT_FILE" | wc -l)
+  BATCH_KEYS=$(echo "$RESPONSE" | jq -r '.aggregations.flownode_instances.buckets[] | [.key.key, .min_timestamp.value_as_string // "N/A"] | @tsv' | tee -a "$OUTPUT_FILE" | wc -l)
   
   TOTAL_KEYS=$((TOTAL_KEYS + BATCH_KEYS))
   echo -e " ${GREEN}✓ $BATCH_KEYS keys (Total: $TOTAL_KEYS)${NC}"
   
   # Check for after_key
-  CURRENT_AFTER_KEY=$(echo "$RESPONSE" | jq -r '.aggregations.process_instances.after_key.processInstanceKey // empty')
+  CURRENT_AFTER_KEY=$(echo "$RESPONSE" | jq -r '.aggregations.flownode_instances.after_key.key // empty')
   
   if [ -z "$CURRENT_AFTER_KEY" ]; then
     echo -e "${GREEN}✓ All keys fetched${NC}"
