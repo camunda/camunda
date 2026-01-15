@@ -118,7 +118,8 @@ public final class JobEventProcessors {
                 processingState,
                 processingState.getKeyGenerator(),
                 jobMetrics,
-                authCheckBehavior))
+                authCheckBehavior,
+                clock))
         .withListener(
             new JobTimeoutCheckerScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
