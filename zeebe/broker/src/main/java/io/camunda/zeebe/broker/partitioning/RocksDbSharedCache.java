@@ -63,8 +63,8 @@ public class RocksDbSharedCache {
       maxNonHeapBytes = Math.round(0.25 * totalMemorySize);
       LOGGER.info(
           "Warning: Non-Heap limit is not set. Using an assumption of 25% of "
-              + "total RAM :{} Bytes for safety, for RocksDB memory calculation."
-              + "Consider setting -XX:MaxMetaspaceSize explicitly.",
+              + "total RAM :{} Bytes for safety, for RocksDB memory calculation. "
+              + "Consider setting -XX:MaxMetaspaceSize, -XX:CompressedClassSpaceSize, and -XX:ReservedCodeCacheSize explicitly.",
           maxNonHeapBytes);
     }
     // -XX:MaxRAMPercentage is almost always set, but in case it is removed.
