@@ -33,7 +33,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   private static final long BYTES_PER_MB = 1024L * 1024L;
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
-          Pattern.compile(".*updateHistoryCleanupDate$"),
+          Pattern.compile(".*update.*HistoryCleanupDate$"),
           Pattern.compile("io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists"));
 
   private final SqlSessionFactory sessionFactory;
@@ -233,8 +233,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       for (final BatchResult singleBatchResult : batchResult) {
         if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)
             && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
-          LOG.error(
-              "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} were not executed successfully",
+          LOG.warn(
+              "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} have not affected any rows. Either add them to the ignore list or check why no rows were affected.",
               partitionId,
               singleBatchResult.getMappedStatement().getId());
         }
