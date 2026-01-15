@@ -46,7 +46,7 @@ public class OpenSearchSetupHelper extends ElasticOpenSearchSetupHelper {
             "plugins.index_state_management.history.enabled",
             "false",
             "plugins.index_state_management.job_interval",
-            String.format("%d", jobInterval.toMinutes()),
+            String.valueOf(jobInterval.toMinutes()),
             "plugins.index_state_management.jitter",
             jitter));
   }

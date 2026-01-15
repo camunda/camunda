@@ -419,11 +419,17 @@ public class CamundaMultiDBExtension
 
     if (isHistoryRelatedTest) {
       // make sure history clean up policies are applied more often
-      final Duration pollInterval =
-          getDatabaseType(context) == DatabaseType.ES
-              ? Duration.ofSeconds(5)
-              : Duration.ofMinutes(1);
-      setupHelper.applyIndexPoliciesPollInterval(pollInterval);
+      switch (getDatabaseType(context)) {
+        case ES, LOCAL:
+          setupHelper.applyIndexPoliciesPollInterval(Duration.ofSeconds(1));
+          break;
+        case OS:
+          setupHelper.applyIndexPoliciesPollInterval(
+              Duration.ofMinutes(1)); // OpenSearch can't go lower
+          break;
+        default:
+          break;
+      }
     }
 
     // we need to close the test application before cleaning up

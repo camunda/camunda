@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,6 @@ public abstract class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper
   protected final String endpoint;
   protected final HttpClient httpClient = HttpClient.newHttpClient();
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final AtomicBoolean hasClusterSettingsChanged = new AtomicBoolean(false);
 
   public ElasticOpenSearchSetupHelper(
       final String endpoint, final Collection<IndexDescriptor> expectedDescriptors) {
@@ -82,7 +80,6 @@ public abstract class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper
   @Override
   public void applyIndexPoliciesPollInterval(final Duration pollInterval) {
     applyClusterSettings(getLifecyclePollIntervalSettings(pollInterval));
-    hasClusterSettingsChanged.set(true); // mark cluster settings changed to reset after the test
   }
 
   /**
@@ -127,8 +124,6 @@ public abstract class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper
   @Override
   public void cleanup(final String prefix) {
     try (final HttpClient httpClient = HttpClient.newHttpClient()) {
-      // reset cluster settings if changed
-      resetLifecyclePollInterval();
 
       // delete indices
       // https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-delete-index.html
@@ -151,13 +146,6 @@ public abstract class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper
             return sendHttpDeleteRequest(httpClient, deleteIndexTemplatesEndpoint);
           },
           5);
-    }
-  }
-
-  protected void resetLifecyclePollInterval() {
-    if (hasClusterSettingsChanged.getAndSet(false)) {
-      final Map<String, Object> settings = getResetLifecyclePollIntervalSettings();
-      applyClusterSettings(settings);
     }
   }
 
