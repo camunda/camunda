@@ -39,23 +39,64 @@ Before starting, you need:
 
 #### Finding Key Jumps Using Elasticsearch
 
-To identify where the key jump occurred within a partition, use the provided script to query Elasticsearch and analyze flow node instance keys. The script automatically handles pagination for partitions with many flow node instances.
+To identify where the key jump occurred within a partition, use the provided script to query Elasticsearch and analyze flownode instance keys. The script automatically handles pagination for partitions with many records and uses position-based validation to distinguish real key overflows from normal time gaps.
 
 > [!NOTE]
 > The provided script should work for most scenarios, but may need adjustments for specific Elasticsearch configurations or custom requirements. If needed, you can perform manual queries by examining the Elasticsearch queries used by the script.
 
+**Understanding Index Patterns and Historic Data:**
+
+The script queries `operate-flownode-instance-*` which matches multiple indices:
+- **Current/active index**: `operate-flownode-instance-8.3.1_` (no date suffix)
+- **Historic/archived indices**: `operate-flownode-instance-8.3.1_2026-01-14`, `operate-flownode-instance-8.3.1_2026-01-13`, etc.
+
+When process instances complete, their flow node records are archived to date-stamped indices. The script automatically:
+1. Queries ALL matching indices (active + all historic)
+2. Fetches position values (Raft log position) to validate jumps
+3. Sorts all keys numerically across indices
+4. Analyzes jumps to determine if they're real overflows or normal time gaps
+
 **Run the Analysis Script:**
 
 ```bash
-# Set required parameters and run the script
+# Basic usage
 ES_URL="http://localhost:9200" PARTITION_ID=1 ./analyze-partition-keys.sh
 ```
 
 The script will:
-1. Query Elasticsearch for all unique flow node instance keys in the partition (with automatic pagination)
-2. Save results to `partition_${PARTITION_ID}_keys.txt`
-3. Analyze the keys to detect jumps > 1 million
-4. Display any jumps found with timestamps
+1. Query Elasticsearch for all unique keys from `operate-flownode-instance-*` (with automatic pagination)
+2. Collect keys from ALL matching indices (active + all historic/archived indices with dates)
+3. Fetch position values (Raft log position) for each key to distinguish real overflows from time gaps
+4. Sort all keys numerically to ensure correct ordering across indices
+5. Save results to `partition_${PARTITION_ID}_keys.txt`
+6. Analyze the keys to detect jumps > 1 million
+7. Validate jumps using position data to identify real key overflow issues
+8. Display any jumps found with timestamps and overflow assessment
+
+**Understanding Position-Based Validation:**
+
+When the script detects a key jump, it analyzes the `position` field (Raft log position) to distinguish between:
+
+1. **Real Key Overflow (CRITICAL)**: Keys jump significantly while position values remain close (< 10,000 difference by default)
+   - Indicates keys jumped during continuous processing
+   - **Requires recovery procedure**
+   - Example: key jumps 2 billion, but position only changes by 5,000
+2. **Normal Time Gap (SAFE)**: Both keys AND positions jump significantly (> 10,000 difference by default)
+   - Indicates cluster restart, downtime, or old completed processes being archived
+   - **No action needed**
+   - Example: key jumps 366 million, position also jumps 896 million
+
+The `POSITION_THRESHOLD` parameter (default: 10,000) controls this validation. A smaller threshold makes detection more sensitive:
+
+```bash
+# More sensitive detection (even smaller position gaps considered real overflow)
+ES_URL="http://localhost:9200" PARTITION_ID=1 POSITION_THRESHOLD=5000 ./analyze-partition-keys.sh
+
+# Less sensitive (larger position gaps allowed before flagging as time gap)
+ES_URL="http://localhost:9200" PARTITION_ID=1 POSITION_THRESHOLD=50000 ./analyze-partition-keys.sh
+```
+
+**Output Files:** The analysis creates a file named `partition_${PARTITION_ID}_keys.txt` containing all keys with their positions and timestamps.
 
 **Optional Parameters:**
 
@@ -72,21 +113,26 @@ PARTITION_ID=1 SKIP_DOWNLOAD=true ./analyze-partition-keys.sh
 # Custom jump threshold (default: 1000000)
 ES_URL="http://localhost:9200" PARTITION_ID=1 JUMP_THRESHOLD=5000000 ./analyze-partition-keys.sh
 
+# Custom position threshold (default: 10000)
+ES_URL="http://localhost:9200" PARTITION_ID=1 POSITION_THRESHOLD=5000 ./analyze-partition-keys.sh
+
 # Re-analyze with different threshold without re-downloading
 PARTITION_ID=1 SKIP_DOWNLOAD=true JUMP_THRESHOLD=500000 ./analyze-partition-keys.sh
 ```
 
 **Use Cases:**
 
-- **BATCH_SIZE**: Use a larger batch size (e.g., 5000-10000) for faster downloads when the partition has many flow node instances. Smaller batch sizes are useful for slow networks.
+- **BATCH_SIZE**: Use a larger batch size (e.g., 5000-10000) for faster downloads when the partition has many flownode instances. Smaller batch sizes are useful for slow networks.
 
 - **AFTER_KEY**: If the script is interrupted during download, you can resume by setting AFTER_KEY to the last key in the file. Check the last line with `tail -1 partition_${PARTITION_ID}_keys.txt | cut -f1`.
 
 - **JUMP_THRESHOLD**: Adjust the minimum difference between consecutive keys to consider a jump. Default is 1,000,000. Use a higher value to only detect larger jumps, or lower to detect smaller anomalies.
 
+- **POSITION_THRESHOLD**: Controls position-based validation sensitivity. Default is 10,000. Lower values flag more jumps as potential overflows; higher values are more conservative.
+
 - **SKIP_DOWNLOAD**: Use this when you've already downloaded the data and just want to re-run the analysis. This is useful for:
 
-  - Testing different jump thresholds without re-downloading
+  - Testing different jump/position thresholds without re-downloading
   - Sharing the data file with team members for offline analysis
   - Re-analyzing after manually modifying the data
 
@@ -102,70 +148,116 @@ rm partition_${PARTITION_ID}_keys.txt
 ======================================
 Partition Key Analysis
 ======================================
-Elasticsearch URL: http://localhost:9200
-Partition ID:      1
-Jump Threshold:    1000000
-Batch Size:        1000
-Output File:       partition_1_keys.txt
+Elasticsearch URL:  http://localhost:9200
+Batch Size:         5000
+Partition ID:       2
+Jump Threshold:     1000000
+Position Threshold: 10000
+Output File:        partition_2_keys.txt
 
 Testing Elasticsearch connectivity...
 ✓ Connected to Elasticsearch
 
-Fetching flow node instance keys...
-Batch 1: Fetching up to 1000 keys... ✓ 1000 keys (Total: 1000)
-Batch 2: Fetching up to 1000 keys... ✓ 1000 keys (Total: 2000)
-Batch 3: Fetching up to 1000 keys... ✓ 456 keys (Total: 2456)
+Fetching flownode instance keys from operate-flownode-instance-*...
+Batch 1: Fetching up to 5000 keys... ✓ 5000 keys (Total: 5000)
+Batch 2: Fetching up to 5000 keys... ✓ 5000 keys (Total: 10000)
+...
 ✓ All keys fetched
+
+Sorting keys across all matched indices...
+✓ Keys sorted numerically
 
 ======================================
 Analyzing for Key Jumps...
 ======================================
 === JUMP DETECTED ===
-Previous key: 2251799813693770 (timestamp: 2026-01-14T14:20:15.123Z)
-Current key:  4503599627373441 (timestamp: 2026-01-14T14:20:15.456Z)
-Difference:   2251799813679671
+Previous key:        4503599669189032 (timestamp: 2026-01-12T11:08:45.526Z, position: 103448255)
+Current key:         4503600035577724 (timestamp: 2026-01-15T14:57:58.189Z, position: 1000011148)
+Key difference:      366388692
+Position difference: 896562893
+✓ Likely NOT an overflow - Large position gap suggests cluster restart/downtime
+  The key jump corresponds to a time gap in processing.
 
 ======================================
-Analysis Complete
+Analysis Summary
 ======================================
-Total keys analyzed: 2456
-Results saved to:    partition_1_keys.txt
+✓ No key overflow issues detected
+  Key jumps found are likely due to cluster downtime/restart (large position gaps)
+Total keys analyzed: 420000
+Results saved to:    partition_2_keys.txt
+```
+
+**Example of Real Overflow Detection:**
+
+If a real key overflow is detected, the output would look like:
+
+```
+=== JUMP DETECTED ===
+Previous key:        2251799813693770 (timestamp: 2026-01-14T14:20:15.123Z, position: 50123456)
+Current key:         4503599627373441 (timestamp: 2026-01-14T14:20:15.456Z, position: 50123512)
+Key difference:      2251799813679671
+Position difference: 56
+⚠ LIKELY REAL KEY OVERFLOW - Position difference is small!
+  This suggests keys jumped while processing was continuous.
+
+======================================
+Analysis Summary
+======================================
+⚠ REAL KEY OVERFLOW DETECTED!
+Action required: Review the jumps above and proceed with recovery procedure.
 ```
 
 **Alternative Analysis Methods:**
 
-Step 2 can be done using other tools if you prefer. The file `partition_${PARTITION_ID}_keys.txt` is a tab-separated text file with two columns:
+The output file is a tab-separated text file with three columns:
 
-1. **Column 1**: `key` (flow node instance key, sorted numerically)
-2. **Column 2**: `timestamp` (when the flow node instance started)
+1. **Column 1**: `key` (sorted numerically)
+2. **Column 2**: `position` (Raft log position, may be "null" for historic records)
+3. **Column 3**: `timestamp` (when the record was created)
 
-**What to look for:** Find rows where the difference between consecutive key values is greater than a threshold (e.g. one million). This indicates an abnormal jump.
+**File naming:** `partition_${PARTITION_ID}_keys.txt`
+
+**What to look for:** Find rows where the difference between consecutive key values is greater than a threshold (e.g. one million). Then check if the position difference is small (potential overflow) or large (normal time gap).
 
 **Example file content:**
 
 ```
-2251799813688023	2026-01-14T14:17:11.249Z
-2251799813688159	2026-01-14T14:18:02.853Z
-2251799813688165	2026-01-14T14:18:03.241Z
-...
-2251799813693770	2026-01-14T14:23:03.201Z
-4503599627373441	2026-01-14T14:23:03.456Z  <- JUMP! Jumped into partition 2's range (~2.25 trillion difference)
-4503599627373512	2026-01-14T14:23:03.789Z
+4503599669189032	103448255	2026-01-12T11:08:45.526Z
+4503600035577724	1000011148	2026-01-15T14:57:58.189Z  <- JUMP! But position also jumped (896M) = time gap, not overflow
+4503600035577726	1000011155	2026-01-15T14:57:58.189Z
 ```
 
 **Using Python:**
 
 ```python
-prev_key = None
+# Analyze with position validation
 with open('partition_1_keys.txt', 'r') as f:
+    prev_key = None
+    prev_pos = None
     for line in f:
-        key, timestamp = line.strip().split('\t')
-        key = int(key)
+        parts = line.strip().split('\t')
+        key = int(parts[0])
+        position = None if parts[1] == 'null' else int(parts[1])
+        timestamp = parts[2]
+        
         if prev_key is not None:
-            diff = key - prev_key
-            if diff > 1000000:
-                print(f"JUMP: {prev_key} -> {key} (diff: {diff})")
+            key_diff = key - prev_key
+            if key_diff > 1000000:
+                print(f"JUMP: {prev_key} -> {key} (key diff: {key_diff})")
+                
+                # Check position to determine if real overflow
+                if prev_pos is not None and position is not None:
+                    pos_diff = position - prev_pos
+                    print(f"  Position diff: {pos_diff}")
+                    if pos_diff <= 10000:
+                        print("  ⚠ LIKELY REAL OVERFLOW!")
+                    else:
+                        print("  ✓ Likely time gap (cluster restart/downtime)")
+                else:
+                    print("  ⚠ Cannot verify - position data missing")
+        
         prev_key = key
+        prev_pos = position
 ```
 
 **Using Excel/Spreadsheet:**
