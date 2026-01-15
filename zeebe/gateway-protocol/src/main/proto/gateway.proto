@@ -850,12 +850,37 @@ message DeleteResourceRequest {
   int64 resourceKey = 1;
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 2;
-  // Indicates if the historic data should be deleted.
+  // Indicates if the historic data should be deleted. Currently supported only for processes
   optional bool deleteHistory = 3;
 }
 
 message DeleteResourceResponse {
+  // The key of the deleted resource.
+  string resourceKey = 1;
 
+  // The batch operation created result, the deletion is executed asynchronously.
+  BatchOperationCreatedResult batchOperation = 2;
+}
+
+message BatchOperationCreatedResult {
+
+  // The batch operation type
+  enum BatchOperationTypeEnum {
+    ADD_VARIABLE = 0;
+    CANCEL_PROCESS_INSTANCE = 1;
+    DELETE_DECISION_DEFINITION = 2;
+    DELETE_PROCESS_DEFINITION = 3;
+    DELETE_PROCESS_INSTANCE = 4;
+    MIGRATE_PROCESS_INSTANCE = 5;
+    MODIFY_PROCESS_INSTANCE = 6;
+    RESOLVE_INCIDENT = 7;
+    UPDATE_VARIABLE = 8;
+  }
+
+  // The batch operation key created to delete the resource.
+  string batchOperationKey = 1;
+
+  BatchOperationTypeEnum batchOperationType = 2;
 }
 
 message BroadcastSignalRequest {

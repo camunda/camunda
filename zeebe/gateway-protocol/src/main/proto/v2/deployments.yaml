@@ -143,6 +143,10 @@ paths:
       responses:
         "200":
           description: The resource is deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResourceResponse'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "404":
@@ -350,6 +354,16 @@ components:
           default: false
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
+
+    DeleteResourceResponse:
+      type: object
+      required:
+        - resourceKey
+      properties:
+        resourceKey:
+          $ref: '#/components/schemas/ResourceKey'
+        batchOperation:
+          $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
 
     ResourceResult:
       type: object

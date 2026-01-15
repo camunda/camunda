@@ -26,6 +26,7 @@ import io.camunda.gateway.protocol.model.BrokerInfo;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
+import io.camunda.gateway.protocol.model.DeleteResourceResponse;
 import io.camunda.gateway.protocol.model.DeploymentDecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DeploymentDecisionResult;
 import io.camunda.gateway.protocol.model.DeploymentFormResult;
@@ -99,6 +100,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRec
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -355,6 +357,23 @@ public final class ResponseMapper {
     addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(response, brokerResponse.formMetadata());
     addDeployedResource(response, brokerResponse.resourceMetadata());
+    return response;
+  }
+
+  public static DeleteResourceResponse toDeleteResourceResponse(
+      final ResourceDeletionRecord brokerResponse) {
+    final var response =
+        new DeleteResourceResponse()
+            .resourceKey(KeyUtil.keyToString(brokerResponse.getResourceKey()));
+
+    if (brokerResponse.isDeleteHistory() && brokerResponse.getBatchOperationKey() != -1) {
+      final var batchOperationCreatedResult =
+          new BatchOperationCreatedResult()
+              .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+              .batchOperationType(
+                  BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
+      response.setBatchOperation(batchOperationCreatedResult);
+    }
     return response;
   }
 
