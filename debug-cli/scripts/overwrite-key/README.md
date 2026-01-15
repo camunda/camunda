@@ -68,6 +68,12 @@ ES_URL="http://localhost:9200" PARTITION_ID=1 AFTER_KEY=2251799813999999 ./analy
 
 # Skip download and only analyze existing file (useful if data already downloaded)
 PARTITION_ID=1 SKIP_DOWNLOAD=true ./analyze-partition-keys.sh
+
+# Custom jump threshold (default: 1000000)
+ES_URL="http://localhost:9200" PARTITION_ID=1 JUMP_THRESHOLD=5000000 ./analyze-partition-keys.sh
+
+# Re-analyze with different threshold without re-downloading
+PARTITION_ID=1 SKIP_DOWNLOAD=true JUMP_THRESHOLD=500000 ./analyze-partition-keys.sh
 ```
 
 **Use Cases:**
@@ -76,12 +82,16 @@ PARTITION_ID=1 SKIP_DOWNLOAD=true ./analyze-partition-keys.sh
 
 - **AFTER_KEY**: If the script is interrupted during download, you can resume by setting AFTER_KEY to the last key in the file. Check the last line with `tail -1 partition_${PARTITION_ID}_keys.txt | cut -f1`.
 
+- **JUMP_THRESHOLD**: Adjust the minimum difference between consecutive keys to consider a jump. Default is 1,000,000. Use a higher value to only detect larger jumps, or lower to detect smaller anomalies.
+
 - **SKIP_DOWNLOAD**: Use this when you've already downloaded the data and just want to re-run the analysis. This is useful for:
+
   - Testing different jump thresholds without re-downloading
   - Sharing the data file with team members for offline analysis
   - Re-analyzing after manually modifying the data
 
 **Important:** If you need to re-run the analysis from scratch, manually delete the output file first:
+
 ```bash
 rm partition_${PARTITION_ID}_keys.txt
 ```
@@ -94,6 +104,7 @@ Partition Key Analysis
 ======================================
 Elasticsearch URL: http://localhost:9200
 Partition ID:      1
+Jump Threshold:    1000000
 Batch Size:        1000
 Output File:       partition_1_keys.txt
 

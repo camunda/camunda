@@ -11,9 +11,10 @@
 #   ES_URL        - Elasticsearch URL (e.g., http://localhost:9200)
 #
 # Optional environment variables:
-#   BATCH_SIZE    - Keys per batch (default: 1000, max: 10000)
-#   AFTER_KEY     - Resume from this key (for manual continuation)
-#   SKIP_DOWNLOAD - Set to "true" to skip download and only analyze existing file
+#   BATCH_SIZE     - Keys per batch (default: 1000, max: 10000)
+#   AFTER_KEY      - Resume from this key (for manual continuation)
+#   SKIP_DOWNLOAD  - Set to "true" to skip download and only analyze existing file
+#   JUMP_THRESHOLD - Minimum difference to consider a jump (default: 1000000)
 #
 # Output:
 #   partition_${PARTITION_ID}_keys.txt - Tab-separated file with keys and timestamps
@@ -30,6 +31,9 @@
 #
 #   # Skip download and only analyze existing file:
 #   PARTITION_ID=1 SKIP_DOWNLOAD=true ./analyze-partition-keys.sh
+#
+#   # Custom jump threshold:
+#   ES_URL="http://localhost:9200" PARTITION_ID=1 JUMP_THRESHOLD=5000000 ./analyze-partition-keys.sh
 #
 # Make executable with: chmod +x analyze-partition-keys.sh
 
@@ -63,6 +67,7 @@ fi
 # Set defaults for optional parameters
 BATCH_SIZE="${BATCH_SIZE:-1000}"
 AFTER_KEY="${AFTER_KEY:-}"
+JUMP_THRESHOLD="${JUMP_THRESHOLD:-1000000}"
 
 # Validate batch size
 if [ "$BATCH_SIZE" -gt 10000 ]; then
@@ -82,6 +87,7 @@ else
   echo "Batch Size:        $BATCH_SIZE"
 fi
 echo "Partition ID:      $PARTITION_ID"
+echo "Jump Threshold:    $JUMP_THRESHOLD"
 echo "Output File:       $OUTPUT_FILE"
 
 if [ "$SKIP_DOWNLOAD" = "true" ]; then
@@ -209,7 +215,6 @@ echo -e "${BLUE}Analyzing for Key Jumps...${NC}"
 echo -e "${BLUE}======================================${NC}"
 
 # Step 2: Analyze the keys to find jumps
-JUMP_THRESHOLD=1000000
 JUMP_FOUND=false
 
 prev_key=""
