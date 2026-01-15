@@ -114,7 +114,7 @@ public class IncidentSelectors {
 
     @Override
     public String describe() {
-      return String.format("processInstanceKey: %d", processInstanceKey);
+      return "processInstanceKey: " + processInstanceKey;
     }
 
     @Override
