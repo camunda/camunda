@@ -10,16 +10,12 @@ import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
 import {
   BpmnJS,
   type OnFlowNodeSelection,
+  type OnRootChange,
   type OverlayData,
 } from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {observer} from 'mobx-react';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {clearSelection as clearSelectionV1} from 'modules/utils/flowNodeSelection';
-import {useRootNode} from 'modules/hooks/flowNodeSelection';
-import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -29,9 +25,11 @@ type SelectedFlowNodeOverlayProps = {
 type Props = {
   xml: string;
   processDefinitionKey?: string;
+  selectedFlowNodeId?: string;
   selectableFlowNodes?: string[];
   selectedFlowNodeIds?: string[];
   onFlowNodeSelection?: OnFlowNodeSelection;
+  onRootChange?: OnRootChange;
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
   selectedFlowNodeOverlay?:
@@ -47,9 +45,11 @@ const Diagram: React.FC<Props> = observer(
   ({
     xml,
     processDefinitionKey,
+    selectedFlowNodeId,
     selectableFlowNodes,
     selectedFlowNodeIds,
     onFlowNodeSelection,
+    onRootChange,
     overlaysData,
     selectedFlowNodeOverlay,
     children,
@@ -62,9 +62,6 @@ const Diagram: React.FC<Props> = observer(
     const [isDiagramRendered, setIsDiagramRendered] = useState(false);
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
-    const rootNode = useRootNode();
-    const {clearSelection, selectedElementId} =
-      useProcessInstanceElementSelection();
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -111,32 +108,17 @@ const Diagram: React.FC<Props> = observer(
         viewer.onViewboxChange = setIsViewboxChanging;
 
         viewer.onRootChange = (rootElementId) => {
-          const elementId = IS_ELEMENT_SELECTION_V2
-            ? selectedElementId
-            : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null);
-
-          if (elementId === null) {
+          if (!selectedFlowNodeId) {
             return;
           }
 
-          const currentSelectionRootId = viewer.findRootId(elementId);
-
+          const currentSelectionRootId = viewer.findRootId(selectedFlowNodeId);
           if (rootElementId !== currentSelectionRootId) {
-            if (IS_ELEMENT_SELECTION_V2) {
-              clearSelection();
-            } else {
-              clearSelectionV1(rootNode);
-            }
+            onRootChange?.(rootElementId);
           }
         };
       }
-    }, [
-      viewer,
-      onFlowNodeSelection,
-      rootNode,
-      clearSelection,
-      selectedElementId,
-    ]);
+    }, [viewer, onFlowNodeSelection, onRootChange, selectedFlowNodeId]);
 
     useEffect(() => {
       return () => {
