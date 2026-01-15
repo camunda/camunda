@@ -55,6 +55,7 @@ public class ResolveIncidentTest {
 
   private static final Long INCIDENT_KEY = 100L;
   private static final Long JOB_KEY = 200L;
+  private static final Long PROCESS_INSTANCE_KEY = 300L;
   private static final String ELEMENT_ID = "test-task";
   private static final String PROCESS_DEFINITION_ID = "test-process";
 
@@ -140,6 +141,20 @@ public class ResolveIncidentTest {
     }
 
     @Test
+    void shouldResolveIncidentByProcessInstanceKey() {
+      // given
+      when(incident.getJobKey()).thenReturn(null);
+      when(incident.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when
+      camundaProcessTestContext.resolveIncident(
+          IncidentSelectors.byProcessInstanceKey(PROCESS_INSTANCE_KEY));
+
+      // then
+      verify(camundaClient.newResolveIncidentCommand(INCIDENT_KEY)).send();
+    }
+
+    @Test
     void shouldResolveIncidentWithJobRetryUpdate() {
       // given
       when(incident.getJobKey()).thenReturn(JOB_KEY);
@@ -184,6 +199,24 @@ public class ResolveIncidentTest {
       incidentFilterCaptor.getValue().accept(incidentFilter);
       verify(incidentFilter).state(IncidentState.ACTIVE);
       verify(incidentFilter).processDefinitionId(PROCESS_DEFINITION_ID);
+
+      verifyNoMoreInteractions(incidentFilter);
+    }
+
+    @Test
+    void shouldSearchByProcessInstanceKey() {
+      // given
+      when(incident.getJobKey()).thenReturn(null);
+      when(incident.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when
+      camundaProcessTestContext.resolveIncident(
+          IncidentSelectors.byProcessInstanceKey(PROCESS_INSTANCE_KEY));
+
+      // then
+      incidentFilterCaptor.getValue().accept(incidentFilter);
+      verify(incidentFilter).state(IncidentState.ACTIVE);
+      verify(incidentFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
 
       verifyNoMoreInteractions(incidentFilter);
     }

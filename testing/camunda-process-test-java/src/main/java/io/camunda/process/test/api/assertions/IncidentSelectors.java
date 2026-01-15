@@ -41,6 +41,16 @@ public class IncidentSelectors {
     return new IncidentProcessDefinitionIdSelector(processDefinitionId);
   }
 
+  /**
+   * Select the incident by its process instance key.
+   *
+   * @param processInstanceKey the process instance key
+   * @return the selector
+   */
+  public static IncidentSelector byProcessInstanceKey(final long processInstanceKey) {
+    return new IncidentProcessInstanceKeySelector(processInstanceKey);
+  }
+
   private static final class IncidentElementIdSelector implements IncidentSelector {
 
     private final String elementId;
@@ -86,6 +96,30 @@ public class IncidentSelectors {
     @Override
     public void applyFilter(final IncidentFilter filter) {
       filter.processDefinitionId(processDefinitionId);
+    }
+  }
+
+  private static final class IncidentProcessInstanceKeySelector implements IncidentSelector {
+
+    private final long processInstanceKey;
+
+    private IncidentProcessInstanceKeySelector(final long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+    }
+
+    @Override
+    public boolean test(final Incident incident) {
+      return incident.getProcessInstanceKey().equals(processInstanceKey);
+    }
+
+    @Override
+    public String describe() {
+      return String.format("processInstanceKey: %d", processInstanceKey);
+    }
+
+    @Override
+    public void applyFilter(final IncidentFilter filter) {
+      filter.processInstanceKey(processInstanceKey);
     }
   }
 }
