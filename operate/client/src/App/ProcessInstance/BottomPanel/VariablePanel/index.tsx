@@ -19,6 +19,8 @@ import {OperationsLog} from './OperationsLog';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 const tabIds = {
   variables: 'variables',
@@ -38,17 +40,26 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   setListenerTabVisibility,
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const isRootNodeSelected = useIsRootNodeSelected();
+  let {hasSelection, selectedElementId, selectedElementInstanceKey} =
+    useProcessInstanceElementSelection();
 
-  const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
-  const flowNodeInstanceId =
-    flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
+  // TODO: Remove these assignments to remove the feature flag from the component
+  hasSelection = IS_ELEMENT_SELECTION_V2
+    ? hasSelection
+    : // eslint-disable-next-line react-hooks/rules-of-hooks
+      !useIsRootNodeSelected();
+  selectedElementId = IS_ELEMENT_SELECTION_V2
+    ? selectedElementId
+    : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null);
+  selectedElementInstanceKey = IS_ELEMENT_SELECTION_V2
+    ? selectedElementInstanceKey
+    : (flowNodeSelectionStore.state.selection?.flowNodeInstanceId ?? null);
 
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerTypeFilter>();
   const [selectedTab, setSelectedTab] = useState<TabId>('variables');
 
-  const shouldFetchListeners = flowNodeInstanceId || flowNodeId;
+  const shouldFetchListeners = selectedElementInstanceKey || selectedElementId;
   const {
     data: jobs,
     fetchNextPage,
@@ -59,8 +70,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     payload: {
       filter: {
         processInstanceKey: processInstanceId,
-        elementId: flowNodeId,
-        elementInstanceKey: flowNodeInstanceId,
+        elementId: selectedElementId ?? undefined,
+        elementInstanceKey: selectedElementInstanceKey ?? undefined,
         kind: listenerTypeFilter,
       },
     },
@@ -72,6 +83,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   return (
     <TabView
+      key={`tabview-${selectedElementId}-${selectedElementInstanceKey}`}
       onTabChange={(tabId) => setSelectedTab(tabId)}
       tabs={[
         {
@@ -83,13 +95,18 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
             setListenerTabVisibility(false);
           },
         },
-        ...(isRootNodeSelected
+        ...(!hasSelection || !selectedElementId
           ? []
           : [
               {
                 id: tabIds.inputMappings,
                 label: 'Input Mappings',
-                content: <InputOutputMappings type="Input" />,
+                content: (
+                  <InputOutputMappings
+                    type="Input"
+                    elementId={selectedElementId}
+                  />
+                ),
                 onClick: () => {
                   setListenerTabVisibility(false);
                 },
@@ -97,7 +114,12 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
               {
                 id: tabIds.outputMappings,
                 label: 'Output Mappings',
-                content: <InputOutputMappings type="Output" />,
+                content: (
+                  <InputOutputMappings
+                    type="Output"
+                    elementId={selectedElementId}
+                  />
+                ),
                 onClick: () => {
                   setListenerTabVisibility(false);
                 },
@@ -137,7 +159,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
           },
         },
       ]}
-      key={`tabview-${flowNodeId}-${flowNodeInstanceId}`}
     />
   );
 });
