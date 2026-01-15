@@ -352,9 +352,9 @@ class OperateProcessesPage {
             .locator('label');
 
           // Wait for the element to be attached and stable
-          await checkbox.waitFor({state: 'attached', timeout: 10000});
+          await checkbox.waitFor({state: 'attached'});
           if (!(await checkbox.isChecked())) {
-            await checkbox.click({timeout: 10000});
+            await checkbox.click();
           }
           await sleep(100);
           break;

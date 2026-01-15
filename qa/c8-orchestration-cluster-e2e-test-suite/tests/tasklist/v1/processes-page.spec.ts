@@ -119,7 +119,7 @@ test.describe('process page', () => {
       assertion: async () => {
         await expect(
           taskPanelPageV1.availableTasks.getByText('User_Task').first()
-        ).toBeVisible({timeout: 10000});
+        ).toBeVisible();
       },
       onFailure: async () => {
         page.reload();
