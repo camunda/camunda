@@ -33,7 +33,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   private static final long BYTES_PER_MB = 1024L * 1024L;
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
-          Pattern.compile(".*updateHistoryCleanupDate$"),
+          Pattern.compile(".*update.*HistoryCleanupDate$"),
           Pattern.compile("io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists"));
 
   private final SqlSessionFactory sessionFactory;
