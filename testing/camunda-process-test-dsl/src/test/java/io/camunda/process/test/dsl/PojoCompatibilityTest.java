@@ -37,6 +37,7 @@ import io.camunda.process.test.api.dsl.ImmutableTestScenario;
 import io.camunda.process.test.api.dsl.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.dsl.TestCaseInstruction;
 import io.camunda.process.test.api.dsl.TestScenario;
+import io.camunda.process.test.api.dsl.instructions.ImmutableActivateElement;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstanceInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertElementInstancesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstanceInstruction;
@@ -44,6 +45,7 @@ import io.camunda.process.test.api.dsl.instructions.ImmutableAssertProcessInstan
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableAssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableBroadcastSignalInstruction;
+import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobAdHocSubProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.ImmutableCreateProcessInstanceInstruction;
@@ -463,6 +465,47 @@ public class PojoCompatibilityTest {
                     .jobSelector(
                         ImmutableJobSelector.builder().processDefinitionId("my-process").build())
                     .useExampleData(true)
+                    .build())),
+        // ===== COMPLETE_JOB_AD_HOC_SUB_PROCESS =====
+        Arguments.of(
+            "complete job ad-hoc sub-process: minimal",
+            singleTestCase(
+                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("ad-hoc-sp").build())
+                    .build())),
+        Arguments.of(
+            "complete job ad-hoc sub-process: with variables",
+            singleTestCase(
+                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("ad-hoc-task").build())
+                    .putVariables("result", "okay")
+                    .build())),
+        Arguments.of(
+            "complete job ad-hoc sub-process: with activate elements",
+            singleTestCase(
+                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("ad-hoc-sp").build())
+                    .addActivateElements(
+                        ImmutableActivateElement.builder()
+                            .elementId("task1")
+                            .putVariables("x", 1)
+                            .build())
+                    .addActivateElements(
+                        ImmutableActivateElement.builder().elementId("task2").build())
+                    .build())),
+        Arguments.of(
+            "complete job ad-hoc sub-process: with all options",
+            singleTestCase(
+                ImmutableCompleteJobAdHocSubProcessInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("ad-hoc-task").build())
+                    .putVariables("result", "completed")
+                    .addActivateElements(
+                        ImmutableActivateElement.builder()
+                            .elementId("task1")
+                            .putVariables("x", 1)
+                            .build())
+                    .cancelRemainingInstances(true)
+                    .completionConditionFulfilled(false)
                     .build())),
         // ===== EVALUATE_CONDITIONAL_START_EVENT =====
         Arguments.of(

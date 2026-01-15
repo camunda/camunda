@@ -25,6 +25,7 @@ import io.camunda.process.test.api.dsl.instructions.AssertProcessInstanceMessage
 import io.camunda.process.test.api.dsl.instructions.AssertUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.AssertVariablesInstruction;
 import io.camunda.process.test.api.dsl.instructions.BroadcastSignalInstruction;
+import io.camunda.process.test.api.dsl.instructions.CompleteJobAdHocSubProcessInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteJobInstruction;
 import io.camunda.process.test.api.dsl.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.api.dsl.instructions.CreateProcessInstanceInstruction;
@@ -69,6 +70,9 @@ import io.camunda.process.test.api.dsl.instructions.ResolveIncidentInstruction;
   @JsonSubTypes.Type(
       value = CompleteJobInstruction.class,
       name = TestCaseInstructionType.COMPLETE_JOB),
+  @JsonSubTypes.Type(
+      value = CompleteJobAdHocSubProcessInstruction.class,
+      name = TestCaseInstructionType.COMPLETE_JOB_AD_HOC_SUB_PROCESS),
   @JsonSubTypes.Type(
       value = CompleteUserTaskInstruction.class,
       name = TestCaseInstructionType.COMPLETE_USER_TASK),

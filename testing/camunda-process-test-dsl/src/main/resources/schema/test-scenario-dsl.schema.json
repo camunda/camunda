@@ -72,6 +72,9 @@
           "$ref": "#/definitions/CompleteJobInstruction"
         },
         {
+          "$ref": "#/definitions/CompleteJobAdHocSubProcessInstruction"
+        },
+        {
           "$ref": "#/definitions/CompleteUserTaskInstruction"
         },
         {
@@ -541,6 +544,61 @@
         },
         "useExampleData": {
           "description": "Whether to complete the job with example data from the BPMN element. This property has precedence over variables. Defaults to false.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "type",
+        "jobSelector"
+      ],
+      "additionalProperties": false
+    },
+    "CompleteJobAdHocSubProcessInstruction": {
+      "description": "An instruction to complete a job of an ad-hoc sub-process.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "COMPLETE_JOB_AD_HOC_SUB_PROCESS"
+        },
+        "jobSelector": {
+          "description": "The selector to identify the job to complete.",
+          "$ref": "#/definitions/JobSelector"
+        },
+        "variables": {
+          "description": "The variables to complete the job with. Defaults to an empty map.",
+          "type": "object"
+        },
+        "activateElements": {
+          "description": "The elements to activate in the ad-hoc sub-process.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "elementId": {
+                "description": "The ID of the element to activate.",
+                "type": "string"
+              },
+              "variables": {
+                "description": "The variables to set when activating the element. Defaults to an empty map.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "elementId"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "cancelRemainingInstances": {
+          "description": "Whether to cancel remaining instances of the ad-hoc sub-process. Defaults to false.",
+          "type": "boolean",
+          "default": false
+        },
+        "completionConditionFulfilled": {
+          "description": "Whether the completion condition of the ad-hoc sub-process is fulfilled. Defaults to false.",
           "type": "boolean",
           "default": false
         }
