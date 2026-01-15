@@ -13,7 +13,7 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {createInstance} from 'modules/testUtils';
 import {createRef, useEffect} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {ModificationDropdown} from '../indexV1';
+import {ModificationDropdown} from '../index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {Paths} from 'modules/Routes';

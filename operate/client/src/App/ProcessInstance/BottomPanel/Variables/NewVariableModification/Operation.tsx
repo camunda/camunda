@@ -15,8 +15,6 @@ import {Button} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
-import {getScopeId} from 'modules/utils/variables';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 
 type Props = {
@@ -31,10 +29,7 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
   const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
     flowNodeSelectionStore.state.selection?.flowNodeId,
   );
-  const scopeKey = IS_ELEMENT_SELECTION_V2
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useVariableScopeKey(newScopeIdForFlowNode)
-    : (getScopeId() ?? newScopeIdForFlowNode);
+  const scopeKey = useVariableScopeKey(newScopeIdForFlowNode);
 
   return (
     <Operations>
