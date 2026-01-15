@@ -282,7 +282,9 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.HISTORY_DELETION,
         new HistoryDeletionDeletedHandler(rdbmsWriters.getHistoryDeletionWriter()));
 
-    registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
+    if (config.getAuditLog().isEnabled()) {
+      registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
+    }
   }
 
   private void createBatchOperationHandlers(
@@ -337,6 +339,7 @@ public class RdbmsExporterWrapper implements Exporter {
       final Builder builder,
       final ExporterConfiguration config,
       final int partitionId) {
+
     final Set<AuditLogTransformer<?>> transformers = new HashSet<>();
     transformers.add(new BatchOperationLifecycleManagementAuditLogTransformer());
     transformers.add(new DecisionEvaluationAuditLogTransformer());
