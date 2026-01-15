@@ -7,33 +7,39 @@
  */
 package io.camunda.operate.elasticsearch.dao;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.store.elasticsearch.dao.GenericDAO;
+import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import java.io.IOException;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.xcontent.XContentType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class GenericDAOTest {
 
-  @Mock private RestHighLevelClient esClient;
+  @Mock private ElasticsearchClient esClient;
   @Mock private ObjectMapper objectMapper;
   @Mock private MetricIndex index;
   @Mock private MetricEntity entity;
+
+  @Captor private ArgumentCaptor<IndexRequest<MetricEntity>> indexRequestCaptor;
 
   @Test
   public void instantiateWithoutObjectMapperThrowsException() {
@@ -41,7 +47,7 @@ public class GenericDAOTest {
         .isThrownBy(
             () ->
                 new GenericDAO.Builder<MetricEntity, MetricIndex>()
-                    .esClient(esClient)
+                    .es8Client(esClient)
                     .index(index)
                     .build());
   }
@@ -64,34 +70,60 @@ public class GenericDAOTest {
             () ->
                 new GenericDAO.Builder<MetricEntity, MetricIndex>()
                     .objectMapper(objectMapper)
-                    .esClient(esClient)
+                    .es8Client(esClient)
                     .build());
   }
 
   @Test
-  @Disabled("Skipping this test as we can't mock esClient final methods")
+  @SuppressWarnings("unchecked")
   public void insertShouldReturnExpectedResponse() throws IOException {
     // Given
     final GenericDAO<MetricEntity, MetricIndex> dao = instantiateDao();
     final String indexName = "indexName";
-    final String json = "json";
-    when(index.getIndexName()).thenReturn(indexName);
-    when(entity.getId()).thenReturn(null);
-    when(objectMapper.writeValueAsString(any())).thenReturn(json);
+    final String entityId = "test-id";
+    when(index.getFullQualifiedName()).thenReturn(indexName);
+    when(entity.getId()).thenReturn(entityId);
 
-    final IndexRequest request =
-        new IndexRequest(indexName).id(null).source(json, XContentType.JSON);
+    final IndexResponse indexResponse = mock(IndexResponse.class);
+    when(indexResponse.result()).thenReturn(Result.Created);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponse);
 
     // When
-    dao.insert(entity);
+    final InsertResponse response = dao.insert(entity);
 
     // Then
-    verify(esClient).index(request, RequestOptions.DEFAULT);
+    assertThat(response.hasError()).isFalse();
+
+    verify(esClient).index(indexRequestCaptor.capture());
+    final IndexRequest<MetricEntity> capturedRequest = indexRequestCaptor.getValue();
+    assertThat(capturedRequest.index()).isEqualTo(indexName);
+    assertThat(capturedRequest.id()).isEqualTo(entityId);
+    assertThat(capturedRequest.document()).isEqualTo(entity);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void insertShouldReturnFailureWhenNotCreated() throws IOException {
+    // Given
+    final GenericDAO<MetricEntity, MetricIndex> dao = instantiateDao();
+    final String indexName = "indexName";
+    when(index.getFullQualifiedName()).thenReturn(indexName);
+    when(entity.getId()).thenReturn("test-id");
+
+    final IndexResponse indexResponse = mock(IndexResponse.class);
+    when(indexResponse.result()).thenReturn(Result.Updated);
+    when(esClient.index(any(IndexRequest.class))).thenReturn(indexResponse);
+
+    // When
+    final InsertResponse response = dao.insert(entity);
+
+    // Then
+    assertThat(response.hasError()).isTrue();
   }
 
   private GenericDAO<MetricEntity, MetricIndex> instantiateDao() {
     return new GenericDAO.Builder<MetricEntity, MetricIndex>()
-        .esClient(esClient)
+        .es8Client(esClient)
         .index(index)
         .objectMapper(objectMapper)
         .build();

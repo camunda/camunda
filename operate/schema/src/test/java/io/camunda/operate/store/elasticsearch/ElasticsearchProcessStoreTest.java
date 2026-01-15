@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,8 +51,6 @@ public class ElasticsearchProcessStoreTest {
   private final List<ProcessInstanceDependant> processInstanceDependantTemplates =
       new LinkedList<>();
 
-  @Mock private RestHighLevelClient esClient;
-
   @Mock private ElasticsearchClient es8Client;
 
   @Mock private OperateProperties operateProperties;
@@ -70,7 +67,6 @@ public class ElasticsearchProcessStoreTest {
             listViewTemplate,
             processInstanceDependantTemplates,
             operateProperties,
-            esClient,
             es8Client,
             tenantHelper);
   }

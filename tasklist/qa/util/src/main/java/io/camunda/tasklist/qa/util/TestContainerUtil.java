@@ -336,7 +336,7 @@ public class TestContainerUtil {
       retryFor = TasklistRuntimeException.class,
       maxAttempts = 5,
       backoff = @Backoff(delay = 3000))
-  public void checkElasctisearchHealth(final TestContext testContext) {
+  public void checkElasticsearchHealth(final TestContext testContext) {
     try {
       final RestHighLevelClient esClient =
           new RestHighLevelClient(

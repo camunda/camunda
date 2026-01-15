@@ -7,20 +7,20 @@
  */
 package io.camunda.operate.qa.backup;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.testhelpers.StatefulRestTemplate;
-import org.elasticsearch.client.RestHighLevelClient;
 
 public class BackupRestoreTestContext extends TestContext<BackupRestoreTestContext> {
 
-  private RestHighLevelClient esClient;
+  private ElasticsearchClient esClient;
   private StatefulRestTemplate operateRestClient;
 
-  public RestHighLevelClient getEsClient() {
+  public ElasticsearchClient getEsClient() {
     return esClient;
   }
 
-  public BackupRestoreTestContext setEsClient(final RestHighLevelClient esClient) {
+  public BackupRestoreTestContext setEsClient(final ElasticsearchClient esClient) {
     this.esClient = esClient;
     return this;
   }

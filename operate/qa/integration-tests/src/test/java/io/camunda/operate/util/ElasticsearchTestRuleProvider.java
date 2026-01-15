@@ -12,9 +12,12 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ExpandWildcard;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshRequest;
+import co.elastic.clients.elasticsearch.nodes.Stats;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -47,14 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
+import java.util.Set;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,13 +65,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   protected static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchTestRuleProvider.class);
 
-  // Scroll contexts constants
-  private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
-  // Path to find search statistics for all indexes
-  private static final String PATH_SEARCH_STATISTICS =
-      "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
-
-  @Autowired protected RestHighLevelClient esClient;
   @Autowired protected ElasticsearchClient es8Client;
 
   @Autowired protected OperateProperties operateProperties;
@@ -95,8 +84,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
-
-  @Autowired private ObjectMapper objectMapper;
 
   private String indexPrefix;
 
@@ -127,7 +114,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void finished(final Description description) {
     if (!failed) {
       final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
-      TestUtil.removeAllIndices(esClient, indexPrefix);
+      TestUtil.removeAllIndices(es8Client, indexPrefix);
     }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
@@ -149,9 +136,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshOperateSearchIndices() {
     try {
-      final RefreshRequest refreshRequest =
-          new RefreshRequest(searchEngineConfiguration.connect().getIndexPrefix() + "*");
-      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      final var refreshRequest =
+          new RefreshRequest.Builder()
+              .index(searchEngineConfiguration.connect().getIndexPrefix() + "*")
+              .build();
+      es8Client.indices().refresh(refreshRequest);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Elasticsearch indices", t);
     }
@@ -247,7 +236,18 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public int getOpenScrollcontextSize() {
-    return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
+    int openContexts = 0;
+    try {
+      final Set<Map.Entry<String, Stats>> nodesResult =
+          es8Client.nodes().stats().nodes().entrySet();
+      for (final Map.Entry<String, Stats> entryNodes : nodesResult) {
+        openContexts += entryNodes.getValue().indices().search().openContexts().intValue();
+      }
+      return openContexts;
+    } catch (final IOException e) {
+      LOGGER.error("Couldn't retrieve node stats from elasticsearch.", e);
+      return 0;
+    }
   }
 
   @Override
@@ -257,8 +257,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public boolean indexExists(final String index) throws IOException {
-    final var request = new GetIndexRequest(index);
-    return esClient.indices().exists(request, RequestOptions.DEFAULT);
+    final var request = new ExistsRequest.Builder().index(index).build();
+    return es8Client.indices().exists(request).value();
   }
 
   private String getRoutingKey(final ExporterEntity entity) {
@@ -272,38 +272,14 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
       throws IOException {
-    final GetIndexResponse response =
-        esClient
-            .indices()
-            .get(
-                new GetIndexRequest(indexPrefix + "*")
-                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
-                RequestOptions.DEFAULT);
-    final String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices;
-  }
-
-  private int getIntValueForJSON(
-      final String path, final String fieldname, final int defaultValue) {
-    final Optional<JsonNode> jsonNode = getJsonFor(path);
-    if (jsonNode.isPresent()) {
-      final JsonNode field = jsonNode.get().findValue(fieldname);
-      if (field != null) {
-        return field.asInt(defaultValue);
-      }
-    }
-    return defaultValue;
-  }
-
-  private Optional<JsonNode> getJsonFor(final String path) {
-    try {
-      final ObjectMapper objectMapper = new ObjectMapper();
-      final Response response =
-          esClient.getLowLevelClient().performRequest(new Request("GET", path));
-      return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
-    } catch (final Exception e) {
-      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
-      return Optional.empty();
-    }
+    final var getIndexRequest =
+        new GetIndexRequest.Builder()
+            .index(indexPrefix + "*")
+            .ignoreUnavailable(true)
+            .allowNoIndices(false)
+            .expandWildcards(ExpandWildcard.Open)
+            .build();
+    final var response = es8Client.indices().get(getIndexRequest);
+    return response.result() != null && response.result().size() >= minCountOfIndices;
   }
 }

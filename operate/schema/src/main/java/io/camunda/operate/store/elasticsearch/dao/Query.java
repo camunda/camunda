@@ -7,80 +7,91 @@
  */
 package io.camunda.operate.store.elasticsearch.dao;
 
-import io.camunda.operate.util.ElasticsearchUtil;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithOr;
+import static io.camunda.operate.util.ElasticsearchUtil.termsQuery;
+
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.UntypedRangeQuery;
+import co.elastic.clients.json.JsonData;
 import java.util.Objects;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 
 public class Query {
 
-  private QueryBuilder queryBuilder = null;
-  private AggregationBuilder aggregationBuilder = null;
+  private co.elastic.clients.elasticsearch._types.query_dsl.Query esQuery = null;
   private String groupName = null;
+  private Aggregation aggregation = null;
 
-  public static Query whereEquals(String field, String value) {
+  public static Query whereEquals(final String field, final String value) {
     final Query instance = new Query();
-    instance.queryBuilder = QueryBuilders.termsQuery(field, value);
-
+    instance.esQuery = termsQuery(field, value);
     return instance;
   }
 
-  public static Query range(String field, Object gte, Object lt) {
+  public static Query range(final String field, final Object gte, final Object lt) {
     final Query instance = new Query();
 
-    RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(field);
+    final UntypedRangeQuery.Builder untypedBuilder = new UntypedRangeQuery.Builder();
+    untypedBuilder.field(field);
     if (gte != null) {
-      rangeQueryBuilder = rangeQueryBuilder.gte(gte);
+      untypedBuilder.gte(JsonData.of(gte));
     }
-
     if (lt != null) {
-      rangeQueryBuilder = rangeQueryBuilder.lt(lt);
+      untypedBuilder.lt(JsonData.of(lt));
     }
 
-    instance.queryBuilder = rangeQueryBuilder;
+    final RangeQuery.Builder rangeBuilder = new RangeQuery.Builder();
+    rangeBuilder.untyped(untypedBuilder.build());
+
+    instance.esQuery =
+        co.elastic.clients.elasticsearch._types.query_dsl.Query.of(
+            q -> q.range(rangeBuilder.build()));
 
     return instance;
   }
 
-  public Query aggregate(String groupName, String fieldName) {
-    this.aggregationBuilder = AggregationBuilders.sum(groupName).field(fieldName);
-    this.groupName = groupName;
+  public Query aggregate(final String aggregationName, final String fieldName) {
+    groupName = aggregationName;
+    aggregation = Aggregation.of(a -> a.sum(s -> s.field(fieldName)));
 
     return this;
   }
 
-  public Query and(Query andQuery) {
-    this.queryBuilder = ElasticsearchUtil.joinWithAnd(this.queryBuilder, andQuery.queryBuilder);
+  public Query and(final Query andQuery) {
+    esQuery = joinWithAnd(esQuery, andQuery.esQuery);
     return this;
   }
 
-  public Query or(Query orQuery) {
-    this.queryBuilder = ElasticsearchUtil.joinWithOr(this.queryBuilder, orQuery.queryBuilder);
+  public Query or(final Query orQuery) {
+    esQuery = joinWithOr(esQuery, orQuery.esQuery);
     return this;
   }
 
-  QueryBuilder getQueryBuilder() {
-    return this.queryBuilder;
-  }
-
-  AggregationBuilder getAggregationBuilder() {
-    return this.aggregationBuilder;
+  co.elastic.clients.elasticsearch._types.query_dsl.Query getEsQuery() {
+    return esQuery;
   }
 
   String getGroupName() {
-    return this.groupName;
+    return groupName;
+  }
+
+  Aggregation getAggregation() {
+    return aggregation;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(queryBuilder, aggregationBuilder, groupName);
+    // Use string representations for hashCode since ES8 client objects don't implement proper
+    // equals/hashCode
+    return Objects.hash(
+        esQuery != null ? esQuery.toString() : null,
+        groupName,
+        aggregation != null ? aggregation.toString() : null);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -88,21 +99,26 @@ public class Query {
       return false;
     }
     final Query query = (Query) o;
-    return Objects.equals(queryBuilder, query.queryBuilder)
-        && Objects.equals(aggregationBuilder, query.aggregationBuilder)
-        && Objects.equals(groupName, query.groupName);
+    // Compare string representations since ES8 client objects don't implement proper equals()
+    return Objects.equals(
+            esQuery != null ? esQuery.toString() : null,
+            query.esQuery != null ? query.esQuery.toString() : null)
+        && Objects.equals(groupName, query.groupName)
+        && Objects.equals(
+            aggregation != null ? aggregation.toString() : null,
+            query.aggregation != null ? query.aggregation.toString() : null);
   }
 
   @Override
   public String toString() {
     return "Query{"
-        + "queryBuilder="
-        + queryBuilder
-        + ", aggregationBuilder="
-        + aggregationBuilder
+        + "esQuery="
+        + esQuery
         + ", groupName='"
         + groupName
         + '\''
+        + ", aggregation="
+        + aggregation
         + '}';
   }
 }

@@ -20,16 +20,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
-import io.camunda.operate.webapp.elasticsearch.QueryHelper;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.writer.PersistOperationHelper;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -46,8 +41,6 @@ import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.SearchHits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,10 +57,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   @Autowired private IncidentReader incidentReader;
 
   @Autowired private OperateProperties operateProperties;
-
-  @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -89,15 +78,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Autowired private ProcessReader processReader;
 
-  @Autowired private PermissionsService permissionsService;
-
   @Autowired private OperationStore operationStore;
 
   @Autowired private ListViewStore listViewStore;
-
-  @Autowired private QueryHelper queryHelper;
-
-  @Autowired private PersistOperationHelper persistOperationHelper;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of
@@ -444,17 +427,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
         .setUsername(
             camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername())
         .setRootProcessInstanceKey(processInstanceSource.getRootProcessInstanceKey());
-  }
-
-  private void validateTotalHits(final SearchHits hits) {
-    final long totalHits = hits.getTotalHits().value;
-    if (operateProperties.getBatchOperationMaxSize() != null
-        && totalHits > operateProperties.getBatchOperationMaxSize()) {
-      throw new InvalidRequestException(
-          String.format(
-              "Too many process instances are selected for batch operation. Maximum possible amount: %s",
-              operateProperties.getBatchOperationMaxSize()));
-    }
   }
 
   private Optional<ProcessInstanceForListViewEntity> tryGetProcessInstance(

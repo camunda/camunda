@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
@@ -37,8 +36,6 @@ public abstract class ElasticsearchDao<T> {
   @Autowired protected ElasticsearchClient es8Client;
 
   @Autowired protected ElasticsearchTenantHelper tenantHelper;
-
-  @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 
   @Autowired
   @Qualifier("operateObjectMapper")

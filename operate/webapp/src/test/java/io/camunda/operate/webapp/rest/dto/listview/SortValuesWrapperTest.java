@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.Tuple;
 import java.math.BigInteger;
-import org.elasticsearch.common.text.Text;
 import org.junit.jupiter.api.Test;
 
 public class SortValuesWrapperTest {
@@ -33,19 +32,6 @@ public class SortValuesWrapperTest {
     assertThat(result.length).isEqualTo(1);
     assertThat(result[0]).isEqualTo("testString");
     assertThat(result[0].getClass()).isEqualTo(String.class);
-  }
-
-  @Test
-  public void testConvertSortValuesText() {
-    final SortValuesWrapper[] sortValuesWrappers = {
-      new SortValuesWrapper("\"testString\"", Text.class)
-    };
-
-    final Object[] result = SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper);
-
-    assertThat(result.length).isEqualTo(1);
-    assertThat(result[0]).isEqualTo(new Text("testString"));
-    assertThat(result[0].getClass()).isEqualTo(Text.class);
   }
 
   @Test
@@ -184,18 +170,6 @@ public class SortValuesWrapperTest {
     assertThat(result.length).isEqualTo(1);
     assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString("testString"));
     assertThat(result[0].getValueType()).isEqualTo(String.class);
-  }
-
-  @Test
-  public void testCreateFromText() {
-    final Object[] sortValues = {new Text("testString")};
-
-    final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
-
-    // The object mapper does not have a module registered that correctly serializes Text types
-    // (the result is a string that reads "{fragment:true}")
-    assertThat(result.length).isEqualTo(1);
-    assertThat(result[0].getValueType()).isEqualTo(Text.class);
   }
 
   @Test

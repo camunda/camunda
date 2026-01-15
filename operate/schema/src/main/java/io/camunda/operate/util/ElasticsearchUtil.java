@@ -63,14 +63,9 @@ public abstract class ElasticsearchUtil {
   public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
-  public static RequestOptions requestOptions = RequestOptions.DEFAULT;
   public static final Class<Map<String, Object>> MAP_CLASS =
       (Class<Map<String, Object>>) (Class<?>) Map.class;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
-
-  public static void setRequestOptions(final RequestOptions newRequestOptions) {
-    requestOptions = newRequestOptions;
-  }
 
   public static SearchRequest createSearchRequest(final IndexTemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);

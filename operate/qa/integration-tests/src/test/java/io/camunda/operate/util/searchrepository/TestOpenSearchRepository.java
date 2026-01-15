@@ -10,11 +10,8 @@ package io.camunda.operate.util.searchrepository;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.ids;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.script;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
@@ -25,21 +22,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.IndexRequest.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,12 +41,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired private ObjectMapper objectMapper;
-
-  @Override
-  public boolean createIndex(final String indexName, final Map<String, ?> mapping)
-      throws Exception {
-    return true;
-  }
 
   @Override
   public boolean createOrUpdateDocumentFromObject(
@@ -81,14 +64,12 @@ public class TestOpenSearchRepository implements TestSearchRepository {
     return createOrUpdateDocument(indexName, entityMap);
   }
 
-  @Override
-  public boolean createOrUpdateDocument(
+  private boolean createOrUpdateDocument(
       final String indexName, final String id, final Map<String, ?> doc) {
     return createOrUpdateDocument(indexName, id, doc, null);
   }
 
-  @Override
-  public boolean createOrUpdateDocument(
+  private boolean createOrUpdateDocument(
       final String indexName, final String id, final Map<String, ?> doc, final String routing) {
     final Builder<Object> document = indexRequestBuilder(indexName).id(id).document(doc);
     if (routing != null) {
@@ -97,11 +78,9 @@ public class TestOpenSearchRepository implements TestSearchRepository {
     return richOpenSearchClient.doc().indexWithRetries(document);
   }
 
-  @Override
-  public String createOrUpdateDocument(final String indexName, final Map<String, ?> doc)
-      throws IOException {
+  private String createOrUpdateDocument(final String indexName, final Map<String, ?> doc) {
     final String docId = UUID.randomUUID().toString();
-    if (createOrUpdateDocument(indexName, UUID.randomUUID().toString(), doc)) {
+    if (createOrUpdateDocument(indexName, docId, doc)) {
       return docId;
     } else {
       return null;
@@ -109,67 +88,9 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public void deleteById(final String index, final String id) throws IOException {
-    richOpenSearchClient.doc().delete(index, id);
-  }
-
-  @Override
-  public Set<String> getFieldNames(final String indexName) throws IOException {
-    final var requestBuilder = getIndexRequestBuilder(indexName);
-    return richOpenSearchClient
-        .index()
-        .get(requestBuilder)
-        .get(indexName)
-        .mappings()
-        .properties()
-        .keySet();
-  }
-
-  @Override
-  public boolean hasDynamicMapping(
-      final String indexName, final DynamicMappingType dynamicMappingType) throws IOException {
-    final var osDynamicMappingType =
-        switch (dynamicMappingType) {
-          case Strict -> DynamicMapping.Strict;
-          case True -> DynamicMapping.True;
-        };
-
-    final var requestBuilder = getIndexRequestBuilder(indexName);
-    final var dynamicMapping =
-        richOpenSearchClient.index().get(requestBuilder).get(indexName).mappings().dynamic();
-
-    return dynamicMapping == osDynamicMappingType;
-  }
-
-  @Override
-  public List<String> getAliasNames(final String indexName) throws IOException {
-    final var requestBuilder = getIndexRequestBuilder(indexName);
-    return richOpenSearchClient
-        .index()
-        .get(requestBuilder)
-        .get(indexName)
-        .aliases()
-        .keySet()
-        .stream()
-        .toList();
-  }
-
-  @Override
   public <R> List<R> searchAll(final String index, final Class<R> clazz) throws IOException {
     final var requestBuilder = searchRequestBuilder(index).query(matchAll());
     return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
-  }
-
-  @Override
-  public <T> List<T> searchJoinRelation(
-      final String index, final String joinRelation, final Class<T> clazz, final int size)
-      throws IOException {
-    final var searchRequestBuilder =
-        searchRequestBuilder(index)
-            .query(constantScore(term(JOIN_RELATION, joinRelation)))
-            .size(size);
-
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, clazz);
   }
 
   @Override
@@ -203,64 +124,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public <R> List<R> searchTerms(
-      final String index,
-      final Map<String, Object> fieldValueMap,
-      final Class<R> clazz,
-      final int size)
-      throws IOException {
-    final List<Query> queryList = new LinkedList<>();
-    fieldValueMap.forEach(
-        (field, value) -> {
-          Query query = null;
-
-          if (value instanceof final Long l) {
-            query = term(field, l);
-          }
-
-          if (value instanceof final String s) {
-            query = term(field, s);
-          }
-          queryList.add(query);
-        });
-    final var queryTerms = queryList.stream().filter(Objects::nonNull).toList();
-
-    if (!queryTerms.isEmpty()) {
-      final var requestBuilder = searchRequestBuilder(index).query(and(queryTerms)).size(size);
-
-      return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
-    } else {
-      return List.of();
-    }
-  }
-
-  @Override
-  public void deleteByTermsQuery(
-      final String index, final String fieldName, final List<Long> values) throws IOException {
-    richOpenSearchClient.doc().deleteByQuery(index, longTerms(fieldName, values));
-  }
-
-  @Override
-  public void update(final String index, final String id, final Map<String, Object> fields)
-      throws IOException {
-    final Function<Exception, String> errorMessageSupplier =
-        e ->
-            String.format(
-                "Exception occurred, while executing update request with script for index %s [id=%s]",
-                index, id);
-
-    final String script =
-        fields.keySet().stream()
-            .map(key -> "ctx._source." + key + " = params." + key + ";\n")
-            .collect(Collectors.joining());
-
-    final var updateRequestBuilder =
-        RequestDSL.<Void, Void>updateRequestBuilder(index).id(id).script(script(script, fields));
-
-    richOpenSearchClient.doc().update(updateRequestBuilder, errorMessageSupplier);
-  }
-
-  @Override
   public List<VariableEntity> getVariablesByProcessInstanceKey(
       final String index, final Long processInstanceKey) {
     final var requestBuilder =
@@ -268,19 +131,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
             .query(constantScore(term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)));
 
     return richOpenSearchClient.doc().scrollValues(requestBuilder, VariableEntity.class);
-  }
-
-  @Override
-  public List<BatchOperationEntity> getBatchOperationEntities(
-      final String indexName, final List<String> ids) throws IOException {
-    final var searchRequestBuilder =
-        searchRequestBuilder(indexName)
-            .query(constantScore(ids(toSafeArrayOfStrings(ids))))
-            .size(100);
-
-    return richOpenSearchClient
-        .doc()
-        .searchValues(searchRequestBuilder, BatchOperationEntity.class, true);
   }
 
   @Override

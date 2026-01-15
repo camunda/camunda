@@ -11,8 +11,11 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JO
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.client.CamundaClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
@@ -38,11 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,7 +74,7 @@ public class DataGenerator {
 
   private StatefulRestTemplate operateRestClient;
 
-  private RestHighLevelClient esClient;
+  private ElasticsearchClient esClient;
 
   @Autowired private OperateAPICaller operateAPICaller;
 
@@ -124,9 +122,7 @@ public class DataGenerator {
     waitTillSomeInstancesAreArchived();
 
     try {
-      esClient
-          .indices()
-          .refresh(new RefreshRequest(indexPrefix + "-operate-*"), RequestOptions.DEFAULT);
+      esClient.indices().refresh(r -> r.index(indexPrefix + "-operate-*"));
     } catch (final IOException e) {
       LOGGER.error("Error in refreshing indices", e);
     }
@@ -144,7 +140,7 @@ public class DataGenerator {
     }
     if (esClient != null) {
       try {
-        esClient.close();
+        esClient._transport().close();
       } catch (final IOException e) {
         throw new OperateRuntimeException(e);
       }
@@ -162,14 +158,12 @@ public class DataGenerator {
 
   private void waitUntilAllDataAreImported() {
     LOGGER.info("Wait till data is imported.");
-    final SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
-    searchRequest.source().query(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
     long loadedProcessInstances = 0;
     int count = 0;
     final int maxWait = 101;
     while (PROCESS_INSTANCE_COUNT > loadedProcessInstances && count < maxWait) {
       count++;
-      loadedProcessInstances = countEntitiesFor(searchRequest);
+      loadedProcessInstances = countEntitiesFor(getAliasFor(ListViewTemplate.INDEX_NAME));
       ThreadUtil.sleepFor(1000L);
     }
     if (count == maxWait) {
@@ -179,12 +173,14 @@ public class DataGenerator {
 
   private boolean someInstancesAreArchived() {
     try {
-      final SearchResponse search =
-          esClient.search(
-              new SearchRequest(
-                  indexPrefix + "-operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
-              RequestOptions.DEFAULT);
-      return search.getHits().getTotalHits().value > 0;
+      final var countResponse =
+          esClient.count(
+              r ->
+                  r.index(
+                      indexPrefix
+                          + "-operate-*_"
+                          + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())));
+      return countResponse.count() > 0;
     } catch (final IOException e) {
       throw new RuntimeException(
           "Exception occurred while checking archived indices: " + e.getMessage(), e);
@@ -262,11 +258,18 @@ public class DataGenerator {
     return keys.get(random.nextInt(keys.size()));
   }
 
-  private long countEntitiesFor(final SearchRequest searchRequest) {
+  private long countEntitiesFor(final String indexName) {
     try {
-      searchRequest.source().size(1000);
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return searchResponse.getHits().getTotalHits().value;
+      final SearchRequest searchRequest =
+          SearchRequest.of(
+              r ->
+                  r.index(indexName)
+                      .size(1000)
+                      .query(
+                          QueryBuilders.term(
+                              t -> t.field(JOIN_RELATION).value(PROCESS_INSTANCE_JOIN_RELATION))));
+      final SearchResponse<Object> searchResponse = esClient.search(searchRequest, Object.class);
+      return searchResponse.hits().total() != null ? searchResponse.hits().total().value() : 0;
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
