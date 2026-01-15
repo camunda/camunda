@@ -448,7 +448,7 @@ public abstract class TestUtil {
 
   public static void removeAllIndices(final ElasticsearchClient es8Client, final String prefix) {
     try {
-      LOGGER.info("Removing indices with ES8 client");
+      LOGGER.info("Removing indices");
 
       // Get all indices matching the prefix and delete in bulk
       final var getIndexRequest = new GetIndexRequest.Builder().index(prefix + "*").build();

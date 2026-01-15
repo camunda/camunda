@@ -11,6 +11,7 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.HealthStatus;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
@@ -324,7 +325,7 @@ public class TestContainerUtil {
         testContext.getExternalElsPort());
   }
 
-  public boolean checkElasctisearchHealth(final TestContext testContext) {
+  public boolean checkElasticsearchHealth(final TestContext testContext) {
     try (final RestClient restClient =
         RestClient.builder(
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))
@@ -334,9 +335,7 @@ public class TestContainerUtil {
       final ElasticsearchClient esClient = new ElasticsearchClient(transport);
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(5)
-          .retryOn(
-              IOException.class,
-              co.elastic.clients.elasticsearch._types.ElasticsearchException.class)
+          .retryOn(IOException.class, ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
           .retryConsumer(
               () -> {

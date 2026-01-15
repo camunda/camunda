@@ -123,7 +123,7 @@ public class BackupRestoreTest {
 
   private void startAllApps() throws IOException {
     testContainerUtil.startElasticsearch(testContext);
-    testContainerUtil.checkElasctisearchHealth(testContext);
+    testContainerUtil.checkElasticsearchHealth(testContext);
     final RestClient restClient =
         RestClient.builder(
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))

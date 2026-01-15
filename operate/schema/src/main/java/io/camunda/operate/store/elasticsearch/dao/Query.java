@@ -114,7 +114,7 @@ public class Query {
     return "Query{"
         + "esQuery="
         + esQuery
-        + ", aggregationName='"
+        + ", groupName='"
         + groupName
         + '\''
         + ", aggregation="

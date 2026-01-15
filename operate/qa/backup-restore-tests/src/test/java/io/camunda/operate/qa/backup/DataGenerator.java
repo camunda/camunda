@@ -173,15 +173,14 @@ public class DataGenerator {
 
   private boolean someInstancesAreArchived() {
     try {
-      final SearchResponse<Object> search =
-          esClient.search(
+      final var countResponse =
+          esClient.count(
               r ->
                   r.index(
                       indexPrefix
                           + "-operate-*_"
-                          + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
-              Object.class);
-      return search.hits().total() != null && search.hits().total().value() > 0;
+                          + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())));
+      return countResponse.count() > 0;
     } catch (final IOException e) {
       throw new RuntimeException(
           "Exception occurred while checking archived indices: " + e.getMessage(), e);

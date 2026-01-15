@@ -130,7 +130,7 @@ public class BackupRestoreTest {
 
   private void startElsApps() throws IOException {
     testContainerUtil.startElasticsearch(testContext);
-    testContainerUtil.checkElasctisearchHealth(testContext);
+    testContainerUtil.checkElasticsearchHealth(testContext);
     testContext.setEsClient(
         new RestHighLevelClient(
             RestClient.builder(

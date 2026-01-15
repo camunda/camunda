@@ -21,7 +21,6 @@ import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,6 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
   private ElasticsearchClient es8Client;
   private ObjectMapper objectMapper;
   private I index;
-  private Class<T> typeOfEntity;
 
   private GenericDAO() {
     // No constructor, only Builder class should be used
@@ -44,7 +42,6 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
    * @param index
    * @param es8Client
    */
-  @SuppressWarnings("unchecked")
   GenericDAO(final ObjectMapper objectMapper, final I index, final ElasticsearchClient es8Client) {
     if (objectMapper == null) {
       throw new IllegalStateException("ObjectMapper can't be null");
@@ -59,9 +56,6 @@ public class GenericDAO<T extends ExporterEntity, I extends IndexDescriptor> {
     this.objectMapper = objectMapper;
     this.index = index;
     this.es8Client = es8Client;
-    typeOfEntity =
-        (Class<T>)
-            ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
   }
 
   /**
