@@ -77,10 +77,16 @@ const useDisplayStatus = ({
   const hasNoContent = useHasNoContent();
   const hasMultipleInstances = useHasMultipleInstances();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
-  const isFetchingElementError = IS_ELEMENT_SELECTION_V2
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useProcessInstanceElementSelection().isFetchingElementError
+  let {isFetchingElementError, isSelectedInstancePlaceholder} =
+    useProcessInstanceElementSelection();
+
+  // TODO: Remove these assignments once the feature flag is fully rolled out
+  isFetchingElementError = IS_ELEMENT_SELECTION_V2
+    ? isFetchingElementError
     : flowNodeMetaDataStore.state.status === 'error';
+  isSelectedInstancePlaceholder = IS_ELEMENT_SELECTION_V2
+    ? isSelectedInstancePlaceholder
+    : (flowNodeSelectionStore.state.selection?.isPlaceholder ?? false);
 
   if (isError || isFetchingElementError) {
     return 'error';
@@ -94,10 +100,7 @@ const useDisplayStatus = ({
     return 'multi-instances';
   }
 
-  if (
-    flowNodeSelectionStore.state.selection?.isPlaceholder ||
-    newTokenCountForSelectedNode === 1
-  ) {
+  if (isSelectedInstancePlaceholder || newTokenCountForSelectedNode === 1) {
     return 'no-variables';
   }
 
