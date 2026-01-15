@@ -8,21 +8,18 @@
 package io.camunda.appint.exporter;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
-import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.moreThanOrExactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import dev.failsafe.TimeoutExceededException;
 import io.camunda.appint.exporter.config.Config;
@@ -39,19 +36,19 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
-import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestInstance(Lifecycle.PER_CLASS)
 final class AppIntegrationsExporterBatchIT {
 
-  @Rule
-  public WireMockRule wireMockRule =
-      new WireMockRule(wireMockConfig().dynamicPort().dynamicHttpsPort());
+  @RegisterExtension
+  public static WireMockExtension wireMock =
+      WireMockExtension.extensionOptions().options(wireMockConfig().dynamicPort()).build();
 
   // omit authorizations since they are removed from the records during serialization
   private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
@@ -63,15 +60,11 @@ final class AppIntegrationsExporterBatchIT {
 
   @BeforeEach
   public void beforeAll() {
-    wireMockRule.resetAll();
-    wireMockRule.start();
-    configureFor(wireMockRule.port());
-    url = "http://localhost:" + wireMockRule.port();
+    url = "http://localhost:" + wireMock.getPort();
   }
 
   @AfterEach
   public void afterAll() {
-    wireMockRule.stop();
     exporter.close();
   }
 
@@ -79,26 +72,26 @@ final class AppIntegrationsExporterBatchIT {
   void testSingleRecordBatching() {
     setupExporter(config -> config.setBatchSize(1));
 
-    stubFor(post(anyUrl()).willReturn(ok()));
+    wireMock.stubFor(post(anyUrl()).willReturn(ok()));
 
     export(generateRecords().limit(100));
 
     Awaitility.await().until(() -> exporter.getSubscription().getBatch().getSize() == 0);
 
-    verify(exactly(100), postRequestedFor(urlEqualTo("/")));
+    wireMock.verify(exactly(100), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
   void testMultipleRecordBatching() {
     setupExporter(config -> config.setBatchSize(10));
 
-    stubFor(post(anyUrl()).willReturn(ok()));
+    wireMock.stubFor(post(anyUrl()).willReturn(ok()));
 
     export(generateRecords().limit(100));
 
     Awaitility.await().until(() -> exporter.getSubscription().getBatch().getSize() == 0);
 
-    verify(moreThanOrExactly(10), postRequestedFor(urlEqualTo("/")));
+    wireMock.verify(moreThanOrExactly(10), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
@@ -113,27 +106,27 @@ final class AppIntegrationsExporterBatchIT {
                 .setRequestTimeoutMs(5000L)
                 .setContinueOnError(false));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs(Scenario.STARTED)
             .willSetStateTo("second attempt")
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs("second attempt")
             .willSetStateTo("ok")
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
-    stubFor(post(anyUrl()).inScenario("retry").whenScenarioStateIs("ok").willReturn(ok()));
+    wireMock.stubFor(post(anyUrl()).inScenario("retry").whenScenarioStateIs("ok").willReturn(ok()));
 
     export(generateRecords().limit(1));
 
     Awaitility.await().until(() -> exporter.getSubscription().getBatch().getSize() == 0);
 
-    verify(exactly(3), postRequestedFor(urlEqualTo("/")));
+    wireMock.verify(exactly(3), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
@@ -146,21 +139,21 @@ final class AppIntegrationsExporterBatchIT {
                 .setRetryDelayMs(100L)
                 .setContinueOnError(false));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs(Scenario.STARTED)
             .willSetStateTo("second attempt")
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs("second attempt")
             .willSetStateTo("third attempt")
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs("third attempt")
@@ -168,9 +161,9 @@ final class AppIntegrationsExporterBatchIT {
 
     assertThatThrownBy(() -> export(generateRecords().limit(1)))
         .isInstanceOf(RuntimeException.class)
-        .hasMessageContaining("Failed to post records, status: 500");
+        .hasMessageContaining("Failed to post records. Status: 500");
 
-    verify(exactly(3), postRequestedFor(urlEqualTo("/")));
+    wireMock.verify(exactly(3), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
@@ -184,7 +177,7 @@ final class AppIntegrationsExporterBatchIT {
                 .setRequestTimeoutMs(500L)
                 .setContinueOnError(false));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .willReturn(
@@ -196,7 +189,7 @@ final class AppIntegrationsExporterBatchIT {
         .isInstanceOf(RuntimeException.class)
         .hasCauseInstanceOf(TimeoutExceededException.class);
 
-    verify(exactly(1), postRequestedFor(urlEqualTo("/")));
+    wireMock.verify(exactly(1), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
@@ -207,21 +200,21 @@ final class AppIntegrationsExporterBatchIT {
 
     assertThat(exporter.getSubscription().getBatch().getLastLogPosition()).isEqualTo(-1L);
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs(Scenario.STARTED)
             .willSetStateTo("second attempt")
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs("second attempt")
             .willSetStateTo("third attempt")
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
-    stubFor(
+    wireMock.stubFor(
         post(anyUrl())
             .inScenario("retry")
             .whenScenarioStateIs("third attempt")
@@ -233,7 +226,7 @@ final class AppIntegrationsExporterBatchIT {
     assertThat(exporter.getSubscription().getBatch().getLastLogPosition())
         .isEqualTo(record.getPosition());
 
-    verify(exactly(3), postRequestedFor(urlEqualTo("/")));
+    wireMock.verify(exactly(3), postRequestedFor(urlEqualTo("/")));
   }
 
   private void setupExporter(final Consumer<Config> configurator) {

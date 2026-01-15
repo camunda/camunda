@@ -87,7 +87,7 @@ Additional configuration options:
 You can run the docker image from https://hub.docker.com/r/mendhak/http-https-echo to test the exporter locally:
 
 ```bash
-docker run -p 8088:8080 --rm -t mendhak/http-https-echo:31
+docker run -p 8088:8080 --rm -t mendhak/http-https-echo:latest
 ```
 
 Then configure the exporter to point to `http://localhost:8088/events`.
