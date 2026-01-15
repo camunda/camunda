@@ -264,7 +264,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Micrometer Prometheus registry -->
+    <!-- Micrometer Prometheus registry  -->
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>io.micrometer</groupId>
@@ -333,7 +333,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Opensearch -->
+    <!-- Opensearch  -->
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
@@ -357,7 +357,7 @@
       <version>${version.camunda-license-check}</version>
     </dependency>
 
-    <!-- ClassGraph -->
+    <!-- ClassGraph  -->
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
@@ -709,6 +709,37 @@
       <artifactId>nimbus-jose-jwt</artifactId>
       <version>${version.nimbus-jose-jwt}</version>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-qa-util</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>io.camunda</groupId>
+          <artifactId>camunda-gateway-mcp</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.liquibase</groupId>
+          <artifactId>liquibase-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.liquibase</groupId>
+          <artifactId>liquibase-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -834,56 +865,6 @@
   </build>
 
   <profiles>
-    <!--
-      The QA module is enabled by default, but having it in a profile allows us to exclude it easily.
-      That is useful for example for creating releases. This profile is active if the skipQaBuild
-      property is not present, or is present and set to a value other than 'true'.
-      -->
-    <profile>
-      <id>include-qa-dependencies</id>
-      <activation>
-        <property>
-          <name>skipQaBuild</name>
-          <value>!true</value>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>io.camunda</groupId>
-          <artifactId>zeebe-qa-util</artifactId>
-          <scope>test</scope>
-          <exclusions>
-            <exclusion>
-              <groupId>io.camunda</groupId>
-              <artifactId>camunda-gateway-mcp</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.liquibase</groupId>
-              <artifactId>liquibase-core</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-
-        <dependency>
-          <groupId>io.camunda</groupId>
-          <artifactId>configuration</artifactId>
-          <scope>test</scope>
-          <exclusions>
-            <exclusion>
-              <groupId>org.liquibase</groupId>
-              <artifactId>liquibase-core</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-
-        <dependency>
-          <groupId>io.camunda</groupId>
-          <artifactId>zeebe-broker</artifactId>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-
     <profile>
       <id>it</id>
       <build>
