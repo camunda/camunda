@@ -184,8 +184,7 @@ If you don't have access to [Minimus hardened base images](https://minimus.io/),
 docker build \
   --tag camunda/zeebe:local \
   --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
-  --build-arg BASE_IMAGE='eclipse-temurin:21-jre-noble' \
-  --build-arg BASE_DIGEST='sha256:67fc762eabacb56e5444b367889e04ce8c839b8f4b3d8ef3e459c5579fbefd8a' \
+  --build-arg BASE='public' \
   --target app \
   --file ./camunda.Dockerfile
   .
