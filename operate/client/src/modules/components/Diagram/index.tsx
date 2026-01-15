@@ -16,8 +16,10 @@ import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {clearSelection} from 'modules/utils/flowNodeSelection';
+import {clearSelection as clearSelectionV1} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -61,6 +63,8 @@ const Diagram: React.FC<Props> = observer(
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
     const rootNode = useRootNode();
+    const {clearSelection, selectedElementId} =
+      useProcessInstanceElementSelection();
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -107,22 +111,32 @@ const Diagram: React.FC<Props> = observer(
         viewer.onViewboxChange = setIsViewboxChanging;
 
         viewer.onRootChange = (rootElementId) => {
-          if (
-            flowNodeSelectionStore.state.selection?.flowNodeId === undefined
-          ) {
+          const elementId = IS_ELEMENT_SELECTION_V2
+            ? selectedElementId
+            : (flowNodeSelectionStore.state.selection?.flowNodeId ?? null);
+
+          if (elementId === null) {
             return;
           }
 
-          const currentSelectionRootId = viewer.findRootId(
-            flowNodeSelectionStore.state.selection?.flowNodeId,
-          );
+          const currentSelectionRootId = viewer.findRootId(elementId);
 
           if (rootElementId !== currentSelectionRootId) {
-            clearSelection(rootNode);
+            if (IS_ELEMENT_SELECTION_V2) {
+              clearSelection();
+            } else {
+              clearSelectionV1(rootNode);
+            }
           }
         };
       }
-    }, [viewer, onFlowNodeSelection, rootNode]);
+    }, [
+      viewer,
+      onFlowNodeSelection,
+      rootNode,
+      clearSelection,
+      selectedElementId,
+    ]);
 
     useEffect(() => {
       return () => {
