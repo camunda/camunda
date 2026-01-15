@@ -8,8 +8,10 @@
 
 import {useMemo} from 'react';
 import {StructuredListSkeleton} from '@carbon/react';
+import isNil from 'lodash/isNil';
 import {Link} from 'modules/components/Link';
 import {Paths, Locations} from 'modules/Routes';
+import {tracking} from 'modules/tracking';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -17,12 +19,25 @@ import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProc
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
+import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container, Callout} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+
+const formatTaskLink = (
+  tasklistUrl: string,
+  userTaskKey: string,
+  state: UserTask['state'],
+) => {
+  const filter = state === 'COMPLETED' ? 'completed' : 'all-open';
+  return `${tasklistUrl}/${userTaskKey}?filter=${filter}`;
+};
 
 const DetailsTab: React.FC = () => {
+  const clientConfig = getClientConfig();
   const {
     resolvedElementInstance,
     selectedElementId,
@@ -77,6 +92,19 @@ const DetailsTab: React.FC = () => {
     },
   );
 
+  const isCamundaTask =
+    resolvedElementType === 'USER_TASK' && isCamundaUserTask(businessObject);
+
+  const {data: userTask} = useGetUserTaskByElementInstance(
+    elementInstanceKey ?? '',
+    {
+      enabled:
+        !!elementInstanceKey &&
+        isCamundaTask &&
+        !isNil(clientConfig.tasklistUrl),
+    },
+  );
+
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
       instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
@@ -108,6 +136,38 @@ const DetailsTab: React.FC = () => {
           {cellContent: elementInstanceKey ?? '-'},
         ],
       },
+      ...(!isNil(clientConfig.tasklistUrl) &&
+      isCamundaTask &&
+      userTask?.userTaskKey
+        ? [
+            {
+              key: 'open-tasklist',
+              columns: [
+                {cellContent: 'Tasklist'},
+                {
+                  cellContent: (
+                    <a
+                      href={formatTaskLink(
+                        clientConfig.tasklistUrl,
+                        userTask.userTaskKey,
+                        userTask.state,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        tracking.track({
+                          eventName: 'open-tasklist-link-clicked',
+                        });
+                      }}
+                    >
+                      Open Tasklist
+                    </a>
+                  ),
+                },
+              ],
+            },
+          ]
+        : []),
       {
         key: 'execution-duration',
         columns: [
@@ -239,6 +299,9 @@ const DetailsTab: React.FC = () => {
     calledProcessInstancesCount,
     processInstance,
     calledDecisionInstance,
+    clientConfig.tasklistUrl,
+    isCamundaTask,
+    userTask,
   ]);
 
   if (isFetchingElement) {
