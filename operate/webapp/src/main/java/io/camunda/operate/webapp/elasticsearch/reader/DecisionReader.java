@@ -7,11 +7,13 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
-
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.TopHitsAggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -20,7 +22,6 @@ import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
@@ -28,16 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,16 +45,9 @@ public class DecisionReader extends AbstractReader
 
   @Autowired private DecisionIndex decisionIndex;
 
-  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
-
   @Autowired private PermissionsService permissionsService;
 
   @Autowired private SecurityConfiguration securityConfiguration;
-
-  private DecisionDefinitionEntity fromSearchHit(final String processString) {
-    return ElasticsearchUtil.fromSearchHit(
-        processString, objectMapper, DecisionDefinitionEntity.class);
-  }
 
   /**
    * Gets the decision by key
@@ -72,16 +57,25 @@ public class DecisionReader extends AbstractReader
    */
   @Override
   public DecisionDefinitionEntity getDecision(final Long decisionDefinitionKey) {
-    final SearchRequest searchRequest =
-        new SearchRequest(decisionIndex.getAlias())
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(DecisionIndex.KEY, decisionDefinitionKey)));
+    final var query = ElasticsearchUtil.termsQuery(DecisionIndex.KEY, decisionDefinitionKey);
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+    final var searchRequest =
+        new SearchRequest.Builder().index(decisionIndex.getAlias()).query(tenantAwareQuery).build();
+
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      if (response.getHits().getTotalHits().value == 1) {
-        return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-      } else if (response.getHits().getTotalHits().value > 1) {
+      final var response = es8client.search(searchRequest, DecisionDefinitionEntity.class);
+      final var totalHits = response.hits().total().value();
+      if (totalHits == 1) {
+        final var hit = response.hits().hits().get(0);
+        final var source = hit.source();
+        if (source == null) {
+          throw new OperateRuntimeException(
+              String.format(
+                  "Decision source is missing for key '%s' despite a search hit being returned.",
+                  decisionDefinitionKey));
+        }
+        return source;
+      } else if (totalHits > 1) {
         throw new NotFoundException(
             String.format("Could not find unique decision with key '%s'.", decisionDefinitionKey));
       } else {
@@ -89,7 +83,7 @@ public class DecisionReader extends AbstractReader
             String.format("Could not find decision with key '%s'.", decisionDefinitionKey));
       }
     } catch (final IOException e) {
-      final String message =
+      final var message =
           String.format("Exception occurred, while obtaining the decision: %s", e.getMessage());
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
@@ -104,88 +98,101 @@ public class DecisionReader extends AbstractReader
   @Override
   public Map<String, List<DecisionDefinitionEntity>> getDecisionsGrouped(
       final DecisionRequestDto request) {
-    final String tenantsGroupsAggName = "group_by_tenantId";
-    final String groupsAggName = "group_by_decisionId";
-    final String decisionsAggName = "decisions";
+    final var tenantsGroupsAggName = "group_by_tenantId";
+    final var groupsAggName = "group_by_decisionId";
+    final var decisionsAggName = "decisions";
 
-    final AggregationBuilder agg =
-        terms(tenantsGroupsAggName)
-            .field(DecisionIndex.TENANT_ID)
-            .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-            .subAggregation(
-                terms(groupsAggName)
-                    .field(DecisionIndex.DECISION_ID)
-                    .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-                    .subAggregation(
-                        topHits(decisionsAggName)
-                            .fetchSource(
-                                new String[] {
-                                  DecisionIndex.ID,
-                                  DecisionIndex.NAME,
-                                  DecisionIndex.VERSION,
-                                  DecisionIndex.DECISION_ID,
-                                  DecisionIndex.TENANT_ID
-                                },
-                                null)
-                            .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
-                            .sort(DecisionIndex.VERSION, SortOrder.DESC)));
+    final var decisionsAgg =
+        new TopHitsAggregation.Builder()
+            .source(
+                s ->
+                    s.filter(
+                        f ->
+                            f.includes(
+                                DecisionIndex.ID,
+                                DecisionIndex.NAME,
+                                DecisionIndex.VERSION,
+                                DecisionIndex.DECISION_ID,
+                                DecisionIndex.TENANT_ID)))
+            .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
+            .sort(s -> s.field(f -> f.field(DecisionIndex.VERSION).order(SortOrder.Desc)))
+            .build();
 
-    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(agg).size(0);
+    final var groupByDecisionIdAgg =
+        new Aggregation.Builder()
+            .terms(t -> t.field(DecisionIndex.DECISION_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE))
+            .aggregations(Map.of(decisionsAggName, decisionsAgg._toAggregation()))
+            .build();
 
-    sourceBuilder.query(buildQuery(request.getTenantId()));
+    final var groupByTenantIdAgg =
+        new Aggregation.Builder()
+            .terms(t -> t.field(DecisionIndex.TENANT_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE))
+            .aggregations(Map.of(groupsAggName, groupByDecisionIdAgg))
+            .build();
 
-    final SearchRequest searchRequest =
-        new SearchRequest(decisionIndex.getAlias()).source(sourceBuilder);
+    final var query = buildQuery(request.getTenantId());
+    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
+    final var searchRequest =
+        new SearchRequest.Builder()
+            .index(decisionIndex.getAlias())
+            .query(tenantAwareQuery)
+            .aggregations(tenantsGroupsAggName, groupByTenantIdAgg)
+            .size(0)
+            .build();
 
     try {
-      final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
-      final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
-      final Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
+      final var searchResponse = es8client.search(searchRequest, DecisionDefinitionEntity.class);
+      final var groups = searchResponse.aggregations().get(tenantsGroupsAggName).sterms();
+      final var result = new HashMap<String, List<DecisionDefinitionEntity>>();
 
-      groups.getBuckets().stream()
+      groups.buckets().array().stream()
           .forEach(
               b -> {
-                final String groupTenantId = b.getKeyAsString();
-                final Terms decisionGroups = b.getAggregations().get(groupsAggName);
+                final var groupTenantId = b.key().stringValue();
+                final StringTermsAggregate decisionGroups =
+                    b.aggregations().get(groupsAggName).sterms();
 
-                decisionGroups.getBuckets().stream()
+                decisionGroups.buckets().array().stream()
                     .forEach(
                         tenantB -> {
-                          final String decisionId = tenantB.getKeyAsString();
-                          final String groupKey = groupTenantId + "_" + decisionId;
-                          result.put(groupKey, new ArrayList<>());
+                          final var decisionId = tenantB.key().stringValue();
+                          final var groupKey = groupTenantId + "_" + decisionId;
 
-                          final TopHits processes = tenantB.getAggregations().get(decisionsAggName);
-                          final SearchHit[] hits = processes.getHits().getHits();
-                          for (final SearchHit searchHit : hits) {
-                            final DecisionDefinitionEntity decisionEntity =
-                                fromSearchHit(searchHit.getSourceAsString());
-                            result.get(groupKey).add(decisionEntity);
-                          }
+                          final var decisionHits =
+                              tenantB.aggregations().get(decisionsAggName).topHits();
+                          final List<DecisionDefinitionEntity> decisions =
+                              decisionHits.hits().hits().stream()
+                                  .map(Hit::source)
+                                  .filter(Objects::nonNull)
+                                  .map(source -> source.to(DecisionDefinitionEntity.class))
+                                  .toList();
+                          result.put(groupKey, new ArrayList<>(decisions));
                         });
               });
 
       return result;
     } catch (final IOException e) {
-      final String message =
+      final var message =
           String.format(
-              "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
+              "Exception occurred, while obtaining grouped decisions: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
 
-  private QueryBuilder buildQuery(final String tenantId) {
+  private Query buildQuery(final String tenantId) {
     final var allowed =
         permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
-    final QueryBuilder decisionIdQ =
-        allowed.isAll()
-            ? matchAllQuery()
-            : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
 
-    QueryBuilder tenantIdQ = null;
+    final var decisionIdQ =
+        allowed.isAll()
+            ? ElasticsearchUtil.matchAllQuery()
+            : ElasticsearchUtil.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
+
+    Query tenantIdQ = null;
     if (securityConfiguration.getMultiTenancy().isChecksEnabled()) {
-      tenantIdQ = tenantId != null ? termQuery(DecisionIndex.TENANT_ID, tenantId) : null;
+      tenantIdQ =
+          tenantId != null ? ElasticsearchUtil.termsQuery(DecisionIndex.TENANT_ID, tenantId) : null;
     }
-    return joinWithAnd(decisionIdQ, tenantIdQ);
+    return ElasticsearchUtil.joinWithAnd(decisionIdQ, tenantIdQ);
   }
 }
