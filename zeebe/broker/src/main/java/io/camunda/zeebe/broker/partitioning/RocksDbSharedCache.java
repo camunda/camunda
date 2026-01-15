@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class RocksDbSharedCache {
   public static final long MINIMUM_PARTITION_MEMORY_LIMIT = 32 * 1024 * 1024L;
-  private static final double ROCKSDB_OVERHEAD_FACTOR = 0.50;
+  private static final double ROCKSDB_OVERHEAD_FACTOR = 0.15;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RocksDbSharedCache.class);
 
