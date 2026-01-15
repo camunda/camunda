@@ -35,11 +35,7 @@ const ProcessOperations: React.FC<Props> = observer(
 
     const [isOperationRunning, setIsOperationRunning] = useState(false);
 
-    const {
-      data: runningInstancesCount,
-      isPending,
-      isError,
-    } = useRunningInstancesCount({
+    const {data: runningInstancesCount} = useRunningInstancesCount({
       processDefinitionKey: processDefinitionKey,
     });
 
@@ -52,16 +48,13 @@ const ProcessOperations: React.FC<Props> = observer(
           <OperationItems>
             <DangerButton
               title={
-                isPending || isError || (runningInstancesCount ?? 1) > 0
+                (runningInstancesCount ?? 0) > 0
                   ? 'Only process definitions without running instances can be deleted.'
                   : `Delete Process Definition "${processName} - Version ${processVersion}"`
               }
               type="DELETE"
               disabled={
-                isOperationRunning ||
-                isPending ||
-                isError ||
-                runningInstancesCount !== 0
+                isOperationRunning || (runningInstancesCount ?? 0) !== 0
               }
               onClick={() => {
                 tracking.track({

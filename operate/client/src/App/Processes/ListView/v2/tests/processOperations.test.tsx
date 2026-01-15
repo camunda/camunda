@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {ListView} from '..';
-import {createWrapper} from './mocks';
+import {getWrapper} from './mocks';
 import {
   mockProcessDefinitions,
   mockProcessXML,
@@ -23,6 +23,14 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockApplyProcessDefinitionOperation} from 'modules/mocks/api/processes/operations';
+import {notificationsStore} from 'modules/stores/notifications';
+
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
@@ -67,7 +75,7 @@ describe('<ListView /> - operations', () => {
       '?active=true&incidents=true&process=demoProcess&version=1';
 
     render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+      wrapper: getWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -97,7 +105,7 @@ describe('<ListView /> - operations', () => {
     });
 
     render(<ListView />, {
-      wrapper: createWrapper('/processes'),
+      wrapper: getWrapper('/processes'),
     });
 
     expect(
@@ -128,7 +136,7 @@ describe('<ListView /> - operations', () => {
     const queryString = '?active=true&incidents=true&process=demoProcess';
 
     render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+      wrapper: getWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -146,16 +154,25 @@ describe('<ListView /> - operations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show delete button when user has resource based permissions', async () => {
+  it('should show permission error notification when delete operation returns 403', async () => {
+    mockSearchProcessInstances().withSuccess(mockProcessInstancesV2);
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     mockSearchProcessInstances().withSuccess({
       items: [],
       page: {totalItems: 0},
     });
 
-    const queryString = '?process=demoProcess&version=1';
+    mockApplyProcessDefinitionOperation().withServerError(403);
 
-    render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
+    const {user} = render(<ListView />, {
+      wrapper: getWrapper('/processes?process=demoProcess&version=1'),
     });
 
     expect(
@@ -163,34 +180,26 @@ describe('<ListView /> - operations', () => {
         name: /delete process definition/i,
       }),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', {name: 'Zoom in diagram'}),
-    ).toBeInTheDocument();
-  });
 
-  it('should not show delete button when user has no resource based permissions', async () => {
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    await user.click(
+      screen.getByRole('button', {name: /delete process definition/i}),
+    );
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Delete Process Definition',
     });
+    const confirmCheckbox = within(dialog).getByLabelText(
+      /Yes, I confirm I want to delete this process definition/i,
+    );
+    const deleteButton = within(dialog).getByRole('button', {name: /Delete/i});
+    await user.click(confirmCheckbox);
+    await user.click(deleteButton);
 
-    const queryString = '?process=demoProcess&version=1';
-
-    vi.stubGlobal('clientConfig', {
-      resourcePermissionsEnabled: true,
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'warning',
+      title: "You don't have permission to perform this operation",
+      subtitle: 'Please contact the administrator if you need access.',
+      isDismissable: true,
     });
-
-    render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
-    });
-
-    expect(
-      await screen.findByRole('heading', {name: 'New demo process'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name: /delete process definition/i,
-      }),
-    ).not.toBeInTheDocument();
   });
 });

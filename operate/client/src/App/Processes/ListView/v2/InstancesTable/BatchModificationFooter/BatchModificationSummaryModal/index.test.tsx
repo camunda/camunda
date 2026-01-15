@@ -11,8 +11,8 @@ import {observer} from 'mobx-react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {BatchModificationSummaryModal} from '.';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
+import {BatchModificationSummaryModal} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {

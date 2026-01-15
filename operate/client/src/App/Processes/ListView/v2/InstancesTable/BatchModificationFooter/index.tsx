@@ -9,7 +9,7 @@
 import {Button, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
 import {Stack} from './styled';

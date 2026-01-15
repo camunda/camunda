@@ -24,7 +24,6 @@ import {Wrapper} from '../tests/mocks';
 import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 vi.mock('modules/hooks/useFilters');
@@ -177,7 +176,10 @@ describe('Target Diagram', () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
     processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
-    processInstancesSelectionStore.setselectedProcessInstanceIds(['1']);
+    processInstanceMigrationStore.setBatchOperationQuery({
+      ids: ['1'],
+    });
+    processInstanceMigrationStore.setSelectedInstancesCount(1);
     await processesStore.fetchProcesses();
 
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});

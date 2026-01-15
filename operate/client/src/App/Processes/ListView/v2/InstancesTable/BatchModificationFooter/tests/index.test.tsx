@@ -9,11 +9,12 @@
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {render, screen} from 'modules/testing-library';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelectionV2';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {BatchModificationFooter} from '..';
+import {BatchModificationFooter} from '../index';
 import {MemoryRouter} from 'react-router-dom';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 vi.mock('modules/hooks/useCallbackPrompt', () => {
   return {
@@ -34,41 +35,44 @@ vi.mock('../BatchModificationSummaryModal', () => ({
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {
     useEffect(() => {
-      processInstancesStore.setProcessInstances({
-        filteredProcessInstancesCount: 10,
-        processInstances: [],
+      processInstancesSelectionStore.init();
+      processInstancesSelectionStore.setRuntime({
+        totalProcessInstancesCount: 10,
+        visibleIds: ['123', '456', '789'],
+        visibleRunningIds: ['123', '456', '789'],
       });
 
       return () => {
         processInstancesSelectionStore.reset();
-        processInstancesStore.reset();
         batchModificationStore.reset();
       };
     });
 
     return (
-      <MemoryRouter>
-        {children}
-        <button
-          onClick={processInstancesSelectionStore.selectAllProcessInstances}
-        >
-          Toggle select all instances
-        </button>
-        <button
-          onClick={() =>
-            processInstancesSelectionStore.selectProcessInstance('123')
-          }
-        >
-          select single instance
-        </button>
-        <button
-          onClick={() => {
-            batchModificationStore.selectTargetElement('startEvent');
-          }}
-        >
-          select target flow node
-        </button>
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter>
+          {children}
+          <button
+            onClick={processInstancesSelectionStore.selectAllProcessInstances}
+          >
+            Toggle select all instances
+          </button>
+          <button
+            onClick={() =>
+              processInstancesSelectionStore.selectProcessInstance('123')
+            }
+          >
+            select single instance
+          </button>
+          <button
+            onClick={() => {
+              batchModificationStore.selectTargetElement('startEvent');
+            }}
+          >
+            select target flow node
+          </button>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   },
 );
