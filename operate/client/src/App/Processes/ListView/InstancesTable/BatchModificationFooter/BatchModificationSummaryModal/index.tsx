@@ -24,9 +24,11 @@ import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
+import {useBatchOperationSuccessNotification} from 'modules/hooks/useBatchOperationSuccessNotification';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
+    const displaySuccessNotification = useBatchOperationSuccessNotification();
     const location = useLocation();
     const batchOperationMutationRequestBody =
       useBatchOperationMutationRequestBody();
@@ -64,7 +66,8 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
 
     const {mutate: batchModifyProcessInstances} =
       useModifyProcessInstancesBatchOperation({
-        onSuccess: () => {
+        onSuccess: ({batchOperationKey, batchOperationType}) => {
+          displaySuccessNotification(batchOperationType, batchOperationKey);
           panelStatesStore.expandOperationsPanel();
           batchModificationStore.reset();
           tracking.track({

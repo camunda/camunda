@@ -31,6 +31,7 @@ import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/que
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {notificationsStore} from 'modules/stores/notifications';
 
 vi.mock('modules/tracking', () => ({
   tracking: {
@@ -154,6 +155,11 @@ describe('BatchModificationSummaryModal', () => {
       eventName: 'batch-operation',
       operationType: 'MODIFY_PROCESS_INSTANCE',
     });
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'success',
+      }),
+    );
 
     expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
   });

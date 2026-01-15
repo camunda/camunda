@@ -27,7 +27,7 @@ import {
 import {parseBatchOperationsSearchSort} from 'modules/utils/filter/batchOperationsSearchSort';
 import {BatchItemsCount} from './BatchItemsCount';
 import {BatchStateIndicator} from './BatchStateIndicator';
-import {formatOperationType} from './formatOperationType';
+import {formatOperationType} from 'modules/utils/formatOperationType';
 
 const MAX_OPERATIONS_PER_REQUEST = 20;
 
