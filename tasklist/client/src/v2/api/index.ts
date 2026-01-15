@@ -18,7 +18,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 import {
-  queryUserTaskAuditLogs,
+  endpoints as endpointsV89,
   type QueryUserTaskAuditLogsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 
@@ -180,16 +180,25 @@ const api = {
   ) => {
     const {userTaskKey, ...body} = params;
     return new Request(
-      getFullURL(queryUserTaskAuditLogs.getUrl({userTaskKey})),
+      getFullURL(endpointsV89.queryUserTaskAuditLogs.getUrl({userTaskKey})),
       {
         ...BASE_REQUEST_OPTIONS,
-        method: queryUserTaskAuditLogs.method,
+        method: endpointsV89.queryUserTaskAuditLogs.method,
         body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
         },
       },
     );
+  },
+  getAuditLog: (params: {auditLogKey: string}) => {
+    return new Request(getFullURL(endpointsV89.getAuditLog.getUrl(params)), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpointsV89.getAuditLog.method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   },
 } as const;
 

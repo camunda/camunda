@@ -6,12 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {
   type LoaderFunctionArgs,
+  Outlet,
+  useNavigate,
   useRevalidator,
   useRouteError,
 } from 'react-router-dom';
-import {useTaskDetailsParams} from 'common/routing';
+import {pages, useTaskDetailsParams} from 'common/routing';
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
 import {getUserTaskAuditLogsQueryOptions} from 'v2/api/useUserTaskAuditLogs.query';
 import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
@@ -20,8 +23,32 @@ import {Forbidden} from 'common/error-handling/Forbidden';
 import {useTranslation} from 'react-i18next';
 import {logger} from 'common/utils/logger';
 import {requestErrorSchema} from 'common/api/request';
+import {
+  DataTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Layer,
+} from '@carbon/react';
+import {formatDate} from 'common/dates/formatDate';
+import {spaceAndCapitalize} from 'common/utils/spaceAndCapitalize';
+import {AuditLogItemStatusIcon} from 'v2/features/tasks/task-history/AuditLogItemStatusIcon';
+import {DetailsButton} from './DetailsButton';
+import styles from './styles.module.scss';
 
 const HTTP_STATUS_FORBIDDEN = 403;
+
+const HEADERS = [
+  {key: 'operation', header: 'taskDetailsHistoryOperationHeader'},
+  {key: 'status', header: 'taskDetailsHistoryStatusHeader'},
+  {key: 'actor', header: 'taskDetailsHistoryActorHeader'},
+  {key: 'time', header: 'taskDetailsHistoryTimeHeader'},
+  {key: 'details', header: ''},
+];
 
 async function loader({params}: LoaderFunctionArgs) {
   const userTaskKey = params.id;
@@ -38,11 +65,106 @@ async function loader({params}: LoaderFunctionArgs) {
 
 const TaskDetailsHistoryView: React.FC = () => {
   const {id} = useTaskDetailsParams();
+  const {t} = useTranslation();
+  const navigate = useNavigate();
   const {data} = useSuspenseInfiniteQuery(getUserTaskAuditLogsQueryOptions(id));
 
+  const auditLogs = useMemo(
+    () => data.pages.flatMap((page) => page.items),
+    [data],
+  );
+
+  const headers = HEADERS.map((header) => ({
+    ...header,
+    header: header.header ? t(header.header) : '',
+  }));
+
+  const rows = useMemo(
+    () =>
+      auditLogs.map((log) => ({
+        id: log.auditLogKey,
+        operation: `${spaceAndCapitalize(log.operationType)} ${spaceAndCapitalize(log.entityType)}`,
+        status: log.result,
+        actor: log.actorId,
+        time: formatDate(log.timestamp),
+        details: log.auditLogKey,
+      })),
+    [auditLogs],
+  );
+
+  const handleOpenDetails = (auditLogKey: string) => {
+    navigate(pages.taskDetailsHistoryAuditLog(id, auditLogKey));
+  };
+
+  if (rows.length === 0) {
+    return (
+      <div
+        className={styles.emptyContainer}
+        data-testid="task-details-history-view"
+      >
+        <Layer>
+          <p>{t('taskDetailsHistoryEmptyMessage')}</p>
+        </Layer>
+      </div>
+    );
+  }
+
   return (
-    <div data-testid="task-details-history-view">
-      <code>{JSON.stringify(data, null, 2)}</code>
+    <div className={styles.container} data-testid="task-details-history-view">
+      <div className={styles.tableContainer}>
+        <DataTable rows={rows} headers={headers}>
+          {({rows, headers, getTableProps, getHeaderProps, getRowProps}) => (
+            <TableContainer>
+              <Table {...getTableProps()} size="sm">
+                <TableHead>
+                  <TableRow>
+                    {headers.map((header) => {
+                      const {key, ...headerProps} = getHeaderProps({header});
+                      return (
+                        <TableHeader key={key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((row) => {
+                    const {key, ...rowProps} = getRowProps({row});
+                    return (
+                      <TableRow key={key} {...rowProps}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>
+                            {cell.info.header === 'status' ? (
+                              <div className={styles.statusCell}>
+                                <AuditLogItemStatusIcon status={cell.value} />
+                                {spaceAndCapitalize(cell.value)}
+                              </div>
+                            ) : (
+                              <>
+                                {cell.info.header === 'details' ? (
+                                  <DetailsButton
+                                    onClick={() =>
+                                      handleOpenDetails(cell.value)
+                                    }
+                                  />
+                                ) : (
+                                  cell.value
+                                )}
+                              </>
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DataTable>
+      </div>
+      <Outlet />
     </div>
   );
 };

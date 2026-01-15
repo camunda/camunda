@@ -41,4 +41,15 @@ function getQueryUserTaskAuditLogsResponseMock(
   };
 }
 
-export {auditLog, auditLogs, getQueryUserTaskAuditLogsResponseMock};
+function getAuditLogResponseMock(
+  customFields: Partial<AuditLogItem> = {},
+): AuditLogItem {
+  return auditLog(customFields);
+}
+
+export {
+  auditLog,
+  auditLogs,
+  getQueryUserTaskAuditLogsResponseMock,
+  getAuditLogResponseMock,
+};
