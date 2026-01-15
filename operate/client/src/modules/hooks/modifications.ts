@@ -193,11 +193,11 @@ const useModificationsByFlowNode = () => {
   }, {});
 };
 
-const useNewScopeIdForFlowNode = (elementId?: string) => {
+const useNewScopeKeyForElement = (elementId: string | null) => {
   const modificationsByFlowNode = useModificationsByFlowNode();
 
   if (
-    elementId === undefined ||
+    elementId === null ||
     (modificationsByFlowNode[elementId]?.newTokens ?? 0) !== 1
   ) {
     return null;
@@ -327,6 +327,6 @@ export {
   useAvailableModifications,
   useCanBeModified,
   useModificationsByFlowNode,
-  useNewScopeIdForFlowNode,
+  useNewScopeKeyForElement,
   useWillAllFlowNodesBeCanceled,
 };
