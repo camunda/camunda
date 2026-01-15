@@ -46,6 +46,7 @@
       }
     ]
   },
+  "description": "A collection of visualisations relating to the Identity domain tracking metrics across authentication and authorization.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -70,6 +71,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "This visualisation tracks the rate of requests made using the RestClient set in the authentication classes used by Spring.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -153,35 +155,98 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
+          "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(http_client_requests_seconds_count{client_name=~\".+\"}[$__interval])",
+          "expr": "rate(camunda_authentication_external_requests_seconds_count{domain=\"identity\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": false,
-          "legendFormat": "[{{client_name}}, method: {{method}}, status:{{status}}, uri:{{uri}}]",
+          "legendFormat": "[{{status}}] {{uri}}",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Requests to the OIDC provider",
+      "title": "Authentication scoped requests to external IDP",
       "type": "timeseries"
     }
   ],
   "schemaVersion": 41,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "${DS_PROMETHEUS}"
+        },
+        "label": "datasource",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "allValue": ".*",
+        "allowCustomValue": false,
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(jvm_info,namespace)",
+        "includeAll": true,
+        "multi": true,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(jvm_info,namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "allowCustomValue": false,
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(jvm_info{namespace=\"$namespace\"},pod)",
+        "includeAll": true,
+        "multi": true,
+        "name": "pod",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(jvm_info{namespace=\"$namespace\"},pod)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      }
+    ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Identity",
+  "title": "Identity Overview",
   "uid": "identity",
-  "version": 10,
-  "weekStart": ""
+  "version": 4
 }
