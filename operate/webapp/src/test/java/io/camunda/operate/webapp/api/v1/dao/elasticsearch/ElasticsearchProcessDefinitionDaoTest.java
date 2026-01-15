@@ -11,7 +11,6 @@ import static io.camunda.operate.util.ElasticsearchTestHelper.unwrapQueryVal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -45,7 +44,8 @@ public class ElasticsearchProcessDefinitionDaoTest {
     // when
     processDefinitionDao.buildQueryOn(query, ProcessDefinition.KEY, searchReqBuilder, false);
 
-    final ArgumentCaptor<Query> captor = ArgumentCaptor.forClass(Query.class);
+    final ArgumentCaptor<co.elastic.clients.elasticsearch._types.query_dsl.Query> captor =
+        ArgumentCaptor.forClass(co.elastic.clients.elasticsearch._types.query_dsl.Query.class);
 
     // verify interaction and capture argument
     Mockito.verify(searchReqBuilder).query(captor.capture());

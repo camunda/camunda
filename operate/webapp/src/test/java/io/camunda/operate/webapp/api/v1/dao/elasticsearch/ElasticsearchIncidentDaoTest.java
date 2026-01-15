@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.util.ElasticsearchTenantHelper;
@@ -42,7 +41,8 @@ public class ElasticsearchIncidentDaoTest {
   @InjectMocks private ElasticsearchIncidentDao underTest;
   @Mock private ElasticsearchTenantHelper tenantHelper;
 
-  @Captor private ArgumentCaptor<Query> queryCaptor;
+  @Captor
+  private ArgumentCaptor<co.elastic.clients.elasticsearch._types.query_dsl.Query> queryCaptor;
 
   @Test
   public void testBuildFilteringWithIncidentFilter() {
@@ -69,7 +69,8 @@ public class ElasticsearchIncidentDaoTest {
     // Capture the queryBuilder object
     verify(reqBuilder).query(queryCaptor.capture());
     final var capturedArgument = queryCaptor.getValue();
-    assertThat(capturedArgument instanceof Query).isTrue();
+    assertThat(capturedArgument instanceof co.elastic.clients.elasticsearch._types.query_dsl.Query)
+        .isTrue();
 
     // Check that 9 filters are present
     final var mustClauses = capturedArgument.bool().must();
@@ -118,7 +119,8 @@ public class ElasticsearchIncidentDaoTest {
     underTest.buildFiltering(mockQuery, reqBuilder, true);
 
     // Capture the queryBuilder object
-    verify(reqBuilder, times(0)).query(any(Query.class));
+    verify(reqBuilder, times(0))
+        .query(any(co.elastic.clients.elasticsearch._types.query_dsl.Query.class));
 
     verifyNoInteractions(mockDateTimeFormatter);
   }
